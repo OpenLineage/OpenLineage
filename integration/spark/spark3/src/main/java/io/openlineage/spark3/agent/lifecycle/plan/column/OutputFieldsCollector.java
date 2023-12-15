@@ -27,24 +27,24 @@ public class OutputFieldsCollector {
 
     if (!builder.hasOutputs()) {
       // extract outputs from the children
-      ScalaConversionUtils.<LogicalPlan>fromSeq(plan.children()).stream()
+      ScalaConversionUtils.<LogicalPlan>asJavaCollection(plan.children()).stream()
           .forEach(childPlan -> collect(context, childPlan, builder));
     }
   }
 
   static List<NamedExpression> getOutputExpressionsFromRoot(LogicalPlan plan) {
     List<NamedExpression> expressions =
-        ScalaConversionUtils.fromSeq(plan.output()).stream()
+        ScalaConversionUtils.asJavaCollection(plan.output()).stream()
             .filter(attr -> attr instanceof Attribute)
             .map(attr -> (Attribute) attr)
             .collect(Collectors.toList());
 
     if (plan instanceof Aggregate) {
       expressions.addAll(
-          ScalaConversionUtils.<NamedExpression>fromSeq(((Aggregate) plan).aggregateExpressions()));
+          ScalaConversionUtils.<NamedExpression>asJavaCollection(((Aggregate) plan).aggregateExpressions()));
     } else if (plan instanceof Project) {
       expressions.addAll(
-          ScalaConversionUtils.<NamedExpression>fromSeq(((Project) plan).projectList()));
+          ScalaConversionUtils.<NamedExpression>asJavaCollection(((Project) plan).projectList()));
     }
     return expressions;
   }
@@ -53,7 +53,7 @@ public class OutputFieldsCollector {
     List<NamedExpression> expressions = getOutputExpressionsFromRoot(plan);
     if (expressions == null || expressions.isEmpty()) {
       // extract outputs from the children
-      ScalaConversionUtils.<LogicalPlan>fromSeq(plan.children()).stream()
+      ScalaConversionUtils.<LogicalPlan>asJavaCollection(plan.children()).stream()
           .forEach(childPlan -> expressions.addAll(getOutputExpressionsFromTree(childPlan)));
     }
     return expressions;

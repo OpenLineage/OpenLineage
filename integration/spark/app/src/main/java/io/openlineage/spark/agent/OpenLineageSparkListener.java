@@ -119,7 +119,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
                         .map(ds -> ds.jobIdToActiveJob().get(jobStart.jobId())))
             .flatMap(ScalaConversionUtils::asJavaOptional);
     Set<Integer> stages =
-        ScalaConversionUtils.fromSeq(jobStart.stageIds()).stream()
+        ScalaConversionUtils.asJavaCollection(jobStart.stageIds()).stream()
             .map(Integer.class::cast)
             .collect(Collectors.toSet());
 

@@ -6,7 +6,7 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import static io.openlineage.client.OpenLineageClientUtils.mergeFacets;
-import static io.openlineage.spark.agent.util.ScalaConversionUtils.fromSeq;
+import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaCollection;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.toScalaFn;
 
 import io.openlineage.client.OpenLineage;
@@ -342,7 +342,7 @@ class OpenLineageRunEventBuilder {
                     .getQueryExecution()
                     .map(
                         qe ->
-                            fromSeq(qe.optimizedPlan().map(inputVisitor)).stream()
+                            asJavaCollection(qe.optimizedPlan().map(inputVisitor)).stream()
                                 .flatMap(Collection::stream)
                                 .map(((Class<InputDataset>) InputDataset.class)::cast))
                     .orElse(Stream.empty()))

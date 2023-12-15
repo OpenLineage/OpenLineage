@@ -54,7 +54,7 @@ public class CreateReplaceInputDatasetBuilder
     return extractChildren(x).stream()
         .flatMap(
             plan ->
-                ScalaConversionUtils.fromSeq(
+                ScalaConversionUtils.asJavaCollection(
                         plan.collect(
                             delegate(
                                 context.getInputDatasetQueryPlanVisitors(),

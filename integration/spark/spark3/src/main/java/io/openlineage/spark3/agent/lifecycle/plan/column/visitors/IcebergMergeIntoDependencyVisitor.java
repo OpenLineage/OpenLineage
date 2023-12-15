@@ -103,15 +103,15 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
 
         collect(
             node.output(),
-            ScalaConversionUtils.<Option<Seq<Expression>>>fromSeq(matched).stream()
+            ScalaConversionUtils.<Option<Seq<Expression>>>asJavaCollection(matched).stream()
                 .filter(Option::isDefined)
                 .map(Option::get)
-                .map(is -> ScalaConversionUtils.<Expression>fromSeq(is))
+                .map(is -> ScalaConversionUtils.<Expression>asJavaCollection(is))
                 .collect(Collectors.toList()),
-            ScalaConversionUtils.<Option<Seq<Expression>>>fromSeq(notMatched).stream()
+            ScalaConversionUtils.<Option<Seq<Expression>>>asJavaCollection(notMatched).stream()
                 .filter(Option::isDefined)
                 .map(Option::get)
-                .map(is -> ScalaConversionUtils.<Expression>fromSeq(is))
+                .map(is -> ScalaConversionUtils.<Expression>asJavaCollection(is))
                 .collect(Collectors.toList()),
             builder);
       }
@@ -128,7 +128,7 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
       List<List<Expression>> notMatched,
       ColumnLevelLineageBuilder builder) {
     Attribute[] output =
-        ScalaConversionUtils.<Attribute>fromSeq(outputSeq).toArray(new Attribute[0]);
+        ScalaConversionUtils.<Attribute>asJavaCollection(outputSeq).toArray(new Attribute[0]);
 
     IntStream.range(0, output.length)
         .forEach(
@@ -155,19 +155,19 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
 
   private static List<List<List<Expression>>> fromSeqNestedThreeTimes(
       Seq<Seq<Seq<Expression>>> expressions) {
-    return ScalaConversionUtils.<Seq<Seq<Expression>>>fromSeq(expressions).stream()
-        .map(s -> ScalaConversionUtils.<Seq<Expression>>fromSeq(s))
+    return ScalaConversionUtils.<Seq<Seq<Expression>>>asJavaCollection(expressions).stream()
+        .map(s -> ScalaConversionUtils.<Seq<Expression>>asJavaCollection(s))
         .map(
             l ->
                 l.stream()
-                    .map(is -> ScalaConversionUtils.<Expression>fromSeq(is))
+                    .map(is -> ScalaConversionUtils.<Expression>asJavaCollection(is))
                     .collect(Collectors.toList()))
         .collect(Collectors.toList());
   }
 
   private static List<List<Expression>> fromSeqNestedTwice(Seq<Seq<Expression>> expressions) {
-    return ScalaConversionUtils.<Seq<Expression>>fromSeq(expressions).stream()
-        .map(s -> ScalaConversionUtils.<Expression>fromSeq(s))
+    return ScalaConversionUtils.<Seq<Expression>>asJavaCollection(expressions).stream()
+        .map(s -> ScalaConversionUtils.<Expression>asJavaCollection(s))
         .collect(Collectors.toList());
   }
 }

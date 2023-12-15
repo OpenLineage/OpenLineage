@@ -76,7 +76,7 @@ public class DebugRunFacetBuilderDelegate {
   private List<String> getSparkJars() {
     return Optional.ofNullable(olContext.getSparkContext())
         .map(sc -> sc.listJars())
-        .map(jars -> ScalaConversionUtils.fromSeq(jars))
+        .map(jars -> ScalaConversionUtils.asJavaCollection(jars))
         .orElse(null);
   }
 
@@ -109,13 +109,13 @@ public class DebugRunFacetBuilderDelegate {
 
     if (node.children() != null) {
       builder.children(
-          ScalaConversionUtils.fromSeq(node.children()).stream()
+          ScalaConversionUtils.asJavaCollection(node.children()).stream()
               .map(this::nodeId)
               .collect(Collectors.toList()));
     }
     result.add(builder.build());
     if (node.children() != null) {
-      ScalaConversionUtils.fromSeq(node.children()).stream()
+      ScalaConversionUtils.asJavaCollection(node.children()).stream()
           .forEach(child -> result.addAll(scanLogicalPlan(child)));
     }
     return result;

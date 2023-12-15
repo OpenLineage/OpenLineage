@@ -68,7 +68,7 @@ public class IcebergHandler implements CatalogHandler {
 
     String prefix = String.format("spark.sql.catalog.%s", catalogName);
     Map<String, String> conf =
-        ScalaConversionUtils.<String, String>fromMap(session.conf().getAll());
+        ScalaConversionUtils.<String, String>asJavaMap(session.conf().getAll());
     log.info(conf.toString());
     Map<String, String> catalogConf =
         conf.entrySet().stream()

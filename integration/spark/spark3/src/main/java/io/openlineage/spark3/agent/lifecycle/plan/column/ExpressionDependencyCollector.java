@@ -50,10 +50,10 @@ public class ExpressionDependencyCollector {
           List<NamedExpression> expressions = new LinkedList<>();
           if (node instanceof Project) {
             expressions.addAll(
-                ScalaConversionUtils.<NamedExpression>fromSeq(((Project) node).projectList()));
+                ScalaConversionUtils.<NamedExpression>asJavaCollection(((Project) node).projectList()));
           } else if (node instanceof Aggregate) {
             expressions.addAll(
-                ScalaConversionUtils.<NamedExpression>fromSeq(
+                ScalaConversionUtils.<NamedExpression>asJavaCollection(
                     ((Aggregate) node).aggregateExpressions()));
           } else if (node instanceof LogicalRelation) {
             if (((LogicalRelation) node).relation() instanceof JDBCRelation) {
@@ -75,7 +75,7 @@ public class ExpressionDependencyCollector {
 
     // discover children expression -> handles UnaryExpressions like Alias
     if (expr.children() != null) {
-      ScalaConversionUtils.<Expression>fromSeq(expr.children()).stream()
+      ScalaConversionUtils.<Expression>asJavaCollection(expr.children()).stream()
           .forEach(child -> traverseExpression(child, ancestorId, builder));
     }
 
@@ -88,7 +88,7 @@ public class ExpressionDependencyCollector {
       } else {
         try {
           Seq<ExprId> resultIds = (Seq<ExprId>) MethodUtils.invokeMethod(aggr, "resultIds");
-          ScalaConversionUtils.<ExprId>fromSeq(resultIds).stream()
+          ScalaConversionUtils.<ExprId>asJavaCollection(resultIds).stream()
               .forEach(e -> builder.addDependency(ancestorId, e));
         } catch (Exception e) {
           // do nothing

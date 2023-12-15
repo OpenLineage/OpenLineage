@@ -27,6 +27,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.Optional;
+
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.Dataset;
@@ -37,7 +39,6 @@ import org.apache.spark.sql.sources.TableScan;
 import org.apache.spark.sql.types.StructType;
 import org.mockito.Mockito;
 import scala.Option;
-import scala.collection.JavaConversions;
 import scala.collection.immutable.Map;
 import scala.runtime.AbstractFunction0;
 
@@ -50,7 +51,9 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
   public static final MockInjector INJECTOR = new MockInjector();
 
   public static Table makeTable(TableId id, StandardTableDefinition tableDefinition)
-      throws InstantiationException, IllegalAccessException, InvocationTargetException,
+      throws InstantiationException,
+          IllegalAccessException,
+          InvocationTargetException,
           NoSuchMethodException {
     Constructor<Table.Builder> constructor =
         Table.Builder.class.getDeclaredConstructor(
@@ -103,7 +106,7 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
           bqModule,
           new SparkBigQueryConnectorModule(
               sparkSession,
-              JavaConversions.<String, String>mapAsJavaMap(parameters),
+              ScalaConversionUtils.<String, String>asJavaMap(parameters),
               Collections.emptyMap(),
               Optional.ofNullable(
                   schema.getOrElse(
@@ -114,7 +117,8 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
                         }
                       })),
               DataSourceVersion.V1,
-              false));
+              false,
+              Optional.empty()));
     }
 
     public void setTestModule(Module testModule) {

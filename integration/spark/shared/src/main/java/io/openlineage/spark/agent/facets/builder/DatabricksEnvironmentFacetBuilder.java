@@ -9,6 +9,7 @@ import com.databricks.backend.daemon.dbutils.MountInfo;
 import com.databricks.dbutils_v1.DbfsUtils;
 import io.openlineage.spark.agent.facets.EnvironmentFacet;
 import io.openlineage.spark.agent.models.DatabricksMountpoint;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.lang.reflect.Constructor;
@@ -23,7 +24,6 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerJobStart;
-import scala.collection.JavaConversions;
 
 /**
  * {@link CustomFacetBuilder} that generates a {@link EnvironmentFacet} when using OpenLineage on
@@ -139,7 +139,7 @@ public class DatabricksEnvironmentFacetBuilder
 
   private static List<DatabricksMountpoint> getDatabricksMountpoints(DbfsUtils dbutils) {
     List<DatabricksMountpoint> mountpoints = new ArrayList<>();
-    List<MountInfo> mountsList = JavaConversions.seqAsJavaList(dbutils.mounts());
+    List<MountInfo> mountsList = ScalaConversionUtils.asJavaCollection(dbutils.mounts());
     for (MountInfo mount : mountsList) {
       mountpoints.add(new DatabricksMountpoint(mount.mountPoint(), mount.source()));
     }

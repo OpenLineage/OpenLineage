@@ -123,7 +123,7 @@ class OptimizedCreateHiveTableAsSelectCommandVisitorTest {
                     .result(),
                 Option.empty(),
                 false),
-            ScalaConversionUtils.fromList(Arrays.asList(KEY, VALUE)),
+            ScalaConversionUtils.asScalaSeq(Arrays.asList(KEY, VALUE)),
             SaveMode.Overwrite);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();

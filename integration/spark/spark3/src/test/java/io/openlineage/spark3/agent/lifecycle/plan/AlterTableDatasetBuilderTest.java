@@ -79,7 +79,7 @@ class AlterTableDatasetBuilderTest {
               openLineageContext,
               tableCatalog,
               identifier,
-              ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+              ScalaConversionUtils.<String, String>asJavaMap(tableProperties)))
           .thenReturn(Optional.empty());
 
       List<OpenLineage.OutputDataset> outputDatasets =
@@ -97,7 +97,7 @@ class AlterTableDatasetBuilderTest {
               openLineageContext,
               tableCatalog,
               identifier,
-              ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+              ScalaConversionUtils.<String, String>asJavaMap(tableProperties)))
           .thenReturn(Optional.of(di));
 
       List<OpenLineage.OutputDataset> outputDatasets =
@@ -119,14 +119,14 @@ class AlterTableDatasetBuilderTest {
                 openLineageContext,
                 tableCatalog,
                 identifier,
-                ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+                ScalaConversionUtils.<String, String>asJavaMap(tableProperties)))
             .thenReturn(Optional.of("v2"));
 
         when(PlanUtils3.getDatasetIdentifier(
                 openLineageContext,
                 tableCatalog,
                 identifier,
-                ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+                ScalaConversionUtils.<String, String>asJavaMap(tableProperties)))
             .thenReturn(Optional.of(di));
 
         List<OpenLineage.OutputDataset> outputDatasets =

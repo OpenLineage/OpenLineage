@@ -6,8 +6,6 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import static java.util.Optional.ofNullable;
-import static scala.collection.JavaConversions.mapAsJavaMap;
-import static scala.collection.JavaConversions.seqAsJavaList;
 
 import io.openlineage.spark.agent.facets.LogicalPlanFacet;
 import io.openlineage.spark.agent.facets.UnknownEntryFacet;
@@ -18,12 +16,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.AttributeSet;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.types.DataType;
-import scala.collection.JavaConversions;
 
 /**
  * Holds information about visited nodes in {@link LogicalPlan}, using {@link LogicalPlanSerializer}
@@ -57,7 +56,7 @@ public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
   public Optional<UnknownEntryFacet> build(LogicalPlan root) {
     Optional<UnknownEntryFacet.FacetEntry> output = mapEntry(root);
     List<UnknownEntryFacet.FacetEntry> inputs =
-        seqAsJavaList(root.collectLeaves()).stream()
+        ScalaConversionUtils.asJavaCollection(root.collectLeaves()).stream()
             .map(this::mapEntry)
             .filter(Optional::isPresent)
             .map(Optional::get)
@@ -80,7 +79,7 @@ public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
   }
 
   private List<UnknownEntryFacet.AttributeField> attributeFields(AttributeSet set) {
-    return JavaConversions.<AttributeReference>asJavaCollection(set.toSet()).stream()
+    return ScalaConversionUtils.<AttributeReference>asJavaCollection(set.toSet()).stream()
         .map(this::mapAttributeReference)
         .collect(Collectors.toList());
   }

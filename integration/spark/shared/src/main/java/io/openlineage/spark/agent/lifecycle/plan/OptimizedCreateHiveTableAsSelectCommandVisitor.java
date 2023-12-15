@@ -55,7 +55,7 @@ public class OptimizedCreateHiveTableAsSelectCommandVisitor
     OptimizedCreateHiveTableAsSelectCommand command = (OptimizedCreateHiveTableAsSelectCommand) x;
     CatalogTable table = command.tableDesc();
     DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(table);
-    StructType schema = outputSchema(ScalaConversionUtils.fromSeq(command.outputColumns()));
+    StructType schema = outputSchema(ScalaConversionUtils.asJavaCollection(command.outputColumns()));
 
     OpenLineage.OutputDataset outputDataset;
     if ((SaveMode.Overwrite == command.mode())) {

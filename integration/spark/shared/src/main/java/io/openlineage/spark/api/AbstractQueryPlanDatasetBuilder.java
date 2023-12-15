@@ -68,7 +68,7 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
             qe -> {
               QueryPlanVisitor<LogicalPlan, D> visitor = asQueryPlanVisitor(event);
               if (searchDependencies) {
-                return ScalaConversionUtils.fromSeq(qe.optimizedPlan().collect(visitor)).stream()
+                return ScalaConversionUtils.asJavaCollection(qe.optimizedPlan().collect(visitor)).stream()
                     .flatMap(Collection::stream)
                     .collect(Collectors.toList());
               } else if (PlanUtils.safeIsDefinedAt(visitor, qe.optimizedPlan())) {

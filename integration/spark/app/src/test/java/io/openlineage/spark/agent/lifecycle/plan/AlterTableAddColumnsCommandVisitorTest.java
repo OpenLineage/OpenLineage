@@ -12,6 +12,8 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import java.util.Arrays;
 import java.util.List;
+
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.execution.command.AlterTableAddColumnsCommand;
@@ -24,7 +26,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import scala.Option;
-import scala.collection.JavaConversions;
 import scala.collection.Map$;
 import scala.collection.immutable.HashMap;
 
@@ -74,13 +75,13 @@ class AlterTableAddColumnsCommandVisitorTest {
     AlterTableAddColumnsCommand command =
         new AlterTableAddColumnsCommand(
             new TableIdentifier(TABLE_1, Option.apply(database)),
-            JavaConversions.asScalaIterator(
+            ScalaConversionUtils.asScalaSeq(
                     Arrays.asList(
                             new StructField(
                                 "col2", StringType$.MODULE$, false, new Metadata(new HashMap<>())),
                             new StructField(
                                 "col3", StringType$.MODULE$, false, new Metadata(new HashMap<>())))
-                        .iterator())
+                        )
                 .toSeq());
 
     command.run(session);
@@ -99,11 +100,11 @@ class AlterTableAddColumnsCommandVisitorTest {
     AlterTableAddColumnsCommand command =
         new AlterTableAddColumnsCommand(
             new TableIdentifier(TABLE_1, Option.apply(database)),
-            JavaConversions.asScalaIterator(
+            ScalaConversionUtils.asScalaSeq(
                     Arrays.asList(
                             new StructField(
                                 "col2", StringType$.MODULE$, false, new Metadata(new HashMap<>())))
-                        .iterator())
+                        )
                 .toSeq());
 
     // command is not run

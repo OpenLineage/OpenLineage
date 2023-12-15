@@ -18,6 +18,7 @@ import scala.Option;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 import scala.collection.Seq$;
+import scala.collection.Set;
 import scala.collection.mutable.Builder;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.AbstractFunction1;
@@ -36,7 +37,7 @@ public class ScalaConversionUtils {
    * @return
    */
   public static <R, T> Seq<R> map(Seq<T> seq, Function<T, R> fn) {
-    return fromList(fromSeq(seq).stream().map(fn).collect(Collectors.toList()));
+    return asScalaSeq(asJavaCollection(seq).stream().map(fn).collect(Collectors.toList()));
   }
 
   /**
@@ -46,7 +47,7 @@ public class ScalaConversionUtils {
    * @param <T>
    * @return
    */
-  public static <T> Seq<T> fromList(List<T> list) {
+  public static <T> Seq<T> asScalaSeq(List<T> list) {
     return JavaConverters.asScalaBufferConverter(list).asScala();
   }
 
@@ -57,8 +58,12 @@ public class ScalaConversionUtils {
    * @param <T>
    * @return
    */
-  public static <T> List<T> fromSeq(Seq<T> seq) {
+  public static <T> List<T> asJavaCollection(Seq<T> seq) {
     return JavaConverters.bufferAsJavaListConverter(seq.<T>toBuffer()).asJava();
+  }
+
+  public static <T> List<T> asJavaCollection(Set<T> set) {
+    return JavaConverters.bufferAsJavaListConverter(set.<T>toBuffer()).asJava();
   }
 
   /**
@@ -69,7 +74,7 @@ public class ScalaConversionUtils {
    * @param <V>
    * @return
    */
-  public static <K, V> Map<K, V> fromMap(scala.collection.immutable.Map<K, V> map) {
+  public static <K, V> Map<K, V> asJavaMap(scala.collection.immutable.Map<K, V> map) {
     return JavaConverters.mapAsJavaMapConverter(map).asJava();
   }
 

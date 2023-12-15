@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,7 +37,6 @@ import org.apache.spark.sql.connector.expressions.Transform;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.Option;
-import scala.collection.JavaConversions;
 import scala.collection.Seq;
 import scala.collection.Seq$;
 
@@ -78,7 +78,7 @@ public class CreateReplaceInputDatasetBuilderTest {
     CreateTableAsSelect node = mock(CreateTableAsSelect.class);
     when(node.children())
         .thenReturn(
-            JavaConversions.asScalaIterator(Arrays.asList(mock(LogicalPlan.class)).iterator())
+            ScalaConversionUtils.asScalaSeq(Arrays.asList(mock(LogicalPlan.class)))
                 .toSeq());
 
     assertFalse(builder.isDefinedAtLogicalPlan(node));
@@ -99,8 +99,8 @@ public class CreateReplaceInputDatasetBuilderTest {
             Option.empty());
     when(query.collect(any()))
         .thenReturn(
-            JavaConversions.asScalaIterator(
-                    Arrays.asList((Object) Collections.singletonList(inputDataset)).iterator())
+            ScalaConversionUtils.asScalaSeq(
+                    Arrays.asList((Object) Collections.singletonList(inputDataset)))
                 .toSeq());
 
     assertThat(builder.apply(mock(SparkListenerEvent.class), node)).containsExactly(inputDataset);

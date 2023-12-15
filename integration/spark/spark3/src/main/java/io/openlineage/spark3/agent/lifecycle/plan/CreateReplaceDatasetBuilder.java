@@ -65,7 +65,7 @@ public class CreateReplaceDatasetBuilder
     if (x instanceof CreateTableAsSelect) {
       CreateTableAsSelect command = (CreateTableAsSelect) x;
       tableCatalog = command.catalog();
-      tableProperties = ScalaConversionUtils.<String, String>fromMap(command.properties());
+      tableProperties = ScalaConversionUtils.<String, String>asJavaMap(command.properties());
       identifier = command.tableName();
       schema = command.tableSchema();
       lifecycleStateChange =
@@ -73,7 +73,7 @@ public class CreateReplaceDatasetBuilder
     } else if (PlanUtils.safeIsInstanceOf(x, CREATE_V2_TABLE)) {
       CreateV2Table command = (CreateV2Table) x;
       tableCatalog = command.catalog();
-      tableProperties = ScalaConversionUtils.<String, String>fromMap(command.properties());
+      tableProperties = ScalaConversionUtils.<String, String>asJavaMap(command.properties());
       identifier = command.tableName();
       schema = command.tableSchema();
       lifecycleStateChange =
@@ -81,7 +81,7 @@ public class CreateReplaceDatasetBuilder
     } else if (x instanceof ReplaceTable) {
       ReplaceTable command = (ReplaceTable) x;
       tableCatalog = command.catalog();
-      tableProperties = ScalaConversionUtils.<String, String>fromMap(command.properties());
+      tableProperties = ScalaConversionUtils.<String, String>asJavaMap(command.properties());
       identifier = command.tableName();
       schema = command.tableSchema();
       lifecycleStateChange =
@@ -89,7 +89,7 @@ public class CreateReplaceDatasetBuilder
     } else {
       ReplaceTableAsSelect command = (ReplaceTableAsSelect) x;
       tableCatalog = command.catalog();
-      tableProperties = ScalaConversionUtils.<String, String>fromMap(command.properties());
+      tableProperties = ScalaConversionUtils.<String, String>asJavaMap(command.properties());
       identifier = command.tableName();
       schema = command.tableSchema();
       lifecycleStateChange =

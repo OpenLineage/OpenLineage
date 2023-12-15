@@ -42,7 +42,6 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
-import scala.collection.JavaConversions;
 
 /** Traverses LogicalPlan and collect input fields with the corresponding ExprId. */
 @Slf4j
@@ -59,7 +58,7 @@ public class InputFieldsCollector {
     if ((plan.getClass()).isAssignableFrom(UnaryNode.class)) {
       collect(context, ((UnaryNode) plan).child(), builder);
     } else if (plan.children() != null) {
-      ScalaConversionUtils.<LogicalPlan>fromSeq(plan.children()).stream()
+      ScalaConversionUtils.<LogicalPlan>asJavaCollection(plan.children()).stream()
           .forEach(child -> collect(context, child, builder));
     }
   }
@@ -87,7 +86,7 @@ public class InputFieldsCollector {
     datasetIdentifiers.stream()
         .forEach(
             di -> {
-              ScalaConversionUtils.fromSeq(node.output()).stream()
+              ScalaConversionUtils.asJavaCollection(node.output()).stream()
                   .filter(attr -> attr instanceof AttributeReference)
                   .map(attr -> (AttributeReference) attr)
                   .collect(Collectors.toList())
@@ -181,7 +180,7 @@ public class InputFieldsCollector {
   private static List<DatasetIdentifier> extractDatasetIdentifier(HadoopFsRelation relation) {
     List<DatasetIdentifier> inputDatasets = new ArrayList<DatasetIdentifier>();
     List<Path> paths =
-        JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
+        ScalaConversionUtils.asJavaCollection(relation.location().rootPaths()).stream()
             .collect(Collectors.toList());
 
     for (Path p : paths) {

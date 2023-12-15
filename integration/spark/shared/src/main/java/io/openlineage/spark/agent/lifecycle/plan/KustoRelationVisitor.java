@@ -151,7 +151,7 @@ public class KustoRelationVisitor<D extends OpenLineage.Dataset>
     List<D> output;
 
     Map<String, String> javaOptions =
-        io.openlineage.spark.agent.util.ScalaConversionUtils.fromMap(options);
+        io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaMap(options);
 
     String name = javaOptions.get("kustotable");
     String database = javaOptions.get("kustodatabase");

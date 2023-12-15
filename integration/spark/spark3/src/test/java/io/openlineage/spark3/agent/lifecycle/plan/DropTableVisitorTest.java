@@ -60,7 +60,7 @@ class DropTableVisitorTest {
     when(resolvedTable.table()).thenReturn(table);
     when(resolvedTable.identifier()).thenReturn(Identifier.of(new String[] {"db"}, TABLE));
     when(table.properties())
-        .thenReturn(ScalaConversionUtils.<String, String>fromMap(tableProperties));
+        .thenReturn(ScalaConversionUtils.<String, String>asJavaMap(tableProperties));
     when(table.name()).thenReturn("db.table");
   }
 
@@ -71,7 +71,7 @@ class DropTableVisitorTest {
               openLineageContext,
               tableCatalog,
               Identifier.of(new String[] {"db"}, TABLE),
-              ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+              ScalaConversionUtils.<String, String>asJavaMap(tableProperties)))
           .thenReturn(Optional.of(di));
 
       List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(dropTable);
@@ -92,7 +92,7 @@ class DropTableVisitorTest {
               openLineageContext,
               tableCatalog,
               Identifier.of(new String[] {"db"}, TABLE),
-              ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+              ScalaConversionUtils.<String, String>asJavaMap(tableProperties)))
           .thenReturn(Optional.empty());
 
       List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(dropTable);

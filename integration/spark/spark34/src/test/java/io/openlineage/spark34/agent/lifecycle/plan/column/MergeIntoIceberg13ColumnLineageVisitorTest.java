@@ -93,14 +93,14 @@ public class MergeIntoIceberg13ColumnLineageVisitorTest {
 
     when(project.projectList())
         .thenReturn(
-            ScalaConversionUtils.<NamedExpression>fromList(
+            ScalaConversionUtils.<NamedExpression>asScalaSeq(
                 Collections.singletonList(projectNamedExpression)));
 
     Attribute tableAttribute = mock(Attribute.class);
     when(tableAttribute.exprId()).thenReturn(tableExprId);
     when(target.output())
         .thenReturn(
-            ScalaConversionUtils.<Attribute>fromList(Collections.singletonList(tableAttribute)));
+            ScalaConversionUtils.<Attribute>asScalaSeq(Collections.singletonList(tableAttribute)));
 
     visitor.collectExpressionDependencies(replaceIcebergData, builder);
     verify(builder, times(1)).addDependency(tableExprId, projectExprId);
@@ -116,7 +116,7 @@ public class MergeIntoIceberg13ColumnLineageVisitorTest {
 
     when(project.projectList())
         .thenReturn(
-            ScalaConversionUtils.<NamedExpression>fromList(
+            ScalaConversionUtils.<NamedExpression>asScalaSeq(
                 Collections.emptyList() // no outputs in project list
                 ));
 
@@ -124,7 +124,7 @@ public class MergeIntoIceberg13ColumnLineageVisitorTest {
     when(tableAttribute.exprId()).thenReturn(tableExprId);
     when(target.output())
         .thenReturn(
-            ScalaConversionUtils.<Attribute>fromList(Collections.singletonList(tableAttribute)));
+            ScalaConversionUtils.<Attribute>asScalaSeq(Collections.singletonList(tableAttribute)));
 
     visitor.collectExpressionDependencies(replaceIcebergData, builder);
     verify(builder, times(0)).addDependency(any(), any());

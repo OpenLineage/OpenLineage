@@ -173,7 +173,7 @@ public class PlanUtils3 {
           (IndexedSeq<CachedData>)
               FieldUtils.getField(CacheManager.class, "cachedData", true).get(cacheManager);
 
-      return ScalaConversionUtils.<CachedData>fromSeq(cachedDataIndexedSeq).stream()
+      return ScalaConversionUtils.<CachedData>asJavaCollection(cachedDataIndexedSeq).stream()
           .filter(
               cachedData ->
                   cachedData

@@ -72,7 +72,7 @@ public class CreateReplaceOutputDatasetBuilder
                 apply(
                     event,
                     catalogPlugin,
-                    ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties()),
+                    ScalaConversionUtils.<String, String>asJavaMap(plan.tableSpec().properties()),
                     plan.tableName(),
                     plan.tableSchema(),
                     LifecycleStateChange.CREATE))
@@ -87,7 +87,7 @@ public class CreateReplaceOutputDatasetBuilder
                 apply(
                     event,
                     catalogPlugin,
-                    ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties()),
+                    ScalaConversionUtils.<String, String>asJavaMap(plan.tableSpec().properties()),
                     plan.tableName(),
                     plan.tableSchema(),
                     LifecycleStateChange.CREATE))
@@ -101,7 +101,7 @@ public class CreateReplaceOutputDatasetBuilder
                 apply(
                     event,
                     catalogPlugin,
-                    ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties()),
+                    ScalaConversionUtils.<String, String>asJavaMap(plan.tableSpec().properties()),
                     plan.tableName(),
                     plan.tableSchema(),
                     LifecycleStateChange.OVERWRITE))
@@ -116,7 +116,7 @@ public class CreateReplaceOutputDatasetBuilder
                 apply(
                     event,
                     catalogPlugin,
-                    ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties()),
+                    ScalaConversionUtils.<String, String>asJavaMap(plan.tableSpec().properties()),
                     plan.tableName(),
                     plan.tableSchema(),
                     LifecycleStateChange.OVERWRITE))
