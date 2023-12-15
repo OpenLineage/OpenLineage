@@ -74,7 +74,7 @@ class KafkaSinkVisitorTest {
           outputDataset.getFacets().getSchema().getFields();
 
       assertEquals("topic", outputDataset.getName());
-      assertEquals("server1;server2", outputDataset.getNamespace());
+      assertEquals("kafka://server1;server2", outputDataset.getNamespace());
 
       assertEquals(1, fields.size());
       assertEquals("a", fields.get(0).getName());

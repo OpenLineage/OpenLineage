@@ -79,7 +79,7 @@ class FlinkKafkaConsumerVisitorTest {
 
       assertEquals(2, inputDatasets.size());
       assertEquals("topic1", inputDatasets.get(0).getName());
-      assertEquals("server1;server2", inputDatasets.get(0).getNamespace());
+      assertEquals("kafka://server1;server2", inputDatasets.get(0).getNamespace());
 
       assertEquals(1, fields.size());
       assertEquals("a", fields.get(0).getName());
