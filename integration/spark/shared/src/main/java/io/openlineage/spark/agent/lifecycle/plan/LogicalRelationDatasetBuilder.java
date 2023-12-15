@@ -182,7 +182,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         // Datasets
         List<D> inputDatasets = new ArrayList<D>();
         List<Path> paths =
-            new ArrayList<>(JavaConversions.asJavaCollection(relation.location().rootPaths()));
+            new ArrayList<>(ScalaConversionUtils.asJavaCollection(relation.location().rootPaths()));
         for (Path p : paths) {
           inputDatasets.add(datasetFactory.getDataset(p.toUri(), relation.schema()));
         }

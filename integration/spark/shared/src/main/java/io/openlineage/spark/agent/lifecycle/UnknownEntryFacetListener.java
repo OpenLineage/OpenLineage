@@ -88,6 +88,6 @@ public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
     return new UnknownEntryFacet.AttributeField(
         ar.name(),
         ofNullable(ar.dataType()).map(DataType::typeName).orElse(null),
-        new HashMap<>(mapAsJavaMap(ar.metadata().map())));
+        new HashMap<>(ScalaConversionUtils.asJavaMap(ar.metadata().map())));
   }
 }
