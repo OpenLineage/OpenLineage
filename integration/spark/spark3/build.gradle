@@ -50,6 +50,7 @@ ext {
     junit5Version = '5.10.1'
     mockitoVersion = '4.11.0'
     sparkVersion = '3.1.3'
+    scalaVersion = '2.12'
     jacksonVersion = '2.15.3'
     lombokVersion = '1.18.30'
     bigqueryVersion = "0.29.0"
@@ -67,27 +68,27 @@ dependencies {
 
     implementation(project(path: ":shared", configuration: "shadow"))
 
-    compileOnly ("com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:${bigqueryVersion}") {
+    compileOnly ("com.google.cloud.spark:spark-bigquery-with-dependencies_${scalaVersion}:${bigqueryVersion}") {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }
-    compileOnly "org.apache.spark:spark-core_2.12:${sparkVersion}"
-    compileOnly "org.apache.spark:spark-sql_2.12:${sparkVersion}"
-    compileOnly "org.apache.spark:spark-hive_2.12:${sparkVersion}"
-    compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}"
-    compileOnly "org.apache.iceberg:iceberg-spark3-runtime:0.12.1"
-    compileOnly "io.delta:delta-core_2.12:1.0.0"
-    compileOnly "com.databricks:dbutils-api_2.12:0.0.6"
+    compileOnly "org.apache.spark:spark-core_${scalaVersion}:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql_${scalaVersion}:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-hive_${scalaVersion}:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
+    compileOnly "org.apache.iceberg:iceberg-spark3-runtime:0.13.0"
+    compileOnly "io.delta:delta-core_${scalaVersion}:1.0.0"
+    compileOnly "com.databricks:dbutils-api_${scalaVersion}:0.0.6"
 
-    testFixturesApi "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
-    testFixturesApi "org.apache.spark:spark-core_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-sql_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-hive_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-catalyst_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.iceberg:iceberg-spark3-runtime:0.12.1"
-    testFixturesApi "io.delta:delta-core_2.12:1.0.0"
-    testFixturesApi "com.databricks:dbutils-api_2.12:0.0.6"
+    testFixturesApi "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:${jacksonVersion}"
+    testFixturesApi "org.apache.spark:spark-core_${scalaVersion}:${sparkVersion}"
+    testFixturesApi "org.apache.spark:spark-sql_${scalaVersion}:${sparkVersion}"
+    testFixturesApi "org.apache.spark:spark-hive_${scalaVersion}:${sparkVersion}"
+    testFixturesApi "org.apache.spark:spark-catalyst_${scalaVersion}:${sparkVersion}"
+    testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
+    testFixturesApi "org.apache.iceberg:iceberg-spark3-runtime:0.13.0"
+    testFixturesApi "io.delta:delta-core_${scalaVersion}:1.0.0"
+    testFixturesApi "com.databricks:dbutils-api_${scalaVersion}:0.0.6"
 
     testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testFixturesApi "org.assertj:assertj-core:${assertjVersion}"
@@ -109,7 +110,7 @@ def commonTestConfiguration = {
             'junit.platform.output.capture.stderr': 'true',
             'spark.version'                       : "${sparkVersion}",
             'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
-            'kafka.package.version'               : "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}",
+            'kafka.package.version'               : "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}",
             'mockserver.logLevel'                 : 'ERROR'
     ]
 
