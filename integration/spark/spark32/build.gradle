@@ -50,7 +50,7 @@ ext {
     junit5Version = '5.10.1'
     mockitoVersion = '4.11.0'
     sparkVersion = '3.2.2'
-    scalaVersion = project.getProperty('scala.binary.version')
+    scalaVersion = '2.12'
     jacksonVersion = '2.15.3'
     lombokVersion = '1.18.30'
 }
