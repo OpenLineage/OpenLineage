@@ -23,12 +23,11 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Guice;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Injector;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Key;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Module;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.Optional;
-
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.Dataset;
@@ -51,9 +50,7 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
   public static final MockInjector INJECTOR = new MockInjector();
 
   public static Table makeTable(TableId id, StandardTableDefinition tableDefinition)
-      throws InstantiationException,
-          IllegalAccessException,
-          InvocationTargetException,
+      throws InstantiationException, IllegalAccessException, InvocationTargetException,
           NoSuchMethodException {
     Constructor<Table.Builder> constructor =
         Table.Builder.class.getDeclaredConstructor(

@@ -40,7 +40,8 @@ public class UnionDependencyVisitor implements ExpressionDependencyVisitor {
     Union union = (Union) plan;
 
     // implement in Java code equivalent to Scala 'children.map(_.output).transpose.map { attrs =>'
-    List<LogicalPlan> children = ScalaConversionUtils.<LogicalPlan>asJavaCollection(union.children());
+    List<LogicalPlan> children =
+        ScalaConversionUtils.<LogicalPlan>asJavaCollection(union.children());
     List<ArrayList<Attribute>> childrenAttributes = new LinkedList<>();
     children.stream()
         .map(child -> ScalaConversionUtils.<Attribute>asJavaCollection(child.output()))

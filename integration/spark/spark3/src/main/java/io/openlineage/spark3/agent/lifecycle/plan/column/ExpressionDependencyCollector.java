@@ -50,7 +50,8 @@ public class ExpressionDependencyCollector {
           List<NamedExpression> expressions = new LinkedList<>();
           if (node instanceof Project) {
             expressions.addAll(
-                ScalaConversionUtils.<NamedExpression>asJavaCollection(((Project) node).projectList()));
+                ScalaConversionUtils.<NamedExpression>asJavaCollection(
+                    ((Project) node).projectList()));
           } else if (node instanceof Aggregate) {
             expressions.addAll(
                 ScalaConversionUtils.<NamedExpression>asJavaCollection(

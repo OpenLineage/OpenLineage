@@ -9,6 +9,7 @@ import static java.util.Optional.ofNullable;
 
 import io.openlineage.spark.agent.facets.LogicalPlanFacet;
 import io.openlineage.spark.agent.facets.UnknownEntryFacet;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -16,8 +17,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.AttributeSet;

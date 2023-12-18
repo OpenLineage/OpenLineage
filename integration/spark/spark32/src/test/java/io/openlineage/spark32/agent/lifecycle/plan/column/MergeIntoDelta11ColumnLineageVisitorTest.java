@@ -66,9 +66,11 @@ public class MergeIntoDelta11ColumnLineageVisitorTest {
     when(builder.getOutputExprIdByFieldName("col_2")).thenReturn(Optional.of(parentExprId2));
 
     when(deltaMergeIntoMatchedClause.actions())
-        .thenReturn(ScalaConversionUtils.<Expression>asScalaSeq(Collections.singletonList(action1)));
+        .thenReturn(
+            ScalaConversionUtils.<Expression>asScalaSeq(Collections.singletonList(action1)));
     when(deltaMergeIntoNotMatchedClause.actions())
-        .thenReturn(ScalaConversionUtils.<Expression>asScalaSeq(Collections.singletonList(action2)));
+        .thenReturn(
+            ScalaConversionUtils.<Expression>asScalaSeq(Collections.singletonList(action2)));
 
     MergeIntoCommand command =
         new MergeIntoCommand(

@@ -30,13 +30,17 @@ public class MergeIntoDelta11ColumnLineageVisitor
   @Override
   public Stream<Expression> getMergeActions(MergeIntoCommand mergeIntoCommand) {
     return Stream.concat(
-        ScalaConversionUtils.<DeltaMergeIntoMatchedClause>asJavaCollection(mergeIntoCommand.matchedClauses())
+        ScalaConversionUtils.<DeltaMergeIntoMatchedClause>asJavaCollection(
+                mergeIntoCommand.matchedClauses())
             .stream()
-            .flatMap(clause -> ScalaConversionUtils.<Expression>asJavaCollection(clause.actions()).stream()),
+            .flatMap(
+                clause ->
+                    ScalaConversionUtils.<Expression>asJavaCollection(clause.actions()).stream()),
         ScalaConversionUtils.<DeltaMergeIntoInsertClause>asJavaCollection(
                 mergeIntoCommand.notMatchedClauses())
             .stream()
             .flatMap(
-                clause -> ScalaConversionUtils.<Expression>asJavaCollection(clause.actions()).stream()));
+                clause ->
+                    ScalaConversionUtils.<Expression>asJavaCollection(clause.actions()).stream()));
   }
 }

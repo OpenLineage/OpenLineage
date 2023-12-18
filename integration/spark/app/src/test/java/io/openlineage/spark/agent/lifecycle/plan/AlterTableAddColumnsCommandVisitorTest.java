@@ -10,10 +10,9 @@ import static org.junit.Assert.assertEquals;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Arrays;
 import java.util.List;
-
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.execution.command.AlterTableAddColumnsCommand;
@@ -77,11 +76,10 @@ class AlterTableAddColumnsCommandVisitorTest {
             new TableIdentifier(TABLE_1, Option.apply(database)),
             ScalaConversionUtils.asScalaSeq(
                     Arrays.asList(
-                            new StructField(
-                                "col2", StringType$.MODULE$, false, new Metadata(new HashMap<>())),
-                            new StructField(
-                                "col3", StringType$.MODULE$, false, new Metadata(new HashMap<>())))
-                        )
+                        new StructField(
+                            "col2", StringType$.MODULE$, false, new Metadata(new HashMap<>())),
+                        new StructField(
+                            "col3", StringType$.MODULE$, false, new Metadata(new HashMap<>()))))
                 .toSeq());
 
     command.run(session);
@@ -102,9 +100,8 @@ class AlterTableAddColumnsCommandVisitorTest {
             new TableIdentifier(TABLE_1, Option.apply(database)),
             ScalaConversionUtils.asScalaSeq(
                     Arrays.asList(
-                            new StructField(
-                                "col2", StringType$.MODULE$, false, new Metadata(new HashMap<>())))
-                        )
+                        new StructField(
+                            "col2", StringType$.MODULE$, false, new Metadata(new HashMap<>()))))
                 .toSeq());
 
     // command is not run

@@ -41,7 +41,8 @@ public class OutputFieldsCollector {
 
     if (plan instanceof Aggregate) {
       expressions.addAll(
-          ScalaConversionUtils.<NamedExpression>asJavaCollection(((Aggregate) plan).aggregateExpressions()));
+          ScalaConversionUtils.<NamedExpression>asJavaCollection(
+              ((Aggregate) plan).aggregateExpressions()));
     } else if (plan instanceof Project) {
       expressions.addAll(
           ScalaConversionUtils.<NamedExpression>asJavaCollection(((Project) plan).projectList()));

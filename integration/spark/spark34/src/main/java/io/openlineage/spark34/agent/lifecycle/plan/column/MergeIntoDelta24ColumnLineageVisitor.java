@@ -34,15 +34,19 @@ public class MergeIntoDelta24ColumnLineageVisitor
   @Override
   public Stream<Expression> getMergeActions(MergeIntoCommand mergeIntoCommand) {
     return Stream.concat(
-        ScalaConversionUtils.<DeltaMergeIntoMatchedClause>asJavaCollection(mergeIntoCommand.matchedClauses())
+        ScalaConversionUtils.<DeltaMergeIntoMatchedClause>asJavaCollection(
+                mergeIntoCommand.matchedClauses())
             .stream()
-            .flatMap(clause -> ScalaConversionUtils.<Expression>asJavaCollection(clause.actions()).stream()),
+            .flatMap(
+                clause ->
+                    ScalaConversionUtils.<Expression>asJavaCollection(clause.actions()).stream()),
         ScalaConversionUtils.<DeltaMergeIntoNotMatchedClause>asJavaCollection(
                 mergeIntoCommand
                     .notMatchedClauses()) // DeltaMergeIntoNotMatchedClause class does not
             // exist in earlier versions
             .stream()
             .flatMap(
-                clause -> ScalaConversionUtils.<Expression>asJavaCollection(clause.actions()).stream()));
+                clause ->
+                    ScalaConversionUtils.<Expression>asJavaCollection(clause.actions()).stream()));
   }
 }

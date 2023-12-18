@@ -55,9 +55,11 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
   @BeforeEach
   void setup() {
     when(deltaMergeIntoMatchedClause.actions())
-        .thenReturn(ScalaConversionUtils.<Expression>asScalaSeq(Collections.singletonList(action1)));
+        .thenReturn(
+            ScalaConversionUtils.<Expression>asScalaSeq(Collections.singletonList(action1)));
     when(deltaMergeIntoNotMatchedClause.actions())
-        .thenReturn(ScalaConversionUtils.<Expression>asScalaSeq(Collections.singletonList(action2)));
+        .thenReturn(
+            ScalaConversionUtils.<Expression>asScalaSeq(Collections.singletonList(action2)));
   }
 
   @Test

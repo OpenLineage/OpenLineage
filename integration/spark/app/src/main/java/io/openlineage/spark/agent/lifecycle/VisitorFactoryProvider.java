@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import org.apache.spark.package$;
+import scala.util.Properties;
 
 class VisitorFactoryProvider {
 
@@ -20,6 +21,7 @@ class VisitorFactoryProvider {
 
   static VisitorFactory getInstance() {
     String version = package$.MODULE$.SPARK_VERSION();
+    String scalaVersion = Properties.versionString();
     try {
       return (VisitorFactory) Class.forName(getVisitorFactoryForVersion(version)).newInstance();
     } catch (Exception e) {

@@ -32,6 +32,7 @@ public class MockBigQueryClientModule implements Module {
         Optional.empty(),
         Optional.empty(),
         Optional.empty(),
+        Optional.empty(),
         Optional.empty());
   }
 
