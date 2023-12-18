@@ -12,8 +12,10 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Collections;
 import java.util.List;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SQLContext;
@@ -29,7 +31,6 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.Option;
-import scala.collection.Seq$;
 
 class SqlDwRelationParams {
 
@@ -140,17 +141,15 @@ class SQLDWDatabricksVisitorTest {
     LogicalRelation lr =
         new LogicalRelation(
             new MockSqlDWBaseRelation(inputName, inputJdbcUrl),
-            Seq$.MODULE$
-                .<AttributeReference>newBuilder()
-                .$plus$eq(
+            ScalaConversionUtils.asScalaSeq(
+                Collections.singletonList(
                     new AttributeReference(
                         FIELD_NAME,
                         StringType$.MODULE$,
                         false,
                         null,
                         ExprId.apply(1L),
-                        Seq$.MODULE$.<String>empty()))
-                .result(),
+                        ScalaConversionUtils.asScalaSeqEmpty()))),
             Option.empty(),
             false);
 
@@ -178,17 +177,15 @@ class SQLDWDatabricksVisitorTest {
     LogicalRelation lr =
         new LogicalRelation(
             new MockSpark2SqlDWBaseRelation(inputName, inputJdbcUrl),
-            Seq$.MODULE$
-                .<AttributeReference>newBuilder()
-                .$plus$eq(
+            ScalaConversionUtils.asScalaSeq(
+                Collections.singletonList(
                     new AttributeReference(
                         FIELD_NAME,
                         StringType$.MODULE$,
                         false,
                         null,
                         ExprId.apply(1L),
-                        Seq$.MODULE$.<String>empty()))
-                .result(),
+                        ScalaConversionUtils.asScalaSeqEmpty()))),
             Option.empty(),
             false);
 
@@ -216,17 +213,15 @@ class SQLDWDatabricksVisitorTest {
     LogicalRelation lr =
         new LogicalRelation(
             new MockSqlDWBaseRelation(inputName, inputJdbcUrl),
-            Seq$.MODULE$
-                .<AttributeReference>newBuilder()
-                .$plus$eq(
+            ScalaConversionUtils.asScalaSeq(
+                Collections.singletonList(
                     new AttributeReference(
                         FIELD_NAME,
                         StringType$.MODULE$,
                         false,
                         null,
                         ExprId.apply(1L),
-                        Seq$.MODULE$.<String>empty()))
-                .result(),
+                        ScalaConversionUtils.asScalaSeqEmpty()))),
             Option.empty(),
             false);
 
@@ -250,17 +245,15 @@ class SQLDWDatabricksVisitorTest {
     LogicalRelation lr =
         new LogicalRelation(
             new MockSqlDWBaseRelation(inputName, inputJdbcUrl),
-            Seq$.MODULE$
-                .<AttributeReference>newBuilder()
-                .$plus$eq(
+            ScalaConversionUtils.asScalaSeq(
+                Collections.singletonList(
                     new AttributeReference(
                         FIELD_NAME,
                         StringType$.MODULE$,
                         false,
                         null,
                         ExprId.apply(1L),
-                        Seq$.MODULE$.<String>empty()))
-                .result(),
+                        ScalaConversionUtils.asScalaSeqEmpty()))),
             Option.empty(),
             false);
 

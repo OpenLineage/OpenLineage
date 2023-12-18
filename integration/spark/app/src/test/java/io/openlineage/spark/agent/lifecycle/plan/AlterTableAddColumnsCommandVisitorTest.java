@@ -25,7 +25,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import scala.Option;
-import scala.collection.Map$;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
@@ -64,7 +63,7 @@ class AlterTableAddColumnsCommandVisitorTest {
               new StructField("col1", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
             });
 
-    session.catalog().createTable(TABLE_1, "csv", schema, Map$.MODULE$.empty());
+    session.catalog().createTable(TABLE_1, "csv", schema, ScalaConversionUtils.asScalaMapEmpty());
     database = session.catalog().currentDatabase();
     visitor = new AlterTableAddColumnsCommandVisitor(SparkAgentTestExtension.newContext(session));
   }

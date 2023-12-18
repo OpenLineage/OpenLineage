@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.util;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -15,10 +16,9 @@ import java.util.stream.Collectors;
 import scala.Function0;
 import scala.Function1;
 import scala.Option;
+import scala.Predef;
 import scala.collection.JavaConverters;
-import scala.collection.Seq;
-import scala.collection.Seq$;
-import scala.collection.Set;
+import scala.collection.immutable.Seq;
 import scala.collection.mutable.Builder;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.AbstractFunction1;
@@ -48,7 +48,21 @@ public class ScalaConversionUtils {
    * @return
    */
   public static <T> Seq<T> asScalaSeq(List<T> list) {
-    return JavaConverters.asScalaBufferConverter(list).asScala();
+    return JavaConverters.asScalaBufferConverter(list).asScala().toList();
+  }
+
+  public static <T> Seq<T> asScalaSeqEmpty() {
+    return JavaConverters.asScalaBufferConverter(Collections.<T>emptyList()).asScala().toList();
+  }
+
+  public static <K, V> scala.collection.immutable.Map<K, V> asScalaMap(Map<K, V> map) {
+    return JavaConverters.mapAsScalaMapConverter(map).asScala().toMap(Predef.$conforms());
+  }
+
+  public static <K, V> scala.collection.immutable.Map<K, V> asScalaMapEmpty() {
+    return JavaConverters.mapAsScalaMapConverter(Collections.<K, V>emptyMap())
+        .asScala()
+        .toMap(Predef.$conforms());
   }
 
   /**
@@ -58,11 +72,11 @@ public class ScalaConversionUtils {
    * @param <T>
    * @return
    */
-  public static <T> List<T> asJavaCollection(Seq<T> seq) {
+  public static <T> List<T> asJavaCollection(scala.collection.Seq<T> seq) {
     return JavaConverters.bufferAsJavaListConverter(seq.<T>toBuffer()).asJava();
   }
 
-  public static <T> List<T> asJavaCollection(Set<T> set) {
+  public static <T> List<T> asJavaCollection(scala.collection.Set<T> set) {
     return JavaConverters.bufferAsJavaListConverter(set.<T>toBuffer()).asJava();
   }
 
@@ -96,12 +110,12 @@ public class ScalaConversionUtils {
             }));
   }
 
-  public static <T> Collector<T, ?, Seq<T>> toSeq() {
+  public static <T> Collector<T, ?, scala.collection.Seq<T>> toSeq() {
     return Collector.of(
-        Seq$.MODULE$::newBuilder,
+        scala.collection.Seq$.MODULE$::newBuilder,
         Builder::$plus$eq,
-        (Builder<T, Seq<T>> a, Builder<T, Seq<T>> b) ->
-            (Builder<T, Seq<T>>) a.$plus$plus$eq(b.result()),
+        (Builder<T, scala.collection.Seq<T>> a, Builder<T, scala.collection.Seq<T>> b) ->
+            (Builder<T, scala.collection.Seq<T>>) a.$plus$plus$eq(b.result()),
         Builder::result);
   }
 

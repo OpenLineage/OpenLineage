@@ -10,6 +10,8 @@ import static org.junit.Assert.assertEquals;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import java.util.Collections;
 import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.SparkSession;
@@ -24,8 +26,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import scala.Option;
 import scala.Tuple2;
-import scala.collection.Seq;
-import scala.collection.Seq$;
 import scala.collection.immutable.Map;
 
 @Tag("nonParallelTest")
@@ -82,16 +82,12 @@ class AlterTableAddPartitionCommandVisitorTest {
   void testAlterTableAddPartition() {
 
     scala.collection.immutable.Map<String, String> params =
-        scala.collection.immutable.Map$.MODULE$
-            .<String, String>newBuilder()
-            .$plus$eq(Tuple2.apply("col1", "aaa"))
-            .result();
+        ScalaConversionUtils.<String, String>asScalaMap(Collections.singletonMap("col1", "aaa"));
 
-    Seq<Tuple2<Map<String, String>, Option<String>>> partitionSpecsAndLocs =
-        Seq$.MODULE$
-            .<Tuple2<Map<String, String>, Option<String>>>newBuilder()
-            .$plus$eq(Tuple2.apply(params, Option.apply("file:///tmp/dir")))
-            .result();
+    scala.collection.immutable.Seq<Tuple2<Map<String, String>, Option<String>>>
+        partitionSpecsAndLocs =
+            ScalaConversionUtils.asScalaSeq(
+                Collections.singletonList(Tuple2.apply(params, Option.apply("file:///tmp/dir"))));
 
     AlterTableAddPartitionCommand command =
         new AlterTableAddPartitionCommand(
