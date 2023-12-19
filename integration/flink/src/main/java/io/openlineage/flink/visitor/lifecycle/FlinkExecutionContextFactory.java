@@ -25,7 +25,7 @@ public class FlinkExecutionContextFactory {
       List<Transformation<?>> transformations) {
     return new FlinkExecutionContext.FlinkExecutionContextBuilder()
         .jobId(jobId)
-        .jobType(jobType)
+        .processingType(jobType)
         .jobName(jobName)
         .jobNamespace(jobNamespace)
         .transformations(transformations)
