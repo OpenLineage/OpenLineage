@@ -6,8 +6,9 @@
     "name": "flink_examples_stateful",
     "facets": {
       "jobType": {
-        "processingType" : "FLINK",
-        "jobType" : "STREAMING"
+        "processingType" : "STREAMING",
+        "jobType" : "JOB",
+        "integration": "FLINK"
       }
     }
   },

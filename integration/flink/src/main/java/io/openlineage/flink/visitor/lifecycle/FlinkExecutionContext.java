@@ -39,14 +39,15 @@ import org.apache.flink.api.dag.Transformation;
 @Builder
 public class FlinkExecutionContext implements ExecutionContext {
 
-  public static final String FLINK_PROCESSING_TYPE = "FLINK";
+  public static final String FLINK_INTEGRATION = "FLINK";
+  public static final String FLINK_JOB_TYPE = "JOB";
   @Getter private final JobID jobId;
   protected final UUID runId;
   protected final EventEmitter eventEmitter;
   protected final OpenLineageContext openLineageContext;
   private final String jobName;
   private final String jobNamespace;
-  private final String jobType;
+  private final String processingType;
 
   @Getter private final List<Transformation<?>> transformations;
 
@@ -136,8 +137,9 @@ public class FlinkExecutionContext implements ExecutionContext {
             .jobType(
                 openLineage
                     .newJobTypeJobFacetBuilder()
-                    .jobType(jobType)
-                    .processingType(FLINK_PROCESSING_TYPE)
+                    .jobType(FLINK_JOB_TYPE)
+                    .processingType(processingType)
+                    .integration(FLINK_INTEGRATION)
                     .build())
             .build();
 

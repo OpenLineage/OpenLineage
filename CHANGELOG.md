@@ -9,6 +9,8 @@
     *Avoid relocating dependency which gets excluded from the jar.*
 * **Flink: Name kafka datasets according to the naming convention.** [`#2321`](https://github.com/OpenLineage/OpenLineage/pull/2321) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Add `kafka://` prefix to kafka topic datasets namespaces.*
+* **Flink: Fix properties within `JobTypeJobFacet`.** [`#2325`](https://github.com/OpenLineage/OpenLineage/pull/2325) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Fix properties assignment.*
 
 ## [1.6.2](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...1.6.2) - 2023-12-07
 ### Added
