@@ -21,6 +21,7 @@ import java.util.Map;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.types.IntegerType$;
@@ -28,6 +29,7 @@ import org.apache.spark.sql.types.Metadata$;
 import org.apache.spark.sql.types.StringType$;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import scala.collection.immutable.Map$;
 
 public class JdbcColumnLineageExpressionCollectorTest {
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
@@ -54,6 +56,10 @@ public class JdbcColumnLineageExpressionCollectorTest {
   @BeforeEach
   void setup() {
     when(relation.jdbcOptions()).thenReturn(jdbcOptions);
+
+    scala.collection.immutable.Map<String, String> properties = Map$.MODULE$.empty();
+    when(jdbcOptions.parameters())
+        .thenReturn(CaseInsensitiveMap$.MODULE$.<String>apply(properties));
   }
 
   @Test

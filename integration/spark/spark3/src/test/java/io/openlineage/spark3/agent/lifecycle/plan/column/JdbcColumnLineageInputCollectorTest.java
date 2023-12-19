@@ -20,10 +20,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import scala.collection.immutable.Map$;
 
 public class JdbcColumnLineageInputCollectorTest {
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
@@ -32,8 +34,8 @@ public class JdbcColumnLineageInputCollectorTest {
   String jdbcQuery =
       "(select js1.k, CONCAT(js1.j1, js2.j2) as j from jdbc_source1 js1 join jdbc_source2 js2 on js1.k = js2.k) SPARK_GEN_SUBQ_0";
   String invalidJdbcQuery = "(INVALID) SPARK_GEN_SUBQ_0";
-  DatasetIdentifier datasetIdentifier1 = new DatasetIdentifier("jdbc_source1", "jdbc");
-  DatasetIdentifier datasetIdentifier2 = new DatasetIdentifier("jdbc_source2", "jdbc");
+  DatasetIdentifier datasetIdentifier1 = new DatasetIdentifier("test.jdbc_source1", "jdbc");
+  DatasetIdentifier datasetIdentifier2 = new DatasetIdentifier("test.jdbc_source2", "jdbc");
   String url = "jdbc:postgresql://localhost:5432/test";
 
   static ExprId exprId1 = ExprId.apply(1);
@@ -55,6 +57,10 @@ public class JdbcColumnLineageInputCollectorTest {
   @BeforeEach
   void setup() {
     when(relation.jdbcOptions()).thenReturn(jdbcOptions);
+
+    scala.collection.immutable.Map<String, String> properties = Map$.MODULE$.empty();
+    when(jdbcOptions.parameters())
+        .thenReturn(CaseInsensitiveMap$.MODULE$.<String>apply(properties));
   }
 
   @Test

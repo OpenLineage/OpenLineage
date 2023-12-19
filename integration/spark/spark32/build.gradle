@@ -121,6 +121,9 @@ compileJava {
 test {
     mustRunAfter shadowJar
     configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
 }
 
 assemble {
