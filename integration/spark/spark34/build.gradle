@@ -126,6 +126,9 @@ def commonTestConfiguration = {
 test {
     dependsOn shadowJar
     configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
 }
 
 compileTestJava {
