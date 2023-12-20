@@ -15,12 +15,14 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
@@ -50,9 +52,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.MockedStatic;
 import org.postgresql.Driver;
 import scala.Option;
-import scala.Tuple2;
-import scala.collection.Seq$;
-import scala.collection.immutable.Map$;
 
 class LogicalRelationDatasetBuilderTest {
 
@@ -87,29 +86,25 @@ class LogicalRelationDatasetBuilderTest {
             new JDBCOptions(
                 connectionUri,
                 sparkTableName,
-                Map$.MODULE$
-                    .<String, String>newBuilder()
-                    .$plus$eq(Tuple2.apply("driver", Driver.class.getName()))
-                    .result()),
+                ScalaConversionUtils.asScalaMap(
+                    Collections.singletonMap("driver", Driver.class.getName()))),
             session);
     QueryExecution qe = mock(QueryExecution.class);
     when(qe.optimizedPlan())
         .thenReturn(
             new Project(
-                Seq$.MODULE$.<String>empty(),
+                ScalaConversionUtils.asScalaSeqEmpty(),
                 new LogicalRelation(
                     relation,
-                    Seq$.MODULE$
-                        .<AttributeReference>newBuilder()
-                        .$plus$eq(
+                    ScalaConversionUtils.asScalaSeq(
+                        Collections.singletonList(
                             new AttributeReference(
                                 "name",
                                 StringType$.MODULE$,
                                 false,
                                 null,
                                 ExprId.apply(1L),
-                                Seq$.MODULE$.<String>empty()))
-                        .result(),
+                                ScalaConversionUtils.asScalaSeqEmpty()))),
                     Option.empty(),
                     false)));
     OpenLineageContext context =
@@ -122,7 +117,8 @@ class LogicalRelationDatasetBuilderTest {
         new LogicalRelationDatasetBuilder<>(
             context, DatasetFactory.output(openLineageContext), true);
     List<OutputDataset> datasets =
-        visitor.apply(new SparkListenerJobStart(1, 1, Seq$.MODULE$.empty(), null));
+        visitor.apply(
+            new SparkListenerJobStart(1, 1, ScalaConversionUtils.asScalaSeqEmpty(), null));
     assertEquals(1, datasets.size());
     OutputDataset ds = datasets.get(0);
     assertEquals(targetUri, ds.getNamespace());

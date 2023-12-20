@@ -5,23 +5,24 @@
 
 package io.openlineage.spark.agent.util;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import scala.Function0;
 import scala.Function1;
 import scala.Option;
-import scala.Predef;
+import scala.Tuple2;
 import scala.collection.JavaConverters;
 import scala.collection.immutable.Seq;
-import scala.collection.mutable.Builder;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.AbstractFunction1;
+import scala.util.Properties;
 
 /** Simple conversion utilities for dealing with Scala types */
 public class ScalaConversionUtils {
@@ -56,13 +57,41 @@ public class ScalaConversionUtils {
   }
 
   public static <K, V> scala.collection.immutable.Map<K, V> asScalaMap(Map<K, V> map) {
-    return JavaConverters.mapAsScalaMapConverter(map).asScala().toMap(Predef.$conforms());
+    List<Tuple2<K, V>> collect =
+        map.entrySet().stream()
+            .map(e -> Tuple2.apply(e.getKey(), e.getValue()))
+            .collect(Collectors.toList());
+    String scalaVersion = Properties.versionNumberString();
+    Seq<Tuple2<K, V>> scalaSeq = ScalaConversionUtils.asScalaSeq(collect);
+    try {
+      if (scalaVersion.startsWith("2.13")) {
+        Class<?> aClass = Class.forName("scala.collection.immutable.Map");
+        Method asJava = aClass.getMethod("from", Class.forName("scala.collection.IterableOnce"));
+        return (scala.collection.immutable.Map<K, V>) asJava.invoke(null, scalaSeq);
+      } else {
+        Class<?> aClass = Class.forName("scala.collection.immutable.Map$");
+        Object module$ = aClass.getField("MODULE$").get(null);
+        Method asJava = module$.getClass().getMethod("apply", scala.collection.Seq.class);
+        return (scala.collection.immutable.Map<K, V>) asJava.invoke(module$, scalaSeq);
+      }
+    } catch (NoSuchMethodException
+        | ClassNotFoundException
+        | InvocationTargetException
+        | IllegalAccessException
+        | NoSuchFieldException e) {
+      throw new RuntimeException(e);
+    }
   }
 
+  /**
+   * Return an empty {@link Map}
+   *
+   * @param <K>
+   * @param <V>
+   * @return
+   */
   public static <K, V> scala.collection.immutable.Map<K, V> asScalaMapEmpty() {
-    return JavaConverters.mapAsScalaMapConverter(Collections.<K, V>emptyMap())
-        .asScala()
-        .toMap(Predef.$conforms());
+    return ScalaConversionUtils.asScalaMap(Collections.emptyMap());
   }
 
   /**
@@ -73,11 +102,26 @@ public class ScalaConversionUtils {
    * @return
    */
   public static <T> List<T> asJavaCollection(scala.collection.Seq<T> seq) {
+    String scalaVersion = Properties.versionNumberString();
+    if (scalaVersion.startsWith("2.13")) {
+      try {
+        Class<?> aClass = Class.forName("scala.jdk.javaapi.CollectionConverters");
+        Method asJava = aClass.getMethod("asJava", scala.collection.Seq.class);
+        List<T> invoke = (List<T>) asJava.invoke(null, seq);
+        return invoke;
+
+      } catch (NoSuchMethodException
+          | ClassNotFoundException
+          | InvocationTargetException
+          | IllegalAccessException e) {
+        throw new RuntimeException(e);
+      }
+    }
     return JavaConverters.bufferAsJavaListConverter(seq.<T>toBuffer()).asJava();
   }
 
   public static <T> List<T> asJavaCollection(scala.collection.Set<T> set) {
-    return JavaConverters.bufferAsJavaListConverter(set.<T>toBuffer()).asJava();
+    return asJavaCollection(set.toBuffer());
   }
 
   /**
@@ -108,15 +152,6 @@ public class ScalaConversionUtils {
                 return null;
               }
             }));
-  }
-
-  public static <T> Collector<T, ?, scala.collection.Seq<T>> toSeq() {
-    return Collector.of(
-        scala.collection.Seq$.MODULE$::newBuilder,
-        Builder::$plus$eq,
-        (Builder<T, scala.collection.Seq<T>> a, Builder<T, scala.collection.Seq<T>> b) ->
-            (Builder<T, scala.collection.Seq<T>>) a.$plus$plus$eq(b.result()),
-        Builder::result);
   }
 
   /**

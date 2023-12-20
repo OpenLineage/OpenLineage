@@ -22,6 +22,7 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.Tabl
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.TableId;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.TableInfo;
 import com.google.cloud.spark.bigquery.repackaged.com.google.common.collect.ImmutableMap;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
@@ -44,8 +45,6 @@ import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
-import org.apache.spark.sql.catalyst.expressions.Expression;
-import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.CatalogFileIndex;
@@ -65,11 +64,9 @@ import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.postgresql.Driver;
 import scala.Option;
-import scala.Tuple2;
-import scala.collection.Seq;
-import scala.collection.Seq$;
 import scala.collection.immutable.HashMap;
-import scala.collection.immutable.Map$;
+import scala.collection.immutable.IndexedSeq;
+import scala.collection.immutable.Seq;
 
 class LogicalPlanSerializerTest {
   private static final String TEST_DATA = "test_data";
@@ -89,11 +86,7 @@ class LogicalPlanSerializerTest {
     String jdbcUrl = "jdbc:postgresql://postgreshost:5432/sparkdata";
     String sparkTableName = "my_spark_table";
     scala.collection.immutable.Map<String, String> map =
-        (scala.collection.immutable.Map<String, String>)
-            Map$.MODULE$
-                .<String, String>newBuilder()
-                .$plus$eq(Tuple2.apply("driver", Driver.class.getName()))
-                .result();
+        ScalaConversionUtils.asScalaMap(Collections.singletonMap("driver", Driver.class.getName()));
     JDBCRelation relation =
         new JDBCRelation(
             new StructType(
@@ -106,23 +99,21 @@ class LogicalPlanSerializerTest {
     LogicalRelation logicalRelation =
         new LogicalRelation(
             relation,
-            Seq$.MODULE$
-                .<AttributeReference>newBuilder()
-                .$plus$eq(
+            ScalaConversionUtils.asScalaSeq(
+                Collections.singletonList(
                     new AttributeReference(
                         NAME,
                         StringType$.MODULE$,
                         false,
                         Metadata.empty(),
                         ExprId.apply(1L),
-                        Seq$.MODULE$.<String>empty()))
-                .result(),
+                        ScalaConversionUtils.asScalaSeqEmpty()))),
             Option.empty(),
             false);
     Aggregate aggregate =
         new Aggregate(
-            Seq$.MODULE$.<Expression>empty(),
-            Seq$.MODULE$.<NamedExpression>empty(),
+            ScalaConversionUtils.asScalaSeqEmpty(),
+            ScalaConversionUtils.asScalaSeqEmpty(),
             logicalRelation);
 
     Map<String, Object> aggregateActualNode =
@@ -147,6 +138,7 @@ class LogicalPlanSerializerTest {
 
   @Test
   void testSerializeLogicalPlanReturnsAlwaysValidJson() throws IOException {
+
     LogicalPlan notSerializablePlan =
         new LogicalPlan() {
           @Override
@@ -154,8 +146,17 @@ class LogicalPlanSerializerTest {
             return null;
           }
 
+          public LogicalPlan withNewChildrenInternal(
+              scala.collection.IndexedSeq<LogicalPlan> newChildren) {
+            return null;
+          }
+
           @Override
           public Seq<LogicalPlan> children() {
+            return null;
+          }
+
+          public LogicalPlan withNewChildrenInternal(IndexedSeq<LogicalPlan> newChildren) {
             return null;
           }
 
@@ -211,17 +212,15 @@ class LogicalPlanSerializerTest {
     LogicalRelation logicalRelation =
         new LogicalRelation(
             hadoopFsRelation,
-            Seq$.MODULE$
-                .<AttributeReference>newBuilder()
-                .$plus$eq(
+            ScalaConversionUtils.asScalaSeq(
+                Collections.singletonList(
                     new AttributeReference(
                         NAME,
                         StringType$.MODULE$,
                         false,
                         Metadata.empty(),
                         ExprId.apply(1L),
-                        Seq$.MODULE$.<String>empty()))
-                .result(),
+                        ScalaConversionUtils.asScalaSeqEmpty()))),
             Option.empty(),
             false);
     InsertIntoHadoopFsRelationCommand command =
@@ -229,17 +228,15 @@ class LogicalPlanSerializerTest {
             new org.apache.hadoop.fs.Path("/tmp"),
             new HashMap<>(),
             false,
-            Seq$.MODULE$
-                .<Attribute>newBuilder()
-                .$plus$eq(
+            ScalaConversionUtils.asScalaSeq(
+                Collections.singletonList(
                     new AttributeReference(
                         NAME,
                         StringType$.MODULE$,
                         false,
                         Metadata.empty(),
                         ExprId.apply(1L),
-                        Seq$.MODULE$.<String>empty()))
-                .result(),
+                        ScalaConversionUtils.asScalaSeqEmpty()))),
             Option.empty(),
             new TextFileFormat(),
             new HashMap<>(),
@@ -247,7 +244,7 @@ class LogicalPlanSerializerTest {
             SaveMode.Overwrite,
             Option.empty(),
             Option.empty(),
-            Seq$.MODULE$.<String>newBuilder().$plus$eq(NAME).result());
+            ScalaConversionUtils.asScalaSeq(Collections.singletonList(NAME)));
 
     Map<String, Object> commandActualNode =
         objectMapper.readValue(logicalPlanSerializer.serialize(command), mapTypeReference);
@@ -303,17 +300,15 @@ class LogicalPlanSerializerTest {
     LogicalRelation logicalRelation =
         new LogicalRelation(
             bigQueryRelation,
-            Seq$.MODULE$
-                .<AttributeReference>newBuilder()
-                .$plus$eq(
+            ScalaConversionUtils.asScalaSeq(
+                Collections.singletonList(
                     new AttributeReference(
                         NAME,
                         StringType$.MODULE$,
                         false,
                         Metadata.empty(),
                         ExprId.apply(1L),
-                        Seq$.MODULE$.<String>empty()))
-                .result(),
+                        ScalaConversionUtils.asScalaSeqEmpty()))),
             Option.empty(),
             false);
 
@@ -369,7 +364,16 @@ class LogicalPlanSerializerTest {
 
           @Override
           public Seq<LogicalPlan> children() {
-            return Seq$.MODULE$.empty();
+            return ScalaConversionUtils.asScalaSeqEmpty();
+          }
+
+          public LogicalPlan withNewChildrenInternal(IndexedSeq<LogicalPlan> newChildren) {
+            return null;
+          }
+
+          public LogicalPlan withNewChildrenInternal(
+              scala.collection.IndexedSeq<LogicalPlan> newChildren) {
+            return null;
           }
 
           @Override
@@ -413,7 +417,16 @@ class LogicalPlanSerializerTest {
 
           @Override
           public Seq<LogicalPlan> children() {
-            return Seq$.MODULE$.empty();
+            return ScalaConversionUtils.asScalaSeqEmpty();
+          }
+
+          public LogicalPlan withNewChildrenInternal(IndexedSeq<LogicalPlan> newChildren) {
+            return null;
+          }
+
+          public LogicalPlan withNewChildrenInternal(
+              scala.collection.IndexedSeq<LogicalPlan> newChildren) {
+            return null;
           }
 
           @Override

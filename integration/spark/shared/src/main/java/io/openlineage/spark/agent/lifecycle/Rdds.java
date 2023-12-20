@@ -31,7 +31,8 @@ public class Rdds {
     if (rdd instanceof ShuffledRowRDD) {
       rdds.addAll(flattenRDDs(((ShuffledRowRDD) rdd).dependency().rdd()));
     }
-    Collection<Dependency<?>> deps = ScalaConversionUtils.asJavaCollection(rdd.dependencies());
+    Seq<Dependency<?>> dependencies = rdd.dependencies();
+    Collection<Dependency<?>> deps = ScalaConversionUtils.asJavaCollection(dependencies);
     for (Dependency<?> dep : deps) {
       rdds.addAll(flattenRDDs(dep.rdd()));
     }

@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.apache.spark.SparkConf;
@@ -33,8 +34,7 @@ import org.apache.spark.sql.execution.QueryExecution;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import scala.collection.Seq;
-import scala.collection.Seq$;
+import scala.collection.immutable.Seq;
 
 public class DeltaEventFilterTest {
 
@@ -90,8 +90,7 @@ public class DeltaEventFilterTest {
   void testDisabledForLocalRelationOnly() {
     try (MockedStatic mocked = mockStatic(SparkSession.class)) {
       LocalRelation localRelation = mock(LocalRelation.class);
-      when(localRelation.children())
-          .thenReturn((Seq<LogicalPlan>) Seq$.MODULE$.<LogicalPlan>empty());
+      when(localRelation.children()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
       when(SparkSession.active()).thenReturn(sparkSession);
       when(sparkConf.get("spark.sql.extensions", ""))
           .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
@@ -132,18 +131,17 @@ public class DeltaEventFilterTest {
       LogicalPlan logicalPlan = mock(LogicalPlan.class);
       LogicalRDD logicalRDD = mock(LogicalRDD.class);
       when(logicalPlan.collectLeaves())
-          .thenReturn(Arrays.asList(logicalRDD).stream().collect(ScalaConversionUtils.toSeq()));
+          .thenReturn(ScalaConversionUtils.asScalaSeq(Collections.singletonList(logicalRDD)));
       Seq<Attribute> outputs =
-          Arrays.asList(
+          ScalaConversionUtils.asScalaSeq(
+              Arrays.asList(
                   attributeWithName("txn"),
                   attributeWithName("add"),
                   attributeWithName("remove"),
                   attributeWithName("metaData"),
                   attributeWithName("cdc"),
                   attributeWithName("protocol"),
-                  attributeWithName("commitInfo"))
-              .stream()
-              .collect(ScalaConversionUtils.toSeq());
+                  attributeWithName("commitInfo")));
       when(logicalRDD.output()).thenReturn(outputs);
 
       when(SparkSession.active()).thenReturn(sparkSession);
@@ -160,14 +158,13 @@ public class DeltaEventFilterTest {
     try (MockedStatic mocked = mockStatic(SparkSession.class)) {
       LogicalPlan project = mock(Project.class);
       Seq<Attribute> attributeSeq =
-          Arrays.asList(
+          ScalaConversionUtils.asScalaSeq(
+              Arrays.asList(
                   attributeWithName("protocol"),
                   attributeWithName("metaData"),
-                  attributeWithName("action_sort_column"))
-              .stream()
-              .collect(ScalaConversionUtils.toSeq());
+                  attributeWithName("action_sort_column")));
       when(project.output()).thenReturn(attributeSeq);
-      when(project.collectLeaves()).thenReturn(Seq$.MODULE$.empty());
+      when(project.collectLeaves()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
 
       when(SparkSession.active()).thenReturn(sparkSession);
       when(sparkConf.get("spark.sql.extensions", ""))
@@ -182,13 +179,12 @@ public class DeltaEventFilterTest {
   void testDisabledForSerializeFromObject() {
     try (MockedStatic mocked = mockStatic(SparkSession.class)) {
       LocalRelation localRelation = mock(LocalRelation.class);
-      when(localRelation.children())
-          .thenReturn((Seq<LogicalPlan>) Seq$.MODULE$.<LogicalPlan>empty());
+      when(localRelation.children()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
       when(SparkSession.active()).thenReturn(sparkSession);
       when(sparkConf.get("spark.sql.extensions", ""))
           .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
       SerializeFromObject serializeFromObject = mock(SerializeFromObject.class);
-      when(serializeFromObject.collectLeaves()).thenReturn(Seq$.MODULE$.empty());
+      when(serializeFromObject.collectLeaves()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
       when(queryExecution.optimizedPlan()).thenReturn(serializeFromObject);
 
       assertTrue(filter.isDisabled(sparkListenerEvent));

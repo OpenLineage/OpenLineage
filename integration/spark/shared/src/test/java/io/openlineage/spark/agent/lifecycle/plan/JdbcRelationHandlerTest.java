@@ -15,7 +15,9 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
+import java.util.Collections;
 import java.util.List;
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap;
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap$;
@@ -26,7 +28,6 @@ import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import scala.Tuple2;
 import scala.collection.immutable.Map$;
 
 public class JdbcRelationHandlerTest {
@@ -76,10 +77,8 @@ public class JdbcRelationHandlerTest {
   void testHandlingJdbcTable() {
     CaseInsensitiveMap params =
         CaseInsensitiveMap$.MODULE$.apply(
-            Map$.MODULE$
-                .<String, String>newBuilder()
-                .$plus$eq(Tuple2.apply(JDBCOptions$.MODULE$.JDBC_TABLE_NAME(), jdbcTable))
-                .result());
+            ScalaConversionUtils.asScalaMap(
+                Collections.singletonMap(JDBCOptions$.MODULE$.JDBC_TABLE_NAME(), jdbcTable)));
     when(jdbcOptions.parameters()).thenReturn(params);
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcTable);
     when(relation.schema()).thenReturn(schema);
