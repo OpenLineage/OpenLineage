@@ -5,8 +5,6 @@
 
 package io.openlineage.spark.agent.util;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -19,10 +17,10 @@ import scala.Function1;
 import scala.Option;
 import scala.Tuple2;
 import scala.collection.JavaConverters;
+import scala.collection.Set;
 import scala.collection.immutable.Seq;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.AbstractFunction1;
-import scala.util.Properties;
 
 /** Simple conversion utilities for dealing with Scala types */
 public class ScalaConversionUtils {
@@ -52,35 +50,14 @@ public class ScalaConversionUtils {
     return JavaConverters.asScalaBufferConverter(list).asScala().toList();
   }
 
+  /**
+   * Return an empty {@link Seq}
+   *
+   * @param <T>
+   * @return
+   */
   public static <T> Seq<T> asScalaSeqEmpty() {
     return JavaConverters.asScalaBufferConverter(Collections.<T>emptyList()).asScala().toList();
-  }
-
-  public static <K, V> scala.collection.immutable.Map<K, V> asScalaMap(Map<K, V> map) {
-    List<Tuple2<K, V>> collect =
-        map.entrySet().stream()
-            .map(e -> Tuple2.apply(e.getKey(), e.getValue()))
-            .collect(Collectors.toList());
-    String scalaVersion = Properties.versionNumberString();
-    Seq<Tuple2<K, V>> scalaSeq = ScalaConversionUtils.asScalaSeq(collect);
-    try {
-      if (scalaVersion.startsWith("2.13")) {
-        Class<?> aClass = Class.forName("scala.collection.immutable.Map");
-        Method asJava = aClass.getMethod("from", Class.forName("scala.collection.IterableOnce"));
-        return (scala.collection.immutable.Map<K, V>) asJava.invoke(null, scalaSeq);
-      } else {
-        Class<?> aClass = Class.forName("scala.collection.immutable.Map$");
-        Object module$ = aClass.getField("MODULE$").get(null);
-        Method asJava = module$.getClass().getMethod("apply", scala.collection.Seq.class);
-        return (scala.collection.immutable.Map<K, V>) asJava.invoke(module$, scalaSeq);
-      }
-    } catch (NoSuchMethodException
-        | ClassNotFoundException
-        | InvocationTargetException
-        | IllegalAccessException
-        | NoSuchFieldException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   /**
@@ -95,6 +72,28 @@ public class ScalaConversionUtils {
   }
 
   /**
+   * Convert a {@link Map} to a Java {@link scala.collection.immutable.Map}.
+   *
+   * @param map
+   * @param <K>
+   * @param <V>
+   * @return
+   */
+  public static <K, V> scala.collection.immutable.Map<K, V> asScalaMap(Map<K, V> map) {
+    // Extract the key value of the map in a Scala sequence.
+    List<Tuple2<K, V>> collect =
+        map.entrySet().stream()
+            .map(e -> Tuple2.apply(e.getKey(), e.getValue()))
+            .collect(Collectors.toList());
+    Seq<Tuple2<K, V>> scalaSeq = ScalaConversionUtils.asScalaSeq(collect);
+    // Use the `scala.collection.immutable.Map$.MODULE$` to create an immutable Map
+    // This method change between Scala 2.12 and 2.13 but the parameter and the return object are
+    // the same.
+    return (scala.collection.immutable.Map<K, V>)
+        scala.collection.immutable.Map$.MODULE$.apply(scalaSeq);
+  }
+
+  /**
    * Convert a {@link Seq} to a Java {@link List}.
    *
    * @param seq
@@ -102,25 +101,17 @@ public class ScalaConversionUtils {
    * @return
    */
   public static <T> List<T> asJavaCollection(scala.collection.Seq<T> seq) {
-    String scalaVersion = Properties.versionNumberString();
-    if (scalaVersion.startsWith("2.13")) {
-      try {
-        Class<?> aClass = Class.forName("scala.jdk.javaapi.CollectionConverters");
-        Method asJava = aClass.getMethod("asJava", scala.collection.Seq.class);
-        List<T> invoke = (List<T>) asJava.invoke(null, seq);
-        return invoke;
-
-      } catch (NoSuchMethodException
-          | ClassNotFoundException
-          | InvocationTargetException
-          | IllegalAccessException e) {
-        throw new RuntimeException(e);
-      }
-    }
     return JavaConverters.bufferAsJavaListConverter(seq.<T>toBuffer()).asJava();
   }
 
-  public static <T> List<T> asJavaCollection(scala.collection.Set<T> set) {
+  /**
+   * Convert a {@link Set} to a Java {@link List}.
+   *
+   * @param set
+   * @param <T>
+   * @return
+   */
+  public static <T> List<T> asJavaCollection(Set<T> set) {
     return asJavaCollection(set.toBuffer());
   }
 
