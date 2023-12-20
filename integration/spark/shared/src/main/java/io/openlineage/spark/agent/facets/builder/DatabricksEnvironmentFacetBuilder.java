@@ -139,7 +139,7 @@ public class DatabricksEnvironmentFacetBuilder
 
   private static List<DatabricksMountpoint> getDatabricksMountpoints(DbfsUtils dbutils) {
     List<DatabricksMountpoint> mountpoints = new ArrayList<>();
-    List<MountInfo> mountsList = ScalaConversionUtils.asJavaCollection(dbutils.mounts());
+    List<MountInfo> mountsList = ScalaConversionUtils.fromSeq(dbutils.mounts());
     for (MountInfo mount : mountsList) {
       mountpoints.add(new DatabricksMountpoint(mount.mountPoint(), mount.source()));
     }

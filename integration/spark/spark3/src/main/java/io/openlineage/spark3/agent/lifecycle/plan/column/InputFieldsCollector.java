@@ -58,7 +58,7 @@ public class InputFieldsCollector {
     if ((plan.getClass()).isAssignableFrom(UnaryNode.class)) {
       collect(context, ((UnaryNode) plan).child(), builder);
     } else if (plan.children() != null) {
-      ScalaConversionUtils.<LogicalPlan>asJavaCollection(plan.children()).stream()
+      ScalaConversionUtils.<LogicalPlan>fromSeq(plan.children()).stream()
           .forEach(child -> collect(context, child, builder));
     }
   }
@@ -86,7 +86,7 @@ public class InputFieldsCollector {
     datasetIdentifiers.stream()
         .forEach(
             di -> {
-              ScalaConversionUtils.asJavaCollection(node.output()).stream()
+              ScalaConversionUtils.fromSeq(node.output()).stream()
                   .filter(attr -> attr instanceof AttributeReference)
                   .map(attr -> (AttributeReference) attr)
                   .collect(Collectors.toList())
@@ -180,7 +180,7 @@ public class InputFieldsCollector {
   private static List<DatasetIdentifier> extractDatasetIdentifier(HadoopFsRelation relation) {
     List<DatasetIdentifier> inputDatasets = new ArrayList<DatasetIdentifier>();
     List<Path> paths =
-        ScalaConversionUtils.asJavaCollection(relation.location().rootPaths()).stream()
+        ScalaConversionUtils.fromSeq(relation.location().rootPaths()).stream()
             .collect(Collectors.toList());
 
     for (Path p : paths) {

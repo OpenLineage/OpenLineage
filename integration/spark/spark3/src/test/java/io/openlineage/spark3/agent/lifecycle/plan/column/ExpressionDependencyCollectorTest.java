@@ -73,7 +73,7 @@ class ExpressionDependencyCollectorTest {
   void testCollectFromProjectPlan() {
     Project project =
         new Project(
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                 Arrays.asList((NamedExpression) alias1, (NamedExpression) alias2)),
             mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
@@ -89,7 +89,7 @@ class ExpressionDependencyCollectorTest {
     Aggregate aggregate =
         new Aggregate(
             ScalaConversionUtils.asScalaSeqEmpty(),
-            ScalaConversionUtils.asScalaSeq(Collections.singletonList((NamedExpression) alias1)),
+            ScalaConversionUtils.fromList(Collections.singletonList((NamedExpression) alias1)),
             mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, aggregate, null, null, false);
 
@@ -109,7 +109,7 @@ class ExpressionDependencyCollectorTest {
 
     // BinaryExpression
     Seq<Expression> children =
-        ScalaConversionUtils.asScalaSeq(Arrays.asList((Expression) aggr1, aggr2)).toSeq();
+        ScalaConversionUtils.fromList(Arrays.asList((Expression) aggr1, aggr2)).toSeq();
     BinaryExpression binaryExpression = mock(BinaryExpression.class);
     when(binaryExpression.children()).thenReturn(children);
 
@@ -125,7 +125,7 @@ class ExpressionDependencyCollectorTest {
 
     Project project =
         new Project(
-            ScalaConversionUtils.asScalaSeq(Collections.singletonList(rootAlias)),
+            ScalaConversionUtils.fromList(Collections.singletonList(rootAlias)),
             mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
 

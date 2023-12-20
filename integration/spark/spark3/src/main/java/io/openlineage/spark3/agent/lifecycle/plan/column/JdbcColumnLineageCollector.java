@@ -68,7 +68,7 @@ public class JdbcColumnLineageCollector {
     extractExpressionsFromJDBC(
         (JDBCRelation) ((LogicalRelation) node).relation(),
         builder,
-        ScalaConversionUtils.asJavaCollection(node.output()));
+        ScalaConversionUtils.fromSeq(node.output()));
   }
 
   public static void extractExpressionsFromJDBC(

@@ -134,7 +134,7 @@ public class SnowflakeRelationVisitor<D extends OpenLineage.Dataset>
     List<D> output;
 
     Map<String, String> javaOptions =
-        io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaMap(options);
+        io.openlineage.spark.agent.util.ScalaConversionUtils.fromMap(options);
 
     String tableName = javaOptions.get("dbtable");
     if (tableName == null) {

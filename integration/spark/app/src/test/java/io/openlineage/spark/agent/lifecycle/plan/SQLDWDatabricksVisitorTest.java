@@ -141,7 +141,7 @@ class SQLDWDatabricksVisitorTest {
     LogicalRelation lr =
         new LogicalRelation(
             new MockSqlDWBaseRelation(inputName, inputJdbcUrl),
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                 Collections.singletonList(
                     new AttributeReference(
                         FIELD_NAME,
@@ -177,7 +177,7 @@ class SQLDWDatabricksVisitorTest {
     LogicalRelation lr =
         new LogicalRelation(
             new MockSpark2SqlDWBaseRelation(inputName, inputJdbcUrl),
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                 Collections.singletonList(
                     new AttributeReference(
                         FIELD_NAME,
@@ -213,7 +213,7 @@ class SQLDWDatabricksVisitorTest {
     LogicalRelation lr =
         new LogicalRelation(
             new MockSqlDWBaseRelation(inputName, inputJdbcUrl),
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                 Collections.singletonList(
                     new AttributeReference(
                         FIELD_NAME,
@@ -245,7 +245,7 @@ class SQLDWDatabricksVisitorTest {
     LogicalRelation lr =
         new LogicalRelation(
             new MockSqlDWBaseRelation(inputName, inputJdbcUrl),
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                 Collections.singletonList(
                     new AttributeReference(
                         FIELD_NAME,

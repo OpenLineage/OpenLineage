@@ -41,7 +41,7 @@ public class CreateHiveTableAsSelectCommandVisitor
 
     // zip query outputs with attribute names
     LogicalPlan query = command.query();
-    List<Attribute> attributes = ScalaConversionUtils.asJavaCollection(command.query().output());
+    List<Attribute> attributes = ScalaConversionUtils.fromSeq(command.query().output());
 
     List<Attribute> schemaAttributes = new ArrayList<>();
     IntStream.range(0, attributes.size())

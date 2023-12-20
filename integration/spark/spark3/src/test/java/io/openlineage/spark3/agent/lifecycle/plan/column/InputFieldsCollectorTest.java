@@ -236,7 +236,7 @@ class InputFieldsCollectorTest {
     when(logicalRelation.relation()).thenReturn(relation);
 
     Path p = new Path("abfss://tmp@storage.dfs.core.windows.net/path");
-    Seq<Path> expected_path_seq = ScalaConversionUtils.asScalaSeq(Collections.singletonList(p));
+    Seq<Path> expected_path_seq = ScalaConversionUtils.fromList(Collections.singletonList(p));
 
     when(relation.location().rootPaths()).thenReturn(expected_path_seq);
 

@@ -86,7 +86,8 @@ class LogicalPlanSerializerTest {
     String jdbcUrl = "jdbc:postgresql://postgreshost:5432/sparkdata";
     String sparkTableName = "my_spark_table";
     scala.collection.immutable.Map<String, String> map =
-        ScalaConversionUtils.asScalaMap(Collections.singletonMap("driver", Driver.class.getName()));
+        ScalaConversionUtils.fromJavaMap(
+            Collections.singletonMap("driver", Driver.class.getName()));
     JDBCRelation relation =
         new JDBCRelation(
             new StructType(
@@ -99,7 +100,7 @@ class LogicalPlanSerializerTest {
     LogicalRelation logicalRelation =
         new LogicalRelation(
             relation,
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                 Collections.singletonList(
                     new AttributeReference(
                         NAME,
@@ -212,7 +213,7 @@ class LogicalPlanSerializerTest {
     LogicalRelation logicalRelation =
         new LogicalRelation(
             hadoopFsRelation,
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                 Collections.singletonList(
                     new AttributeReference(
                         NAME,
@@ -228,7 +229,7 @@ class LogicalPlanSerializerTest {
             new org.apache.hadoop.fs.Path("/tmp"),
             new HashMap<>(),
             false,
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                 Collections.singletonList(
                     new AttributeReference(
                         NAME,
@@ -244,7 +245,7 @@ class LogicalPlanSerializerTest {
             SaveMode.Overwrite,
             Option.empty(),
             Option.empty(),
-            ScalaConversionUtils.asScalaSeq(Collections.singletonList(NAME)));
+            ScalaConversionUtils.fromList(Collections.singletonList(NAME)));
 
     Map<String, Object> commandActualNode =
         objectMapper.readValue(logicalPlanSerializer.serialize(command), mapTypeReference);
@@ -300,7 +301,7 @@ class LogicalPlanSerializerTest {
     LogicalRelation logicalRelation =
         new LogicalRelation(
             bigQueryRelation,
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                 Collections.singletonList(
                     new AttributeReference(
                         NAME,

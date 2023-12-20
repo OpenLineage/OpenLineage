@@ -203,8 +203,7 @@ public class SaveIntoDataSourceCommandVisitor
         && command.query() != null
         && command.query().output() != null) {
       // get schema from logical plan's output
-      schema =
-          PlanUtils.toStructType(ScalaConversionUtils.asJavaCollection(command.query().output()));
+      schema = PlanUtils.toStructType(ScalaConversionUtils.fromSeq(command.query().output()));
     }
     return schema;
   }

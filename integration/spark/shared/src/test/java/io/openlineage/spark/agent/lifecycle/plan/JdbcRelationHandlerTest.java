@@ -77,7 +77,7 @@ public class JdbcRelationHandlerTest {
   void testHandlingJdbcTable() {
     CaseInsensitiveMap params =
         CaseInsensitiveMap$.MODULE$.apply(
-            ScalaConversionUtils.asScalaMap(
+            ScalaConversionUtils.fromJavaMap(
                 Collections.singletonMap(JDBCOptions$.MODULE$.JDBC_TABLE_NAME(), jdbcTable)));
     when(jdbcOptions.parameters()).thenReturn(params);
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcTable);

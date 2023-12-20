@@ -54,7 +54,7 @@ public class CatalogTableTestUtils {
               new StructField("name", StringType$.MODULE$, false, Metadata.empty())
             }));
     params.add(Option.empty());
-    params.add(ScalaConversionUtils.asScalaSeq(Collections.singletonList("name")));
+    params.add(ScalaConversionUtils.fromList(Collections.singletonList("name")));
     params.add(Option.empty());
     params.add("");
     params.add(Instant.now().getEpochSecond());

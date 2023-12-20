@@ -107,7 +107,7 @@ public class DebugRunFacetBuilderDelegateTest {
   void testBuildClasspathDebugFacet() {
     when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
     when(sparkContext.listJars())
-        .thenReturn(ScalaConversionUtils.asScalaSeq(Collections.singletonList("oneJar")));
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList("oneJar")));
     when(openLineageContext.getSparkVersion()).thenReturn("3.3.0");
 
     ClasspathDebugFacet facet = delegate.buildFacet().getClasspath();
@@ -133,8 +133,8 @@ public class DebugRunFacetBuilderDelegateTest {
 
     when(queryExecution.optimizedPlan()).thenReturn(root);
     when(root.children())
-        .thenReturn(ScalaConversionUtils.asScalaSeq(Collections.singletonList(node)));
-    when(node.children()).thenReturn(ScalaConversionUtils.asScalaSeq(Arrays.asList(leaf1, leaf2)));
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(node)));
+    when(node.children()).thenReturn(ScalaConversionUtils.fromList(Arrays.asList(leaf1, leaf2)));
 
     LogicalPlanDebugFacet facet = delegate.buildFacet().getLogicalPlan();
 

@@ -43,7 +43,7 @@ public class InMemoryRelationInputDatasetBuilder
     return PlanUtils3.getLogicalPlanOf(context, inMemoryRelation)
         .map(
             plan ->
-                ScalaConversionUtils.asJavaCollection(
+                ScalaConversionUtils.fromSeq(
                         plan.collect(
                             delegate(
                                 context.getInputDatasetQueryPlanVisitors(),

@@ -73,7 +73,7 @@ class AlterTableAddColumnsCommandVisitorTest {
     AlterTableAddColumnsCommand command =
         new AlterTableAddColumnsCommand(
             new TableIdentifier(TABLE_1, Option.apply(database)),
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                     Arrays.asList(
                         new StructField(
                             "col2", StringType$.MODULE$, false, new Metadata(new HashMap<>())),
@@ -97,7 +97,7 @@ class AlterTableAddColumnsCommandVisitorTest {
     AlterTableAddColumnsCommand command =
         new AlterTableAddColumnsCommand(
             new TableIdentifier(TABLE_1, Option.apply(database)),
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                     Arrays.asList(
                         new StructField(
                             "col2", StringType$.MODULE$, false, new Metadata(new HashMap<>()))))

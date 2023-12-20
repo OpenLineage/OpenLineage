@@ -103,7 +103,7 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
           bqModule,
           new SparkBigQueryConnectorModule(
               sparkSession,
-              ScalaConversionUtils.<String, String>asJavaMap(parameters),
+              ScalaConversionUtils.<String, String>fromMap(parameters),
               Collections.emptyMap(),
               Optional.ofNullable(
                   schema.getOrElse(

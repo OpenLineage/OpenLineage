@@ -39,10 +39,10 @@ class UnknownEntryFacetListenerTest {
 
     ListFilesCommand logicalPlan =
         new ListFilesCommand(
-            ScalaConversionUtils.asScalaSeq(Collections.singletonList("./test.file")));
+            ScalaConversionUtils.fromList(Collections.singletonList("./test.file")));
     Project project =
         new Project(
-            ScalaConversionUtils.asScalaSeq(Collections.singletonList(reference)), logicalPlan);
+            ScalaConversionUtils.fromList(Collections.singletonList(reference)), logicalPlan);
 
     UnknownEntryFacet facet = underTest.build(project).get();
 
@@ -91,10 +91,10 @@ class UnknownEntryFacetListenerTest {
             ScalaConversionUtils.asScalaSeqEmpty());
 
     ListFilesCommand logicalPlan =
-        new ListFilesCommand(ScalaConversionUtils.asScalaSeq(Collections.singletonList("./test")));
+        new ListFilesCommand(ScalaConversionUtils.fromList(Collections.singletonList("./test")));
     Project project =
         new Project(
-            ScalaConversionUtils.asScalaSeq(Collections.singletonList(reference)), logicalPlan);
+            ScalaConversionUtils.fromList(Collections.singletonList(reference)), logicalPlan);
     underTest.accept(project);
     underTest.accept(logicalPlan);
 

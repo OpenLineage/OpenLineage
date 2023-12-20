@@ -36,7 +36,7 @@ public class AlterTableAddColumnsCommandVisitor
 
     List<StructField> tableColumns = Arrays.asList(catalogTable.schema().fields());
     List<StructField> addedColumns =
-        ScalaConversionUtils.asJavaCollection(((AlterTableAddColumnsCommand) x).colsToAdd());
+        ScalaConversionUtils.fromSeq(((AlterTableAddColumnsCommand) x).colsToAdd());
 
     if (tableColumns.containsAll(addedColumns)) {
       return Collections.singletonList(

@@ -174,7 +174,7 @@ class RddExecutionContext implements ExecutionContext {
               .toLowerCase(Locale.ROOT);
     }
     Seq<Dependency<?>> deps = (Seq<Dependency<?>>) rdd.dependencies();
-    List<Dependency<?>> dependencies = ScalaConversionUtils.asJavaCollection(deps);
+    List<Dependency<?>> dependencies = ScalaConversionUtils.fromSeq(deps);
     if (dependencies.isEmpty()) {
       return rddName;
     }
@@ -364,7 +364,7 @@ class RddExecutionContext implements ExecutionContext {
   }
 
   protected void printRDDs(String prefix, RDD<?> rdd) {
-    Collection<Dependency<?>> deps = ScalaConversionUtils.asJavaCollection(rdd.dependencies());
+    Collection<Dependency<?>> deps = ScalaConversionUtils.fromSeq(rdd.dependencies());
     for (Dependency<?> dep : deps) {
       printRDDs(prefix + "  ", dep.rdd());
     }

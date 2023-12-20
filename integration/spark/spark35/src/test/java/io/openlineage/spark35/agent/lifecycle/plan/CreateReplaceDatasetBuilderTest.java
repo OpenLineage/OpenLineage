@@ -153,14 +153,14 @@ public class CreateReplaceDatasetBuilderTest {
                 openLineageContext,
                 catalog,
                 Identifier.of(new String[] {"db"}, TABLE),
-                ScalaConversionUtils.<String, String>asJavaMap(commandProperties)))
+                ScalaConversionUtils.<String, String>fromMap(commandProperties)))
             .thenReturn(Optional.of("v2"));
 
         when(PlanUtils3.getDatasetIdentifier(
                 openLineageContext,
                 catalog,
                 tableName,
-                ScalaConversionUtils.<String, String>asJavaMap(commandProperties)))
+                ScalaConversionUtils.<String, String>fromMap(commandProperties)))
             .thenReturn(Optional.of(di));
 
         List<OpenLineage.OutputDataset> outputDatasets =
@@ -187,14 +187,14 @@ public class CreateReplaceDatasetBuilderTest {
                 openLineageContext,
                 catalog,
                 Identifier.of(new String[] {"db"}, TABLE),
-                ScalaConversionUtils.<String, String>asJavaMap(commandProperties)))
+                ScalaConversionUtils.<String, String>fromMap(commandProperties)))
             .thenReturn(Optional.empty());
 
         when(PlanUtils3.getDatasetIdentifier(
                 openLineageContext,
                 catalog,
                 tableName,
-                ScalaConversionUtils.<String, String>asJavaMap(commandProperties)))
+                ScalaConversionUtils.<String, String>fromMap(commandProperties)))
             .thenReturn(Optional.of(di));
 
         List<OpenLineage.OutputDataset> outputDatasets =
@@ -216,7 +216,7 @@ public class CreateReplaceDatasetBuilderTest {
               openLineageContext,
               catalog,
               tableName,
-              ScalaConversionUtils.<String, String>asJavaMap(tableProperties)))
+              ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.of(di));
 
       List<OpenLineage.OutputDataset> outputDatasets =
@@ -244,7 +244,7 @@ public class CreateReplaceDatasetBuilderTest {
               openLineageContext,
               catalog,
               tableName,
-              ScalaConversionUtils.<String, String>asJavaMap(tableSpec.properties())))
+              ScalaConversionUtils.<String, String>fromMap(tableSpec.properties())))
           .thenReturn(Optional.empty());
 
       List<OpenLineage.OutputDataset> outputDatasets =

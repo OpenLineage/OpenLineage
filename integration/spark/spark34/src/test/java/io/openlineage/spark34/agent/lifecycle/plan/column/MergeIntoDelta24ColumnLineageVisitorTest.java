@@ -55,11 +55,9 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
   @BeforeEach
   void setup() {
     when(deltaMergeIntoMatchedClause.actions())
-        .thenReturn(
-            ScalaConversionUtils.<Expression>asScalaSeq(Collections.singletonList(action1)));
+        .thenReturn(ScalaConversionUtils.<Expression>fromList(Collections.singletonList(action1)));
     when(deltaMergeIntoNotMatchedClause.actions())
-        .thenReturn(
-            ScalaConversionUtils.<Expression>asScalaSeq(Collections.singletonList(action2)));
+        .thenReturn(ScalaConversionUtils.<Expression>fromList(Collections.singletonList(action2)));
   }
 
   @Test
@@ -101,9 +99,9 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
   @Test
   void testGetMergeActions() {
     when(action1.targetColNameParts())
-        .thenReturn(ScalaConversionUtils.<String>asScalaSeq(Collections.singletonList("col_1")));
+        .thenReturn(ScalaConversionUtils.<String>fromList(Collections.singletonList("col_1")));
     when(action2.targetColNameParts())
-        .thenReturn(ScalaConversionUtils.<String>asScalaSeq(Collections.singletonList("col_2")));
+        .thenReturn(ScalaConversionUtils.<String>fromList(Collections.singletonList("col_2")));
 
     when(action1.child()).thenReturn(actionChild1);
     when(actionChild1.exprId()).thenReturn(action1ExprId);
@@ -120,11 +118,11 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
             mock(LogicalPlan.class),
             mock(TahoeFileIndex.class),
             mock(Expression.class),
-            ScalaConversionUtils.<DeltaMergeIntoMatchedClause>asScalaSeq(
+            ScalaConversionUtils.<DeltaMergeIntoMatchedClause>fromList(
                 Collections.singletonList(deltaMergeIntoMatchedClause)),
-            ScalaConversionUtils.<DeltaMergeIntoNotMatchedClause>asScalaSeq(
+            ScalaConversionUtils.<DeltaMergeIntoNotMatchedClause>fromList(
                 Collections.singletonList(deltaMergeIntoNotMatchedClause)),
-            ScalaConversionUtils.<DeltaMergeIntoNotMatchedBySourceClause>asScalaSeq(
+            ScalaConversionUtils.<DeltaMergeIntoNotMatchedBySourceClause>fromList(
                 Collections.emptyList()),
             Option.empty());
 

@@ -82,11 +82,11 @@ class AlterTableAddPartitionCommandVisitorTest {
   void testAlterTableAddPartition() {
 
     scala.collection.immutable.Map<String, String> params =
-        ScalaConversionUtils.<String, String>asScalaMap(Collections.singletonMap("col1", "aaa"));
+        ScalaConversionUtils.<String, String>fromJavaMap(Collections.singletonMap("col1", "aaa"));
 
     scala.collection.immutable.Seq<Tuple2<Map<String, String>, Option<String>>>
         partitionSpecsAndLocs =
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                 Collections.singletonList(Tuple2.apply(params, Option.apply("file:///tmp/dir"))));
 
     AlterTableAddPartitionCommand command =

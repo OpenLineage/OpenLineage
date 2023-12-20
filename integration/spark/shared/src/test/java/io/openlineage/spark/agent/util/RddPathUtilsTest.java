@@ -35,7 +35,7 @@ public class RddPathUtilsTest {
 
     when(mapPartitions.prev()).thenReturn(fileScanRDD);
     when(fileScanRDD.filePartitions())
-        .thenReturn(ScalaConversionUtils.asScalaSeq(Collections.singletonList(filePartition)));
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(filePartition)));
     when(filePartition.files()).thenReturn(new PartitionedFile[] {partitionedFile});
     when(partitionedFile.filePath()).thenReturn("/some-path/sub-path");
 
@@ -94,7 +94,7 @@ public class RddPathUtilsTest {
     when(filePartition.files()).thenReturn(new PartitionedFile[] {partitionedFile});
     when(partitionedFile.filePath()).thenReturn("");
     when(fileScanRDD.filePartitions())
-        .thenReturn(ScalaConversionUtils.asScalaSeq(Collections.singletonList(filePartition)));
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(filePartition)));
 
     List rddPaths = PlanUtils.findRDDPaths(Collections.singletonList(fileScanRDD));
 

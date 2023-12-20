@@ -126,7 +126,7 @@ class KustoRelationVisitorTest {
     LogicalRelation lr =
         new LogicalRelation(
             new MockKustoRelation(inputQuery, url, database),
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                 Collections.singletonList(
                     new AttributeReference(
                         FIELD_NAME,

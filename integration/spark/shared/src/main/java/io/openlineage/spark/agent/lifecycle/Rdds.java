@@ -32,7 +32,7 @@ public class Rdds {
       rdds.addAll(flattenRDDs(((ShuffledRowRDD) rdd).dependency().rdd()));
     }
     Seq<Dependency<?>> dependencies = rdd.dependencies();
-    Collection<Dependency<?>> deps = ScalaConversionUtils.asJavaCollection(dependencies);
+    Collection<Dependency<?>> deps = ScalaConversionUtils.fromSeq(dependencies);
     for (Dependency<?> dep : deps) {
       rdds.addAll(flattenRDDs(dep.rdd()));
     }
@@ -42,7 +42,7 @@ public class Rdds {
   static String toString(SparkListenerJobStart jobStart) {
     StringBuilder sb = new StringBuilder();
     sb.append("start: ").append(jobStart.properties().toString()).append("\n");
-    List<StageInfo> stageInfos = ScalaConversionUtils.asJavaCollection(jobStart.stageInfos());
+    List<StageInfo> stageInfos = ScalaConversionUtils.fromSeq(jobStart.stageInfos());
     for (StageInfo stageInfo : stageInfos) {
       sb.append("  ")
           .append("stageInfo: ")
@@ -50,7 +50,7 @@ public class Rdds {
           .append(" ")
           .append(stageInfo.name())
           .append("\n");
-      List<RDDInfo> rddInfos = ScalaConversionUtils.asJavaCollection(stageInfo.rddInfos());
+      List<RDDInfo> rddInfos = ScalaConversionUtils.fromSeq(stageInfo.rddInfos());
       for (RDDInfo rddInfo : rddInfos) {
         sb.append("    ").append("rddInfo: ").append(rddInfo).append("\n");
       }
@@ -66,7 +66,7 @@ public class Rdds {
       RDD<?> cur = deps.pop();
       Seq<Dependency<?>> dependencies = cur.getDependencies();
       deps.addAll(
-          ScalaConversionUtils.asJavaCollection(dependencies).stream()
+          ScalaConversionUtils.fromSeq(dependencies).stream()
               .map(Dependency::rdd)
               .collect(Collectors.toList()));
       if (cur instanceof HadoopRDD) {

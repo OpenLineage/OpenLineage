@@ -86,7 +86,7 @@ class LogicalRelationDatasetBuilderTest {
             new JDBCOptions(
                 connectionUri,
                 sparkTableName,
-                ScalaConversionUtils.asScalaMap(
+                ScalaConversionUtils.fromJavaMap(
                     Collections.singletonMap("driver", Driver.class.getName()))),
             session);
     QueryExecution qe = mock(QueryExecution.class);
@@ -96,7 +96,7 @@ class LogicalRelationDatasetBuilderTest {
                 ScalaConversionUtils.asScalaSeqEmpty(),
                 new LogicalRelation(
                     relation,
-                    ScalaConversionUtils.asScalaSeq(
+                    ScalaConversionUtils.fromList(
                         Collections.singletonList(
                             new AttributeReference(
                                 "name",

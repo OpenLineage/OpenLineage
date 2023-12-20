@@ -87,7 +87,7 @@ public class RddPathUtils {
 
     @Override
     public Stream<Path> extract(FileScanRDD rdd) {
-      return ScalaConversionUtils.asJavaCollection(rdd.filePartitions()).stream()
+      return ScalaConversionUtils.fromSeq(rdd.filePartitions()).stream()
           .flatMap(fp -> Arrays.stream(fp.files()))
           .map(
               f -> {
@@ -117,7 +117,7 @@ public class RddPathUtils {
         Object data = FieldUtils.readField(rdd, "data", true);
         log.debug("ParallelCollectionRDD data: {} {}", data);
         if (data instanceof Seq) {
-          return ScalaConversionUtils.asJavaCollection((Seq) data).stream()
+          return ScalaConversionUtils.fromSeq((Seq) data).stream()
               .map(
                   el -> {
                     Path path = null;

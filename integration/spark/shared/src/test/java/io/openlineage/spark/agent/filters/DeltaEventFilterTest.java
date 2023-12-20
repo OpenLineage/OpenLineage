@@ -131,9 +131,9 @@ public class DeltaEventFilterTest {
       LogicalPlan logicalPlan = mock(LogicalPlan.class);
       LogicalRDD logicalRDD = mock(LogicalRDD.class);
       when(logicalPlan.collectLeaves())
-          .thenReturn(ScalaConversionUtils.asScalaSeq(Collections.singletonList(logicalRDD)));
+          .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(logicalRDD)));
       Seq<Attribute> outputs =
-          ScalaConversionUtils.asScalaSeq(
+          ScalaConversionUtils.fromList(
               Arrays.asList(
                   attributeWithName("txn"),
                   attributeWithName("add"),
@@ -158,7 +158,7 @@ public class DeltaEventFilterTest {
     try (MockedStatic mocked = mockStatic(SparkSession.class)) {
       LogicalPlan project = mock(Project.class);
       Seq<Attribute> attributeSeq =
-          ScalaConversionUtils.asScalaSeq(
+          ScalaConversionUtils.fromList(
               Arrays.asList(
                   attributeWithName("protocol"),
                   attributeWithName("metaData"),

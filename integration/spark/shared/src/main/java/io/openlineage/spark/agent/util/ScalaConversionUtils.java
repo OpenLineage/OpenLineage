@@ -36,7 +36,7 @@ public class ScalaConversionUtils {
    * @return
    */
   public static <R, T> Seq<R> map(Seq<T> seq, Function<T, R> fn) {
-    return asScalaSeq(asJavaCollection(seq).stream().map(fn).collect(Collectors.toList()));
+    return fromList(fromSeq(seq).stream().map(fn).collect(Collectors.toList()));
   }
 
   /**
@@ -46,7 +46,7 @@ public class ScalaConversionUtils {
    * @param <T>
    * @return
    */
-  public static <T> Seq<T> asScalaSeq(List<T> list) {
+  public static <T> Seq<T> fromList(List<T> list) {
     return JavaConverters.asScalaBufferConverter(list).asScala().toList();
   }
 
@@ -68,7 +68,7 @@ public class ScalaConversionUtils {
    * @return
    */
   public static <K, V> scala.collection.immutable.Map<K, V> asScalaMapEmpty() {
-    return ScalaConversionUtils.asScalaMap(Collections.emptyMap());
+    return ScalaConversionUtils.fromJavaMap(Collections.emptyMap());
   }
 
   /**
@@ -79,13 +79,13 @@ public class ScalaConversionUtils {
    * @param <V>
    * @return
    */
-  public static <K, V> scala.collection.immutable.Map<K, V> asScalaMap(Map<K, V> map) {
+  public static <K, V> scala.collection.immutable.Map<K, V> fromJavaMap(Map<K, V> map) {
     // Extract the key value of the map in a Scala sequence.
     List<Tuple2<K, V>> collect =
         map.entrySet().stream()
             .map(e -> Tuple2.apply(e.getKey(), e.getValue()))
             .collect(Collectors.toList());
-    Seq<Tuple2<K, V>> scalaSeq = ScalaConversionUtils.asScalaSeq(collect);
+    Seq<Tuple2<K, V>> scalaSeq = ScalaConversionUtils.fromList(collect);
     // Use the `scala.collection.immutable.Map$.MODULE$` to create an immutable Map
     // This method change between Scala 2.12 and 2.13 but the parameter and the return object are
     // the same.
@@ -100,7 +100,7 @@ public class ScalaConversionUtils {
    * @param <T>
    * @return
    */
-  public static <T> List<T> asJavaCollection(scala.collection.Seq<T> seq) {
+  public static <T> List<T> fromSeq(scala.collection.Seq<T> seq) {
     return JavaConverters.bufferAsJavaListConverter(seq.<T>toBuffer()).asJava();
   }
 
@@ -111,8 +111,8 @@ public class ScalaConversionUtils {
    * @param <T>
    * @return
    */
-  public static <T> List<T> asJavaCollection(Set<T> set) {
-    return asJavaCollection(set.toBuffer());
+  public static <T> List<T> fromSet(Set<T> set) {
+    return fromSeq(set.toBuffer());
   }
 
   /**
@@ -123,7 +123,7 @@ public class ScalaConversionUtils {
    * @param <V>
    * @return
    */
-  public static <K, V> Map<K, V> asJavaMap(scala.collection.immutable.Map<K, V> map) {
+  public static <K, V> Map<K, V> fromMap(scala.collection.immutable.Map<K, V> map) {
     return JavaConverters.mapAsJavaMapConverter(map).asJava();
   }
 

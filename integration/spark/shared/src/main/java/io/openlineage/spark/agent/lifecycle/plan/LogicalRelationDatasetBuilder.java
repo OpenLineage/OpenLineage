@@ -146,7 +146,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                                 context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
 
                 Collection<Path> rootPaths =
-                    ScalaConversionUtils.asJavaCollection(relation.location().rootPaths());
+                    ScalaConversionUtils.fromSeq(relation.location().rootPaths());
 
                 if (isSingleFileRelation(rootPaths, hadoopConfig)) {
                   return Collections.singletonList(
@@ -182,7 +182,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         // Datasets
         List<D> inputDatasets = new ArrayList<D>();
         List<Path> paths =
-            new ArrayList<>(ScalaConversionUtils.asJavaCollection(relation.location().rootPaths()));
+            new ArrayList<>(ScalaConversionUtils.fromSeq(relation.location().rootPaths()));
         for (Path p : paths) {
           inputDatasets.add(datasetFactory.getDataset(p.toUri(), relation.schema()));
         }

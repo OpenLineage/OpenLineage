@@ -55,7 +55,7 @@ public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
   public Optional<UnknownEntryFacet> build(LogicalPlan root) {
     Optional<UnknownEntryFacet.FacetEntry> output = mapEntry(root);
     List<UnknownEntryFacet.FacetEntry> inputs =
-        ScalaConversionUtils.asJavaCollection(root.collectLeaves()).stream()
+        ScalaConversionUtils.fromSeq(root.collectLeaves()).stream()
             .map(this::mapEntry)
             .filter(Optional::isPresent)
             .map(Optional::get)
@@ -78,7 +78,7 @@ public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
   }
 
   private List<UnknownEntryFacet.AttributeField> attributeFields(AttributeSet set) {
-    return ScalaConversionUtils.<AttributeReference>asJavaCollection(set.toSet()).stream()
+    return ScalaConversionUtils.<AttributeReference>fromSet(set.toSet()).stream()
         .map(this::mapAttributeReference)
         .collect(Collectors.toList());
   }
@@ -87,6 +87,6 @@ public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
     return new UnknownEntryFacet.AttributeField(
         ar.name(),
         ofNullable(ar.dataType()).map(DataType::typeName).orElse(null),
-        new HashMap<>(ScalaConversionUtils.asJavaMap(ar.metadata().map())));
+        new HashMap<>(ScalaConversionUtils.fromMap(ar.metadata().map())));
   }
 }

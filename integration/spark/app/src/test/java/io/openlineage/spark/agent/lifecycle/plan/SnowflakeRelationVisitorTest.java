@@ -75,7 +75,7 @@ public class SnowflakeRelationVisitorTest {
     LogicalRelation lr =
         new LogicalRelation(
             relation,
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                 Collections.singletonList(
                     new AttributeReference(
                         FIELD_NAME,

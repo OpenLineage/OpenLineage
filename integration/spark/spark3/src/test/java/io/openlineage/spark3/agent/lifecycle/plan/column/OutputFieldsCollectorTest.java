@@ -35,7 +35,7 @@ class OutputFieldsCollectorTest {
   ExprId exprId1 = mock(ExprId.class);
   ExprId exprId2 = mock(ExprId.class);
 
-  Seq<Attribute> attrs = ScalaConversionUtils.asScalaSeq(Arrays.asList(attr1, attr2)).toSeq();
+  Seq<Attribute> attrs = ScalaConversionUtils.fromList(Arrays.asList(attr1, attr2)).toSeq();
 
   @BeforeEach
   void setup() {

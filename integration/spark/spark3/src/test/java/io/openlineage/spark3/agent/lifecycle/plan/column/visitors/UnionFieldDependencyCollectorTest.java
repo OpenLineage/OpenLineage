@@ -52,16 +52,16 @@ class UnionFieldDependencyCollectorTest {
   void testCollect() {
     Union union =
         new Union(
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                     Arrays.asList(
                         (LogicalPlan)
                             new Project(
-                                ScalaConversionUtils.asScalaSeq(
+                                ScalaConversionUtils.fromList(
                                     Collections.singletonList(expression1)),
                                 mock(LogicalPlan.class)),
                         (LogicalPlan)
                             new Project(
-                                ScalaConversionUtils.asScalaSeq(
+                                ScalaConversionUtils.fromList(
                                     Collections.singletonList(expression2)),
                                 mock(LogicalPlan.class))))
                 .toSeq(),

@@ -77,8 +77,7 @@ public class CreateReplaceInputDatasetBuilderTest {
   void testIsDefinedWhenNodeHasChildren() {
     CreateTableAsSelect node = mock(CreateTableAsSelect.class);
     when(node.children())
-        .thenReturn(
-            ScalaConversionUtils.asScalaSeq(Arrays.asList(mock(LogicalPlan.class))).toSeq());
+        .thenReturn(ScalaConversionUtils.fromList(Arrays.asList(mock(LogicalPlan.class))).toSeq());
 
     assertFalse(builder.isDefinedAtLogicalPlan(node));
   }
@@ -98,7 +97,7 @@ public class CreateReplaceInputDatasetBuilderTest {
             Option.empty());
     when(query.collect(any()))
         .thenReturn(
-            ScalaConversionUtils.asScalaSeq(
+            ScalaConversionUtils.fromList(
                     Arrays.asList((Object) Collections.singletonList(inputDataset)))
                 .toSeq());
 

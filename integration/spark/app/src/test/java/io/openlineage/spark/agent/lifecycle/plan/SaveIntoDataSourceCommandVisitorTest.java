@@ -52,20 +52,20 @@ class SaveIntoDataSourceCommandVisitorTest {
     when(attr2.name()).thenReturn("b");
 
     Map<String, String> options =
-        ScalaConversionUtils.asScalaMap(Collections.singletonMap("path", "some-path"));
+        ScalaConversionUtils.fromJavaMap(Collections.singletonMap("path", "some-path"));
 
     command = mock(SaveIntoDataSourceCommand.class);
     DeltaDataSource deltaDataSource = mock(DeltaDataSource.class);
     LocalRelation localRelation = mock(LocalRelation.class);
     when(localRelation.output())
-        .thenReturn(ScalaConversionUtils.asScalaSeq(Arrays.asList(attr1, attr2)).toSeq());
+        .thenReturn(ScalaConversionUtils.fromList(Arrays.asList(attr1, attr2)).toSeq());
     when(command.dataSource()).thenReturn(deltaDataSource);
     when(command.schema()).thenReturn(null);
     when(command.mode()).thenReturn(SaveMode.Overwrite);
     when(command.query()).thenReturn(localRelation);
     when(command.options()).thenReturn(options);
     when(localRelation.output())
-        .thenReturn(ScalaConversionUtils.asScalaSeq(Arrays.asList(attr1, attr2)).toSeq());
+        .thenReturn(ScalaConversionUtils.fromList(Arrays.asList(attr1, attr2)).toSeq());
     when(datasetFactory.getDataset(any(), any(), eq(OVERWRITE))).thenReturn(dataset);
 
     List<OpenLineage.OutputDataset> datasets =

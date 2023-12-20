@@ -60,7 +60,7 @@ public class MergeIntoIceberg13ColumnLineageVisitor implements ColumnLevelLineag
 
       if (query instanceof Project) {
         List<NamedExpression> queryOutputs =
-            ScalaConversionUtils.<NamedExpression>asJavaCollection(((Project) query).projectList());
+            ScalaConversionUtils.<NamedExpression>fromSeq(((Project) query).projectList());
 
         if (queryOutputs.size() != ((LogicalPlan) namedRelation).output().size()) {
           log.warn("Project and table output sizes do not match");

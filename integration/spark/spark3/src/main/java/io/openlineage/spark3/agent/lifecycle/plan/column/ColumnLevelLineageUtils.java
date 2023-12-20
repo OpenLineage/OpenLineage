@@ -84,7 +84,7 @@ public class ColumnLevelLineageUtils {
 
                         // map outputs of cachedPlan onto inputs of InMemoryRelation
                         Map<String, ExprId> idMap =
-                            ScalaConversionUtils.<Attribute>asJavaCollection(node.output()).stream()
+                            ScalaConversionUtils.<Attribute>fromSeq(node.output()).stream()
                                 .collect(Collectors.toMap(Attribute::name, Attribute::exprId));
 
                         OutputFieldsCollector.getOutputExpressionsFromTree(cachedPlan).stream()
