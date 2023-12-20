@@ -75,7 +75,7 @@ dependencies {
     compileOnly "org.apache.spark:spark-sql_${scalaVersion}:${sparkVersion}"
     compileOnly "org.apache.spark:spark-hive_${scalaVersion}:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
-    compileOnly "org.apache.iceberg:iceberg-spark-runtime-3.3_${scalaVersion}:0.14.0"
+    compileOnly "org.apache.iceberg:iceberg-spark-runtime-3.3_${scalaVersion}:0.14.1"
     compileOnly "io.delta:delta-core_${scalaVersion}:2.1.0"
 
     testFixturesApi "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:${jacksonVersion}"
@@ -84,7 +84,7 @@ dependencies {
     testFixturesApi "org.apache.spark:spark-hive_${scalaVersion}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-catalyst_${scalaVersion}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
-    testFixturesApi "org.apache.iceberg:iceberg-spark-runtime-3.3_${scalaVersion}:0.14.0"
+    testFixturesApi "org.apache.iceberg:iceberg-spark-runtime-3.3_${scalaVersion}:0.14.1"
     testFixturesApi "io.delta:delta-core_${scalaVersion}:2.1.0"
 
     testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
