@@ -50,6 +50,7 @@ ext {
     junit5Version = '5.10.1'
     mockitoVersion = '4.11.0'
     sparkVersion = '3.2.2'
+    scalaVersion = project.getProperty('scala.binary.version')
     scalaVersion = '2.12'
     jacksonVersion = '2.15.3'
     lombokVersion = '1.18.30'
@@ -68,9 +69,11 @@ dependencies {
     compileOnly "org.apache.spark:spark-sql_${scalaVersion}:${sparkVersion}"
     compileOnly "org.apache.spark:spark-hive_${scalaVersion}:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
-    compileOnly "org.apache.iceberg:iceberg-spark3-runtime:0.13.0"
+    compileOnly "org.apache.iceberg:iceberg-spark-runtime-3.2_${scalaVersion}:0.14.1"
     compileOnly "io.delta:delta-core_${scalaVersion}:1.1.0"
-    compileOnly "com.databricks:dbutils-api_2.12:0.0.6"
+    compileOnly ("com.databricks:databricks-dbutils-scala_${scalaVersion}:0.1.4") {
+        exclude group: 'com.fasterxml.jackson.core'
+    }
 
     testFixturesApi "com.fasterxml.jackson.module:jackson-module-scala_${scalaVersion}:${jacksonVersion}"
     testFixturesApi "org.apache.spark:spark-core_${scalaVersion}:${sparkVersion}"
@@ -78,9 +81,11 @@ dependencies {
     testFixturesApi "org.apache.spark:spark-hive_${scalaVersion}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-catalyst_${scalaVersion}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
-    testFixturesApi "org.apache.iceberg:iceberg-spark-runtime-3.2_${scalaVersion}:0.13.0"
+    testFixturesApi "org.apache.iceberg:iceberg-spark-runtime-3.2_${scalaVersion}:0.14.1"
     testFixturesApi "io.delta:delta-core_${scalaVersion}:1.1.0"
-    testFixturesApi "com.databricks:dbutils-api_2.12:0.0.6"
+    testFixturesApi ("com.databricks:databricks-dbutils-scala_${scalaVersion}:0.1.4") {
+        exclude group: 'com.fasterxml.jackson.core'
+    }
 
     testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testFixturesApi "org.assertj:assertj-core:${assertjVersion}"
