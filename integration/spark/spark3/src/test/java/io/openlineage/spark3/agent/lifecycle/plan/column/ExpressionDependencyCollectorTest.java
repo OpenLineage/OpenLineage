@@ -11,9 +11,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
 import org.apache.spark.sql.catalyst.expressions.Alias;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.BinaryExpression;
@@ -30,8 +31,7 @@ import org.apache.spark.sql.types.Metadata$;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import scala.Option;
-import scala.collection.Seq;
-import scala.collection.Seq$;
+import scala.collection.immutable.Seq;
 
 class ExpressionDependencyCollectorTest {
 
@@ -56,24 +56,25 @@ class ExpressionDependencyCollectorTest {
           (Expression) expression1,
           "name1",
           aliasExprId1,
-          (Seq<String>) Seq$.MODULE$.empty(),
+          ScalaConversionUtils.asScalaSeqEmpty(),
           Option.empty(),
-          (Seq<String>) Seq$.MODULE$.empty());
+          ScalaConversionUtils.asScalaSeqEmpty());
 
   Alias alias2 =
       new Alias(
           (Expression) expression2,
           "name2",
           aliasExprId2,
-          (Seq<String>) Seq$.MODULE$.empty(),
+          ScalaConversionUtils.asScalaSeqEmpty(),
           Option.empty(),
-          (Seq<String>) Seq$.MODULE$.empty());
+          ScalaConversionUtils.asScalaSeqEmpty());
 
   @Test
   void testCollectFromProjectPlan() {
     Project project =
         new Project(
-            toScalaSeq(Arrays.asList((NamedExpression) alias1, (NamedExpression) alias2)),
+            ScalaConversionUtils.asScalaSeq(
+                Arrays.asList((NamedExpression) alias1, (NamedExpression) alias2)),
             mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
 
@@ -87,8 +88,8 @@ class ExpressionDependencyCollectorTest {
   void testCollectFromAggregatePlan() {
     Aggregate aggregate =
         new Aggregate(
-            (Seq<Expression>) Seq$.MODULE$.empty(),
-            toScalaSeq(Arrays.asList((NamedExpression) alias1)),
+            ScalaConversionUtils.asScalaSeqEmpty(),
+            ScalaConversionUtils.asScalaSeq(Collections.singletonList((NamedExpression) alias1)),
             mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, aggregate, null, null, false);
 
@@ -108,10 +109,7 @@ class ExpressionDependencyCollectorTest {
 
     // BinaryExpression
     Seq<Expression> children =
-        scala.collection.JavaConverters.collectionAsScalaIterableConverter(
-                Arrays.asList((Expression) aggr1, aggr2))
-            .asScala()
-            .toSeq();
+        ScalaConversionUtils.asScalaSeq(Arrays.asList((Expression) aggr1, aggr2)).toSeq();
     BinaryExpression binaryExpression = mock(BinaryExpression.class);
     when(binaryExpression.children()).thenReturn(children);
 
@@ -121,22 +119,19 @@ class ExpressionDependencyCollectorTest {
             (Expression) binaryExpression,
             "name2",
             rootAliasExprId,
-            (Seq<String>) Seq$.MODULE$.empty(),
+            ScalaConversionUtils.asScalaSeqEmpty(),
             Option.empty(),
-            (Seq<String>) Seq$.MODULE$.empty());
+            ScalaConversionUtils.asScalaSeqEmpty());
 
-    Project project = new Project(toScalaSeq(Arrays.asList(rootAlias)), mock(LogicalPlan.class));
+    Project project =
+        new Project(
+            ScalaConversionUtils.asScalaSeq(Collections.singletonList(rootAlias)),
+            mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
 
     ExpressionDependencyCollector.collect(context, plan, builder);
 
     verify(builder, times(1)).addDependency(rootAliasExprId, exprId1);
     verify(builder, times(1)).addDependency(rootAliasExprId, exprId2);
-  }
-
-  private Seq<NamedExpression> toScalaSeq(Collection<NamedExpression> expressions) {
-    return scala.collection.JavaConverters.collectionAsScalaIterableConverter(expressions)
-        .asScala()
-        .toSeq();
   }
 }
