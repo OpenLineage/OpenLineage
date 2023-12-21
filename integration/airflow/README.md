@@ -2,6 +2,21 @@
 
 A library that integrates [Airflow `DAGs`]() with [OpenLineage](https://openlineage.io) for automatic metadata collection.
 
+## Native integration with Airflow
+
+Starting from Airflow version 2.7.0 OpenLineage integration is included in Airflow repository as a provider.
+The `apache-airflow-providers-openlineage` 
+[package](https://airflow.apache.org/docs/apache-airflow-providers-openlineage) 
+significantly ease lineage tracking in Airflow, 
+ensuring stability by embedding the functionality directly into each provider and 
+simplifying the process for users to select and manage lineage collection consumers.
+
+As a result, **starting from Airflow 2.7.0** one should use the native Airflow Openlineage provider 
+[package](https://airflow.apache.org/docs/apache-airflow-providers-openlineage).  
+
+The ongoing development and enhancements will be focused on the `apache-airflow-providers-openlineage` package, 
+while the `openlineage-airflow` will primarily be updated for bug fixes.
+
 ## Features
 
 **Metadata**
@@ -24,7 +39,7 @@ A library that integrates [Airflow `DAGs`]() with [OpenLineage](https://openline
 ## Requirements
 
 - [Python 3.8](https://www.python.org/downloads)
-- [Airflow 2.1+](https://pypi.org/project/apache-airflow)
+- [Airflow >= 2.1,<2.8](https://pypi.org/project/apache-airflow)
 
 ## Installation
 
@@ -42,9 +57,16 @@ $ python3 setup.py install
 
 ## Setup
 
-### Airflow 2.3+
+### Airflow 2.7+
 
-The integration automatically registers itself for Airflow 2.3 if it's installed on the Airflow worker's Python.
+This package **should not** be used starting with Airflow 2.7.0 and **must not** be used with Airflow 2.8+. 
+It was designed as Airflow's external integration that works mainly for Airflow versions <2.7.
+For Airflow 2.7+ use the native Airflow OpenLineage provider 
+[package](https://airflow.apache.org/docs/apache-airflow-providers-openlineage) `apache-airflow-providers-openlineage`.
+
+### Airflow 2.3 - 2.6
+
+The integration automatically registers itself starting from Airflow 2.3 if it's installed on the Airflow worker's Python.
 This means you don't have to do anything besides configuring it, which is described in the Configuration section.
 
 ### Airflow 2.1 - 2.2
