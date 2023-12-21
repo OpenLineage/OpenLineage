@@ -77,6 +77,7 @@ dependencies {
     compileOnly "org.apache.spark:spark-hive_${scalaVersion}:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
     compileOnly "org.apache.iceberg:iceberg-spark-runtime-3.4_${scalaVersion}:1.3.1"
+    compileOnly "org.scala-lang.modules:scala-collection-compat_${scalaVersion}:2.11.0"
     compileOnly "io.delta:delta-core_${scalaVersion}:2.4.0"
     compileOnly ("com.google.cloud.spark:spark-bigquery-with-dependencies_${scalaVersion}:${bigqueryVersion}") {
         exclude group: 'com.fasterxml.jackson.core'
