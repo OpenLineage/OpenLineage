@@ -1,16 +1,27 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.6.2...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.7.0...HEAD)
+
+## [1.7.0](https://github.com/OpenLineage/OpenLineage/compare/1.6.2...1.7.0) - 2023-12-21
+### Added
+* **Airflow: add parent run facet to `COMPLETE` and `FAIL` events in Airflow integration** [`#2320`](https://github.com/OpenLineage/OpenLineage/pull/2320) [@kacpermuda](https://github.com/kacpermuda)  
+    *Adds a parent run facet to all events in the Airflow integration.*
 
 ### Fixed
-* **Flink: Open Iceberg `TableLoader` before loading a table.** [`#2314`](https://github.com/OpenLineage/OpenLineage/pull/2314) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Fix potential NullPointerException in 1.17 when dealing with Iceberg sinks.*
-* **Spark: Fix `commons-logging` relocate in target jar.** [`#2319`](https://github.com/OpenLineage/OpenLineage/pull/2319) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Avoid relocating dependency which gets excluded from the jar.*
-* **Flink: Name kafka datasets according to the naming convention.** [`#2321`](https://github.com/OpenLineage/OpenLineage/pull/2321) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Add `kafka://` prefix to kafka topic datasets namespaces.*
-* **Flink: Fix properties within `JobTypeJobFacet`.** [`#2325`](https://github.com/OpenLineage/OpenLineage/pull/2325) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Fix properties assignment.*
+* **Airflow: repair up.sh for MacOS** [`#2316`](https://github.com/OpenLineage/OpenLineage/pull/2316) [`#2318`](https://github.com/OpenLineage/OpenLineage/pull/2318) [@kacpermuda](https://github.com/kacpermuda)  
+    *Some scripts were not working well on MacOS. This adjusts them.*
+* **Airflow: repair `run_id` for FAIL event in Airflow 2.6+** [`#2305`](https://github.com/OpenLineage/OpenLineage/pull/2305) [@kacpermuda](https://github.com/kacpermuda)  
+    *The `Run_id` in a `FAIL` event was different than in the `START` event for Airflow 2.6+.*
+* **Flink: open Iceberg `TableLoader` before loading a table** [`#2314`](https://github.com/OpenLineage/OpenLineage/pull/2314) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Fixes a potential `NullPointerException` in 1.17 when dealing with Iceberg sinks.*
+* **Flink: name Kafka datasets according to the naming convention** [`#2321`](https://github.com/OpenLineage/OpenLineage/pull/2321) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds a `kafka://` prefix to Kafka topic datasets' namespaces.*
+* **Flink: fix properties within `JobTypeJobFacet`** [`#2325`](https://github.com/OpenLineage/OpenLineage/pull/2325) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Fixes properties assignment in the Flink visitor.*
+* **Spark: fix `commons-logging` relocate in target jar** [`#2319`](https://github.com/OpenLineage/OpenLineage/pull/2319) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Avoids relocating a dependency that was getting excluded from the jar.*
+* **Spec: fix inconsistency with Redshift authority format** [`#2315`](https://github.com/OpenLineage/OpenLineage/pull/2315) [@davidjgoss](https://github.com/davidjgoss)  
+    *Amends the `Authority` format for consistency with other references in the same section.*
 
 ## [1.6.2](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...1.6.2) - 2023-12-07
 ### Added
