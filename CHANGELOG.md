@@ -23,6 +23,10 @@
 * **Spec: fix inconsistency with Redshift authority format** [`#2315`](https://github.com/OpenLineage/OpenLineage/pull/2315) [@davidjgoss](https://github.com/davidjgoss)  
     *Amends the `Authority` format for consistency with other references in the same section.*
 
+### Removed
+* **Airflow: remove Airflow 2.8+ support** [`#2330`](https://github.com/OpenLineage/OpenLineage/pull/2330) [@kacpermuda](https://github.com/kacpermuda)  
+    *To encourage use of the Provider, this removes the listener from the plugin if the Airflow version is `<2.3.0` or `>=2.8.0`.*
+
 ## [1.6.2](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...1.6.2) - 2023-12-07
 ### Added
 * **Dagster: support Dagster 1.5.x** [`#2220`](https://github.com/OpenLineage/OpenLineage/pull/2220) [@tsungchih](https://github.com/tsungchih)  
