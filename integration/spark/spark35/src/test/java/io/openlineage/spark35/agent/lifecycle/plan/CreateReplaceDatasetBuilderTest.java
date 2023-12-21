@@ -24,7 +24,6 @@ import java.util.Optional;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.ResolvedTable;
-import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTable;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -40,10 +39,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
-import scala.collection.Seq;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
-import scala.collection.immutable.Seq$;
 
 public class CreateReplaceDatasetBuilderTest {
 
@@ -68,7 +65,7 @@ public class CreateReplaceDatasetBuilderTest {
           catalog,
           mock(Identifier.class),
           mock(Table.class),
-          (Seq<Attribute>) Seq$.MODULE$.empty());
+          ScalaConversionUtils.asScalaSeqEmpty());
 
   TableSpec tableSpec = mock(TableSpec.class);
 

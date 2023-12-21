@@ -8,6 +8,8 @@ package io.openlineage.spark.agent.lifecycle;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.spark.agent.facets.UnknownEntryFacet;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import java.util.Collections;
 import java.util.Optional;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
@@ -36,10 +38,11 @@ class UnknownEntryFacetListenerTest {
             Seq$.MODULE$.<String>newBuilder().result());
 
     ListFilesCommand logicalPlan =
-        new ListFilesCommand(Seq$.MODULE$.<String>newBuilder().$plus$eq("./test.file").result());
+        new ListFilesCommand(
+            ScalaConversionUtils.fromList(Collections.singletonList("./test.file")));
     Project project =
         new Project(
-            Seq$.MODULE$.<NamedExpression>newBuilder().$plus$eq(reference).result(), logicalPlan);
+            ScalaConversionUtils.fromList(Collections.singletonList(reference)), logicalPlan);
 
     UnknownEntryFacet facet = underTest.build(project).get();
 
@@ -85,13 +88,13 @@ class UnknownEntryFacetListenerTest {
             false,
             Metadata$.MODULE$.fromJson("{\"__CHAR_VARCHAR_TYPE_STRING\":\"varchar(64)\"}"),
             ExprId.apply(1L),
-            Seq$.MODULE$.<String>newBuilder().result());
+            ScalaConversionUtils.asScalaSeqEmpty());
 
     ListFilesCommand logicalPlan =
-        new ListFilesCommand(Seq$.MODULE$.<String>newBuilder().$plus$eq("./test").result());
+        new ListFilesCommand(ScalaConversionUtils.fromList(Collections.singletonList("./test")));
     Project project =
         new Project(
-            Seq$.MODULE$.<NamedExpression>newBuilder().$plus$eq(reference).result(), logicalPlan);
+            ScalaConversionUtils.fromList(Collections.singletonList(reference)), logicalPlan);
     underTest.accept(project);
     underTest.accept(logicalPlan);
 

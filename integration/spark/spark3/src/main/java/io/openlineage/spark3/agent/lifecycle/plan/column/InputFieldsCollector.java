@@ -42,7 +42,6 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
-import scala.collection.JavaConversions;
 
 /** Traverses LogicalPlan and collect input fields with the corresponding ExprId. */
 @Slf4j
@@ -181,7 +180,7 @@ public class InputFieldsCollector {
   private static List<DatasetIdentifier> extractDatasetIdentifier(HadoopFsRelation relation) {
     List<DatasetIdentifier> inputDatasets = new ArrayList<DatasetIdentifier>();
     List<Path> paths =
-        JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
+        ScalaConversionUtils.fromSeq(relation.location().rootPaths()).stream()
             .collect(Collectors.toList());
 
     for (Path p : paths) {

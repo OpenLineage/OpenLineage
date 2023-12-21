@@ -23,6 +23,7 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Guice;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Injector;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Key;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Module;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
@@ -37,7 +38,6 @@ import org.apache.spark.sql.sources.TableScan;
 import org.apache.spark.sql.types.StructType;
 import org.mockito.Mockito;
 import scala.Option;
-import scala.collection.JavaConversions;
 import scala.collection.immutable.Map;
 import scala.runtime.AbstractFunction0;
 
@@ -103,7 +103,7 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
           bqModule,
           new SparkBigQueryConnectorModule(
               sparkSession,
-              JavaConversions.<String, String>mapAsJavaMap(parameters),
+              ScalaConversionUtils.<String, String>fromMap(parameters),
               Collections.emptyMap(),
               Optional.ofNullable(
                   schema.getOrElse(

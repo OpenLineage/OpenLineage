@@ -21,7 +21,6 @@ import org.apache.spark.scheduler.StageInfo;
 import org.apache.spark.sql.execution.ShuffledRowRDD;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.storage.RDDInfo;
-import scala.collection.JavaConversions;
 import scala.collection.Seq;
 
 public class Rdds {
@@ -32,7 +31,8 @@ public class Rdds {
     if (rdd instanceof ShuffledRowRDD) {
       rdds.addAll(flattenRDDs(((ShuffledRowRDD) rdd).dependency().rdd()));
     }
-    Collection<Dependency<?>> deps = JavaConversions.asJavaCollection(rdd.dependencies());
+    Seq<Dependency<?>> dependencies = rdd.dependencies();
+    Collection<Dependency<?>> deps = ScalaConversionUtils.fromSeq(dependencies);
     for (Dependency<?> dep : deps) {
       rdds.addAll(flattenRDDs(dep.rdd()));
     }
@@ -42,7 +42,7 @@ public class Rdds {
   static String toString(SparkListenerJobStart jobStart) {
     StringBuilder sb = new StringBuilder();
     sb.append("start: ").append(jobStart.properties().toString()).append("\n");
-    List<StageInfo> stageInfos = JavaConversions.seqAsJavaList(jobStart.stageInfos());
+    List<StageInfo> stageInfos = ScalaConversionUtils.fromSeq(jobStart.stageInfos());
     for (StageInfo stageInfo : stageInfos) {
       sb.append("  ")
           .append("stageInfo: ")
@@ -50,7 +50,7 @@ public class Rdds {
           .append(" ")
           .append(stageInfo.name())
           .append("\n");
-      List<RDDInfo> rddInfos = JavaConversions.seqAsJavaList(stageInfo.rddInfos());
+      List<RDDInfo> rddInfos = ScalaConversionUtils.fromSeq(stageInfo.rddInfos());
       for (RDDInfo rddInfo : rddInfos) {
         sb.append("    ").append("rddInfo: ").append(rddInfo).append("\n");
       }

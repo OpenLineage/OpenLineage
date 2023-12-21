@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.SparkPropertyFacet;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +22,6 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.junit.jupiter.api.Test;
-import scala.collection.Seq$;
 
 public class SparkPropertyFacetBuilderTest {
 
@@ -79,7 +79,8 @@ public class SparkPropertyFacetBuilderTest {
 
     Map<String, OpenLineage.RunFacet> runFacetMap = new HashMap<>();
     builder.build(
-        new SparkListenerJobStart(1, 1L, Seq$.MODULE$.empty(), new Properties()), runFacetMap::put);
+        new SparkListenerJobStart(1, 1L, ScalaConversionUtils.asScalaSeqEmpty(), new Properties()),
+        runFacetMap::put);
 
     assertThat(runFacetMap).hasEntrySatisfying("spark_properties", runFacetConsumer);
   }
