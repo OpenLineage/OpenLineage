@@ -23,7 +23,6 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.ResolvedTable;
-import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTable;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -33,12 +32,9 @@ import org.apache.spark.sql.catalyst.plans.logical.TableSpec;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
-import org.apache.spark.sql.connector.expressions.Transform;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.Option;
-import scala.collection.Seq;
-import scala.collection.Seq$;
 
 public class CreateReplaceInputDatasetBuilderTest {
   OpenLineageContext openLineageContext =
@@ -57,7 +53,7 @@ public class CreateReplaceInputDatasetBuilderTest {
           catalog,
           mock(Identifier.class),
           mock(Table.class),
-          (Seq<Attribute>) Seq$.MODULE$.empty());
+          ScalaConversionUtils.asScalaSeqEmpty());
 
   TableSpec tableSpec = mock(TableSpec.class);
 
@@ -89,7 +85,7 @@ public class CreateReplaceInputDatasetBuilderTest {
     CreateTableAsSelect node =
         new CreateTableAsSelect(
             namePlan,
-            (Seq<Transform>) Seq$.MODULE$.empty(),
+            ScalaConversionUtils.asScalaSeqEmpty(),
             query,
             tableSpec,
             null,
