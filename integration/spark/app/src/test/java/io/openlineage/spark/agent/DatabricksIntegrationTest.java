@@ -12,11 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.databricks.sdk.WorkspaceClient;
 import com.databricks.sdk.core.DatabricksConfig;
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFieldsAdditional;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -175,5 +177,62 @@ public class DatabricksIntegrationTest {
     assertThat(outputDataset.getNamespace()).isEqualTo(outputDataset.getNamespace());
     assertThat(inputDataset.getName()).isEqualTo(inputDataset.getName());
     assertThat(runEvents.size()).isLessThan(20);
+  }
+
+  @Test
+  @SneakyThrows
+  void testMergeInto() {
+    List<RunEvent> runEvents = runScript(workspace, clusterId, "merge_into.py");
+
+    RunEvent event =
+        runEvents.stream()
+            .filter(runEvent -> runEvent.getOutputs().size() > 0)
+            .filter(runEvent -> runEvent.getOutputs().get(0).getFacets() != null)
+            .filter(runEvent -> runEvent.getOutputs().get(0).getFacets().getColumnLineage() != null)
+            .findFirst()
+            .get();
+
+    Map<String, ColumnLineageDatasetFacetFieldsAdditional> fields =
+        event
+            .getOutputs()
+            .get(0)
+            .getFacets()
+            .getColumnLineage()
+            .getFields()
+            .getAdditionalProperties();
+
+    assertThat(event.getOutputs()).hasSize(1);
+    assertThat(event.getOutputs().get(0).getName()).endsWith("events");
+
+    assertThat(event.getInputs()).hasSize(2);
+    assertThat(event.getInputs().stream().map(d -> d.getName()).collect(Collectors.toList()))
+        .containsExactlyInAnyOrder(
+            "/user/hive/warehouse/test_db.db/updates", "/user/hive/warehouse/test_db.db/events");
+
+    assertThat(fields).hasSize(2);
+    assertThat(fields.get("last_updated_at").getInputFields()).hasSize(1);
+    assertThat(fields.get("last_updated_at").getInputFields().get(0))
+        .hasFieldOrPropertyWithValue("namespace", "dbfs")
+        .hasFieldOrPropertyWithValue("name", "/user/hive/warehouse/test_db.db/updates")
+        .hasFieldOrPropertyWithValue("field", "updated_at");
+
+    assertThat(fields.get("event_id").getInputFields()).hasSize(2);
+    assertThat(
+            fields.get("event_id").getInputFields().stream()
+                .filter(e -> e.getName().endsWith("updates"))
+                .findFirst()
+                .get())
+        .hasFieldOrPropertyWithValue("namespace", "dbfs")
+        .hasFieldOrPropertyWithValue("name", "/user/hive/warehouse/test_db.db/updates")
+        .hasFieldOrPropertyWithValue("field", "event_id");
+
+    assertThat(
+            fields.get("event_id").getInputFields().stream()
+                .filter(e -> e.getName().endsWith("events"))
+                .findFirst()
+                .get())
+        .hasFieldOrPropertyWithValue("namespace", "dbfs")
+        .hasFieldOrPropertyWithValue("name", "/user/hive/warehouse/test_db.db/events")
+        .hasFieldOrPropertyWithValue("field", "event_id");
   }
 }

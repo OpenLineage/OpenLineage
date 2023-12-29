@@ -6,12 +6,9 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.OutputDataset;
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -38,11 +35,6 @@ public class MergeIntoCommandOutputDatasetBuilder
       target = ((SubqueryAlias) target).child();
     }
 
-    return delegate(
-            context.getOutputDatasetQueryPlanVisitors(), context.getOutputDatasetBuilders(), event)
-        .applyOrElse(
-            target, ScalaConversionUtils.toScalaFn((lp) -> Collections.<OutputDataset>emptyList()))
-        .stream()
-        .collect(Collectors.toList());
+    return delegate(target, event);
   }
 }
