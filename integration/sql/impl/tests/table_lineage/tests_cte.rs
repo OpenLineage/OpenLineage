@@ -47,7 +47,7 @@ fn parse_bugged_cte() {
     let meta = parse_sql(sql, &PostgreSqlDialect {}, None).unwrap();
     assert_eq!(meta.errors.len(), 1);
     assert_eq!(
-        meta.errors.get(0).unwrap(),
+        meta.errors.first().unwrap(),
         &ExtractionError {
             index: 0,
             message: "Expected ), found: user_id".to_string(),
