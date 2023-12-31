@@ -90,7 +90,7 @@ dependencies {
 
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-    implementation 'org.javassist:javassist:3.30.1-GA'
+    implementation 'org.javassist:javassist:3.30.2-GA'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.3'
 
     testImplementation "org.apache.flink:flink-java:$flinkVersion"
