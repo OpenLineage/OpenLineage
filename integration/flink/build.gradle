@@ -90,7 +90,7 @@ dependencies {
 
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-    implementation 'org.javassist:javassist:3.30.1-GA'
+    implementation 'org.javassist:javassist:3.30.2-GA'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.3'
 
     testImplementation "org.apache.flink:flink-java:$flinkVersion"
@@ -109,7 +109,7 @@ dependencies {
     testImplementation 'org.mock-server:mockserver-client-java:5.12.0'
     testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.2.0'
     testImplementation 'com.github.tomakehurst:wiremock:3.0.1'
-    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.22.0'
+    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.22.1'
 
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
