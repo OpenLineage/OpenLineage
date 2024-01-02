@@ -79,9 +79,14 @@ public class IcebergHandler implements CatalogHandler {
                     Map.Entry::getValue));
 
     log.info(catalogConf.toString());
-    if (catalogConf.isEmpty() || !catalogConf.containsKey(TYPE)) {
-      throw new UnsupportedCatalogException(catalogName);
+    if (!catalogConf.isEmpty() && catalogConf.containsKey(TYPE)) {
+      if ("iceberg".equals(catalogName) && "org.apache.iceberg.nessie.NessieCatalog".equals(catalogConf.get("catalog-impl"))) {
+          log.info("Using Iceberg with NessieCatalog");
+      } else {
+          throw new UnsupportedCatalogException(catalogName);
+      }
     }
+
     log.info(catalogConf.get(TYPE));
 
     String warehouse = catalogConf.get(CatalogProperties.WAREHOUSE_LOCATION);
@@ -101,7 +106,7 @@ public class IcebergHandler implements CatalogHandler {
       di.withSymlink(
           getRestIdentifier(
               session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
-    } else if (catalogConf.get(TYPE).equals("nessie")) {
+    } else if (catalogConf.get(TYPE).equals("iceberg") && "org.apache.iceberg.nessie.NessieCatalog".equals(catalogConf.get("catalog-impl"))) {
       di.withSymlink(
           getNessieIdentifier(
               session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
