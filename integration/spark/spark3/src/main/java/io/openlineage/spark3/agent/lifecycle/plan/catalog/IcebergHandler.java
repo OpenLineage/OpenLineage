@@ -36,6 +36,7 @@ public class IcebergHandler implements CatalogHandler {
   private final OpenLineageContext context;
 
   private static final String TYPE = "type";
+  private static final String CATALOG_IMPL = "catalog-impl";
 
   public IcebergHandler(OpenLineageContext context) {
     this.context = context;
@@ -79,7 +80,8 @@ public class IcebergHandler implements CatalogHandler {
                     Map.Entry::getValue));
 
     log.info(catalogConf.toString());
-    if (catalogConf.isEmpty() || !catalogConf.containsKey(TYPE)) {
+    String catalogType = getCatalogType(catalogConf);
+    if (catalogType == null) {
       throw new UnsupportedCatalogException(catalogName);
     }
     log.info(catalogConf.get(TYPE));
@@ -87,24 +89,29 @@ public class IcebergHandler implements CatalogHandler {
     String warehouse = catalogConf.get(CatalogProperties.WAREHOUSE_LOCATION);
     DatasetIdentifier di = PathUtils.fromPath(new Path(warehouse, identifier.toString()));
 
-    if (catalogConf.get(TYPE).equals("hive")) {
+    if (catalogType.equals("hive")) {
       di.withSymlink(
           getHiveIdentifier(
               session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
-    } else if (catalogConf.get(TYPE).equals("hadoop")) {
+    } else if (catalogType.equals("hadoop")) {
       di.withSymlink(
           identifier.toString(),
           StringUtils.substringBeforeLast(
               di.getName(), File.separator), // parent location from a name becomes a namespace
           DatasetIdentifier.SymlinkType.TABLE);
-    } else if (catalogConf.get(TYPE).equals("rest")) {
+    } else if (catalogType.equals("rest")) {
       di.withSymlink(
           getRestIdentifier(
               session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
-    } else if (catalogConf.get(TYPE).equals("nessie")) {
+    } else if (catalogType.equals("nessie")) {
       di.withSymlink(
           getNessieIdentifier(
               session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
+    } else if (catalogType.equals("glue")) {
+      di.withSymlink(
+          identifier.toString(),
+          StringUtils.substringBeforeLast(di.getName(), File.separator),
+          DatasetIdentifier.SymlinkType.TABLE);
     }
 
     return di;
@@ -177,5 +184,16 @@ public class IcebergHandler implements CatalogHandler {
   @Override
   public String getName() {
     return "iceberg";
+  }
+
+  private String getCatalogType(Map<String, String> catalogConf) {
+    if (catalogConf.containsKey(TYPE)) {
+      return catalogConf.get(TYPE);
+    } else if (catalogConf.containsKey(CATALOG_IMPL)
+        && catalogConf.get(CATALOG_IMPL).endsWith("GlueCatalog")) {
+      return "glue";
+    } else {
+      return null;
+    }
   }
 }
