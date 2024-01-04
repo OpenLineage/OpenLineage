@@ -2,12 +2,18 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.7.0...HEAD)
 
+### Added
+* **Spark: Support `MERGE INTO` queries on Databricks** [`#2283`](https://github.com/OpenLineage/OpenLineage/pull/2283) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Support custom plan nodes used when running `MERGE INTO` queries on Databricks runtime.*
+
+### Fixed
+* **Spark: Fix `removePathPattern` feature** [`#2350`](https://github.com/OpenLineage/OpenLineage/pull/2350) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Refactor code to make sure that all datasets sent are processed through `removePathPattern` if configured to do so.*
+
 ## [1.7.0](https://github.com/OpenLineage/OpenLineage/compare/1.6.2...1.7.0) - 2023-12-21
 ### Added
 * **Airflow: add parent run facet to `COMPLETE` and `FAIL` events in Airflow integration** [`#2320`](https://github.com/OpenLineage/OpenLineage/pull/2320) [@kacpermuda](https://github.com/kacpermuda)  
     *Adds a parent run facet to all events in the Airflow integration.*
-* **Spark: Support `MERGE INTO` queries on Databricks** [`#2283`](https://github.com/OpenLineage/OpenLineage/pull/2283) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Support custom plan nodes used when running `MERGE INTO` queries on Databricks runtime.*
 
 ### Fixed
 * **Airflow: repair up.sh for MacOS** [`#2316`](https://github.com/OpenLineage/OpenLineage/pull/2316) [`#2318`](https://github.com/OpenLineage/OpenLineage/pull/2318) [@kacpermuda](https://github.com/kacpermuda)  
