@@ -46,7 +46,7 @@ repositories {
 archivesBaseName='openlineage-spark-spark3'
 
 ext {
-    assertjVersion = '3.24.2'
+    assertjVersion = '3.25.1'
     junit5Version = '5.10.1'
     mockitoVersion = '4.11.0'
     sparkVersion = '3.3.1'
