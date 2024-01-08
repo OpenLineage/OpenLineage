@@ -17,7 +17,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -100,6 +102,9 @@ public class SparkIcebergIntegrationTest {
                 "spark.sql.extensions",
                 "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
             .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
+            .config(
+                "spark.openlineage.dataset.removePath.pattern",
+                "(.*)(?<remove>\\_666)") // removes _666 from dataset name
             .getOrCreate();
 
     spark.sparkContext().setLogLevel("WARN");
@@ -286,6 +291,32 @@ public class SparkIcebergIntegrationTest {
   }
 
   @Test
+  void testRemovePathPattern() {
+    clearTables("tbl_remove_path_666", "temp", "input_table_666");
+    createTempDataset().createOrReplaceTempView("temp");
+
+    spark.sql("CREATE TABLE input_table_666 USING iceberg AS SELECT * FROM temp");
+    spark.sql("CREATE TABLE tbl_remove_path_666 USING iceberg AS SELECT a FROM input_table_666");
+
+    List<RunEvent> jobEvents =
+        getEventsEmitted().stream()
+            .filter(e -> e.getJob().getName().contains("default_tbl_remove_path"))
+            .collect(Collectors.toList());
+
+    assertThat(
+            jobEvents.stream()
+                .filter(e -> !e.getOutputs().isEmpty())
+                .filter(e -> e.getOutputs().get(0).getName().endsWith("tbl_remove_path")))
+        .isNotEmpty();
+
+    assertThat(
+            jobEvents.stream()
+                .filter(e -> !e.getInputs().isEmpty())
+                .filter(e -> e.getInputs().get(0).getName().endsWith("input_table")))
+        .isNotEmpty();
+  }
+
+  @Test
   void testDebugFacet() {
     clearTables("iceberg_temp", "temp");
     createTempDataset().createOrReplaceTempView("temp");
@@ -364,5 +395,14 @@ public class SparkIcebergIntegrationTest {
     Arrays.asList(tables).stream()
         .filter(t -> spark.catalog().tableExists(t))
         .forEach(t -> spark.sql("DROP TABLE IF EXISTS " + t));
+  }
+
+  private List<RunEvent> getEventsEmitted() {
+    HttpRequest[] httpRequests =
+        mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage"));
+
+    return Arrays.asList(httpRequests).stream()
+        .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+        .collect(Collectors.toList());
   }
 }

@@ -31,6 +31,7 @@ import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.RemovePathPatternUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -308,8 +309,9 @@ class OpenLineageRunEventBuilder {
     runEventBuilder
         .run(runBuilder.build())
         .job(jobBuilder.facets(jobFacets).build())
-        .inputs(inputDatasets)
-        .outputs(outputDatasets);
+        .inputs(RemovePathPatternUtils.removeInputsPathPattern(openLineageContext, inputDatasets))
+        .outputs(
+            RemovePathPatternUtils.removeOutputsPathPattern(openLineageContext, outputDatasets));
 
     HookUtils.preBuild(openLineageContext, runEventBuilder);
     return runEventBuilder.build();
