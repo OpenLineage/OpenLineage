@@ -58,7 +58,8 @@ public class JdbcColumnLineageInputCollectorTest {
   void setup() {
     when(relation.jdbcOptions()).thenReturn(jdbcOptions);
 
-    scala.collection.immutable.Map<String, String> properties = ScalaConversionUtils.<String, String>asScalaMapEmpty();
+    scala.collection.immutable.Map<String, String> properties =
+        ScalaConversionUtils.<String, String>asScalaMapEmpty();
     when(jdbcOptions.parameters())
         .thenReturn(CaseInsensitiveMap$.MODULE$.<String>apply(properties));
   }
