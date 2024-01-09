@@ -114,7 +114,8 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
                         }
                       })),
               DataSourceVersion.V1,
-              false));
+              false,
+              Optional.empty()));
     }
 
     public void setTestModule(Module testModule) {
