@@ -404,25 +404,23 @@ def test_build_dag_run_id_uses_correct_methods_underneath():
 
 
 def test_build_task_instance_run_id_is_valid_uuid():
-    task_id = "task_1"
-    execution_date = "2023-01-01"
-    try_number = 1
-    result = OpenLineageAdapter.build_task_instance_run_id(task_id, execution_date, try_number)
+    result = OpenLineageAdapter.build_task_instance_run_id("dag_id", "task_id", "execution_date", 1)
     assert uuid.UUID(result)
 
 
 def test_build_task_instance_run_id_different_inputs_gives_different_results():
-    result1 = OpenLineageAdapter.build_task_instance_run_id("task1", "2023-01-01", 1)
-    result2 = OpenLineageAdapter.build_task_instance_run_id("task2", "2023-01-02", 2)
+    result1 = OpenLineageAdapter.build_task_instance_run_id("dag_id", "task1", "2023-01-01", 1)
+    result2 = OpenLineageAdapter.build_task_instance_run_id("dag_id", "task2", "2023-01-02", 2)
     assert result1 != result2
 
 
 def test_build_task_instance_run_id_uses_correct_methods_underneath():
+    dag_id = "dag_id"
     task_id = "task_1"
     execution_date = "2023-01-01"
     try_number = 1
     expected = str(
-        uuid.uuid3(uuid.NAMESPACE_URL, f"{_DAG_NAMESPACE}.{task_id}.{execution_date}.{try_number}")
+        uuid.uuid3(uuid.NAMESPACE_URL, f"{_DAG_NAMESPACE}.{dag_id}.{task_id}.{execution_date}.{try_number}")
     )
-    actual = OpenLineageAdapter.build_task_instance_run_id(task_id, execution_date, try_number)
+    actual = OpenLineageAdapter.build_task_instance_run_id(dag_id, task_id, execution_date, try_number)
     assert actual == expected

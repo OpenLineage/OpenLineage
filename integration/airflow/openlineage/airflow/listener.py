@@ -122,7 +122,7 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
         parent_run_id = OpenLineageAdapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
 
         task_uuid = OpenLineageAdapter.build_task_instance_run_id(
-            task.task_id, ti.execution_date, ti._try_number
+            dag.dag_id, task.task_id, ti.execution_date, ti._try_number
         )
 
         task_metadata = extractor_manager.extract_metadata(dagrun, task, task_uuid=task_uuid)
@@ -161,7 +161,7 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
     parent_run_id = OpenLineageAdapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
 
     task_uuid = OpenLineageAdapter.build_task_instance_run_id(
-        task.task_id, task_instance.execution_date, task_instance._try_number
+        dag.dag_id, task.task_id, task_instance.execution_date, task_instance._try_number
     )
 
     def on_success():
@@ -190,7 +190,7 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
     parent_run_id = OpenLineageAdapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
 
     task_uuid = OpenLineageAdapter.build_task_instance_run_id(
-        task.task_id, task_instance.execution_date, task_instance._try_number
+        dag.dag_id, task.task_id, task_instance.execution_date, task_instance._try_number
     )
 
     def on_failure():

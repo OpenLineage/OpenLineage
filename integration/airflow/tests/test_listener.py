@@ -205,7 +205,7 @@ def test_running_task_correctly_calls_adapter_build_ti_run_id_method(
     task_instance.state = state
 
     on_task_instance_running(None, task_instance, None)
-    mock_adapter.build_task_instance_run_id.assert_called_once_with("task_id", "execution_date", 1)
+    mock_adapter.build_task_instance_run_id.assert_called_once_with("dag_id", "task_id", "execution_date", 1)
 
 
 @pytest.mark.parametrize("state", TaskInstanceState)
@@ -220,7 +220,7 @@ def test_failed_task_correctly_calls_adapter_build_ti_run_id_method(
     task_instance.state = state
 
     on_task_instance_failed(None, task_instance, None)
-    mock_adapter.build_task_instance_run_id.assert_called_with("task_id", "execution_date", 1)
+    mock_adapter.build_task_instance_run_id.assert_called_with("dag_id", "task_id", "execution_date", 1)
 
 
 @pytest.mark.parametrize("state", TaskInstanceState)
@@ -235,4 +235,4 @@ def test_successful_task_correctly_calls_adapter_build_ti_run_id_method(
     task_instance.state = state
 
     on_task_instance_success(None, task_instance, None)
-    mock_adapter.build_task_instance_run_id.assert_called_with("task_id", "execution_date", 1)
+    mock_adapter.build_task_instance_run_id.assert_called_with("dag_id", "task_id", "execution_date", 1)
