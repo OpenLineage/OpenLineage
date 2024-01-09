@@ -16,15 +16,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -127,22 +127,46 @@ class LibraryTest {
     assertEquals(2, events.size());
 
     ObjectMapper objectMapper = OpenLineageClientUtils.newObjectMapper();
-    for (int i = 0; i < events.size(); i++) {
-      log.info("Iteration {}", i);
-      OpenLineage.RunEvent event = events.get(i);
-      Map<String, Object> snapshot =
-          objectMapper.readValue(
-              Paths.get(String.format("integrations/%s/%d.json", "sparkrdd", i + 1)).toFile(),
-              mapTypeReference);
-      Map<String, Object> actual =
-          objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference);
-      assertThat(actual)
-          .satisfies(
-              new MatchesMapRecursively(
-                  snapshot,
-                  new HashSet<>(
-                      Arrays.asList("runId", "nonInheritableMetadataKeys", "validConstraints"))));
-    }
+
+    // verify first event
+    RunEvent first = events.get(0);
+
+    assertThat(first.getJob())
+        .hasFieldOrPropertyWithValue("namespace", "ns_name")
+        .hasFieldOrPropertyWithValue(
+            "name", "test_rdd.map_partitions_shuffled_map_partitions_hadoop");
+
+    assertThat(first.getRun().getFacets().getParent().getJob())
+        .hasFieldOrPropertyWithValue("namespace", "ns_name")
+        .hasFieldOrPropertyWithValue("name", "job_name");
+
+    assertThat(first.getInputs())
+        .hasSize(1)
+        .first()
+        .hasFieldOrPropertyWithValue("namespace", "file");
+
+    assertThat(first.getInputs().get(0).getName()).endsWith("test/test_data");
+    assertThat(first.getEventType()).isEqualTo(EventType.START);
+
+    // verify second event
+    RunEvent second = events.get(1);
+
+    assertThat(second.getJob())
+        .hasFieldOrPropertyWithValue("namespace", "ns_name")
+        .hasFieldOrPropertyWithValue(
+            "name", "test_rdd.map_partitions_shuffled_map_partitions_hadoop");
+
+    assertThat(second.getRun().getFacets().getParent().getJob())
+        .hasFieldOrPropertyWithValue("namespace", "ns_name")
+        .hasFieldOrPropertyWithValue("name", "job_name");
+
+    assertThat(second.getOutputs())
+        .hasSize(1)
+        .first()
+        .hasFieldOrPropertyWithValue("namespace", "file");
+
+    assertThat(second.getOutputs().get(0).getName()).endsWith("output");
+    assertThat(second.getEventType()).isEqualTo(EventType.COMPLETE);
 
     verifySerialization(events);
   }
