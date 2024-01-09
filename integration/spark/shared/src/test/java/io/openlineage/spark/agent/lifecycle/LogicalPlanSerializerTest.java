@@ -65,8 +65,8 @@ import org.junit.jupiter.api.Test;
 import org.postgresql.Driver;
 import scala.Option;
 import scala.collection.Seq;
-import scala.collection.Seq$;
 import scala.collection.immutable.HashMap;
+import scala.collection.immutable.IndexedSeq;
 
 class LogicalPlanSerializerTest {
   private static final String TEST_DATA = "test_data";
@@ -139,6 +139,7 @@ class LogicalPlanSerializerTest {
 
   @Test
   void testSerializeLogicalPlanReturnsAlwaysValidJson() throws IOException {
+
     LogicalPlan notSerializablePlan =
         new LogicalPlan() {
           @Override
@@ -146,8 +147,17 @@ class LogicalPlanSerializerTest {
             return null;
           }
 
+          public LogicalPlan withNewChildrenInternal(
+              scala.collection.IndexedSeq<LogicalPlan> newChildren) {
+            return null;
+          }
+
           @Override
           public Seq<LogicalPlan> children() {
+            return null;
+          }
+
+          public LogicalPlan withNewChildrenInternal(IndexedSeq<LogicalPlan> newChildren) {
             return null;
           }
 
@@ -355,7 +365,16 @@ class LogicalPlanSerializerTest {
 
           @Override
           public Seq<LogicalPlan> children() {
-            return Seq$.MODULE$.empty();
+            return ScalaConversionUtils.asScalaSeqEmpty();
+          }
+
+          public LogicalPlan withNewChildrenInternal(IndexedSeq<LogicalPlan> newChildren) {
+            return null;
+          }
+
+          public LogicalPlan withNewChildrenInternal(
+              scala.collection.IndexedSeq<LogicalPlan> newChildren) {
+            return null;
           }
 
           @Override
@@ -399,7 +418,16 @@ class LogicalPlanSerializerTest {
 
           @Override
           public Seq<LogicalPlan> children() {
-            return Seq$.MODULE$.empty();
+            return ScalaConversionUtils.asScalaSeqEmpty();
+          }
+
+          public LogicalPlan withNewChildrenInternal(IndexedSeq<LogicalPlan> newChildren) {
+            return null;
+          }
+
+          public LogicalPlan withNewChildrenInternal(
+              scala.collection.IndexedSeq<LogicalPlan> newChildren) {
+            return null;
           }
 
           @Override
