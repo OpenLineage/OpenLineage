@@ -47,6 +47,7 @@ configurations {
     lombok
     spark2.extendsFrom testImplementation
     spark3.extendsFrom testImplementation
+    spark31.extendsFrom testImplementation
     spark32.extendsFrom testImplementation
     spark33.extendsFrom testImplementation
     spark34.extendsFrom testImplementation
@@ -72,7 +73,7 @@ ext {
             "3.4": ["module": "spark34", "scala": "2.12", "delta": "2.4.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.13.0-spark_3.4", "iceberg": "iceberg-spark-runtime-3.4_2.12:1.3.0", "hadoopclient": "3.3.4"],
             "3.3": ["module": "spark33", "scala": "2.12", "delta": "2.1.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.3", "iceberg": "iceberg-spark-runtime-3.3_2.12:0.14.0", "hadoopclient": "3.3.4"],
             "3.2": ["module": "spark32", "scala": "2.12", "delta": "1.1.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.2", "iceberg": "iceberg-spark-runtime-3.2_2.12:0.14.0", "hadoopclient": "3.3.4"],
-            "3.1": ["module": "spark3",  "scala": "2.12", "delta": "1.0.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.1", "iceberg": "iceberg-spark-runtime-3.1_2.12:0.13.0", "hadoopclient": "3.3.4"],
+            "3.1": ["module": "spark31", "scala": "2.12", "delta": "1.0.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.1", "iceberg": "iceberg-spark-runtime-3.1_2.12:0.13.0", "hadoopclient": "3.3.4"],
             "2.4": ["module": "spark2",  "scala": "2.11", "delta": "NA",    "gcs": "hadoop2-2.2.9", "snowflake": "2.9.3-spark_2.4",  "iceberg": "NA", "hadoopclient": "2.10.2"]
     ]
     versions = versionsMap[shortVersion]
@@ -94,6 +95,7 @@ dependencies {
     implementation(project(path: ":shared", configuration: 'shadow'))
     implementation(project(path: ":spark2"))
     implementation(project(path: ":spark3"))
+    implementation(project(path: ":spark31"))
     implementation(project(path: ":spark32"))
     implementation(project(path: ":spark33"))
     implementation(project(path: ":spark34"))
@@ -263,17 +265,17 @@ test {
 task copyDependencies(type: Copy) {
     dependsOn shadowJar
     dependsOn(
-            ':spark2:shadowJar',':spark3:shadowJar',
+            ':spark2:shadowJar',':spark3:shadowJar', ':spark31:shadowJar',
             ':spark32:shadowJar', ':spark33:shadowJar',
             ':spark34:shadowJar', ':spark35:shadowJar'
     )
     dependsOn(
-            ':spark2:jar', ':spark3:jar',
+            ':spark2:jar', ':spark3:jar', ':spark31:jar',
             ':spark32:jar', ':spark33:jar',
             ':spark34:jar', ':spark35:jar'
     )
     dependsOn(
-            ':spark2:testFixturesJar', ':spark3:testFixturesJar',
+            ':spark2:testFixturesJar', ':spark3:testFixturesJar', ':spark31:testFixturesJar',
             ':spark32:testFixturesJar', ':spark33:testFixturesJar',
             ':spark34:testFixturesJar', ':spark35:testFixturesJar'
     )
@@ -349,6 +351,7 @@ shadowJar {
         exclude (project(":shared"))
         exclude (project(":spark2"))
         exclude (project(":spark3"))
+        exclude (project(":spark31"))
         exclude (project(":spark32"))
         exclude (project(":spark33"))
         exclude (project(":spark34"))

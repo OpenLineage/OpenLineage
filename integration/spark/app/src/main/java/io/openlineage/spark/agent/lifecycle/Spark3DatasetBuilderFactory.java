@@ -15,7 +15,6 @@ import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisito
 import io.openlineage.spark.agent.util.DeltaUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.AlterTableDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateReplaceDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputDatasetBuilder;
@@ -30,6 +29,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandOutputDatasetB
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
+import io.openlineage.spark31.agent.lifecycle.plan.AlterTableDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoDelta11ColumnLineageVisitor;
 import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoIceberg013ColumnLineageVisitor;
 import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoCommandEdgeColumnLineageBuilder;
