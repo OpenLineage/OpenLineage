@@ -58,7 +58,6 @@ import org.apache.spark.scheduler.SparkListenerStageSubmitted;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.apache.spark.util.SerializableJobConf;
-import scala.collection.Seq;
 import scala.runtime.AbstractFunction0;
 
 @Slf4j
@@ -138,7 +137,7 @@ class RddExecutionContext implements ExecutionContext {
    * In spark2 we can get it by "config$1" field.<br>
    * In spark3 we can get it by "arg$1" field
    *
-   * @param fn
+   * @param resultStage
    * @return HadoopMapRedWriteConfigUtil field
    * @throws NoSuchFieldException
    */
@@ -173,8 +172,7 @@ class RddExecutionContext implements ExecutionContext {
               .replaceAll(CAMEL_TO_SNAKE_CASE, "_$1") // camel case to snake case
               .toLowerCase(Locale.ROOT);
     }
-    Seq<Dependency<?>> deps = (Seq<Dependency<?>>) rdd.dependencies();
-    List<Dependency<?>> dependencies = ScalaConversionUtils.fromSeq(deps);
+    List<Dependency<?>> dependencies = ScalaConversionUtils.fromSeq(rdd.dependencies());
     if (dependencies.isEmpty()) {
       return rddName;
     }

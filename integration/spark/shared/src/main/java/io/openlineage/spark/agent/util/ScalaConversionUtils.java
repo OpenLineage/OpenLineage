@@ -19,6 +19,7 @@ import scala.Tuple2;
 import scala.collection.JavaConverters;
 import scala.collection.Set;
 import scala.collection.immutable.Seq;
+import scala.collection.mutable.Buffer;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.AbstractFunction1;
 
@@ -101,7 +102,29 @@ public class ScalaConversionUtils {
    * @return
    */
   public static <T> List<T> fromSeq(scala.collection.Seq<T> seq) {
-    return JavaConverters.bufferAsJavaListConverter(seq.<T>toBuffer()).asJava();
+    return fromBuffer(seq.<T>toBuffer());
+  }
+
+  /**
+   * Convert a {@link Seq} to a Java {@link List}.
+   *
+   * @param seq
+   * @param <T>
+   * @return
+   */
+  public static <T> List<T> fromSeq(scala.collection.immutable.Seq<T> seq) {
+    return fromBuffer(seq.<T>toBuffer());
+  }
+
+  /**
+   * Convert a {@link Seq} to a Java {@link List}.
+   *
+   * @param seq
+   * @param <T>
+   * @return
+   */
+  public static <T> List<T> fromBuffer(Buffer<T> seq) {
+    return JavaConverters.bufferAsJavaListConverter(seq).asJava();
   }
 
   /**

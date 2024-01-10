@@ -30,7 +30,6 @@ import org.apache.spark.sql.types.Metadata$;
 import org.apache.spark.sql.types.StringType$;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import scala.collection.immutable.Map$;
 
 public class JdbcColumnLineageExpressionCollectorTest {
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);

@@ -23,7 +23,6 @@ import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import scala.Option;
-import scala.collection.Seq$;
 import scala.collection.immutable.HashMap;
 
 public class CatalogTableTestUtils {
@@ -64,7 +63,7 @@ public class CatalogTableTestUtils {
     params.add(Option.empty());
     params.add(Option.empty());
     params.add(Option.empty());
-    params.add(Seq$.MODULE$.<String>empty());
+    params.add(ScalaConversionUtils.asScalaSeqEmpty());
     params.add(false);
     params.add(false);
     params.add(new HashMap<>());
