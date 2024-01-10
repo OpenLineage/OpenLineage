@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan;
+package io.openlineage.spark31.agent.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -13,19 +13,17 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
-import org.apache.spark.sql.catalyst.analysis.ResolvedTable;
-import org.apache.spark.sql.catalyst.plans.logical.CommentOnTable;
+import org.apache.spark.sql.catalyst.plans.logical.AlterTable;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
@@ -34,6 +32,8 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import scala.collection.immutable.HashMap;
+import scala.collection.immutable.Map;
 
 class AlterTableDatasetBuilderTest {
 
@@ -50,20 +50,15 @@ class AlterTableDatasetBuilderTest {
   Map<String, String> tableProperties = new HashMap<>();
   DatasetIdentifier di = new DatasetIdentifier("table", "db");
   Identifier identifier = mock(Identifier.class);
-  CommentOnTable alterTable = mock(CommentOnTable.class);
-
-  ResolvedTable resolvedTable = mock(ResolvedTable.class);
+  AlterTable alterTable = mock(AlterTable.class);
 
   AlterTableDatasetBuilder builder = new AlterTableDatasetBuilder(openLineageContext);
 
   @BeforeEach
   public void setUp() {
-    when(alterTable.table()).thenReturn(resolvedTable);
-    when(resolvedTable.catalog()).thenReturn(tableCatalog);
-    when(resolvedTable.identifier()).thenReturn(identifier);
-    when(resolvedTable.table()).thenReturn(table);
-    when(resolvedTable.table().schema()).thenReturn(schema);
-    when(resolvedTable.table().properties()).thenReturn(tableProperties);
+    when(alterTable.catalog()).thenReturn(tableCatalog);
+    when(alterTable.ident()).thenReturn(identifier);
+    when(table.schema()).thenReturn(schema);
   }
 
   @Test
@@ -81,7 +76,10 @@ class AlterTableDatasetBuilderTest {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
-              openLineageContext, tableCatalog, identifier, tableProperties))
+              openLineageContext,
+              tableCatalog,
+              identifier,
+              ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.empty());
 
       List<OpenLineage.OutputDataset> outputDatasets =
@@ -96,7 +94,10 @@ class AlterTableDatasetBuilderTest {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
-              openLineageContext, tableCatalog, identifier, tableProperties))
+              openLineageContext,
+              tableCatalog,
+              identifier,
+              ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.of(di));
 
       List<OpenLineage.OutputDataset> outputDatasets =
@@ -115,11 +116,17 @@ class AlterTableDatasetBuilderTest {
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockCatalog = mockStatic(CatalogUtils3.class)) {
         when(CatalogUtils3.getDatasetVersion(
-                openLineageContext, tableCatalog, identifier, tableProperties))
+                openLineageContext,
+                tableCatalog,
+                identifier,
+                ScalaConversionUtils.<String, String>fromMap(tableProperties)))
             .thenReturn(Optional.of("v2"));
 
         when(PlanUtils3.getDatasetIdentifier(
-                openLineageContext, tableCatalog, identifier, tableProperties))
+                openLineageContext,
+                tableCatalog,
+                identifier,
+                ScalaConversionUtils.<String, String>fromMap(tableProperties)))
             .thenReturn(Optional.of(di));
 
         List<OpenLineage.OutputDataset> outputDatasets =
