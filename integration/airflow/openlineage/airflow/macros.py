@@ -27,7 +27,7 @@ def lineage_run_id(task: "BaseOperator", task_instance: "TaskInstance"):
     )
     """
     return OpenLineageAdapter.build_task_instance_run_id(
-        task.task_id, task_instance.execution_date, task_instance.try_number
+        task_instance.dag_id, task.task_id, task_instance.execution_date, task_instance.try_number
     )
 
 
@@ -47,6 +47,6 @@ def lineage_parent_id(run_id: str, task: "BaseOperator", task_instance: "TaskIns
     )
     """
     job_name = OpenLineageAdapter.build_task_instance_run_id(
-        task.task_id, task_instance.execution_date, task_instance.try_number
+        task_instance.dag_id, task.task_id, task_instance.execution_date, task_instance.try_number
     )
     return f"{_JOB_NAMESPACE}/{job_name}/{run_id}"

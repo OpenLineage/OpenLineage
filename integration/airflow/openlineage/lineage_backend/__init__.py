@@ -53,7 +53,7 @@ class Backend:
         )
 
         task_uuid = OpenLineageAdapter.build_task_instance_run_id(
-            operator.task_id, task_instance.execution_date, task_instance.try_number
+            dag.dag_id, operator.task_id, task_instance.execution_date, task_instance.try_number
         )
         start, end = get_dagrun_start_end(dagrun, dag)
 
