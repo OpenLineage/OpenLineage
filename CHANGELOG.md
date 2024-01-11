@@ -2,7 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...HEAD)
 
+
 ### Added
+* **Spark: integration now emits intermediate, application level events wrapping entire job execution** [`#1672`](https://github.com/OpenLineage/OpenLineage/issues/1672) [@mobuchowski](https://github.com/mobuchowski)  
+    *Previously, Spark event model described only single actions, potentially linked only to some parent run.
 * **Flink: support multi topic Kafka Sink.** [`#2372`](https://github.com/OpenLineage/OpenLineage/pull/2372) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Support multi topic kafka sinks. Limitations: `recordSerializer` need to implement `KafkaTopicsDescriptor`. Please refer to [limitations](https://openlineage.io/docs/integrations/flink/#limitations) sections in documentation.*
 

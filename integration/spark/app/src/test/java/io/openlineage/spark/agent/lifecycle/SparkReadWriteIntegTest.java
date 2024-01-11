@@ -126,12 +126,14 @@ class SparkReadWriteIntegTest {
   @BeforeEach
   public void setUp() {
     reset(MockBigQueryRelationProvider.BIG_QUERY);
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId())
+    when(SparkAgentTestExtension.EVENT_EMITTER.getParentRunId())
         .thenReturn(Optional.of(UUID.randomUUID()));
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
-        .thenReturn("ParentJob");
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace())
-        .thenReturn("Namespace");
+    when(SparkAgentTestExtension.EVENT_EMITTER.getParentJobName())
+        .thenReturn(Optional.of("ParentJob"));
+    when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationRunId()).thenReturn(UUID.randomUUID());
+    when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationJobName())
+        .thenReturn("application-job");
+    when(SparkAgentTestExtension.EVENT_EMITTER.getJobNamespace()).thenReturn("Namespace");
   }
 
   @AfterEach
@@ -204,21 +206,21 @@ class SparkReadWriteIntegTest {
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
-        .emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(5)).emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
-    assertThat(events.get(2).getRun().getFacets().getAdditionalProperties())
+    OpenLineage.RunEvent event = events.get(3);
+    assertThat(event.getRun().getFacets().getAdditionalProperties())
         .hasEntrySatisfying(
             TestOpenLineageEventHandlerFactory.TEST_FACET_KEY,
             facet ->
                 assertThat(facet)
                     .isInstanceOf(TestOpenLineageEventHandlerFactory.TestRunFacet.class)
                     .hasFieldOrProperty("message"));
-    List<InputDataset> inputs = events.get(2).getInputs();
+    List<InputDataset> inputs = event.getInputs();
     assertEquals("bigquery", inputs.get(0).getNamespace());
     assertEquals(BigQueryUtil.friendlyTableName(tableId), inputs.get(0).getName());
 
-    List<OutputDataset> outputs = events.get(2).getOutputs();
+    List<OutputDataset> outputs = event.getOutputs();
     OutputDataset output = outputs.get(0);
     assertEquals(FILE, output.getNamespace());
     assertEquals(outputDir, output.getName());
@@ -256,8 +258,7 @@ class SparkReadWriteIntegTest {
 
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(RunEvent.class);
 
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(4))
-        .emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(4)).emit(lineageEvent.capture());
     List<RunEvent> events = lineageEvent.getAllValues();
     ObjectAssert<RunEvent> completionEvent =
         assertThat(events)
@@ -349,8 +350,7 @@ class SparkReadWriteIntegTest {
     // The CreateView action completes quickly enough that it is sometimes missed in CI (the
     // execution id is no longer in the QueryExecution map). That makes this test sometimes flaky
     // if we expect an exact count.
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(2))
-        .emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(2)).emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     Optional<OpenLineage.RunEvent> completionEvent =
         events.stream()
@@ -383,9 +383,8 @@ class SparkReadWriteIntegTest {
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
-        .emit(lineageEvent.capture());
-    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(3);
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(5)).emit(lineageEvent.capture());
+    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(4);
     assertThat(completeEvent).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     assertThat(completeEvent.getInputs())
         .first()
@@ -421,13 +420,15 @@ class SparkReadWriteIntegTest {
         .csv(csvUri);
     StaticExecutionContextFactory.waitForExecutionEnd();
 
-    reset(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT); // reset to start counting now
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace())
-        .thenReturn("theNamespace");
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
-        .thenReturn("theParentJob");
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId())
+    reset(SparkAgentTestExtension.EVENT_EMITTER); // reset to start counting now
+    when(SparkAgentTestExtension.EVENT_EMITTER.getJobNamespace()).thenReturn("theNamespace");
+    when(SparkAgentTestExtension.EVENT_EMITTER.getParentJobName())
+        .thenReturn(Optional.of("theParentJob"));
+    when(SparkAgentTestExtension.EVENT_EMITTER.getParentRunId())
         .thenReturn(Optional.of(UUID.randomUUID()));
+    when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationRunId()).thenReturn(UUID.randomUUID());
+    when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationJobName())
+        .thenReturn("application-job");
     JobConf conf = new JobConf();
     FileInputFormat.addInputPath(conf, new org.apache.hadoop.fs.Path(csvUri));
     JavaRDD<Tuple2<LongWritable, Text>> csvRdd =
@@ -448,8 +449,7 @@ class SparkReadWriteIntegTest {
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
-        .emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, times(4)).emit(lineageEvent.capture());
     OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(2);
     assertThat(completeEvent.getInputs())
         .singleElement()
@@ -481,8 +481,7 @@ class SparkReadWriteIntegTest {
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(4))
-        .emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(4)).emit(lineageEvent.capture());
     OpenLineage.RunEvent event =
         lineageEvent.getAllValues().stream()
             .filter(ev -> ev.getInputs() != null && !ev.getInputs().isEmpty())
@@ -542,10 +541,10 @@ class SparkReadWriteIntegTest {
     StaticExecutionContextFactory.waitForExecutionEnd();
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
-        .emit(lineageEvent.capture());
-    OpenLineage.RunEvent event = lineageEvent.getAllValues().get(2);
-    assertThat(lineageEvent.getAllValues().get(3))
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(5)).emit(lineageEvent.capture());
+
+    OpenLineage.RunEvent event = lineageEvent.getAllValues().get(3);
+    assertThat(lineageEvent.getAllValues().get(4))
         .hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     String kafkaNamespace =
         "kafka://"
@@ -589,11 +588,9 @@ class SparkReadWriteIntegTest {
     StaticExecutionContextFactory.waitForExecutionEnd();
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
-        .emit(lineageEvent.capture());
-    OpenLineage.RunEvent event = lineageEvent.getAllValues().get(2);
-    assertThat(lineageEvent.getAllValues().get(3))
-        .hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(5)).emit(lineageEvent.capture());
+    OpenLineage.RunEvent event = lineageEvent.getAllValues().get(4);
+    assertThat(event).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     String kafkaNamespace =
         "kafka://"
             + kafkaContainer.getHost()
@@ -635,8 +632,7 @@ class SparkReadWriteIntegTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
 
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(1))
-        .emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(1)).emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
 
     ObjectAssert<RunEvent> event =
@@ -691,8 +687,7 @@ class SparkReadWriteIntegTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
 
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(1))
-        .emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(1)).emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     ObjectAssert<RunEvent> completionEvent =
         assertThat(events)
@@ -748,8 +743,7 @@ class SparkReadWriteIntegTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
 
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(1))
-        .emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(1)).emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     OpenLineage.RunEvent lastEvent = events.get(events.size() - 1);
 

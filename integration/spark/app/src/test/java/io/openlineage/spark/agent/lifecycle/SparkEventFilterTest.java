@@ -60,7 +60,6 @@ public class SparkEventFilterTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
 
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atMost(0))
-        .emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atMost(1)).emit(lineageEvent.capture());
   }
 }

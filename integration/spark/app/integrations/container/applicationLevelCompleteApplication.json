@@ -1,0 +1,20 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "name": "generic_integration_test",
+    "namespace": "generic-namespace"
+  },
+  "run": {
+    "facets": {
+      "parent": {
+        "job": {
+          "name": "parent-job",
+          "namespace": "parent-namespace"
+        },
+        "run": {
+          "runId": "bd9c2467-3ed7-4fdc-85c2-41ebf5c73b40"
+        }
+      }
+    }
+  }
+}

@@ -5,7 +5,9 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.lifecycle.ExecutionContext.CAMEL_TO_SNAKE_CASE;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
+import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
 import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
@@ -14,9 +16,9 @@ import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
-import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -202,15 +204,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     return outputs.get(rdd);
   }
 
-  public static void emitError(Exception e) {
-    OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
-    try {
-      contextFactory.openLineageEventEmitter.emit(buildErrorLineageEvent(ol, errorRunFacet(e, ol)));
-    } catch (Exception ex) {
-      log.error("Could not emit open lineage on error", e);
-    }
-  }
-
   @SuppressWarnings(
       "PMD") // javadoc -> Closing a ByteArrayOutputStream has no effect. The methods in this class
   // can be called after the stream has been closed without generating an IOException.
@@ -225,21 +218,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     return runFacetsBuilder.build();
   }
 
-  public static OpenLineage.RunEvent buildErrorLineageEvent(
-      OpenLineage ol, OpenLineage.RunFacets runFacets) {
-    return ol.newRunEventBuilder()
-        .eventTime(ZonedDateTime.now())
-        .run(
-            ol.newRun(
-                contextFactory.openLineageEventEmitter.getParentRunId().orElse(null), runFacets))
-        .job(
-            ol.newJobBuilder()
-                .namespace(contextFactory.openLineageEventEmitter.getJobNamespace())
-                .name(contextFactory.openLineageEventEmitter.getParentJobName())
-                .build())
-        .build();
-  }
-
   private static void clear() {
     sparkSqlExecutionRegistry.clear();
     rddExecutionRegistry.clear();
@@ -248,6 +226,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onApplicationEnd(SparkListenerApplicationEnd applicationEnd) {
+    emitApplicationEndEvent(applicationEnd.time());
     close();
     super.onApplicationEnd(applicationEnd);
   }
@@ -264,26 +243,90 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
    */
   @Override
   public void onApplicationStart(SparkListenerApplicationStart applicationStart) {
-    initializeContextFactoryIfNotInitialized();
+    initializeContextFactoryIfNotInitialized(applicationStart.appName());
+    emitApplicationStartEvent(applicationStart.time());
   }
 
   private void initializeContextFactoryIfNotInitialized() {
     if (contextFactory != null || isDisabled) {
       return;
     }
+    asJavaOptional(activeSparkContext.apply())
+        .ifPresent(context -> initializeContextFactoryIfNotInitialized(context.appName()));
+  }
+
+  private void initializeContextFactoryIfNotInitialized(String appName) {
+    if (contextFactory != null || isDisabled) {
+      return;
+    }
     SparkEnv sparkEnv = SparkEnv$.MODULE$.get();
-    if (sparkEnv != null) {
-      try {
-        ArgumentParser args = ArgumentParser.parse(sparkEnv.conf());
-        contextFactory = new ContextFactory(new EventEmitter(args));
-      } catch (URISyntaxException e) {
-        log.error("Unable to parse open lineage endpoint. Lineage events will not be collected", e);
-      }
-    } else {
+    if (sparkEnv == null) {
       log.warn(
           "Open lineage listener instantiated, but no configuration could be found. "
               + "Lineage events will not be collected");
+      return;
     }
+    initializeContextFactoryIfNotInitialized(sparkEnv.conf(), appName);
+  }
+
+  private void initializeContextFactoryIfNotInitialized(SparkConf sparkConf, String appName) {
+    if (contextFactory != null || isDisabled) {
+      return;
+    }
+    try {
+      ArgumentParser args = ArgumentParser.parse(sparkConf);
+      contextFactory = new ContextFactory(new EventEmitter(args, appName));
+    } catch (URISyntaxException e) {
+      log.error("Unable to parse open lineage endpoint. Lineage events will not be collected", e);
+    }
+  }
+
+  private void emitApplicationEvent(Long time, OpenLineage.RunEvent.EventType eventType) {
+    OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
+    EventEmitter emitter = contextFactory.openLineageEventEmitter;
+    OpenLineage.RunBuilder runBuilder =
+        openLineage.newRunBuilder().runId(emitter.getApplicationRunId());
+    if (emitter.getParentRunId().isPresent()
+        && emitter.getParentJobName().isPresent()
+        && emitter.getParentJobNamespace().isPresent()) {
+      runBuilder.facets(
+          openLineage
+              .newRunFacetsBuilder()
+              .parent(
+                  openLineage.newParentRunFacet(
+                      openLineage.newParentRunFacetRun(emitter.getParentRunId().get()),
+                      openLineage.newParentRunFacetJob(
+                          emitter.getParentJobNamespace().get(), emitter.getParentJobName().get())))
+              .build());
+    }
+    OpenLineage.RunEvent applicationEvent =
+        openLineage
+            .newRunEventBuilder()
+            .eventType(eventType)
+            .eventTime(toZonedTime(time))
+            .job(
+                openLineage
+                    .newJobBuilder()
+                    .namespace(emitter.getJobNamespace())
+                    .name(
+                        emitter
+                            .getApplicationJobName()
+                            .replaceAll(CAMEL_TO_SNAKE_CASE, "_$1")
+                            .toLowerCase(Locale.ROOT))
+                    .build())
+            .run(runBuilder.build())
+            .inputs(Collections.emptyList())
+            .outputs(Collections.emptyList())
+            .build();
+    emitter.emit(applicationEvent);
+  }
+
+  private void emitApplicationStartEvent(Long time) {
+    emitApplicationEvent(time, OpenLineage.RunEvent.EventType.START);
+  }
+
+  private void emitApplicationEndEvent(Long time) {
+    emitApplicationEvent(time, OpenLineage.RunEvent.EventType.COMPLETE);
   }
 
   private static boolean checkIfDisabled() {

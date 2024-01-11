@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.EventEmitter;
@@ -19,9 +21,6 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -249,14 +248,9 @@ class RddExecutionContext implements ExecutionContext {
     eventEmitter.emit(event);
   }
 
-  protected ZonedDateTime toZonedTime(long time) {
-    Instant i = Instant.ofEpochMilli(time);
-    return ZonedDateTime.ofInstant(i, ZoneOffset.UTC);
-  }
-
   protected OpenLineage.RunFacets buildRunFacets(ErrorFacet jobError, OpenLineage ol) {
     OpenLineage.RunFacetsBuilder runFacetsBuilder = ol.newRunFacetsBuilder();
-    buildParentFacet().ifPresent(runFacetsBuilder::parent);
+    runFacetsBuilder.parent(buildApplicationParentFacet());
     if (jobError != null) {
       runFacetsBuilder.put("spark.exception", jobError);
     }
@@ -281,13 +275,11 @@ class RddExecutionContext implements ExecutionContext {
         });
   }
 
-  private Optional<OpenLineage.ParentRunFacet> buildParentFacet() {
-    return eventEmitter
-        .getParentRunId()
-        .map(
-            runId ->
-                PlanUtils.parentRunFacet(
-                    runId, eventEmitter.getParentJobName(), eventEmitter.getJobNamespace()));
+  private OpenLineage.ParentRunFacet buildApplicationParentFacet() {
+    return PlanUtils.parentRunFacet(
+        eventEmitter.getApplicationRunId(),
+        eventEmitter.getApplicationJobName(),
+        eventEmitter.getJobNamespace());
   }
 
   protected ErrorFacet buildJobErrorFacet(JobResult jobResult) {
@@ -305,7 +297,7 @@ class RddExecutionContext implements ExecutionContext {
 
     String name =
         eventEmitter
-            .getAppName()
+            .getOverriddenAppName()
             .orElse(sparkContextOption.map(SparkContext::appName).orElse("unknown"));
     String jobName = name + "." + suffix;
     return new OpenLineage.JobBuilder()

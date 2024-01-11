@@ -22,17 +22,22 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EventEmitter {
   @Getter private OpenLineageClient client;
-  @Getter private Optional<String> appName;
+  @Getter private Optional<String> overriddenAppName;
   @Getter private String jobNamespace;
-  @Getter private String parentJobName;
+  @Getter private Optional<String> parentJobName;
+  @Getter private Optional<String> parentJobNamespace;
   @Getter private Optional<UUID> parentRunId;
+  @Getter private UUID applicationRunId;
+  @Getter private String applicationJobName;
   @Getter private Optional<List<String>> customEnvironmentVariables;
 
-  public EventEmitter(ArgumentParser argument) throws URISyntaxException {
+  public EventEmitter(ArgumentParser argument, String applicationJobName)
+      throws URISyntaxException {
     this.jobNamespace = argument.getNamespace();
-    this.parentJobName = argument.getJobName();
+    this.parentJobName = Optional.ofNullable(argument.getParentJobName());
+    this.parentJobNamespace = Optional.ofNullable(argument.getParentJobNamespace());
     this.parentRunId = convertToUUID(argument.getParentRunId());
-    this.appName = Optional.ofNullable(argument.getAppName());
+    this.overriddenAppName = Optional.ofNullable(argument.getOverriddenAppName());
     this.customEnvironmentVariables =
         argument.getOpenLineageYaml().getFacetsConfig() != null
             ? argument.getOpenLineageYaml().getFacetsConfig().getCustomEnvironmentVariables()
@@ -55,6 +60,8 @@ public class EventEmitter {
                 new TransportFactory(argument.getOpenLineageYaml().getTransportConfig()).build())
             .disableFacets(disabledFacets)
             .build();
+    this.applicationJobName = applicationJobName;
+    this.applicationRunId = UUID.randomUUID();
   }
 
   public void emit(OpenLineage.RunEvent event) {

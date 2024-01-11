@@ -47,9 +47,7 @@ public class DatabricksEnvironmentFacetBuilder
     // extract some custom environment variables if needed
     openLineageContext
         .getCustomEnvironmentVariables()
-        .ifPresent(
-            envVars ->
-                envVars.forEach(envVar -> dbProperties.put(envVar, System.getenv().get(envVar))));
+        .forEach(envVar -> dbProperties.put(envVar, System.getenv().get(envVar)));
   }
 
   @Override

@@ -50,8 +50,7 @@ public class LogicalRelationBuilderTest {
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(1))
-        .emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(1)).emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
 
     assertThat(events.get(events.size() - 1).getOutputs()).isEmpty();
@@ -72,22 +71,21 @@ public class LogicalRelationBuilderTest {
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(1))
-        .emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(1)).emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
 
     assertThat(
             events.stream()
                 .flatMap(e -> e.getInputs().stream())
                 .map(e -> e.getName())
-                .filter(name -> name.endsWith("temp")))
+                .filter(name -> name != null && name.endsWith("temp")))
         .isNotEmpty();
 
     assertThat(
             events.stream()
                 .flatMap(e -> e.getOutputs().stream())
                 .map(e -> e.getName())
-                .filter(name -> name.endsWith("output_table")))
+                .filter(name -> name != null && name.endsWith("output_table")))
         .isNotEmpty();
   }
 }

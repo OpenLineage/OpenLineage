@@ -95,11 +95,6 @@ public class StaticExecutionContextFactory extends ContextFactory {
             super.end(jobEnd);
             semaphore.release();
           }
-
-          @Override
-          protected ZonedDateTime toZonedTime(long time) {
-            return getZonedTime();
-          }
         };
     return rdd;
   }
@@ -113,10 +108,10 @@ public class StaticExecutionContextFactory extends ContextFactory {
               SparkContext sparkContext = qe.sparkPlan().sparkContext();
               OpenLineageContext olContext =
                   OpenLineageContext.builder()
-                      .sparkSession(Optional.of(session))
+                      .sparkSession(session)
                       .sparkContext(sparkContext)
                       .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-                      .customEnvironmentVariables(Optional.of(Arrays.asList("TEST_VAR")))
+                      .customEnvironmentVariables(Arrays.asList("TEST_VAR"))
                       .queryExecution(qe)
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
@@ -132,11 +127,6 @@ public class StaticExecutionContextFactory extends ContextFactory {
               olContext.getOutputDatasetQueryPlanVisitors().addAll(outputDatasets);
               return new SparkSQLExecutionContext(
                   executionId, openLineageEventEmitter, olContext, runEventBuilder) {
-                @Override
-                public ZonedDateTime toZonedTime(long time) {
-                  return getZonedTime();
-                }
-
                 @Override
                 public void start(SparkListenerSQLExecutionStart startEvent) {
                   try {

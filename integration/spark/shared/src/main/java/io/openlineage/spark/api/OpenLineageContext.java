@@ -11,15 +11,17 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.Value;
-import lombok.experimental.Tolerate;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.apache.spark.SparkContext;
 import org.apache.spark.package$;
 import org.apache.spark.sql.SparkSession;
@@ -43,86 +45,78 @@ import scala.PartialFunction;
  *
  * @apiNote This interface is evolving and may change in future releases
  */
-@Value
+@RequiredArgsConstructor
+@AllArgsConstructor
 @Builder
 public class OpenLineageContext {
-  UUID runUuid = UUID.randomUUID();
+  @Default @NonNull @Getter final UUID runUuid = UUID.randomUUID();
 
-  /**
-   * Optional {@link SparkSession} instance when an application is using a Spark SQL configuration
-   */
-  @Default @NonNull Optional<SparkSession> sparkSession = Optional.empty();
+  /** {@link SparkSession} instance when an application is using a Spark SQL configuration */
+  final SparkSession sparkSession;
+
+  public Optional<SparkSession> getSparkSession() {
+    return Optional.ofNullable(sparkSession);
+  }
 
   /** The non-null {@link SparkContext} running for the application we're reporting run data for */
-  @NonNull SparkContext sparkContext;
+  @NonNull @Getter final SparkContext sparkContext;
 
   /** The list of custom environment variables to be captured */
-  Optional<List<String>> customEnvironmentVariables;
+  @Default @NonNull @Getter final List<String> customEnvironmentVariables = Collections.emptyList();
+
   /**
    * A non-null, preconfigured {@link OpenLineage} client instance for constructing OpenLineage
    * model objects
    */
-  @NonNull OpenLineage openLineage;
+  @NonNull @Getter final OpenLineage openLineage;
 
   /**
    * A non-null, but potentially empty, list of {@link LogicalPlan} visitors that can extract {@link
    * InputDataset}s from plan nodes. Useful for delegating from general input visitors to more
    * specific ones.
    */
-  @Default @NonNull
-  List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasetQueryPlanVisitors =
+  @Default @NonNull @Getter
+  final List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasetQueryPlanVisitors =
       new ArrayList<>();
 
-  @Default @NonNull
-  List<PartialFunction<Object, Collection<InputDataset>>> inputDatasetBuilders = new ArrayList<>();
+  @Default @NonNull @Getter
+  final List<PartialFunction<Object, Collection<InputDataset>>> inputDatasetBuilders =
+      new ArrayList<>();
 
   /**
    * A non-null, but potentially empty, list of {@link LogicalPlan} visitors that can extract {@link
    * OutputDataset}s from plan nodes. Useful for delegating from general output visitors to more
    * specific ones.
    */
-  @Default @NonNull
-  List<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasetQueryPlanVisitors =
+  @Default @NonNull @Getter
+  final List<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasetQueryPlanVisitors =
       new ArrayList<>();
 
-  @Default @NonNull
-  List<PartialFunction<Object, Collection<OutputDataset>>> outputDatasetBuilders =
+  @Default @NonNull @Getter
+  final List<PartialFunction<Object, Collection<OutputDataset>>> outputDatasetBuilders =
       new ArrayList<>();
 
   /**
    * List of column level lineage visitors to be added dynamically based on Spark version and
    * versions of the 3rd party libraries
    */
-  @Default @NonNull List<ColumnLevelLineageVisitor> columnLevelLineageVisitors = new ArrayList<>();
+  @Default @NonNull @Getter
+  final List<ColumnLevelLineageVisitor> columnLevelLineageVisitors = new ArrayList<>();
 
   /** Optional {@link QueryExecution} for runs that are Spark SQL queries. */
-  @Default @NonNull Optional<QueryExecution> queryExecution = Optional.empty();
+  final QueryExecution queryExecution;
+
+  public Optional<QueryExecution> getQueryExecution() {
+    return Optional.ofNullable(queryExecution);
+  }
 
   /** Spark version of currently running job */
-  String sparkVersion = package$.MODULE$.SPARK_VERSION();
+  @Default @NonNull @Getter String sparkVersion = package$.MODULE$.SPARK_VERSION();
 
   /**
    * Job name is build when the first event of the run is build is created on the top of ready event
    * based on the output dataset being present within an event. It is stored within a context to
    * become consistent over a run progress.
    */
-  List<String> jobName = new LinkedList<>();
-
-  /**
-   * Override the default Builder class to take an unwrapped {@link QueryExecution} argument, rather
-   * than forcing the caller to wrap the {@link QueryExecution} in an {@link Optional}. The Spark
-   * APIs don't return an optional {@link QueryExecution}, so the caller either has an instance or
-   * they don't. This is contrasted with the {@link SparkSession}, where the caller generally
-   * obtains an optional instance via {@link SparkSession#getActiveSession()}, so will generally
-   * prefer to pass in an optional value without first checking to see if #getActiveSession returned
-   * a present value.
-   */
-  public static class OpenLineageContextBuilder {
-
-    // allow this method and the generated method, since the signatures differ
-    @Tolerate
-    public OpenLineageContextBuilder queryExecution(QueryExecution queryExecution) {
-      return queryExecution(Optional.of(queryExecution));
-    }
-  }
+  @Getter @Setter String jobName;
 }

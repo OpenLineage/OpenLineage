@@ -16,7 +16,6 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
@@ -71,7 +70,7 @@ class CreateTableLikeCommandVisitorTest {
     CreateTableLikeCommandVisitor visitor =
         new CreateTableLikeCommandVisitor(
             OpenLineageContext.builder()
-                .sparkSession(Optional.of(sparkSession))
+                .sparkSession(sparkSession)
                 .sparkContext(sparkSession.sparkContext())
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .build());

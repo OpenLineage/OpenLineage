@@ -21,10 +21,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
+import org.awaitility.Awaitility;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.MatchType;
-import org.mockserver.model.HttpRequest;
 import org.mockserver.model.JsonBody;
 import org.mockserver.model.RequestDefinition;
 
@@ -71,11 +71,39 @@ public class MockServerUtils {
     return json(fileContent[0], MatchType.ONLY_MATCHING_FIELDS);
   }
 
-  static List<RunEvent> getEventsEmitted(ClientAndServer mockServer) {
-    HttpRequest[] httpRequests =
-        mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage"));
+  public static List<RunEvent> getEventsEmittedWithJobName(
+      ClientAndServer mockServer, String jobNameContains) {
 
-    return Arrays.asList(httpRequests).stream()
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () ->
+                Arrays.stream(
+                        mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+                    .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+                    .anyMatch(
+                        e ->
+                            e.getJob().getName().contains(jobNameContains)
+                                && e.getEventType().equals(RunEvent.EventType.COMPLETE)));
+
+    return Arrays.stream(mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+        .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+        .filter(e -> e.getJob().getName().contains(jobNameContains))
+        .collect(Collectors.toList());
+  }
+
+  public static List<RunEvent> getEventsEmitted(ClientAndServer mockServer) {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () ->
+                Arrays.stream(
+                        mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+                    .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+                    .findAny()
+                    .isPresent());
+
+    return Arrays.stream(mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
         .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
         .collect(Collectors.toList());
   }
