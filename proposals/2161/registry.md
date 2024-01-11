@@ -30,6 +30,9 @@ Each consumer or producer entity can claim a name, defined in the registry: “{
 Each registered entity will provide a documentation URL for its documentation.
 The registered name is used to shorten “producer” and “schemaUrl” fields in facets.
 
+### Core facets
+As part of the creation of the registry, the core facets under "spec/facets" will be moved to the registry as well under the "core" name. They will follow all the same constraints as all the other facets in the registry. The "core" name is used to shorten the URIs. ex: "ol:core:{FacetName}"
+
 ## Acceptance Guidelines
 To claim a name, an entity must have either documentation or a test/sample. "Reserving" a name prior to public functionality is discouraged.
 
@@ -93,7 +96,9 @@ OpenLineage/spec/registry/
 				Consumed facets:
 					{ facets: [ “{URI}”, “{URI}”, … ]}
 		/facets/       <- where custom facet schemas are stored
+                /facets/examples/{FacetName}/{number}.json       <- where facet examples are stored
 ```
+Facet examples are  currently in [spec/tests](https://github.com/OpenLineage/OpenLineage/blob/main/spec/tests/ColumnLineageDatasetFacet/1.json)
 
 Examples:
 
