@@ -13,6 +13,7 @@ import static org.mockserver.model.HttpRequest.request;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClientUtils;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -95,8 +97,24 @@ public class SparkScalaContainerTest {
   }
 
   private GenericContainer createSparkContainer(String script) {
-    return new GenericContainer<>(
-            DockerImageName.parse("bitnami/spark:" + System.getProperty("spark.version")))
+    String scalaVersion = scala.util.Properties.versionNumberString();
+    GenericContainer<?> container;
+    if (scalaVersion.startsWith("2.11") || scalaVersion.startsWith("2.12")) {
+      container =
+          new GenericContainer<>(
+              DockerImageName.parse("bitnami/spark:" + System.getProperty("spark.version"))
+                  .asCanonicalNameString());
+    } else if (scalaVersion.startsWith("2.13")) {
+      container =
+          new GenericContainer<>(
+              new ImageFromDockerfile()
+                  .withFileFromPath("Dockerfile", Paths.get("../docker/scala213/Dockerfile"))
+                  .withBuildArg("SPARK_VERSION", System.getProperty("spark.version")));
+    } else {
+      throw new RuntimeException(
+          "Scala version not supported (only support 2.11, 2.12 2.13) " + scalaVersion);
+    }
+    return container
         .withNetwork(network)
         .withNetworkAliases("spark")
         .withFileSystemBind("src/test/resources/spark_scala_scripts", "/opt/spark_scala_scripts")
