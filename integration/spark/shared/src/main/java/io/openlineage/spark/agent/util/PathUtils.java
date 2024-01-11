@@ -138,13 +138,6 @@ public class PathUtils {
     return SparkConfUtils.getMetastoreUri(sparkConf.get());
   }
 
-  private static String removeFirstSlashIfSingleSlashInString(String name) {
-    if (name.chars().filter(x -> x == '/').count() == 1 && name.startsWith("/")) {
-      return name.substring(1);
-    }
-    return name;
-  }
-
   private static String nameFromTableIdentifier(TableIdentifier identifier) {
     // we create name instead of calling `unquotedString` method which includes spark_catalog
     // for Spark 3.4
