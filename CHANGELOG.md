@@ -5,6 +5,8 @@
 ### Added
 * **Spark: Support `MERGE INTO` queries on Databricks** [`#2283`](https://github.com/OpenLineage/OpenLineage/pull/2283) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Support custom plan nodes used when running `MERGE INTO` queries on Databricks runtime.*
+* **Flink: Support Flink 1.18.0**
+  *Add Flink 1.8.0 as default flink version and introduce it into integration test*
 
 ### Fixed
 * **Spark: Fix `removePathPattern` feature** [`#2350`](https://github.com/OpenLineage/OpenLineage/pull/2350) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
