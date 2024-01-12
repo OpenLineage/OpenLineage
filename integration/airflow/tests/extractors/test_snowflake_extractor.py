@@ -183,7 +183,7 @@ def test_information_schema_query(get_connection):
     ]
 
     same_db_explicit_sql = (
-        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type, table_catalog "
         "FROM DB.information_schema.columns "
         "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_A','TABLE_B') );"
     )
@@ -191,7 +191,7 @@ def test_information_schema_query(get_connection):
     same_db_implicit = [DbTableMeta("SCHEMA.TABLE_A"), DbTableMeta("SCHEMA.TABLE_B")]
 
     same_db_implicit_sql = (
-        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type, table_catalog "
         "FROM FOOD_DELIVERY.information_schema.columns "
         "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_A','TABLE_B') );"
     )
@@ -202,11 +202,11 @@ def test_information_schema_query(get_connection):
     ]
 
     different_databases_explicit_sql = (
-        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type, table_catalog "
         "FROM DB_1.information_schema.columns "
         "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_A') ) "
         "UNION ALL "
-        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type, table_catalog "
         "FROM DB_2.information_schema.columns "
         "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_B') );"
     )
@@ -217,11 +217,11 @@ def test_information_schema_query(get_connection):
     ]
 
     different_databases_mixed_sql = (
-        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type, table_catalog "
         "FROM FOOD_DELIVERY.information_schema.columns "
         "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_A') ) "
         "UNION ALL "
-        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type, table_catalog "
         "FROM DB_2.information_schema.columns "
         "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_B') );"
     )
