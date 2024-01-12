@@ -57,7 +57,6 @@ ext {
 dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
-    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     implementation(project(path: ":shared", configuration: "shadow"))
@@ -65,27 +64,12 @@ dependencies {
 
     compileOnly "org.apache.spark:spark-core_2.12:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.12:${sparkVersion}"
-    compileOnly "org.apache.spark:spark-hive_2.12:${sparkVersion}"
-    compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}"
-    compileOnly "org.apache.iceberg:iceberg-spark3-runtime:0.13.0"
-    compileOnly "io.delta:delta-core_2.12:1.1.0"
-    compileOnly "com.databricks:dbutils-api_2.12:0.0.6"
 
-    testFixturesApi "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
     testFixturesApi "org.apache.spark:spark-core_2.12:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-sql_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-hive_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-catalyst_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.iceberg:iceberg-spark-runtime-3.2_2.12:0.13.0"
-    testFixturesApi "io.delta:delta-core_2.12:1.1.0"
-    testFixturesApi "com.databricks:dbutils-api_2.12:0.0.6"
-
-    testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
-    testFixturesApi "org.assertj:assertj-core:${assertjVersion}"
-    testFixturesApi "org.mockito:mockito-core:${mockitoVersion}"
-    testFixturesApi "org.mockito:mockito-inline:${mockitoVersion}"
     testFixturesApi "org.junit.jupiter:junit-jupiter-api:${junit5Version}"
+    testFixturesApi "org.mockito:mockito-inline:${mockitoVersion}"
+
     testFixturesApi(project(path: ":shared", configuration: 'shadow'))
 }
 
