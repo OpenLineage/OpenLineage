@@ -20,6 +20,7 @@ class SnowflakeExtractor(SqlExtractor):
         "column_name",
         "ordinal_position",
         "data_type",
+        "table_catalog",
     ]
     _is_information_schema_cross_db = True
     _is_uppercase_names = True
