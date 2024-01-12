@@ -10,6 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
@@ -21,8 +22,7 @@ import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import scala.collection.Seq;
-import scala.collection.Seq$;
+import scala.collection.immutable.Seq;
 
 class OutputFieldsCollectorTest {
 
@@ -35,11 +35,7 @@ class OutputFieldsCollectorTest {
   ExprId exprId1 = mock(ExprId.class);
   ExprId exprId2 = mock(ExprId.class);
 
-  Seq<Attribute> attrs =
-      scala.collection.JavaConverters.collectionAsScalaIterableConverter(
-              Arrays.asList(attr1, attr2))
-          .asScala()
-          .toSeq();
+  Seq<Attribute> attrs = ScalaConversionUtils.fromList(Arrays.asList(attr1, attr2)).toSeq();
 
   @BeforeEach
   void setup() {
@@ -49,7 +45,7 @@ class OutputFieldsCollectorTest {
     when(attr2.name()).thenReturn("name2");
     when(attr2.exprId()).thenReturn(exprId2);
 
-    when(plan.output()).thenReturn((Seq<Attribute>) Seq$.MODULE$.empty());
+    when(plan.output()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
     when(builder.hasOutputs()).thenReturn(true);
   }
 
@@ -72,7 +68,7 @@ class OutputFieldsCollectorTest {
     when(namedExpression.exprId()).thenReturn(exprId);
 
     Aggregate aggregate = mock(Aggregate.class);
-    when(aggregate.output()).thenReturn((Seq<Attribute>) Seq$.MODULE$.empty());
+    when(aggregate.output()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
     when(aggregate.aggregateExpressions())
         .thenReturn(
             scala.collection.JavaConverters.collectionAsScalaIterableConverter(
@@ -94,7 +90,7 @@ class OutputFieldsCollectorTest {
     when(namedExpression.exprId()).thenReturn(exprId);
 
     Project project = mock(Project.class);
-    when(project.output()).thenReturn((Seq<Attribute>) Seq$.MODULE$.empty());
+    when(project.output()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
     when(project.projectList())
         .thenReturn(
             scala.collection.JavaConverters.collectionAsScalaIterableConverter(
@@ -112,7 +108,7 @@ class OutputFieldsCollectorTest {
     LogicalPlan childPlan = mock(LogicalPlan.class);
     when(childPlan.output()).thenReturn(attrs);
 
-    when(plan.output()).thenReturn((Seq<Attribute>) Seq$.MODULE$.empty());
+    when(plan.output()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
     when(builder.hasOutputs()).thenReturn(false).thenReturn(true);
     when(plan.children())
         .thenReturn(

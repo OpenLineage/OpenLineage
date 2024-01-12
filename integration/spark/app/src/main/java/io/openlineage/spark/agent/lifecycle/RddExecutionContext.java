@@ -5,8 +5,6 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
-import static scala.collection.JavaConversions.asJavaCollection;
-
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.EventEmitter;
@@ -370,7 +368,7 @@ class RddExecutionContext implements ExecutionContext {
   }
 
   protected void printRDDs(String prefix, RDD<?> rdd) {
-    Collection<Dependency<?>> deps = asJavaCollection(rdd.dependencies());
+    Collection<Dependency<?>> deps = ScalaConversionUtils.fromSeq(rdd.dependencies());
     for (Dependency<?> dep : deps) {
       printRDDs(prefix + "  ", dep.rdd());
     }

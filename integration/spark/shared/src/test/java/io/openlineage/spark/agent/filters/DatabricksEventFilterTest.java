@@ -12,6 +12,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Optional;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -20,7 +21,6 @@ import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.WholeStageCodegenExec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import scala.collection.Seq$;
 
 public class DatabricksEventFilterTest {
 
@@ -55,7 +55,7 @@ public class DatabricksEventFilterTest {
   @Test
   public void testSerializeFromObjectIsDisabled() {
     SerializeFromObject serializeFromObject = mock(SerializeFromObject.class);
-    when(serializeFromObject.collectLeaves()).thenReturn(Seq$.MODULE$.empty());
+    when(serializeFromObject.collectLeaves()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
     when(queryExecution.optimizedPlan()).thenReturn(serializeFromObject);
 
     assertTrue(filter.isDisabled(sparkListenerEvent));

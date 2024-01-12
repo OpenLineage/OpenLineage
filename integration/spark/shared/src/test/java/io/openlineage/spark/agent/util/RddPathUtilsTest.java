@@ -21,7 +21,6 @@ import org.apache.spark.sql.execution.datasources.PartitionedFile;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.shaded.org.apache.commons.lang3.reflect.FieldUtils;
 import scala.Tuple2;
-import scala.collection.JavaConversions;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
@@ -36,7 +35,7 @@ public class RddPathUtilsTest {
 
     when(mapPartitions.prev()).thenReturn(fileScanRDD);
     when(fileScanRDD.filePartitions())
-        .thenReturn(JavaConversions.asScalaBuffer(Collections.singletonList(filePartition)));
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(filePartition)));
     when(filePartition.files()).thenReturn(new PartitionedFile[] {partitionedFile});
     when(partitionedFile.filePath()).thenReturn("/some-path/sub-path");
 
@@ -95,7 +94,7 @@ public class RddPathUtilsTest {
     when(filePartition.files()).thenReturn(new PartitionedFile[] {partitionedFile});
     when(partitionedFile.filePath()).thenReturn("");
     when(fileScanRDD.filePartitions())
-        .thenReturn(JavaConversions.asScalaBuffer(Collections.singletonList(filePartition)));
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(filePartition)));
 
     List rddPaths = PlanUtils.findRDDPaths(Collections.singletonList(fileScanRDD));
 

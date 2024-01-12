@@ -20,6 +20,7 @@ import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URISyntaxException;
 import java.util.Optional;
@@ -46,8 +47,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import scala.Option;
-import scala.collection.Map$;
-import scala.collection.Seq$;
 
 class OpenLineageSparkListenerTest {
 
@@ -86,15 +85,15 @@ class OpenLineageSparkListenerTest {
                 new Path("file:///tmp/dir"),
                 null,
                 false,
-                Seq$.MODULE$.empty(),
+                ScalaConversionUtils.asScalaSeqEmpty(),
                 Option.empty(),
                 null,
-                Map$.MODULE$.empty(),
+                ScalaConversionUtils.asScalaMapEmpty(),
                 query,
                 SaveMode.Overwrite,
                 Option.empty(),
                 Option.empty(),
-                Seq$.MODULE$.<String>empty()));
+                ScalaConversionUtils.<String>asScalaSeqEmpty()));
 
     when(qe.executedPlan()).thenReturn(plan);
 
@@ -111,9 +110,9 @@ class OpenLineageSparkListenerTest {
             new SparkPlanInfo(
                 "name",
                 "string",
-                Seq$.MODULE$.empty(),
-                Map$.MODULE$.empty(),
-                Seq$.MODULE$.empty()));
+                ScalaConversionUtils.asScalaSeqEmpty(),
+                ScalaConversionUtils.asScalaMapEmpty(),
+                ScalaConversionUtils.asScalaSeqEmpty()));
     when(event.executionId()).thenReturn(1L);
     try (MockedStatic<EventFilterUtils> utils = mockStatic(EventFilterUtils.class)) {
       utils.when(() -> EventFilterUtils.isDisabled(olContext, event)).thenReturn(false);
@@ -137,7 +136,8 @@ class OpenLineageSparkListenerTest {
       OpenLineageSparkListener listener = new OpenLineageSparkListener();
 
       listener.onJobStart(
-          new SparkListenerJobStart(0, 2L, Seq$.MODULE$.<StageInfo>empty(), new Properties()));
+          new SparkListenerJobStart(
+              0, 2L, ScalaConversionUtils.<StageInfo>asScalaSeqEmpty(), new Properties()));
 
       verify(contextFactory, never()).createSparkSQLExecutionContext(anyLong());
     }
@@ -156,15 +156,15 @@ class OpenLineageSparkListenerTest {
                 new Path("file:///tmp/dir"),
                 null,
                 false,
-                Seq$.MODULE$.empty(),
+                ScalaConversionUtils.asScalaSeqEmpty(),
                 Option.empty(),
                 null,
-                Map$.MODULE$.empty(),
+                ScalaConversionUtils.asScalaMapEmpty(),
                 query,
                 SaveMode.Overwrite,
                 Option.empty(),
                 Option.empty(),
-                Seq$.MODULE$.<String>empty()));
+                ScalaConversionUtils.asScalaSeqEmpty()));
 
     when(qe.executedPlan()).thenReturn(plan);
     when(qe.sparkSession()).thenReturn(sparkSession);

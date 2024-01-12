@@ -32,7 +32,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
-import scala.collection.Seq$;
 
 public class MergeIntoDelta24ColumnLineageVisitorTest {
 
@@ -67,8 +66,8 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
 
     when(command.source()).thenReturn(source);
     when(command.target()).thenReturn(target);
-    when(command.matchedClauses()).thenReturn(Seq$.MODULE$.empty());
-    when(command.notMatchedClauses()).thenReturn(Seq$.MODULE$.empty());
+    when(command.matchedClauses()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+    when(command.notMatchedClauses()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
 
     try (MockedStatic mocked = mockStatic(InputFieldsCollector.class)) {
       visitor.collectInputs(command, builder);

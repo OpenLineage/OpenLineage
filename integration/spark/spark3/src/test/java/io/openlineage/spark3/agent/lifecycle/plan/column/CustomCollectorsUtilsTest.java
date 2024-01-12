@@ -11,20 +11,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import scala.collection.Seq;
-import scala.collection.Seq$;
 
 @Slf4j
 public class CustomCollectorsUtilsTest {
@@ -50,9 +48,9 @@ public class CustomCollectorsUtilsTest {
                 .toSeq());
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(queryExecution.optimizedPlan()).thenReturn(plan);
-    when(child.output()).thenReturn((Seq<Attribute>) Seq$.MODULE$.empty());
-    when(plan.output()).thenReturn((Seq<Attribute>) Seq$.MODULE$.empty());
-    when(child.children()).thenReturn((Seq<LogicalPlan>) Seq$.MODULE$.empty());
+    when(child.output()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+    when(plan.output()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
+    when(child.children()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
     when(context.getOpenLineage()).thenReturn(openLineage);
 
     Mockito.doCallRealMethod().when(plan).foreach(any());

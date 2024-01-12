@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.sql.ColumnMeta;
 import io.openlineage.sql.DbTableMeta;
 import java.util.Arrays;
@@ -25,7 +26,6 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import scala.collection.immutable.Map$;
 
 public class JdbcColumnLineageInputCollectorTest {
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
@@ -58,7 +58,8 @@ public class JdbcColumnLineageInputCollectorTest {
   void setup() {
     when(relation.jdbcOptions()).thenReturn(jdbcOptions);
 
-    scala.collection.immutable.Map<String, String> properties = Map$.MODULE$.empty();
+    scala.collection.immutable.Map<String, String> properties =
+        ScalaConversionUtils.<String, String>asScalaMapEmpty();
     when(jdbcOptions.parameters())
         .thenReturn(CaseInsensitiveMap$.MODULE$.<String>apply(properties));
   }
