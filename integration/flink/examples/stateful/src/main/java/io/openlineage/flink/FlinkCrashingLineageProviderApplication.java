@@ -5,17 +5,16 @@
 
 package io.openlineage.flink;
 
+import static io.openlineage.flink.StreamEnvironment.setupEnv;
+
+import io.openlineage.client.OpenLineage;
 import io.openlineage.flink.api.DatasetFactory;
 import io.openlineage.flink.api.LineageProvider;
 import io.openlineage.util.OpenLineageFlinkJobListenerBuilder;
+import java.util.List;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
-import io.openlineage.client.OpenLineage;
-
-import java.util.List;
-
-import static io.openlineage.flink.StreamEnvironment.setupEnv;
 
 public class FlinkCrashingLineageProviderApplication {
 
@@ -24,12 +23,10 @@ public class FlinkCrashingLineageProviderApplication {
     env.addSource(new FakeSource()).addSink(new FakeSink());
 
     env.registerJobListener(
-        OpenLineageFlinkJobListenerBuilder
-            .create()
+        OpenLineageFlinkJobListenerBuilder.create()
             .executionEnvironment(env)
             .jobName("flink-crushing-lineage-job")
-            .build()
-    );
+            .build());
   }
 
   static class FakeSource implements SourceFunction<Integer> {
@@ -37,7 +34,7 @@ public class FlinkCrashingLineageProviderApplication {
 
     @Override
     public void run(SourceContext<Integer> ctx) throws Exception {
-      while(isRunning) {
+      while (isRunning) {
         synchronized (ctx.getCheckpointLock()) {
           ctx.collect(1);
         }
@@ -51,9 +48,11 @@ public class FlinkCrashingLineageProviderApplication {
     }
   }
 
-  static class FakeSink implements SinkFunction<Integer>, LineageProvider<OpenLineage.OutputDataset> {
+  static class FakeSink
+      implements SinkFunction<Integer>, LineageProvider<OpenLineage.OutputDataset> {
     @Override
-    public List<OpenLineage.OutputDataset> getDatasets(DatasetFactory<OpenLineage.OutputDataset> datasetFactory) {
+    public List<OpenLineage.OutputDataset> getDatasets(
+        DatasetFactory<OpenLineage.OutputDataset> datasetFactory) {
       throw new RuntimeException("fail");
     }
   }
