@@ -57,6 +57,7 @@ ext {
 dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     implementation(project(path: ":shared", configuration: "shadow"))
@@ -68,6 +69,9 @@ dependencies {
     testFixturesApi "org.apache.spark:spark-core_2.12:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-sql_2.12:${sparkVersion}"
     testFixturesApi "org.junit.jupiter:junit-jupiter-api:${junit5Version}"
+    testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testFixturesApi "org.assertj:assertj-core:${assertjVersion}"
+    testFixturesApi "org.mockito:mockito-core:${mockitoVersion}"
     testFixturesApi "org.mockito:mockito-inline:${mockitoVersion}"
 
     testFixturesApi(project(path: ":shared", configuration: 'shadow'))
