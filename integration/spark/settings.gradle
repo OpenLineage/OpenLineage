@@ -7,3 +7,6 @@ include 'spark34'
 include 'spark35'
 include 'shared'
 include 'app'
+
+include 'snowflake'
+project(":snowflake").projectDir = file("./vendor/snowflake")

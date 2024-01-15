@@ -26,7 +26,6 @@ ext {
     mockitoVersion = "4.11.0"
     mockserverVersion = "5.14.0"
     postgresqlVersion = "42.7.1"
-    snowflakeVersion = "2.11.0"
     sqlLiteVersion = "3.45.0.0"
     testcontainersVersion = "1.19.3"
 
@@ -50,10 +49,6 @@ dependencies {
     compileOnly("com.google.cloud.spark:spark-bigquery-with-dependencies_${scalaBinaryVersion}:${bigqueryVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
         exclude(group: "com.fasterxml.jackson.module")
-    }
-    compileOnly("net.snowflake:spark-snowflake_${scalaBinaryVersion}:${snowflakeVersion}-spark_${sparkSeries}") {
-        exclude(group: "com.google.guava")
-        exclude(group: "org.apache.spark")
     }
 
     // TODO: Convert these to testImplementation
@@ -86,10 +81,6 @@ dependencies {
         exclude(group: "com.fasterxml.jackson.core")
         exclude(group: "com.fasterxml.jackson.module")
     }
-    testFixturesApi("net.snowflake:spark-snowflake_${scalaBinaryVersion}:${snowflakeVersion}-spark_${sparkSeries}") {
-        exclude(group: "com.google.guava")
-        exclude(group: "org.apache.spark")
-    }
 
     // Scala 2.12 dependencies
     scala212Api("io.openlineage:openlineage-java:${project.version}")
@@ -106,10 +97,6 @@ dependencies {
         exclude(group: "com.fasterxml.jackson.core")
         exclude(group: "com.fasterxml.jackson.module")
     }
-    scala212CompileOnly("net.snowflake:spark-snowflake_2.12:${snowflakeVersion}-spark_${sparkSeries}") {
-        exclude(group: "com.google.guava")
-        exclude(group: "org.apache.spark")
-    }
 
     testScala212Implementation("org.apache.spark:spark-hive_2.12:${sparkVersion}")
     testScala212Implementation("org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}")
@@ -121,10 +108,6 @@ dependencies {
     testScala212Implementation("com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:${bigqueryVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
         exclude(group: "com.fasterxml.jackson.module")
-    }
-    testScala212Implementation("net.snowflake:spark-snowflake_2.12:${snowflakeVersion}-spark_${sparkSeries}") {
-        exclude(group: "com.google.guava")
-        exclude(group: "org.apache.spark")
     }
 
     testScala212Implementation("org.apache.kafka:kafka-clients:${kafkaClientsVersion}")
@@ -160,10 +143,6 @@ dependencies {
         exclude(group: "com.fasterxml.jackson.core")
         exclude(group: "com.fasterxml.jackson.module")
     }
-    scala213CompileOnly("net.snowflake:spark-snowflake_2.13:${snowflakeVersion}-spark_${sparkSeries}") {
-        exclude(group: "com.google.guava")
-        exclude(group: "org.apache.spark")
-    }
 
     testScala213Implementation("org.apache.spark:spark-hive_2.13:${sparkVersion}")
     testScala213Implementation("org.apache.spark:spark-sql-kafka-0-10_2.13:${sparkVersion}")
@@ -175,10 +154,6 @@ dependencies {
     testScala213Implementation("com.google.cloud.spark:spark-bigquery-with-dependencies_2.13:${bigqueryVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
         exclude(group: "com.fasterxml.jackson.module")
-    }
-    testScala213Implementation("net.snowflake:spark-snowflake_2.13:${snowflakeVersion}-spark_${sparkSeries}") {
-        exclude(group: "com.google.guava")
-        exclude(group: "org.apache.spark")
     }
 
     testScala213Implementation("org.apache.kafka:kafka-clients:${kafkaClientsVersion}")

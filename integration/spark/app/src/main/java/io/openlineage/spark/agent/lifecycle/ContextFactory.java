@@ -10,6 +10,7 @@ import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
+import io.openlineage.spark.api.Vendors;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.Optional;
@@ -52,6 +53,7 @@ public class ContextFactory {
                 this.openLineageEventEmitter
                     .getCustomEnvironmentVariables()
                     .orElse(Collections.emptyList()))
+            .vendors(Vendors.getVendors())
             .build();
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, handlerFactory);
@@ -76,6 +78,7 @@ public class ContextFactory {
                           this.openLineageEventEmitter
                               .getCustomEnvironmentVariables()
                               .orElse(Collections.emptyList()))
+                      .vendors(Vendors.getVendors())
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, handlerFactory);

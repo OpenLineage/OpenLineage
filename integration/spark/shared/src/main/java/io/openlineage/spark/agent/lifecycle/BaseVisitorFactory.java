@@ -32,7 +32,6 @@ import io.openlineage.spark.agent.lifecycle.plan.KustoRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelectCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.SnowflakeRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SqlDWDatabricksVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SqlExecutionRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandVisitor;
@@ -61,9 +60,6 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     }
     if (KustoRelationVisitor.hasKustoClasses()) {
       list.add(new KustoRelationVisitor(context, factory));
-    }
-    if (SnowflakeRelationVisitor.hasSnowflakeClasses()) {
-      list.add(new SnowflakeRelationVisitor(context, factory));
     }
     return list;
   }

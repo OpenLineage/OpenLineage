@@ -1,0 +1,123 @@
+plugins {
+    id("io.openlineage.common-config")
+}
+
+ext {
+    assertjVersion = '3.25.1'
+    junit5Version = '5.10.1'
+    defaultSparkVersion = '3.4.2'
+    defaultSparkSeries = '3.4'
+    defaultScalaVersion = '2.12'
+    snowflakeVersion = '2.13.0'
+    mockitoVersion = '4.11.0'
+    lombokVersion = '1.18.30'
+    compilationMatrix = [
+            'spark24': [sparkSeries: '2.4', spark: '2.4.8', scala: '2.11', snowflake: '2.9.3'],
+            'spark31': [sparkSeries: '3.1', spark: '3.1.3', scala: '2.12', snowflake: '2.11.0'],
+            'spark32': [sparkSeries: '3.2', spark: '3.2.4', scala: '2.12', snowflake: '2.11.0'],
+            'spark33': [sparkSeries: '3.3', spark: '3.3.4', scala: '2.12', snowflake: '2.11.0'],
+            'spark34': [sparkSeries: '3.4', spark: '3.4.2', scala: '2.12', snowflake: '2.13.0']
+
+    ]
+}
+
+compilationMatrix.each { key, value ->
+    sourceSets.create(key) {
+        java {
+            srcDir('src/main/java')
+        }
+        resources {
+            srcDir('src/main/resources')
+        }
+    }
+    sourceSets.create("test${key.capitalize()}") {
+        compileClasspath += sourceSets."${key}".output
+        runtimeClasspath += sourceSets."${key}".output
+        java {
+            srcDir('src/test/java')
+        }
+        resources {
+            srcDir('src/test/resources')
+        }
+    }
+
+    configurations {
+        named("test${key.capitalize()}Implementation") {
+            extendsFrom(named("${key}CompileOnly").get())
+        }
+    }
+    dependencies {
+        "${key}CompileOnly"("org.projectlombok:lombok:${lombokVersion}")
+        "${key}Implementation"(project(":shared"))
+        "${key}CompileOnly"("org.apache.spark:spark-sql_${value.scala}:${value.spark}")
+        "${key}CompileOnly"("net.snowflake:spark-snowflake_${value.scala}:${value.snowflake}-spark_${value.sparkSeries}") {
+            exclude group: "com.google.guava:guava"
+            exclude group: "org.apache.spark:spark-core_${value.scala}"
+            exclude group: "org.apache.spark:spark-sql_${value.scala}"
+            exclude group: "org.apache.spark:spark-catalyst_${value.scala}"
+        }
+
+        "test${key.capitalize()}Implementation"(project(":shared"))
+        "test${key.capitalize()}CompileOnly" "org.projectlombok:lombok:${lombokVersion}"
+
+        "test${key.capitalize()}Implementation"(platform("org.junit:junit-bom:${junit5Version}"))
+        "test${key.capitalize()}Implementation"("org.junit.jupiter:junit-jupiter")
+        "test${key.capitalize()}Implementation"("org.junit.jupiter:junit-jupiter-params")
+
+        "test${key.capitalize()}Implementation"("org.assertj:assertj-core:${assertjVersion}")
+        "test${key.capitalize()}Implementation"("org.mockito:mockito-core:${mockitoVersion}")
+        "test${key.capitalize()}Implementation"("org.mockito:mockito-inline:${mockitoVersion}")
+        "test${key.capitalize()}Implementation"("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
+    }
+
+    tasks.register("test${key.capitalize()}", Test) {
+        dependsOn(tasks.named("compileTest${key.capitalize()}Java"))
+        description = "Runs all tests in this module using Apache Spark ${value.sparkSeries}.x " +
+                "libraries compiled with Scala ${value.scala}"
+        group = "verification"
+        testClassesDirs = sourceSets."test${key.capitalize()}".output.classesDirs
+        classpath = sourceSets."test${key.capitalize()}".runtimeClasspath
+    }
+
+}
+
+dependencies {
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    implementation(project(":shared"))
+    compileOnly("org.apache.spark:spark-sql_${defaultScalaVersion}:${defaultSparkVersion}")
+
+    compileOnly("net.snowflake:spark-snowflake_${defaultScalaVersion}:${snowflakeVersion}-spark_${defaultSparkSeries}") {
+        exclude group: "com.google.guava:guava"
+        exclude group: "org.apache.spark:spark-core_${defaultScalaVersion}"
+        exclude group: "org.apache.spark:spark-sql_${defaultScalaVersion}"
+        exclude group: "org.apache.spark:spark-catalyst_${defaultScalaVersion}"
+    }
+    testImplementation(platform("org.junit:junit-bom:${junit5Version}"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
+
+
+    testImplementation("org.assertj:assertj-core:${assertjVersion}")
+    testImplementation("org.mockito:mockito-core:${mockitoVersion}")
+    testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
+    testImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
+    testImplementation("org.apache.spark:spark-sql_${defaultScalaVersion}:${defaultSparkVersion}")
+    testImplementation("net.snowflake:spark-snowflake_${defaultScalaVersion}:${snowflakeVersion}-spark_${defaultSparkSeries}") {
+        exclude group: "com.google.guava:guava"
+        exclude group: "org.apache.spark:spark-core_${defaultScalaVersion}"
+        exclude group: "org.apache.spark:spark-sql_${defaultScalaVersion}"
+        exclude group: "org.apache.spark:spark-catalyst_${defaultScalaVersion}"
+    }
+}
+
+tasks.register('testAll') {
+    group = "verification"
+    compilationMatrix.each { key, value ->
+        dependsOn tasks.named("test${key.capitalize()}")
+    }
+    dependsOn tasks.named('test')
+}

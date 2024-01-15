@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark.agent.vendor.snowflake.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -11,13 +11,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.agent.vendor.snowflake.lifecycle.SnowflakeRelationVisitor;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.Vendors;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import net.snowflake.spark.snowflake.SnowflakeRelation;
 import net.snowflake.spark.snowflake.TableName;
@@ -68,9 +71,17 @@ public class SnowflakeRelationVisitorTest {
   @Test
   void testApplyDbTable() {
 
+    OpenLineageContext openLineageContext =
+        OpenLineageContext.builder()
+            .sparkSession(Optional.of(session))
+            .sparkContext(session.sparkContext())
+            .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .customEnvironmentVariables(Optional.of(Arrays.asList("TEST_VAR")))
+            .vendors(Vendors.getVendors())
+            .build();
+
     SnowflakeRelationVisitor visitor =
-        new SnowflakeRelationVisitor<>(
-            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
+        new SnowflakeRelationVisitor<>(openLineageContext, DatasetFactory.output(context));
 
     LogicalRelation lr =
         new LogicalRelation(
