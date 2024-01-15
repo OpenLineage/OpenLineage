@@ -19,32 +19,34 @@ import org.slf4j.LoggerFactory;
 
 public class StatefulCounter extends KeyedProcessFunction<String, InputEvent, OutputEvent> {
 
-    public static final long serialVersionUID = 1;
-    public static final ValueStateDescriptor<Counter> COUNTER_DESCRIPTOR;
+  public static final long serialVersionUID = 1;
+  public static final ValueStateDescriptor<Counter> COUNTER_DESCRIPTOR;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(StatefulCounter.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(StatefulCounter.class);
 
-    static {
-        COUNTER_DESCRIPTOR = new ValueStateDescriptor<>("counter", Counter.class);
-        COUNTER_DESCRIPTOR.setQueryable(COUNTER_DESCRIPTOR.getName());
-    }
+  static {
+    COUNTER_DESCRIPTOR = new ValueStateDescriptor<>("counter", Counter.class);
+    COUNTER_DESCRIPTOR.setQueryable(COUNTER_DESCRIPTOR.getName());
+  }
 
-    private transient ValueState<Counter> counterState;
+  private transient ValueState<Counter> counterState;
 
-    @Override
-    public void open(Configuration parameters) {
-        counterState = getRuntimeContext().getState(COUNTER_DESCRIPTOR);
-    }
+  @Override
+  public void open(Configuration parameters) {
+    counterState = getRuntimeContext().getState(COUNTER_DESCRIPTOR);
+  }
 
-    @Override
-    public void processElement(InputEvent inputEvent, Context ctx, Collector<OutputEvent> output) throws Exception {
-        LOGGER.info("Processing InputEvent={}", inputEvent);
-        Counter counter = StateUtils.value(counterState, new Counter(0L, null));
-        counter.setCounter(counter.getCounter() + 1);
-        counter.setLastSeen(inputEvent.toString());
-        counterState.update(counter);
-        OutputEvent outputEvent = new OutputEvent(inputEvent.id, inputEvent.version, counter.getCounter());
-        LOGGER.info("Preparing OutputEvent={} to sent.", inputEvent);
-        output.collect(outputEvent);
-    }
+  @Override
+  public void processElement(InputEvent inputEvent, Context ctx, Collector<OutputEvent> output)
+      throws Exception {
+    LOGGER.info("Processing InputEvent={}", inputEvent);
+    Counter counter = StateUtils.value(counterState, new Counter(0L, null));
+    counter.setCounter(counter.getCounter() + 1);
+    counter.setLastSeen(inputEvent.toString());
+    counterState.update(counter);
+    OutputEvent outputEvent =
+        new OutputEvent(inputEvent.id, inputEvent.version, counter.getCounter());
+    LOGGER.info("Preparing OutputEvent={} to sent.", inputEvent);
+    output.collect(outputEvent);
+  }
 }

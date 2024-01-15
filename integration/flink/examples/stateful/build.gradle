@@ -117,6 +117,30 @@ assemble {
     dependsOn shadowJar
 }
 
+spotless {
+    def disallowWildcardImports = {
+        String text = it
+        def regex = ~/import .*\.\*;/
+        def m = regex.matcher(text)
+        if (m.find()) {
+            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
+        }
+    }
+    java {
+        target project.fileTree(project.rootDir) {
+            include 'build/classes/java/main/io/openlineage/flink/**/*.java'
+            exclude '**/io/openlineage/flink/avro/**/*.*'
+        }
+        googleJavaFormat()
+        removeUnusedImports()
+        custom 'disallowWildcardImports', disallowWildcardImports
+    }
+}
+
+spotlessJava {
+    dependsOn("compileJava", "compileTestJava", "generateAvroJava")
+}
+
 avro {
     fieldVisibility = 'PUBLIC'
 }

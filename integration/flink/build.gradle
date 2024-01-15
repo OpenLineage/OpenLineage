@@ -341,6 +341,10 @@ assemble {
     dependsOn shadowJar
 }
 
+spotlessJava {
+    dependsOn("compileJava", "compileTestJava", ":examples:stateful:generateAvroJava")
+}
+
 task createVersionProperties(dependsOn: processResources) {
     doLast {
         File dir = new File("$buildDir/resources/main/io/openlineage/flink/client/")
