@@ -58,9 +58,10 @@ ext {
     icebergVersion = "1.3.0"
 
     versionsMap = [
-            "1.15": ["cassandra": "1.15.4"],
-            "1.16": ["cassandra": "3.0.0-1.16"],
-            "1.17": ["cassandra": "3.1.0-1.17"]
+            "1.15": ["cassandra": "1.15.4", "kafka": flinkVersion, "alternativeShort": "1.15"],
+            "1.16": ["cassandra": "3.0.0-1.16", "kafka": flinkVersion, "alternativeShort": "1.16"],
+            "1.17": ["cassandra": "3.1.0-1.17", "kafka": flinkVersion, "alternativeShort": "1.17"],
+            "1.18": ["cassandra": "3.1.0-1.17", "kafka": "3.0.2-1.18", "alternativeShort": "1.17"]
     ]
 
     versions = versionsMap[flinkVersionShort]
@@ -84,8 +85,9 @@ dependencies {
     compileOnly "org.apache.flink:flink-streaming-java:$flinkVersion"
     compileOnly "org.apache.flink:flink-runtime-web:$flinkVersion"
     compileOnly "org.apache.flink:flink-core:$flinkVersion"
+    compileOnly "org.apache.flink:flink-connector-base:$flinkVersion"
     implementation "org.apache.flink:flink-runtime:$flinkVersion"
-    implementation "org.apache.flink:flink-connector-kafka:$flinkVersion"
+    implementation "org.apache.flink:flink-connector-kafka:${versions.kafka}"
     implementation "org.apache.flink:flink-connector-cassandra_2.12:${versions.cassandra}"
     implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     implementation "org.apache.flink:flink-avro:$flinkVersion"
@@ -108,7 +110,7 @@ dependencies {
     }
     implementation "org.apache.avro:avro"
 
-    implementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:$icebergVersion"
+    implementation "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:$icebergVersion"
 }
 
 assemble {
