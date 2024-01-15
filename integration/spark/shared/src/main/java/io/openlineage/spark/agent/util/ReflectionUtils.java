@@ -7,10 +7,12 @@ package io.openlineage.spark.agent.util;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.reflect.MethodUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ClassUtils;
+import org.jetbrains.annotations.Nullable;
 
 @Slf4j
 public class ReflectionUtils {
@@ -55,5 +57,39 @@ public class ReflectionUtils {
 
   public static boolean hasClasses(String... classes) {
     return Arrays.stream(classes).allMatch(ReflectionUtils::hasClass);
+  }
+
+  public static boolean hasClassWithCheck(
+      final AtomicBoolean aClassChecked, Class<?> aClass, String classToCheck) {
+    boolean available = false;
+    if (!aClassChecked.get()) {
+      available =
+          checkWithCurrentClassClassLoader(aClass, classToCheck)
+              || checkWithCurrentThreadContextClassLoader(classToCheck);
+      aClassChecked.set(true);
+      log.debug(aClass + "classes availability: " + available);
+    }
+    return available;
+  }
+
+  public static boolean checkWithCurrentClassClassLoader(Class<?> aClass, String className) {
+    try {
+      aClass.getClassLoader().loadClass(className);
+      return true;
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  private static boolean checkWithCurrentThreadContextClassLoader(String className) {
+    return loadClassWithCurrentThreadContextClassLoader(className) != null;
+  }
+
+  private static @Nullable Class<?> loadClassWithCurrentThreadContextClassLoader(String className) {
+    try {
+      return Thread.currentThread().getContextClassLoader().loadClass(className);
+    } catch (Exception e) {
+      return null;
+    }
   }
 }

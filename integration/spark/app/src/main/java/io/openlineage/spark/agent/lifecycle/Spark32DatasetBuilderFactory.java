@@ -33,10 +33,8 @@ import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuil
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoDelta11ColumnLineageVisitor;
-import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoIceberg013ColumnLineageVisitor;
 import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoCommandEdgeColumnLineageBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoDelta24ColumnLineageVisitor;
-import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoIceberg13ColumnLineageVisitor;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
@@ -126,14 +124,6 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
 
     if (MergeIntoDelta11ColumnLineageVisitor.hasClasses()) {
       builder.add(new MergeIntoDelta11ColumnLineageVisitor(context));
-    }
-
-    if (MergeIntoIceberg13ColumnLineageVisitor.hasClasses()) {
-      builder.add(new MergeIntoIceberg13ColumnLineageVisitor(context));
-    }
-
-    if (MergeIntoIceberg013ColumnLineageVisitor.hasClasses()) {
-      builder.add(new MergeIntoIceberg013ColumnLineageVisitor(context));
     }
 
     return builder.build();

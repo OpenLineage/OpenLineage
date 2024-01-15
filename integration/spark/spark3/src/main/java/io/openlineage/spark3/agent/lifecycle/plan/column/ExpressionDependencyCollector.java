@@ -8,12 +8,14 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.lifecycle.plan.VendorSpark3;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionDependencyVisitor;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
@@ -35,7 +37,13 @@ import scala.collection.Seq;
 public class ExpressionDependencyCollector {
 
   private static final List<ExpressionDependencyVisitor> expressionDependencyVisitors =
-      Arrays.asList(new UnionDependencyVisitor(), new IcebergMergeIntoDependencyVisitor());
+      Stream.concat(
+              Stream.of(new UnionDependencyVisitor()),
+              VendorSpark3.getVendors().stream()
+                  .map(VendorSpark3::getExpressionDependencyVisitor)
+                  .filter(Optional::isPresent)
+                  .map(Optional::get))
+          .collect(Collectors.toList());
 
   static void collect(
       OpenLineageContext context, LogicalPlan plan, ColumnLevelLineageBuilder builder) {

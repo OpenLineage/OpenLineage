@@ -18,7 +18,10 @@ public interface Vendors {
   List<String> VENDORS =
       Arrays.asList(
           // Add vendor classes here
-          "io.openlineage.spark.agent.vendor.snowflake.SnowflakeVendor");
+          "io.openlineage.spark.agent.vendor.snowflake.SnowflakeVendor",
+          "io.openlineage.spark.vendor.iceberg.IcebergVendor",
+          "io.openlineage.spark32.vendor.iceberg.IcebergVendorSpark32",
+          "io.openlineage.spark33.vendor.iceberg.IcebergVendorSpark33");
 
   static Vendors getVendors() {
     return getVendors(Collections.emptyList());

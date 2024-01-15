@@ -7,14 +7,11 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -28,32 +25,10 @@ import org.junit.jupiter.api.Test;
 class CatalogUtils3Test {
 
   @Test
-  void testGetCatalogHandler() {
-    TableCatalog tableCatalog = mock(org.apache.iceberg.spark.SparkCatalog.class);
-    assertTrue(
-        CatalogUtils3.getCatalogHandler(mock(OpenLineageContext.class), tableCatalog).get()
-            instanceof IcebergHandler);
-  }
-
-  @Test
   void testGetCatalogHandlerEmpty() {
     assertEquals(
         Optional.empty(),
         CatalogUtils3.getCatalogHandler(mock(OpenLineageContext.class), mock(TableCatalog.class)));
-  }
-
-  @Test
-  void testGetStorageDatasetFacet() {
-    OpenLineageContext context = mock(OpenLineageContext.class);
-    TableCatalog tableCatalog = mock(org.apache.iceberg.spark.SparkCatalog.class);
-    Map<String, String> properties = new HashMap<>();
-    when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
-
-    assertEquals(
-        "iceberg",
-        CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, properties)
-            .get()
-            .getStorageLayer());
   }
 
   @Test

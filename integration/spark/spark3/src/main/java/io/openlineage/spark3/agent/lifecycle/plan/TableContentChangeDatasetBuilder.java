@@ -8,7 +8,6 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
@@ -21,7 +20,6 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.MergeIntoTable;
 import org.apache.spark.sql.catalyst.plans.logical.OverwriteByExpression;
 import org.apache.spark.sql.catalyst.plans.logical.OverwritePartitionsDynamic;
-import org.apache.spark.sql.catalyst.plans.logical.ReplaceData;
 import org.apache.spark.sql.catalyst.plans.logical.UpdateTable;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
@@ -40,7 +38,6 @@ public class TableContentChangeDatasetBuilder
         || (x instanceof OverwritePartitionsDynamic)
         || (x instanceof DeleteFromTable)
         || (x instanceof UpdateTable)
-        || (new IcebergHandler(context).hasClasses() && x instanceof ReplaceData)
         || (x instanceof MergeIntoTable)
         || (x instanceof InsertIntoStatement);
   }
@@ -59,10 +56,6 @@ public class TableContentChangeDatasetBuilder
       if (((InsertIntoStatement) x).overwrite()) {
         includeOverwriteFacet = true;
       }
-    } else if (new IcebergHandler(context).hasClasses() && x instanceof ReplaceData) {
-      // DELETE FROM on ICEBERG HAS START ELEMENT WITH ReplaceData AND COMPLETE ONE WITH
-      // DeleteFromTable
-      table = ((ReplaceData) x).table();
     } else if (x instanceof DeleteFromTable) {
       table = (NamedRelation) ((DeleteFromTable) x).table();
     } else if (x instanceof UpdateTable) {
