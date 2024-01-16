@@ -10,16 +10,21 @@ import static org.awaitility.Awaitility.await;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
 
+import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineageClientUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.mockserver.client.MockServerClient;
+import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.MatchType;
+import org.mockserver.model.HttpRequest;
 import org.mockserver.model.JsonBody;
 import org.mockserver.model.RequestDefinition;
 
@@ -64,5 +69,14 @@ public class MockServerUtils {
         });
 
     return json(fileContent[0], MatchType.ONLY_MATCHING_FIELDS);
+  }
+
+  static List<RunEvent> getEventsEmitted(ClientAndServer mockServer) {
+    HttpRequest[] httpRequests =
+        mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage"));
+
+    return Arrays.asList(httpRequests).stream()
+        .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+        .collect(Collectors.toList());
   }
 }

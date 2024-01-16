@@ -124,6 +124,10 @@ class PathUtilsTest {
     di = PathUtils.fromURI(new URI("s3://data-bucket/path"), FILE);
     assertThat(di.getName()).isEqualTo("path");
     assertThat(di.getNamespace()).isEqualTo("s3://data-bucket");
+
+    di = PathUtils.fromURI(new URI("gs://gs-bucket/test.csv"));
+    assertThat(di.getName()).isEqualTo("test.csv");
+    assertThat(di.getNamespace()).isEqualTo("gs://gs-bucket");
   }
 
   @Test
