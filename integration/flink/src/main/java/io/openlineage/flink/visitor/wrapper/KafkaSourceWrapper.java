@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
@@ -69,7 +70,6 @@ public class KafkaSourceWrapper {
         WrapperUtils.<Pattern>getFieldValue(
             kafkaSubscriber.getClass(), kafkaSubscriber, "topicPattern");
 
-    // TODO: write some unit test to this
     if (topicPattern.isPresent()) {
       KafkaTopicsDescriptor descriptor = new KafkaTopicsDescriptor(null, topicPattern.get());
 
@@ -79,7 +79,10 @@ public class KafkaSourceWrapper {
           KafkaPartitionDiscoverer.class, partitionDiscoverer, "initializeConnections");
       return WrapperUtils.<List<String>>invoke(
               KafkaPartitionDiscoverer.class, partitionDiscoverer, "getAllTopics")
-          .get();
+          .get()
+          .stream()
+          .filter(topic -> descriptor.isMatchingTopic(topic))
+          .collect(Collectors.toList());
     }
     return Collections.emptyList();
   }

@@ -30,7 +30,7 @@ public class FlinkLegacyKafkaApplication {
         .process(new StatefulCounter())
         .name("process")
         .uid("process")
-        .addSink(legacyKafkaSink(parameters.getRequired("output-topic")))
+        .addSink(legacyKafkaSink(parameters.getRequired("output-topics")))
         .name("kafka-sink")
         .uid("kafka-sink");
 
