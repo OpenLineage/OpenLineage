@@ -45,79 +45,115 @@ jobs:
   # workflow
   determine_changed_modules:
     docker:
-      - image: cimg/go:1.21.0
+      - image: cimg/python:3.8
     steps:
       - checkout
       - run:
           name: Install yq
-          command: go install "github.com/mikefarah/yq/v4@v4.35.2"
-      - run: |
-          # Based on the changed files (or if we are on the main branch), generate a yaml file with
-          # a list of workflow files. Use those files to build a workflow with a union of all tasks
+          command: |
+            wget -q https://github.com/mikefarah/yq/releases/download/v4.35.2/yq_linux_amd64
+            sudo mv yq_linux_amd64 /usr/local/bin/yq
+            sudo chmod +x /usr/local/bin/yq
+      - run:
+          name: Check changes and merge workflows.
+          command: |
+            # Based on the changed files (or if we are on the main branch), generate a yaml file with
+            # a list of workflow files. Use those files to build a workflow with a union of all tasks
 
-          function check_change () {
-            MOD=$1
-            shift
-            if [ $(git diff --name-only main $MOD | grep -v ".*.md" | wc -l) -gt 0 ]; then
-              echo "Change found in $MOD"
-              if [ "$1" == "*" ]; then
-                ls -d $PWD/.circleci/workflows/* > workflow_files.txt
-              else
-                for ln in $@; do
-                  echo "$PWD/.circleci/workflows/$ln" >> workflow_files.txt
-                done
+            function check_change () {
+              MOD=$1
+              shift
+              if [ $(git diff --name-only main $MOD | grep -v ".*.md" | wc -l) -gt 0 ]; then
+                echo "Change found in $MOD"
+                if [ "$1" == "*" ]; then
+                  ls -d $PWD/.circleci/workflows/* > workflow_files.txt
+                else
+                  for ln in $@; do
+                    echo "$PWD/.circleci/workflows/$ln" >> workflow_files.txt
+                  done
+                fi
               fi
-            fi
-          }
+            }
 
-          # Add always workflow
-          echo "$PWD/.circleci/workflows/openlineage-always.yml" >> workflow_files.txt
+            # Add always workflow
+            echo "$PWD/.circleci/workflows/openlineage-always.yml" >> workflow_files.txt
 
-          # If we are on the main branch, run all of the workflows
-          if [ "$CIRCLE_BRANCH" == "main" ]; then
-            # if integration type is not all, we specify only a single integration type in workflow files
-            if [ "<< pipeline.parameters.integration-type >>" != "*" ]; then
-              ls -d $PWD/.circleci/workflows/openlineage-integration-<< pipeline.parameters.integration-type >>.yml > workflow_files.txt
+            # If we are on the main branch, run all of the workflows
+            if [ "$CIRCLE_BRANCH" == "main" ]; then
+              # if integration type is not all, we specify only a single integration type in workflow files
+              if [ "<< pipeline.parameters.integration-type >>" != "*" ]; then
+                ls -d $PWD/.circleci/workflows/openlineage-integration-<< pipeline.parameters.integration-type >>.yml > workflow_files.txt
+              else
+                ls -d $PWD/.circleci/workflows/* > workflow_files.txt
+              fi
             else
-              ls -d $PWD/.circleci/workflows/* > workflow_files.txt
+              # Changes to the spec require all workflows to run
+              check_change spec "*"
+              check_change .circleci "*"
+              check_change integration/sql/ "*"
+
+              check_change client/java/ openlineage-java.yml openlineage-flink.yml openlineage-spark.yml
+              check_change integration/spark/ openlineage-java.yml openlineage-spark.yml
+              check_change integration/flink/ openlineage-java.yml openlineage-flink.yml
+              check_change client/python/ openlineage-integration-python.yml openlineage-integration-dbt.yml openlineage-integration-dagster.yml openlineage-integration-airflow.yml
+              check_change integration/common/ openlineage-integration-python.yml openlineage-integration-airflow.yml openlineage-integration-dbt.yml
+              check_change integration/airflow/ openlineage-integration-python.yml openlineage-integration-airflow.yml
+              check_change integration/dagster/ openlineage-integration-python.yml openlineage-integration-dagster.yml
+              check_change integration/dbt/ openlineage-integration-python.yml openlineage-integration-dbt.yml openlineage-integration-airflow.yml
+              check_change proxy/backend/ openlineage-proxy-backend.yml
+              check_change proxy/fluentd/ openlineage-proxy-fluentd.yml
             fi
-          else
-            # Changes to the spec require all workflows to run
-            check_change spec "*"
-            check_change .circleci "*"
-            check_change integration/sql/ "*"
+            touch workflow_files.txt
+            FILES=$(sort workflow_files.txt | uniq | tr "\n" " ")
+            
+            # yq eval-all the workflow files specified in the workflow_files.txt file.
+            # Collect all the jobs from each workflow except for the "workflow_complete" job and
+            # create a union of all jobs.
+            # Collect the "workflow_complete" job from each workflow and concatenate the "requires"
+            # section of each and create a single "workflow_complete" job that is the union of all.
+            # The output of this is a circleci configuration with a single workflow called "build"
+            # that contains the union of all jobs plus the "workflow_complete" job that depends on
+            # all required jobs.
+            #
+            # This configuration is piped into yq along with the continue_config.yml file and the
+            # union of the two files is output to complete_config.yml
 
-            check_change client/java/ openlineage-java.yml openlineage-flink.yml openlineage-spark.yml
-            check_change integration/spark/ openlineage-java.yml openlineage-spark.yml
-            check_change integration/flink/ openlineage-java.yml openlineage-flink.yml
-            check_change client/python/ openlineage-integration-python.yml openlineage-integration-dbt.yml openlineage-integration-dagster.yml openlineage-integration-airflow.yml
-            check_change integration/common/ openlineage-integration-python.yml openlineage-integration-airflow.yml openlineage-integration-dbt.yml
-            check_change integration/airflow/ openlineage-integration-python.yml openlineage-integration-airflow.yml
-            check_change integration/dagster/ openlineage-integration-python.yml openlineage-integration-dagster.yml
-            check_change integration/dbt/ openlineage-integration-python.yml openlineage-integration-dbt.yml openlineage-integration-airflow.yml
-            check_change proxy/backend/ openlineage-proxy-backend.yml
-            check_change proxy/fluentd/ openlineage-proxy-fluentd.yml
-          fi
-          touch workflow_files.txt
-          FILES=$(sort workflow_files.txt | uniq | tr "\n" " ")
-          
-          # yq eval-all the workflow files specified in the workflow_files.txt file.
-          # Collect all the jobs from each workflow except for the "workflow_complete" job and
-          # create a union of all jobs.
-          # Collect the "workflow_complete" job from each workflow and concatenate the "requires"
-          # section of each and create a single "workflow_complete" job that is the union of all.
-          # The output of this is a circleci configuration with a single workflow called "build"
-          # that contains the union of all jobs plus the "workflow_complete" job that depends on
-          # all required jobs.
-          #
-          # This configuration is piped into yq along with the continue_config.yml file and the
-          # union of the two files is output to complete_config.yml
+            yq eval-all '.workflows[].jobs |= map(select(.[].requires == null) |= .[].requires = ["always_run"])
+                | .workflows | . as $wf ireduce({}; . * $wf) |
+                (map(.jobs[] | select(has("workflow_complete") | not)) | . as $item ireduce ([]; (. *+ $item) ))
+                + [(map(.jobs[] | select(has("workflow_complete"))) | .[] as $item ireduce ({}; . *+ $item))] | {"workflows": {"build": {"jobs": .}}}' $FILES | \
+            yq eval-all '. as $wf ireduce({}; . * $wf)' .circleci/continue_config.yml - > complete_config.yml
+      - unless:
+          condition:
+            matches:
+              pattern: '^pull\/[0-9]+$'
+              value: << pipeline.git.branch >>
+          steps:
+          - run:
+              name: Remove approval steps if not pull from forks.
+              command: |
+                pip install pyyaml==6.0.1
+                python -c  "import yaml
+                d = yaml.safe_load(open('complete_config.yml'))
+                for workflow_name, workflow_definition in d['workflows'].items():
+                    jobs = workflow_definition.get('jobs') if isinstance(workflow_definition, dict) else None
+                    if not jobs: continue
 
-          yq eval-all '.workflows[].jobs |= map(select(.[].requires == null) |= .[].requires = ["always_run"])
-              | .workflows | . as $wf ireduce({}; . * $wf) |
-              (map(.jobs[] | select(has("workflow_complete") | not)) | . as $item ireduce ([]; (. *+ $item) ))
-              + [(map(.jobs[] | select(has("workflow_complete"))) | .[] as $item ireduce ({}; . *+ $item))] | {"workflows": {"build": {"jobs": .}}}' $FILES | \
-          yq eval-all '. as $wf ireduce({}; . * $wf)' .circleci/continue_config.yml - > complete_config.yml
+                    # find all approvals
+                    approvals = list(filter(lambda x: isinstance(x, dict) and list(x.values())[0].get('type') == 'approval', jobs))
+                    for approval in approvals:
+                        approval_name = next(iter(approval))
+                        approval_upstreams = approval[approval_name].get('requires')
+                        approval_downstream = list(filter(lambda x: isinstance(x, dict) and approval_name in list(x.values())[0].get('requires'), jobs))
+                        # replace approval with its upstream jobs
+                        for job in approval_downstream:
+                            requires = next(iter(job.values()))['requires']
+                            requires.remove(approval_name)
+                            requires.extend(approval_upstreams)
+                        jobs.remove(approval)
+                with open('complete_config.yml', 'w') as f:
+                    f.write(yaml.dump(d, sort_keys=False))"
+
       - continuation/continue:
           configuration_path: complete_config.yml
 
