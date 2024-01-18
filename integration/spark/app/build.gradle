@@ -1,14 +1,8 @@
-import org.apache.tools.ant.filters.ReplaceTokens
-import groovy.io.FileType
-
-import java.nio.file.Files
-
-
 plugins {
     id 'java'
     id 'java-library'
     id 'java-test-fixtures'
-    id 'com.diffplug.spotless' version '6.12.0'
+    id("io.openlineage.standard-spotless")
     id "com.adarshr.test-logger" version "3.2.0"
     id "org.gradle.test-retry" version "1.5.8"
     id "com.github.johnrengelman.shadow" version "8.1.1"
@@ -55,8 +49,7 @@ configurations {
     pysparkContainerOnly
 }
 
-archivesBaseName='openlineage-spark-app'
-
+archivesBaseName = 'openlineage-spark-app'
 
 ext {
     assertjVersion = '3.25.1'
@@ -66,7 +59,7 @@ ext {
     mockitoVersion = '4.11.0'
     testcontainersVersion = '1.19.3'
     junit5Version = '5.10.1'
-    shortVersion = sparkVersion.substring(0,3)
+    shortVersion = sparkVersion.substring(0, 3)
 
     versionsMap = [
             "3.5": ["module": "spark35", "scala": "2.12", "delta": "NA", "gcs": "hadoop3-2.2.9", "snowflake": "2.13.0-spark_3.4", "iceberg": "NA", "hadoopclient": "3.3.4"],
@@ -74,7 +67,7 @@ ext {
             "3.3": ["module": "spark33", "scala": "2.12", "delta": "2.1.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.3", "iceberg": "iceberg-spark-runtime-3.3_2.12:0.14.0", "hadoopclient": "3.3.4"],
             "3.2": ["module": "spark32", "scala": "2.12", "delta": "1.1.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.2", "iceberg": "iceberg-spark-runtime-3.2_2.12:0.14.0", "hadoopclient": "3.3.4"],
             "3.1": ["module": "spark31", "scala": "2.12", "delta": "1.0.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.1", "iceberg": "iceberg-spark-runtime-3.1_2.12:0.13.0", "hadoopclient": "3.3.4"],
-            "2.4": ["module": "spark2",  "scala": "2.11", "delta": "NA",    "gcs": "hadoop2-2.2.9", "snowflake": "2.9.3-spark_2.4",  "iceberg": "NA", "hadoopclient": "2.10.2"]
+            "2.4": ["module": "spark2", "scala": "2.11", "delta": "NA", "gcs": "hadoop2-2.2.9", "snowflake": "2.9.3-spark_2.4", "iceberg": "NA", "hadoopclient": "2.10.2"]
     ]
     versions = versionsMap[shortVersion]
 }
@@ -105,7 +98,7 @@ dependencies {
 
     compileOnly "org.apache.spark:spark-core_${versions.scala}:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_${versions.scala}:${sparkVersion}"
-    compileOnly ("com.google.cloud.spark:spark-bigquery-with-dependencies_${versions.scala}:${bigqueryVersion}") {
+    compileOnly("com.google.cloud.spark:spark-bigquery-with-dependencies_${versions.scala}:${bigqueryVersion}") {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
         exclude group: 'com.sun.jmx'
@@ -113,7 +106,7 @@ dependencies {
         exclude group: 'javax.jms'
     }
 
-    compileOnly ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
+    compileOnly("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
         exclude group: 'com.google.guava:guava'
         exclude group: 'org.apache.spark:spark-core_2.11'
         exclude group: 'org.apache.spark:spark-sql_2.11'
@@ -140,7 +133,7 @@ dependencies {
         exclude group: "org.apache.spark", module: "spark-graphx_${versions.scala}"
     }
     testFixturesApi 'commons-beanutils:commons-beanutils:1.9.4'
-    if(versions.module != "spark2") {
+    if (versions.module != "spark2") {
         testFixturesApi("org.apache.spark:spark-hadoop-cloud_${versions.scala}:${sparkVersion}") {
             exclude group: 'com.fasterxml.jackson.core'
             exclude group: 'org.apache.hadoop', module: 'hadoop-azure'
@@ -148,8 +141,8 @@ dependencies {
         }
     }
 
-    if(versions.snowflake != "NA") {
-        testFixturesApi ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
+    if (versions.snowflake != "NA") {
+        testFixturesApi("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
             exclude group: 'com.google.guava:guava'
             exclude group: 'org.apache.spark:spark-core_2.11'
             exclude group: 'org.apache.spark:spark-sql_2.11'
@@ -188,29 +181,33 @@ dependencies {
     testFixturesApi "org.mockito:mockito-inline:${mockitoVersion}"
     testFixturesApi "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
 
-    pysparkContainerOnly("com.google.cloud.bigdataoss:gcs-connector:${versions.gcs}:shaded"){
+    pysparkContainerOnly("com.google.cloud.bigdataoss:gcs-connector:${versions.gcs}:shaded") {
         exclude group: 'com.google.guava', module: 'guava'
     }
     pysparkContainerOnly("com.google.guava:guava:30.1-jre")
 
-    if(versions.delta != "NA") { testFixturesApi "io.delta:delta-core_2.12:${versions.delta}" }
+    if (versions.delta != "NA") {
+        testFixturesApi "io.delta:delta-core_2.12:${versions.delta}"
+    }
 
-    if(versions.iceberg != "NA") { testFixturesApi "org.apache.iceberg:${versions.iceberg}" }
+    if (versions.iceberg != "NA") {
+        testFixturesApi "org.apache.iceberg:${versions.iceberg}"
+    }
 
     testImplementation(project(":${versions.module}"))
-    if(versions.module != "spark2") {
-        testImplementation("com.google.cloud.bigdataoss:gcs-connector:hadoop3-2.2.9"){
+    if (versions.module != "spark2") {
+        testImplementation("com.google.cloud.bigdataoss:gcs-connector:hadoop3-2.2.9") {
             exclude group: 'com.google.guava', module: 'guava'
         }
         pysparkContainerOnly("com.google.guava:guava:30.1-jre")
     }
-    
-    
-    testImplementation testFixtures(project(":${versions.module}")){
+
+
+    testImplementation testFixtures(project(":${versions.module}")) {
         exclude group: 'org.apache.avro'
     }
 
-    lombok  "org.projectlombok:lombok:${lombokVersion}"
+    lombok "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
 
@@ -224,7 +221,7 @@ def commonTestConfiguration = {
     systemProperties = [
             'junit.platform.output.capture.stdout': 'true',
             'junit.platform.output.capture.stderr': 'true',
-            'spark.version'                       :  sparkVersion,
+            'spark.version'                       : sparkVersion,
             'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
             'kafka.package.version'               : "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}",
             'mockserver.logLevel'                 : 'ERROR'
@@ -233,7 +230,7 @@ def commonTestConfiguration = {
     classpath = project.sourceSets.test.runtimeClasspath
 }
 
-task nonParallelTest (type: Test) {
+task nonParallelTest(type: Test) {
     dependsOn shadowJar
     group = 'verification'
     description = "Runs tests that cannot be run in parallel. For example test suites that require metastore_db"
@@ -245,7 +242,7 @@ task nonParallelTest (type: Test) {
     }
 }
 
-task beforeShadowJarTest (type: Test) {
+task beforeShadowJarTest(type: Test) {
     group = 'verification'
     description = "Tests that depend that have to be run before shadowJar"
 
@@ -257,10 +254,14 @@ task beforeShadowJarTest (type: Test) {
 // wrócić do jednego test z jakąś metodą zwracającą konfigurację żeby spark3 działał
 test {
     dependsOn nonParallelTest
-    useJUnitPlatform {i ->
-        excludeTags ('integration-test', 'nonParallelTest', 'beforeShadowJarTest' )
-        if(versions.delta == "NA") {excludeTags 'delta'}
-        if(versions.iceberg == "NA") {excludeTags 'iceberg'}
+    useJUnitPlatform { i ->
+        excludeTags('integration-test', 'nonParallelTest', 'beforeShadowJarTest')
+        if (versions.delta == "NA") {
+            excludeTags 'delta'
+        }
+        if (versions.iceberg == "NA") {
+            excludeTags 'iceberg'
+        }
     }
     configure commonTestConfiguration
     classpath = project.sourceSets.test.runtimeClasspath + configurations."${versions.module}"
@@ -269,7 +270,7 @@ test {
 task copyDependencies(type: Copy) {
     dependsOn shadowJar
     dependsOn(
-            ':spark2:shadowJar',':spark3:shadowJar', ':spark31:shadowJar',
+            ':spark2:shadowJar', ':spark3:shadowJar', ':spark31:shadowJar',
             ':spark32:shadowJar', ':spark33:shadowJar',
             ':spark34:shadowJar', ':spark35:shadowJar'
     )
@@ -307,9 +308,15 @@ task integrationTest(type: Test) {
     useJUnitPlatform {
         includeTags "integration-test"
         excludeTags "databricks"
-        if(!sparkVersion.startsWith('3')) {excludeTags 'spark3'}
-        if(versions.delta == "NA") {excludeTags 'delta'}
-        if(versions.iceberg == "NA") {excludeTags 'iceberg'}
+        if (!sparkVersion.startsWith('3')) {
+            excludeTags 'spark3'
+        }
+        if (versions.delta == "NA") {
+            excludeTags 'delta'
+        }
+        if (versions.iceberg == "NA") {
+            excludeTags 'iceberg'
+        }
     }
 }
 
@@ -328,22 +335,6 @@ task databricksIntegrationTest(type: Test) {
     }
 }
 
-spotless {
-    def disallowWildcardImports = {
-        String text = it
-        def regex = ~/import .*\.\*;/
-        def m = regex.matcher(text)
-        if (m.find()) {
-            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
-        }
-    }
-    java {
-        googleJavaFormat()
-        removeUnusedImports()
-        custom 'disallowWildcardImports', disallowWildcardImports
-    }
-}
-
 assemble {
     dependsOn shadowJar
 }
@@ -351,15 +342,15 @@ assemble {
 shadowJar {
     dependsOn beforeShadowJarTest
 
-    minimize(){
-        exclude (project(":shared"))
-        exclude (project(":spark2"))
-        exclude (project(":spark3"))
-        exclude (project(":spark31"))
-        exclude (project(":spark32"))
-        exclude (project(":spark33"))
-        exclude (project(":spark34"))
-        exclude (project(":spark35"))
+    minimize() {
+        exclude(project(":shared"))
+        exclude(project(":spark2"))
+        exclude(project(":spark3"))
+        exclude(project(":spark31"))
+        exclude(project(":spark32"))
+        exclude(project(":spark33"))
+        exclude(project(":spark34"))
+        exclude(project(":spark35"))
     }
     archiveClassifier = ''
     // avoid conflict with any client version of that lib
