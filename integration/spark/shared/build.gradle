@@ -1,45 +1,9 @@
 plugins {
-    id 'java'
-    id 'java-library'
+    id("io.openlineage.common-config")
     id 'java-test-fixtures'
-    id("io.openlineage.standard-spotless")
-    id "com.github.johnrengelman.shadow" version "8.1.1"
-    id "pmd"
-}
-
-pmd {
-    consoleOutput = true
-    toolVersion = "6.46.0"
-    rulesMinimumPriority = 5
-    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
-    ruleSets = []
-    ignoreFailures = true
-}
-
-pmdMain {
-    dependsOn shadowJar
-    reports {
-        html.required = true
-    }
-}
-
-pmdTest {
-    dependsOn shadowJar
 }
 
 archivesBaseName = 'openlineage-spark-shared'
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven {
-        url = 'https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot'
-    }
-}
-
-configurations {
-    lombok
-}
 
 ext {
     assertjVersion = '3.25.1'
@@ -125,19 +89,8 @@ def commonTestConfiguration = {
 }
 
 test {
-    dependsOn shadowJar
     configure commonTestConfiguration
     useJUnitPlatform {
         excludeTags 'integration-test'
     }
-}
-
-assemble {
-    dependsOn shadowJar
-}
-
-shadowJar {
-    minimize()
-    archiveClassifier = ''
-    zip64 true
 }

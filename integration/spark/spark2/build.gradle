@@ -1,40 +1,9 @@
 plugins {
-    id 'java'
-    id 'java-library'
+    id("io.openlineage.common-config")
     id 'java-test-fixtures'
-    id("io.openlineage.standard-spotless")
     id "com.adarshr.test-logger" version "3.2.0"
     id "org.gradle.test-retry" version "1.5.8"
     id "com.github.johnrengelman.shadow" version "8.1.1"
-    id "pmd"
-}
-
-pmd {
-    consoleOutput = true
-    toolVersion = "6.46.0"
-    rulesMinimumPriority = 5
-    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
-    ruleSets = []
-    ignoreFailures = true
-}
-
-pmdMain {
-    dependsOn shadowJar
-    reports {
-        html.required = true
-    }
-}
-
-pmdTest {
-    dependsOn shadowJar
-}
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven {
-        url = 'https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot'
-    }
 }
 
 archivesBaseName = 'openlineage-spark-spark2'
@@ -49,15 +18,13 @@ ext {
 }
 
 dependencies {
-    api "io.openlineage:openlineage-java:${project.version}"
-    implementation(project(path: ":shared", configuration: 'shadow'))
+    implementation(project(path: ":shared"))
 
     compileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:2.15.3"
     compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
-
     compileOnly "com.databricks:dbutils-api_2.11:0.0.5"
 
     testFixturesApi "org.apache.spark:spark-core_2.11:${sparkVersion}"
@@ -73,7 +40,7 @@ dependencies {
     testFixturesApi "org.mockito:mockito-inline:${mockitoVersion}"
     testFixturesApi "org.junit.jupiter:junit-jupiter-api:${junit5Version}"
     testFixturesApi "org.apache.kafka:kafka-clients:3.6.1"
-    testFixturesApi(project(path: ":shared", configuration: 'shadow'))
+    testFixturesApi(project(path: ":shared"))
 }
 
 def commonTestConfiguration = {
@@ -96,27 +63,8 @@ def commonTestConfiguration = {
 }
 
 test {
-    dependsOn shadowJar
     configure commonTestConfiguration
     useJUnitPlatform {
         excludeTags 'integration-test'
     }
-}
-
-assemble {
-    dependsOn shadowJar
-}
-
-compileTestJava {
-    dependsOn(':shared:jar')
-}
-
-compileJava {
-    dependsOn(':shared:jar')
-}
-
-shadowJar {
-    minimize()
-    archiveClassifier = ''
-    zip64 true
 }

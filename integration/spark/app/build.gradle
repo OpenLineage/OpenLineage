@@ -1,44 +1,12 @@
 plugins {
-    id 'java'
-    id 'java-library'
+    id("io.openlineage.common-config")
     id 'java-test-fixtures'
-    id("io.openlineage.standard-spotless")
     id "com.adarshr.test-logger" version "3.2.0"
     id "org.gradle.test-retry" version "1.5.8"
     id "com.github.johnrengelman.shadow" version "8.1.1"
-    id "pmd"
-}
-
-pmd {
-    consoleOutput = true
-    toolVersion = "6.46.0"
-    rulesMinimumPriority = 5
-    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
-    ruleSets = []
-    ignoreFailures = true
-}
-
-pmdMain {
-    dependsOn shadowJar
-    reports {
-        html.required = true
-    }
-}
-
-pmdTest {
-    dependsOn shadowJar
-}
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven {
-        url = 'https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot'
-    }
 }
 
 configurations {
-    lombok
     spark2.extendsFrom testImplementation
     spark3.extendsFrom testImplementation
     spark31.extendsFrom testImplementation
@@ -80,12 +48,7 @@ configurations.all { // https://github.com/apache/spark/pull/38355 - can be remo
 }
 
 dependencies {
-    compileOnly "org.projectlombok:lombok:${lombokVersion}"
-    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
-    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
-    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
-
-    implementation(project(path: ":shared", configuration: 'shadow'))
+    implementation(project(path: ":shared"))
     implementation(project(path: ":spark2"))
     implementation(project(path: ":spark3"))
     implementation(project(path: ":spark31"))
@@ -206,9 +169,6 @@ dependencies {
     testImplementation testFixtures(project(":${versions.module}")) {
         exclude group: 'org.apache.avro'
     }
-
-    lombok "org.projectlombok:lombok:${lombokVersion}"
-    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
 
 def commonTestConfiguration = {
@@ -269,11 +229,6 @@ test {
 
 task copyDependencies(type: Copy) {
     dependsOn shadowJar
-    dependsOn(
-            ':spark2:shadowJar', ':spark3:shadowJar', ':spark31:shadowJar',
-            ':spark32:shadowJar', ':spark33:shadowJar',
-            ':spark34:shadowJar', ':spark35:shadowJar'
-    )
     dependsOn(
             ':spark2:jar', ':spark3:jar', ':spark31:jar',
             ':spark32:jar', ':spark33:jar',
@@ -395,4 +350,8 @@ task createVersionProperties(dependsOn: processResources) {
 
 classes {
     dependsOn createVersionProperties
+}
+
+tasks.named("pmdTest") {
+    mustRunAfter("shadowJar")
 }

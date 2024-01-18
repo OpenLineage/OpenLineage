@@ -7,27 +7,17 @@ package io.openlineage.gradle.plugin
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.provider.Property
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.*
 
 /**
- * An interface for the `Scala213VariantPlugin` extension.
+ * A Gradle plugin that configures a project for Scala 2.13 development.
+ * It manages the setup of source sets, tasks, and configurations specific to Scala 2.13,
+ * facilitating the development and testing of Scala-based applications.
  *
- * This extension provides a property for setting the archive base name for the plugin.
- */
-interface Scala213VariantPluginExtension {
-    val archiveBaseName: Property<String>
-}
-
-/**
- * A Gradle plugin that configures the project to use Scala 2.13.
- *
- * This plugin sets up the necessary source sets, tasks, and configurations for building and testing against libraries compiled using Scala 2.13. It also provides an extension for setting the archive base name.
- *
- * To apply this plugin, add the following to your `build.gradle.kts`:
+ * To apply this plugin, add the following to your build script:
  *
  * ```kotlin
  * plugins {

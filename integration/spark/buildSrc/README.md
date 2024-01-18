@@ -1,10 +1,13 @@
 # OpenLineage Gradle Plugins
 
-This repository contains four Gradle plugins that are used to configure and manage the build process for OpenLineage projects. These plugins are written in Kotlin and are designed to work with Gradle.
+This repository hosts a suite of Gradle plugins designed for configuring and managing the build
+process for OpenLineage projects. Written in Kotlin, these plugins are optimized for use with
+Gradle.
 
 ## Scala213VariantPlugin
 
-The `Scala213VariantPlugin` is a Gradle plugin that configures the project to use Scala 2.13. It sets up the necessary source sets, tasks, and configurations for building and testing Scala 2.13 code.
+Configures the project to support builds that use libraries compiled with Scala 2.13, setting up
+necessary source sets, tasks, and configurations for building and testing said code.
 
 To apply this plugin, add the following to your `build.gradle.kts` (or `build.gradle`):
 
@@ -14,43 +17,32 @@ plugins {
 }
 ```
 
-## StandardSpotlessPlugin
+## CommonConfigPlugin
 
-The `StandardSpotlessPlugin` is a Gradle plugin that applies the Spotless code formatter to the project. It is configured to use the Google Java Format and to disallow wildcard imports.
+This versatile plugin combines the functionalities of the
+former `StandardSpotlessPlugin`, `PrintSourceSetConfigurationPlugin`, and `CommonJavaConfigPlugin`.
+It applies common configurations to Java projects and includes additional features like PMD, Lombok,
+and Spotless setup.
 
-To apply this plugin, add the following to your `build.gradle.kts` (or `build.gradle`):
+Features:
 
-```kotlin
-plugins {
-    id("io.openlineage.standard-spotless")
-}
-```
-
-## CommonJavaConfigPlugin
-
-The `CommonJavaConfigPlugin` is a Gradle plugin that applies common Java configurations to the project. It sets the source and target compatibility to Java 8 and configures the project to use Maven Central, Maven Local, and a custom Astronomer repository.
-
-To apply this plugin, add the following to your `build.gradle.kts` (or `build.gradle`):
-
-```kotlin
-plugins {
-    id("io.openlineage.common-java-config")
-}
-```
-
-## PrintSourceSetConfigurationPlugin
-
-The `PrintSourceSetConfigurationPlugin` is a Gradle plugin that registers a task named `printSourceSetConfiguration` to the project. This task, when executed, prints the configuration of the source sets in the project. This includes the name of each source set, its source directories, output directories, and compile classpath. This plugin can be useful for debugging and understanding how the source sets are configured in a project.
+- **PMD**: Integrated code analysis tool (configurable).
+- **Lombok**: Simplifies Java code, reducing boilerplate.
+- **Spotless**: Applies code formatting with Google Java Format and disallows wildcard imports.
+- **Print Source Set Configuration**: Registers a task to print the configuration of the project's
+  source sets.
+- **Java Configuration**: Sets source and target compatibility to Java 8 and configures Maven
+  Central, Maven Local, and a custom Astronomer repository.
 
 To apply this plugin, add the following to your `build.gradle.kts` (or `build.gradle`):
 
 ```kotlin
 plugins {
-    id("io.openlineage.print-source-set-configuration")
+    id("io.openlineage.common-config")
 }
 ```
 
-To execute the `printSourceSetConfiguration` task, run the following command in your terminal:
+To execute the `printSourceSetConfiguration` task, use the following command:
 
 ```bash
 ./gradlew printSourceSetConfiguration
