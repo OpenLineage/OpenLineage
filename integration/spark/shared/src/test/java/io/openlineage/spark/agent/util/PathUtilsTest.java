@@ -181,6 +181,26 @@ class PathUtilsTest {
   }
 
   @Test
+  void testFromCatalogWithDefaultStorageAndNoWarehouse() throws URISyntaxException {
+    sparkConf.remove("spark.hadoop.hive.metastore.uris");
+    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+    when(catalogStorageFormat.locationUri())
+        .thenReturn(Option.apply(new URI("s3://s3-db/table")));
+
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(catalogTable.identifier()).thenReturn(tableIdentifier);
+    when(tableIdentifier.database()).thenReturn(Option.apply("db"));
+    when(tableIdentifier.table()).thenReturn("table");
+
+    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
+    assertThat(di.getName()).isEqualTo("table");
+    assertThat(di.getNamespace()).isEqualTo("s3://s3-db");
+    assertThat(di.getSymlinks()).hasSize(1);
+    assertThat(di.getSymlinks().get(0).getName()).isEqualTo("db.table");
+    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("");
+  }
+
+  @Test
   void testFromCatalogExceptionIsThrownWhenUnableToExtractDatasetIdentifier() {
     try (MockedStatic<SparkSession> mocked = mockStatic(SparkSession.class)) {
       mocked.when(SparkSession::active).thenThrow(new IllegalStateException("some message"));
