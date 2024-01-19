@@ -8,7 +8,7 @@ plugins {
     id 'jacoco'
     id "com.adarshr.test-logger" version "3.2.0"
     id "org.gradle.test-retry" version "1.5.8"
-    id 'com.diffplug.spotless' version '6.12.0'
+    id("io.openlineage.standard-spotless")
     id "com.github.johnrengelman.shadow" version "8.1.1"
 }
 
@@ -41,7 +41,7 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
-archivesBaseName='openlineage-spark'
+archivesBaseName = 'openlineage-spark'
 
 ext {
     lombokVersion = '1.18.20'
@@ -51,7 +51,7 @@ ext {
 }
 
 dependencies {
-    implementation(project(path:    ":app"))
+    implementation(project(path: ":app"))
     implementation(project(path: ":shared", configuration: "shadow"))
     implementation(project(path: ":spark2"))
     implementation(project(path: ":spark3"))
@@ -71,12 +71,12 @@ dependencies {
 
 
 task sourceJar(type: Jar) {
-    archiveClassifier='sources'
+    archiveClassifier = 'sources'
     from sourceSets.main.allJava
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    archiveClassifier='javadoc'
+    archiveClassifier = 'javadoc'
     from javadoc.destinationDir
 }
 
@@ -103,23 +103,7 @@ task integrationTest(type: Test) {
 integrationTest.outputs.upToDateWhen { false }
 
 javadoc {
-    options.tags = [ "apiNote" ]
-}
-
-spotless {
-    def disallowWildcardImports = {
-        String text = it
-        def regex = ~/import .*\.\*;/
-        def m = regex.matcher(text)
-        if (m.find()) {
-            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
-        }
-    }
-    java {
-        googleJavaFormat()
-        removeUnusedImports()
-        custom 'disallowWildcardImports', disallowWildcardImports
-    }
+    options.tags = ["apiNote"]
 }
 
 def reportsDir = "${buildDir}/reports";
@@ -220,16 +204,16 @@ signing {
 shadowJar {
     dependsOn test
 
-    minimize(){
-        exclude (project(":shared"))
-        exclude (project(":spark2"))
-        exclude (project(":spark3"))
-        exclude (project(":spark31"))
-        exclude (project(":spark32"))
-        exclude (project(":spark33"))
-        exclude (project(":spark34"))
-        exclude (project(":spark35"))
-        exclude (project(":app"))
+    minimize() {
+        exclude(project(":shared"))
+        exclude(project(":spark2"))
+        exclude(project(":spark3"))
+        exclude(project(":spark31"))
+        exclude(project(":spark32"))
+        exclude(project(":spark33"))
+        exclude(project(":spark34"))
+        exclude(project(":spark35"))
+        exclude(project(":app"))
     }
     dependencies {
         exclude(dependency('org.slf4j::'))
