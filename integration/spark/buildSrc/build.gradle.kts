@@ -7,33 +7,25 @@ repositories {
     mavenCentral()
 }
 
+val lombokPluginVersion: String = "8.4"
 val spotlessVersion: String = "6.13.0"
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("com.diffplug.spotless:spotless-plugin-gradle:${spotlessVersion}")
+    implementation("io.freefair.gradle:lombok-plugin:${lombokPluginVersion}")
 }
 
 gradlePlugin {
     plugins {
-        create("printSourceSetConfiguration") {
-            id = "io.openlineage.print-source-set-configuration"
-            implementationClass = "io.openlineage.gradle.plugin.PrintSourceSetConfigurationPlugin"
-        }
-
-        create("standardSpotless") {
-            id = "io.openlineage.standard-spotless"
-            implementationClass = "io.openlineage.gradle.plugin.StandardSpotlessPlugin"
-        }
-
         create("scala213Variant") {
             id = "io.openlineage.scala213-variant"
             implementationClass = "io.openlineage.gradle.plugin.Scala213VariantPlugin"
         }
 
-        create("commonJavaConfig") {
-            id = "io.openlineage.common-java-config"
-            implementationClass = "io.openlineage.gradle.plugin.CommonJavaConfigPlugin"
+        create("commonConfig") {
+            id = "io.openlineage.common-config"
+            implementationClass = "io.openlineage.gradle.plugin.CommonConfigPlugin"
         }
     }
 }

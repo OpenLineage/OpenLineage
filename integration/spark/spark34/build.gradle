@@ -1,40 +1,8 @@
 plugins {
-    id 'java'
-    id 'java-library'
+    id("io.openlineage.common-config")
     id 'java-test-fixtures'
-    id("io.openlineage.standard-spotless")
     id "com.adarshr.test-logger" version "3.2.0"
     id "org.gradle.test-retry" version "1.5.8"
-    id "com.github.johnrengelman.shadow" version "8.1.1"
-    id "pmd"
-}
-
-pmd {
-    consoleOutput = true
-    toolVersion = "6.46.0"
-    rulesMinimumPriority = 5
-    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
-    ruleSets = []
-    ignoreFailures = true
-}
-
-pmdMain {
-    dependsOn shadowJar
-    reports {
-        html.required = true
-    }
-}
-
-pmdTest {
-    dependsOn shadowJar
-}
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven {
-        url = 'https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot'
-    }
 }
 
 archivesBaseName = 'openlineage-spark-spark3'
@@ -57,13 +25,8 @@ configurations.all { // https://github.com/apache/spark/pull/38355 - can be remo
 }
 
 dependencies {
-    compileOnly "org.projectlombok:lombok:${lombokVersion}"
-    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
-    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
-    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
-
-    implementation(project(path: ":shared", configuration: "shadow"))
-    implementation(project(path: ":spark3", configuration: "shadow"))
+    implementation(project(path: ":shared"))
+    implementation(project(path: ":spark3"))
 
     compileOnly "org.apache.spark:spark-core_2.12:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.12:${sparkVersion}"
@@ -95,7 +58,7 @@ dependencies {
     testFixturesApi "org.mockito:mockito-core:${mockitoVersion}"
     testFixturesApi "org.mockito:mockito-inline:${mockitoVersion}"
     testFixturesApi "org.junit.jupiter:junit-jupiter-api:${junit5Version}"
-    testFixturesApi(project(path: ":shared", configuration: 'shadow'))
+    testFixturesApi(project(path: ":shared"))
 }
 
 def commonTestConfiguration = {
@@ -118,33 +81,8 @@ def commonTestConfiguration = {
 }
 
 test {
-    dependsOn shadowJar
     configure commonTestConfiguration
     useJUnitPlatform {
         excludeTags 'integration-test'
     }
-}
-
-compileTestJava {
-    dependsOn(':shared:jar')
-    dependsOn(':spark3:jar')
-}
-
-compileJava {
-    dependsOn(':shared:jar')
-    dependsOn(':spark3:jar')
-}
-
-assemble {
-    dependsOn shadowJar
-}
-
-shadowJar {
-    dependsOn(':spark3:shadowJar')
-    minimize()
-    archiveClassifier = ''
-    dependencies {
-        exclude(dependency('org.slf4j::'))
-    }
-    zip64 true
 }

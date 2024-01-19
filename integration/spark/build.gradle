@@ -1,50 +1,22 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
-    id 'java'
-    id 'java-library'
+    id("io.openlineage.common-config")
     id 'maven-publish'
     id 'signing'
     id 'jacoco'
-    id "com.adarshr.test-logger" version "3.2.0"
-    id "org.gradle.test-retry" version "1.5.8"
-    id("io.openlineage.standard-spotless")
     id "com.github.johnrengelman.shadow" version "8.1.1"
 }
 
-subprojects {
-    apply plugin: 'java'
-
-    ext {
-        lombokVersion = '1.18.30'
-        isReleaseVersion = !version.endsWith('SNAPSHOT')
-    }
-
-    dependencies {
-        compileOnly "org.projectlombok:lombok:${lombokVersion}"
-        annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
-        testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
-        testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
-    }
-}
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven {
-        url = 'https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot'
-    }
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+commonConfig {
+    pmdEnabled = false
+    lombokEnabled = false
+    spotlessEnabled = false
 }
 
 archivesBaseName = 'openlineage-spark'
 
 ext {
-    lombokVersion = '1.18.20'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
     jacksonVersion = "2.13.2"
     jacksonDatabindVersion = "2.13.2.2"
@@ -52,7 +24,7 @@ ext {
 
 dependencies {
     implementation(project(path: ":app"))
-    implementation(project(path: ":shared", configuration: "shadow"))
+    implementation(project(path: ":shared"))
     implementation(project(path: ":spark2"))
     implementation(project(path: ":spark3"))
     implementation(project(path: ":spark31"))
@@ -60,13 +32,6 @@ dependencies {
     implementation(project(path: ":spark33"))
     implementation(project(path: ":spark34"))
     implementation(project(path: ":spark35"))
-
-    compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
-    compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
 }
 
 
@@ -80,50 +45,8 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
-test {
-    useJUnitPlatform {
-        excludeTags 'integration-test'
-    }
-}
-
-task integrationTest(type: Test) {
-    retry {
-        boolean isCiServer = System.getenv().containsKey("CI")
-        if (isCiServer) {
-            maxRetries = 3
-            maxFailures = 3
-        }
-    }
-    useJUnitPlatform {
-        includeTags "integration-test"
-    }
-    dependsOn shadowJar
-}
-
-integrationTest.outputs.upToDateWhen { false }
-
 javadoc {
     options.tags = ["apiNote"]
-}
-
-def reportsDir = "${buildDir}/reports";
-def coverageDir = "${reportsDir}/coverage";
-
-jacoco {
-    toolVersion = '0.8.5'
-    reportsDir = file(coverageDir)
-}
-
-jacocoTestReport {
-    reports {
-        xml {
-            enabled true
-        }
-        html {
-            enabled true
-            destination = file(coverageDir)
-        }
-    }
 }
 
 tasks.withType(GenerateModuleMetadata) {
@@ -202,8 +125,6 @@ signing {
 }
 
 shadowJar {
-    dependsOn test
-
     minimize() {
         exclude(project(":shared"))
         exclude(project(":spark2"))
