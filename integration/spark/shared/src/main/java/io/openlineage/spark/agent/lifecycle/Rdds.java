@@ -21,7 +21,6 @@ import org.apache.spark.scheduler.StageInfo;
 import org.apache.spark.sql.execution.ShuffledRowRDD;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.storage.RDDInfo;
-import scala.collection.Seq;
 
 public class Rdds {
 
@@ -31,8 +30,8 @@ public class Rdds {
     if (rdd instanceof ShuffledRowRDD) {
       rdds.addAll(flattenRDDs(((ShuffledRowRDD) rdd).dependency().rdd()));
     }
-    Seq<Dependency<?>> dependencies = rdd.dependencies();
-    Collection<Dependency<?>> deps = ScalaConversionUtils.fromSeq(dependencies);
+
+    Collection<Dependency<?>> deps = ScalaConversionUtils.fromSeq(rdd.dependencies());
     for (Dependency<?> dep : deps) {
       rdds.addAll(flattenRDDs(dep.rdd()));
     }
@@ -64,9 +63,8 @@ public class Rdds {
     deps.add(rdd);
     while (!deps.isEmpty()) {
       RDD<?> cur = deps.pop();
-      Seq<Dependency<?>> dependencies = cur.getDependencies();
       deps.addAll(
-          ScalaConversionUtils.fromSeq(dependencies).stream()
+          ScalaConversionUtils.fromSeq(cur.getDependencies()).stream()
               .map(Dependency::rdd)
               .collect(Collectors.toList()));
       if (cur instanceof HadoopRDD) {
