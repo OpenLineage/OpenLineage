@@ -1,22 +1,34 @@
 plugins {
     id("io.openlineage.common-config")
-    id 'java-test-fixtures'
-    id "com.adarshr.test-logger" version "3.2.0"
-    id "org.gradle.test-retry" version "1.5.8"
+    id("io.openlineage.scala-variants")
+    id("idea")
+    id("java-test-fixtures")
 }
 
-archivesBaseName = 'openlineage-spark-spark3'
+scalaVariants {
+    create("2.12")
+    create("2.13")
+}
+
+idea {
+    module {
+        testSources.from(sourceSets.testScala212.java.srcDirs, sourceSets.testScala213.java.srcDirs)
+    }
+}
 
 ext {
-    assertjVersion = '3.25.1'
-    junit5Version = '5.10.1'
-    mockitoVersion = '4.11.0'
-    sparkVersion = '3.3.1'
-    jacksonVersion = '2.15.3'
-    lombokVersion = '1.18.30'
+    assertjVersion = "3.25.1"
+    icebergVersion = "0.14.1"
+    jacksonVersion = "2.15.3"
+    junit5Version = "5.10.1"
+    mockitoVersion = "4.11.0"
+
+    sparkVersion = project.findProperty("spark33.spark.version") ?: "3.3.2"
+    scalaBinaryVersion = project.findProperty("scala.binary.version") ?: "2.12"
+    configurationName = scalaBinaryVersion.replace(".", "")
 }
 
-configurations.all { // https://github.com/apache/spark/pull/38355 - can be remove for Spark 3.3.2
+configurations.configureEach { // https://github.com/apache/spark/pull/38355 - can be remove for Spark 3.3.2
     resolutionStrategy {
         // https://github.com/FasterXML/jackson-databind/issues/3627
         force "com.fasterxml.jackson:jackson-bom:$jacksonVersion"
@@ -24,55 +36,49 @@ configurations.all { // https://github.com/apache/spark/pull/38355 - can be remo
 }
 
 dependencies {
-    implementation(project(path: ":shared"))
-    implementation(project(path: ":spark3"))
+    implementation(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
+    implementation(project(path: ":spark3", configuration: "scala${configurationName}RuntimeElements"))
 
-    compileOnly "org.apache.spark:spark-core_2.12:${sparkVersion}"
-    compileOnly "org.apache.spark:spark-sql_2.12:${sparkVersion}"
-    compileOnly "org.apache.spark:spark-hive_2.12:${sparkVersion}"
-    compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}"
-    compileOnly "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:0.14.0"
-    compileOnly "io.delta:delta-core_2.12:2.1.0"
+    compileOnly("org.apache.iceberg:iceberg-spark-runtime-3.3_${scalaBinaryVersion}:${icebergVersion}")
+    compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
 
-    testFixturesApi "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
-    testFixturesApi "org.apache.spark:spark-core_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-sql_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-hive_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-catalyst_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:0.14.0"
-    testFixturesApi "io.delta:delta-core_2.12:2.1.0"
+    // TODO: Replace these with 'testImplementation'
+    testFixturesApi(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
+    testFixturesApi("org.apache.iceberg:iceberg-spark-runtime-3.3_${scalaBinaryVersion}:${icebergVersion}")
+    testFixturesApi("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
+    testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
+    testFixturesApi("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
+    testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
+    testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
 
-    testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
-    testFixturesApi "org.assertj:assertj-core:${assertjVersion}"
-    testFixturesApi "org.mockito:mockito-core:${mockitoVersion}"
-    testFixturesApi "org.mockito:mockito-inline:${mockitoVersion}"
-    testFixturesApi "org.junit.jupiter:junit-jupiter-api:${junit5Version}"
-    testFixturesApi(project(path: ":shared"))
-}
+    // Scala 2.12
+    scala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
+    scala212Implementation(project(path: ":spark3", configuration: "scala212RuntimeElements"))
 
-def commonTestConfiguration = {
-    forkEvery 1
-    maxParallelForks 5
-    testLogging {
-        events "passed", "skipped", "failed"
-        showStandardStreams = true
-    }
-    systemProperties = [
-            'junit.platform.output.capture.stdout': 'true',
-            'junit.platform.output.capture.stderr': 'true',
-            'spark.version'                       : "${sparkVersion}",
-            'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
-            'kafka.package.version'               : "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}",
-            'mockserver.logLevel'                 : 'ERROR'
-    ]
+    scala212CompileOnly("org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:${icebergVersion}")
+    scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
 
-    classpath = project.sourceSets.test.runtimeClasspath
-}
+    testScala212Implementation("org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:${icebergVersion}")
+    testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
+    testScala212Implementation("org.assertj:assertj-core:${assertjVersion}")
+    testScala212Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
+    testScala212Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testScala212Implementation("org.mockito:mockito-core:${mockitoVersion}")
+    testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
 
-test {
-    configure commonTestConfiguration
-    useJUnitPlatform {
-        excludeTags 'integration-test'
-    }
+    // Scala 2.13
+    scala213Implementation(project(path: ":shared", configuration: "scala213RuntimeElements"))
+    scala213Implementation(project(path: ":spark3", configuration: "scala213RuntimeElements"))
+
+    scala213CompileOnly("org.apache.iceberg:iceberg-spark-runtime-3.3_2.13:${icebergVersion}")
+    scala213CompileOnly("org.apache.spark:spark-sql_2.13:${sparkVersion}")
+
+    testScala213Implementation("org.apache.iceberg:iceberg-spark-runtime-3.3_2.13:${icebergVersion}")
+    testScala213Implementation("org.apache.spark:spark-sql_2.13:${sparkVersion}")
+    testScala213Implementation("org.assertj:assertj-core:${assertjVersion}")
+    testScala213Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
+    testScala213Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testScala213Implementation("org.mockito:mockito-core:${mockitoVersion}")
+    testScala213Implementation("org.mockito:mockito-inline:${mockitoVersion}")
 }
