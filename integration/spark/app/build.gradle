@@ -40,10 +40,16 @@ ext {
     versions = versionsMap[shortVersion]
 }
 
-configurations.all { // https://github.com/apache/spark/pull/38355 - can be remove for Spark 3.3.2
-    resolutionStrategy {
-        // https://github.com/FasterXML/jackson-databind/issues/3627
-        force "com.fasterxml.jackson:jackson-bom:$jacksonVersion"
+// This is done, in order to prevent Jackson version conflicts during the tests in 'app'
+configurations.configureEach {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group.startsWith('com.fasterxml.jackson')) {
+            if (details.requested.name == 'jackson-databind') {
+                details.useVersion(jacksonDatabindVersion)
+            } else {
+                details.useVersion(jacksonVersion)
+            }
+        }
     }
 }
 
