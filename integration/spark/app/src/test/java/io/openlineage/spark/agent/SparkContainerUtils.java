@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent;
 
+import io.openlineage.spark.agent.olserver.OLServerContainer;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -18,6 +19,7 @@ import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
@@ -32,6 +34,16 @@ public class SparkContainerUtils {
         .withNetwork(network)
         .withNetworkAliases("openlineageclient")
         .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES));
+  }
+
+  static OLServerContainer makeOLServerContainer(Network network) {
+    return new OLServerContainer()
+        .withNetwork(network)
+        .withNetworkAliases("olserver")
+        .waitingFor(
+            new LogMessageWaitStrategy()
+                .withRegEx(".*Running on all addresses (0.0.0.0).*")
+                .withStartupTimeout(Duration.ofSeconds(10)));
   }
 
   static PostgreSQLContainer<?> makeMetastoreContainer(Network network) {
@@ -71,6 +83,24 @@ public class SparkContainerUtils {
         .withCommand(command);
   }
 
+  private static GenericContainer<?> makePysparkContainer(
+      Network network, String waitMessage, String... command) {
+    return new GenericContainer<>(
+            DockerImageName.parse("bitnami/spark:" + System.getProperty("spark.version")))
+        .withNetwork(network)
+        .withNetworkAliases("spark")
+        .withFileSystemBind("build/gcloud", "/opt/gcloud")
+        .withFileSystemBind("src/test/resources/test_data", "/test_data")
+        .withFileSystemBind("src/test/resources/spark_scripts", "/opt/spark_scripts")
+        .withFileSystemBind("build/libs", "/opt/libs")
+        .withFileSystemBind("build/dependencies", "/opt/dependencies")
+        .withLogConsumer(SparkContainerUtils::consumeOutput)
+        .waitingFor(Wait.forLogMessage(waitMessage, 1))
+        .withStartupTimeout(Duration.of(10, ChronoUnit.MINUTES))
+        .withReuse(true)
+        .withCommand(command);
+  }
+
   static GenericContainer<?> makeKafkaContainer(Network network) {
     return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.0.0"))
         .withNetworkAliases("kafka")
@@ -97,16 +127,24 @@ public class SparkContainerUtils {
 
   static GenericContainer<?> makePysparkContainerWithDefaultConf(
       Network network,
-      MockServerContainer mockServerContainer,
       String namespace,
+      List<String> urlParams,
+      List<String> sparkConfigParams,
       String... command) {
     return makePysparkContainerWithDefaultConf(
         network,
-        mockServerContainer,
+        "http://openlineageclient:1080",
+        ".*ShutdownHookManager: Shutdown hook called.*",
         namespace,
-        Collections.emptyList(),
-        Collections.emptyList(),
+        urlParams,
+        sparkConfigParams,
         command);
+  }
+
+  static GenericContainer<?> makePysparkContainerWithDefaultConf(
+      Network network, String namespace, String... command) {
+    return makePysparkContainerWithDefaultConf(
+        network, namespace, Collections.emptyList(), Collections.emptyList(), command);
   }
 
   static GenericContainer<?> makePysparkContainerWithDefaultConf(
@@ -165,6 +203,60 @@ public class SparkContainerUtils {
         network, waitMessage, mockServerContainer, sparkSubmit.toArray(new String[0]));
   }
 
+  static GenericContainer<?> makePysparkContainerWithDefaultConf(
+      Network network,
+      String openlineageUrl,
+      String waitMessage,
+      String namespace,
+      List<String> urlParams,
+      List<String> sparkConfigParams,
+      String... command) {
+
+    //    String urlParamsString = urlParams.isEmpty() ?
+    String paramString = "";
+    if (!urlParams.isEmpty()) {
+      paramString = "?" + String.join("&", urlParams);
+    }
+
+    List<String> sparkConf = new ArrayList<>();
+    sparkConfigParams.forEach(param -> addSparkConfig(sparkConf, param));
+    addSparkConfig(sparkConf, "spark.openlineage.transport.type=http");
+    addSparkConfig(
+        sparkConf,
+        "spark.openlineage.transport.url="
+            + openlineageUrl
+            + "/api/v1/namespaces/"
+            + namespace
+            + paramString);
+    addSparkConfig(sparkConf, "spark.extraListeners=" + OpenLineageSparkListener.class.getName());
+    addSparkConfig(sparkConf, "spark.sql.warehouse.dir=/tmp/warehouse");
+    addSparkConfig(sparkConf, "spark.sql.shuffle.partitions=1");
+    addSparkConfig(sparkConf, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
+    addSparkConfig(sparkConf, "spark.sql.warehouse.dir=/tmp/warehouse");
+    addSparkConfig(sparkConf, "spark.jars.ivy=/tmp/.ivy2/");
+    addSparkConfig(sparkConf, "spark.openlineage.facets.disabled=");
+
+    List<String> sparkSubmit =
+        new ArrayList(Arrays.asList("./bin/spark-submit", "--master", "local"));
+    sparkSubmit.addAll(sparkConf);
+    sparkSubmit.addAll(
+        Arrays.asList(
+            "--jars",
+            "/opt/libs/"
+                + System.getProperty("openlineage.spark.jar")
+                + ",/opt/dependencies/spark-sql-kafka-*.jar"
+                + ",/opt/dependencies/spark-bigquery-with-dependencies*.jar"
+                + ",/opt/dependencies/gcs-connector-hadoop*.jar"
+                + ",/opt/dependencies/google-http-client-*.jar"
+                + ",/opt/dependencies/google-oauth-client-*.jar"
+                + ",/opt/dependencies/kafka-*.jar"
+                + ",/opt/dependencies/spark-token-provider-*.jar"
+                + ",/opt/dependencies/commons-pool2-*.jar"));
+    sparkSubmit.addAll(Arrays.asList(command));
+
+    return makePysparkContainer(network, waitMessage, sparkSubmit.toArray(new String[0]));
+  }
+
   public static void addSparkConfig(List command, String value) {
     command.add("--conf");
     command.add(value);
@@ -182,6 +274,23 @@ public class SparkContainerUtils {
         Collections.emptyList(),
         Collections.emptyList(),
         pysparkFile);
+  }
+
+  static void runPysparkContainerWithDefaultConf(
+      Network network, String namespace, String pysparkFile) {
+    runPysparkContainerWithDefaultConf(
+        network, namespace, Collections.emptyList(), Collections.emptyList(), pysparkFile);
+  }
+
+  static void runPysparkContainerWithDefaultConf(
+      Network network,
+      String namespace,
+      List<String> urlParams,
+      List<String> sparkConfigParams,
+      String pysparkFile) {
+    makePysparkContainerWithDefaultConf(
+            network, namespace, urlParams, sparkConfigParams, "/opt/spark_scripts/" + pysparkFile)
+        .start();
   }
 
   static void runPysparkContainerWithDefaultConf(

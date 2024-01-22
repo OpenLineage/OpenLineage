@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.lifecycle;
+package io.openlineage.spark.agent.util;
 
 import io.openlineage.spark.agent.Versions;
 import java.util.HashSet;
