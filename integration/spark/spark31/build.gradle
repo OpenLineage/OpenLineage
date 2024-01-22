@@ -14,7 +14,7 @@ ext {
     assertjVersion = "3.25.1"
     junit5Version = "5.10.1"
     mockitoVersion = "4.11.0"
-    sparkVersion = project.findProperty("spark31.spark.version") ?: "3.1.2"
+    sparkVersion = project.findProperty("spark31.spark.version")
 }
 
 dependencies {

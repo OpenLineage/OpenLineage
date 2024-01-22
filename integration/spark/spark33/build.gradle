@@ -23,8 +23,8 @@ ext {
     junit5Version = "5.10.1"
     mockitoVersion = "4.11.0"
 
-    sparkVersion = project.findProperty("spark33.spark.version") ?: "3.3.2"
-    scalaBinaryVersion = project.findProperty("scala.binary.version") ?: "2.12"
+    sparkVersion = project.findProperty("spark33.spark.version")
+    scalaBinaryVersion = project.findProperty("scala.binary.version")
     configurationName = scalaBinaryVersion.replace(".", "")
 }
 

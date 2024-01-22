@@ -40,19 +40,6 @@ ext {
     versions = versionsMap[shortVersion]
 }
 
-// This is done, in order to prevent Jackson version conflicts during the tests in 'app'
-configurations.configureEach {
-    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-        if (details.requested.group.startsWith('com.fasterxml.jackson')) {
-            if (details.requested.name == 'jackson-databind') {
-                details.useVersion(jacksonDatabindVersion)
-            } else {
-                details.useVersion(jacksonVersion)
-            }
-        }
-    }
-}
-
 dependencies {
     implementation(project(path: ":shared"))
     implementation(project(path: ":spark2"))
