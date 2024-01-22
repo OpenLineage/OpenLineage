@@ -1,5 +1,9 @@
 workflows:
   openlineage-integration-airflow:
+    when:
+      matches:
+        pattern: '^pull\/[0-9]+$'
+        value: << pipeline.git.branch >>
     jobs:
       - build-integration-sql:
           name: "build-integration-sql-x86"
@@ -35,6 +39,13 @@ workflows:
                 install_parser: [ true ]
           requires:
             - build-integration-sql-x86
+      - approval-integration-airflow:
+          type: approval
+          requires:
+            - unit-test-integration-airflow
+            - unit-test-integration-common
+            - unit-tests-client-python
+            - build-integration-sql-x86
       - integration-test-integration-airflow:
           matrix:
             parameters:
@@ -48,13 +59,7 @@ workflows:
               ]
           context: integration-tests
           requires:
-            - unit-test-integration-airflow
-            - unit-test-integration-common
-            - unit-tests-client-python
-            - build-integration-sql-x86
-          filters:
-            branches:
-              ignore: /pull\/[0-9]+/
+            - approval-integration-airflow
       - integration-test-integration-airflow-failure:
           matrix:
             parameters:
@@ -65,13 +70,7 @@ workflows:
               ]
           context: integration-tests
           requires:
-            - unit-test-integration-airflow
-            - unit-test-integration-common
-            - unit-tests-client-python
-            - build-integration-sql-x86
-          filters:
-            branches:
-              ignore: /pull\/[0-9]+/
+            - approval-integration-airflow
       - build-integration-airflow:
           filters:
             branches:
