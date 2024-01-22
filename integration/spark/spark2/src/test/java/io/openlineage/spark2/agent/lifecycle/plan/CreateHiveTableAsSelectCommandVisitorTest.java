@@ -17,6 +17,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.spark.Partition;
@@ -70,10 +71,10 @@ class CreateHiveTableAsSelectCommandVisitorTest {
     CreateHiveTableAsSelectCommand command =
         new CreateHiveTableAsSelectCommand(
             SparkUtils.catalogTable(
-                TableIdentifier$.MODULE$.apply("tablename", Option.apply("db")),
+                TableIdentifier$.MODULE$.apply("tablename", Option.<String>apply("db")),
                 CatalogTableType.EXTERNAL(),
                 CatalogStorageFormat$.MODULE$.apply(
-                    Option.apply(URI.create("s3://bucket/directory")),
+                    Option.<URI>apply(URI.create("s3://bucket/directory")),
                     null,
                     null,
                     null,
@@ -82,9 +83,15 @@ class CreateHiveTableAsSelectCommandVisitorTest {
                 new StructType(
                     new StructField[] {
                       new StructField(
-                          KEY, IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
+                          KEY,
+                          IntegerType$.MODULE$,
+                          false,
+                          new Metadata(new HashMap<String, Object>())),
                       new StructField(
-                          VALUE, StringType$.MODULE$, false, new Metadata(new HashMap<>()))
+                          VALUE,
+                          StringType$.MODULE$,
+                          false,
+                          new Metadata(new HashMap<String, Object>()))
                     })),
             new LogicalRelation(
                 new JDBCRelation(
@@ -97,10 +104,9 @@ class CreateHiveTableAsSelectCommandVisitorTest {
                     new JDBCOptions(
                         "",
                         "temp",
-                        scala.collection.immutable.Map$.MODULE$
-                            .newBuilder()
-                            .$plus$eq(Tuple2.apply("driver", Driver.class.getName()))
-                            .result()),
+                        ScalaUtils.<String, String>fromTuples(
+                            Collections.singletonList(
+                                Tuple2.<String, String>apply("driver", Driver.class.getName())))),
                     session),
                 Seq$.MODULE$
                     .<AttributeReference>newBuilder()

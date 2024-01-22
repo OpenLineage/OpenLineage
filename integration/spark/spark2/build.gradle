@@ -1,70 +1,84 @@
 plugins {
     id("io.openlineage.common-config")
-    id 'java-test-fixtures'
-    id "com.adarshr.test-logger" version "3.2.0"
-    id "org.gradle.test-retry" version "1.5.8"
-    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id("io.openlineage.scala-variants")
+    id("idea")
+    id("java-test-fixtures")
 }
 
-archivesBaseName = 'openlineage-spark-spark2'
+scalaVariants {
+    create("2.11")
+    create("2.12")
+}
+
+idea {
+    module {
+        testSources.from(sourceSets.testScala212.java.srcDirs)
+    }
+}
 
 ext {
-    assertjVersion = '3.25.1'
-    sparkVersion = '2.4.8'
-    junit5Version = '5.10.1'
-    mockitoVersion = '4.11.0'
-    lombokVersion = '1.18.20'
-    postgresqlVersion = '42.7.1'
+    assertjVersion = "3.25.1"
+    deltaVersion = "1.1.0"
+    icebergVersion = "0.14.1"
+    jacksonVersion = "2.15.3"
+    junit5Version = "5.10.1"
+    mockitoVersion = "4.11.0"
+    postgresqlVersion = "42.7.1"
+
+    sparkVersion = project.findProperty("spark2.spark.version")
+    scalaBinaryVersion = "2.11"
 }
 
 dependencies {
-    implementation(project(path: ":shared"))
+    compileOnly(project(path: ":shared", configuration: "scala212RuntimeElements"))
 
-    compileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:2.15.3"
-    compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
-    compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
-    compileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
-    compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
-    compileOnly "com.databricks:dbutils-api_2.11:0.0.5"
+    compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
 
-    testFixturesApi "org.apache.spark:spark-core_2.11:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-sql_2.11:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-hive_2.11:${sparkVersion}"
-    testFixturesApi "com.fasterxml.jackson.module:jackson-module-scala_2.11:2.15.3"
-    testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
+    // TODO: Replace 'testFixturesApi' with 'testImplementation'
+    // TODO: Remove the test dependency on 'shared'
+    testFixturesApi(project(path: ":shared", configuration: "scala212RuntimeElements"))
+    testFixturesApi("com.fasterxml.jackson.module:jackson-module-scala_${scalaBinaryVersion}:${jacksonVersion}")
+    testFixturesApi("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
+    testFixturesApi("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
+    testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
+    testFixturesApi("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
+    testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
+    testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
+    testFixturesApi("org.postgresql:postgresql:${postgresqlVersion}")
 
-    testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
-    testFixturesApi "org.postgresql:postgresql:${postgresqlVersion}"
-    testFixturesApi "org.assertj:assertj-core:${assertjVersion}"
-    testFixturesApi "org.mockito:mockito-core:${mockitoVersion}"
-    testFixturesApi "org.mockito:mockito-inline:${mockitoVersion}"
-    testFixturesApi "org.junit.jupiter:junit-jupiter-api:${junit5Version}"
-    testFixturesApi "org.apache.kafka:kafka-clients:3.6.1"
-    testFixturesApi(project(path: ":shared"))
-}
+    // Scala 2.11
+    // This is intentionally left as 'scala212RuntimeElements' because the 'shared' project
+    // only has Scala 2.12 and 2.13 variants. Because this project is written in Java, this should
+    // not be a problem.
+    scala211CompileOnly(project(path: ":shared", configuration: "scala212RuntimeElements"))
 
-def commonTestConfiguration = {
-    forkEvery 1
-    maxParallelForks 5
-    testLogging {
-        events "passed", "skipped", "failed"
-        showStandardStreams = true
-    }
-    systemProperties = [
-            'junit.platform.output.capture.stdout': 'true',
-            'junit.platform.output.capture.stderr': 'true',
-            'spark.version'                       : "${sparkVersion}",
-            'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
-            'kafka.package.version'               : "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}",
-            'mockserver.logLevel'                 : 'ERROR'
-    ]
+    scala211CompileOnly("org.apache.spark:spark-sql_2.11:${sparkVersion}")
 
-    classpath = project.sourceSets.test.runtimeClasspath
-}
+    testScala211Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
+    testScala211Implementation("com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}")
+    testScala211Implementation("org.apache.spark:spark-hive_2.11:${sparkVersion}")
+    testScala211Implementation("org.apache.spark:spark-sql_2.11:${sparkVersion}")
+    testScala211Implementation("org.assertj:assertj-core:${assertjVersion}")
+    testScala211Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
+    testScala211Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testScala211Implementation("org.mockito:mockito-core:${mockitoVersion}")
+    testScala211Implementation("org.mockito:mockito-inline:${mockitoVersion}")
+    testScala211Implementation("org.postgresql:postgresql:${postgresqlVersion}")
 
-test {
-    configure commonTestConfiguration
-    useJUnitPlatform {
-        excludeTags 'integration-test'
-    }
+    // Scala 2.12
+    scala212CompileOnly(project(path: ":shared", configuration: "scala212RuntimeElements"))
+
+    scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
+
+    testScala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
+    testScala212Implementation("com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}")
+    testScala212Implementation("org.apache.spark:spark-hive_2.12:${sparkVersion}")
+    testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
+    testScala212Implementation("org.assertj:assertj-core:${assertjVersion}")
+    testScala212Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
+    testScala212Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testScala212Implementation("org.mockito:mockito-core:${mockitoVersion}")
+    testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
+    testScala212Implementation("org.postgresql:postgresql:${postgresqlVersion}")
 }
