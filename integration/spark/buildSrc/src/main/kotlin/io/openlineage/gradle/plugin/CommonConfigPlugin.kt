@@ -15,6 +15,7 @@ import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.plugins.quality.PmdExtension
 import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.*
 
 /**
@@ -63,6 +64,14 @@ class CommonConfigPlugin : Plugin<Project> {
         target.repositories.mavenCentral()
         target.repositories.mavenLocal()
         target.repositories.maven("https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot")
+
+        target.tasks.withType<Test> {
+            useJUnitPlatform()
+            testLogging {
+                events("passed", "skipped", "failed")
+                showStandardStreams = true
+            }
+        }
     }
 
     private fun configurePmd(target: Project) {
