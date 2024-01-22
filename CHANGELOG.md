@@ -6,7 +6,7 @@
 
 * **Flink: support Flink 1.18** [`#2366`](https://github.com/OpenLineage/OpenLineage/pull/2366) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
     *Adds support for the latest Flink version with 1.17 used for Iceberg Flink runtime and Cassandra Connector as these do not yet support 1.18.*
-* **Spark: add Gradle plugins to simplify the build process to support Scala 2.13.** [`#2376`](https://github.com/OpenLineage/OpenLineage/pull/2376) [@d-m-h](https://github.com/d-m-h)  
+* **Spark: add Gradle plugins to simplify the build process to support Scala 2.13** [`#2376`](https://github.com/OpenLineage/OpenLineage/pull/2376) [@d-m-h](https://github.com/d-m-h)  
     *Defines a set of Gradle plugins to configure the modules and reduce duplication.
 * **Spark: support multiple Scala versions `LogicalPlan` implementation** [`#2361`](https://github.com/OpenLineage/OpenLineage/pull/2361) [@mattiabertorello](https://github.com/mattiabertorello)  
     *In the LogicalPlanSerializerTest class, the implementation of the LogicalPlan interface is different between Scala 2.12 and Scala 2.13. In detail, the IndexedSeq changes package from the scala.collection to scala.collection.immutable. This implements both of the methods necessary in the two versions.*
@@ -35,8 +35,10 @@
     *The function from the ResultStage.func() object change type in Spark between Scala 2.12 and 2.13 makes the compilation fail. This avoids getting the function with an explicit type; instead, it gets it every time it is needed from the ResultStage object. This PR is part of the effort to support Scala 2.13 in the Spark integration.*
 * **Spark: Fix `removePathPattern` feature** [`#2350`](https://github.com/OpenLineage/OpenLineage/pull/2350) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
    *Refactors code to make sure that all datasets sent are processed through `removePathPattern` if configured to do so.*
-* **Spark: Clean up the individual build.gradle files, in preparation for Scala 2.13 support** [`#2377`](https://github.com/OpenLineage/OpenLineage/pull/2377) [@d-m-h](https://github.com/d-m-h)  
+* **Spark: Clean up the individual build.gradle files in preparation for Scala 2.13 support** [`#2377`](https://github.com/OpenLineage/OpenLineage/pull/2377) [@d-m-h](https://github.com/d-m-h)  
     *Cleans up the build.gradle files, consolidating the custom plugin and removing unused and unnecessary configuration.*
+* **Spark: refactor the Gradle plugins to make it easier to define Scala variants per module** [`#2383`](https://github.com/OpenLineage/OpenLineage/pull/2383) [@d-m-h](https://github.com/d-m-h)  
+    *The third of several PRs to support producing Scala 2.12 and Scala 2.13 variants of the OpenLineage Spark integration. This PR refactors the custom Gradle plugins in order to make supporting multiple variants per module easier. This is necessary because the shared module fails its tests when consuming the Scala 2.13 variants of Apache Spark.*
 
 ## [1.7.0](https://github.com/OpenLineage/OpenLineage/compare/1.6.2...1.7.0) - 2023-12-21
 ### Added
