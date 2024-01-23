@@ -32,6 +32,12 @@ public class MockBigQueryClientModule implements Module {
         Optional.empty(),
         Optional.empty(),
         Optional.empty(),
+        "",
+        Collections.emptySet(),
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty(),
         Optional.empty(),
         Optional.empty());
   }
@@ -44,6 +50,8 @@ public class MockBigQueryClientModule implements Module {
         Optional.of("materializationProject"),
         Optional.of("materializationDataset"),
         null,
-        Collections.emptyMap());
+        Collections.emptyMap(),
+        null,
+        Optional.empty());
   }
 }

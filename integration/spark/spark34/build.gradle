@@ -14,7 +14,7 @@ ext {
     sparkVersion = '3.4.0'
     jacksonVersion = '2.15.3'
     lombokVersion = '1.18.30'
-    bigqueryVersion = '0.29.0'
+    bigqueryVersion = '0.35.1'
 }
 
 configurations.all { // https://github.com/apache/spark/pull/38355 - can be remove for Spark 3.3.2

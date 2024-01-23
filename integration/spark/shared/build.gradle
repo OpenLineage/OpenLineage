@@ -19,7 +19,7 @@ idea {
 ext {
     assertjVersion = "3.25.1"
     awaitilityVersion = "4.2.0"
-    bigqueryVersion = "0.29.0"
+    bigqueryVersion = "0.35.1"
     databricksVersion = "0.1.4"
     junit5Version = "5.10.1"
     kafkaClientsVersion = "3.6.1"

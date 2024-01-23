@@ -14,7 +14,7 @@ ext {
     sparkVersion = '3.5.0'
     jacksonVersion = '2.15.3'
     lombokVersion = '1.18.30'
-    bigqueryVersion = '0.29.0'
+    bigqueryVersion = '0.35.1'
 }
 
 dependencies {
