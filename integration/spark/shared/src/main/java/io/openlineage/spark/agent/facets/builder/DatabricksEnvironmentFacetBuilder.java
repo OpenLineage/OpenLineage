@@ -5,8 +5,8 @@
 
 package io.openlineage.spark.agent.facets.builder;
 
-import com.databricks.backend.daemon.dbutils.MountInfo;
-import com.databricks.dbutils_v1.DbfsUtils;
+import com.databricks.sdk.scala.dbutils.DbfsUtils;
+import com.databricks.sdk.scala.dbutils.MountInfo;
 import io.openlineage.spark.agent.facets.EnvironmentFacet;
 import io.openlineage.spark.agent.models.DatabricksMountpoint;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;

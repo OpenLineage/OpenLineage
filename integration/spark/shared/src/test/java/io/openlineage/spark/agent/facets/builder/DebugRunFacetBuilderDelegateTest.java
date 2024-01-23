@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static scala.util.Properties.versionNumberString;
 
 import io.openlineage.spark.agent.facets.DebugRunFacet.ClasspathDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanDebugFacet;
@@ -115,7 +116,7 @@ public class DebugRunFacetBuilderDelegateTest {
     assertThat(facet.getJars()).containsExactly("oneJar");
     assertThat(facet)
         .hasFieldOrPropertyWithValue("sparkVersion", "3.3.0")
-        .hasFieldOrPropertyWithValue("scalaVersion", "2.11.12");
+        .hasFieldOrPropertyWithValue("scalaVersion", versionNumberString());
   }
 
   @Test
