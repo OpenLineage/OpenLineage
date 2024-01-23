@@ -26,12 +26,14 @@ public class EventEmitter {
   @Getter private String jobNamespace;
   @Getter private String parentJobName;
   @Getter private Optional<UUID> parentRunId;
+  @Getter private Optional<Long> eventProcessingTimeoutSeconds;
   @Getter private Optional<List<String>> customEnvironmentVariables;
 
   public EventEmitter(ArgumentParser argument) throws URISyntaxException {
     this.jobNamespace = argument.getNamespace();
     this.parentJobName = argument.getJobName();
     this.parentRunId = convertToUUID(argument.getParentRunId());
+    this.eventProcessingTimeoutSeconds = argument.getEventProcessingTimeoutSeconds();
     this.appName = Optional.ofNullable(argument.getAppName());
     this.customEnvironmentVariables =
         argument.getOpenLineageYaml().getFacetsConfig() != null

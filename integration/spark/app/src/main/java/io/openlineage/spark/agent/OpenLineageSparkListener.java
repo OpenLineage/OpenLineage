@@ -74,6 +74,26 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onOtherEvent(SparkListenerEvent event) {
+    Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds;
+
+    if (eventProcessingTimeoutSeconds.isEmpty()) {
+      log.debug("Processing onOtherEventFn without any timeout")
+      onOtherEventFn(event);
+      return;
+    }
+
+    try {
+      this.callWithTimeout(() -> {
+        log.debug("Processing onOtherEventFn with timeout: {} seconds", eventProcessingTimeoutSeconds.get());
+        onOtherEventFn(event);
+        return null;
+      }, eventProcessingTimeoutSeconds.get(), TimeUnit.SECONDS, true);
+    } catch (Exception e) {
+      log.debug("onOtherEvent Timeout Exception: {}", e.getMessage(), e);
+    }
+  }
+
+  public void onOtherEventFn(SparkListenerEvent event) {
     if (isDisabled) {
       return;
     }
@@ -104,15 +124,35 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job starts */
   @Override
   public void onJobStart(SparkListenerJobStart jobStart) {
+    Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds;
+
+    if (eventProcessingTimeoutSeconds.isEmpty()) {
+      log.debug("Processing onJobStartFn without any timeout")
+      onJobStartFn(jobStart);
+      return;
+    }
+
+    try {
+      this.callWithTimeout(() -> {
+        log.debug("Processing onJobStartFn with timeout: {} seconds", eventProcessingTimeoutSeconds.get());
+        onJobStartFn(jobStart);
+        return null;
+      }, eventProcessingTimeoutSeconds.get(), TimeUnit.SECONDS, true);
+    } catch (Exception e) {
+      log.debug("onJobStart Timeout Exception: {}", e.getMessage(), e);
+    }
+  }
+
+  public void onJobStartFn(SparkListenerJobStart jobStart) {
     if (isDisabled) {
       return;
     }
     initializeContextFactoryIfNotInitialized();
     Optional<ActiveJob> activeJob =
         asJavaOptional(
-                SparkSession.getDefaultSession()
-                    .map(sparkContextFromSession)
-                    .orElse(activeSparkContext))
+            SparkSession.getDefaultSession()
+                .map(sparkContextFromSession)
+                .orElse(activeSparkContext))
             .flatMap(
                 ctx ->
                     Optional.ofNullable(ctx.dagScheduler())
@@ -132,9 +172,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         .orElseGet(
             () ->
                 asJavaOptional(
-                        SparkSession.getDefaultSession()
-                            .map(sparkContextFromSession)
-                            .orElse(activeSparkContext))
+                    SparkSession.getDefaultSession()
+                        .map(sparkContextFromSession)
+                        .orElse(activeSparkContext))
                     .flatMap(
                         ctx ->
                             Optional.ofNullable(ctx.dagScheduler())
@@ -159,6 +199,26 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job ends */
   @Override
   public void onJobEnd(SparkListenerJobEnd jobEnd) {
+    Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds;
+
+    if (eventProcessingTimeoutSeconds.isEmpty()) {
+      log.debug("Processing onJobEndFn without any timeout")
+      onJobEndFn(jobEnd);
+      return;
+    }
+
+    try {
+      this.callWithTimeout(() -> {
+        log.debug("Processing onJobEndFn with timeout: {} seconds", eventProcessingTimeoutSeconds.get());
+        onJobEndFn(jobEnd);
+        return null;
+      }, eventProcessingTimeoutSeconds.get(), TimeUnit.SECONDS, true);
+    } catch (Exception e) {
+      log.debug("onJobEnd Timeout Exception: {}", e.getMessage(), e);
+    }
+  }
+
+  public void onJobEndFn(SparkListenerJobEnd jobEnd) {
     if (isDisabled) {
       return;
     }
@@ -171,8 +231,29 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     }
   }
 
+
   @Override
   public void onTaskEnd(SparkListenerTaskEnd taskEnd) {
+    Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds;
+
+    if (eventProcessingTimeoutSeconds.isEmpty()) {
+      log.debug("Processing onTaskEndFn without any timeout")
+      onTaskEndFn(taskEnd);
+      return;
+    }
+
+    try {
+      this.callWithTimeout(() -> {
+        log.debug("Processing onTaskEndFn with timeout: {} seconds", eventProcessingTimeoutSeconds.get());
+        onTaskEndFn(taskEnd);
+        return null;
+      }, eventProcessingTimeoutSeconds.get(), TimeUnit.SECONDS, true);
+    } catch (Exception e) {
+      log.debug("onTaskEnd Timeout Exception: {}", e.getMessage(), e);
+    }
+  }
+
+  public void onTaskEndFn(SparkListenerTaskEnd taskEnd) {
     if (isDisabled || sparkVersion.startsWith("2")) {
       return;
     }
@@ -284,6 +365,33 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           "Open lineage listener instantiated, but no configuration could be found. "
               + "Lineage events will not be collected");
     }
+  }
+
+  private <T> T callWithTimeout(Callable<T> callable, long timeoutDuration,
+      TimeUnit timeoutUnit, boolean amInterruptible) throws Exception {
+    ExecutorService executor = Executors.newCachedThreadPool();
+
+    Future<T> future = executor.submit(callable);
+    T result;
+    try {
+      log.debug("Submitting a timed thread with timeout = " + timeoutDuration + timeoutUnit);
+      result = future.get(timeoutDuration, timeoutUnit);
+    } catch (InterruptedException e) {
+      future.cancel(amInterruptible);
+      log.debug("Got error in callWithTimeout future.get: {}", e.getMessage(), e);
+      result = null;
+    } catch (ExecutionException e) {
+      future.cancel(amInterruptible);
+      log.debug("Got error in callWithTimeout executing callable: {}", e.getMessage(), e.getCause());
+      result = null;
+    } catch (TimeoutException e) {
+      future.cancel(amInterruptible);
+      log.debug("Callable timeout after {} {}", timeoutDuration, timeoutUnit);
+      result = null;
+    } finally {
+      executor.shutdownNow();
+    }
+    return result;
   }
 
   private static boolean checkIfDisabled() {
