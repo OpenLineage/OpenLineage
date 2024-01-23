@@ -77,7 +77,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds;
 
     if (eventProcessingTimeoutSeconds.isEmpty()) {
-      log.debug("Processing onOtherEventFn without any timeout")
+      log.debug("Processing onOtherEventFn without any timeout");
       onOtherEventFn(event);
       return;
     }
@@ -127,7 +127,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds;
 
     if (eventProcessingTimeoutSeconds.isEmpty()) {
-      log.debug("Processing onJobStartFn without any timeout")
+      log.debug("Processing onJobStartFn without any timeout");
       onJobStartFn(jobStart);
       return;
     }
@@ -202,7 +202,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds;
 
     if (eventProcessingTimeoutSeconds.isEmpty()) {
-      log.debug("Processing onJobEndFn without any timeout")
+      log.debug("Processing onJobEndFn without any timeout");
       onJobEndFn(jobEnd);
       return;
     }
@@ -237,7 +237,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds;
 
     if (eventProcessingTimeoutSeconds.isEmpty()) {
-      log.debug("Processing onTaskEndFn without any timeout")
+      log.debug("Processing onTaskEndFn without any timeout");
       onTaskEndFn(taskEnd);
       return;
     }
