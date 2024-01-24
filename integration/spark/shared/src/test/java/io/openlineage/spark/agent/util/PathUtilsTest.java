@@ -177,7 +177,7 @@ class PathUtilsTest {
     assertThat(di.getNamespace()).isEqualTo("hdfs://namenode:8020");
     assertThat(di.getSymlinks()).hasSize(1);
     assertThat(di.getSymlinks().get(0).getName()).isEqualTo("db.table");
-    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("/warehouse");
+    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("hdfs://namenode:8020/warehouse");
   }
 
   @Test
@@ -197,7 +197,7 @@ class PathUtilsTest {
     assertThat(di.getNamespace()).isEqualTo("s3://s3-db");
     assertThat(di.getSymlinks()).hasSize(1);
     assertThat(di.getSymlinks().get(0).getName()).isEqualTo("db.table");
-    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("");
+    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("s3://s3-db");
   }
 
   @Test
