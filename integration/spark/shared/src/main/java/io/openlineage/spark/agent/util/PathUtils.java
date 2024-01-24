@@ -84,15 +84,13 @@ public class PathUtils {
 
       return di.withSymlink(
           nameFromTableIdentifier(catalogTable.identifier()),
-          StringUtils.substringBeforeLast(
-              uri.toString(), File.separator),
+          StringUtils.substringBeforeLast(uri.toString(), File.separator),
           DatasetIdentifier.SymlinkType.TABLE);
     }
   }
 
   @SneakyThrows
-  private static URI prepareUriFromDefaultTablePath(
-      CatalogTable catalogTable) {
+  private static URI prepareUriFromDefaultTablePath(CatalogTable catalogTable) {
     URI uri =
         SparkSession.active().sessionState().catalog().defaultTablePath(catalogTable.identifier());
 
