@@ -319,7 +319,7 @@ class PathUtilsTest {
               "foo",
               "hdfs://namenode",
               tableUri.getPath(),
-              "/user/hive/warehouse/foo.db",
+              "hdfs://namenode/user/hive/warehouse/foo.db",
               "foo.bar")
           .performTest();
     }
