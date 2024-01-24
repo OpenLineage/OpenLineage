@@ -184,8 +184,7 @@ class PathUtilsTest {
   void testFromCatalogWithDefaultStorageAndNoWarehouse() throws URISyntaxException {
     sparkConf.remove("spark.hadoop.hive.metastore.uris");
     when(catalogTable.storage()).thenReturn(catalogStorageFormat);
-    when(catalogStorageFormat.locationUri())
-        .thenReturn(Option.apply(new URI("s3://s3-db/table")));
+    when(catalogStorageFormat.locationUri()).thenReturn(Option.apply(new URI("s3://s3-db/table")));
 
     TableIdentifier tableIdentifier = mock(TableIdentifier.class);
     when(catalogTable.identifier()).thenReturn(tableIdentifier);
