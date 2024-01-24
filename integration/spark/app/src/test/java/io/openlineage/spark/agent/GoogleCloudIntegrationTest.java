@@ -121,16 +121,18 @@ public class GoogleCloudIntegrationTest {
 
     spark.sparkContext().setLogLevel("info");
 
-    // TODO: would love to avoid this in future
-    // # # ran this once to create source table
-    // # df = spark.createDataFrame([
-    // #     {'a': 1, 'b': 2},
-    // #     {'a': 3, 'b': 4}
-    // # ])
-    // # df.write.format('bigquery') \
-    // #     .option('table', source_table) \
-    // #     .mode('overwrite') \
-    // #     .save()
+    Dataset<Row> dataset =
+        spark
+            .createDataFrame(
+                ImmutableList.of(RowFactory.create(1L, 2L), RowFactory.create(3L, 4L)),
+                new StructType(
+                    new StructField[] {
+                      new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                      new StructField("b", LongType$.MODULE$, false, Metadata.empty())
+                    }))
+            .repartition(1);
+
+    dataset.write().format("bigquery").option("table", source_table).mode("overwrite").save();
 
     Dataset<Row> first = spark.read().format("bigquery").option("table", source_table).load();
 
