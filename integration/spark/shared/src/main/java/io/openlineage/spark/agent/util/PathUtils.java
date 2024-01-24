@@ -79,7 +79,7 @@ public class PathUtils {
     } else {
       return di.withSymlink(
           nameFromTableIdentifier(catalogTable.identifier()),
-          StringUtils.substringBeforeLast(di.getName(), File.separator),
+          StringUtils.substringBeforeLast(catalogTable.storage().locationUri().get().toString() , File.separator),
           DatasetIdentifier.SymlinkType.TABLE);
     }
   }
