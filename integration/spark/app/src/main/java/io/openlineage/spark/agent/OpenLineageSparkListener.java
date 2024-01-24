@@ -85,7 +85,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   public void onOtherEvent(SparkListenerEvent event) {
     Optional<Long> eventProcessingTimeoutSeconds = OpenLineageSparkListener.getEventProcessingTimeoutSeconds();
 
-    if (eventProcessingTimeoutSeconds.isEmpty()) {
+    if (!eventProcessingTimeoutSeconds.isPresent()) {
       log.debug("Processing onOtherEventFn without any timeout");
       onOtherEventFn(event);
       return;
@@ -135,7 +135,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   public void onJobStart(SparkListenerJobStart jobStart) {
     Optional<Long> eventProcessingTimeoutSeconds = OpenLineageSparkListener.getEventProcessingTimeoutSeconds();
 
-    if (eventProcessingTimeoutSeconds.isEmpty()) {
+    if (!eventProcessingTimeoutSeconds.isPresent()) {
       log.debug("Processing onJobStartFn without any timeout");
       onJobStartFn(jobStart);
       return;
@@ -210,7 +210,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   public void onJobEnd(SparkListenerJobEnd jobEnd) {
     Optional<Long> eventProcessingTimeoutSeconds = OpenLineageSparkListener.getEventProcessingTimeoutSeconds();
 
-    if (eventProcessingTimeoutSeconds.isEmpty()) {
+    if (!eventProcessingTimeoutSeconds.isPresent()) {
       log.debug("Processing onJobEndFn without any timeout");
       onJobEndFn(jobEnd);
       return;
@@ -245,7 +245,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   public void onTaskEnd(SparkListenerTaskEnd taskEnd) {
     Optional<Long> eventProcessingTimeoutSeconds = OpenLineageSparkListener.getEventProcessingTimeoutSeconds();
 
-    if (eventProcessingTimeoutSeconds.isEmpty()) {
+    if (!eventProcessingTimeoutSeconds.isPresent()) {
       log.debug("Processing onTaskEndFn without any timeout");
       onTaskEndFn(taskEnd);
       return;
