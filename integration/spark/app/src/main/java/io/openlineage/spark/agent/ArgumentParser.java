@@ -53,7 +53,8 @@ public class ArgumentParser {
           Arrays.asList("transport.properties.", "transport.urlParams.", "transport.headers."));
   public static final String SPARK_CONF_CUSTOM_ENVIRONMENT_VARIABLES =
       "spark.openlineage.facets.custom_environment_variables";
-  public static final String SPARK_CONF_EVENT_PROCESSING_TIMEOUT_SECONDS = "spark.openlineage.event.processing.timeout.seconds";
+  public static final String SPARK_CONF_EVENT_PROCESSING_TIMEOUT_SECONDS =
+      "spark.openlineage.event.processing.timeout.seconds";
 
   @Builder.Default private String namespace = "default";
   @Builder.Default private String jobName = "default";
@@ -77,13 +78,15 @@ public class ArgumentParser {
     findSparkConfigKey(conf, SPARK_CONF_NAMESPACE).ifPresent(builder::namespace);
     findSparkConfigKey(conf, SPARK_CONF_JOB_NAME).ifPresent(builder::jobName);
     findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID).ifPresent(builder::parentRunId);
-    findSparkConfigKey(conf, SPARK_CONF_EVENT_PROCESSING_TIMEOUT_SECONDS).ifPresent(timeout -> {
-      try {
-        builder.eventProcessingTimeoutSeconds(Optional.of(Long.parseLong(timeout)));
-      } catch (Exception e) {
-        builder.eventProcessingTimeoutSeconds(Optional.empty());
-      }
-    });
+    findSparkConfigKey(conf, SPARK_CONF_EVENT_PROCESSING_TIMEOUT_SECONDS)
+        .ifPresent(
+            timeout -> {
+              try {
+                builder.eventProcessingTimeoutSeconds(Optional.of(Long.parseLong(timeout)));
+              } catch (Exception e) {
+                builder.eventProcessingTimeoutSeconds(Optional.empty());
+              }
+            });
 
     builder.openLineageYaml(extractOpenlineageConfFromSparkConf(conf));
     return builder.build();
