@@ -83,7 +83,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onOtherEvent(SparkListenerEvent event) {
-    Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds;
+    Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds();
 
     if (eventProcessingTimeoutSeconds.isEmpty()) {
       log.debug("Processing onOtherEventFn without any timeout");
@@ -133,7 +133,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job starts */
   @Override
   public void onJobStart(SparkListenerJobStart jobStart) {
-    Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds;
+    Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds();
 
     if (eventProcessingTimeoutSeconds.isEmpty()) {
       log.debug("Processing onJobStartFn without any timeout");
@@ -208,7 +208,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job ends */
   @Override
   public void onJobEnd(SparkListenerJobEnd jobEnd) {
-    Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds;
+    Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds();
 
     if (eventProcessingTimeoutSeconds.isEmpty()) {
       log.debug("Processing onJobEndFn without any timeout");
@@ -243,7 +243,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onTaskEnd(SparkListenerTaskEnd taskEnd) {
-    Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds;
+    Optional<Long> eventProcessingTimeoutSeconds = contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds();
 
     if (eventProcessingTimeoutSeconds.isEmpty()) {
       log.debug("Processing onTaskEndFn without any timeout");
