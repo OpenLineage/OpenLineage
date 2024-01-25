@@ -103,8 +103,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           },
           eventProcessingTimeoutSeconds.get(),
           TimeUnit.SECONDS,
-          true
-      );
+          true);
     } catch (Exception e) {
       log.debug("onOtherEvent Timeout Exception: {}", e.getMessage(), e);
     }
@@ -161,8 +160,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           },
           eventProcessingTimeoutSeconds.get(),
           TimeUnit.SECONDS,
-          true
-      );
+          true);
     } catch (Exception e) {
       log.debug("onJobStart Timeout Exception: {}", e.getMessage(), e);
     }
@@ -244,8 +242,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           },
           eventProcessingTimeoutSeconds.get(),
           TimeUnit.SECONDS,
-          true
-      );
+          true);
     } catch (Exception e) {
       log.debug("onJobEnd Timeout Exception: {}", e.getMessage(), e);
     }
@@ -287,8 +284,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           },
           eventProcessingTimeoutSeconds.get(),
           TimeUnit.SECONDS,
-          true
-      );
+          true);
     } catch (Exception e) {
       log.debug("onTaskEnd Timeout Exception: {}", e.getMessage(), e);
     }
