@@ -363,6 +363,49 @@ check a `MapPartitionsRDD`'s dependencies. The `RDD` for each `Stage` can be eva
 `org.apache.spark.scheduler.SparkListenerJobEnd` event is encountered, the last `Stage` for the
 `ActiveJob` can be evaluated.
 
+## Spark extensions' built-in lineage extraction
+
+Spark ecosystem comes with a plenty of pluggable extensions like iceberg, delta or spark-bigquery-connector
+to name a few. Extensions modify logical plan of the job and inject its own classes from which lineage shall be 
+extracted. This is adding extra complexity, as it makes `openlineage-spark` codebase
+dependent on the extension packages. The complexity grows more when multiple versions
+of the same extension need to be supported. 
+
+### Spark DataSource V2 API Extensions
+
+Some extensions rely on Spark DataSource V2 API and implement TableProvider, Table, ScanBuilder etc.
+that are used within Spark to create `DataSourceV2Relation` instances.
+
+A logical plan node `DataSourceV2Relation` contains `Table` field with a properties map of type
+`Map<String, String>`. `openlineage-spark` uses this map to extract dataset information for lineage
+event from `DataSourceV2Relation`. It is checking for the properties `openlineage.dataset.name` and
+`openlineage.dataset.namespace`. If they are present, it uses them to identify a dataset. Please 
+be aware that namespace and name need to conform to [naming convention](https://github.com/OpenLineage/OpenLineage/blob/main/spec/Naming.md).
+
+Properties can be also used to pass any dataset facet. For example:
+```
+openlineage.dataset.facets.customFacet={"property1": "value1", "property2": "value2"}
+```
+will enrich dataset with `customFacet`:
+```json
+"inputs": [{
+    "name": "...",
+    "namespace": "...",
+    "facets": {
+        "customFacet": {
+            "property1": "value1",
+            "property2": "value2",
+            "_producer": "..."
+        },
+        "schema": { }
+}]
+```
+
+The approach can be used for standard facets
+from OpenLineage spec as well. `schema` does not need to be passed through the properties as 
+it is derived within `openlineage-spark` from `DataSourceV2Relation`. Custom facets are automatically
+filled with `_producer` field.
+
 ## Contributing
 
 If contributing changes, additions or fixes to the Spark integration, please include the following header in any new `.java` files:
