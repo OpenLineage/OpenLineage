@@ -72,7 +72,12 @@ public class FlinkContainerUtils {
         .withEnv("KAFKA_BROKER_ID", "1")
         .withEnv(
             "KAFKA_CREATE_TOPICS",
-            "io.openlineage.flink.kafka.input1:1:1,io.openlineage.flink.kafka.input2:1:1,io.openlineage.flink.kafka.output:1:1,io.openlineage.flink.kafka.input_no_schema_registry:1:1")
+            "io.openlineage.flink.kafka.input1:1:1,"
+                + "io.openlineage.flink.kafka.input2:1:1,"
+                + "io.openlineage.flink.kafka.output:1:1,"
+                + "io.openlineage.flink.kafka.output1:1:1,"
+                + "io.openlineage.flink.kafka.output2:1:1,"
+                + "io.openlineage.flink.kafka.input_no_schema_registry:1:1")
         .withEnv(
             "KAFKA_LOG4J_LOGGERS",
             "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO")
@@ -140,6 +145,8 @@ public class FlinkContainerUtils {
     String inputTopics =
         jobProperties.getProperty(
             "inputTopics", "io.openlineage.flink.kafka.input1,io.openlineage.flink.kafka.input2");
+    String outputTopics =
+        jobProperties.getProperty("outputTopics", "io.openlineage.flink.kafka.output");
     String jobNameParam = "";
     if (jobProperties.getProperty("jobName") != null) {
       jobNameParam = "--job-name " + jobProperties.get("jobName") + " ";
@@ -159,7 +166,9 @@ public class FlinkContainerUtils {
                     + String.format("--job-classname %s ", entrypointClass)
                     + "--input-topics "
                     + inputTopics
-                    + " --output-topic io.openlineage.flink.kafka.output "
+                    + " --output-topics "
+                    + outputTopics
+                    + " "
                     + jobNameParam)
             .withEnv(
                 "FLINK_PROPERTIES", "jobmanager.rpc.address: jobmanager\nexecution.attached: true")
