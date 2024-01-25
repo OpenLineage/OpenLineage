@@ -22,7 +22,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.WeakHashMap;
-
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -30,7 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.output.ByteArrayOutputStream;
@@ -173,9 +171,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     initializeContextFactoryIfNotInitialized();
     Optional<ActiveJob> activeJob =
         asJavaOptional(
-            SparkSession.getDefaultSession()
-                .map(sparkContextFromSession)
-                .orElse(activeSparkContext))
+                SparkSession.getDefaultSession()
+                    .map(sparkContextFromSession)
+                    .orElse(activeSparkContext))
             .flatMap(
                 ctx ->
                     Optional.ofNullable(ctx.dagScheduler())
@@ -195,9 +193,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         .orElseGet(
             () ->
                 asJavaOptional(
-                    SparkSession.getDefaultSession()
-                        .map(sparkContextFromSession)
-                        .orElse(activeSparkContext))
+                        SparkSession.getDefaultSession()
+                            .map(sparkContextFromSession)
+                            .orElse(activeSparkContext))
                     .flatMap(
                         ctx ->
                             Optional.ofNullable(ctx.dagScheduler())
@@ -260,7 +258,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       jobMetrics.cleanUp(jobEnd.jobId());
     }
   }
-
 
   @Override
   public void onTaskEnd(SparkListenerTaskEnd taskEnd) {
@@ -404,20 +401,19 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     }
   }
 
-  private <T> T callWithTimeout(Callable<T> callable, long timeoutDuration,
-      TimeUnit timeoutUnit, boolean amInterruptible) throws Exception {
+  private <T> T callWithTimeout(
+      Callable<T> callable, long timeoutDuration, TimeUnit timeoutUnit, boolean amInterruptible)
+      throws Exception {
     ExecutorService executor = Executors.newCachedThreadPool();
     Future<T> future = executor.submit(callable);
     T result;
 
     try {
-      log.debug(
-          "Submitting a timed thread with timeout = " + timeoutDuration + timeoutUnit);
+      log.debug("Submitting a timed thread with timeout = " + timeoutDuration + timeoutUnit);
       result = future.get(timeoutDuration, timeoutUnit);
     } catch (InterruptedException e) {
       future.cancel(amInterruptible);
-      log.debug(
-          "Got error in callWithTimeout future.get: {}", e.getMessage(), e);
+      log.debug("Got error in callWithTimeout future.get: {}", e.getMessage(), e);
       result = null;
     } catch (ExecutionException e) {
       future.cancel(amInterruptible);
