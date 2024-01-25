@@ -131,6 +131,7 @@ class OpenLineageSparkListenerTest {
       when(Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED")).thenReturn("true");
 
       ContextFactory contextFactory = mock(ContextFactory.class);
+      when(contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds()).thenReturn(Optional.empty());
 
       OpenLineageSparkListener.init(contextFactory);
       OpenLineageSparkListener listener = new OpenLineageSparkListener();
