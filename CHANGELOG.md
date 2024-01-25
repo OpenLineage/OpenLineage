@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...HEAD)
 
+### Added
+* **Flink: support multi topic Kafka Sink.** [`#2372`](https://github.com/OpenLineage/OpenLineage/pull/2372) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Support multi topic kafka sinks. Limitations: `recordSerializer` need to implement `KafkaTopicsDescriptor`. Please refer to [limitations](https://openlineage.io/docs/integrations/flink/#limitations) sections in documentation.*
+
 ## [1.8.0](https://github.com/OpenLineage/OpenLineage/compare/1.7.0...1.8.0) - 2024-01-19
 
 * **Flink: support Flink 1.18** [`#2366`](https://github.com/OpenLineage/OpenLineage/pull/2366) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
