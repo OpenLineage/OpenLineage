@@ -27,7 +27,7 @@
                 "symlinks": {
                     "identifiers": [
                         {
-                            "namespace": "/tmp/warehouse",
+                            "namespace": "file:/tmp/warehouse",
                             "name": "default.test",
                             "type": "TABLE"
                         }

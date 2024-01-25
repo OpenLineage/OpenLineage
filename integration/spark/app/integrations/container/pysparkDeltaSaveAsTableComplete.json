@@ -35,7 +35,7 @@
         "symlinks": {
           "identifiers": [
             {
-              "namespace": "/tmp/delta",
+              "namespace": "file:/tmp/delta",
               "name": "${json-unit.any-string}",
               "type": "TABLE"
             }
