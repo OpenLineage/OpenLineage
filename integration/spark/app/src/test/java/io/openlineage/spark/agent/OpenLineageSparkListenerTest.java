@@ -73,11 +73,6 @@ class OpenLineageSparkListenerTest {
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(qe)
             .build();
-
-    //    try (MockedStatic mocked = mockStatic(OpenLineageSparkListener.class)) {
-    //
-    // when(OpenLineageSparkListener.getEventProcessingTimeoutSeconds()).thenReturn(Optional.empty());
-    //    }
   }
 
   @Test
