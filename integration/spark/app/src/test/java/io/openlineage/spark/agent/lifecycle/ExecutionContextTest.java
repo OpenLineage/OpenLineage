@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import io.openlineage.spark.agent.util.PlanUtils;
 import java.util.Locale;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -22,7 +23,7 @@ class ExecutionContextTest {
   })
   void testCamelCaseToSnakeCase(String appName, String expected) {
     String actual =
-        appName.replaceAll(ExecutionContext.CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT);
+        appName.replaceAll(PlanUtils.CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT);
     Assertions.assertEquals(expected, actual);
   }
 }

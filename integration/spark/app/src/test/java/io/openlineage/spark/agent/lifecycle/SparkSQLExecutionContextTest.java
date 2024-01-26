@@ -32,15 +32,16 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 @ExtendWith(SparkAgentTestExtension.class)
-public class SparkSQLExecutionContextTest {
-
+class SparkSQLExecutionContextTest {
   private final long executionId = 1L;
   private final OpenLineageContext olContext = mock(OpenLineageContext.class);
   private final OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
@@ -70,18 +71,27 @@ public class SparkSQLExecutionContextTest {
     when(eventEmitter.getApplicationJobName()).thenReturn("test_rdd");
   }
 
+  @AfterEach
+  void resetMocks() {
+    Mockito.reset(olContext, eventEmitter, queryExecution);
+  }
+
+  private void mockCommonBehavior(SparkSession spark) {
+    try (MockedStatic<EventFilterUtils> mocked = mockStatic(EventFilterUtils.class)) {
+      mocked.when(() -> EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+      when(olContext.getSparkContext()).thenReturn(spark.sparkContext());
+      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
+    }
+  }
+
   @Test
   void testSingleStartIsSent(SparkSession spark) {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
-      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
+    mockCommonBehavior(spark);
+    context.start(mock(SparkListenerSQLExecutionStart.class));
+    context.start(mock(SparkListenerJobStart.class));
 
-      context.start(mock(SparkListenerSQLExecutionStart.class));
-      context.start(mock(SparkListenerJobStart.class));
-    }
     verify(eventEmitter, times(2)).emit(lineageEvent.capture());
-
     assertThat(lineageEvent.getAllValues().get(0))
         .hasFieldOrPropertyWithValue("eventType", EventType.START);
     assertThat(lineageEvent.getAllValues().get(1))
@@ -91,15 +101,11 @@ public class SparkSQLExecutionContextTest {
   @Test
   void testSingleStartIsSentWhenJobStartGoesFirst(SparkSession spark) {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
-      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
+    mockCommonBehavior(spark);
+    context.start(mock(SparkListenerJobStart.class));
+    context.start(mock(SparkListenerSQLExecutionStart.class));
 
-      context.start(mock(SparkListenerJobStart.class));
-      context.start(mock(SparkListenerSQLExecutionStart.class));
-    }
     verify(eventEmitter, times(2)).emit(lineageEvent.capture());
-
     assertThat(lineageEvent.getAllValues().get(0))
         .hasFieldOrPropertyWithValue("eventType", EventType.START);
     assertThat(lineageEvent.getAllValues().get(1))
@@ -109,17 +115,14 @@ public class SparkSQLExecutionContextTest {
   @Test
   void testSingleCompleteIsSent(SparkSession spark) {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
-      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
+    mockCommonBehavior(spark);
 
-      context.start(mock(SparkListenerJobStart.class));
-      context.start(mock(SparkListenerSQLExecutionStart.class));
-      context.end(mock(SparkListenerSQLExecutionEnd.class));
-      context.end(mock(SparkListenerJobEnd.class));
-    }
+    context.start(mock(SparkListenerJobStart.class));
+    context.start(mock(SparkListenerSQLExecutionStart.class));
+    context.end(mock(SparkListenerSQLExecutionEnd.class));
+    context.end(mock(SparkListenerJobEnd.class));
+
     verify(eventEmitter, times(4)).emit(lineageEvent.capture());
-
     assertThat(lineageEvent.getAllValues().get(2))
         .hasFieldOrPropertyWithValue("eventType", EventType.RUNNING);
     assertThat(lineageEvent.getAllValues().get(3))
@@ -129,17 +132,14 @@ public class SparkSQLExecutionContextTest {
   @Test
   void testSingleCompleteIsSentWhenJobEndGoesFirst(SparkSession spark) {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
-      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
+    mockCommonBehavior(spark);
 
-      context.start(mock(SparkListenerJobStart.class));
-      context.start(mock(SparkListenerSQLExecutionStart.class));
-      context.end(mock(SparkListenerJobEnd.class));
-      context.end(mock(SparkListenerSQLExecutionEnd.class));
-    }
+    context.start(mock(SparkListenerJobStart.class));
+    context.start(mock(SparkListenerSQLExecutionStart.class));
+    context.end(mock(SparkListenerJobEnd.class));
+    context.end(mock(SparkListenerSQLExecutionEnd.class));
+
     verify(eventEmitter, times(4)).emit(lineageEvent.capture());
-
     assertThat(lineageEvent.getAllValues().get(2))
         .hasFieldOrPropertyWithValue("eventType", EventType.RUNNING);
     assertThat(lineageEvent.getAllValues().get(3))
@@ -149,15 +149,11 @@ public class SparkSQLExecutionContextTest {
   @Test
   void testCompleteIsSentWhenNoSqlStart(SparkSession spark) {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
-      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
+    mockCommonBehavior(spark);
+    context.start(mock(SparkListenerJobStart.class));
+    context.end(mock(SparkListenerJobEnd.class));
 
-      context.start(mock(SparkListenerJobStart.class));
-      context.end(mock(SparkListenerJobEnd.class));
-    }
     verify(eventEmitter, times(2)).emit(lineageEvent.capture());
-
     assertThat(lineageEvent.getAllValues().get(0))
         .hasFieldOrPropertyWithValue("eventType", EventType.START);
     assertThat(lineageEvent.getAllValues().get(1))
@@ -169,15 +165,11 @@ public class SparkSQLExecutionContextTest {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     SparkListenerJobEnd jobEnd = mock(SparkListenerJobEnd.class);
     when(jobEnd.jobResult()).thenReturn(mock(JobFailed.class));
-    try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
-      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
-      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
+    mockCommonBehavior(spark);
+    context.start(mock(SparkListenerJobStart.class));
+    context.end(jobEnd);
 
-      context.start(mock(SparkListenerJobStart.class));
-      context.end(jobEnd);
-    }
     verify(eventEmitter, times(2)).emit(lineageEvent.capture());
-
     assertThat(lineageEvent.getAllValues().get(0))
         .hasFieldOrPropertyWithValue("eventType", EventType.START);
     assertThat(lineageEvent.getAllValues().get(1))

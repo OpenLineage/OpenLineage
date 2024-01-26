@@ -6,7 +6,6 @@ plugins {
     id("io.openlineage.common-config")
     id("io.openlineage.scala-variants")
     id("idea")
-    id("java-test-fixtures")
 }
 
 scalaVariants {
@@ -36,8 +35,21 @@ ext {
     configurationName = scalaBinaryVersion.replace(".", "")
 }
 
+configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.scala-lang" && requested.name == "scala-library") {
+            if (requested.version.startsWith("2.12")) {
+                useVersion("2.12.15")
+            }
+            if (requested.version.startsWith("2.13")) {
+                useVersion("2.13.10")
+            }
+        }
+    }
+}
+
 dependencies {
-    implementation(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
+    compileOnly(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
 
     compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
@@ -50,26 +62,24 @@ dependencies {
     compileOnly("io.delta:delta-core_${scalaBinaryVersion}:${deltaVersion}")
     compileOnly("org.apache.iceberg:iceberg-spark-runtime-3.2_${scalaBinaryVersion}:${icebergVersion}")
 
-    // TODO: Convert this to testImplementation
-    testFixturesApi(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
-    testFixturesApi("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
-    testFixturesApi("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
-    testFixturesApi("com.databricks:databricks-dbutils-scala_${scalaBinaryVersion}:${databricksVersion}")
-    testFixturesApi("com.google.cloud.spark:spark-bigquery-with-dependencies_${scalaBinaryVersion}:${bigqueryVersion}") {
+    testImplementation(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
+    testImplementation("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
+    testImplementation("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
+    testImplementation("com.databricks:databricks-dbutils-scala_${scalaBinaryVersion}:${databricksVersion}")
+    testImplementation("com.google.cloud.spark:spark-bigquery-with-dependencies_${scalaBinaryVersion}:${bigqueryVersion}") {
         exclude group: "com.fasterxml.jackson.core"
         exclude group: "com.fasterxml.jackson.module"
     }
-    testFixturesApi("io.delta:delta-core_${scalaBinaryVersion}:${deltaVersion}")
-    testFixturesApi("org.apache.iceberg:iceberg-spark-runtime-3.2_${scalaBinaryVersion}:${icebergVersion}")
-    testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
-    testFixturesApi("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
-    testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
-    testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
-    testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
+    testImplementation("io.delta:delta-core_${scalaBinaryVersion}:${deltaVersion}")
+    testImplementation("org.apache.iceberg:iceberg-spark-runtime-3.2_${scalaBinaryVersion}:${icebergVersion}")
+    testImplementation("org.assertj:assertj-core:${assertjVersion}")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
+    testImplementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testImplementation("org.mockito:mockito-core:${mockitoVersion}")
+    testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
 
     // Scala 2.12
-    scala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
-
+    scala212CompileOnly(project(path: ":shared", configuration: "scala212RuntimeElements"))
     scala212CompileOnly("org.apache.spark:spark-hive_2.12:${sparkVersion}")
     scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
 
@@ -81,6 +91,7 @@ dependencies {
     scala212CompileOnly("io.delta:delta-core_2.12:${deltaVersion}")
     scala212CompileOnly("org.apache.iceberg:iceberg-spark-runtime-3.2_2.12:${icebergVersion}")
 
+    testScala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
     testScala212Implementation("org.apache.spark:spark-hive_2.12:${sparkVersion}")
     testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
 
@@ -99,8 +110,7 @@ dependencies {
     testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
 
     // Scala 2.13
-    scala213Implementation(project(path: ":shared", configuration: "scala213RuntimeElements"))
-
+    scala213CompileOnly(project(path: ":shared", configuration: "scala213RuntimeElements"))
     scala213CompileOnly("org.apache.spark:spark-hive_2.13:${sparkVersion}")
     scala213CompileOnly("org.apache.spark:spark-sql_2.13:${sparkVersion}")
 
@@ -112,6 +122,7 @@ dependencies {
     scala213CompileOnly("io.delta:delta-core_2.13:${deltaVersion}")
     scala213CompileOnly("org.apache.iceberg:iceberg-spark-runtime-3.2_2.13:${icebergVersion}")
 
+    testScala213Implementation(project(path: ":shared", configuration: "scala213RuntimeElements"))
     testScala213Implementation("org.apache.spark:spark-hive_2.13:${sparkVersion}")
     testScala213Implementation("org.apache.spark:spark-sql_2.13:${sparkVersion}")
 

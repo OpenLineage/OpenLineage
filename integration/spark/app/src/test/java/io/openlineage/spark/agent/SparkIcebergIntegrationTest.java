@@ -37,14 +37,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.configuration.Configuration;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 import org.slf4j.event.Level;
 
-@Tag("integration-test")
-@Tag("iceberg")
 @Slf4j
+@Tag("integration-test")
+@EnabledIfSystemProperty(named = "iceberg.tests.enabled", matches = "true")
 public class SparkIcebergIntegrationTest {
 
   @SuppressWarnings("PMD")

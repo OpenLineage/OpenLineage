@@ -61,7 +61,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.LongWritable;
@@ -101,6 +100,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 import scala.Tuple2;
@@ -108,8 +109,8 @@ import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
 @Tag("integration-test")
-@Slf4j
 class SparkReadWriteIntegTest {
+  private static final Logger log = LoggerFactory.getLogger(SparkReadWriteIntegTest.class);
 
   private static final String EVENT_TYPE = "eventType";
   private static final String NAMESPACE = "namespace";

@@ -4,3 +4,7 @@ bin/
 */spark-warehouse
 
 .sdkmanrc
+
+# This is where the Spark binaries are downloaded to
+# in order to produce the Docker images
+app/bin/spark-*/

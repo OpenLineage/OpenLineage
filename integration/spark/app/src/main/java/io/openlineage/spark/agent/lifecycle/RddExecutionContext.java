@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import static io.openlineage.spark.agent.util.PlanUtils.CAMEL_TO_SNAKE_CASE;
 import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
 import io.openlineage.client.OpenLineage;
@@ -15,15 +16,14 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.SparkVersionFacet;
 import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilderDelegate;
+import io.openlineage.spark.agent.lifecycle.proxy.RddProxy;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -58,7 +58,6 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.apache.spark.util.SerializableJobConf;
 import scala.Option;
-import scala.collection.Seq;
 
 @Slf4j
 class RddExecutionContext implements ExecutionContext {
@@ -142,7 +141,7 @@ class RddExecutionContext implements ExecutionContext {
   }
 
   static String nameRDD(RDD<?> rdd) {
-    String rddName = (String) rdd.name();
+    String rddName = rdd.name();
     if (rddName == null
 
         // HadoopRDDs are always named for the path. Don't name the RDD for a file. Otherwise, the
@@ -164,8 +163,9 @@ class RddExecutionContext implements ExecutionContext {
               .replaceAll(CAMEL_TO_SNAKE_CASE, "_$1") // camel case to snake case
               .toLowerCase(Locale.ROOT);
     }
-    Seq<Dependency<?>> deps = (Seq<Dependency<?>>) rdd.dependencies();
-    List<Dependency<?>> dependencies = ScalaConversionUtils.fromSeq(deps);
+
+    RddProxy proxy = new RddProxy(rdd);
+    List<Dependency<?>> dependencies = proxy.dependencies();
     if (dependencies.isEmpty()) {
       return rddName;
     }
@@ -345,13 +345,6 @@ class RddExecutionContext implements ExecutionContext {
     return PlanUtils.findRDDPaths(rdds.stream().collect(Collectors.toList())).stream()
         .map(path -> path.toUri())
         .collect(Collectors.toList());
-  }
-
-  protected void printRDDs(String prefix, RDD<?> rdd) {
-    Collection<Dependency<?>> deps = ScalaConversionUtils.fromSeq(rdd.dependencies());
-    for (Dependency<?> dep : deps) {
-      printRDDs(prefix + "  ", dep.rdd());
-    }
   }
 
   protected static Path getOutputPath(RDD<?> rdd, Configuration config) {

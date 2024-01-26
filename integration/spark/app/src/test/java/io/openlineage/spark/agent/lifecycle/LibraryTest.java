@@ -23,7 +23,7 @@ import io.openlineage.spark.agent.SparkAgentTestExtension;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +38,6 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -48,10 +47,8 @@ import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
 @Slf4j
-@Tag("beforeShadowJarTest")
 @ExtendWith(SparkAgentTestExtension.class)
 class LibraryTest {
-
   @BeforeEach
   public void beforeEach() throws Exception {
     Mockito.reset(EVENT_EMITTER);
@@ -81,7 +78,8 @@ class LibraryTest {
   void testRdd(@TempDir Path tmpDir, SparkSession spark) throws IOException {
     URL url = Resources.getResource("test_data/data.txt");
     JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
-    JavaRDD<String> textFile = sc.textFile(url.getPath());
+    String urlPath = url.getPath();
+    JavaRDD<String> textFile = sc.textFile(urlPath);
 
     textFile
         .flatMap(s -> Arrays.asList(s.split(" ")).iterator())
@@ -127,7 +125,14 @@ class LibraryTest {
         .first()
         .hasFieldOrPropertyWithValue("namespace", "file");
 
-    assertThat(first.getInputs().get(0).getName()).endsWith("test/test_data");
+    // This needed to change, because of the addition of additional source sets.
+    // Previously, we were hard-coding the expectation to be 'test/test_data', but
+    // with the additional source sets, the path to the resource changes.
+    // This will also handle any issues that may arise, if someone runs these tests
+    // on a Windows machine.
+    Path path = Paths.get(urlPath);
+    Path parentPath = path.getParent();
+    assertThat(first.getInputs().get(0).getName()).endsWith(parentPath.toString());
     assertThat(first.getEventType()).isEqualTo(EventType.START);
 
     // verify second job event
@@ -164,24 +169,6 @@ class LibraryTest {
     assertThat(applicationComplete.getEventType()).isEqualTo(EventType.COMPLETE);
 
     verifySerialization(events);
-  }
-
-  Map<String, Object> stripSchemaURL(Map<String, Object> map) {
-    List<String> toRemove = new ArrayList<>();
-    for (String key : map.keySet()) {
-      if (key.endsWith("schemaURL")) {
-        toRemove.add(key);
-      } else {
-        Object value = map.get(key);
-        if (value instanceof Map) {
-          stripSchemaURL((Map<String, Object>) value);
-        }
-      }
-    }
-    for (String key : toRemove) {
-      map.remove(key);
-    }
-    return map;
   }
 
   @Test

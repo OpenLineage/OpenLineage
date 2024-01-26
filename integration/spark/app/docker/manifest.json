@@ -1,0 +1,83 @@
+[
+  {
+    "sparkVersion": "2.4.8",
+    "scalaBinaryVersion": "2.11",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-2.4.8/spark-2.4.8-bin-without-hadoop.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-2.4.8/spark-2.4.8-bin-without-hadoop.tgz.asc",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
+    "baseDockerImage": "bitnami/spark:2.4.6"
+  },
+  {
+    "sparkVersion": "2.4.8",
+    "scalaBinaryVersion": "2.12",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-2.4.8/spark-2.4.8-bin-without-hadoop-scala-2.12.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-2.4.8/spark-2.4.8-bin-without-hadoop-scala-2.12.tgz.asc",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
+    "baseDockerImage": "bitnami/spark:2.4.6"
+  },
+  {
+    "sparkVersion": "3.2.4",
+    "scalaBinaryVersion": "2.12",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.2.4/spark-3.2.4-bin-hadoop3.2.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.2.4/spark-3.2.4-bin-hadoop3.2.tgz.asc",
+    "baseDockerImage": "bitnami/spark:3.2.4",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS"
+  },
+  {
+    "sparkVersion": "3.2.4",
+    "scalaBinaryVersion": "2.13",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.2.4/spark-3.2.4-bin-hadoop3.2-scala2.13.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.2.4/spark-3.2.4-bin-hadoop3.2-scala2.13.tgz.asc",
+    "baseDockerImage": "bitnami/spark:3.2.4",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS"
+  },
+  {
+    "sparkVersion": "3.3.4",
+    "scalaBinaryVersion": "2.12",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.3.4/spark-3.3.4-bin-hadoop3.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.3.4/spark-3.3.4-bin-hadoop3.tgz.asc",
+    "baseDockerImage": "bitnami/spark:3.3.4",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS"
+  },
+  {
+    "sparkVersion": "3.3.4",
+    "scalaBinaryVersion": "2.13",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.3.4/spark-3.3.4-bin-hadoop3-scala2.13.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.3.4/spark-3.3.4-bin-hadoop3-scala2.13.tgz.asc",
+    "baseDockerImage": "bitnami/spark:3.3.4",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS"
+  },
+  {
+    "sparkVersion": "3.4.2",
+    "scalaBinaryVersion": "2.12",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.4.2/spark-3.4.2-bin-hadoop3.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.4.2/spark-3.4.2-bin-hadoop3.tgz.asc",
+    "baseDockerImage": "bitnami/spark:3.4.2",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS"
+  },
+  {
+    "sparkVersion": "3.4.2",
+    "scalaBinaryVersion": "2.13",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.4.2/spark-3.4.2-bin-hadoop3-scala2.13.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.4.2/spark-3.4.2-bin-hadoop3-scala2.13.tgz.asc",
+    "baseDockerImage": "bitnami/spark:3.4.2",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS"
+  },
+  {
+    "sparkVersion": "3.5.0",
+    "scalaBinaryVersion": "2.12",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.5.0/spark-3.5.0-bin-hadoop3.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.5.0/spark-3.5.0-bin-hadoop3.tgz.asc",
+    "baseDockerImage": "bitnami/spark:3.5.0",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS"
+  },
+  {
+    "sparkVersion": "3.5.0",
+    "scalaBinaryVersion": "2.13",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.5.0/spark-3.5.0-bin-hadoop3-scala2.13.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.5.0/spark-3.5.0-bin-hadoop3-scala2.13.tgz.asc",
+    "baseDockerImage": "bitnami/spark:3.5.0",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS"
+  }
+]
+

@@ -159,11 +159,16 @@ class SparkContainerIntegrationTest {
                 new NewTopic("topicA", 1, (short) 1), new NewTopic("topicB", 1, (short) 1)));
     topicsResult.all().get();
 
-    SparkContainerUtils.runPysparkContainerWithDefaultConf(
-        network,
-        openLineageClientMockContainer,
-        "testPysparkKafkaReadAssignTest",
-        "spark_kafk_assign_read.py");
+    GenericContainer<?> container =
+        SparkContainerUtils.makePysparkContainerWithDefaultConf(
+            network,
+            openLineageClientMockContainer,
+            "testPysparkKafkaReadAssignTest",
+            PACKAGES,
+            System.getProperty("kafka.package.version"),
+            "/opt/spark_scripts/spark_kafka_assign_read.py");
+
+    container.start();
 
     verifyEvents(
         mockServerClient,

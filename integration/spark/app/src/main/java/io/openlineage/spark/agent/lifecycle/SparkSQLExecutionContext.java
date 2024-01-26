@@ -9,6 +9,7 @@ import static io.openlineage.client.OpenLineage.RunEvent.EventType.COMPLETE;
 import static io.openlineage.client.OpenLineage.RunEvent.EventType.FAIL;
 import static io.openlineage.client.OpenLineage.RunEvent.EventType.RUNNING;
 import static io.openlineage.client.OpenLineage.RunEvent.EventType.START;
+import static io.openlineage.spark.agent.util.PlanUtils.CAMEL_TO_SNAKE_CASE;
 import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
 import io.openlineage.client.OpenLineage;

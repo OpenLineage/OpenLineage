@@ -6,7 +6,6 @@ plugins {
     id("io.openlineage.common-config")
     id("io.openlineage.scala-variants")
     id("idea")
-    id("java-test-fixtures")
 }
 
 scalaVariants {
@@ -31,28 +30,40 @@ ext {
     configurationName = scalaBinaryVersion.replace(".", "")
 }
 
-dependencies {
-    implementation(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
-    implementation(project(path: ":spark3", configuration: "scala${configurationName}RuntimeElements"))
+configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.scala-lang" && requested.name == "scala-library") {
+            if (requested.version.startsWith("2.12")) {
+                useVersion("2.12.15")
+            }
+            if (requested.version.startsWith("2.13")) {
+                useVersion("2.13.10")
+            }
+        }
+    }
+}
 
+dependencies {
+    compileOnly(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
+    compileOnly(project(path: ":spark3", configuration: "scala${configurationName}RuntimeElements"))
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
 
-    // TODO: Remove 'testFixturesApi' and replace with 'testImplementation'
-    // TODO: Completely remove the test dependency on 'shared'
-    testFixturesApi(project(path: ":shared"))
-    testFixturesApi("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
-    testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
-    testFixturesApi("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
-    testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
-    testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
-    testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
+    testImplementation(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
+    testImplementation(project(path: ":spark3", configuration: "scala${configurationName}RuntimeElements"))
+    testImplementation("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
+    testImplementation("org.assertj:assertj-core:${assertjVersion}")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
+    testImplementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testImplementation("org.mockito:mockito-core:${mockitoVersion}")
+    testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
 
     // Scala 2.12
-    scala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
-    scala212Implementation(project(path: ":spark3", configuration: "scala212RuntimeElements"))
-
+    scala212CompileOnly(project(path: ":shared", configuration: "scala212RuntimeElements"))
+    scala212CompileOnly(project(path: ":spark3", configuration: "scala212RuntimeElements"))
     scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
 
+    testScala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
+    testScala212Implementation(project(path: ":spark3", configuration: "scala212RuntimeElements"))
     testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
     testScala212Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala212Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
@@ -61,11 +72,12 @@ dependencies {
     testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
 
     // Scala 2.13
-    scala213Implementation(project(path: ":shared", configuration: "scala213RuntimeElements"))
-    scala213Implementation(project(path: ":spark3", configuration: "scala213RuntimeElements"))
-
+    scala213CompileOnly(project(path: ":shared", configuration: "scala213RuntimeElements"))
+    scala213CompileOnly(project(path: ":spark3", configuration: "scala213RuntimeElements"))
     scala213CompileOnly("org.apache.spark:spark-sql_2.13:${sparkVersion}")
 
+    testScala213Implementation(project(path: ":shared", configuration: "scala213RuntimeElements"))
+    testScala213Implementation(project(path: ":spark3", configuration: "scala213RuntimeElements"))
     testScala213Implementation("org.apache.spark:spark-sql_2.13:${sparkVersion}")
     testScala213Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala213Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")

@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.client.transports.ApiKeyTokenProvider;
@@ -36,7 +37,9 @@ class ArgumentParserTest {
                 1, ArgumentParser.DEFAULT_DISABLED_FACETS.length() - 1)
             .split(";")[0],
         argumentParser.getOpenLineageYaml().getFacetsConfig().getDisabledFacets()[0]);
-    assert (argumentParser.getOpenLineageYaml().getTransportConfig() instanceof ConsoleConfig);
+
+    assertEquals(
+        ConsoleConfig.class, argumentParser.getOpenLineageYaml().getTransportConfig().getClass());
   }
 
   @Test
@@ -53,12 +56,17 @@ class ArgumentParserTest {
         ArgumentParser.parse(
             new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "kinesis"));
 
-    assert (argumentParserConsole.getOpenLineageYaml().getTransportConfig()
-        instanceof ConsoleConfig);
-    assert (argumentParserHttp.getOpenLineageYaml().getTransportConfig() instanceof HttpConfig);
-    assert (argumentParserKafka.getOpenLineageYaml().getTransportConfig() instanceof KafkaConfig);
-    assert (argumentParserKinesis.getOpenLineageYaml().getTransportConfig()
-        instanceof KinesisConfig);
+    assertEquals(
+        ConsoleConfig.class,
+        argumentParserConsole.getOpenLineageYaml().getTransportConfig().getClass());
+    assertEquals(
+        HttpConfig.class, argumentParserHttp.getOpenLineageYaml().getTransportConfig().getClass());
+    assertEquals(
+        KafkaConfig.class,
+        argumentParserKafka.getOpenLineageYaml().getTransportConfig().getClass());
+    assertEquals(
+        KinesisConfig.class,
+        argumentParserKinesis.getOpenLineageYaml().getTransportConfig().getClass());
   }
 
   @Test
@@ -97,8 +105,8 @@ class ArgumentParserTest {
     HttpConfig transportConfig = (HttpConfig) openLineageYaml.getTransportConfig();
     assertEquals(URL, transportConfig.getUrl().toString());
     assertEquals(ENDPOINT, transportConfig.getEndpoint());
-    assert (transportConfig.getAuth() != null);
-    assert (transportConfig.getAuth() instanceof ApiKeyTokenProvider);
+    assertNotNull(transportConfig.getAuth());
+    assertEquals(ApiKeyTokenProvider.class, transportConfig.getAuth().getClass());
     assertEquals("Bearer random_token", transportConfig.getAuth().getToken());
     assertEquals(5000, transportConfig.getTimeout());
     assertEquals("test1", transportConfig.getHeaders().get("testHeader1"));

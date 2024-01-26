@@ -215,11 +215,9 @@ class OpenLineageRunEventBuilder {
       OpenLineage.JobFacetsBuilder jobFacetsBuilder,
       SparkListenerStageCompleted event) {
     Stage stage = stageMap.get(event.stageInfo().stageId());
+    List<Object> nodes = new ArrayList<>(Arrays.asList(event.stageInfo(), stage));
+
     RDD<?> rdd = stage.rdd();
-
-    List<Object> nodes = new ArrayList<>();
-    nodes.addAll(Arrays.asList(event.stageInfo(), stage));
-
     nodes.addAll(Rdds.flattenRDDs(rdd));
 
     return populateRun(

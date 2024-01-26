@@ -37,10 +37,10 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
-@Tag("delta")
+@EnabledIfSystemProperty(named = "delta.tests.enabled", matches = "true")
 public class ColumnLevelLineageDeltaTest {
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";

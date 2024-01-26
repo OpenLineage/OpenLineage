@@ -14,7 +14,8 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -126,21 +127,21 @@ public class SparkAgentTestExtension
       throws ParameterResolutionException {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
     String testName = parameterContext.getDeclaringExecutable().getName();
-    String warehouseDir =
-        new File("spark-warehouse/")
-            .getAbsoluteFile()
-            .toPath()
+    Path warehouseDir =
+        Paths.get(System.getProperty("spark.warehouse.dir"))
             .resolve(testName)
-            .resolve(String.valueOf(Instant.now().getEpochSecond()))
-            .toString();
+            .resolve(String.valueOf(Instant.now().getEpochSecond()));
     return SparkSession.builder()
         .master("local[*]")
         .appName(testName)
         .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
         .config("spark.driver.host", LOCAL_IP)
         .config("spark.driver.bindAddress", LOCAL_IP)
-        .config("spark.sql.warehouse.dir", warehouseDir)
+        .config("spark.sql.warehouse.dir", warehouseDir.toString())
         .config("spark.openlineage.facets.custom_environment_variables", "[TEST_VAR;]")
+        .config(
+            "spark.openlineage.facets.disabled",
+            "[spark_unknown;]") // to prevent infinite recursion errors during JSON serialization
         .getOrCreate();
   }
 

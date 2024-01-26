@@ -45,12 +45,12 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import scala.collection.immutable.HashMap;
 
 @Slf4j
-@Tag("iceberg")
+@EnabledIfSystemProperty(named = "iceberg.tests.enabled", matches = "true")
 class ColumnLevelLineageIcebergTest {
 
   @SuppressWarnings("PMD")

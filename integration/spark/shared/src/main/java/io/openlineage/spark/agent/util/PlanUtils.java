@@ -5,8 +5,6 @@
 
 package io.openlineage.spark.agent.util;
 
-import static io.openlineage.spark.agent.lifecycle.ExecutionContext.CAMEL_TO_SNAKE_CASE;
-
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import java.io.IOException;
@@ -37,6 +35,13 @@ import scala.runtime.AbstractPartialFunction;
  */
 @Slf4j
 public class PlanUtils {
+  /**
+   * Pattern used to match a variety of patterns in job names, including camel case and token
+   * separated (whitespace, dash, or underscore), with special handling for upper-case
+   * abbreviations, like XML or JDBC
+   */
+  public static final String CAMEL_TO_SNAKE_CASE =
+      "[\\s\\-_]?((?<=.)[A-Z](?=[a-z\\s\\-_])|(?<=[^A-Z])[A-Z]|((?<=[\\s\\-_])[a-z\\d]))";
 
   public static final String SLASH_DELIMITER_USER_PASSWORD_REGEX =
       "[A-Za-z0-9_%]+//?[A-Za-z0-9_%]*@";
@@ -81,10 +86,6 @@ public class PlanUtils {
             .filter(pfn -> PlanUtils.safeIsDefinedAt(pfn, x))
             .findFirst()
             .isPresent();
-      }
-
-      private boolean isDefinedAt(T x, PartialFunction<T, ? extends Collection<D>> pfn) {
-        return PlanUtils.safeIsDefinedAt(pfn, x);
       }
 
       @Override
@@ -258,13 +259,12 @@ public class PlanUtils {
     } catch (ClassCastException e) {
       // do nothing
       return false;
-    } catch (Exception e) {
-      if (e != null) {
-        log.info("isDefinedAt method failed on {}", e);
-      }
-      return false;
-    } catch (NoClassDefFoundError e) {
-      log.info("isDefinedAt method failed on {}", e.getMessage());
+    } catch (Exception | NoClassDefFoundError e) {
+      log.error(
+          "PartialFunction#apply(Object) failed for function type '{}' to input of type '{}'",
+          pfn.getClass().getCanonicalName(),
+          x.getClass().getCanonicalName(),
+          e);
       return false;
     }
   }
@@ -281,7 +281,11 @@ public class PlanUtils {
     try {
       return pfn.apply(x);
     } catch (Exception | NoClassDefFoundError | NoSuchMethodError e) {
-      log.info("apply method failed with", e);
+      log.error(
+          "PartialFunction#apply(Object) failed for function type '{}' to input of type '{}'",
+          pfn.getClass().getCanonicalName(),
+          x.getClass().getCanonicalName(),
+          e);
       return Collections.emptyList();
     }
   }

@@ -6,7 +6,6 @@ plugins {
     id("io.openlineage.common-config")
     id("io.openlineage.scala-variants")
     id("idea")
-    id("java-test-fixtures")
 }
 
 scalaVariants {
@@ -34,32 +33,32 @@ ext {
 }
 
 dependencies {
-    implementation(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
-    implementation(project(path: ":spark3", configuration: "scala${configurationName}RuntimeElements"))
-
+    compileOnly(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
+    compileOnly(project(path: ":spark3", configuration: "scala${configurationName}RuntimeElements"))
     compileOnly("io.delta:delta-core_${scalaBinaryVersion}:${deltaVersion}")
     compileOnly("org.apache.iceberg:iceberg-spark-runtime-3.2_${scalaBinaryVersion}:${icebergVersion}")
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
 
-    // TODO: Remove this. Test Fixtures are not needed.
-    testFixturesApi(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
-    testFixturesApi("io.delta:delta-core_${scalaBinaryVersion}:${deltaVersion}")
-    testFixturesApi("org.apache.iceberg:iceberg-spark-runtime-3.2_${scalaBinaryVersion}:${icebergVersion}")
-    testFixturesApi("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
-    testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
-    testFixturesApi("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
-    testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
-    testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
-    testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
+    testImplementation(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
+    testImplementation(project(path: ":spark3", configuration: "scala${configurationName}RuntimeElements"))
+    testImplementation("io.delta:delta-core_${scalaBinaryVersion}:${deltaVersion}")
+    testImplementation("org.apache.iceberg:iceberg-spark-runtime-3.2_${scalaBinaryVersion}:${icebergVersion}")
+    testImplementation("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
+    testImplementation("org.assertj:assertj-core:${assertjVersion}")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
+    testImplementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testImplementation("org.mockito:mockito-core:${mockitoVersion}")
+    testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
 
     // Scala 2.12
-    scala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
-    scala212Implementation(project(path: ":spark3", configuration: "scala212RuntimeElements"))
-
+    scala212CompileOnly(project(path: ":shared", configuration: "scala212RuntimeElements"))
+    scala212CompileOnly(project(path: ":spark3", configuration: "scala212RuntimeElements"))
     scala212CompileOnly("io.delta:delta-core_2.12:${deltaVersion}")
     scala212CompileOnly("org.apache.iceberg:iceberg-spark-runtime-3.2_2.12:${icebergVersion}")
     scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
 
+    testScala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
+    testScala212Implementation(project(path: ":spark3", configuration: "scala212RuntimeElements"))
     testScala212Implementation("io.delta:delta-core_2.12:${deltaVersion}")
     testScala212Implementation("org.apache.iceberg:iceberg-spark-runtime-3.2_2.12:${icebergVersion}")
     testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
@@ -70,13 +69,14 @@ dependencies {
     testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
 
     // Scala 2.13
-    scala213Implementation(project(path: ":shared", configuration: "scala213RuntimeElements"))
-    scala213Implementation(project(path: ":spark3", configuration: "scala213RuntimeElements"))
-
+    scala213CompileOnly(project(path: ":shared", configuration: "scala213RuntimeElements"))
+    scala213CompileOnly(project(path: ":spark3", configuration: "scala213RuntimeElements"))
     scala213CompileOnly("io.delta:delta-core_2.13:${deltaVersion}")
     scala213CompileOnly("org.apache.iceberg:iceberg-spark-runtime-3.2_2.13:${icebergVersion}")
     scala213CompileOnly("org.apache.spark:spark-sql_2.13:${sparkVersion}")
 
+    testScala213Implementation(project(path: ":shared", configuration: "scala213RuntimeElements"))
+    testScala213Implementation(project(path: ":spark3", configuration: "scala213RuntimeElements"))
     testScala213Implementation("io.delta:delta-core_2.13:${deltaVersion}")
     testScala213Implementation("org.apache.iceberg:iceberg-spark-runtime-3.2_2.13:${icebergVersion}")
     testScala213Implementation("org.apache.spark:spark-sql_2.13:${sparkVersion}")

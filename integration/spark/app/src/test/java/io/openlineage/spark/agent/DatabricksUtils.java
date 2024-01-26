@@ -48,7 +48,6 @@ import org.jetbrains.annotations.NotNull;
 
 @Slf4j
 public class DatabricksUtils {
-
   public static final String CLUSTER_NAME = "openlineage-test-cluster";
   public static final Map<String, String> PLATFORM_VERSIONS =
       Stream.of(
@@ -213,7 +212,7 @@ public class DatabricksUtils {
   @SneakyThrows
   private static void uploadOpenlineageJar(WorkspaceClient workspace) {
     Path jarFile =
-        Files.list(Paths.get("../build/libs/"))
+        Files.list(Paths.get(System.getProperty("openlineage.lib.dir")))
             .filter(p -> p.getFileName().toString().startsWith("openlineage-spark-"))
             .filter(p -> p.getFileName().toString().endsWith("jar"))
             .findAny()

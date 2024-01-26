@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.openlineage.client.OpenLineage;
 
 public class ColumnLevelLineageTestUtils {
-
   static void assertColumnDependsOn(
       OpenLineage.ColumnLineageDatasetFacet facet,
       String outputColumn,
@@ -22,9 +21,7 @@ public class ColumnLevelLineageTestUtils {
         facet.getFields().getAdditionalProperties().get(outputColumn).getInputFields().stream()
             .filter(f -> f.getNamespace().equalsIgnoreCase(expectedNamespace))
             .filter(f -> f.getName().endsWith(expectedName))
-            .filter(f -> f.getField().equalsIgnoreCase(expectedInputField))
-            .findAny()
-            .isPresent());
+            .anyMatch(f -> f.getField().equalsIgnoreCase(expectedInputField)));
   }
 
   static void assertColumnDependsOnInputs(

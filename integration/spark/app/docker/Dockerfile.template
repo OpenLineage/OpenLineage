@@ -1,0 +1,53 @@
+FROM ##BASE_DOCKER_IMAGE## AS builder
+
+USER root
+
+# This is needed to verify the downloads
+RUN install_packages gnupg2
+
+WORKDIR /tmp/bitnami/pkg/cache
+
+COPY spark.tgz .
+COPY spark.tgz.asc .
+COPY KEYS .
+
+RUN export GNUPGHOME="$(mktemp -d)"; \
+    gpg --batch --import KEYS; \
+    gpg --batch --verify spark.tgz.asc spark.tgz; \
+    gpgconf --kill all; \
+    rm -rf "$GNUPGHOME";
+
+RUN tar -xf spark.tgz --strip-components=1; \
+    rm -rf spark.tgz; \
+    rm -rf spark.tgz.asc; \
+    rm -rf KEYS;  \
+    rm -rf RELEASE; \
+    rm -rf /tmp/bitnami/pkg/cache/LICENSE; \
+    rm -rf /tmp/bitnami/pkg/cache/NOTICE; \
+    rm -rf /tmp/bitnami/pkg/cache/R; \
+    rm -rf /tmp/bitnami/pkg/cache/README.md; \
+    rm -rf /tmp/bitnami/pkg/cache/RELEASE; \
+    rm -rf /tmp/bitnami/pkg/cache/bin; \
+    rm -rf /tmp/bitnami/pkg/cache/conf; \
+    rm -rf /tmp/bitnami/pkg/cache/data; \
+    rm -rf /tmp/bitnami/pkg/cache/kubernetes; \
+    rm -rf /tmp/bitnami/pkg/cache/licenses; \
+    rm -rf /tmp/bitnami/pkg/cache/python; \
+    rm -rf /tmp/bitnami/pkg/cache/sbin; \
+    rm -rf /tmp/bitnami/pkg/cache/yarn;
+
+FROM ##BASE_DOCKER_IMAGE## AS runtime
+
+USER root
+
+RUN rm -rf /opt/bitnami/spark/jars; \
+    rm -rf /opt/bitnami/spark/examples;
+
+COPY --from=builder /tmp/bitnami/pkg/cache/jars /opt/bitnami/spark/jars
+COPY --from=builder /tmp/bitnami/pkg/cache/examples /opt/bitnami/spark/examples
+
+RUN rm -rf /tmp/bitnami/pkg/cache
+
+RUN chown -R 1001:root /opt/bitnami/spark
+
+USER 1001

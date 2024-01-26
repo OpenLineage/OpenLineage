@@ -6,7 +6,6 @@ plugins {
     id("io.openlineage.common-config")
     id("io.openlineage.scala-variants")
     id("idea")
-    id("java-test-fixtures")
 }
 
 scalaVariants {
@@ -56,32 +55,32 @@ dependencies {
     }
 
     // TODO: Convert these to testImplementation
-    testFixturesApi(platform("org.junit:junit-bom:${junit5Version}"))
-    testFixturesApi("org.junit.jupiter:junit-jupiter")
-    testFixturesApi("org.junit.jupiter:junit-jupiter-params")
-    testFixturesApi("org.postgresql:postgresql:${postgresqlVersion}")
-    testFixturesApi("org.xerial:sqlite-jdbc:${sqlLiteVersion}")
-    testFixturesApi("org.apache.kafka:kafka-clients:${kafkaClientsVersion}")
-    testFixturesApi("org.mock-server:mockserver-client-java:${mockserverVersion}") {
+    testImplementation(platform("org.junit:junit-bom:${junit5Version}"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
+    testImplementation("org.postgresql:postgresql:${postgresqlVersion}")
+    testImplementation("org.xerial:sqlite-jdbc:${sqlLiteVersion}")
+    testImplementation("org.apache.kafka:kafka-clients:${kafkaClientsVersion}")
+    testImplementation("org.mock-server:mockserver-client-java:${mockserverVersion}") {
         exclude(group: "com.google.guava")
         exclude(group: "com.fasterxml.jackson.core")
         exclude(group: "com.fasterxml.jackson.datatype")
         exclude(group: "com.fasterxml.jackson.dataformat")
     }
-    testFixturesApi("org.awaitility:awaitility:${awaitilityVersion}")
-    testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
-    testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
-    testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
-    testFixturesApi("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
+    testImplementation("org.awaitility:awaitility:${awaitilityVersion}")
+    testImplementation("org.assertj:assertj-core:${assertjVersion}")
+    testImplementation("org.mockito:mockito-core:${mockitoVersion}")
+    testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
+    testImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
 
-    testFixturesApi("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
-    testFixturesApi("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
-    testFixturesApi("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
+    testImplementation("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
+    testImplementation("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
+    testImplementation("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
 
-    testFixturesApi("com.databricks:databricks-dbutils-scala_${scalaBinaryVersion}:${databricksVersion}") {
+    testImplementation("com.databricks:databricks-dbutils-scala_${scalaBinaryVersion}:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
     }
-    testFixturesApi("com.google.cloud.spark:spark-bigquery-with-dependencies_${scalaBinaryVersion}:${bigqueryVersion}") {
+    testImplementation("com.google.cloud.spark:spark-bigquery-with-dependencies_${scalaBinaryVersion}:${bigqueryVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
         exclude(group: "com.fasterxml.jackson.module")
     }

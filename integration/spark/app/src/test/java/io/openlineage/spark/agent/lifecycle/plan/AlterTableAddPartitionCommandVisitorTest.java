@@ -22,15 +22,12 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import scala.Option;
 import scala.Tuple2;
 import scala.collection.immutable.Map;
 
-@Tag("nonParallelTest")
 class AlterTableAddPartitionCommandVisitorTest {
-
   private static final String TABLE_5 = "table5";
   SparkSession session;
   AlterTableAddPartitionCommandVisitor visitor;
@@ -64,7 +61,7 @@ class AlterTableAddPartitionCommandVisitorTest {
   public void setup() {
     session =
         SparkSession.builder()
-            .config("spark.sql.warehouse.dir", "/tmp/warehouse")
+            .config("spark.sql.warehouse.dir", System.getProperty("spark.warehouse.dir"))
             .config("spark.sql.catalogImplementation", "hive")
             .enableHiveSupport()
             .master("local")

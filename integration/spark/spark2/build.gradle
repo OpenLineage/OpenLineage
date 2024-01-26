@@ -6,7 +6,6 @@ plugins {
     id("io.openlineage.common-config")
     id("io.openlineage.scala-variants")
     id("idea")
-    id("java-test-fixtures")
 }
 
 scalaVariants {
@@ -35,28 +34,24 @@ ext {
 
 dependencies {
     compileOnly(project(path: ":shared", configuration: "scala212RuntimeElements"))
-
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
 
-    // TODO: Replace 'testFixturesApi' with 'testImplementation'
-    // TODO: Remove the test dependency on 'shared'
-    testFixturesApi(project(path: ":shared", configuration: "scala212RuntimeElements"))
-    testFixturesApi("com.fasterxml.jackson.module:jackson-module-scala_${scalaBinaryVersion}:${jacksonVersion}")
-    testFixturesApi("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
-    testFixturesApi("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
-    testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
-    testFixturesApi("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
-    testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
-    testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
-    testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
-    testFixturesApi("org.postgresql:postgresql:${postgresqlVersion}")
+    testImplementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
+    testImplementation("com.fasterxml.jackson.module:jackson-module-scala_${scalaBinaryVersion}:${jacksonVersion}")
+    testImplementation("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
+    testImplementation("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
+    testImplementation("org.assertj:assertj-core:${assertjVersion}")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
+    testImplementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testImplementation("org.mockito:mockito-core:${mockitoVersion}")
+    testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
+    testImplementation("org.postgresql:postgresql:${postgresqlVersion}")
 
     // Scala 2.11
     // This is intentionally left as 'scala212RuntimeElements' because the 'shared' project
     // only has Scala 2.12 and 2.13 variants. Because this project is written in Java, this should
     // not be a problem.
     scala211CompileOnly(project(path: ":shared", configuration: "scala212RuntimeElements"))
-
     scala211CompileOnly("org.apache.spark:spark-sql_2.11:${sparkVersion}")
 
     testScala211Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
@@ -72,7 +67,6 @@ dependencies {
 
     // Scala 2.12
     scala212CompileOnly(project(path: ":shared", configuration: "scala212RuntimeElements"))
-
     scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
 
     testScala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))

@@ -34,12 +34,13 @@ dependencies {
 }
 
 
-task sourceJar(type: Jar) {
+tasks.register('sourceJar', Jar) {
     archiveClassifier = 'sources'
     from sourceSets.main.allJava
 }
 
-task javadocJar(type: Jar, dependsOn: javadoc) {
+tasks.register('javadocJar', Jar) {
+    dependsOn javadoc
     archiveClassifier = 'javadoc'
     from javadoc.destinationDir
 }
@@ -187,7 +188,8 @@ assemble {
     dependsOn shadowJar
 }
 
-task createVersionProperties(dependsOn: processResources) {
+tasks.register('createVersionProperties') {
+    dependsOn processResources
     doLast {
         File dir = new File("$buildDir/resources/main/io/openlineage/spark/agent/")
         dir.mkdirs();

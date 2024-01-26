@@ -24,6 +24,7 @@ import java.util.Optional;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.ResolvedTable;
+import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTable;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -42,7 +43,7 @@ import scala.Option;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
 
-public class CreateReplaceDatasetBuilderTest {
+class CreateReplaceDatasetBuilderTest {
 
   private static final String TABLE = "table";
   OpenLineageContext openLineageContext =
@@ -65,7 +66,7 @@ public class CreateReplaceDatasetBuilderTest {
           catalog,
           mock(Identifier.class),
           mock(Table.class),
-          ScalaConversionUtils.asScalaSeqEmpty());
+          ScalaConversionUtils.<Attribute>asScalaSeqEmpty());
 
   TableSpec tableSpec = mock(TableSpec.class);
 
@@ -91,7 +92,7 @@ public class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableSpec()).thenReturn(tableSpec);
     when(logicalPlan.tableSchema()).thenReturn(schema);
     verifyApply(
-        (LogicalPlan) logicalPlan,
+        logicalPlan,
         commandProperties,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
   }
@@ -104,7 +105,7 @@ public class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableSpec()).thenReturn(tableSpec);
     when(logicalPlan.tableSchema()).thenReturn(schema);
     verifyApply(
-        (LogicalPlan) logicalPlan,
+        logicalPlan,
         commandProperties,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
@@ -117,7 +118,7 @@ public class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableSpec()).thenReturn(tableSpec);
     when(logicalPlan.tableSchema()).thenReturn(schema);
     verifyApply(
-        (LogicalPlan) logicalPlan,
+        logicalPlan,
         commandProperties,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
@@ -130,7 +131,7 @@ public class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableSpec()).thenReturn(tableSpec);
     when(logicalPlan.tableSchema()).thenReturn(schema);
     verifyApply(
-        (LogicalPlan) logicalPlan,
+        logicalPlan,
         commandProperties,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
   }
