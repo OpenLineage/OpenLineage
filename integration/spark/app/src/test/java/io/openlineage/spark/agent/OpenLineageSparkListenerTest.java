@@ -136,17 +136,11 @@ class OpenLineageSparkListenerTest {
       when(Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED")).thenReturn("true");
 
       ContextFactory contextFactory = mock(ContextFactory.class);
-      //      when(contextFactory.openLineageEventEmitter).thenReturn(new
-      // EventEmitter(ArgumentParser.builder().build()));
-      //      ArgumentParser argumentParser = mock(ArgumentParser.class);
-      //      ContextFactory contextFactory = new ContextFactory(new EventEmitter(argumentParser));
       when(OpenLineageSparkListener.getEventProcessingTimeoutSeconds())
           .thenReturn(Optional.empty());
-      //      ContextFactory contextFactory = new ContextFactory(new
-      // EventEmitter(ArgumentParser.builder().build()));
 
-      try (MockedStatic mocked2 = mockStatic(OpenLineageSparkListener.class)) {
-        mocked2
+      try (MockedStatic mockedListener = mockStatic(OpenLineageSparkListener.class)) {
+        mockedListener
             .when(OpenLineageSparkListener::getEventProcessingTimeoutSeconds)
             .thenReturn(Optional.empty());
         when(OpenLineageSparkListener.getEventProcessingTimeoutSeconds())
