@@ -73,6 +73,11 @@ class OpenLineageSparkListenerTest {
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(qe)
             .build();
+
+    //    try (MockedStatic mocked = mockStatic(OpenLineageSparkListener.class)) {
+    //
+    // when(OpenLineageSparkListener.getEventProcessingTimeoutSeconds()).thenReturn(Optional.empty());
+    //    }
   }
 
   @Test
@@ -131,16 +136,31 @@ class OpenLineageSparkListenerTest {
       when(Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED")).thenReturn("true");
 
       ContextFactory contextFactory = mock(ContextFactory.class);
-      when(contextFactory.openLineageEventEmitter.getEventProcessingTimeoutSeconds()).thenReturn(Optional.empty());
+      //      when(contextFactory.openLineageEventEmitter).thenReturn(new
+      // EventEmitter(ArgumentParser.builder().build()));
+      //      ArgumentParser argumentParser = mock(ArgumentParser.class);
+      //      ContextFactory contextFactory = new ContextFactory(new EventEmitter(argumentParser));
+      when(OpenLineageSparkListener.getEventProcessingTimeoutSeconds())
+          .thenReturn(Optional.empty());
+      //      ContextFactory contextFactory = new ContextFactory(new
+      // EventEmitter(ArgumentParser.builder().build()));
 
-      OpenLineageSparkListener.init(contextFactory);
-      OpenLineageSparkListener listener = new OpenLineageSparkListener();
+      try (MockedStatic mocked2 = mockStatic(OpenLineageSparkListener.class)) {
+        mocked2
+            .when(OpenLineageSparkListener::getEventProcessingTimeoutSeconds)
+            .thenReturn(Optional.empty());
+        when(OpenLineageSparkListener.getEventProcessingTimeoutSeconds())
+            .thenReturn(Optional.empty());
 
-      listener.onJobStart(
-          new SparkListenerJobStart(
-              0, 2L, ScalaConversionUtils.<StageInfo>asScalaSeqEmpty(), new Properties()));
+        OpenLineageSparkListener.init(contextFactory);
+        OpenLineageSparkListener listener = new OpenLineageSparkListener();
 
-      verify(contextFactory, never()).createSparkSQLExecutionContext(anyLong());
+        listener.onJobStart(
+            new SparkListenerJobStart(
+                0, 2L, ScalaConversionUtils.<StageInfo>asScalaSeqEmpty(), new Properties()));
+
+        verify(contextFactory, never()).createSparkSQLExecutionContext(anyLong());
+      }
     }
   }
 

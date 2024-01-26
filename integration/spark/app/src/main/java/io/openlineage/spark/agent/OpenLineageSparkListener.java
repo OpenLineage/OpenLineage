@@ -142,7 +142,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         OpenLineageSparkListener.getEventProcessingTimeoutSeconds();
 
     if (!eventProcessingTimeoutSeconds.isPresent()) {
-      log.debug("Processing onJobStartFn without any timeout");
+      //      log.debug("Processing onJobStartFn without any timeout");
       onJobStartFn(jobStart);
       return;
     }
