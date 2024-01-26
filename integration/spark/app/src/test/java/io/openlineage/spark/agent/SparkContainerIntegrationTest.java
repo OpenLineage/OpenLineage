@@ -157,7 +157,7 @@ class SparkContainerIntegrationTest {
         admin.createTopics(
             Arrays.asList(
                 new NewTopic("topicA", 1, (short) 1), new NewTopic("topicB", 1, (short) 1)));
-    topicsResult.topicId("topicA").get();
+    topicsResult.all().get();
 
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,

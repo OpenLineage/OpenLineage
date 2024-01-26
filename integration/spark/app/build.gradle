@@ -40,6 +40,17 @@ ext {
     versions = versionsMap[shortVersion]
 }
 
+// This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
+// cannot run on Apple Silicon. It fails with:
+// org.xerial.snappy.SnappyError: [FAILED_TO_LOAD_NATIVE_LIBRARY] no native library is found for os.name=Mac and os.arch=aarch64
+configurations.configureEach {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group == 'org.xerial.snappy' && details.requested.name == 'snappy-java') {
+            details.useVersion("[1.1.8.4,)")
+        }
+    }
+}
+
 dependencies {
     implementation(project(path: ":shared"))
     implementation(project(path: ":spark2"))
@@ -50,7 +61,6 @@ dependencies {
     implementation(project(path: ":spark34"))
     implementation(project(path: ":spark35"))
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.3'
-
 
     compileOnly "org.apache.spark:spark-core_${versions.scala}:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_${versions.scala}:${sparkVersion}"
@@ -100,9 +110,9 @@ dependencies {
     if (versions.snowflake != "NA") {
         testFixturesApi("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
             exclude group: 'com.google.guava:guava'
-            exclude group: 'org.apache.spark:spark-core_2.11'
-            exclude group: 'org.apache.spark:spark-sql_2.11'
-            exclude group: 'org.apache.spark:spark-catalyst_2.11'
+            exclude group: 'org.apache.spark:spark-core_${versions.scala}'
+            exclude group: 'org.apache.spark:spark-sql_${versions.scala}'
+            exclude group: 'org.apache.spark:spark-catalyst_${versions.scala}'
         }
     }
 
@@ -143,24 +153,18 @@ dependencies {
     pysparkContainerOnly("com.google.guava:guava:30.1-jre")
 
     if (versions.delta != "NA") {
-        testFixturesApi "io.delta:delta-core_2.12:${versions.delta}"
+        testFixturesApi "io.delta:delta-core_${versions.scala}:${versions.delta}"
     }
 
     if (versions.iceberg != "NA") {
         testFixturesApi "org.apache.iceberg:${versions.iceberg}"
     }
 
-    testImplementation(project(":${versions.module}"))
     if (versions.module != "spark2") {
         testImplementation("com.google.cloud.bigdataoss:gcs-connector:hadoop3-2.2.9") {
             exclude group: 'com.google.guava', module: 'guava'
         }
         pysparkContainerOnly("com.google.guava:guava:30.1-jre")
-    }
-
-
-    testImplementation testFixtures(project(":${versions.module}")) {
-        exclude group: 'org.apache.avro'
     }
 }
 
@@ -183,8 +187,20 @@ def commonTestConfiguration = {
     classpath = project.sourceSets.test.runtimeClasspath
 }
 
+// These entries aren't considered "outputs" of any Gradle task, thus Gradle doesn't know about
+// them and won't clean them up when you run './gradlew clean'. This is a problem because
+// you may experience weird test failures, when running the tests using different versions of
+// Apache Spark. Thus this take is a workaround to clean up these file(s) and folder(s).
+tasks.register("cleanUp", Delete) {
+    delete("derby.log", "metastore_db", "spark-warehouse")
+}
+
+tasks.withType(Test).configureEach {
+    failFast = true
+}
+
 task nonParallelTest(type: Test) {
-    dependsOn shadowJar
+    dependsOn tasks.named("shadowJar"), tasks.named("cleanUp")
     group = 'verification'
     description = "Runs tests that cannot be run in parallel. For example test suites that require metastore_db"
 
@@ -198,7 +214,6 @@ task nonParallelTest(type: Test) {
 task beforeShadowJarTest(type: Test) {
     group = 'verification'
     description = "Tests that depend that have to be run before shadowJar"
-
     useJUnitPlatform {
         includeTags("beforeShadowJarTest")
     }
@@ -348,3 +363,4 @@ classes {
 tasks.named("pmdTest") {
     mustRunAfter("shadowJar")
 }
+

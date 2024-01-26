@@ -93,12 +93,12 @@ jobs:
           keys:
             - v1-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-client-java-{{ .Branch }}
-      - run: ./gradlew --no-daemon --stacktrace build
-      - run: ./gradlew --no-daemon jacocoTestReport
-      - run: ./gradlew --no-daemon --info check
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
+      - run: ./gradlew --no-daemon --console=plain --info check
       - run: bash <(curl -s https://codecov.io/bash)
-      - run: ./gradlew javadoc
-      - run: ./gradlew publishToMavenLocal --info
+      - run: ./gradlew --console=plain javadoc
+      - run: ./gradlew --console=plain publishToMavenLocal --info
       - persist_to_workspace:
           root: ~/.m2/repository/io/openlineage/
           paths:
@@ -115,7 +115,7 @@ jobs:
           key: v1-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.gradle
-  
+
   release-client-java:
     working_directory: ~/openlineage/client/java
     docker:
@@ -132,10 +132,10 @@ jobs:
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
 
           # publish jar to maven local so it can be found by dependents
-          ./gradlew publishToMavenLocal --info
+          ./gradlew --console=plain publishToMavenLocal --info
 
           # Publish *.jar
-          ./gradlew --no-daemon publish --info
+          ./gradlew --no-daemon --console=plain publish --info
       - store_artifacts:
           path: ./build/libs
           destination: java-client-artifacts
@@ -143,7 +143,7 @@ jobs:
           key: v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.m2
-  
+
   release-integration-spark:
     working_directory: ~/openlineage/integration/spark
     docker:
@@ -166,14 +166,14 @@ jobs:
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
 
           cd ../../client/java
-          ./gradlew --no-daemon publishToMavenLocal
+          ./gradlew --no-daemon --console=plain publishToMavenLocal
           cd -
           # Publish *.jar
-          ./gradlew --no-daemon publish
+          ./gradlew --no-daemon --console=plain publish
       - store_artifacts:
           path: ./build/libs
           destination: spark-client-artifacts
-  
+
   build-integration-spark:
     parameters:
       spark-version:
@@ -199,13 +199,13 @@ jobs:
       - run: |
           sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
           sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-      - run: ./gradlew --no-daemon --stacktrace build -Pspark.version=<< parameters.spark-version >>
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pspark.version=<< parameters.spark-version >>
       - run:
           when: on_fail
           command: cat build/test-results/test/TEST-*.xml
-      - run: ./gradlew --no-daemon jacocoTestReport
-      - run: ./gradlew --no-daemon --info check -x test -Pspark.version=<< parameters.spark-version >>
-      - run: ./gradlew javadoc
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
+      - run: ./gradlew --no-daemon --console=plain --info check -x test -Pspark.version=<< parameters.spark-version >>
+      - run: ./gradlew --console=plain javadoc
       - store_test_results:
           path: build/test-results/test
       - store_artifacts:
@@ -218,7 +218,7 @@ jobs:
           key: v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.gradle
-  
+
   release-integration-flink:
     working_directory: ~/openlineage/integration/flink
     docker:
@@ -241,10 +241,10 @@ jobs:
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
 
           cd ../../client/java
-          ./gradlew --no-daemon publishToMavenLocal
+          ./gradlew --no-daemon --console=plain publishToMavenLocal
           cd -
           # Publish *.jar
-          ./gradlew --no-daemon publish
+          ./gradlew --no-daemon --console=plain publish
       - store_artifacts:
           path: ./build/libs
           destination: flink-client-artifacts
@@ -270,13 +270,13 @@ jobs:
             - v1-integration-flink-{{ .Branch }}
       - attach_workspace:
           at: .
-      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
-      - run: ./gradlew --no-daemon --stacktrace build -Pflink.version=<< parameters.flink-version >>
+      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --console=plain --stacktrace publishToMavenLocal)
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail
           command: cat build/test-results/test/TEST-*.xml
-      - run: ./gradlew --no-daemon jacocoTestReport
-      - run: ./gradlew javadoc
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
+      - run: ./gradlew --console=plain javadoc
       - store_test_results:
           path: build/test-results/test
       - store_artifacts:
@@ -286,7 +286,7 @@ jobs:
           key: v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.gradle
-  
+
   unit-test-integration-common:
     working_directory: ~/openlineage/integration/common
     docker:
@@ -300,7 +300,7 @@ jobs:
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
           path: test-results
-  
+
   build-integration-common:
     working_directory: ~/openlineage/integration/common
     docker:
@@ -314,7 +314,7 @@ jobs:
           paths:
             - ./dist/*.whl
             - ./dist/*.tar.gz
-  
+
   build-integration-sql:
     parameters:
       image:
@@ -345,7 +345,7 @@ jobs:
       - store_artifacts:
           path: ./iface-py/target/wheels
           destination: sql-artifacts
-  
+
   compile-integration-sql-java-linux:
     parameters:
       image:
@@ -367,7 +367,7 @@ jobs:
           path: ./target/debug/
           destination: sql-linux-artifacts
 
-  
+
   compile-integration-sql-java-macos:
     parameters:
       resource_class:
@@ -429,10 +429,10 @@ jobs:
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
 
           cd ../../../client/java
-          ./gradlew --no-daemon publishToMavenLocal
+          ./gradlew --no-daemon --console=plain publishToMavenLocal
           cd -
           # Publish *.jar
-          ./gradlew --no-daemon publish
+          ./gradlew --no-daemon --console=plain publish
 
   build-integration-sql-macos:
     working_directory: ~/openlineage/integration/sql
@@ -450,7 +450,7 @@ jobs:
       - store_artifacts:
           path: ./iface-py/target/wheels
           destination: sql-artifacts-macos
-  
+
   build-integration-dbt:
     working_directory: ~/openlineage/integration/dbt
     docker:
@@ -464,7 +464,7 @@ jobs:
           paths:
             - ./dist/*.whl
             - ./dist/*.tar.gz
-  
+
   integration-test-integration-spark:
     parameters:
       spark-version:
@@ -493,8 +493,8 @@ jobs:
       - run: |
           sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
           sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-      - run: ./gradlew --no-daemon integrationTest -x test   -Pspark.version=<< parameters.spark-version >>
-      - run: ./gradlew --no-daemon jacocoTestReport
+      - run: ./gradlew --no-daemon --console=plain integrationTest -x test   -Pspark.version=<< parameters.spark-version >>
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
       - store_test_results:
           path: app/build/test-results/integrationTest
       - store_artifacts:
@@ -534,8 +534,8 @@ jobs:
             - run: |
                 sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
                 sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-            - run: ./gradlew shadowJar -x test
-            - run: ./gradlew --no-daemon databricksIntegrationTest -x test   -Pspark.version=<< parameters.spark-version >> -PdatabricksHost=$DATABRICKS_HOST -PdatabricksToken=$DATABRICKS_TOKEN
+            - run: ./gradlew --console=plain shadowJar -x test
+            - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test   -Pspark.version=<< parameters.spark-version >> -PdatabricksHost=$DATABRICKS_HOST -PdatabricksToken=$DATABRICKS_TOKEN
             - store_test_results:
                 path: app/build/test-results/databricksIntegrationTest
             - store_artifacts:
@@ -568,14 +568,14 @@ jobs:
           keys:
             - v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-integration-flink-{{ .Branch }}
-      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
+      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --console=plain --stacktrace publishToMavenLocal)
       - run: chmod -R 777 data/iceberg/db
-      - run: ./gradlew examples:stateful:build -Pflink.version=<< parameters.flink-version >>
-      - run: ./gradlew --no-daemon integrationTest --i -Pflink.version=<< parameters.flink-version >>
+      - run: ./gradlew --console=plain examples:stateful:build -Pflink.version=<< parameters.flink-version >>
+      - run: ./gradlew --no-daemon --console=plain integrationTest --i -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail
           command: cat build/test-results/integrationTest/TEST-*.xml
-      - run: ./gradlew --no-daemon jacocoTestReport
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
       - store_test_results:
           path: build/test-results/integrationTest
       - store_artifacts:
@@ -679,7 +679,7 @@ jobs:
       - run: python -m mypy --ignore-missing-imports --no-namespace-packages openlineage
       - run: pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)
-  
+
   build-integration-dagster:
     working_directory: ~/openlineage/integration/dagster
     docker:
@@ -716,7 +716,7 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - "7d:bc:78:35:09:c9:25:04:63:f9:eb:4b:f1:f4:d1:91"
-      - run: ./gradlew javadoc
+      - run: ./gradlew --console=plain javadoc
       - run: ./release-javadoc.sh
 
   publish-spec:
@@ -752,8 +752,8 @@ jobs:
           keys:
             - v1-proxy-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-proxy-{{ .Branch }}
-      - run: ./gradlew --no-daemon --stacktrace build
-      - run: ./gradlew --no-daemon jacocoTestReport
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
           path: proxy/build/test-results/test
@@ -789,10 +789,10 @@ jobs:
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
 
           # publish jar to maven local so it can be found by dependents
-          ./gradlew publishToMavenLocal
+          ./gradlew --console=plain publishToMavenLocal
 
           # Publish *.jar
-          ./gradlew publish
+          ./gradlew --console=plain publish
 
   release-docker-proxy-backend:
     working_directory: ~/openlineage/proxy/backend

@@ -58,8 +58,8 @@ import org.apache.spark.scheduler.SparkListenerStageSubmitted;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.apache.spark.util.SerializableJobConf;
+import scala.Option;
 import scala.collection.Seq;
-import scala.runtime.AbstractFunction0;
 
 @Slf4j
 class RddExecutionContext implements ExecutionContext {
@@ -72,17 +72,9 @@ class RddExecutionContext implements ExecutionContext {
 
   public RddExecutionContext(EventEmitter eventEmitter) {
     this.eventEmitter = eventEmitter;
+    Option<SparkContext> activeSessionOption = SparkContext$.MODULE$.getActive();
     sparkContextOption =
-        Optional.ofNullable(
-            SparkContext$.MODULE$
-                .getActive()
-                .getOrElse(
-                    new AbstractFunction0<SparkContext>() {
-                      @Override
-                      public SparkContext apply() {
-                        return null;
-                      }
-                    }));
+        activeSessionOption.isDefined() ? Optional.of(activeSessionOption.get()) : Optional.empty();
   }
 
   @Override
