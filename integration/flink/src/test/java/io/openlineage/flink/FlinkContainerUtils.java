@@ -29,6 +29,7 @@ public class FlinkContainerUtils {
   private static final String KAFKA_IMAGE = "wurstmeister/kafka:2.13-2.8.1";
   private static final String ZOOKEEPER_IMAGE = "confluentinc/cp-zookeeper:" + CONFLUENT_VERSION;
   private static final String CASSANDRA_IMAGE = "cassandra:3.11.16";
+  private static final String POSTGRES_IMAGE = "postgres";
 
   static final String FLINK_IMAGE =
       String.format("flink:%s-java11", System.getProperty("flink.version"));
@@ -105,6 +106,29 @@ public class FlinkContainerUtils {
         .withExposedPorts(2181)
         .withEnv("ZOOKEEPER_CLIENT_PORT", "2181")
         .withEnv("ZOOKEEPER_SERVER_ID", "1");
+  }
+
+  static GenericContainer<?> makeJdbcContainer(Network network) {
+    try {
+      return genericContainer(network, POSTGRES_IMAGE, "postgres")
+          .withExposedPorts(5432)
+          .withEnv("POSTGRES_PASSWORD", "postgres");
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  static GenericContainer<?> makeJdbcGenerateRecordContainer(Network network, Startable postgres) {
+    try {
+      return genericContainer(network, POSTGRES_IMAGE, "postgres_prep")
+          .withEnv("PGPASSWORD", "postgres")
+          .withCopyFileToContainer(
+              MountableFile.forClasspathResource("create_postgres_data.sh"), "/opt/")
+          .withCommand("sh", "/opt/create_postgres_data.sh")
+          .dependsOn(postgres);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   static GenericContainer<?> makeCassandraContainer(Network network) {

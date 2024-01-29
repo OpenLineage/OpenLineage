@@ -42,12 +42,6 @@ public class CassandraSourceVisitor extends Visitor<OpenLineage.InputDataset> {
     }
 
     return Collections.singletonList(
-        getDataset(context, sourceWrapper.getKeyspace(), sourceWrapper.getTableName()));
-  }
-
-  private OpenLineage.InputDataset getDataset(
-      OpenLineageContext context, String keySpace, String tableName) {
-    OpenLineage openLineage = context.getOpenLineage();
-    return openLineage.newInputDatasetBuilder().name(tableName).namespace(keySpace).build();
+        createInputDataset(context, sourceWrapper.getKeyspace(), sourceWrapper.getTableName()));
   }
 }

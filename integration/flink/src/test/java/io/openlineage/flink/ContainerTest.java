@@ -80,6 +80,13 @@ class ContainerTest {
   private static final GenericContainer generateRecord =
       FlinkContainerUtils.makeCassandraGenerateRecordContainer(network, cassandra);
 
+  @Container
+  private static final GenericContainer postgres = FlinkContainerUtils.makeJdbcContainer(network);
+
+  @Container
+  private static final GenericContainer generateRow =
+      FlinkContainerUtils.makeJdbcGenerateRecordContainer(network, postgres);
+
   private static GenericContainer jobManager;
 
   private static GenericContainer taskManager;
@@ -123,6 +130,8 @@ class ContainerTest {
             generateEvents,
             cassandra,
             generateRecord,
+            postgres,
+            generateRow,
             jobManager,
             taskManager));
 
@@ -292,6 +301,20 @@ class ContainerTest {
     HttpRequest request =
         mockServerClient
             .retrieveRecordedRequests(this.getEvent("events/expected_cassandra.json"))[0];
+
+    assertThat(StringUtils.countMatches(request.getBodyAsString(), "source_event")).isEqualTo(1);
+    assertThat(StringUtils.countMatches(request.getBodyAsString(), "sink_event")).isEqualTo(1);
+  }
+
+  @Test
+  @SneakyThrows
+  void testOpenLineageEventSentForJdbcJob() {
+    runUntilCheckpoint("io.openlineage.flink.FlinkJdbcApplication", new Properties(), generateRow);
+    verify("events/expected_jdbc.json");
+
+    // verify input dataset is available only once
+    HttpRequest request =
+        mockServerClient.retrieveRecordedRequests(this.getEvent("events/expected_jdbc.json"))[0];
 
     assertThat(StringUtils.countMatches(request.getBodyAsString(), "source_event")).isEqualTo(1);
     assertThat(StringUtils.countMatches(request.getBodyAsString(), "sink_event")).isEqualTo(1);

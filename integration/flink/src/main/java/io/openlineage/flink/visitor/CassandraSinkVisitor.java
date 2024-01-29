@@ -64,7 +64,7 @@ public class CassandraSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
     }
 
     return Collections.singletonList(
-        getDataset(context, sinkWrapper.getKeySpace(), sinkWrapper.getTableName()));
+        createOutputDataset(context, sinkWrapper.getKeySpace(), sinkWrapper.getTableName()));
   }
 
   private CassandraSinkWrapper createWrapperForSink(Object object) {
@@ -110,11 +110,5 @@ public class CassandraSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
               object, CassandraTupleOutputFormat.class, INSERT_QUERY_FIELD_NAME, true);
     }
     return sinkWrapper;
-  }
-
-  private OpenLineage.OutputDataset getDataset(
-      OpenLineageContext context, String keySpace, String tableName) {
-    OpenLineage openLineage = context.getOpenLineage();
-    return openLineage.newOutputDatasetBuilder().name(tableName).namespace(keySpace).build();
   }
 }

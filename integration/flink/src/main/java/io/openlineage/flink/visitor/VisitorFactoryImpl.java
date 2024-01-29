@@ -12,6 +12,7 @@ import io.openlineage.flink.api.DatasetFactory;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.utils.CassandraUtils;
 import io.openlineage.flink.utils.IcebergUtils;
+import io.openlineage.flink.utils.JdbcUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,6 +40,10 @@ public class VisitorFactoryImpl implements VisitorFactory {
       visitors.add(new CassandraSourceVisitor(context));
     }
 
+    if (JdbcUtils.hasClasses()) {
+      visitors.add(new JdbcSourceVisitor(context));
+    }
+
     return Collections.unmodifiableList(visitors);
   }
 
@@ -58,6 +63,10 @@ public class VisitorFactoryImpl implements VisitorFactory {
 
     if (CassandraUtils.hasClasses()) {
       visitors.add(new CassandraSinkVisitor(context));
+    }
+
+    if (JdbcUtils.hasClasses()) {
+      visitors.add(new JdbcSinkVisitor(context));
     }
 
     return Collections.unmodifiableList(visitors);
