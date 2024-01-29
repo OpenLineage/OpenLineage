@@ -25,7 +25,7 @@ public class IcebergSinkWrapper {
   }
 
   public Optional<Table> getTable() {
-    Class icebergFilesCommiterClass = null;
+    Class icebergFilesCommiterClass;
     try {
       icebergFilesCommiterClass =
           Class.forName("org.apache.iceberg.flink.sink.IcebergFilesCommitter");
@@ -36,7 +36,7 @@ public class IcebergSinkWrapper {
                 loader.open();
                 return loader.loadTable();
               });
-    } catch (ClassNotFoundException | NullPointerException e) {
+    } catch (ClassNotFoundException e) {
       log.warn("Failed extracting table from IcebergFilesCommitter", e);
     }
 

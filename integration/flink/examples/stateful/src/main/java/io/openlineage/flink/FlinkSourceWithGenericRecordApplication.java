@@ -25,8 +25,6 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 */
 public class FlinkSourceWithGenericRecordApplication {
 
-  private static final String TOPIC_PARAM_SEPARATOR = ",";
-
   public static void main(String[] args) throws Exception {
     ParameterTool parameters = ParameterTool.fromArgs(args);
     StreamExecutionEnvironment env = setupEnv(args);
