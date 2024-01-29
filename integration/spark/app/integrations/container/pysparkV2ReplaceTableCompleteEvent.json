@@ -25,7 +25,7 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "file:/tmp/delta",
+            "namespace": "/tmp/delta",
             "name": "default.tbl",
             "type": "TABLE"
           }

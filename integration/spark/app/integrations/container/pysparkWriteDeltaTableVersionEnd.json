@@ -29,7 +29,7 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "file:/tmp/delta",
+            "namespace": "/tmp/delta",
             "name": "default.versioned_table",
             "type": "TABLE"
           }
