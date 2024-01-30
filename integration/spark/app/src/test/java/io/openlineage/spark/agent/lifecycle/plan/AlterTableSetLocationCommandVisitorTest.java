@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -10,6 +10,7 @@ import static org.junit.Assert.assertEquals;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.List;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -23,7 +24,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import scala.Option;
-import scala.collection.Map$;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
@@ -62,7 +62,7 @@ class AlterTableSetLocationCommandVisitorTest {
               new StructField("col1", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
             });
 
-    session.catalog().createTable(TABLE_1, "csv", schema, Map$.MODULE$.empty());
+    session.catalog().createTable(TABLE_1, "csv", schema, ScalaConversionUtils.asScalaMapEmpty());
     database = session.catalog().currentDatabase();
     visitor = new AlterTableSetLocationCommandVisitor(SparkAgentTestExtension.newContext(session));
   }

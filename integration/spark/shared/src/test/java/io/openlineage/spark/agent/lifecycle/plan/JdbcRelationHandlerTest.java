@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -15,14 +15,20 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
+import java.util.Collections;
 import java.util.List;
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap;
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import scala.collection.immutable.Map$;
 
 public class JdbcRelationHandlerTest {
   JdbcRelationHandler jdbcRelationHandler;
@@ -45,6 +51,8 @@ public class JdbcRelationHandlerTest {
   @BeforeEach
   void setup() {
     when(relation.jdbcOptions()).thenReturn(jdbcOptions);
+    when(jdbcOptions.parameters())
+        .thenReturn(CaseInsensitiveMap$.MODULE$.apply(Map$.MODULE$.empty()));
     when(jdbcOptions.url()).thenReturn("jdbc:" + url);
     when(relation.schema()).thenReturn(schema);
     jdbcRelationHandler = new JdbcRelationHandler(datasetFactory);
@@ -67,6 +75,11 @@ public class JdbcRelationHandlerTest {
 
   @Test
   void testHandlingJdbcTable() {
+    CaseInsensitiveMap params =
+        CaseInsensitiveMap$.MODULE$.apply(
+            ScalaConversionUtils.fromJavaMap(
+                Collections.singletonMap(JDBCOptions$.MODULE$.JDBC_TABLE_NAME(), jdbcTable)));
+    when(jdbcOptions.parameters()).thenReturn(params);
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcTable);
     when(relation.schema()).thenReturn(schema);
 

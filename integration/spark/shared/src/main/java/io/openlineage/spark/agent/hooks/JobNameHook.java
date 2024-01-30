@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -12,7 +12,10 @@ import io.openlineage.client.OpenLineage.Job;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Arrays;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class JobNameHook implements RunEventBuilderHook {
 
   public static final String SPARK_CONF_JOB_NAME_APPEND_DATASET_NAME =
@@ -72,10 +75,15 @@ public class JobNameHook implements RunEventBuilderHook {
     }
 
     if (runEvent.getOutputs() != null && runEvent.getOutputs().size() > 0) {
+      log.debug(
+          "Job name appends following output: {}",
+          Arrays.toString(runEvent.getOutputs().toArray()));
       // append output dataset name to job name
       jobNameBuilder
           .append(JOB_NAME_PARTS_SEPARATOR)
           .append(trimPath(runEvent.getOutputs().get(0).getName()).replace(".", INNER_SEPARATOR));
+    } else {
+      log.debug("No outputs - do not append anything to job name.");
     }
 
     String jobName = jobNameBuilder.toString();

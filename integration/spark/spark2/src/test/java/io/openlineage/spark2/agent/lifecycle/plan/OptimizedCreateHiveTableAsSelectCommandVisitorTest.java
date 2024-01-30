@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -17,6 +17,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.spark.Partition;
@@ -25,6 +26,7 @@ import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier$;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat$;
+import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
@@ -70,10 +72,10 @@ class OptimizedCreateHiveTableAsSelectCommandVisitorTest {
     OptimizedCreateHiveTableAsSelectCommand command =
         new OptimizedCreateHiveTableAsSelectCommand(
             SparkUtils.catalogTable(
-                TableIdentifier$.MODULE$.apply("tablename", Option.apply("db")),
+                TableIdentifier$.MODULE$.apply("tablename", Option.<String>apply("db")),
                 CatalogTableType.EXTERNAL(),
                 CatalogStorageFormat$.MODULE$.apply(
-                    Option.apply(URI.create("s3://bucket/directory")),
+                    Option.<URI>apply(URI.create("s3://bucket/directory")),
                     null,
                     null,
                     null,
@@ -82,9 +84,15 @@ class OptimizedCreateHiveTableAsSelectCommandVisitorTest {
                 new StructType(
                     new StructField[] {
                       new StructField(
-                          KEY, IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
+                          KEY,
+                          IntegerType$.MODULE$,
+                          false,
+                          new Metadata(new HashMap<String, Object>())),
                       new StructField(
-                          VALUE, StringType$.MODULE$, false, new Metadata(new HashMap<>()))
+                          VALUE,
+                          StringType$.MODULE$,
+                          false,
+                          new Metadata(new HashMap<String, Object>()))
                     })),
             new LogicalRelation(
                 new JDBCRelation(
@@ -97,10 +105,9 @@ class OptimizedCreateHiveTableAsSelectCommandVisitorTest {
                     new JDBCOptions(
                         "",
                         "temp",
-                        scala.collection.immutable.Map$.MODULE$
-                            .newBuilder()
-                            .$plus$eq(Tuple2.apply("driver", Driver.class.getName()))
-                            .result()),
+                        ScalaUtils.<String, String>fromTuples(
+                            Collections.singletonList(
+                                Tuple2.<String, String>apply("driver", Driver.class.getName())))),
                     session),
                 Seq$.MODULE$
                     .<AttributeReference>newBuilder()
@@ -121,9 +128,9 @@ class OptimizedCreateHiveTableAsSelectCommandVisitorTest {
                             ExprId.apply(2L),
                             Seq$.MODULE$.<String>empty()))
                     .result(),
-                Option.empty(),
+                Option.<CatalogTable>empty(),
                 false),
-            ScalaConversionUtils.fromList(Arrays.asList(KEY, VALUE)),
+            ScalaConversionUtils.<String>fromList(Arrays.asList(KEY, VALUE)),
             SaveMode.Overwrite);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();

@@ -1,16 +1,16 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.flink;
 
+import static io.openlineage.flink.StreamEnvironment.setupEnv;
+
 import io.openlineage.util.OpenLineageFlinkJobListenerBuilder;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
-
-import static io.openlineage.flink.StreamEnvironment.setupEnv;
 
 public class FlinkFakeApplication {
 
@@ -19,12 +19,10 @@ public class FlinkFakeApplication {
 
     env.addSource(new FakeSource()).addSink(new FakeSink());
     env.registerJobListener(
-        OpenLineageFlinkJobListenerBuilder
-            .create()
+        OpenLineageFlinkJobListenerBuilder.create()
             .executionEnvironment(env)
             .jobName("flink-fake-application")
-            .build()
-    );
+            .build());
     env.execute("flink-fake-application");
   }
 
@@ -33,7 +31,7 @@ public class FlinkFakeApplication {
 
     @Override
     public void run(SourceContext<Integer> ctx) throws Exception {
-      while(isRunning) {
+      while (isRunning) {
         synchronized (ctx.getCheckpointLock()) {
           ctx.collect(1);
         }

@@ -1,16 +1,20 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.flink.visitor.wrapper;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Function;
@@ -22,9 +26,11 @@ import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.formats.avro.AvroSerializationSchema;
 import org.apache.flink.formats.avro.RegistryAvroSerializationSchema;
+import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicsDescriptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import org.testcontainers.shaded.org.apache.commons.lang3.reflect.FieldUtils;
 
 class KafkaSinkWrapperTest {
 
@@ -128,6 +134,37 @@ class KafkaSinkWrapperTest {
           .thenReturn(Optional.empty());
 
       assertFalse(wrapper.getAvroSchema().isPresent());
+    }
+  }
+
+  @Test
+  void testGetTopicsOfMultiTopicSink() throws IllegalAccessException {
+    KafkaRecordSerializationSchema serializer =
+        (KafkaRecordSerializationSchema)
+            mock(
+                KafkaTopicsDescriptor.class,
+                withSettings().extraInterfaces(KafkaRecordSerializationSchema.class));
+
+    when(((KafkaTopicsDescriptor) serializer).isFixedTopics()).thenReturn(true);
+    when(((KafkaTopicsDescriptor) serializer).getFixedTopics())
+        .thenReturn(Arrays.asList("topic1", "topic2"));
+
+    FieldUtils.writeField(wrapper, "serializationSchema", serializer, true);
+
+    assertThat(wrapper.getTopicsOfMultiTopicSink()).containsExactlyInAnyOrder("topic1", "topic2");
+  }
+
+  @Test
+  void testGetSchemaOfMultiTopicSink() throws IllegalAccessException {
+    KafkaRecordSerializationSchema serializer =
+        new MultiTopicSerializationSchema(new String[] {"t1"});
+    FieldUtils.writeField(wrapper, "serializationSchema", serializer, true);
+
+    try (MockedStatic<AvroSerializationSchema> mockedStatic =
+        mockStatic(AvroSerializationSchema.class)) {
+      AvroSerializationSchema<SomeEvent> schema = mock(AvroSerializationSchema.class);
+      when(AvroSerializationSchema.<SomeEvent>forSpecific(eq(SomeEvent.class))).thenReturn(schema);
+      assertThat(wrapper.getSchemaOfMultiTopicSink().get()).isEqualTo(schema);
     }
   }
 }

@@ -1,4 +1,4 @@
-# Copyright 2018-2023 contributors to the OpenLineage project
+# Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -24,11 +24,16 @@ def _is_disabled():
     return os.getenv("OPENLINEAGE_DISABLED", "").lower() == "true"
 
 
-if parse_version(AIRFLOW_VERSION) < parse_version("2.3.0.dev0") or _is_disabled():  # type: ignore
+if (
+    parse_version(AIRFLOW_VERSION) < parse_version("2.3.0.dev0")  # type: ignore
+    or parse_version(AIRFLOW_VERSION) >= parse_version("2.8.0.b1")  # type: ignore
+    or _is_disabled()
+):
 
     class OpenLineagePlugin(AirflowPlugin):
         name = "OpenLineagePlugin"
         macros = [lineage_run_id, lineage_parent_id]
+
 else:
     from openlineage.airflow import listener
 

@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -12,8 +12,10 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +35,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import scala.Option;
-import scala.collection.Seq$;
 
 /**
  * This unit test tests the apply method of KustoRelationVisitor. Therefore it only tests Kusto read
@@ -125,17 +126,15 @@ class KustoRelationVisitorTest {
     LogicalRelation lr =
         new LogicalRelation(
             new MockKustoRelation(inputQuery, url, database),
-            Seq$.MODULE$
-                .<AttributeReference>newBuilder()
-                .$plus$eq(
+            ScalaConversionUtils.fromList(
+                Collections.singletonList(
                     new AttributeReference(
                         FIELD_NAME,
                         StringType$.MODULE$,
                         false,
                         null,
                         ExprId.apply(1L),
-                        Seq$.MODULE$.<String>empty()))
-                .result(),
+                        ScalaConversionUtils.<String>asScalaSeqEmpty()))),
             Option.empty(),
             false);
 

@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -30,7 +30,8 @@ public class SparkContainerUtils {
   static MockServerContainer makeMockServerContainer(Network network) {
     return new MockServerContainer(MOCKSERVER_IMAGE)
         .withNetwork(network)
-        .withNetworkAliases("openlineageclient");
+        .withNetworkAliases("openlineageclient")
+        .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES));
   }
 
   static PostgreSQLContainer<?> makeMetastoreContainer(Network network) {

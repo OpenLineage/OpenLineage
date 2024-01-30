@@ -1,9 +1,9 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan;
+package io.openlineage.spark31.agent.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -13,11 +13,12 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.spark.SparkContext;
@@ -32,8 +33,6 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import scala.collection.immutable.HashMap;
-import scala.collection.immutable.Map;
 
 class AlterTableDatasetBuilderTest {
 
@@ -76,10 +75,7 @@ class AlterTableDatasetBuilderTest {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
-              openLineageContext,
-              tableCatalog,
-              identifier,
-              ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(Optional.empty());
 
       List<OpenLineage.OutputDataset> outputDatasets =
@@ -94,10 +90,7 @@ class AlterTableDatasetBuilderTest {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
-              openLineageContext,
-              tableCatalog,
-              identifier,
-              ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(Optional.of(di));
 
       List<OpenLineage.OutputDataset> outputDatasets =
@@ -116,17 +109,11 @@ class AlterTableDatasetBuilderTest {
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockCatalog = mockStatic(CatalogUtils3.class)) {
         when(CatalogUtils3.getDatasetVersion(
-                openLineageContext,
-                tableCatalog,
-                identifier,
-                ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+                openLineageContext, tableCatalog, identifier, tableProperties))
             .thenReturn(Optional.of("v2"));
 
         when(PlanUtils3.getDatasetIdentifier(
-                openLineageContext,
-                tableCatalog,
-                identifier,
-                ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+                openLineageContext, tableCatalog, identifier, tableProperties))
             .thenReturn(Optional.of(di));
 
         List<OpenLineage.OutputDataset> outputDatasets =

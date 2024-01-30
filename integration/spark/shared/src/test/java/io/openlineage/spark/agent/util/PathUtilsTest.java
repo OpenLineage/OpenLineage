@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -124,6 +124,10 @@ class PathUtilsTest {
     di = PathUtils.fromURI(new URI("s3://data-bucket/path"), FILE);
     assertThat(di.getName()).isEqualTo("path");
     assertThat(di.getNamespace()).isEqualTo("s3://data-bucket");
+
+    di = PathUtils.fromURI(new URI("gs://gs-bucket/test.csv"));
+    assertThat(di.getName()).isEqualTo("test.csv");
+    assertThat(di.getNamespace()).isEqualTo("gs://gs-bucket");
   }
 
   @Test
@@ -189,31 +193,6 @@ class PathUtilsTest {
   void testEnrichMetastoreUriWithTableName() throws URISyntaxException {
     assertThat(enrichHiveMetastoreURIWithTableName(new URI("thrift://10.1.0.1:9083"), "/db/table"))
         .isEqualTo(new URI("hive://10.1.0.1:9083/db/table"));
-  }
-
-  @Test
-  void testDatasetNameReplaceNamePattern() throws URISyntaxException {
-    DatasetIdentifier di;
-    try (MockedStatic<SparkSession> mocked = mockStatic(SparkSession.class)) {
-      mocked.when(SparkSession::getDefaultSession).thenReturn(Option.apply(sparkSession));
-      when(sparkSession.sparkContext()).thenReturn(sparkContext);
-      when(sparkContext.getConf()).thenReturn(sparkConf);
-
-      sparkConf.set(
-          "spark.openlineage.dataset.removePath.pattern", "(.*)(?<remove>\\/.*\\/.*\\/.*)");
-      di = PathUtils.fromURI(new URI("s3:///my-whatever-path/year=2023/month=04/day=24"), null);
-      assertThat(di.getName()).isEqualTo("/my-whatever-path");
-
-      sparkConf.set(
-          "spark.openlineage.dataset.removePath.pattern", "(.*)(?<nonValidGroup>\\/.*\\/.*\\/.*)");
-      di = PathUtils.fromURI(new URI("s3:///my-whatever-path/year=2023/month=04/day=24"), null);
-      assertThat(di.getName()).isEqualTo("/my-whatever-path/year=2023/month=04/day=24");
-
-      sparkConf.set(
-          "spark.openlineage.dataset.removePath.pattern", "(.*)(?<remove>\\/.*\\/.*\\/.*)");
-      di = PathUtils.fromURI(new URI("s3:///path-without-group/file"), null);
-      assertThat(di.getName()).isEqualTo("/path-without-group/file");
-    }
   }
 
   static class FromCatalogTableShouldReturnTheCorrectScheme {

@@ -1,7 +1,7 @@
 {
   "eventType": "START",
   "job": {
-    "namespace": "testReadAndWriteFromBigquery"
+    "namespace": "gc-namespace"
   },
   "inputs": [{
     "namespace": "bigquery",

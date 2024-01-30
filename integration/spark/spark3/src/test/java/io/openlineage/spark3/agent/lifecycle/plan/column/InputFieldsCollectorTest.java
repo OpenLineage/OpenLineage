@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -18,6 +18,7 @@ import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.net.URI;
@@ -47,8 +48,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
-import scala.collection.JavaConverters;
-import scala.collection.Seq;
+import scala.collection.immutable.Seq;
 
 class InputFieldsCollectorTest {
 
@@ -236,8 +236,7 @@ class InputFieldsCollectorTest {
     when(logicalRelation.relation()).thenReturn(relation);
 
     Path p = new Path("abfss://tmp@storage.dfs.core.windows.net/path");
-    Seq<Path> expected_path_seq =
-        JavaConverters.asScalaBufferConverter(Collections.singletonList(p)).asScala();
+    Seq<Path> expected_path_seq = ScalaConversionUtils.fromList(Collections.singletonList(p));
 
     when(relation.location().rootPaths()).thenReturn(expected_path_seq);
 

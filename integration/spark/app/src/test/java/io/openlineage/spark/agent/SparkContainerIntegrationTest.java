@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -9,10 +9,8 @@ import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableMap;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
@@ -23,7 +21,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.RegexBody;
@@ -160,7 +157,7 @@ class SparkContainerIntegrationTest {
         admin.createTopics(
             Arrays.asList(
                 new NewTopic("topicA", 1, (short) 1), new NewTopic("topicB", 1, (short) 1)));
-    topicsResult.topicId("topicA").get();
+    topicsResult.all().get();
 
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
@@ -294,36 +291,6 @@ class SparkContainerIntegrationTest {
         network, openLineageClientMockContainer, "testAlterTable", "spark_alter_table.py");
     verifyEvents(
         mockServerClient, "pysparkAlterTableAddColumnsEnd.json", "pysparkAlterTableRenameEnd.json");
-  }
-
-  @Test
-  @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
-  void testReadAndWriteFromBigquery() {
-    List<String> sparkConfigParams = new ArrayList<>();
-    sparkConfigParams.add(
-        "spark.hadoop.google.cloud.auth.service.account.json.keyfile=/opt/gcloud/gcloud-service-key.json");
-    sparkConfigParams.add("spark.hadoop.google.cloud.auth.service.account.enable=true");
-    sparkConfigParams.add(
-        "spark.hadoop.fs.AbstractFileSystem.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS");
-    sparkConfigParams.add(
-        "spark.hadoop.fs.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem");
-
-    SparkContainerUtils.runPysparkContainerWithDefaultConf(
-        network,
-        openLineageClientMockContainer,
-        "testReadAndWriteFromBigquery",
-        Collections.emptyList(),
-        sparkConfigParams,
-        "spark_bigquery.py");
-    verifyEvents(
-        mockServerClient,
-        Collections.singletonMap(
-            "{spark_version}", System.getProperty(SPARK_VERSION).replace(".", "_")),
-        "pysparkBigquerySaveStart.json",
-        "pysparkBigqueryInsertStart.json",
-        "pysparkBigqueryInsertEnd.json",
-        "pysparkBigquerySaveEnd.json");
   }
 
   @Test

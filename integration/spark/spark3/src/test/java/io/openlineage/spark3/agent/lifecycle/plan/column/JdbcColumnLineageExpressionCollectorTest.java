@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.sql.ColumnMeta;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -21,6 +22,7 @@ import java.util.Map;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.types.IntegerType$;
@@ -54,6 +56,11 @@ public class JdbcColumnLineageExpressionCollectorTest {
   @BeforeEach
   void setup() {
     when(relation.jdbcOptions()).thenReturn(jdbcOptions);
+
+    scala.collection.immutable.Map<String, String> properties =
+        ScalaConversionUtils.<String, String>asScalaMapEmpty();
+    when(jdbcOptions.parameters())
+        .thenReturn(CaseInsensitiveMap$.MODULE$.<String>apply(properties));
   }
 
   @Test

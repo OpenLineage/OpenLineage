@@ -1,4 +1,4 @@
-# Copyright 2018-2023 contributors to the OpenLineage project
+# Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -76,15 +76,16 @@ class OpenLineageAdapter:
             self._client = OpenLineageAdapter.get_or_create_openlineage_client()
         return self._client
 
-    def build_dag_run_id(self, dag_id, dag_run_id):
+    @staticmethod
+    def build_dag_run_id(dag_id, dag_run_id):
         return str(uuid.uuid3(uuid.NAMESPACE_URL, f"{_DAG_NAMESPACE}.{dag_id}.{dag_run_id}"))
 
     @staticmethod
-    def build_task_instance_run_id(task_id, execution_date, try_number):
+    def build_task_instance_run_id(dag_id, task_id, execution_date, try_number):
         return str(
             uuid.uuid3(
                 uuid.NAMESPACE_URL,
-                f"{_DAG_NAMESPACE}.{task_id}.{execution_date}.{try_number}",
+                f"{_DAG_NAMESPACE}.{dag_id}.{task_id}.{execution_date}.{try_number}",
             )
         )
 
@@ -139,17 +140,19 @@ class OpenLineageAdapter:
         )
         if run_facets is None:
             run_facets = {}
+        if task:
+            run_facets = {**task.run_facets, **run_facets}
         run_facets["processing_engine"] = processing_engine_version_facet  # type: ignore
         event = RunEvent(
             eventType=RunState.START,
             eventTime=event_time,
             run=self._build_run(
-                run_id,
-                parent_job_name,
-                parent_run_id,
-                job_name,
-                nominal_start_time,
-                nominal_end_time,
+                run_id=run_id,
+                parent_job_name=parent_job_name,
+                parent_run_id=parent_run_id,
+                job_name=job_name,
+                nominal_start_time=nominal_start_time,
+                nominal_end_time=nominal_end_time,
                 run_facets=run_facets,
             ),
             job=self._build_job(
@@ -159,18 +162,29 @@ class OpenLineageAdapter:
                 owners=owners,
                 job_facets=task.job_facets if task else None,
             ),
-            inputs=task.inputs if task else None,
-            outputs=task.outputs if task else None,
+            inputs=task.inputs if task else [],
+            outputs=task.outputs if task else [],
             producer=_PRODUCER,
         )
         self.emit(event)
         return event.run.runId
 
-    def complete_task(self, run_id: str, job_name: str, end_time: str, task: TaskMetadata):
+    def complete_task(
+        self,
+        run_id: str,
+        parent_job_name: Optional[str],
+        parent_run_id: Optional[str],
+        job_name: str,
+        end_time: str,
+        task: TaskMetadata,
+    ):
         """
         Emits openlineage event of type COMPLETE
         :param run_id: globally unique identifier of task in dag run
         :param job_name: globally unique identifier of task between dags
+        :param parent_job_name: the name of the parent job (typically the DAG,
+                but possibly a task group)
+        :param parent_run_id: identifier of job spawning this task
         :param end_time: time of task completion
         :param task: metadata container with information extracted from operator
         """
@@ -178,7 +192,12 @@ class OpenLineageAdapter:
         event = RunEvent(
             eventType=RunState.COMPLETE,
             eventTime=end_time,
-            run=self._build_run(run_id, run_facets=task.run_facets),
+            run=self._build_run(
+                run_id=run_id,
+                parent_job_name=parent_job_name,
+                parent_run_id=parent_run_id,
+                run_facets=task.run_facets,
+            ),
             job=self._build_job(job_name, job_facets=task.job_facets),
             inputs=task.inputs,
             outputs=task.outputs,
@@ -186,19 +205,35 @@ class OpenLineageAdapter:
         )
         self.emit(event)
 
-    def fail_task(self, run_id: str, job_name: str, end_time: str, task: TaskMetadata):
+    def fail_task(
+        self,
+        run_id: str,
+        job_name: str,
+        parent_job_name: Optional[str],
+        parent_run_id: Optional[str],
+        end_time: str,
+        task: TaskMetadata,
+    ):
         """
         Emits openlineage event of type FAIL
         :param run_id: globally unique identifier of task in dag run
         :param job_name: globally unique identifier of task between dags
+        :param parent_job_name: the name of the parent job (typically the DAG,
+                but possibly a task group)
+        :param parent_run_id: identifier of job spawning this task
         :param end_time: time of task completion
         :param task: metadata container with information extracted from operator
         """
         event = RunEvent(
             eventType=RunState.FAIL,
             eventTime=end_time,
-            run=self._build_run(run_id, run_facets=task.run_facets),
-            job=self._build_job(job_name),
+            run=self._build_run(
+                run_id=run_id,
+                parent_job_name=parent_job_name,
+                parent_run_id=parent_run_id,
+                run_facets=task.run_facets,
+            ),
+            job=self._build_job(job_name, job_facets=task.job_facets),
             inputs=task.inputs,
             outputs=task.outputs,
             producer=_PRODUCER,

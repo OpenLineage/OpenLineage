@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -42,7 +42,6 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
-import scala.collection.JavaConversions;
 
 /** Traverses LogicalPlan and collect input fields with the corresponding ExprId. */
 @Slf4j
@@ -70,7 +69,7 @@ public class InputFieldsCollector {
     if (isJDBCNode(node)) {
       JdbcColumnLineageCollector.extractExternalInputs(node, builder, datasetIdentifiers);
     } else {
-      extreactInternalInputs(node, builder, datasetIdentifiers);
+      extractInternalInputs(node, builder, datasetIdentifiers);
     }
   }
 
@@ -79,7 +78,7 @@ public class InputFieldsCollector {
         && ((LogicalRelation) node).relation() instanceof JDBCRelation;
   }
 
-  private static void extreactInternalInputs(
+  private static void extractInternalInputs(
       LogicalPlan node,
       ColumnLevelLineageBuilder builder,
       List<DatasetIdentifier> datasetIdentifiers) {
@@ -141,7 +140,10 @@ public class InputFieldsCollector {
         .map(
             meta ->
                 meta.inTables().stream()
-                    .map(e -> new DatasetIdentifier(e.name(), relation.jdbcOptions().url()))
+                    .map(
+                        e ->
+                            JdbcUtils.getDatasetIdentifierFromJdbcUrl(
+                                relation.jdbcOptions().url(), e.qualifiedName()))
                     .collect(Collectors.toList()))
         .orElse(Collections.emptyList());
   }
@@ -178,7 +180,7 @@ public class InputFieldsCollector {
   private static List<DatasetIdentifier> extractDatasetIdentifier(HadoopFsRelation relation) {
     List<DatasetIdentifier> inputDatasets = new ArrayList<DatasetIdentifier>();
     List<Path> paths =
-        JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
+        ScalaConversionUtils.fromSeq(relation.location().rootPaths()).stream()
             .collect(Collectors.toList());
 
     for (Path p : paths) {

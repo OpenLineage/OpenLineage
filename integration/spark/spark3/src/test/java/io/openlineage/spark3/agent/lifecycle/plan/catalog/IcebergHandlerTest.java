@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -164,5 +164,32 @@ class IcebergHandlerTest {
 
     assertTrue(version.isPresent());
     assertEquals(version.get(), "1500100900");
+  }
+
+  @Test
+  void testGetDatasetIdentifierForGlue() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.test.catalog-impl",
+                "org.apache.iceberg.aws.glue.GlueCatalog",
+                "spark.sql.catalog.test.warehouse",
+                "/tmp/warehouse"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    when(sparkCatalog.name()).thenReturn("test");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession,
+            sparkCatalog,
+            Identifier.of(new String[] {"database", "schema"}, "table"),
+            new HashMap<>());
+
+    assertEquals("/tmp/warehouse/database.schema.table", datasetIdentifier.getName());
+    assertEquals("file", datasetIdentifier.getNamespace());
+    assertEquals("database.schema.table", datasetIdentifier.getSymlinks().get(0).getName());
+    assertEquals("/tmp/warehouse", datasetIdentifier.getSymlinks().get(0).getNamespace());
   }
 }

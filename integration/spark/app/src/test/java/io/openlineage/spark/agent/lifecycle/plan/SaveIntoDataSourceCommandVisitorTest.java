@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -29,9 +29,7 @@ import org.apache.spark.sql.sources.CreatableRelationProvider;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.StringType$;
 import org.junit.jupiter.api.Test;
-import scala.Predef;
-import scala.Tuple2;
-import scala.collection.Map;
+import scala.collection.immutable.Map;
 
 class SaveIntoDataSourceCommandVisitorTest {
 
@@ -54,21 +52,20 @@ class SaveIntoDataSourceCommandVisitorTest {
     when(attr2.name()).thenReturn("b");
 
     Map<String, String> options =
-        scala.collection.JavaConversions$.MODULE$.mapAsScalaMap(
-            Collections.singletonMap("path", "some-path"));
+        ScalaConversionUtils.fromJavaMap(Collections.singletonMap("path", "some-path"));
 
     command = mock(SaveIntoDataSourceCommand.class);
     DeltaDataSource deltaDataSource = mock(DeltaDataSource.class);
     LocalRelation localRelation = mock(LocalRelation.class);
     when(localRelation.output())
-        .thenReturn(Arrays.asList(attr1, attr2).stream().collect(ScalaConversionUtils.toSeq()));
+        .thenReturn(ScalaConversionUtils.fromList(Arrays.asList(attr1, attr2)).toSeq());
     when(command.dataSource()).thenReturn(deltaDataSource);
     when(command.schema()).thenReturn(null);
     when(command.mode()).thenReturn(SaveMode.Overwrite);
     when(command.query()).thenReturn(localRelation);
-    when(command.options()).thenReturn(options.toMap(Predef.<Tuple2<String, String>>conforms()));
+    when(command.options()).thenReturn(options);
     when(localRelation.output())
-        .thenReturn(Arrays.asList(attr1, attr2).stream().collect(ScalaConversionUtils.toSeq()));
+        .thenReturn(ScalaConversionUtils.fromList(Arrays.asList(attr1, attr2)).toSeq());
     when(datasetFactory.getDataset(any(), any(), eq(OVERWRITE))).thenReturn(dataset);
 
     List<OpenLineage.OutputDataset> datasets =

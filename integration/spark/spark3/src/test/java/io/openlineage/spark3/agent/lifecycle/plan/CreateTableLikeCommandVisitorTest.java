@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.util.List;
@@ -34,7 +35,6 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
 import scala.Option;
 import scala.Option$;
-import scala.collection.Map$;
 import scala.collection.immutable.HashMap;
 
 class CreateTableLikeCommandVisitorTest {
@@ -82,7 +82,7 @@ class CreateTableLikeCommandVisitorTest {
             sourceTableIdentifier,
             CatalogStorageFormat.empty(),
             Option$.MODULE$.empty(),
-            Map$.MODULE$.empty(),
+            ScalaConversionUtils.asScalaMapEmpty(),
             false);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();

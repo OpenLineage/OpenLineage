@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.spark.rdd.MapPartitionsRDD;
 import org.apache.spark.rdd.ParallelCollectionRDD;
 import org.apache.spark.rdd.RDD;
@@ -19,9 +20,7 @@ import org.apache.spark.sql.execution.datasources.FilePartition;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.sql.execution.datasources.PartitionedFile;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.org.apache.commons.lang3.reflect.FieldUtils;
 import scala.Tuple2;
-import scala.collection.JavaConversions;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
@@ -36,7 +35,7 @@ public class RddPathUtilsTest {
 
     when(mapPartitions.prev()).thenReturn(fileScanRDD);
     when(fileScanRDD.filePartitions())
-        .thenReturn(JavaConversions.asScalaBuffer(Collections.singletonList(filePartition)));
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(filePartition)));
     when(filePartition.files()).thenReturn(new PartitionedFile[] {partitionedFile});
     when(partitionedFile.filePath()).thenReturn("/some-path/sub-path");
 
@@ -95,7 +94,7 @@ public class RddPathUtilsTest {
     when(filePartition.files()).thenReturn(new PartitionedFile[] {partitionedFile});
     when(partitionedFile.filePath()).thenReturn("");
     when(fileScanRDD.filePartitions())
-        .thenReturn(JavaConversions.asScalaBuffer(Collections.singletonList(filePartition)));
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(filePartition)));
 
     List rddPaths = PlanUtils.findRDDPaths(Collections.singletonList(fileScanRDD));
 

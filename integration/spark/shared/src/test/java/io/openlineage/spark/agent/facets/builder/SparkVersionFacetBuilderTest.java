@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -11,6 +11,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.SparkVersionFacet;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +28,6 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import scala.collection.Seq$;
 
 class SparkVersionFacetBuilderTest {
 
@@ -60,7 +60,8 @@ class SparkVersionFacetBuilderTest {
         .isTrue();
     assertThat(
             builder.isDefinedAt(
-                new SparkListenerJobStart(1, 1L, Seq$.MODULE$.empty(), new Properties())))
+                new SparkListenerJobStart(
+                    1, 1L, ScalaConversionUtils.asScalaSeqEmpty(), new Properties())))
         .isTrue();
     assertThat(builder.isDefinedAt(new SparkListenerJobEnd(1, 1L, JobSucceeded$.MODULE$))).isTrue();
     assertThat(builder.isDefinedAt(new SparkListenerStageSubmitted(null, new Properties())))

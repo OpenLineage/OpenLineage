@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -28,6 +28,7 @@ public class MockBigQueryClientModule implements Module {
   public BigQueryCredentialsSupplier provideBigQueryCredentialsSupplier(BigQueryConfig config) {
     return new BigQueryCredentialsSupplier(
         Optional.of("not a real access token"),
+        Optional.empty(),
         Optional.empty(),
         Optional.empty(),
         Optional.empty(),

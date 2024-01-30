@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -51,7 +51,9 @@ public class DatabricksUtils {
 
   public static final String CLUSTER_NAME = "openlineage-test-cluster";
   public static final Map<String, String> PLATFORM_VERSIONS =
-      Stream.of(new AbstractMap.SimpleEntry<>("3.4.1", "13.3.x-scala2.12"))
+      Stream.of(
+              new AbstractMap.SimpleEntry<>("3.4.1", "13.3.x-scala2.12"),
+              new AbstractMap.SimpleEntry<>("3.5.0", "14.2.x-scala2.12"))
           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   public static final String NODE_TYPE = "Standard_DS3_v2";
   public static final String DBFS_EVENTS_FILE = "dbfs:/databricks/openlineage/events.log";

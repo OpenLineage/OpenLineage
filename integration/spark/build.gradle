@@ -1,124 +1,52 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
-    id 'java'
-    id 'java-library'
+    id("io.openlineage.common-config")
     id 'maven-publish'
     id 'signing'
     id 'jacoco'
-    id "com.adarshr.test-logger" version "3.2.0"
-    id "org.gradle.test-retry" version "1.5.7"
-    id 'com.diffplug.spotless' version '6.12.0'
     id "com.github.johnrengelman.shadow" version "8.1.1"
 }
 
-subprojects {
-    apply plugin: 'java'
-
-    ext {
-        lombokVersion = '1.18.30'
-        isReleaseVersion = !version.endsWith('SNAPSHOT')
-    }
-
-    dependencies {
-        compileOnly "org.projectlombok:lombok:${lombokVersion}"
-        annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
-        testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
-        testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
-    }
+commonConfig {
+    pmdEnabled = false
+    lombokEnabled = false
+    spotlessEnabled = false
 }
 
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven {
-        url = 'https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot'
-    }
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-}
-
-archivesBaseName='openlineage-spark'
+archivesBaseName = 'openlineage-spark'
 
 ext {
-    lombokVersion = '1.18.20'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
     jacksonVersion = "2.13.2"
     jacksonDatabindVersion = "2.13.2.2"
 }
 
 dependencies {
-    implementation(project(path:    ":app"))
-    implementation(project(path: ":shared", configuration: "shadow"))
+    implementation(project(path: ":app"))
+    implementation(project(path: ":shared"))
     implementation(project(path: ":spark2"))
     implementation(project(path: ":spark3"))
+    implementation(project(path: ":spark31"))
     implementation(project(path: ":spark32"))
     implementation(project(path: ":spark33"))
     implementation(project(path: ":spark34"))
     implementation(project(path: ":spark35"))
-
-    compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
-    compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
 }
 
 
 task sourceJar(type: Jar) {
-    archiveClassifier='sources'
+    archiveClassifier = 'sources'
     from sourceSets.main.allJava
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    archiveClassifier='javadoc'
+    archiveClassifier = 'javadoc'
     from javadoc.destinationDir
 }
 
-test {
-    useJUnitPlatform {
-        excludeTags 'integration-test'
-    }
-}
-
-task integrationTest(type: Test) {
-    retry {
-        boolean isCiServer = System.getenv().containsKey("CI")
-        if (isCiServer) {
-            maxRetries = 3
-            maxFailures = 3
-        }
-    }
-    useJUnitPlatform {
-        includeTags "integration-test"
-    }
-    dependsOn shadowJar
-}
-
-integrationTest.outputs.upToDateWhen { false }
-
 javadoc {
-    options.tags = [ "apiNote" ]
-}
-
-spotless {
-    def disallowWildcardImports = {
-        String text = it
-        def regex = ~/import .*\.\*;/
-        def m = regex.matcher(text)
-        if (m.find()) {
-            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
-        }
-    }
-    java {
-        googleJavaFormat()
-        removeUnusedImports()
-        custom 'disallowWildcardImports', disallowWildcardImports
-    }
+    options.tags = ["apiNote"]
 }
 
 def reportsDir = "${buildDir}/reports";
@@ -217,20 +145,20 @@ signing {
 }
 
 shadowJar {
-    dependsOn test
-
-    minimize(){
-        exclude (project(":shared"))
-        exclude (project(":spark2"))
-        exclude (project(":spark3"))
-        exclude (project(":spark32"))
-        exclude (project(":spark33"))
-        exclude (project(":spark34"))
-        exclude (project(":spark35"))
-        exclude (project(":app"))
+    minimize() {
+        exclude(project(":shared"))
+        exclude(project(":spark2"))
+        exclude(project(":spark3"))
+        exclude(project(":spark31"))
+        exclude(project(":spark32"))
+        exclude(project(":spark33"))
+        exclude(project(":spark34"))
+        exclude(project(":spark35"))
+        exclude(project(":app"))
     }
     dependencies {
         exclude(dependency('org.slf4j::'))
+        exclude('org/apache/commons/logging/**')
     }
     archiveClassifier = ''
     // avoid conflict with any client version of that lib
@@ -239,7 +167,7 @@ shadowJar {
     relocate 'javassist', 'io.openlineage.spark.shaded.javassist'
     relocate 'org.apache.hc', 'io.openlineage.spark.shaded.org.apache.hc'
     relocate 'org.apache.commons.codec', 'io.openlineage.spark.shaded.org.apache.commons.codec'
-    relocate 'org.apache.commons.logging', 'io.openlineage.spark.shaded.org.apache.commons.logging'
+    relocate 'org.apache.commons.lang3', 'io.openlineage.spark.shaded.org.apache.commons.lang3'
     relocate 'org.apache.commons.beanutils', 'io.openlineage.spark.shaded.org.apache.commons.beanutils'
     relocate 'org.apache.http', 'io.openlineage.spark.shaded.org.apache.http'
     relocate 'com.fasterxml.jackson', 'io.openlineage.spark.shaded.com.fasterxml.jackson'

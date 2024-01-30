@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,7 +34,6 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import scala.collection.Seq$;
 
 class LogicalPlanRunFacetBuilderTest {
 
@@ -91,7 +91,8 @@ class LogicalPlanRunFacetBuilderTest {
 
     assertThat(
             builder.isDefinedAt(
-                new SparkListenerJobStart(1, 1L, Seq$.MODULE$.empty(), new Properties())))
+                new SparkListenerJobStart(
+                    1, 1L, ScalaConversionUtils.asScalaSeqEmpty(), new Properties())))
         .isTrue();
   }
 
@@ -108,7 +109,8 @@ class LogicalPlanRunFacetBuilderTest {
     sparkContext.conf().set("spark.openlineage.facets.disabled", "[spark.logicalPlan]");
     assertThat(
             builder.isDefinedAt(
-                new SparkListenerJobStart(1, 1L, Seq$.MODULE$.empty(), new Properties())))
+                new SparkListenerJobStart(
+                    1, 1L, ScalaConversionUtils.asScalaSeqEmpty(), new Properties())))
         .isFalse();
 
     sparkContext.conf().remove("spark.openlineage.facets.disabled");
@@ -132,7 +134,8 @@ class LogicalPlanRunFacetBuilderTest {
 
     assertThat(
             builder.isDefinedAt(
-                new SparkListenerJobStart(1, 1L, Seq$.MODULE$.empty(), new Properties())))
+                new SparkListenerJobStart(
+                    1, 1L, ScalaConversionUtils.asScalaSeqEmpty(), new Properties())))
         .isFalse();
   }
 

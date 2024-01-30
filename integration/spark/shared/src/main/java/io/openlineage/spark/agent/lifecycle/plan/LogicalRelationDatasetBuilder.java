@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -11,6 +11,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -31,7 +32,6 @@ import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
-import scala.collection.JavaConversions;
 
 /**
  * {@link LogicalPlan} visitor that attempts to extract a {@link OpenLineage.Dataset} from a {@link
@@ -146,7 +146,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                                 context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
 
                 Collection<Path> rootPaths =
-                    JavaConversions.asJavaCollection(relation.location().rootPaths());
+                    ScalaConversionUtils.fromSeq(relation.location().rootPaths());
 
                 if (isSingleFileRelation(rootPaths, hadoopConfig)) {
                   return Collections.singletonList(
@@ -182,7 +182,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         // Datasets
         List<D> inputDatasets = new ArrayList<D>();
         List<Path> paths =
-            new ArrayList<>(JavaConversions.asJavaCollection(relation.location().rootPaths()));
+            new ArrayList<>(ScalaConversionUtils.fromSeq(relation.location().rootPaths()));
         for (Path p : paths) {
           inputDatasets.add(datasetFactory.getDataset(p.toUri(), relation.schema()));
         }

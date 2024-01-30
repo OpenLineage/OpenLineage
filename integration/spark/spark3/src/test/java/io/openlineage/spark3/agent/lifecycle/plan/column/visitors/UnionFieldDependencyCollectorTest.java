@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -12,8 +12,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
@@ -50,15 +52,18 @@ class UnionFieldDependencyCollectorTest {
   void testCollect() {
     Union union =
         new Union(
-            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+            ScalaConversionUtils.fromList(
                     Arrays.asList(
                         (LogicalPlan)
                             new Project(
-                                toScalaSeq(Arrays.asList(expression1)), mock(LogicalPlan.class)),
+                                ScalaConversionUtils.fromList(
+                                    Collections.singletonList(expression1)),
+                                mock(LogicalPlan.class)),
                         (LogicalPlan)
                             new Project(
-                                toScalaSeq(Arrays.asList(expression2)), mock(LogicalPlan.class))))
-                .asScala()
+                                ScalaConversionUtils.fromList(
+                                    Collections.singletonList(expression2)),
+                                mock(LogicalPlan.class))))
                 .toSeq(),
             true,
             true);

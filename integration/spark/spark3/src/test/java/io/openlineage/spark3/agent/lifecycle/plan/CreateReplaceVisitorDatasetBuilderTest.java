@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -71,7 +72,7 @@ class CreateReplaceVisitorDatasetBuilderTest {
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
     verifyApply(
-        (LogicalPlan) logicalPlan,
+        logicalPlan,
         commandProperties,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
   }
@@ -84,7 +85,7 @@ class CreateReplaceVisitorDatasetBuilderTest {
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
     verifyApply(
-        (LogicalPlan) logicalPlan,
+        logicalPlan,
         commandProperties,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
@@ -97,7 +98,7 @@ class CreateReplaceVisitorDatasetBuilderTest {
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
     verifyApply(
-        (LogicalPlan) logicalPlan,
+        logicalPlan,
         commandProperties,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
@@ -110,7 +111,7 @@ class CreateReplaceVisitorDatasetBuilderTest {
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
     verifyApply(
-        (LogicalPlan) logicalPlan,
+        logicalPlan,
         commandProperties,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
   }
@@ -124,8 +125,8 @@ class CreateReplaceVisitorDatasetBuilderTest {
     when(logicalPlan.properties()).thenReturn(commandProperties);
 
     DatasetIdentifier di = new DatasetIdentifier(TABLE, "db");
-    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      try (MockedStatic mockedCatalog = mockStatic(CatalogUtils3.class)) {
+    try (MockedStatic<PlanUtils3> ignored = mockStatic(PlanUtils3.class)) {
+      try (MockedStatic<CatalogUtils3> ignored1 = mockStatic(CatalogUtils3.class)) {
         when(CatalogUtils3.getDatasetVersion(
                 openLineageContext,
                 catalogTable,
@@ -158,8 +159,8 @@ class CreateReplaceVisitorDatasetBuilderTest {
     when(logicalPlan.properties()).thenReturn(commandProperties);
 
     DatasetIdentifier di = new DatasetIdentifier(TABLE, "db");
-    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      try (MockedStatic mockedCatalog = mockStatic(CatalogUtils3.class)) {
+    try (MockedStatic<PlanUtils3> ignored = mockStatic(PlanUtils3.class)) {
+      try (MockedStatic<CatalogUtils3> ignored1 = mockStatic(CatalogUtils3.class)) {
         when(CatalogUtils3.getDatasetVersion(
                 openLineageContext,
                 catalogTable,
@@ -178,7 +179,7 @@ class CreateReplaceVisitorDatasetBuilderTest {
             visitor.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
 
         assertEquals(1, outputDatasets.size());
-        assertEquals(null, outputDatasets.get(0).getFacets().getVersion());
+        assertNull(outputDatasets.get(0).getFacets().getVersion());
       }
     }
   }
@@ -188,7 +189,7 @@ class CreateReplaceVisitorDatasetBuilderTest {
       Map<String, String> tableProperties,
       OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
     DatasetIdentifier di = new DatasetIdentifier(TABLE, "db");
-    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+    try (MockedStatic<PlanUtils3> ignored = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
               openLineageContext,
               catalogTable,
@@ -211,7 +212,7 @@ class CreateReplaceVisitorDatasetBuilderTest {
   @Test
   void testApplyWhenNoDatasetIdentifierReturned() {
     CreateTableAsSelect logicalPlan = mock(CreateTableAsSelect.class);
-    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+    try (MockedStatic<PlanUtils3> ignored = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
               openLineageContext,
               catalogTable,

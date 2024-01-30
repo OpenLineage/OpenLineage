@@ -1,11 +1,12 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.flink.api;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.DatasetIdentifier;
 
 public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   private final OpenLineage openLineage;
@@ -43,6 +44,10 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
 
   public OpenLineage.DatasetFacetsBuilder getDatasetFacetsBuilder() {
     return openLineage.newDatasetFacetsBuilder();
+  }
+
+  public D getDataset(DatasetIdentifier di, OpenLineage.DatasetFacetsBuilder facetsBuilder) {
+    return getDataset(di.getName(), di.getNamespace(), facetsBuilder.build());
   }
 
   public D getDataset(

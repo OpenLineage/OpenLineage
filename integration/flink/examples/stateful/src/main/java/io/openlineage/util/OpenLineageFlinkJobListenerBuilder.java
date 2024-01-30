@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -16,8 +16,9 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
  * The example applications are used within test phase of building flink integration, so they cannot
  * make use of OpenLineageFlinkJobListener classes as this would cause cyclic dependency. This utils
  * class uses reflection to instantiate {@link OpenLineageFlinkJobListener}.
- * <p>
- * Please note that the recommended way to achieve that is by using the builder:
+ *
+ * <p>Please note that the recommended way to achieve that is by using the builder:
+ *
  * <pre>
  *           OpenLineageFlinkJobListener.builder()
  *             .executionEnvironment(streamExecutionEnvironment)
@@ -45,11 +46,13 @@ public class OpenLineageFlinkJobListenerBuilder {
   }
 
   private OpenLineageFlinkJobListenerBuilder()
-      throws InvocationTargetException, NoSuchMethodException, IllegalAccessException, ClassNotFoundException {
-    builder = MethodUtils.invokeStaticMethod(
-        Class.forName("io.openlineage.flink.OpenLineageFlinkJobListener"),
-        "builder"
-    );
+      throws InvocationTargetException,
+          NoSuchMethodException,
+          IllegalAccessException,
+          ClassNotFoundException {
+    builder =
+        MethodUtils.invokeStaticMethod(
+            Class.forName("io.openlineage.flink.OpenLineageFlinkJobListener"), "builder");
 
     // some defaults
     builder = MethodUtils.invokeMethod(builder, "jobNamespace", "flink_job_namespace");
@@ -74,7 +77,8 @@ public class OpenLineageFlinkJobListenerBuilder {
     return this;
   }
 
-  public OpenLineageFlinkJobListenerBuilder executionEnvironment(StreamExecutionEnvironment executionEnvironment)
+  public OpenLineageFlinkJobListenerBuilder executionEnvironment(
+      StreamExecutionEnvironment executionEnvironment)
       throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
     builder = MethodUtils.invokeMethod(builder, "executionEnvironment", executionEnvironment);
     return this;

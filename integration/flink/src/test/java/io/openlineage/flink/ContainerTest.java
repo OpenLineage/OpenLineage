@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -16,6 +16,8 @@ import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
 
 import com.google.common.io.Resources;
+import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineageClientUtils;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -185,6 +187,29 @@ class ContainerTest {
 
   @Test
   @SneakyThrows
+  void testMultiTopicSinkJob() {
+    Properties jobProperties = new Properties();
+    jobProperties.put("inputTopics", "io.openlineage.flink.kafka.input[0-9].*");
+    jobProperties.put(
+        "outputTopics", "io.openlineage.flink.kafka.output1,io.openlineage.flink.kafka.output2");
+    jobProperties.put("jobName", "flink_multi_topic_sink");
+    runUntilCheckpoint(
+        "io.openlineage.flink.FlinkMultiTopicSinkApplication", jobProperties, generateEvents);
+    verify("events/expected_kafka_multi_topic_sink.json");
+
+    HttpRequest[] httpRequests =
+        mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage"));
+
+    RunEvent lastEvent =
+        OpenLineageClientUtils.runEventFromJson(
+            httpRequests[httpRequests.length - 1].getBodyAsString());
+
+    assertThat(lastEvent.getOutputs()).hasSize(2);
+    assertThat(lastEvent.getInputs()).hasSize(2);
+  }
+
+  @Test
+  @SneakyThrows
   void testOpenLineageEventSentForKafkaSourceWithGenericRecord() {
     runUntilCheckpoint(
         "io.openlineage.flink.FlinkSourceWithGenericRecordApplication",
@@ -294,7 +319,7 @@ class ContainerTest {
                         "--job-classname %s ", "io.openlineage.flink.FlinkStatefulApplication")
                     + "--input-topics "
                     + inputTopics
-                    + " --output-topic io.openlineage.flink.kafka.output --job-name flink_conf_job")
+                    + " --output-topics io.openlineage.flink.kafka.output --job-name flink_conf_job")
             .withEnv(
                 "FLINK_PROPERTIES",
                 "jobmanager.rpc.address: jobmanager\n"

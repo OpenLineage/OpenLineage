@@ -1,11 +1,9 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.spark.agent.lifecycle;
-
-import static scala.collection.JavaConversions.asJavaCollection;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
@@ -44,7 +42,6 @@ import org.apache.parquet.Strings;
 import org.apache.spark.Dependency;
 import org.apache.spark.SparkContext;
 import org.apache.spark.SparkContext$;
-import org.apache.spark.TaskContext;
 import org.apache.spark.internal.io.HadoopMapRedWriteConfigUtil;
 import org.apache.spark.internal.io.HadoopMapReduceWriteConfigUtil;
 import org.apache.spark.rdd.HadoopRDD;
@@ -61,10 +58,8 @@ import org.apache.spark.scheduler.SparkListenerStageSubmitted;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.apache.spark.util.SerializableJobConf;
-import scala.Function2;
-import scala.collection.Iterator;
+import scala.Option;
 import scala.collection.Seq;
-import scala.runtime.AbstractFunction0;
 
 @Slf4j
 class RddExecutionContext implements ExecutionContext {
@@ -77,17 +72,9 @@ class RddExecutionContext implements ExecutionContext {
 
   public RddExecutionContext(EventEmitter eventEmitter) {
     this.eventEmitter = eventEmitter;
+    Option<SparkContext> activeSessionOption = SparkContext$.MODULE$.getActive();
     sparkContextOption =
-        Optional.ofNullable(
-            SparkContext$.MODULE$
-                .getActive()
-                .getOrElse(
-                    new AbstractFunction0<SparkContext>() {
-                      @Override
-                      public SparkContext apply() {
-                        return null;
-                      }
-                    }));
+        activeSessionOption.isDefined() ? Optional.of(activeSessionOption.get()) : Optional.empty();
   }
 
   @Override
@@ -107,11 +94,11 @@ class RddExecutionContext implements ExecutionContext {
     this.inputs = findInputs(rdds);
     Configuration jc = new JobConf();
     if (activeJob.finalStage() instanceof ResultStage) {
-      Function2<TaskContext, Iterator<?>, ?> fn = ((ResultStage) activeJob.finalStage()).func();
+      ResultStage resultStage = (ResultStage) activeJob.finalStage();
       try {
-        Field f = getConfigField(fn);
+        Field f = getConfigField(resultStage);
         f.setAccessible(true);
-        Object conf = f.get(fn);
+        Object conf = f.get(resultStage.func());
 
         if (conf instanceof HadoopMapRedWriteConfigUtil) {
           Field confField = HadoopMapRedWriteConfigUtil.class.getDeclaredField("conf");
@@ -143,16 +130,15 @@ class RddExecutionContext implements ExecutionContext {
    * In spark2 we can get it by "config$1" field.<br>
    * In spark3 we can get it by "arg$1" field
    *
-   * @param fn
+   * @param resultStage
    * @return HadoopMapRedWriteConfigUtil field
    * @throws NoSuchFieldException
    */
-  private Field getConfigField(Function2<TaskContext, Iterator<?>, ?> fn)
-      throws NoSuchFieldException {
+  private Field getConfigField(ResultStage resultStage) throws NoSuchFieldException {
     try {
-      return fn.getClass().getDeclaredField("config$1");
+      return resultStage.func().getClass().getDeclaredField("config$1");
     } catch (NoSuchFieldException e) {
-      return fn.getClass().getDeclaredField("arg$1");
+      return resultStage.func().getClass().getDeclaredField("arg$1");
     }
   }
 
@@ -370,7 +356,7 @@ class RddExecutionContext implements ExecutionContext {
   }
 
   protected void printRDDs(String prefix, RDD<?> rdd) {
-    Collection<Dependency<?>> deps = asJavaCollection(rdd.dependencies());
+    Collection<Dependency<?>> deps = ScalaConversionUtils.fromSeq(rdd.dependencies());
     for (Dependency<?> dep : deps) {
       printRDDs(prefix + "  ", dep.rdd());
     }

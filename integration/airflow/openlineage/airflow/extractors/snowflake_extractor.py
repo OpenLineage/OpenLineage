@@ -1,4 +1,4 @@
-# Copyright 2018-2023 contributors to the OpenLineage project
+# Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Dict, List, Mapping, Optional
@@ -20,6 +20,7 @@ class SnowflakeExtractor(SqlExtractor):
         "column_name",
         "ordinal_position",
         "data_type",
+        "table_catalog",
     ]
     _is_information_schema_cross_db = True
     _is_uppercase_names = True

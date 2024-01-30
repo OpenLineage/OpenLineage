@@ -1,15 +1,17 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.spark.agent.lifecycle;
 
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -52,7 +54,7 @@ public class CatalogTableTestUtils {
               new StructField("name", StringType$.MODULE$, false, Metadata.empty())
             }));
     params.add(Option.empty());
-    params.add(Seq$.MODULE$.<String>newBuilder().$plus$eq("name").result());
+    params.add(ScalaConversionUtils.fromList(Collections.singletonList("name")));
     params.add(Option.empty());
     params.add("");
     params.add(Instant.now().getEpochSecond());

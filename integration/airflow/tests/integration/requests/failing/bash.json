@@ -1,0 +1,136 @@
+[{
+    "eventType": "START",
+    "inputs": [],
+    "job": {
+        "name": "bash_dag.failing_task",
+        "namespace": "food_delivery"
+    },
+    "outputs": [],
+    "run": {
+        "facets": {
+            "airflow": {
+                "dag": {
+                    "dag_id": "bash_dag",
+                    "timetable": {}
+                },
+                "dagRun": {
+                    "dag_id": "bash_dag"
+                },
+                "task": {
+                },
+                "taskInstance": {
+                    "try_number": 1
+                }
+            },
+            "parent": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
+            },
+            "parentRun": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
+            }
+        }
+    }
+},
+{
+    "eventType": "FAIL",
+    "inputs": [],
+    "job": {
+        "name": "bash_dag.failing_task",
+        "namespace": "food_delivery"
+    },
+    "run": {
+        "facets": {
+            "parent": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
+            },
+            "parentRun": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
+            }
+        }
+    },
+    "outputs": []
+},
+{
+    "eventType": "START",
+    "inputs": [],
+    "job": {
+        "name": "bash_dag.success_task",
+        "namespace": "food_delivery"
+    },
+    "outputs": [],
+    "run": {
+        "facets": {
+            "airflow": {
+                "dag": {
+                    "dag_id": "bash_dag",
+                    "timetable": {}
+                },
+                "dagRun": {
+                    "dag_id": "bash_dag"
+                },
+                "task": {
+                },
+                "taskInstance": {
+                    "try_number": 1
+                }
+            },
+            "parent": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
+            },
+            "parentRun": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
+            }
+        }
+    }
+},
+{
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "job": {
+        "name": "bash_dag.success_task",
+        "namespace": "food_delivery"
+    },
+        "run": {
+        "facets": {
+            "parent": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
+            },
+            "parentRun": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
+            }
+        }
+    },
+    "outputs": []
+}]

@@ -11,6 +11,7 @@ repos:
           - --license-filepath
           - .pre_commit/license-python.txt
           - --fuzzy-match-generates-todo
+          - --use-current-year
       - id: insert-license
         name: Add license for all Java files
         files: \.java$
@@ -20,6 +21,7 @@ repos:
           - --license-filepath
           - .pre_commit/license-java.txt
           - --fuzzy-match-generates-todo
+          - --use-current-year
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
@@ -48,17 +50,6 @@ repos:
       - id: ruff-format
         name: ruff-format
         files: ^client/python/|^dev/|^integration/airflow/|^integration/common/|^integration/dagster/|^integration/dbt/|^integration/spark/|^integration/sql/
-  - repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.5.1
-    hooks:
-      - id: insert-license
-        files: ^client/python/.*\.py$
-        args:
-          - --detect-license-in-X-top-lines=2
-          - --license-filepath
-          - LICENSE.insert.txt
-          - --use-current-year
-          - --no-extra-eol
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: "v2.7.1"
     hooks:

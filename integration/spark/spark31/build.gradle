@@ -1,0 +1,47 @@
+plugins {
+    id("io.openlineage.common-config")
+    id("io.openlineage.scala-variants")
+    id("java-test-fixtures")
+}
+
+// We configure this variant build, because of convention. Apache Spark 3.1.x is only compiled
+// with Scala 2.12, however, this configuration adds important things for the broader project.
+scalaVariants {
+    create("2.12")
+}
+
+ext {
+    assertjVersion = "3.25.1"
+    junit5Version = "5.10.1"
+    mockitoVersion = "4.11.0"
+    sparkVersion = project.findProperty("spark31.spark.version")
+}
+
+dependencies {
+    implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
+    implementation(project(path: ":spark3", configuration: "scala212RuntimeElements"))
+
+    compileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
+
+    testFixturesApi(project(path: ":shared", configuration: "scala212RuntimeElements"))
+    testFixturesApi("org.apache.spark:spark-sql_2.12:${sparkVersion}")
+    testFixturesApi("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
+    testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
+    testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
+    testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
+
+    // Scala 2.12 - we need this, because of convention. Its just duplication from the above for this specific module
+    scala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
+    scala212Implementation(project(path: ":spark3", configuration: "scala212RuntimeElements"))
+
+    scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
+
+    testScala212Implementation(project(path: ":shared"))
+    testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
+    testScala212Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
+    testScala212Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
+    testScala212Implementation("org.assertj:assertj-core:${assertjVersion}")
+    testScala212Implementation("org.mockito:mockito-core:${mockitoVersion}")
+    testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
+}

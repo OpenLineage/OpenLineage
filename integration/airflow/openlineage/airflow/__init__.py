@@ -1,4 +1,4 @@
-# Copyright 2018-2023 contributors to the OpenLineage project
+# Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 #
@@ -12,12 +12,20 @@ from airflow.version import version as AIRFLOW_VERSION
 
 __author__ = """OpenLineage"""
 
-if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):  # type: ignore
+if parse_version(AIRFLOW_VERSION) < parse_version("2.1.0"):  # type: ignore
     logging.warning(
         f"""
         OpenLineage support for Airflow version {AIRFLOW_VERSION} is REMOVED.
-        Please make sure to upgrade your Airflow version to minimum of 2.0.0
+        Please make sure to upgrade your Airflow version to minimum of 2.1.0
         in order to continue using OpenLineage.
+        """
+    )
+elif parse_version(AIRFLOW_VERSION) >= parse_version("2.8.0b1"):  # type: ignore
+    logging.warning(
+        f"""
+        OpenLineage support for Airflow version {AIRFLOW_VERSION} is REMOVED.
+        For Airflow 2.7 and later, use the native Airflow Openlineage provider package.
+        Documentation can be found at https://airflow.apache.org/docs/apache-airflow-providers-openlineage
         """
     )
 

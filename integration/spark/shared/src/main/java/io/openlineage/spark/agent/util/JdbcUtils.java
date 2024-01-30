@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -7,6 +7,8 @@ package io.openlineage.spark.agent.util;
 
 import com.google.common.base.CharMatcher;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.sql.ColumnLineage;
+import io.openlineage.sql.ColumnMeta;
 import io.openlineage.sql.DbTableMeta;
 import io.openlineage.sql.ExtractionError;
 import io.openlineage.sql.OpenLineageSql;
@@ -21,6 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 
 @Slf4j
@@ -93,34 +96,44 @@ public class JdbcUtils {
   }
 
   public static Optional<SqlMeta> extractQueryFromSpark(JDBCRelation relation) {
-    String tableOrQuery = relation.jdbcOptions().tableOrQuery();
-    if (!tableOrQuery.trim().startsWith("(")) {
+    Optional<String> table =
+        ScalaConversionUtils.asJavaOptional(
+            relation.jdbcOptions().parameters().get(JDBCOptions$.MODULE$.JDBC_TABLE_NAME()));
+    if (table.isPresent()) {
+      DbTableMeta origin = new DbTableMeta(null, null, table.get());
       return Optional.of(
           new SqlMeta(
-              Collections.singletonList(new DbTableMeta(null, null, tableOrQuery)),
+              Collections.singletonList(origin),
               Collections.emptyList(),
-              Collections.emptyList(),
+              Arrays.stream(relation.schema().fields())
+                  .map(
+                      field ->
+                          new ColumnLineage(
+                              new ColumnMeta(null, field.name()),
+                              Collections.singletonList(new ColumnMeta(origin, field.name()))))
+                  .collect(Collectors.toList()),
               Collections.emptyList()));
     } else {
+      String tableOrQuery = relation.jdbcOptions().tableOrQuery();
       String query =
           tableOrQuery.substring(0, tableOrQuery.lastIndexOf(")")).replaceFirst("\\(", "");
 
       String dialect = extractDialectFromJdbcUrl(relation.jdbcOptions().url());
-      SqlMeta sqlMeta = OpenLineageSql.parse(Collections.singletonList(query), dialect).get();
+      Optional<SqlMeta> sqlMeta = OpenLineageSql.parse(Collections.singletonList(query), dialect);
 
-      if (!sqlMeta.errors().isEmpty()) { // error return nothing
+      if (!sqlMeta.get().errors().isEmpty()) { // error return nothing
         log.error(
             String.format(
                 "error while parsing query: %s",
-                sqlMeta.errors().stream()
+                sqlMeta.get().errors().stream()
                     .map(ExtractionError::toString)
                     .collect(Collectors.joining(","))));
         return Optional.empty();
-      } else if (sqlMeta.inTables().isEmpty()) {
+      } else if (sqlMeta.get().inTables().isEmpty()) {
         log.error("no tables defined in query, this should not happen");
         return Optional.empty();
       }
-      return Optional.of(sqlMeta);
+      return Optional.of(sqlMeta.get());
     }
   }
 

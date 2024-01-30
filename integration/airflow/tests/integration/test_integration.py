@@ -1,4 +1,4 @@
-# Copyright 2018-2023 contributors to the OpenLineage project
+# Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 import json
@@ -7,12 +7,15 @@ import os
 import sys
 import time
 import unittest
-from typing import List
+from collections import defaultdict
+from typing import Dict, List
 
 import psycopg2
 import pytest
 import requests
+from openlineage.client.run import RunState
 from openlineage.common.test import match, setup_jinja
+from openlineage.common.utils import get_from_nullable_chain
 from pkg_resources import parse_version
 from retrying import retry
 
@@ -208,6 +211,100 @@ def wait_for_dag(dag_id, airflow_db_conn, should_fail=False) -> bool:
     return True
 
 
+def check_run_id_matches(actual_events: List[Dict]) -> bool:
+    """Checks if the events have matching `runId` values for 'START' and 'COMPLETE'/'FAIL' states.
+
+    Each `runId` should have exactly one 'START' event and one 'COMPLETE' or 'FAIL' event.
+    If an unknown event type is encountered or the counts of event types do not match the expected pattern,
+    the function returns `False`.
+
+    :param actual_events: A list of event dictionaries.
+
+    :return: True if all `runId`s have matching event counts, False otherwise.
+
+    Examples:
+    >>> check_run_id_matches([
+    ...     {"eventType": "START", "run": {"runId": "run123"}},
+    ...     {"eventType": "COMPLETE", "run": {"runId": "run123"}}
+    ... ])
+    True
+
+    >>> check_run_id_matches([
+    ...     {"eventType": "START", "run": {"runId": "run123"}},
+    ... ])
+    False
+
+    >>> check_run_id_matches([
+    ...     {"eventType": "START", "run": {"runId": "run123"}},
+    ...     {"eventType": "COMPLETE", "run": {"runId": "run123"}},
+    ...     {"eventType": "FAIL", "run": {"runId": "run123"}}
+    ... ])
+    False
+
+    >>> mapped_task_facet = {"airflow": {"task": {"mapped": True}}}
+    >>> check_run_id_matches([
+    ...     {"eventType": "START", "run": {"runId": "run123", "facets": mapped_task_facet}},
+    ... ])
+    False
+
+    >>> mapped_task_facet = {"airflow": {"task": {"mapped": True}}}
+    >>> check_run_id_matches([
+    ...     {"eventType": "START", "run": {"runId": "run123", "facets": mapped_task_facet}},
+    ...     {"eventType": "COMPLETE", "run": {"runId": "run123", "facets": mapped_task_facet}},
+    ...     {"eventType": "START", "run": {"runId": "run123", "facets": mapped_task_facet}},
+    ...     {"eventType": "FAIL", "run": {"runId": "run123", "facets": mapped_task_facet}},
+    ... ])
+    True
+
+    >>> check_run_id_matches([
+    ...     {"eventType": "START", "run": {"runId": "run123"}},
+    ...     {"eventType": "COMPLETE", "run": {"runId": "run123"}},
+    ...     {"eventType": "FAIL", "run": {"runId": "run123"}}
+    ... ])
+    False
+    """
+    start = RunState.START.value
+    complete = RunState.COMPLETE.value
+    fail = RunState.FAIL.value
+
+    event_tracker = defaultdict(lambda: {start: 0, complete: 0, fail: 0, "is_mapped": False})
+
+    # Process each event in the list
+    for event in actual_events:
+        event_type = event["eventType"]
+        event_run_id = event["run"]["runId"]
+
+        is_dynamic_task = get_from_nullable_chain(event, ["run", "facets", "airflow", "task", "mapped"])
+        if is_dynamic_task is not None:
+            event_tracker[event_run_id]["is_mapped"] = is_dynamic_task
+
+        if event_type in [start, complete, fail]:
+            event_tracker[event_run_id][event_type] += 1
+        else:
+            log.info(f"Found unknown event_type: `{event_type}` for run_id: `{event_run_id}`")
+            return False
+
+    # Validate each run_id
+    failed_runs = {}
+    for run_id, events in event_tracker.items():
+        log.debug(f"{run_id} -> {events}")
+        if events["is_mapped"]:
+            # Dynamic tasks will have the same run_id, so we can allow more than one start and complete
+            if events[start] != (events[complete] + events[fail]):
+                failed_runs[run_id] = events
+        else:
+            if events[start] != 1 or (events[complete] + events[fail]) != 1:
+                failed_runs[run_id] = events
+
+    if failed_runs:
+        log_msg = "Validation failed for the following run_ids:\n"
+        for run_id, events in failed_runs.items():
+            log_msg += f"\t\t{run_id} -> {events}\n"
+        log.info(log_msg)
+        return False
+    return True
+
+
 def check_matches(expected_events, actual_events, check_duplicates: bool = None) -> bool:
     for expected in expected_events:
         expected_job_name = env.from_string(expected["job"]["name"]).render()
@@ -296,7 +393,11 @@ def test_integration(dag_id, request_path, check_duplicates, airflow_db_conn):
     # (3) Get actual events
     actual_events = get_events()
 
-    # (3) Verify events emitted
+    # (4) Verify run_id is constant across pairs of actual events for this dag
+    dag_events = [x for x in actual_events if dag_id in x["job"]["name"]]
+    assert check_run_id_matches(dag_events) is True
+
+    # (5) Verify events emitted
     assert check_matches(expected_events, actual_events, check_duplicates) is True
     log.info(f"Events for dag {dag_id} verified!")
 
@@ -307,6 +408,12 @@ def test_integration(dag_id, request_path, check_duplicates, airflow_db_conn):
         pytest.param(
             "async_dag",
             "requests/failing/async.json",
+            True,
+            marks=pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"),
+        ),
+        pytest.param(
+            "bash_dag",
+            "requests/failing/bash.json",
             True,
             marks=pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"),
         ),
@@ -325,7 +432,11 @@ def test_failing_dag(dag_id, request_path, check_duplicates, airflow_db_conn):
     # (3) Get actual events
     actual_events = get_events()
 
-    # (3) Verify events emitted
+    # (4) Verify run_id is constant across pairs of actual events for this dag
+    dag_events = [x for x in actual_events if dag_id in x["job"]["name"]]
+    assert check_run_id_matches(dag_events) is True
+
+    # (5) Verify events emitted
     assert check_matches(expected_events, actual_events, check_duplicates) is True
     log.info(f"Events for dag {dag_id} verified!")
 
@@ -359,7 +470,10 @@ def test_integration_ordered(dag_id, request_dir: str, skip_jobs: List[str], air
     # (3) Get actual events with job names starting with dag_id
     actual_events = get_events(dag_id, False)
 
-    # (4) Filter jobs that we want to skip, which is
+    # # (4) Verify run_id is constant across pairs of actual events
+    assert check_run_id_matches(actual_events) is True
+
+    # (5) Filter jobs that we want to skip, which is
     #     used to skip dag events if we don't want to check them
     actual_events = [event for event in actual_events if event["job"]["name"] not in skip_jobs]
 
@@ -390,7 +504,7 @@ def test_airflow_run_facet(dag_id, request_path, airflow_db_conn):
     assert check_matches(expected_events, actual_events) is True
 
 
-@pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.4.0"), reason="Airflow < 2.4.0")
+@pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0")
 def test_airflow_mapped_task_facet(airflow_db_conn):
     dag_id = "mapped_dag"
     task_id = "multiply"

@@ -5,7 +5,7 @@ plugins {
     id 'signing'
     id 'jacoco'
     id "com.adarshr.test-logger" version "3.2.0"
-    id 'com.diffplug.spotless' version '6.23.2'
+    id 'com.diffplug.spotless' version '6.25.0'
     id "com.github.johnrengelman.shadow" version "8.1.1"
     id "pmd"
     id "com.github.davidmc24.gradle.plugin.avro" version "1.9.1"
@@ -58,9 +58,10 @@ ext {
     icebergVersion = "1.3.0"
 
     versionsMap = [
-            "1.15": ["cassandra": "1.15.4"],
-            "1.16": ["cassandra": "3.0.0-1.16"],
-            "1.17": ["cassandra": "3.1.0-1.17"]
+            "1.15": ["cassandra": "1.15.4", "kafka": flinkVersion, "alternativeShort": "1.15"],
+            "1.16": ["cassandra": "3.0.0-1.16", "kafka": flinkVersion, "alternativeShort": "1.16"],
+            "1.17": ["cassandra": "3.1.0-1.17", "kafka": flinkVersion, "alternativeShort": "1.17"],
+            "1.18": ["cassandra": "3.1.0-1.17", "kafka": "3.0.2-1.18", "alternativeShort": "1.17"]
     ]
 
     versions = versionsMap[flinkVersionShort]
@@ -74,7 +75,7 @@ dependencies {
     }
 
     testRuntimeOnly "org.junit.jupiter:junit-jupiter:5.10.1"
-    testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.19'
+    testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.20'
     testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
     implementation 'org.awaitility:awaitility:4.2.0'
 
@@ -84,8 +85,9 @@ dependencies {
     compileOnly "org.apache.flink:flink-streaming-java:$flinkVersion"
     compileOnly "org.apache.flink:flink-runtime-web:$flinkVersion"
     compileOnly "org.apache.flink:flink-core:$flinkVersion"
+    compileOnly "org.apache.flink:flink-connector-base:$flinkVersion"
     implementation "org.apache.flink:flink-runtime:$flinkVersion"
-    implementation "org.apache.flink:flink-connector-kafka:$flinkVersion"
+    implementation "org.apache.flink:flink-connector-kafka:${versions.kafka}"
     implementation "org.apache.flink:flink-connector-cassandra_2.12:${versions.cassandra}"
     implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     implementation "org.apache.flink:flink-avro:$flinkVersion"
@@ -99,7 +101,7 @@ dependencies {
     implementation "com.typesafe:config:1.4.3"
     implementation "org.apache.avro:avro:1.11.3"
     implementation 'io.confluent:kafka-avro-serializer:7.5.2'
-    implementation 'io.confluent:kafka-schema-registry-client:7.5.2'
+    implementation 'io.confluent:kafka-schema-registry-client:7.5.3'
     implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.9.1'
     implementation "org.apache.hadoop:hadoop-hdfs:$hadoopVersion"
     implementation "org.apache.hadoop:hadoop-common:$hadoopVersion"
@@ -108,11 +110,35 @@ dependencies {
     }
     implementation "org.apache.avro:avro"
 
-    implementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:$icebergVersion"
+    implementation "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:$icebergVersion"
 }
 
 assemble {
     dependsOn shadowJar
+}
+
+spotless {
+    def disallowWildcardImports = {
+        String text = it
+        def regex = ~/import .*\.\*;/
+        def m = regex.matcher(text)
+        if (m.find()) {
+            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
+        }
+    }
+    java {
+        target project.fileTree(project.rootDir) {
+            include 'build/classes/java/main/io/openlineage/flink/**/*.java'
+            exclude '**/io/openlineage/flink/avro/**/*.*'
+        }
+        googleJavaFormat()
+        removeUnusedImports()
+        custom 'disallowWildcardImports', disallowWildcardImports
+    }
+}
+
+spotlessJava {
+    dependsOn("compileJava", "compileTestJava", "generateAvroJava")
 }
 
 avro {

@@ -1,4 +1,4 @@
-# Copyright 2018-2023 contributors to the OpenLineage project
+# Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import abstractmethod
@@ -102,9 +102,7 @@ class SqlExtractor(BaseExtractor):
             connection_url=self.get_connection_uri(self.conn),
         )
 
-        database = getattr(self.operator, "database", None)
-        if not database:
-            database = self._get_database()
+        database = getattr(self.operator, "database", None) or self._get_database()
 
         # (3) Map input / output tables to dataset objects with source set
         # as the current connection. We need to also fetch the schema for the
@@ -155,7 +153,7 @@ class SqlExtractor(BaseExtractor):
         for ds in outputs:
             ds.output_facets = self._get_output_facets()
             if len(outputs) == 1:  # Should be always true
-                self.attach_column_facet(ds, sql_meta)
+                self.attach_column_facet(ds, database, sql_meta)
 
         db_specific_run_facets = self._get_db_specific_run_facets(source, inputs, outputs)
 
@@ -242,7 +240,7 @@ class SqlExtractor(BaseExtractor):
     def _normalize_name(name: str) -> str:
         return name.lower()
 
-    def attach_column_facet(self, dataset, sql_meta: SqlMeta):
+    def attach_column_facet(self, dataset: Dataset, database: Optional[str], sql_meta: SqlMeta) -> None:
         if not len(sql_meta.column_lineage):
             return
         dataset.custom_facets["columnLineage"] = ColumnLineageDatasetFacet(
@@ -251,7 +249,18 @@ class SqlExtractor(BaseExtractor):
                     inputFields=[
                         ColumnLineageDatasetFacetFieldsAdditionalInputFields(
                             namespace=dataset.source.name,
-                            name=column_meta.origin.qualified_name if column_meta.origin else "",
+                            name=".".join(
+                                filter(
+                                    None,
+                                    (
+                                        column_meta.origin.database or database,
+                                        column_meta.origin.schema or self.default_schema,
+                                        column_meta.origin.name,
+                                    ),
+                                )
+                            )
+                            if column_meta.origin
+                            else "",
                             field=column_meta.name,
                         )
                         for column_meta in column_lineage.lineage

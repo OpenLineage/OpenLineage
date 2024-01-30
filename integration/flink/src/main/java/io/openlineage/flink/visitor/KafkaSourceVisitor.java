@@ -1,13 +1,15 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.flink.visitor;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.utils.AvroSchemaUtils;
+import io.openlineage.flink.utils.KafkaUtils;
 import io.openlineage.flink.visitor.wrapper.KafkaSourceWrapper;
 import java.util.Collections;
 import java.util.List;
@@ -35,12 +37,13 @@ public class KafkaSourceVisitor extends Visitor<OpenLineage.InputDataset> {
       KafkaSourceWrapper wrapper = KafkaSourceWrapper.of((KafkaSource<?>) kafkaSource);
       List<String> topics = wrapper.getTopics();
       Properties properties = wrapper.getProps();
-      String bootstrapServers = properties.getProperty("bootstrap.servers");
 
       topics.forEach(topic -> log.debug("Kafka input topic: {}", topic));
       return topics.stream()
           .map(
               topic -> {
+                DatasetIdentifier di = KafkaUtils.datasetIdentifierOf(properties, topic);
+
                 OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
                     inputDataset().getDatasetFacetsBuilder();
                 // The issue here is that we assign dataset a schema that we're trying to read with.
@@ -51,7 +54,7 @@ public class KafkaSourceVisitor extends Visitor<OpenLineage.InputDataset> {
                         schema ->
                             datasetFacetsBuilder.schema(
                                 AvroSchemaUtils.convert(context.getOpenLineage(), schema)));
-                return inputDataset().getDataset(topic, bootstrapServers, datasetFacetsBuilder);
+                return inputDataset().getDataset(di, datasetFacetsBuilder);
               })
           .collect(Collectors.toList());
     } catch (IllegalAccessException e) {

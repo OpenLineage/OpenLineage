@@ -1,12 +1,11 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.spark.agent.lifecycle;
 
 import static io.openlineage.client.OpenLineageClientUtils.mergeFacets;
-import static io.openlineage.spark.agent.util.ScalaConversionUtils.fromSeq;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.toScalaFn;
 
 import io.openlineage.client.OpenLineage;
@@ -31,6 +30,7 @@ import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.RemovePathPatternUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -308,8 +308,9 @@ class OpenLineageRunEventBuilder {
     runEventBuilder
         .run(runBuilder.build())
         .job(jobBuilder.facets(jobFacets).build())
-        .inputs(inputDatasets)
-        .outputs(outputDatasets);
+        .inputs(RemovePathPatternUtils.removeInputsPathPattern(openLineageContext, inputDatasets))
+        .outputs(
+            RemovePathPatternUtils.removeOutputsPathPattern(openLineageContext, outputDatasets));
 
     HookUtils.preBuild(openLineageContext, runEventBuilder);
     return runEventBuilder.build();
@@ -340,7 +341,8 @@ class OpenLineageRunEventBuilder {
                     .getQueryExecution()
                     .map(
                         qe ->
-                            fromSeq(qe.optimizedPlan().map(inputVisitor)).stream()
+                            ScalaConversionUtils.fromSeq(qe.optimizedPlan().map(inputVisitor))
+                                .stream()
                                 .flatMap(Collection::stream)
                                 .map(((Class<InputDataset>) InputDataset.class)::cast))
                     .orElse(Stream.empty()))

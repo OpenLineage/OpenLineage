@@ -1,18 +1,96 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...HEAD)
+
 ### Added
-* **Flink: add option for flink job listener to read from flink conf** [`#2229`](https://github.com/OpenLineage/OpenLineage/pull/2229) [@ensctom](https://github.com/ensctom)  
-  *Add option for flink job listener to read jobname and namespace from flink conf*
-* **Introduce `JobTypeJobFacet` to contain additional job related information**[`#2241`](https://github.com/OpenLineage/OpenLineage/pull/2241) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *`JobTypeJobFacet` contains processing type like `BATCH|STREAMING`, integration like `SPARK|FLINK|...` and job type `QUERY|COMMAND|DAG|...`.*
-* **Dbt: Add a new command `dbt-ol send-events` to send metadata of the last run without running the job** [`#2885`](https://github.com/OpenLineage/OpenLineage/pull/2285) [@sophiely](https://github.com/sophiely)
+* **Flink: support multi topic Kafka Sink.** [`#2372`](https://github.com/OpenLineage/OpenLineage/pull/2372) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Support multi topic kafka sinks. Limitations: `recordSerializer` need to implement `KafkaTopicsDescriptor`. Please refer to [limitations](https://openlineage.io/docs/integrations/flink/#limitations) sections in documentation.*
+
+## [1.8.0](https://github.com/OpenLineage/OpenLineage/compare/1.7.0...1.8.0) - 2024-01-19
+
+* **Flink: support Flink 1.18** [`#2366`](https://github.com/OpenLineage/OpenLineage/pull/2366) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Adds support for the latest Flink version with 1.17 used for Iceberg Flink runtime and Cassandra Connector as these do not yet support 1.18.*
+* **Spark: add Gradle plugins to simplify the build process to support Scala 2.13** [`#2376`](https://github.com/OpenLineage/OpenLineage/pull/2376) [@d-m-h](https://github.com/d-m-h)  
+    *Defines a set of Gradle plugins to configure the modules and reduce duplication.
+* **Spark: support multiple Scala versions `LogicalPlan` implementation** [`#2361`](https://github.com/OpenLineage/OpenLineage/pull/2361) [@mattiabertorello](https://github.com/mattiabertorello)  
+    *In the LogicalPlanSerializerTest class, the implementation of the LogicalPlan interface is different between Scala 2.12 and Scala 2.13. In detail, the IndexedSeq changes package from the scala.collection to scala.collection.immutable. This implements both of the methods necessary in the two versions.*
+* **Spark: Use ScalaConversionUtils to convert Scala and Java collections** [`#2357`](https://github.com/OpenLineage/OpenLineage/pull/2357) [@mattiabertorello](https://github.com/mattiabertorello)  
+    *This initial step is to start supporting compilation for Scala 2.13 in the 3.2+ Spark versions. Scala 2.13 changed the default collection to immutable, the methods to create an empty collection, and the conversion between Java and Scala. This causes the code to not compile between 2.12 and 2.13. This replaces the usage of direct Scala collection methods (like creating an empty object) and conversions utils with `ScalaConversionUtils` methods that will support cross-compilation.*
+* **Spark: support `MERGE INTO` queries on Databricks** [`#2348`](https://github.com/OpenLineage/OpenLineage/pull/2348) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Supports custom plan nodes used when running `MERGE INTO` queries on Databricks runtime.*
+* **Spark: Support Glue catalog in iceberg** [`#2283`](https://github.com/OpenLineage/OpenLineage/pull/2283) [@nataliezeller1](https://github.com/nataliezeller1)  
+    *Adds support for the Glue catalog based on the 'catalog-impl' property (in this case we will not have a 'type' property).*
+
+### Changed
+
+* **Spark: Move Spark 3.1 code from the spark3 project** [`#2365`](https://github.com/OpenLineage/OpenLineage/pull/2365) [@mattiabertorello](https://github.com/mattiabertorello)  
+    *Moves the Spark 3.1-related code to a specific project, spark31, so the spark3 project can be compiled with any Spark 3.x version.*
+
+### Fixed
+* **Airflow: add database information to SnowflakeExtractor** [`#2364`](https://github.com/OpenLineage/OpenLineage/pull/2364) [@kacpermuda](https://github.com/kacpermuda)  
+    *Fixes missing database information in SnowflakeExtractor.*
+* **Airflow: add dag_id to task_run_id to avoid duplicates** [`#2358`](https://github.com/OpenLineage/OpenLineage/pull/2358) [@kacpermuda](https://github.com/kacpermuda)  
+    *The lack of dag_id in task_run_id can cause duplicates in run_id across different dags.*
+* **Airflow: Add tests for column lineage facet and sql parser** [`#2373`](https://github.com/OpenLineage/OpenLineage/pull/2373) [@kacpermuda](https://github.com/kacpermuda)  
+    *Improves naming (database.schema.table) in SQLExtractor's column lineage facet and adds some unit tests.*
+* **Spark: fix removePathPattern behaviour** [`#2350`](https://github.com/OpenLineage/OpenLineage/pull/2350) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *The removepath pattern feature is not applied all the time. The method is called when constructing DatasetIdentifier through PathUtils which is not the case all the time. This moves removePattern to another place in the codebase that is always run.*
+* **Spark: fix a type incompatibility in RddExecutionContext between Scala 2.12 and 2.13** [`#2360`](https://github.com/OpenLineage/OpenLineage/pull/2360) [@mattiabertorello](https://github.com/mattiabertorello)  
+    *The function from the ResultStage.func() object change type in Spark between Scala 2.12 and 2.13 makes the compilation fail. This avoids getting the function with an explicit type; instead, it gets it every time it is needed from the ResultStage object. This PR is part of the effort to support Scala 2.13 in the Spark integration.*
+* **Spark: Fix `removePathPattern` feature** [`#2350`](https://github.com/OpenLineage/OpenLineage/pull/2350) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+   *Refactors code to make sure that all datasets sent are processed through `removePathPattern` if configured to do so.*
+* **Spark: Clean up the individual build.gradle files in preparation for Scala 2.13 support** [`#2377`](https://github.com/OpenLineage/OpenLineage/pull/2377) [@d-m-h](https://github.com/d-m-h)  
+    *Cleans up the build.gradle files, consolidating the custom plugin and removing unused and unnecessary configuration.*
+* **Spark: refactor the Gradle plugins to make it easier to define Scala variants per module** [`#2383`](https://github.com/OpenLineage/OpenLineage/pull/2383) [@d-m-h](https://github.com/d-m-h)  
+    *The third of several PRs to support producing Scala 2.12 and Scala 2.13 variants of the OpenLineage Spark integration. This PR refactors the custom Gradle plugins in order to make supporting multiple variants per module easier. This is necessary because the shared module fails its tests when consuming the Scala 2.13 variants of Apache Spark.*
+
+## [1.7.0](https://github.com/OpenLineage/OpenLineage/compare/1.6.2...1.7.0) - 2023-12-21
+### Added
+* **Airflow: add parent run facet to `COMPLETE` and `FAIL` events in Airflow integration** [`#2320`](https://github.com/OpenLineage/OpenLineage/pull/2320) [@kacpermuda](https://github.com/kacpermuda)  
+    *Adds a parent run facet to all events in the Airflow integration.*
+
+### Fixed
+* **Airflow: repair up.sh for MacOS** [`#2316`](https://github.com/OpenLineage/OpenLineage/pull/2316) [`#2318`](https://github.com/OpenLineage/OpenLineage/pull/2318) [@kacpermuda](https://github.com/kacpermuda)  
+    *Some scripts were not working well on MacOS. This adjusts them.*
+* **Airflow: repair `run_id` for FAIL event in Airflow 2.6+** [`#2305`](https://github.com/OpenLineage/OpenLineage/pull/2305) [@kacpermuda](https://github.com/kacpermuda)  
+    *The `Run_id` in a `FAIL` event was different than in the `START` event for Airflow 2.6+.*
+* **Flink: open Iceberg `TableLoader` before loading a table** [`#2314`](https://github.com/OpenLineage/OpenLineage/pull/2314) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Fixes a potential `NullPointerException` in 1.17 when dealing with Iceberg sinks.*
+* **Flink: name Kafka datasets according to the naming convention** [`#2321`](https://github.com/OpenLineage/OpenLineage/pull/2321) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds a `kafka://` prefix to Kafka topic datasets' namespaces.*
+* **Flink: fix properties within `JobTypeJobFacet`** [`#2325`](https://github.com/OpenLineage/OpenLineage/pull/2325) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Fixes properties assignment in the Flink visitor.*
+* **Spark: fix `commons-logging` relocate in target jar** [`#2319`](https://github.com/OpenLineage/OpenLineage/pull/2319) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Avoids relocating a dependency that was getting excluded from the jar.*
+* **Spec: fix inconsistency with Redshift authority format** [`#2315`](https://github.com/OpenLineage/OpenLineage/pull/2315) [@davidjgoss](https://github.com/davidjgoss)  
+    *Amends the `Authority` format for consistency with other references in the same section.*
+
+### Removed
+* **Airflow: remove Airflow 2.8+ support** [`#2330`](https://github.com/OpenLineage/OpenLineage/pull/2330) [@kacpermuda](https://github.com/kacpermuda)  
+    *To encourage use of the Provider, this removes the listener from the plugin if the Airflow version is `<2.3.0` or `>=2.8.0`.*
+
+## [1.6.2](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...1.6.2) - 2023-12-07
+### Added
+* **Dagster: support Dagster 1.5.x** [`#2220`](https://github.com/OpenLineage/OpenLineage/pull/2220) [@tsungchih](https://github.com/tsungchih)  
+    *Gets event records for each target Dagster event type to support Dagster version 0.15.0+.*
+* **Dbt: add a new command `dbt-ol send-events` to send metadata of the last run without running the job** [`#2285`](https://github.com/OpenLineage/OpenLineage/pull/2285) [@sophiely](https://github.com/sophiely)  
+    *Adds a new command to send events to OpenLineage according to the latest metadata generated without running any dbt command.*
+* **Flink: add option for Flink job listener to read from Flink conf** [`#2229`](https://github.com/OpenLineage/OpenLineage/pull/2229) [@ensctom](https://github.com/ensctom)  
+    *Adds option for the Flink job listener to read jobnames and namespaces from Flink conf.*
+* **Spark: get column-level lineage from JDBC dbtable option** [`#2284`](https://github.com/OpenLineage/OpenLineage/pull/2284) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds support for dbtable, enables lineage in the case of single input columns, and improves dataset naming.*
+* **Spec: introduce `JobTypeJobFacet` to contain additional job related information**[`#2241`](https://github.com/OpenLineage/OpenLineage/pull/2241) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *New `JobTypeJobFacet` contains the processing type such as `BATCH|STREAMING`, integration via `SPARK|FLINK|...` and job type in `QUERY|COMMAND|DAG|...`.*
+* **SQL: add quote information from sqlparser-rs** [`#2259`](https://github.com/OpenLineage/OpenLineage/pull/2259) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds quote information from sqlparser-rs.*
 
 ### Fixed
 * **Spark: update Jackson dependency to resolve `CVE-2022-1471`** [`#2185`](https://github.com/OpenLineage/OpenLineage/pull/2185) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Update Gradle for Spark and Flink to 8.1.1. Upgrade Jackson `2.15.3`.*
-* **Flink: Avoid relying on Guava which can be missing during production runtime.** [`#2296`](https://github.com/OpenLineage/OpenLineage/pull/2296) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Remove usage of Guava ImmutableList.*
+    *Updates Gradle for Spark and Flink to 8.1.1. Upgrade Jackson `2.15.3`.*
+* **Flink: avoid relying on Guava which can be missing during production runtime** [`#2296`](https://github.com/OpenLineage/OpenLineage/pull/2296) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Removes usage of Guava ImmutableList.*
+* **Spark: exclude `commons-logging` transitive dependency from published jar** [`#2297`](https://github.com/OpenLineage/OpenLineage/pull/2297) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Ensures `commons-logging` is not shipped as this can lead to a version mismatch on the user's side.*
 
 ## [1.5.0](https://github.com/OpenLineage/OpenLineage/compare/1.4.1...1.5.0) - 2023-11-01
 ### Added

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2018-2023 contributors to the OpenLineage project
+# Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 #
 # -*- coding: utf-8 -*-
@@ -10,7 +10,7 @@ from setuptools import setup
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "1.6.0"
+__version__ = "1.9.0"
 
 requirements = [
     "tqdm>=4.62.0",

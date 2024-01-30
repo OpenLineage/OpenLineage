@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -45,19 +45,25 @@ public class FlinkStoppableApplication {
     ParameterTool parameters = ParameterTool.fromArgs(args);
     StreamExecutionEnvironment env = setupEnv(args);
 
-    env.fromSource(aKafkaSource(parameters.getRequired("input-topics").split(TOPIC_PARAM_SEPARATOR)), noWatermarks(), "kafka-source").uid("kafka-source")
-            .keyBy(InputEvent::getId)
-            .process(new StatefulCounter()).name("process").uid("process")
-            .sinkTo(aKafkaSink(parameters.getRequired("output-topic"))).name("kafka-sink").uid("kafka-sink");
+    env.fromSource(
+            aKafkaSource(parameters.getRequired("input-topics").split(TOPIC_PARAM_SEPARATOR)),
+            noWatermarks(),
+            "kafka-source")
+        .uid("kafka-source")
+        .keyBy(InputEvent::getId)
+        .process(new StatefulCounter())
+        .name("process")
+        .uid("process")
+        .sinkTo(aKafkaSink(parameters.getRequired("output-topics")))
+        .name("kafka-sink")
+        .uid("kafka-sink");
 
     env.registerJobListener(
-        OpenLineageFlinkJobListenerBuilder
-            .create()
+        OpenLineageFlinkJobListenerBuilder.create()
             .executionEnvironment(env)
             .jobName("flink-stoppable-job")
             .jobTrackingInterval(Duration.ofSeconds(1))
-            .build()
-    );
+            .build());
 
     JobClient jobClient = env.executeAsync("flink-stoppable-job");
 
@@ -74,27 +80,29 @@ public class FlinkStoppableApplication {
             jobClient.getJobID().toString());
     HttpGet request = new HttpGet(checkpointApiUrl);
 
-    Awaitility
-        .await()
+    Awaitility.await()
         .atMost(Duration.ofSeconds(30))
         .pollInterval(Duration.ofSeconds(1))
-        .until(() -> {
-            CloseableHttpResponse response = httpClient.execute(request);
-            String json = EntityUtils.toString(response.getEntity());
-            Checkpoints checkpoints = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .readValue(json, Checkpoints.class);
+        .until(
+            () -> {
+              CloseableHttpResponse response = httpClient.execute(request);
+              String json = EntityUtils.toString(response.getEntity());
+              Checkpoints checkpoints =
+                  new ObjectMapper()
+                      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                      .readValue(json, Checkpoints.class);
 
-            return checkpoints != null && checkpoints.getCounts() != null && checkpoints.getCounts().getCompleted() > 0;
-        });
+              return checkpoints != null
+                  && checkpoints.getCounts() != null
+                  && checkpoints.getCounts().getCompleted() > 0;
+            });
 
     // save the job gracefully
     LOGGER.info("Stopping gracefully");
-    jobClient.stopWithSavepoint(
-        false,
-        "/tmp/savepoint_" + UUID.randomUUID(),
-        SavepointFormatType.DEFAULT
-    ).get();
+    jobClient
+        .stopWithSavepoint(
+            false, "/tmp/savepoint_" + UUID.randomUUID(), SavepointFormatType.DEFAULT)
+        .get();
 
     // wait until job is finished
     Awaitility.await().until(() -> jobClient.getJobStatus().get().equals(JobStatus.FINISHED));
@@ -108,15 +116,14 @@ public class FlinkStoppableApplication {
     LOGGER.info("calling onJobExecuted on listeners");
     jobListeners.forEach(
         jobListener -> {
-            try {
-                jobListener.onJobExecuted(jobClient.getJobExecutionResult().get(), null);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            } catch (ExecutionException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    );
+          try {
+            jobListener.onJobExecuted(jobClient.getJobExecutionResult().get(), null);
+          } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+          } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+          }
+        });
 
     // wait another few secs to still check if tracker thread stopped emitting running events
     // checkpointing thread is triggered to run each second

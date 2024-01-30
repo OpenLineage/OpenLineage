@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -37,8 +37,6 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import scala.collection.Seq;
-import scala.collection.Seq$;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
 
@@ -60,7 +58,7 @@ public class CreateReplaceVisitorDatasetBuilderTest {
   Identifier tableName = Identifier.of(new String[] {"db"}, TABLE);
 
   ResolvedDBObjectName namePlan =
-      new ResolvedDBObjectName(catalog, (Seq<String>) Seq$.MODULE$.empty());
+      new ResolvedDBObjectName(catalog, ScalaConversionUtils.asScalaSeqEmpty());
   TableSpec tableSpec = mock(TableSpec.class);
 
   @BeforeEach

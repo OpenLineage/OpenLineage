@@ -1,12 +1,16 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
@@ -38,5 +42,14 @@ public abstract class AbstractQueryPlanOutputDatasetBuilder<P extends LogicalPla
   @Override
   public List<OpenLineage.OutputDataset> apply(P logicalPlan) {
     throw new UnsupportedOperationException("Unimplemented");
+  }
+
+  public List<OpenLineage.OutputDataset> delegate(LogicalPlan node, SparkListenerEvent event) {
+    return delegate(
+            context.getOutputDatasetQueryPlanVisitors(), context.getOutputDatasetBuilders(), event)
+        .applyOrElse(
+            node, ScalaConversionUtils.toScalaFn((lp) -> Collections.<OutputDataset>emptyList()))
+        .stream()
+        .collect(Collectors.toList());
   }
 }

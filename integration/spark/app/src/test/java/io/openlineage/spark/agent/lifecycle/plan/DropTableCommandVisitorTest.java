@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -10,6 +10,7 @@ import static org.junit.Assert.assertEquals;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.List;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -22,7 +23,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import scala.collection.Map$;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
@@ -71,7 +71,9 @@ class DropTableCommandVisitorTest {
             new StructField[] {
               new StructField("field1", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
             });
-    session.catalog().createTable("drop_table", "csv", schema, Map$.MODULE$.empty());
+    session
+        .catalog()
+        .createTable("drop_table", "csv", schema, ScalaConversionUtils.asScalaMapEmpty());
 
     // apply the visitor before running the command
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);

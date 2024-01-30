@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static scala.util.Properties.versionNumberString;
 
 import io.openlineage.spark.agent.facets.DebugRunFacet.ClasspathDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanDebugFacet;
@@ -107,8 +108,7 @@ public class DebugRunFacetBuilderDelegateTest {
   void testBuildClasspathDebugFacet() {
     when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
     when(sparkContext.listJars())
-        .thenReturn(
-            Collections.singletonList("oneJar").stream().collect(ScalaConversionUtils.toSeq()));
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList("oneJar")));
     when(openLineageContext.getSparkVersion()).thenReturn("3.3.0");
 
     ClasspathDebugFacet facet = delegate.buildFacet().getClasspath();
@@ -116,7 +116,7 @@ public class DebugRunFacetBuilderDelegateTest {
     assertThat(facet.getJars()).containsExactly("oneJar");
     assertThat(facet)
         .hasFieldOrPropertyWithValue("sparkVersion", "3.3.0")
-        .hasFieldOrPropertyWithValue("scalaVersion", "2.11.12");
+        .hasFieldOrPropertyWithValue("scalaVersion", versionNumberString());
   }
 
   @Test
@@ -134,9 +134,8 @@ public class DebugRunFacetBuilderDelegateTest {
 
     when(queryExecution.optimizedPlan()).thenReturn(root);
     when(root.children())
-        .thenReturn(Collections.singletonList(node).stream().collect(ScalaConversionUtils.toSeq()));
-    when(node.children())
-        .thenReturn(Arrays.asList(leaf1, leaf2).stream().collect(ScalaConversionUtils.toSeq()));
+        .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(node)));
+    when(node.children()).thenReturn(ScalaConversionUtils.fromList(Arrays.asList(leaf1, leaf2)));
 
     LogicalPlanDebugFacet facet = delegate.buildFacet().getLogicalPlan();
 

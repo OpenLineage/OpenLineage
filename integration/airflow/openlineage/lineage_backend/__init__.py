@@ -1,4 +1,4 @@
-# Copyright 2018-2023 contributors to the OpenLineage project
+# Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 import os
@@ -53,7 +53,7 @@ class Backend:
         )
 
         task_uuid = OpenLineageAdapter.build_task_instance_run_id(
-            operator.task_id, task_instance.execution_date, task_instance.try_number
+            dag.dag_id, operator.task_id, task_instance.execution_date, task_instance.try_number
         )
         start, end = get_dagrun_start_end(dagrun, dag)
 
@@ -79,6 +79,8 @@ class Backend:
         self.adapter.complete_task(
             run_id=run_id,
             job_name=job_name,
+            parent_job_name=dag.dag_id,
+            parent_run_id=dag_run_id,
             end_time=DagUtils.to_iso_8601(self._now_ms()),
             task=task_metadata,
         )

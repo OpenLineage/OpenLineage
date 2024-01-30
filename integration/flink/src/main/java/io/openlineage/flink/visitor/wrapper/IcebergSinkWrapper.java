@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -31,8 +31,12 @@ public class IcebergSinkWrapper {
           Class.forName("org.apache.iceberg.flink.sink.IcebergFilesCommitter");
       return WrapperUtils.<TableLoader>getFieldValue(
               icebergFilesCommiterClass, icebergFilesCommitter, "tableLoader")
-          .map(TableLoader::loadTable);
-    } catch (ClassNotFoundException e) {
+          .map(
+              loader -> {
+                loader.open();
+                return loader.loadTable();
+              });
+    } catch (ClassNotFoundException | NullPointerException e) {
       log.warn("Failed extracting table from IcebergFilesCommitter", e);
     }
 

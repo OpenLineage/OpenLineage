@@ -54,15 +54,20 @@ A configurable backend allows the user to choose what protocol to send the event
 ## Spec
 The [specification](spec/OpenLineage.md) is defined using OpenAPI and allows extension through custom facets.
 
-## Integrations
+## Integration matrix
 
 The OpenLineage repository contains integrations with several systems.
 
-- [Apache Spark](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)
-- [Apache Airflow](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow)
-- [Dagster](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dagster)
-- [dbt](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dbt)
-- [Flink](https://github.com/OpenLineage/OpenLineage/tree/main/integration/flink)
+| Name| Table-level lineage| Column-level lineage |
+| ----| ------------------ | -------------------- |
+|[Apache Spark](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)| :white_check_mark: | :white_check_mark:<sup>1</sup> |
+|[Apache Airflow](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow)| :white_check_mark: | :white_check_mark:<sup>2</sup> |
+|[Dagster](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dagster)| :white_check_mark: | :x: |
+|[dbt](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dbt) |:white_check_mark: | :x: |
+|[Flink](https://github.com/OpenLineage/OpenLineage/tree/main/integration/flink)|:white_check_mark: | :x: |
+
+1. Does not support `SELECT *` queries with JDBC.
+2. Supports SQL-based operators other than BigQuery.
 
 ## Related projects
 - [Marquez](https://marquezproject.ai/): Marquez is an [LF AI & DATA](https://lfaidata.foundation/) project to collect, aggregate, and visualize a data ecosystem's metadata. It is the reference implementation of the OpenLineage API.

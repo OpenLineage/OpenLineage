@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -24,6 +24,8 @@ import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationOutputData
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.InMemoryRelationInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandEdgeInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandEdgeOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuilder;
@@ -32,6 +34,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuild
 import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoDelta11ColumnLineageVisitor;
 import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoIceberg013ColumnLineageVisitor;
+import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoCommandEdgeColumnLineageBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoDelta24ColumnLineageVisitor;
 import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoIceberg13ColumnLineageVisitor;
 import java.lang.reflect.Method;
@@ -55,6 +58,7 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new CommandPlanVisitor(context))
             .add(new DataSourceV2ScanRelationInputDatasetBuilder(context, datasetFactory))
             .add(new SubqueryAliasInputDatasetBuilder(context))
+            .add(new MergeIntoCommandEdgeInputDatasetBuilder(context))
             .add(new DataSourceV2RelationInputDatasetBuilder(context, datasetFactory));
 
     if (DeltaUtils.hasMergeIntoCommandClass()) {
@@ -77,6 +81,7 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new TableContentChangeDatasetBuilder(context))
             .add(new SubqueryAliasOutputDatasetBuilder(context))
             .add(getCreateReplaceDatasetBuilder(context))
+            .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context))
             .add(new AlterTableCommandDatasetBuilder(context));
 
     if (DeltaUtils.hasMergeIntoCommandClass()) {
@@ -113,6 +118,10 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
 
     if (MergeIntoDelta24ColumnLineageVisitor.hasClasses()) {
       builder.add(new MergeIntoDelta24ColumnLineageVisitor(context));
+    }
+
+    if (MergeIntoCommandEdgeColumnLineageBuilder.hasClasses()) {
+      builder.add(new MergeIntoCommandEdgeColumnLineageBuilder(context));
     }
 
     if (MergeIntoDelta11ColumnLineageVisitor.hasClasses()) {

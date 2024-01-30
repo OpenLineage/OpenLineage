@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 package io.openlineage.spark34.agent.lifecycle.plan.column;
@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,9 +37,6 @@ import org.apache.spark.sql.connector.expressions.Transform;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.Option;
-import scala.collection.JavaConversions;
-import scala.collection.Seq;
-import scala.collection.Seq$;
 
 public class CreateReplaceInputDatasetBuilderTest {
   OpenLineageContext openLineageContext =
@@ -57,7 +55,7 @@ public class CreateReplaceInputDatasetBuilderTest {
           catalog,
           mock(Identifier.class),
           mock(Table.class),
-          (Seq<Attribute>) Seq$.MODULE$.empty());
+          ScalaConversionUtils.<Attribute>asScalaSeqEmpty());
 
   TableSpec tableSpec = mock(TableSpec.class);
 
@@ -77,9 +75,7 @@ public class CreateReplaceInputDatasetBuilderTest {
   void testIsDefinedWhenNodeHasChildren() {
     CreateTableAsSelect node = mock(CreateTableAsSelect.class);
     when(node.children())
-        .thenReturn(
-            JavaConversions.asScalaIterator(Arrays.asList(mock(LogicalPlan.class)).iterator())
-                .toSeq());
+        .thenReturn(ScalaConversionUtils.fromList(Arrays.asList(mock(LogicalPlan.class))).toSeq());
 
     assertFalse(builder.isDefinedAtLogicalPlan(node));
   }
@@ -91,16 +87,16 @@ public class CreateReplaceInputDatasetBuilderTest {
     CreateTableAsSelect node =
         new CreateTableAsSelect(
             namePlan,
-            (Seq<Transform>) Seq$.MODULE$.empty(),
+            ScalaConversionUtils.<Transform>asScalaSeqEmpty(),
             query,
             tableSpec,
             null,
             false,
-            Option.empty());
+            Option.<LogicalPlan>empty());
     when(query.collect(any()))
         .thenReturn(
-            JavaConversions.asScalaIterator(
-                    Arrays.asList((Object) Collections.singletonList(inputDataset)).iterator())
+            ScalaConversionUtils.fromList(
+                    Arrays.asList((Object) Collections.singletonList(inputDataset)))
                 .toSeq());
 
     assertThat(builder.apply(mock(SparkListenerEvent.class), node)).containsExactly(inputDataset);
