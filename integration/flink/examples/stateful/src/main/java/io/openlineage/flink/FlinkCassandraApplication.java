@@ -35,13 +35,12 @@ public class FlinkCassandraApplication {
         new CassandraPojoInputFormat<>(
             query, createClusterBuilder(), Event.class, () -> new Mapper.Option[] {});
 
-    CassandraSink sink =
-        CassandraSink.addSink(
-                env.createInput(eventInputFormat, TypeInformation.of(Event.class))
-                    .uid("cassandra-source"))
-            .setClusterBuilder(createClusterBuilder())
-            .setMapperOptions(() -> new Mapper.Option[] {Mapper.Option.saveNullFields(true)})
-            .build();
+    CassandraSink.addSink(
+            env.createInput(eventInputFormat, TypeInformation.of(Event.class))
+                .uid("cassandra-source"))
+        .setClusterBuilder(createClusterBuilder())
+        .setMapperOptions(() -> new Mapper.Option[] {Mapper.Option.saveNullFields(true)})
+        .build();
 
     env.registerJobListener(
         OpenLineageFlinkJobListenerBuilder.create()
