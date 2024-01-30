@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.client.transports.HttpConfig;
 import java.net.URI;
-import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
@@ -45,11 +44,10 @@ public class FlinkConfigParserTest {
     configuration.set(authTypeOption, "api_key");
     configuration.set(testHeaderOption, "some-header");
 
-    Optional<OpenLineageYaml> openLineageYaml = FlinkConfigParser.parse(configuration);
-    assertTrue(openLineageYaml.isPresent());
+    OpenLineageYaml openLineageYaml = FlinkConfigParser.parse(configuration);
 
-    assertTrue(openLineageYaml.get().getTransportConfig() instanceof HttpConfig);
-    HttpConfig transportConfig = (HttpConfig) openLineageYaml.get().getTransportConfig();
+    assertTrue(openLineageYaml.getTransportConfig() instanceof HttpConfig);
+    HttpConfig transportConfig = (HttpConfig) openLineageYaml.getTransportConfig();
 
     assertEquals(new URI("http://some-url"), transportConfig.getUrl());
     assertThat(transportConfig.getAuth().getToken()).contains("some-api-key");
@@ -61,9 +59,8 @@ public class FlinkConfigParserTest {
     configuration.set(transportTypeOption, "console");
     configuration.set(disabledFacetsOption, "[facet1;facet2]");
 
-    Optional<OpenLineageYaml> openLineageYaml = FlinkConfigParser.parse(configuration);
-    assertTrue(openLineageYaml.isPresent());
+    OpenLineageYaml openLineageYaml = FlinkConfigParser.parse(configuration);
 
-    assertThat(openLineageYaml.get().getFacetsConfig().getDisabledFacets()[0]).isEqualTo("facet1");
+    assertThat(openLineageYaml.getFacetsConfig().getDisabledFacets()[0]).isEqualTo("facet1");
   }
 }

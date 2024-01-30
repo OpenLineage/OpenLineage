@@ -9,6 +9,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.circuitBreaker.SimpleJvmCircuitBreaker;
+import io.openlineage.client.circuitBreaker.SimpleJvmCircuitBreakerConfig;
 import io.openlineage.client.transports.HttpTransport;
 import io.openlineage.client.transports.NoopTransport;
 import java.net.URISyntaxException;
@@ -59,6 +61,18 @@ class ConfigTest {
     OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(configPath));
 
     assertThat(client.disabledFacets).contains("facet1", "facet2");
+  }
+
+  @Test
+  void testCircuitBreakerConfigFromYaml() throws URISyntaxException {
+    Path configPath =
+        Paths.get(
+            this.getClass().getClassLoader().getResource("config/circuitBreaker.yaml").toURI());
+    OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(configPath));
+
+    assertThat(client.circuitBreaker.get())
+        .isInstanceOf(SimpleJvmCircuitBreaker.class)
+        .hasFieldOrPropertyWithValue("config", new SimpleJvmCircuitBreakerConfig(20));
   }
 
   static class TestConfigPathProvider implements ConfigPathProvider {

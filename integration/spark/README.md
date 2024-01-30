@@ -107,6 +107,7 @@ Parameters configuring the Spark integration
 | spark.openlineage.jobName.appendDatasetName           | Decides whether output dataset name should be appended to job name. By default `true`.                                                                                             | false                               |
 | spark.openlineage.jobName.replaceDotWithUnderscore    | Replaces dots in job name with underscore. Can be used to mimic legacy behaviour on Databricks platform. By default `false`.                                                       | false                               |
 | spark.openlineage.debugFacet                          | Determines whether debug facet shall be generated and included within the event. Set `enabled` to turn it on. By default, facet is disabled.                                       | enabled                             |
+| spark.openlineage.circuitBreaker.*                    | Please refer to [client java](https://github.com/OpenLineage/OpenLineage/blob/main/client/java/README.md) **Circuit Breakers** section for more details.                           |                              |
 
 ### HTTP
 

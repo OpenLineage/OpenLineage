@@ -149,11 +149,9 @@ public class OpenLineageFlinkJobListener implements JobListener {
   @Override
   public void onJobSubmitted(@Nullable JobClient jobClient, @Nullable Throwable throwable) {
     log.info("onJobSubmitted event triggered for {}.{}", jobNamespace, jobName);
-
     if (jobClient == null) {
       return;
     }
-
     try {
       start(jobClient);
     } catch (Exception | NoClassDefFoundError | NoSuchFieldError e) {

@@ -11,6 +11,7 @@ import io.openlineage.client.OpenLineage.JobFacetsBuilder;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunEventBuilder;
+import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.flink.SinkLineage;
 import io.openlineage.flink.TransformationUtils;
 import io.openlineage.flink.api.OpenLineageContext;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -48,12 +50,17 @@ public class FlinkExecutionContext implements ExecutionContext {
   private final String jobName;
   private final String jobNamespace;
   private final String processingType;
+  private final Optional<CircuitBreaker> circuitBreaker;
 
   @Getter private final List<Transformation<?>> transformations;
 
   @Override
   public void onJobSubmitted() {
     log.debug("JobClient - jobId: {}", jobId);
+    if (isCircuitBreakerClosed()) {
+      log.warn("CircuitBreaker has stopped emitting OpenLineage event.");
+      return;
+    }
     RunEvent runEvent =
         buildEventForEventType(EventType.START)
             .run(new OpenLineage.RunBuilder().runId(runId).build())
@@ -65,6 +72,10 @@ public class FlinkExecutionContext implements ExecutionContext {
   @Override
   public void onJobCheckpoint(CheckpointFacet facet) {
     log.debug("JobClient - jobId: {}", jobId);
+    if (isCircuitBreakerClosed()) {
+      log.warn("CircuitBreaker has stopped emitting OpenLineage event.");
+      return;
+    }
     RunEvent runEvent =
         buildEventForEventType(EventType.RUNNING)
             .run(
@@ -98,6 +109,10 @@ public class FlinkExecutionContext implements ExecutionContext {
 
   @Override
   public void onJobCompleted(JobExecutionResult jobExecutionResult) {
+    if (isCircuitBreakerClosed()) {
+      log.warn("CircuitBreaker has stopped emitting OpenLineage event.");
+      return;
+    }
     OpenLineage openLineage = openLineageContext.getOpenLineage();
     eventEmitter.emit(
         commonEventBuilder()
@@ -108,6 +123,10 @@ public class FlinkExecutionContext implements ExecutionContext {
 
   @Override
   public void onJobFailed(Throwable failed) {
+    if (isCircuitBreakerClosed()) {
+      log.warn("CircuitBreaker has stopped emitting OpenLineage event.");
+      return;
+    }
     OpenLineage openLineage = openLineageContext.getOpenLineage();
     eventEmitter.emit(
         commonEventBuilder()
@@ -178,5 +197,9 @@ public class FlinkExecutionContext implements ExecutionContext {
         .map(outputVisitor -> outputVisitor.apply(sink))
         .flatMap(List::stream)
         .collect(Collectors.toList());
+  }
+
+  private boolean isCircuitBreakerClosed() {
+    return circuitBreaker.map(CircuitBreaker::isClosed).orElse(false);
   }
 }

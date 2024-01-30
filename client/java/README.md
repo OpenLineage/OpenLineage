@@ -189,6 +189,20 @@ facets:
     - spark_logicalPlan
 ```
 
+## Circuit Breakers 
+
+To prevent from over-instrumentation OpenLineage integration provides a circuit breaker mechanism
+that stops OpenLineage from creating, serializing and sending OpenLineage events. 
+
+### Simple Circuit Breaker
+
+Circuit breaker gets closed when percentage of free memory drops below `memoryThreshold` provided.
+```yaml
+circuitBreaker:
+  type: simple
+  memoryThreshold: 20
+```
+
 ## Error Handling
 
 ```java

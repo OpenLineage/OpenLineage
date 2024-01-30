@@ -1,0 +1,5 @@
+transport:
+  type: console
+circuitBreaker:
+  type: simple
+  memoryThreshold: 20

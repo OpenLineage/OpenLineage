@@ -5,9 +5,11 @@
 
 package io.openlineage.spark.agent;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.openlineage.client.OpenLineageYaml;
+import io.openlineage.client.circuitBreaker.TestCircuitBreakerConfig;
 import io.openlineage.client.transports.ApiKeyTokenProvider;
 import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.client.transports.HttpConfig;
@@ -139,5 +141,18 @@ class ArgumentParserTest {
     assertEquals("test", transportConfig.getRoleArn());
     assertEquals("test1", transportConfig.getProperties().get("test1"));
     assertEquals("test2", transportConfig.getProperties().get("test2"));
+  }
+
+  @Test
+  void testCircuitBreakerConfig() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.circuitBreaker.type", "test")
+            .set("spark.openlineage.circuitBreaker.closed", "true");
+
+    OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
+    assertThat(openLineageYaml.getCircuitBreaker()).isInstanceOf(TestCircuitBreakerConfig.class);
+    assertThat(((TestCircuitBreakerConfig) openLineageYaml.getCircuitBreaker()).isClosed())
+        .isTrue();
   }
 }

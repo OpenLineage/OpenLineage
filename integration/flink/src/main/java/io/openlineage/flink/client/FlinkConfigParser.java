@@ -32,16 +32,12 @@ public class FlinkConfigParser {
       new HashSet<>(
           Arrays.asList("transport.properties.", "transport.urlParams.", "transport.headers."));
 
-  public static Optional<OpenLineageYaml> parse(Configuration configuration) {
+  public static OpenLineageYaml parse(Configuration configuration) {
     // configuration
     List<String> configKeys =
         configuration.keySet().stream()
             .filter(key -> key.startsWith("openlineage."))
             .collect(Collectors.toList());
-
-    if (configKeys.isEmpty()) {
-      return Optional.empty();
-    }
 
     ObjectMapper objectMapper = new ObjectMapper();
     ObjectNode objectNode = objectMapper.createObjectNode();
@@ -72,9 +68,8 @@ public class FlinkConfigParser {
       }
     }
     try {
-      return Optional.of(
-          OpenLineageClientUtils.loadOpenLineageYaml(
-              new ByteArrayInputStream(objectMapper.writeValueAsBytes(objectNode))));
+      return OpenLineageClientUtils.loadOpenLineageYaml(
+          new ByteArrayInputStream(objectMapper.writeValueAsBytes(objectNode)));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

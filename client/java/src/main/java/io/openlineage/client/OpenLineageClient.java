@@ -5,8 +5,10 @@
 
 package io.openlineage.client;
 
+import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.client.transports.ConsoleTransport;
 import io.openlineage.client.transports.Transport;
+import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -14,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public final class OpenLineageClient {
   final Transport transport;
+  final Optional<CircuitBreaker> circuitBreaker;
   final String[] disabledFacets;
 
   /** Creates a new {@code OpenLineageClient} object. */
@@ -26,8 +29,14 @@ public final class OpenLineageClient {
   }
 
   public OpenLineageClient(@NonNull final Transport transport, String[] disabledFacets) {
+    this(transport, disabledFacets, null);
+  }
+
+  public OpenLineageClient(
+      @NonNull final Transport transport, String[] disabledFacets, CircuitBreaker circuitBreaker) {
     this.transport = transport;
     this.disabledFacets = disabledFacets;
+    this.circuitBreaker = Optional.ofNullable(circuitBreaker);
 
     OpenLineageClientUtils.configureObjectMapper(disabledFacets);
   }
@@ -42,6 +51,10 @@ public final class OpenLineageClient {
     if (log.isDebugEnabled()) {
       log.debug(
           "OpenLineageClient will emit lineage event: {}", OpenLineageClientUtils.toJson(runEvent));
+    }
+    if (circuitBreaker.isPresent() && circuitBreaker.get().isClosed()) {
+      log.warn("OpenLineageClient disabled with circuit breaker");
+      return;
     }
     transport.emit(runEvent);
   }
@@ -58,6 +71,10 @@ public final class OpenLineageClient {
           "OpenLineageClient will emit lineage event: {}",
           OpenLineageClientUtils.toJson(datasetEvent));
     }
+    if (circuitBreaker.isPresent() && circuitBreaker.get().isClosed()) {
+      log.warn("OpenLineageClient disabled with circuit breaker");
+      return;
+    }
     transport.emit(OpenLineageClientUtils.toJson(datasetEvent));
   }
 
@@ -71,6 +88,10 @@ public final class OpenLineageClient {
     if (log.isDebugEnabled()) {
       log.debug(
           "OpenLineageClient will emit lineage event: {}", OpenLineageClientUtils.toJson(jobEvent));
+    }
+    if (circuitBreaker.isPresent() && circuitBreaker.get().isClosed()) {
+      log.warn("OpenLineageClient disabled with circuit breaker");
+      return;
     }
     transport.emit(OpenLineageClientUtils.toJson(jobEvent));
   }
@@ -98,6 +119,7 @@ public final class OpenLineageClient {
     private static final Transport DEFAULT_TRANSPORT = new ConsoleTransport();
     private Transport transport;
     private String[] disabledFacets;
+    private CircuitBreaker circuitBreaker;
 
     private Builder() {
       this.transport = DEFAULT_TRANSPORT;
@@ -106,6 +128,11 @@ public final class OpenLineageClient {
 
     public Builder transport(@NonNull Transport transport) {
       this.transport = transport;
+      return this;
+    }
+
+    public Builder circuitBreaker(@NonNull CircuitBreaker circuitBreaker) {
+      this.circuitBreaker = circuitBreaker;
       return this;
     }
 
@@ -119,7 +146,7 @@ public final class OpenLineageClient {
      * OpenLineageClient.Builder}.
      */
     public OpenLineageClient build() {
-      return new OpenLineageClient(transport, disabledFacets);
+      return new OpenLineageClient(transport, disabledFacets, circuitBreaker);
     }
   }
 }

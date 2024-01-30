@@ -11,6 +11,8 @@ import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
 import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.circuitBreaker.CircuitBreaker;
+import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -63,6 +65,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       ScalaConversionUtils.toScalaFn(SparkSession::sparkContext);
   private final Function0<Option<SparkContext>> activeSparkContext =
       ScalaConversionUtils.toScalaFn(SparkContext$.MODULE$::getActive);
+  private static Optional<CircuitBreaker> circuitBreaker = Optional.empty();
 
   String sparkVersion = package$.MODULE$.SPARK_VERSION();
 
@@ -80,6 +83,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       return;
     }
     initializeContextFactoryIfNotInitialized();
+    if (isCircuitBreakerClosed()) {
+      log.warn("CircuitBreaker has stopped emitting OpenLineage event.");
+      return;
+    }
     if (event instanceof SparkListenerSQLExecutionStart) {
       sparkSQLExecStart((SparkListenerSQLExecutionStart) event);
     } else if (event instanceof SparkListenerSQLExecutionEnd) {
@@ -110,6 +117,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       return;
     }
     initializeContextFactoryIfNotInitialized();
+    if (isCircuitBreakerClosed()) {
+      log.warn("CircuitBreaker has stopped emitting OpenLineage event.");
+      return;
+    }
     Optional<ActiveJob> activeJob =
         asJavaOptional(
                 SparkSession.getDefaultSession()
@@ -164,6 +175,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (isDisabled) {
       return;
     }
+    if (isCircuitBreakerClosed()) {
+      log.warn("CircuitBreaker has stopped emitting OpenLineage event.");
+      return;
+    }
     ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
     if (context != null) {
       context.end(jobEnd);
@@ -176,6 +191,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   @Override
   public void onTaskEnd(SparkListenerTaskEnd taskEnd) {
     if (isDisabled || sparkVersion.startsWith("2")) {
+      return;
+    }
+    if (isCircuitBreakerClosed()) {
+      log.warn("CircuitBreaker has stopped emitting OpenLineage event.");
       return;
     }
     jobMetrics.addMetrics(taskEnd.stageId(), taskEnd.taskMetrics());
@@ -226,6 +245,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onApplicationEnd(SparkListenerApplicationEnd applicationEnd) {
+    if (isCircuitBreakerClosed()) {
+      log.warn("CircuitBreaker has stopped emitting OpenLineage event.");
+      return;
+    }
     emitApplicationEndEvent(applicationEnd.time());
     close();
     super.onApplicationEnd(applicationEnd);
@@ -244,6 +267,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   @Override
   public void onApplicationStart(SparkListenerApplicationStart applicationStart) {
     initializeContextFactoryIfNotInitialized(applicationStart.appName());
+    if (isCircuitBreakerClosed()) {
+      return;
+    }
     emitApplicationStartEvent(applicationStart.time());
   }
 
@@ -276,6 +302,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     try {
       ArgumentParser args = ArgumentParser.parse(sparkConf);
       contextFactory = new ContextFactory(new EventEmitter(args, appName));
+      circuitBreaker =
+          Optional.ofNullable(args.getOpenLineageYaml().getCircuitBreaker())
+              .map(config -> new CircuitBreakerFactory(config).build());
     } catch (URISyntaxException e) {
       log.error("Unable to parse open lineage endpoint. Lineage events will not be collected", e);
     }
@@ -327,6 +356,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   private void emitApplicationEndEvent(Long time) {
     emitApplicationEvent(time, OpenLineage.RunEvent.EventType.COMPLETE);
+  }
+
+  private boolean isCircuitBreakerClosed() {
+    return circuitBreaker.map(CircuitBreaker::isClosed).orElse(false);
   }
 
   private static boolean checkIfDisabled() {

@@ -344,6 +344,47 @@ class ContainerTest {
 
   @Test
   @SneakyThrows
+  void testCircuitBreaker() {
+    String inputTopics = "io.openlineage.flink.kafka.input1,io.openlineage.flink.kafka.input2";
+    GenericContainer<?> jobManager =
+        genericContainer(network, FLINK_IMAGE, "jobmanager")
+            .withExposedPorts(8081)
+            .withFileSystemBind(getOpenLineageJarPath(), "/opt/flink/lib/openlineage.jar")
+            .withFileSystemBind(getExampleAppJarPath(), "/opt/flink/lib/example-app.jar")
+            .withCommand(
+                "standalone-job "
+                    + String.format(
+                        "--job-classname %s ", "io.openlineage.flink.FlinkStatefulApplication")
+                    + "--input-topics "
+                    + inputTopics
+                    + " --output-topics io.openlineage.flink.kafka.output --job-name flink_conf_job")
+            .withEnv(
+                "FLINK_PROPERTIES",
+                "jobmanager.rpc.address: jobmanager\n"
+                    + "execution.attached: true\n"
+                    + "openlineage.transport.url: http://openlineageclient:1080\n"
+                    + "openlineage.transport.type: http\n"
+                    + "openlineage.circuitBreaker.type: test\n"
+                    + "openlineage.circuitBreaker.closed: true\n")
+            .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
+            .dependsOn(Arrays.asList(generateEvents, openLineageClientMockContainer));
+
+    taskManager =
+        FlinkContainerUtils.makeFlinkTaskManagerContainer(network, Arrays.asList(jobManager));
+    taskManager.start();
+
+    await()
+        .atMost(Duration.ofMinutes(5))
+        .pollDelay(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofSeconds(1))
+        .until(() -> FlinkContainerUtils.verifyJobManagerReachedCheckpointOrFinished(jobManager));
+
+    assertThat(mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+        .isEmpty();
+  }
+
+  @Test
+  @SneakyThrows
   void testJobTrackerStopsAfterJobIsExecuted() {
     runUntilNotRunning("io.openlineage.flink.FlinkStoppableApplication");
 
