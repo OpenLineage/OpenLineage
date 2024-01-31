@@ -4,12 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import csv
+import logging
 import sys
 import textwrap
 from datetime import datetime
-import pytz
 
 import pendulum
+import pytz
 import rich_click as click
 from dateutil.relativedelta import relativedelta
 from github import Github
@@ -34,7 +35,8 @@ option_github_token = click.option(
     envvar="GITHUB_TOKEN",
 )
 
-utc=pytz.UTC
+utc = pytz.UTC
+
 
 class ContributorStats:
     def __init__(self, repo: Repository, org: Organization, team: Team, sort: str):
@@ -144,7 +146,8 @@ class ContributorStats:
                 try:
                     commit = self.repo.get_commit(sha=pull.merge_commit_sha)
                     self.logins[pull.user.login]["total"] += commit.stats.total
-                except Exception:
+                except AssertionError:
+                    logging.exception("Skipping null commit")
                     continue
 
     def add_pulls(self):
