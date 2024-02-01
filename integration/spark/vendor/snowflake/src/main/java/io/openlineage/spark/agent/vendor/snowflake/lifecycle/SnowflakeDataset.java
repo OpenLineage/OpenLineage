@@ -6,8 +6,16 @@
 package io.openlineage.spark.agent.vendor.snowflake.lifecycle;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.util.JdbcUtils;
 import io.openlineage.spark.api.DatasetFactory;
+
+import java.util.Collections;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
+import io.openlineage.sql.OpenLineageSql;
+import io.openlineage.sql.SqlMeta;
 import org.apache.spark.sql.types.StructType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +44,10 @@ public class SnowflakeDataset {
     if (dbtable.isPresent()) {
       tableName = dbtable.get();
     } else {
+      // TODO Implement same logic as the `io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler`
+      //      to extract the table name from the query string
+      //      Optional<SqlMeta> sqlMeta = OpenLineageSql.parse(Collections.singletonList(query), "snowflake");
+      //      the OpenLineageSql support the dialect: [snowflake](https://github.com/OpenLineage/OpenLineage/blob/99fed92fe2a8c63f24accbd8b632b15b72cce7c0/integration/sql/README.md#supported-dialects)
       tableName = "COMPLEX";
       logger.warn("Unable to discover Snowflake table property");
     }
