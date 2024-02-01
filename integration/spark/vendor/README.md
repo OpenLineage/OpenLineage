@@ -3,6 +3,11 @@
 This directory hosts vendor-specific projects for integrating with various data sources.
 Currently, it includes the Snowflake project, which implements OpenLineage interfaces for getting input and output Snowflake datasets.
 
+## Disclosure
+
+This interface is intended for internal use only. It is not recommended for Spark extension authors to implement this directly.
+Instead, it is advised to consider the proposed solution outlined in [[SPARK] lineage metadata extraction built-in within Spark extensions #2272](https://github.com/OpenLineage/OpenLineage/pull/2272).
+
 ## How
 Follow a common pattern for vendor integration projects:
 1. Implement the `io.openlineage.spark.api.Vendor` interface, this interface will work as gateway to other vendor specific implementation.
@@ -28,8 +33,6 @@ This separation accommodates variations in Spark and Scala versions supported by
 
 Keeping vendor-specific code in separate projects facilitates handling specific cases for integration without a Spark-based source or destination.
 It simplifies testing and supporting multiple versions of the same vendor, preserving a clean main codebase.
-This approach also lowers the barrier for new contributors implementing new vendors,
-allowing loading dependencies from entirely different projects, effectively supporting [plugins](https://github.com/OpenLineage/OpenLineage/issues/2162).
 
 The vendors currently in the OpenLineage Spark connectors are Snowflake, BigQuery, Databricks, Delta, and Iceberg.
 Each requires separate dependencies with varying levels of support for Spark and Scala versions.
