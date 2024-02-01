@@ -20,6 +20,6 @@ public class SnowflakeEventHandlerFactory implements OpenLineageEventHandlerFact
       createOutputDatasetBuilder(OpenLineageContext context) {
     // The right function will be determined at runtime by using type checking based on the correct
     // Spark LogicalPlan
-    return Collections.singleton((PartialFunction) new QueryPlanDatasetBuilder(context));
+    return Collections.singleton((PartialFunction) new SnowflakeSaveIntoDataSourceCommandDatasetBuilder(context));
   }
 }

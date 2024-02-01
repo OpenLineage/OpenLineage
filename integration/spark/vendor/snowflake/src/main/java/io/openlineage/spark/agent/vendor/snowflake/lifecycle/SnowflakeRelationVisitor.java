@@ -8,7 +8,7 @@ package io.openlineage.spark.agent.vendor.snowflake.lifecycle;
 import static io.openlineage.spark.agent.vendor.snowflake.Constants.SNOWFLAKE_CLASS_NAME;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.vendor.snowflake.lifecycle.plan.QueryPlanDatasetBuilder;
+import io.openlineage.spark.agent.vendor.snowflake.lifecycle.plan.SnowflakeSaveIntoDataSourceCommandDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
@@ -26,7 +26,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation;
  * {@link LogicalPlan} visitor that matches the SnowflakeRelation that comes from Snowflake The
  * SnowflakeRelation is used to extract the table name and database name to populate the {@link
  * OpenLineage.Dataset} during Snowflake read operations. Writes are routed here from {@link
- * QueryPlanDatasetBuilder}.
+ * SnowflakeSaveIntoDataSourceCommandDatasetBuilder}.
  */
 @Slf4j
 public class SnowflakeRelationVisitor<D extends OpenLineage.Dataset>

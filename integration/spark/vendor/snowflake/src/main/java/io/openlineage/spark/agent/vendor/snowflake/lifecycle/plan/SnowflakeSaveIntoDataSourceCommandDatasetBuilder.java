@@ -24,11 +24,11 @@ import org.apache.spark.sql.sources.CreatableRelationProvider;
 import org.apache.spark.sql.types.StructType;
 
 /** Look to {@link io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor} */
-public class QueryPlanDatasetBuilder
+public class SnowflakeSaveIntoDataSourceCommandDatasetBuilder
     extends AbstractQueryPlanDatasetBuilder<
         SparkListenerEvent, SaveIntoDataSourceCommand, OpenLineage.OutputDataset> {
 
-  public QueryPlanDatasetBuilder(OpenLineageContext context) {
+  public SnowflakeSaveIntoDataSourceCommandDatasetBuilder(OpenLineageContext context) {
     super(context, false);
   }
 
