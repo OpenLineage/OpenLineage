@@ -41,7 +41,7 @@ public class ReplaceIcebergDataDatasetBuilderTest {
   OpenLineage openLineage = mock(OpenLineage.class);
   OpenLineageContext openLineageContext =
       OpenLineageContext.builder()
-          .sparkSession(Optional.of(mock(SparkSession.class)))
+          .sparkSession(mock(SparkSession.class))
           .sparkContext(mock(SparkContext.class))
           .openLineage(openLineage)
           .build();

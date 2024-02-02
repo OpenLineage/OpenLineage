@@ -39,7 +39,7 @@ class AlterTableCommandDatasetBuilderTest {
 
   OpenLineageContext openLineageContext =
       OpenLineageContext.builder()
-          .sparkSession(Optional.of(mock(SparkSession.class)))
+          .sparkSession(mock(SparkSession.class))
           .sparkContext(mock(SparkContext.class))
           .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
           .build();

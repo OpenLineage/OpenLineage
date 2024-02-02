@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.MockServerUtils.getEventsEmittedWithJobName;
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
@@ -19,7 +20,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -291,17 +291,14 @@ public class SparkIcebergIntegrationTest {
   }
 
   @Test
-  void testRemovePathPattern() {
+  void testRemovePathPattern() throws InterruptedException {
     clearTables("tbl_remove_path_666", "temp", "input_table_666");
     createTempDataset().createOrReplaceTempView("temp");
 
     spark.sql("CREATE TABLE input_table_666 USING iceberg AS SELECT * FROM temp");
     spark.sql("CREATE TABLE tbl_remove_path_666 USING iceberg AS SELECT a FROM input_table_666");
 
-    List<RunEvent> jobEvents =
-        getEventsEmitted().stream()
-            .filter(e -> e.getJob().getName().contains("default_tbl_remove_path"))
-            .collect(Collectors.toList());
+    List<RunEvent> jobEvents = getEventsEmittedWithJobName(mockServer, "default_tbl_remove_path");
 
     assertThat(
             jobEvents.stream()
@@ -395,14 +392,5 @@ public class SparkIcebergIntegrationTest {
     Arrays.asList(tables).stream()
         .filter(t -> spark.catalog().tableExists(t))
         .forEach(t -> spark.sql("DROP TABLE IF EXISTS " + t));
-  }
-
-  private List<RunEvent> getEventsEmitted() {
-    HttpRequest[] httpRequests =
-        mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage"));
-
-    return Arrays.asList(httpRequests).stream()
-        .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
-        .collect(Collectors.toList());
   }
 }

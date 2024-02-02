@@ -18,8 +18,6 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Optional;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
@@ -35,7 +33,7 @@ public class JobNameHookTest {
   SparkConf sparkConf = mock(SparkConf.class);
   SparkContext sparkContext = mock(SparkContext.class);
   OpenLineage.RunEventBuilder runEventBuilder;
-  List<String> jobName = new LinkedList();
+  String jobName = null;
 
   @BeforeEach
   public void setup() {
@@ -94,9 +92,6 @@ public class JobNameHookTest {
     builderHook.preBuild(runEventBuilder);
     assertThat(runEventBuilder.build().getJob().getName())
         .isEqualTo("dbc-954f5d5f-34dd.append_data_exec_v1.air_companies_db_air_companies");
-    assertThat(jobName)
-        .hasSize(1)
-        .contains("dbc-954f5d5f-34dd.append_data_exec_v1.air_companies_db_air_companies");
   }
 
   @Test
@@ -122,9 +117,6 @@ public class JobNameHookTest {
     builderHook.preBuild(runEventBuilder);
     assertThat(runEventBuilder.build().getJob().getName())
         .isEqualTo("dbc-954f5d5f-34dd_append_data_exec_v1_air_companies_db_air_companies");
-    assertThat(jobName)
-        .hasSize(1)
-        .contains("dbc-954f5d5f-34dd_append_data_exec_v1_air_companies_db_air_companies");
   }
 
   @Test
@@ -149,11 +141,9 @@ public class JobNameHookTest {
 
   @Test
   public void testPreBuildWhenJobNamePresentInContext() {
-    jobName.add("some-job-name");
+    when(context.getJobName()).thenReturn("some-job-name");
     runEventBuilder.job(context.getOpenLineage().newJobBuilder().build());
     builderHook.preBuild(runEventBuilder);
     assertThat(runEventBuilder.build().getJob().getName()).isEqualTo("some-job-name");
-
-    jobName.remove(0);
   }
 }

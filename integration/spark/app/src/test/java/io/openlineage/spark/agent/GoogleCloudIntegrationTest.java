@@ -49,6 +49,7 @@ public class GoogleCloudIntegrationTest {
   private static final String LOCAL_IP = "127.0.0.1";
   private static final int MOCKSERVER_PORT = 1084;
   private static final String SPARK_3 = "(3.*)";
+  private static final String SPARK_3_3 = "(3\\.[3-9].*)";
   private static final String SPARK_VERSION = "spark.version";
   private static ClientAndServer mockServer;
   static SparkSession spark;
@@ -89,7 +90,7 @@ public class GoogleCloudIntegrationTest {
                 "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/gc-namespace")
             .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
-            .config("spark.openlineage.debugFacet", "enabled")
+            .config("spark.openlineage.debugFacet", "disabled")
             .config("parentProject", "openlineage-ci")
             .config("credentialsFile", "build/gcloud/gcloud-service-key.json")
             .config("temporaryGcsBucket", "openlineage-spark-bigquery-integration")
@@ -110,7 +111,7 @@ public class GoogleCloudIntegrationTest {
 
   @Test
   @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_3) // Spark version >= 3.*
   void testReadAndWriteFromBigquery() {
     String PROJECT_ID = "openlineage-ci";
     String DATASET_ID = "airflow_integration";

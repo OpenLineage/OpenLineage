@@ -19,7 +19,6 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import org.apache.spark.Partition;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SaveMode;
@@ -63,7 +62,7 @@ class CreateHiveTableAsSelectCommandVisitorTest {
     CreateHiveTableAsSelectCommandVisitor visitor =
         new CreateHiveTableAsSelectCommandVisitor(
             OpenLineageContext.builder()
-                .sparkSession(Optional.of(session))
+                .sparkSession(session)
                 .sparkContext(session.sparkContext())
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .build());

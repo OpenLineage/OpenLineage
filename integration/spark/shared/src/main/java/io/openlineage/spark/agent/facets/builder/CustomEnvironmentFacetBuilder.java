@@ -11,7 +11,6 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -24,7 +23,7 @@ import org.apache.spark.scheduler.SparkListenerEvent;
 public class CustomEnvironmentFacetBuilder
     extends CustomFacetBuilder<SparkListenerEvent, EnvironmentFacet> {
   private Map<String, Object> envProperties;
-  private Optional<List<String>> customEnvironmentVariables;
+  private List<String> customEnvironmentVariables;
 
   public CustomEnvironmentFacetBuilder() {}
 
@@ -42,9 +41,8 @@ public class CustomEnvironmentFacetBuilder
   private Map<String, Object> getCustomEnvironmentalAttributes() {
     envProperties = new HashMap<>();
     // extract some custom environment variables if needed
-    customEnvironmentVariables.ifPresent(
-        envVars ->
-            envVars.forEach(envVar -> envProperties.put(envVar, System.getenv().get(envVar))));
+    customEnvironmentVariables.forEach(
+        envVar -> envProperties.put(envVar, System.getenv().get(envVar)));
 
     return envProperties;
   }

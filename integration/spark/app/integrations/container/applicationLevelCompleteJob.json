@@ -1,0 +1,16 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "generic-namespace"
+  },
+  "run": {
+    "facets": {
+      "parent": {
+        "job": {
+          "name": "generic_integration_test",
+          "namespace": "generic-namespace"
+        }
+      }
+    }
+  }
+}

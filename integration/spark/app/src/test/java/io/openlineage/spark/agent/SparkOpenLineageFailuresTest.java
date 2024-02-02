@@ -166,7 +166,7 @@ class SparkOpenLineageFailuresTest {
           }
         };
 
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, Mockito.atLeast(2))
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, Mockito.atLeast(2))
         .emit(argThat(matcher));
   }
 

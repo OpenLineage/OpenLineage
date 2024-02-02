@@ -7,6 +7,7 @@ package io.openlineage.spark.agent;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
@@ -19,6 +20,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.spark.sql.SparkSession;
@@ -37,19 +39,40 @@ import org.slf4j.LoggerFactory;
 /** JUnit extension that sets up SparkSession for OpenLineage context. */
 public class SparkAgentTestExtension
     implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, ParameterResolver {
-  public static final EventEmitter OPEN_LINEAGE_SPARK_CONTEXT = mock(EventEmitter.class);
+  public static final EventEmitter EVENT_EMITTER = mock(EventEmitter.class);
 
   @SuppressWarnings("PMD") // always point locally
   private static final String LOCAL_IP = "127.0.0.1";
 
   @Override
   public void beforeAll(ExtensionContext context) throws Exception {
-    OpenLineageSparkListener.init(new StaticExecutionContextFactory(OPEN_LINEAGE_SPARK_CONTEXT));
+    when(SparkAgentTestExtension.EVENT_EMITTER.getJobNamespace()).thenReturn("ns_name");
+    when(SparkAgentTestExtension.EVENT_EMITTER.getParentJobName())
+        .thenReturn(Optional.of("parent_name"));
+    when(SparkAgentTestExtension.EVENT_EMITTER.getParentJobNamespace())
+        .thenReturn(Optional.of("parent_namespace"));
+    when(SparkAgentTestExtension.EVENT_EMITTER.getParentRunId())
+        .thenReturn(Optional.of(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b")));
+    when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationRunId())
+        .thenReturn(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
+    when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationJobName()).thenReturn("test_rdd");
+
+    OpenLineageSparkListener.init(new StaticExecutionContextFactory(EVENT_EMITTER));
   }
 
   @Override
   public void beforeEach(ExtensionContext context) throws Exception {
-    Mockito.reset(OPEN_LINEAGE_SPARK_CONTEXT);
+    Mockito.reset(EVENT_EMITTER);
+    when(SparkAgentTestExtension.EVENT_EMITTER.getJobNamespace()).thenReturn("ns_name");
+    when(SparkAgentTestExtension.EVENT_EMITTER.getParentJobName())
+        .thenReturn(Optional.of("parent_name"));
+    when(SparkAgentTestExtension.EVENT_EMITTER.getParentJobNamespace())
+        .thenReturn(Optional.of("parent_namespace"));
+    when(SparkAgentTestExtension.EVENT_EMITTER.getParentRunId())
+        .thenReturn(Optional.of(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b")));
+    when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationRunId())
+        .thenReturn(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
+    when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationJobName()).thenReturn("test_rdd");
     Mockito.doAnswer(
             (arg) -> {
               LoggerFactory.getLogger(getClass())
@@ -60,7 +83,7 @@ public class SparkAgentTestExtension
                           .collect(Collectors.toList()));
               return null;
             })
-        .when(OPEN_LINEAGE_SPARK_CONTEXT)
+        .when(EVENT_EMITTER)
         .emit(any(RunEvent.class));
   }
 
@@ -122,11 +145,12 @@ public class SparkAgentTestExtension
   }
 
   public static OpenLineageContext newContext(SparkSession sparkSession) {
+    OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
     return OpenLineageContext.builder()
-        .sparkSession(Optional.of(sparkSession))
+        .sparkSession(sparkSession)
         .sparkContext(sparkSession.sparkContext())
-        .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-        .customEnvironmentVariables(Optional.of(Arrays.asList("TEST_VAR")))
+        .openLineage(openLineage)
+        .customEnvironmentVariables(Arrays.asList("TEST_VAR"))
         .build();
   }
 }

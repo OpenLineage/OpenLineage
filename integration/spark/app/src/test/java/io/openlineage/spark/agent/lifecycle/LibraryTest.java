@@ -5,15 +5,15 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import static io.openlineage.spark.agent.SparkAgentTestExtension.EVENT_EMITTER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
@@ -25,6 +25,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,81 +33,52 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.beanutils.BeanUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
 @Slf4j
 @Tag("beforeShadowJarTest")
 @ExtendWith(SparkAgentTestExtension.class)
 class LibraryTest {
-  private final TypeReference<Map<String, Object>> mapTypeReference =
-      new TypeReference<Map<String, Object>>() {};
 
-  //  @RepeatedTest(30)
-  //  public void testSparkSql(SparkSession spark) throws IOException, TimeoutException {
-  //    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace())
-  //        .thenReturn("ns_name");
-  //    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
-  //        .thenReturn("job_name");
-  //    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId())
-  //        .thenReturn(Optional.of(UUID.fromString("ea445b5c-22eb-457a-8007-01c7c52b6e54")));
-  //
-  //    URL url = Resources.getResource("test_data/data.txt");
-  //    final Dataset<String> data = spark.read().textFile(url.getPath());
-  //
-  //    final long numAs = data.filter((FilterFunction<String>) s -> s.contains("a")).count();
-  //    final long numBs = data.filter((FilterFunction<String>) s -> s.contains("b")).count();
-  //
-  //    System.out.println("Lines with a: " + numAs + ", lines with b: " + numBs);
-  //    spark.sparkContext().listenerBus().waitUntilEmpty(1000);
-  //    spark.stop();
-  //
-  //    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
-  //        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-  //    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
-  //        .emit(lineageEvent.capture());
-  //    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
-  //
-  //    assertEquals(4, events.size());
-  //
-  //    ObjectMapper objectMapper = OpenLineageClient.getObjectMapper();
-  //
-  //    for (int i = 0; i < events.size(); i++) {
-  //      OpenLineage.RunEvent event = events.get(i);
-  //      Map<String, Object> snapshot =
-  //          objectMapper.readValue(
-  //              Paths.get(String.format("integrations/%s/%d.json", "sparksql", i + 1)).toFile(),
-  //              mapTypeReference);
-  //      Map<String, Object> actual =
-  //          objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference);
-  //      assertThat(actual)
-  //          .satisfies(
-  //              new MatchesMapRecursively(
-  //                  snapshot,
-  //                  new HashSet<>(
-  //                      Arrays.asList("runId", "nonInheritableMetadataKeys",
-  // "validConstraints"))));
-  //    }
-  //    verifySerialization(events);
-  //  }
+  @BeforeEach
+  public void beforeEach() throws Exception {
+    Mockito.reset(EVENT_EMITTER);
+    when(EVENT_EMITTER.getJobNamespace()).thenReturn("ns_name");
+    when(EVENT_EMITTER.getParentJobName()).thenReturn(Optional.of("parent_name"));
+    when(EVENT_EMITTER.getParentJobNamespace()).thenReturn(Optional.of("parent_namespace"));
+    when(EVENT_EMITTER.getParentRunId())
+        .thenReturn(Optional.of(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b")));
+    when(EVENT_EMITTER.getApplicationRunId())
+        .thenReturn(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
+    when(EVENT_EMITTER.getApplicationJobName()).thenReturn("test_rdd");
+    Mockito.doAnswer(
+            (arg) -> {
+              LoggerFactory.getLogger(getClass())
+                  .info(
+                      "Emit called with args {}",
+                      Arrays.stream(arg.getArguments())
+                          .map(this::describe)
+                          .collect(Collectors.toList()));
+              return null;
+            })
+        .when(EVENT_EMITTER)
+        .emit(any(RunEvent.class));
+  }
 
   @Test
   void testRdd(@TempDir Path tmpDir, SparkSession spark) throws IOException {
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace())
-        .thenReturn("ns_name");
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
-        .thenReturn("job_name");
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId())
-        .thenReturn(Optional.of(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b")));
-
     URL url = Resources.getResource("test_data/data.txt");
     JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
     JavaRDD<String> textFile = sc.textFile(url.getPath());
@@ -121,15 +93,25 @@ class LibraryTest {
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(2))
-        .emit(lineageEvent.capture());
+    Mockito.verify(EVENT_EMITTER, times(4)).emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
-    assertEquals(2, events.size());
+    assertEquals(4, events.size());
 
-    ObjectMapper objectMapper = OpenLineageClientUtils.newObjectMapper();
+    // verify first application event
+    RunEvent applicationStart = events.get(0);
 
-    // verify first event
-    RunEvent first = events.get(0);
+    assertThat(applicationStart.getJob())
+        .hasFieldOrPropertyWithValue("namespace", "ns_name")
+        .hasFieldOrPropertyWithValue("name", "test_rdd");
+
+    assertThat(applicationStart.getRun().getFacets().getParent().getJob())
+        .hasFieldOrPropertyWithValue("namespace", "parent_namespace")
+        .hasFieldOrPropertyWithValue("name", "parent_name");
+
+    assertThat(applicationStart.getEventType()).isEqualTo(EventType.START);
+
+    // verify first job event
+    RunEvent first = events.get(1);
 
     assertThat(first.getJob())
         .hasFieldOrPropertyWithValue("namespace", "ns_name")
@@ -138,7 +120,7 @@ class LibraryTest {
 
     assertThat(first.getRun().getFacets().getParent().getJob())
         .hasFieldOrPropertyWithValue("namespace", "ns_name")
-        .hasFieldOrPropertyWithValue("name", "job_name");
+        .hasFieldOrPropertyWithValue("name", "test_rdd");
 
     assertThat(first.getInputs())
         .hasSize(1)
@@ -148,8 +130,8 @@ class LibraryTest {
     assertThat(first.getInputs().get(0).getName()).endsWith("test/test_data");
     assertThat(first.getEventType()).isEqualTo(EventType.START);
 
-    // verify second event
-    RunEvent second = events.get(1);
+    // verify second job event
+    RunEvent second = events.get(2);
 
     assertThat(second.getJob())
         .hasFieldOrPropertyWithValue("namespace", "ns_name")
@@ -158,7 +140,7 @@ class LibraryTest {
 
     assertThat(second.getRun().getFacets().getParent().getJob())
         .hasFieldOrPropertyWithValue("namespace", "ns_name")
-        .hasFieldOrPropertyWithValue("name", "job_name");
+        .hasFieldOrPropertyWithValue("name", "test_rdd");
 
     assertThat(second.getOutputs())
         .hasSize(1)
@@ -167,6 +149,19 @@ class LibraryTest {
 
     assertThat(second.getOutputs().get(0).getName()).endsWith("output");
     assertThat(second.getEventType()).isEqualTo(EventType.COMPLETE);
+
+    // verify complete application event
+    RunEvent applicationComplete = events.get(3);
+
+    assertThat(applicationComplete.getJob())
+        .hasFieldOrPropertyWithValue("namespace", "ns_name")
+        .hasFieldOrPropertyWithValue("name", "test_rdd");
+
+    assertThat(applicationComplete.getRun().getFacets().getParent().getJob())
+        .hasFieldOrPropertyWithValue("namespace", "parent_namespace")
+        .hasFieldOrPropertyWithValue("name", "parent_name");
+
+    assertThat(applicationComplete.getEventType()).isEqualTo(EventType.COMPLETE);
 
     verifySerialization(events);
   }
@@ -207,6 +202,15 @@ class LibraryTest {
       assertNotNull(
           "Event can serialize",
           OpenLineageClientUtils.newObjectMapper().writeValueAsString(event));
+    }
+  }
+
+  private Map describe(Object arg) {
+    try {
+      return BeanUtils.describe(arg);
+    } catch (Exception e) {
+      LoggerFactory.getLogger(getClass()).error("Unable to describe event {}", arg, e);
+      return new HashMap();
     }
   }
 }
