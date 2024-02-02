@@ -18,14 +18,14 @@ import java.util.Optional;
 public class SnowflakeVendor implements Vendor {
 
   public static boolean hasSnowflakeClasses() {
-    /**
-     * Checking the Snowflake class with both
-     * SnowflakeRelationVisitor.class.getClassLoader.loadClass and
-     * Thread.currentThread().getContextClassLoader().loadClass. The first checks if the class is
-     * present on the classpath, and the second one is a catchall which captures if the class has
-     * been installed. This is relevant for Azure Databricks where jars can be installed and
-     * accessible to the user, even if they are not present on the classpath.
-     */
+    /*
+     Checking the Snowflake class with both
+     SnowflakeRelationVisitor.class.getClassLoader.loadClass and
+     Thread.currentThread().getContextClassLoader().loadClass. The first checks if the class is
+     present on the classpath, and the second one is a catchall which captures if the class has
+     been installed. This is relevant for Azure Databricks where jars can be installed and
+     accessible to the user, even if they are not present on the classpath.
+    */
     try {
       SnowflakeRelationVisitor.class.getClassLoader().loadClass(SNOWFLAKE_PROVIDER_CLASS_NAME);
       return true;
@@ -46,6 +46,7 @@ public class SnowflakeVendor implements Vendor {
     return hasSnowflakeClasses();
   }
 
+  @Override
   public Optional<VisitorFactory> getVisitorFactory() {
     return Optional.of(new SnowflakeVisitorFactory());
   }

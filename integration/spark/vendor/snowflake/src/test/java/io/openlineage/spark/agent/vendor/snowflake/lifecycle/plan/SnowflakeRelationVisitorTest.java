@@ -17,10 +17,8 @@ import io.openlineage.spark.agent.vendor.snowflake.lifecycle.SnowflakeRelationVi
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.Vendors;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import net.snowflake.spark.snowflake.SnowflakeRelation;
 import net.snowflake.spark.snowflake.TableName;
@@ -73,10 +71,10 @@ public class SnowflakeRelationVisitorTest {
 
     OpenLineageContext openLineageContext =
         OpenLineageContext.builder()
-            .sparkSession(Optional.of(session))
+            .sparkSession(session)
             .sparkContext(session.sparkContext())
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-            .customEnvironmentVariables(Optional.of(Arrays.asList("TEST_VAR")))
+            .customEnvironmentVariables(Collections.singletonList("TEST_VAR"))
             .vendors(Vendors.getVendors())
             .build();
 
