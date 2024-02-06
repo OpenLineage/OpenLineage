@@ -24,7 +24,11 @@ public class IcebergSourceWrapper<T> {
 
   public Table getTable() {
     return WrapperUtils.<TableLoader>getFieldValue(sourceClass, source, "tableLoader")
-        .map(TableLoader::loadTable)
+        .map(
+            loader -> {
+              loader.open();
+              return loader.loadTable();
+            })
         .get();
   }
 }
