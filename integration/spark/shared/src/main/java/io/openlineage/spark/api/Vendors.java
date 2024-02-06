@@ -6,27 +6,48 @@
 package io.openlineage.spark.api;
 
 import io.openlineage.spark.agent.lifecycle.VisitorFactory;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.ServiceLoader;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public interface Vendors {
+  List<String> VENDORS =
+      Arrays.asList(
+              // Add vendor classes here
+              "io.openlineage.spark.agent.vendor.snowflake.SnowflakeVendor"
+      );
 
   static Vendors getVendors() {
-    ServiceLoader<Vendor> serviceLoader = ServiceLoader.load(Vendor.class);
+    ClassLoader cl = Thread.currentThread().getContextClassLoader();
+
     List<Vendor> vendors =
-        StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(
-                    serviceLoader.iterator(), Spliterator.IMMUTABLE & Spliterator.DISTINCT),
-                false)
+        VENDORS.stream()
+            .map(
+                vendorClassName -> {
+                  try {
+                    Class<?> vendor = cl.loadClass(vendorClassName);
+                    return (Vendor) vendor.newInstance();
+                  } catch (ClassNotFoundException
+                      | InstantiationException
+                      | IllegalAccessException e) {
+                    return null;
+                  }
+                })
+            .filter(Objects::nonNull)
             .filter(Vendor::isVendorAvailable)
             .collect(Collectors.toList());
-
+    // The main reason to avoid using the service loader and use static loading with the class name
+    // is to prevent potential missing loading caused by missing META-INF/services files.
+    // This can happen if the user packages the OpenLineage dependency in an Uber-jar without proper
+    // services file configuration
+    // The implementation with the ClassLoader and the list of vendor class names increase the
+    // coupling between the vendor
+    // and the app
+    // https://github.com/OpenLineage/OpenLineage/issues/1860
+    // ServiceLoader<Vendor> serviceLoader = ServiceLoader.load(Vendor.class);
     return new VendorsImpl(vendors);
   }
 
