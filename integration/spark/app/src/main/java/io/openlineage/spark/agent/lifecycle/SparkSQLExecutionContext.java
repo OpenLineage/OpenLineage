@@ -94,7 +94,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .eventTime(toZonedTime(startEvent.time()))
                 .eventType(eventType),
             buildJob(olContext.getQueryExecution().get()),
-            buildJobType(olContext.getQueryExecution().get()),
+            getJobFacetsBuilder(olContext.getQueryExecution().get()),
             startEvent);
 
     log.debug("Posting event for start {}: {}", executionId, event);
@@ -134,7 +134,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .eventTime(toZonedTime(endEvent.time()))
                 .eventType(eventType),
             buildJob(olContext.getQueryExecution().get()),
-            buildJobType(olContext.getQueryExecution().get()),
+            getJobFacetsBuilder(olContext.getQueryExecution().get()),
             endEvent);
 
     log.debug("Posting event for end {}: {}", executionId, OpenLineageClientUtils.toJson(event));
@@ -161,7 +161,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
                 .eventType(RUNNING),
             buildJob(olContext.getQueryExecution().get()),
-            buildJobType(olContext.getQueryExecution().get()),
+            getJobFacetsBuilder(olContext.getQueryExecution().get()),
             stageSubmitted);
 
     log.debug("Posting event for stage submitted {}: {}", executionId, event);
@@ -187,7 +187,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
                 .eventType(RUNNING),
             buildJob(olContext.getQueryExecution().get()),
-            buildJobType(olContext.getQueryExecution().get()),
+            getJobFacetsBuilder(olContext.getQueryExecution().get()),
             stageCompleted);
 
     log.debug("Posting event for stage completed {}: {}", executionId, event);
@@ -225,7 +225,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .eventTime(toZonedTime(jobStart.time()))
                 .eventType(eventType),
             buildJob(olContext.getQueryExecution().get()),
-            buildJobType(olContext.getQueryExecution().get()),
+            getJobFacetsBuilder(olContext.getQueryExecution().get()),
             jobStart);
 
     log.debug("Posting event for start {}: {}", executionId, event);
@@ -269,7 +269,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .eventTime(toZonedTime(jobEnd.time()))
                 .eventType(eventType),
             buildJob(olContext.getQueryExecution().get()),
-            buildJobType(olContext.getQueryExecution().get()),
+            getJobFacetsBuilder(olContext.getQueryExecution().get()),
             jobEnd);
 
     log.debug("Posting event for end {}: {}", executionId, event);
@@ -299,7 +299,15 @@ class SparkSQLExecutionContext implements ExecutionContext {
         .name(normalizeName(name) + "." + normalizeName(node.nodeName()));
   }
 
-  private OpenLineage.JobTypeJobFacet buildJobType(QueryExecution queryExecution) {
+  /**
+   * Getting the job type facet for Spark jobs. Values: job type: `JOB`, job integration: `SPARK`,
+   * processing type: can be `batch` or `streaming` based on
+   * queryExecution.optimizedPlan().isStreaming()
+   *
+   * @param queryExecution
+   * @return OpenLineage.JobTypeJobFacet
+   */
+  private OpenLineage.JobTypeJobFacet getJobTypeJobFacet(QueryExecution queryExecution) {
     final String processingType;
     // Determine processing type
     if (queryExecution.optimizedPlan().isStreaming()) {
@@ -314,6 +322,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
         .processingType(processingType)
         .integration(SPARK_INTEGRATION)
         .build();
+  }
+
+  private OpenLineage.JobFacetsBuilder getJobFacetsBuilder(QueryExecution queryExecution) {
+    return openLineage.newJobFacetsBuilder().jobType(getJobTypeJobFacet(queryExecution));
   }
 
   // normalizes string, changes CamelCase to snake_case and replaces all non-alphanumerics with '_'
