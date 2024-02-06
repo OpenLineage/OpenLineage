@@ -118,7 +118,10 @@ public class PlanUtils3 {
 
     Optional<DatasetIdentifier> di;
     // Get identifier for dataset, or return empty list
-    if (relation.identifier().isEmpty()) {
+    if (BuiltInDataSourceV2Utils.hasBuiltInLineage(relation)) {
+      di = Optional.of(BuiltInDataSourceV2Utils.getDatasetIdentifier(relation));
+      BuiltInDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
+    } else if (relation.identifier().isEmpty()) {
       log.warn("Couldn't find identifier for dataset in plan {}", relation);
       di = PlanUtils3.getDatasetIdentifier(context, relation);
       if (!di.isPresent()) {
