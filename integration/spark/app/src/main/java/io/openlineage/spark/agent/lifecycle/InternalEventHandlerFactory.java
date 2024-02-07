@@ -27,6 +27,7 @@ import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisito
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
+import io.openlineage.spark.api.Vendors;
 import java.util.Collection;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -34,6 +35,7 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
@@ -51,19 +53,25 @@ import scala.PartialFunction;
 class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
 
   private final List<OpenLineageEventHandlerFactory> eventHandlerFactories;
-  private final VisitorFactory visitorFactory;
+  private final List<VisitorFactory> visitorFactory;
 
   public InternalEventHandlerFactory() {
     ServiceLoader<OpenLineageEventHandlerFactory> loader =
         ServiceLoader.load(OpenLineageEventHandlerFactory.class);
     eventHandlerFactories =
-        StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(
-                    loader.iterator(), Spliterator.IMMUTABLE & Spliterator.DISTINCT),
-                false)
+        Stream.concat(
+                StreamSupport.stream(
+                    Spliterators.spliteratorUnknownSize(
+                        loader.iterator(), Spliterator.IMMUTABLE & Spliterator.DISTINCT),
+                    false),
+                Vendors.getVendors().getEventHandlerFactories().stream())
             .collect(Collectors.toList());
 
-    visitorFactory = VisitorFactoryProvider.getInstance();
+    visitorFactory =
+        ImmutableList.<VisitorFactory>builder()
+            .add(VisitorFactoryProvider.getInstance())
+            .addAll(Vendors.getVendors().getVisitorFactories())
+            .build();
   }
 
   /**
@@ -88,7 +96,9 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   public Collection<PartialFunction<LogicalPlan, List<InputDataset>>>
       createInputDatasetQueryPlanVisitors(OpenLineageContext context) {
     List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasets =
-        visitorFactory.getInputVisitors(context);
+        visitorFactory.stream()
+            .flatMap(v -> v.getInputVisitors(context).stream())
+            .collect(Collectors.toList());
 
     ImmutableList<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasetVisitors =
         ImmutableList.<PartialFunction<LogicalPlan, List<InputDataset>>>builder()
@@ -106,7 +116,9 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   public Collection<PartialFunction<LogicalPlan, List<OutputDataset>>>
       createOutputDatasetQueryPlanVisitors(OpenLineageContext context) {
     List<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasets =
-        visitorFactory.getOutputVisitors(context);
+        visitorFactory.stream()
+            .flatMap(v -> v.getOutputVisitors(context).stream())
+            .collect(Collectors.toList());
 
     ImmutableList<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasetBuilders =
         ImmutableList.<PartialFunction<LogicalPlan, List<OutputDataset>>>builder()

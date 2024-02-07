@@ -119,4 +119,10 @@ public class OpenLineageContext {
    * become consistent over a run progress.
    */
   @Getter @Setter String jobName;
+
+  /**
+   * Contains the vendors like Snowflake to separate the dependencies from the app and shared
+   * project.
+   */
+  @Default @NonNull @Getter Vendors vendors = Vendors.empty();
 }
