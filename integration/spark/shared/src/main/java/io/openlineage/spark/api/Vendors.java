@@ -12,19 +12,23 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public interface Vendors {
   List<String> VENDORS =
       Arrays.asList(
-              // Add vendor classes here
-              "io.openlineage.spark.agent.vendor.snowflake.SnowflakeVendor"
-      );
+          // Add vendor classes here
+          "io.openlineage.spark.agent.vendor.snowflake.SnowflakeVendor");
 
   static Vendors getVendors() {
+    return getVendors(Collections.emptyList());
+  }
+
+  static Vendors getVendors(List<String> additionalVendors) {
     ClassLoader cl = Thread.currentThread().getContextClassLoader();
 
     List<Vendor> vendors =
-        VENDORS.stream()
+        Stream.concat(VENDORS.stream(), additionalVendors.stream())
             .map(
                 vendorClassName -> {
                   try {

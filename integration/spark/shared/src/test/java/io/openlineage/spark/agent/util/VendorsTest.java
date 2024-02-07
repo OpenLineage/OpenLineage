@@ -14,6 +14,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.Vendor;
 import io.openlineage.spark.api.Vendors;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -56,7 +57,11 @@ public class VendorsTest implements Vendor {
 
   @Test
   void testGetVendors() {
-    Vendors vendors = Vendors.getVendors();
+
+    Vendors vendors =
+        Vendors.getVendors(
+            Collections.singletonList("io.openlineage.spark.agent.util.VendorsTest"));
+
     assertFalse(vendors.getVisitorFactories().isEmpty());
     assertTrue(
         vendors.getEventHandlerFactories().stream()
