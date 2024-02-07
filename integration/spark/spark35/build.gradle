@@ -1,4 +1,8 @@
 plugins {
+    id("java-library")
+    id("pmd")
+    id("com.diffplug.spotless")
+    id("io.freefair.lombok")
     id("io.openlineage.common-config")
     id("io.openlineage.scala-variants")
     id("idea")

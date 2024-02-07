@@ -1,17 +1,15 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
+    id("java-library")
+    id("pmd")
+    id("com.diffplug.spotless")
+    id("io.freefair.lombok")
     id("io.openlineage.common-config")
     id 'maven-publish'
     id 'signing'
     id 'jacoco'
-    id "com.github.johnrengelman.shadow" version "8.1.1"
-}
-
-commonConfig {
-    pmdEnabled = false
-    lombokEnabled = false
-    spotlessEnabled = false
+    id "com.github.johnrengelman.shadow"
 }
 
 archivesBaseName = 'openlineage-spark'
