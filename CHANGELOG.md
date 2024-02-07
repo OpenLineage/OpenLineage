@@ -10,6 +10,8 @@
   *Support multi topic kafka sinks. Limitations: `recordSerializer` need to implement `KafkaTopicsDescriptor`. Please refer to [limitations](https://openlineage.io/docs/integrations/flink/#limitations) sections in documentation.*
 * **Spark: support built-in lineage within `DataSourceV2Relation`** [`#2394`](https://github.com/OpenLineage/OpenLineage/pull/2394) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Enable built-in lineage extraction within from `DataSourceV2Relation` lineage nodes.*
+* **Spark: Add support for `JobTypeJobFacet` properties.** [`#2410`](https://github.com/OpenLineage/OpenLineage/pull/2410) [@mattiabertorello](https://github.com/mattiabertorello)
+  *Support job type properties within the Spark Job facet.*
 
 ## [1.8.0](https://github.com/OpenLineage/OpenLineage/compare/1.7.0...1.8.0) - 2024-01-19
 

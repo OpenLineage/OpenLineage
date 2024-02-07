@@ -183,4 +183,51 @@ public class SparkSQLExecutionContextTest {
     assertThat(lineageEvent.getAllValues().get(1))
         .hasFieldOrPropertyWithValue("eventType", EventType.FAIL);
   }
+
+  @Test
+  void testSingleCompleteIsSentWithJobType(SparkSession spark) {
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
+
+      context.start(mock(SparkListenerJobStart.class));
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+      context.end(mock(SparkListenerJobEnd.class));
+    }
+    verify(eventEmitter, times(4)).emit(lineageEvent.capture());
+
+    for (RunEvent event : lineageEvent.getAllValues()) {
+      OpenLineage.JobTypeJobFacet jobType = event.getJob().getFacets().getJobType();
+      assertThat(jobType).isNotNull();
+      assertThat(jobType.getJobType()).isEqualTo("JOB");
+      assertThat(jobType.getIntegration()).isEqualTo("SPARK");
+      assertThat(jobType.getProcessingType()).isEqualTo("BATCH");
+    }
+  }
+
+  @Test
+  void testSingleCompleteIsSentWithJobTypeStreaming(SparkSession spark) {
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    try (MockedStatic mocked = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
+      when(queryExecution.optimizedPlan().isStreaming()).thenReturn(true);
+
+      context.start(mock(SparkListenerJobStart.class));
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+      context.end(mock(SparkListenerJobEnd.class));
+    }
+    verify(eventEmitter, times(4)).emit(lineageEvent.capture());
+
+    for (RunEvent event : lineageEvent.getAllValues()) {
+      OpenLineage.JobTypeJobFacet jobType = event.getJob().getFacets().getJobType();
+      assertThat(jobType).isNotNull();
+      assertThat(jobType.getJobType()).isEqualTo("JOB");
+      assertThat(jobType.getIntegration()).isEqualTo("SPARK");
+      assertThat(jobType.getProcessingType()).isEqualTo("STREAMING");
+    }
+  }
 }
