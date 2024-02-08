@@ -33,10 +33,6 @@ if TYPE_CHECKING:
 _DAG_DEFAULT_OWNER = "anonymous"
 _DAG_DEFAULT_NAMESPACE = "default"
 
-# https://openlineage.io/docs/spec/facets/job-facets/job-type
-_JOB_TYPE_DAG = JobTypeJobFacet(jobType="DAG", integration="AIRFLOW", processingType="BATCH")
-_JOB_TYPE_TASK = JobTypeJobFacet(jobType="TASK", integration="AIRFLOW", processingType="BATCH")
-
 _DAG_NAMESPACE = os.getenv("OPENLINEAGE_NAMESPACE", os.getenv("MARQUEZ_NAMESPACE", _DAG_DEFAULT_NAMESPACE))
 
 _PRODUCER = (
@@ -45,6 +41,11 @@ _PRODUCER = (
 
 set_producer(_PRODUCER)
 
+# https://openlineage.io/docs/spec/facets/job-facets/job-type
+# They must be set after the `set_producer(_PRODUCER)`
+# otherwise the `JobTypeJobFacet._producer` will be set with the default value
+_JOB_TYPE_DAG = JobTypeJobFacet(jobType="DAG", integration="AIRFLOW", processingType="BATCH")
+_JOB_TYPE_TASK = JobTypeJobFacet(jobType="TASK", integration="AIRFLOW", processingType="BATCH")
 
 log = logging.getLogger(__name__)
 
