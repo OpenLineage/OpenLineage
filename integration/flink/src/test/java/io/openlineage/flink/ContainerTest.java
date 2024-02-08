@@ -365,7 +365,7 @@ class ContainerTest {
                     + "openlineage.transport.url: http://openlineageclient:1080\n"
                     + "openlineage.transport.type: http\n"
                     + "openlineage.circuitBreaker.type: test\n"
-                    + "openlineage.circuitBreaker.closed: true\n")
+                    + "openlineage.circuitBreaker.valuesReturned: true,true\n")
             .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
             .dependsOn(Arrays.asList(generateEvents, openLineageClientMockContainer));
 

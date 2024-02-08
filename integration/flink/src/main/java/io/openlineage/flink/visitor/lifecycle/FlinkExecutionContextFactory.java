@@ -12,7 +12,6 @@ import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.EventEmitter;
 import io.openlineage.flink.client.FlinkConfigParser;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.dag.Transformation;
@@ -35,9 +34,7 @@ public class FlinkExecutionContextFactory {
         .jobNamespace(jobNamespace)
         .transformations(transformations)
         .runId(UUID.randomUUID())
-        .circuitBreaker(
-            Optional.ofNullable(openLineageYaml.getCircuitBreaker())
-                .map(config -> new CircuitBreakerFactory(config).build()))
+        .circuitBreaker(new CircuitBreakerFactory(openLineageYaml.getCircuitBreaker()).build())
         .openLineageContext(
             OpenLineageContext.builder()
                 .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_CLIENT_URI))

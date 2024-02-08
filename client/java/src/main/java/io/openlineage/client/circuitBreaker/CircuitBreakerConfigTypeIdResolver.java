@@ -21,8 +21,10 @@ public class CircuitBreakerConfigTypeIdResolver extends TypeIdResolverBase {
 
   @Override
   public String idFromValue(Object value) {
-    if (value instanceof SimpleJvmCircuitBreaker) {
-      return "simple";
+    if (value instanceof JavaRuntimeCircuitBreaker) {
+      return "javaRuntime";
+    } else if (value instanceof SimpleMemoryCircuitBreaker) {
+      return "simpleMemory";
     } else if (value instanceof TestCircuitBreaker) {
       return "test";
     }
@@ -36,8 +38,10 @@ public class CircuitBreakerConfigTypeIdResolver extends TypeIdResolverBase {
 
   @Override
   public JavaType typeFromId(DatabindContext context, String id) {
-    if (id.equalsIgnoreCase("simple")) {
-      return context.constructSpecializedType(superType, SimpleJvmCircuitBreakerConfig.class);
+    if (id.equalsIgnoreCase("javaRuntime")) {
+      return context.constructSpecializedType(superType, JavaRuntimeCircuitBreakerConfig.class);
+    } else if (id.equalsIgnoreCase("simpleMemory")) {
+      return context.constructSpecializedType(superType, SimpleMemoryCircuitBreakerConfig.class);
     } else if (id.equalsIgnoreCase("test")) {
       return context.constructSpecializedType(superType, TestCircuitBreakerConfig.class);
     }

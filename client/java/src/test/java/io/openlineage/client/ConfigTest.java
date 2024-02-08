@@ -9,8 +9,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
-import io.openlineage.client.circuitBreaker.SimpleJvmCircuitBreaker;
-import io.openlineage.client.circuitBreaker.SimpleJvmCircuitBreakerConfig;
+import io.openlineage.client.circuitBreaker.JavaRuntimeCircuitBreaker;
+import io.openlineage.client.circuitBreaker.JavaRuntimeCircuitBreakerConfig;
+import io.openlineage.client.circuitBreaker.SimpleMemoryCircuitBreaker;
+import io.openlineage.client.circuitBreaker.SimpleMemoryCircuitBreakerConfig;
 import io.openlineage.client.transports.HttpTransport;
 import io.openlineage.client.transports.NoopTransport;
 import java.net.URISyntaxException;
@@ -64,15 +66,50 @@ class ConfigTest {
   }
 
   @Test
-  void testCircuitBreakerConfigFromYaml() throws URISyntaxException {
+  void testJavaRuntimeCircuitBreakerConfigFromYaml() throws URISyntaxException {
     Path configPath =
         Paths.get(
-            this.getClass().getClassLoader().getResource("config/circuitBreaker.yaml").toURI());
+            this.getClass().getClassLoader().getResource("config/circuitBreaker1.yaml").toURI());
     OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(configPath));
 
     assertThat(client.circuitBreaker.get())
-        .isInstanceOf(SimpleJvmCircuitBreaker.class)
-        .hasFieldOrPropertyWithValue("config", new SimpleJvmCircuitBreakerConfig(20));
+        .isInstanceOf(JavaRuntimeCircuitBreaker.class)
+        .hasFieldOrPropertyWithValue("config", new JavaRuntimeCircuitBreakerConfig(13, 10));
+
+    assertThat(client.circuitBreaker.get().getCheckIntervalMillis()).isEqualTo(1000);
+
+    configPath =
+        Paths.get(
+            this.getClass().getClassLoader().getResource("config/circuitBreaker2.yaml").toURI());
+    client = Clients.newClient(new TestConfigPathProvider(configPath));
+
+    assertThat(client.circuitBreaker.get())
+        .isInstanceOf(JavaRuntimeCircuitBreaker.class)
+        .hasFieldOrPropertyWithValue("config", new JavaRuntimeCircuitBreakerConfig(13, 7, 200));
+    assertThat(client.circuitBreaker.get().getCheckIntervalMillis()).isEqualTo(200);
+  }
+
+  @Test
+  void testSimpleMemoryCircuitBreakerConfigFromYaml() throws URISyntaxException {
+    Path configPath =
+        Paths.get(
+            this.getClass().getClassLoader().getResource("config/circuitBreaker3.yaml").toURI());
+    OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(configPath));
+
+    assertThat(client.circuitBreaker.get())
+        .isInstanceOf(SimpleMemoryCircuitBreaker.class)
+        .hasFieldOrPropertyWithValue("config", new SimpleMemoryCircuitBreakerConfig(13));
+    assertThat(client.circuitBreaker.get().getCheckIntervalMillis()).isEqualTo(1000);
+
+    configPath =
+        Paths.get(
+            this.getClass().getClassLoader().getResource("config/circuitBreaker4.yaml").toURI());
+    client = Clients.newClient(new TestConfigPathProvider(configPath));
+
+    assertThat(client.circuitBreaker.get())
+        .isInstanceOf(SimpleMemoryCircuitBreaker.class)
+        .hasFieldOrPropertyWithValue("config", new SimpleMemoryCircuitBreakerConfig(13, 200));
+    assertThat(client.circuitBreaker.get().getCheckIntervalMillis()).isEqualTo(200);
   }
 
   static class TestConfigPathProvider implements ConfigPathProvider {

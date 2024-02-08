@@ -194,13 +194,39 @@ facets:
 To prevent from over-instrumentation OpenLineage integration provides a circuit breaker mechanism
 that stops OpenLineage from creating, serializing and sending OpenLineage events. 
 
-### Simple Circuit Breaker
+### Simple Memory Circuit Breaker
 
-Circuit breaker gets closed when percentage of free memory drops below `memoryThreshold` provided.
+Simple circuit breaker which is working based only on free memory within JVM. Configuration should
+contain free memory threshold limit (percentage). Default value is `20%`. The circuit breaker 
+will close within first call if free memory is low. `circuitCheckIntervalInMillis` parameter is used
+to configure a frequency circuit breaker is called. Default value is `1000ms`, when no entry in config.
+
+Example usage:
+
 ```yaml
 circuitBreaker:
-  type: simple
+  type: simpleMemory
   memoryThreshold: 20
+  circuitCheckIntervalInMillis: 1000
+```
+
+### Java Runtime Circuit Breaker
+
+More complex version of circuit breaker. The amount of free memory can be low as long as 
+amount of time spent on Garbage Collection is acceptable. `JavaRuntimeCircuitBreaker` closes
+when free memory drops below threshold and amount of time spent on garbage collection exceeds
+given threshold (`10%` by default). The circuit breaker is always open when checked for the first time
+as GC threshold is computed since the previous circuit breaker call. 
+`circuitCheckIntervalInMillis` parameter is used
+to configure a frequency circuit breaker is called. 
+Default value is `1000ms`, when no entry in config.
+
+```yaml
+circuitBreaker:
+  type: javaRuntime
+  memoryThreshold: 20
+  gcCpuThreshold: 10
+  circuitCheckIntervalInMillis: 1000
 ```
 
 ## Error Handling

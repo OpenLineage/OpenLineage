@@ -1,5 +1,5 @@
 transport:
   type: console
 circuitBreaker:
-  type: simple
-  memoryThreshold: 20
+  type: simpleMemory
+  memoryThreshold: 13

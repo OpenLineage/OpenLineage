@@ -5,23 +5,24 @@
 
 package io.openlineage.client.circuitBreaker;
 
-import lombok.NonNull;
-
 public class CircuitBreakerFactory {
 
   private final CircuitBreakerConfig circuitBreakerConfig;
 
-  public CircuitBreakerFactory(@NonNull final CircuitBreakerConfig circuitBreakerConfig) {
+  public CircuitBreakerFactory(final CircuitBreakerConfig circuitBreakerConfig) {
     this.circuitBreakerConfig = circuitBreakerConfig;
   }
 
   public CircuitBreaker build() {
-    if (circuitBreakerConfig instanceof SimpleJvmCircuitBreakerConfig) {
-      return new SimpleJvmCircuitBreaker((SimpleJvmCircuitBreakerConfig) circuitBreakerConfig);
+    if (circuitBreakerConfig instanceof JavaRuntimeCircuitBreakerConfig) {
+      return new JavaRuntimeCircuitBreaker((JavaRuntimeCircuitBreakerConfig) circuitBreakerConfig);
+    } else if (circuitBreakerConfig instanceof SimpleMemoryCircuitBreakerConfig) {
+      return new SimpleMemoryCircuitBreaker(
+          (SimpleMemoryCircuitBreakerConfig) circuitBreakerConfig);
     } else if (circuitBreakerConfig instanceof TestCircuitBreakerConfig) {
       return new TestCircuitBreaker((TestCircuitBreakerConfig) circuitBreakerConfig);
     }
-    throw new UnsupportedOperationException(
-        "Unsupported circuit breaker config provided " + circuitBreakerConfig);
+
+    return new NoOpCircuitBreaker();
   }
 }

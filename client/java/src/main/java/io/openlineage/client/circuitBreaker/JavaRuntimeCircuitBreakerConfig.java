@@ -16,15 +16,16 @@ import lombok.ToString;
 import lombok.With;
 
 @NoArgsConstructor
+@AllArgsConstructor
 @ToString
 @EqualsAndHashCode
-@AllArgsConstructor
 @With
-public final class TestCircuitBreakerConfig implements CircuitBreakerConfig {
-  @Getter @Setter private String valuesReturned;
+public final class JavaRuntimeCircuitBreakerConfig implements CircuitBreakerConfig {
+  @Getter @Setter private Integer memoryThreshold = 20;
+  @Getter @Setter private Integer gcCpuThreshold = 10;
   @Getter @Setter private Integer circuitCheckIntervalInMillis = CIRCUIT_CHECK_INTERVAL_IN_MILLIS;
 
-  public TestCircuitBreakerConfig(String valuesReturned) {
-    this(valuesReturned, CIRCUIT_CHECK_INTERVAL_IN_MILLIS);
+  public JavaRuntimeCircuitBreakerConfig(int memoryThreshold, int gcCpuThreshold) {
+    this(memoryThreshold, gcCpuThreshold, CIRCUIT_CHECK_INTERVAL_IN_MILLIS);
   }
 }

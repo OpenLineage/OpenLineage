@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -50,42 +49,43 @@ public class FlinkExecutionContext implements ExecutionContext {
   private final String jobName;
   private final String jobNamespace;
   private final String processingType;
-  private final Optional<CircuitBreaker> circuitBreaker;
+  private final CircuitBreaker circuitBreaker;
 
   @Getter private final List<Transformation<?>> transformations;
 
   @Override
   public void onJobSubmitted() {
     log.debug("JobClient - jobId: {}", jobId);
-    if (isCircuitBreakerClosed()) {
-      log.warn("CircuitBreaker has stopped emitting OpenLineage event.");
-      return;
-    }
-    RunEvent runEvent =
-        buildEventForEventType(EventType.START)
-            .run(new OpenLineage.RunBuilder().runId(runId).build())
-            .build();
-    log.debug("Posting event for onJobSubmitted {}: {}", jobId, runEvent);
-    eventEmitter.emit(runEvent);
+    circuitBreaker.run(
+        () -> {
+          RunEvent runEvent =
+              buildEventForEventType(EventType.START)
+                  .run(new OpenLineage.RunBuilder().runId(runId).build())
+                  .build();
+          log.debug("Posting event for onJobSubmitted {}: {}", jobId, runEvent);
+          eventEmitter.emit(runEvent);
+          return null;
+        });
   }
 
   @Override
   public void onJobCheckpoint(CheckpointFacet facet) {
     log.debug("JobClient - jobId: {}", jobId);
-    if (isCircuitBreakerClosed()) {
-      log.warn("CircuitBreaker has stopped emitting OpenLineage event.");
-      return;
-    }
-    RunEvent runEvent =
-        buildEventForEventType(EventType.RUNNING)
-            .run(
-                new OpenLineage.RunBuilder()
-                    .runId(runId)
-                    .facets(new OpenLineage.RunFacetsBuilder().put("checkpoints", facet).build())
-                    .build())
-            .build();
-    log.debug("Posting event for onJobCheckpoint {}: {}", jobId, runEvent);
-    eventEmitter.emit(runEvent);
+    circuitBreaker.run(
+        () -> {
+          RunEvent runEvent =
+              buildEventForEventType(EventType.RUNNING)
+                  .run(
+                      new OpenLineage.RunBuilder()
+                          .runId(runId)
+                          .facets(
+                              new OpenLineage.RunFacetsBuilder().put("checkpoints", facet).build())
+                          .build())
+                  .build();
+          log.debug("Posting event for onJobCheckpoint {}: {}", jobId, runEvent);
+          eventEmitter.emit(runEvent);
+          return null;
+        });
   }
 
   public OpenLineage.RunEventBuilder buildEventForEventType(EventType eventType) {
@@ -109,39 +109,41 @@ public class FlinkExecutionContext implements ExecutionContext {
 
   @Override
   public void onJobCompleted(JobExecutionResult jobExecutionResult) {
-    if (isCircuitBreakerClosed()) {
-      log.warn("CircuitBreaker has stopped emitting OpenLineage event.");
-      return;
-    }
-    OpenLineage openLineage = openLineageContext.getOpenLineage();
-    eventEmitter.emit(
-        commonEventBuilder()
-            .run(openLineage.newRun(runId, null))
-            .eventType(EventType.COMPLETE)
-            .build());
+    circuitBreaker.run(
+        () -> {
+          OpenLineage openLineage = openLineageContext.getOpenLineage();
+          eventEmitter.emit(
+              commonEventBuilder()
+                  .run(openLineage.newRun(runId, null))
+                  .eventType(EventType.COMPLETE)
+                  .build());
+          return null;
+        });
   }
 
   @Override
   public void onJobFailed(Throwable failed) {
-    if (isCircuitBreakerClosed()) {
-      log.warn("CircuitBreaker has stopped emitting OpenLineage event.");
-      return;
-    }
-    OpenLineage openLineage = openLineageContext.getOpenLineage();
-    eventEmitter.emit(
-        commonEventBuilder()
-            .run(
-                openLineage.newRun(
-                    runId,
-                    openLineage
-                        .newRunFacetsBuilder()
-                        .errorMessage(
-                            openLineage.newErrorMessageRunFacet(
-                                failed.getMessage(), "JAVA", ExceptionUtils.getStackTrace(failed)))
-                        .build()))
-            .eventType(EventType.FAIL)
-            .eventTime(ZonedDateTime.now())
-            .build());
+    circuitBreaker.run(
+        () -> {
+          OpenLineage openLineage = openLineageContext.getOpenLineage();
+          eventEmitter.emit(
+              commonEventBuilder()
+                  .run(
+                      openLineage.newRun(
+                          runId,
+                          openLineage
+                              .newRunFacetsBuilder()
+                              .errorMessage(
+                                  openLineage.newErrorMessageRunFacet(
+                                      failed.getMessage(),
+                                      "JAVA",
+                                      ExceptionUtils.getStackTrace(failed)))
+                              .build()))
+                  .eventType(EventType.FAIL)
+                  .eventTime(ZonedDateTime.now())
+                  .build());
+          return null;
+        });
   }
 
   /**
@@ -197,9 +199,5 @@ public class FlinkExecutionContext implements ExecutionContext {
         .map(outputVisitor -> outputVisitor.apply(sink))
         .flatMap(List::stream)
         .collect(Collectors.toList());
-  }
-
-  private boolean isCircuitBreakerClosed() {
-    return circuitBreaker.map(CircuitBreaker::isClosed).orElse(false);
   }
 }

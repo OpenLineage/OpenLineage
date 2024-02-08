@@ -20,11 +20,11 @@ import lombok.With;
 @EqualsAndHashCode
 @AllArgsConstructor
 @With
-public final class TestCircuitBreakerConfig implements CircuitBreakerConfig {
-  @Getter @Setter private String valuesReturned;
+public final class SimpleMemoryCircuitBreakerConfig implements CircuitBreakerConfig {
+  @Getter @Setter private Integer memoryThreshold = 20;
   @Getter @Setter private Integer circuitCheckIntervalInMillis = CIRCUIT_CHECK_INTERVAL_IN_MILLIS;
 
-  public TestCircuitBreakerConfig(String valuesReturned) {
-    this(valuesReturned, CIRCUIT_CHECK_INTERVAL_IN_MILLIS);
+  public SimpleMemoryCircuitBreakerConfig(int memoryThreshold) {
+    this(memoryThreshold, CIRCUIT_CHECK_INTERVAL_IN_MILLIS);
   }
 }

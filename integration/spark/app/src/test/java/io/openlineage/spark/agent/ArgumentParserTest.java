@@ -148,11 +148,11 @@ class ArgumentParserTest {
     SparkConf sparkConf =
         new SparkConf()
             .set("spark.openlineage.circuitBreaker.type", "test")
-            .set("spark.openlineage.circuitBreaker.closed", "true");
+            .set("spark.openlineage.circuitBreaker.valuesReturned", "false,true");
 
     OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
     assertThat(openLineageYaml.getCircuitBreaker()).isInstanceOf(TestCircuitBreakerConfig.class);
-    assertThat(((TestCircuitBreakerConfig) openLineageYaml.getCircuitBreaker()).isClosed())
-        .isTrue();
+    assertThat(((TestCircuitBreakerConfig) openLineageYaml.getCircuitBreaker()).getValuesReturned())
+        .isEqualTo("false,true");
   }
 }
