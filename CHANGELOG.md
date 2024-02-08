@@ -12,6 +12,8 @@
   *Enable built-in lineage extraction within from `DataSourceV2Relation` lineage nodes.*
 * **Spark: Add support for `JobTypeJobFacet` properties.** [`#2410`](https://github.com/OpenLineage/OpenLineage/pull/2410) [@mattiabertorello](https://github.com/mattiabertorello)
   *Support job type properties within the Spark Job facet.*
+* **DBT: Add support for `JobTypeJobFacet` properties.** [`#2411`](https://github.com/OpenLineage/OpenLineage/pull/2411) [@mattiabertorello](https://github.com/mattiabertorello)
+  *Support job type properties within the DBT Job facet.*
 * **Airflow: Add support for `JobTypeJobFacet` properties.** [`#2412`](https://github.com/OpenLineage/OpenLineage/pull/2412) [@mattiabertorello](https://github.com/mattiabertorello)
   *Support job type properties within the Airflow Job facet.*
 

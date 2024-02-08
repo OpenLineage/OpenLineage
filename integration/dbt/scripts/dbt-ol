@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from openlineage.client.client import OpenLineageClient
+from openlineage.client.facet import JobTypeJobFacet
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.common.provider.dbt import (
     DbtLocalArtifactProcessor,
@@ -26,6 +27,11 @@ __version__ = "1.9.0"
 from openlineage.common.utils import parse_single_arg
 
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
+JOB_TYPE_FACET = JobTypeJobFacet(
+    jobType="JOB",
+    integration="DBT",
+    processingType="BATCH",
+)
 
 
 def dbt_run_event(
@@ -39,7 +45,11 @@ def dbt_run_event(
         eventType=state,
         eventTime=datetime.now(timezone.utc).isoformat(),
         run=Run(runId=run_id, facets={"parent": parent.to_openlineage()} if parent else {}),
-        job=Job(namespace=parent.job_namespace if parent else job_namespace, name=job_name),
+        job=Job(
+            namespace=parent.job_namespace if parent else job_namespace,
+            name=job_name,
+            facets={"jobType": JOB_TYPE_FACET},
+        ),
         producer=PRODUCER,
     )
 
