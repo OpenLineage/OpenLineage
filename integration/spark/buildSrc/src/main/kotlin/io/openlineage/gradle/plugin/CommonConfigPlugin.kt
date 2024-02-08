@@ -1,19 +1,23 @@
-/*
-* SPDX-License-Identifier: Apache-2.0
-* Copyright 2018-2023 contributors to the OpenLineage project
-*/
+/**
+ * Copyright 2018-2024 contributors to the OpenLineage project
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 package io.openlineage.gradle.plugin
 
 import com.diffplug.gradle.spotless.SpotlessExtension
+import com.diffplug.gradle.spotless.SpotlessPlugin
 import com.diffplug.spotless.FormatterFunc
 import io.freefair.gradle.plugins.lombok.LombokExtension
+import io.freefair.gradle.plugins.lombok.LombokPlugin
 import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.plugins.quality.PmdExtension
+import org.gradle.api.plugins.quality.PmdPlugin
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.*
@@ -48,14 +52,10 @@ class CommonConfigPlugin : Plugin<Project> {
 
     private fun configureExtension(target: Project) {
         val extension = target.extensions.create<CommonConfigPluginExtension>("commonConfig")
-        extension.lombokEnabled.convention(true)
         extension.lombokVersion.convention("1.18.30")
-        extension.pmdEnabled.convention(true)
-        extension.spotlessEnabled.convention(true)
     }
 
-    private fun configureJava(target: Project) {
-        target.plugins.apply("java-library")
+    private fun configureJava(target: Project) = target.plugins.withType<JavaPlugin> {
         target.extensions.getByType<JavaPluginExtension>().apply {
             sourceCompatibility = JavaVersion.VERSION_1_8
             targetCompatibility = JavaVersion.VERSION_1_8
@@ -74,14 +74,7 @@ class CommonConfigPlugin : Plugin<Project> {
         }
     }
 
-    private fun configurePmd(target: Project) {
-        val commonConfigExtension = getPluginExtension(target)
-        if (!commonConfigExtension.pmdEnabled.get()) {
-            return
-        }
-
-        target.plugins.apply("pmd")
-
+    private fun configurePmd(target: Project) = target.plugins.withType<PmdPlugin> {
         with(target.extensions.getByType<PmdExtension>()) {
             isConsoleOutput = true
             toolVersion = "6.46.0"
@@ -96,26 +89,14 @@ class CommonConfigPlugin : Plugin<Project> {
         }
     }
 
-    private fun configureLombok(target: Project) {
+    private fun configureLombok(target: Project) = target.plugins.withType<LombokPlugin> {
         val commonConfigExtension = getPluginExtension(target)
-        if (!commonConfigExtension.lombokEnabled.get()) {
-            return
-        }
-
-        target.plugins.apply("io.freefair.lombok")
         with(target.extensions.getByType<LombokExtension>()) {
             version.set(commonConfigExtension.lombokVersion)
         }
     }
 
-    private fun configureSpotless(target: Project) {
-        val commonConfigExtension = getPluginExtension(target)
-        if (!commonConfigExtension.spotlessEnabled.get()) {
-            return
-        }
-
-        target.plugins.apply("com.diffplug.spotless")
-
+    private fun configureSpotless(target: Project) = target.plugins.withType<SpotlessPlugin> {
         val disallowWildcardImports = FormatterFunc { text ->
             val regex = Regex("^import\\s+\\w+(\\.\\w+)*\\.*;$")
             val m = regex.find(text)
