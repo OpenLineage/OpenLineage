@@ -7,6 +7,7 @@ repositories {
     mavenCentral()
 }
 
+val downloadTaskVersion: String = "5.5.0"
 val lombokPluginVersion: String = "8.4"
 val shadowPluginVersion: String = "8.1.1"
 val spotlessVersion: String = "6.13.0"
@@ -28,6 +29,12 @@ gradlePlugin {
         create("scalaVariants") {
             id = "io.openlineage.scala-variants"
             implementationClass = "io.openlineage.gradle.plugin.ScalaVariantsPlugin"
+        }
+
+        create("sparkBuilds") {
+            id = "io.openlineage.spark-variant-build"
+            implementationClass =
+                "io.openlineage.gradle.plugin.variant.spark.SparkVariantsBuildPlugin"
         }
     }
 }
