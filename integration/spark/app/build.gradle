@@ -1,9 +1,13 @@
 plugins {
+    id("java-library")
+    id("pmd")
+    id("com.diffplug.spotless")
+    id("io.freefair.lombok")
+    id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
     id 'java-test-fixtures'
     id "com.adarshr.test-logger" version "3.2.0"
     id "org.gradle.test-retry" version "1.5.8"
-    id "com.github.johnrengelman.shadow" version "8.1.1"
 }
 
 configurations {
