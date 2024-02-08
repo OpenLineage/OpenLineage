@@ -71,22 +71,37 @@ public class KafkaSinkWrapper {
   }
 
   public String getKafkaTopic() throws IllegalAccessException {
-    Function<?, ?> topicSelector =
+    Optional<Function<?, ?>> topicSelectorOpt =
         WrapperUtils.<Function<?, ?>>getFieldValue(
-                serializationSchema.getClass(), serializationSchema, "topicSelector")
-            .get();
+            serializationSchema.getClass(), serializationSchema, "topicSelector");
+    if (topicSelectorOpt.isPresent()) {
+      Function<?, ?> function =
+          (Function<?, ?>)
+              WrapperUtils.getFieldValue(
+                      topicSelectorOpt.get().getClass(), topicSelectorOpt.get(), "topicSelector")
+                  .get();
 
-    Function<?, ?> function =
-        (Function<?, ?>)
-            WrapperUtils.getFieldValue(topicSelector.getClass(), topicSelector, "topicSelector")
-                .get();
+      return (String) function.apply(null);
+    } else {
+      // assume the other implementation as topic as a field inside, for example
+      // DynamicKafkaRecordSerializationSchema.
+      Optional<String> topicOptional =
+          WrapperUtils.getFieldValue(serializationSchema.getClass(), serializationSchema, "topic");
 
-    return (String) function.apply(null);
+      return topicOptional.isPresent() ? topicOptional.get() : "";
+    }
   }
 
   public Optional<Schema> getAvroSchema() {
-    return AvroUtils.getAvroSchema(
+    Optional<SerializationSchema> optionalSchema =
         WrapperUtils.getFieldValue(
-            serializationSchema.getClass(), serializationSchema, "valueSerializationSchema"));
+            serializationSchema.getClass(), serializationSchema, "valueSerializationSchema");
+    if (optionalSchema.isPresent()) {
+      return AvroUtils.getAvroSchema(optionalSchema);
+    } else {
+      return AvroUtils.getAvroSchema(
+          WrapperUtils.getFieldValue(
+              serializationSchema.getClass(), serializationSchema, "valueSerialization"));
+    }
   }
 }
