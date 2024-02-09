@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     id("java-library")
     id("pmd")
@@ -49,6 +51,14 @@ ext {
             "2.4": ["module": "spark2", "scala": "2.11", "delta": "NA", "gcs": "hadoop2-2.2.9", "iceberg": "NA", "hadoopclient": "2.10.2"]
     ]
     versions = versionsMap[shortVersion]
+
+    destAdditionalJarsDir = layout.buildDirectory.dir("additional/jars")
+    srcAdditionalConfDir = layout.projectDirectory.dir("additional/conf")
+    destAdditionalConfDir = layout.buildDirectory.dir("additional/conf")
+
+    scalaFmt = versions.scala.replace(".", "")
+    scalaFixturesJarName = "openlineage-spark-scala-fixtures_${versions.scala}-${project.version}.jar"
+    scalaFixturesConfiguration = "scala${scalaFmt}RuntimeElements"
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
@@ -56,9 +66,26 @@ ext {
 // org.xerial.snappy.SnappyError: [FAILED_TO_LOAD_NATIVE_LIBRARY] no native library is found for os.name=Mac and os.arch=aarch64
 configurations.configureEach {
     resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-        if (details.requested.group == 'org.xerial.snappy' && details.requested.name == 'snappy-java') {
+        if (details.requested.group == "org.xerial.snappy" && details.requested.name == "snappy-java") {
             details.useVersion("[1.1.8.4,)")
         }
+    }
+}
+
+configurations {
+    // This configuration holds JARs that will be mounted to the Docker container and then executed.
+    // For example, a Spark job that is written in Java or Scala and is executed using the spark-submit command.
+    integrationTestFixtures {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+
+    // This configuration holds JARs that will be mounted in order to support the execution of an integration test.
+    // For example, running the Iceberg integration tests requires the Iceberg JARs to be present on the classpath.
+    // This configuration facilitates that.
+    additionalJars {
+        canBeResolved = true
+        canBeConsumed = false
     }
 }
 
@@ -161,7 +188,14 @@ dependencies {
         testImplementation("com.google.cloud.bigdataoss:gcs-connector:hadoop3-2.2.9") {
             exclude group: 'com.google.guava', module: 'guava'
         }
-        pysparkContainerOnly("com.google.guava:guava:30.1-jre")
+    }
+
+    integrationTestFixtures(project(path: ":scala-fixtures", configuration: scalaFixturesConfiguration))
+
+    if (versions.module == "spark35") {
+        // We need to upload logging JARS, for some reason
+        additionalJars("org.slf4j:slf4j-api:2.0.10")
+        additionalJars("org.slf4j:slf4j-reload4j:2.0.10")
     }
 }
 
@@ -173,13 +207,22 @@ def commonTestConfiguration = {
         showStandardStreams = true
     }
     systemProperties = [
-            'junit.platform.output.capture.stdout': 'true',
-            'junit.platform.output.capture.stderr': 'true',
-            'spark.version'                       : sparkVersion,
-            'scala.binary.version'                : scalaBinaryVersion,
-            'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
-            'kafka.package.version'               : "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}",
-            'mockserver.logLevel'                 : 'ERROR'
+            "additional.conf.dir"                 : destAdditionalConfDir.get().asFile.absolutePath,
+            "additional.jars.dir"                 : destAdditionalJarsDir.get().asFile.absolutePath,
+            "derby.system.home.base"              : layout.buildDirectory.dir("var/run/derby/${versions.module}").get().asFile.absolutePath,
+            "fixtures.dir"                        : layout.buildDirectory.dir("fixtures").get().asFile.absolutePath,
+            "junit.platform.output.capture.stderr": "true",
+            "junit.platform.output.capture.stdout": "true",
+            "kafka.package.version"               : "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}",
+            "lib.dir"                             : layout.buildDirectory.dir("lib").get().asFile.absolutePath,
+            "mockserver.logLevel"                 : "ERROR",
+            "openlineage.spark.jar"               : tasks.named("shadowJar", ShadowJar.class).get().outputs.files.singleFile.name,
+            "resources.dir"                       : layout.buildDirectory.dir("resources/test").get().asFile.absolutePath,
+            "scala.fixtures.jar.name"             : scalaFixturesJarName.toString(),
+            "spark.docker.image"                  : "bitnami/spark:${sparkVersion}",
+            "spark.home.dir"                      : "/opt/bitnami/spark",
+            "spark.sql.warehouse.dir"             : layout.buildDirectory.dir("var/run/spark-warehouse/${versions.module}").get().asFile.absolutePath,
+            "spark.version"                       : sparkVersion,
     ]
 
     classpath = project.sourceSets.test.runtimeClasspath
@@ -211,6 +254,11 @@ if (sparkVersion == '2.4.6') {
 // you may experience weird test failures, when running the tests using different versions of
 // Apache Spark. Thus this take is a workaround to clean up these file(s) and folder(s).
 tasks.register("cleanUp", Delete) {
+    delete(layout.buildDirectory.dir("var/run/derby/${versions.module}"))
+    delete(layout.buildDirectory.dir("var/run/spark-warehouse/${versions.module}"))
+    // some tests seem to create these directories in the 'app' directory,
+    // instead of using the build dir. This makes it hard to prevent conflicts (particularly in the metastore)
+    // when you run the tests with different versions of Apache Spark on the same machine.
     delete("derby.log", "metastore_db", "spark-warehouse")
 }
 
@@ -218,57 +266,50 @@ tasks.withType(Test).configureEach {
     failFast = true
 }
 
-task nonParallelTest(type: Test) {
-    dependsOn tasks.named("shadowJar"), tasks.named("cleanUp")
-    group = 'verification'
-    description = "Runs tests that cannot be run in parallel. For example test suites that require metastore_db"
-
-    maxParallelForks = 1
-
-    useJUnitPlatform {
-        includeTags("nonParallelTest")
-    }
+tasks.register("copyIntegrationTestFixtures", Copy) {
+    group = "copy"
+    description = "Copies dependencies in the integrationTestFixtures configuration to the build directory"
+    from(configurations.integrationTestFixtures)
+    into(layout.buildDirectory.dir("fixtures"))
 }
 
-task beforeShadowJarTest(type: Test) {
-    group = 'verification'
-    description = "Tests that depend that have to be run before shadowJar"
-    useJUnitPlatform {
-        includeTags("beforeShadowJarTest")
-    }
+tasks.register("copyAdditionalJars", Copy) {
+    group = "copy"
+    description = "Copies dependencies in the 'additionalJars' configuration to the build directory"
+    from(configurations.additionalJars)
+    into(destAdditionalJarsDir)
+
+    it.onlyIf({ !configurations.additionalJars.getFiles().any() })
+}
+
+tasks.register("copyAdditionalConfiguration", Copy) {
+    group = "copy"
+    description = "Copies additional spark configuration files to the build directory"
+    from(srcAdditionalConfDir)
+    into(destAdditionalConfDir)
 }
 
 // wrócić do jednego test z jakąś metodą zwracającą konfigurację żeby spark3 działał
-test {
-    dependsOn nonParallelTest
-    useJUnitPlatform { i ->
-        excludeTags('integration-test', 'nonParallelTest', 'beforeShadowJarTest')
+tasks.named("test", Test).configure {
+    dependsOn(tasks.named("cleanUp"))
+    useJUnitPlatform {
+        excludeTags("integration-test")
         if (versions.delta == "NA") {
-            excludeTags 'delta'
+            excludeTags "delta"
         }
         if (versions.iceberg == "NA") {
-            excludeTags 'iceberg'
+            excludeTags "iceberg"
         }
     }
     configure commonTestConfiguration
     classpath = project.sourceSets.test.runtimeClasspath + configurations."${versions.module}"
 }
 
-task copyDependencies(type: Copy) {
-    dependsOn shadowJar
-    dependsOn(
-            ':spark2:jar', ':spark3:jar', ':spark31:jar',
-            ':spark32:jar', ':spark33:jar',
-            ':spark34:jar', ':spark35:jar'
-    )
-    dependsOn(
-            ':spark2:testFixturesJar', ':spark3:testFixturesJar', ':spark31:testFixturesJar',
-            ':spark32:testFixturesJar', ':spark33:testFixturesJar',
-            ':spark34:testFixturesJar', ':spark35:testFixturesJar'
-    )
-
-    dependsOn(':app:testFixturesJar', ':app:jar')
-    // delete the dependencies directory so we don't accidentally mix Spark 2 and Spark 3 dependencies
+tasks.register("copyDependencies", Copy) {
+    // TODO: We need to fix this. Copy dependencies shouldn't depend on 'jar' and 'testFixturesJar'
+    mustRunAfter(tasks.named("jar"), tasks.named("testFixturesJar"))
+    dependsOn(tasks.named("shadowJar"))
+    // delete the dependencies directory so we don"t accidentally mix Spark 2 and Spark 3 dependencies
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     delete layout.buildDirectory.dir("dependencies")
     def config = configurations."${versions.module}"
@@ -277,8 +318,18 @@ task copyDependencies(type: Copy) {
     into layout.buildDirectory.dir("dependencies")
 }
 
-task integrationTest(type: Test) {
-    dependsOn shadowJar, copyDependencies, buildDockerImage
+def integrationTestDependencies = [
+        tasks.named("shadowJar"),
+        tasks.named("copyDependencies"),
+        tasks.named("copyIntegrationTestFixtures"),
+        tasks.named("copyAdditionalJars"),
+        tasks.named("copyAdditionalConfiguration")
+]
+
+tasks.register("integrationTest", Test) {
+    group = "verification"
+
+    dependsOn(integrationTestDependencies)
     retry {
         boolean isCiServer = System.getenv().containsKey("CI")
         if (isCiServer) {
@@ -287,23 +338,21 @@ task integrationTest(type: Test) {
         }
     }
     configure commonTestConfiguration
+
     useJUnitPlatform {
         includeTags "integration-test"
         excludeTags "databricks"
-        if (!sparkVersion.startsWith('3')) {
-            excludeTags 'spark3'
-        }
         if (versions.delta == "NA") {
-            excludeTags 'delta'
+            excludeTags "delta"
         }
         if (versions.iceberg == "NA") {
-            excludeTags 'iceberg'
+            excludeTags "iceberg"
         }
     }
 }
 
-task databricksIntegrationTest(type: Test) {
-    dependsOn shadowJar, copyDependencies
+tasks.register("databricksIntegrationTest", Test) {
+    dependsOn(integrationTestDependencies)
     retry {
         boolean isCiServer = System.getenv().containsKey("CI")
         if (isCiServer) {
@@ -321,9 +370,10 @@ assemble {
     dependsOn shadowJar
 }
 
-shadowJar {
-    dependsOn beforeShadowJarTest
-
+tasks.named("shadowJar", ShadowJar.class) {
+    dependsOn(tasks.named("jar"))
+    group = "shadow"
+    destinationDirectory.set(layout.buildDirectory.dir("libs/shadow"))
     minimize() {
         exclude(project(":shared"))
         exclude(project(":spark2"))
@@ -363,20 +413,21 @@ shadowJar {
     zip64 true
 }
 
-task createVersionProperties(dependsOn: processResources) {
+tasks.register("createVersionProperties") {
+    dependsOn(tasks.named("processResources"))
     doLast {
-        File dir = new File("$buildDir/resources/main/io/openlineage/spark/agent/")
-        dir.mkdirs();
-        new File("$buildDir/resources/main/io/openlineage/spark/agent/version.properties").withWriter { w ->
+        def dir = layout.buildDirectory.dir("resources/main/io/openlineage/spark/agent").get()
+        dir.asFile.mkdirs()
+        dir.file("version.properties").asFile.withWriter { w ->
             Properties p = new Properties()
-            p['version'] = project.version.toString()
+            p["version"] = project.version.toString()
             p.store w, null
         }
     }
 }
 
-classes {
-    dependsOn createVersionProperties
+tasks.named("classes") {
+    dependsOn(tasks.named("createVersionProperties"))
 }
 
 tasks.named("pmdTest") {

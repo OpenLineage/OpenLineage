@@ -5,14 +5,27 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_LOG4J2_PROPERTIES_PATH;
+import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_LOG4J_PROPERTIES_PATH;
+import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LOG4J2_PROPERTIES_PATH;
+import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LOG4J_PROPERTIES_PATH;
+import static io.openlineage.spark.agent.SparkContainerProperties.HOST_RESOURCES_DIR;
+import static io.openlineage.spark.agent.SparkContainerProperties.SPARK_DOCKER_IMAGE;
+
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 import org.mockserver.client.MockServerClient;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.MockServerContainer;
@@ -21,7 +34,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
+@Slf4j
 public class SparkContainerUtils {
+  public static final String SPARK_DOCKER_CONTAINER_WAIT_MESSAGE =
+      ".*ShutdownHookManager.*Shutdown\\s*hook\\s*called.*";
 
   public static final DockerImageName MOCKSERVER_IMAGE =
       DockerImageName.parse("mockserver/mockserver")
@@ -35,18 +51,52 @@ public class SparkContainerUtils {
   }
 
   static PostgreSQLContainer<?> makeMetastoreContainer(Network network) {
-    String basePath = "src/test/resources/metastore_psql/";
-    return new PostgreSQLContainer<>(DockerImageName.parse("postgres:13.4-bullseye"))
-        .withNetwork(network)
-        .withNetworkAliases("metastore")
-        .withUsername("admin")
-        .withPassword("password")
-        .withDatabaseName("test")
-        .withFileSystemBind(basePath + "init-db.sh", "/docker-entrypoint-initdb.d/init-db.sh")
-        .withFileSystemBind(basePath + "create-databases.sql", "/create-databases.sql")
-        .withFileSystemBind(basePath + "metastore-2.3.0.sql", "/metastore-2.3.0.sql")
-        .withFileSystemBind(basePath + "metastore-3.1.0.sql", "/metastore-3.1.0.sql")
-        .withExposedPorts(5432);
+    PostgreSQLContainer container =
+        new PostgreSQLContainer<>(DockerImageName.parse("postgres:13.4-bullseye"))
+            .withNetwork(network)
+            .withNetworkAliases("metastore")
+            .withUsername("admin")
+            .withPassword("password")
+            .withDatabaseName("test")
+            .withExposedPorts(5432);
+
+    final Path basePath = Paths.get("src/test/resources/metastore_psql/").toAbsolutePath();
+    mountPath(
+        container,
+        basePath.resolve("init-db.sh"),
+        Paths.get("/docker-entrypoint-initdb.d/init-db.sh"));
+    mountPath(
+        container, basePath.resolve("create-databases.sql"), Paths.get("/create-databases.sql"));
+    mountPath(
+        container, basePath.resolve("metastore-2.3.0.sql"), Paths.get("/metastore-2.3.0.sql"));
+    mountPath(
+        container, basePath.resolve("metastore-3.1.0.sql"), Paths.get("/metastore-3.1.0.sql"));
+
+    return container;
+  }
+
+  static void mountPath(GenericContainer<?> container, Path sourcePath, Path targetPath) {
+    log.info(
+        "[image={}]: Mount volume '{}:{}'", container.getDockerImageName(), sourcePath, targetPath);
+    container.withFileSystemBind(sourcePath.toString(), targetPath.toString(), BindMode.READ_ONLY);
+  }
+
+  static void mountFiles(GenericContainer<?> container, Path sourceDir, Path targetDir)
+      throws IOException {
+    if (!Files.exists(sourceDir)) {
+      log.info("Source directory {} does not exist, skipping mount", sourceDir);
+      return;
+    }
+
+    try (Stream<Path> files = Files.list(sourceDir)) {
+      files.forEach(
+          filePath -> {
+            Path hostPath = filePath.toAbsolutePath();
+            Path fileName = hostPath.getFileName();
+            Path containerPath = targetDir.resolve(fileName);
+            mountPath(container, hostPath, containerPath);
+          });
+    }
   }
 
   private static GenericContainer<?> makePysparkContainer(
@@ -54,21 +104,28 @@ public class SparkContainerUtils {
       String waitMessage,
       MockServerContainer mockServerContainer,
       String... command) {
-    return new GenericContainer<>(
-            DockerImageName.parse("bitnami/spark:" + System.getProperty("spark.version")))
-        .withNetwork(network)
-        .withNetworkAliases("spark")
-        .withFileSystemBind("build/gcloud", "/opt/gcloud")
-        .withFileSystemBind("src/test/resources/test_data", "/test_data")
-        .withFileSystemBind("src/test/resources/spark_scripts", "/opt/spark_scripts")
-        .withFileSystemBind("build/libs", "/opt/libs")
-        .withFileSystemBind("build/dependencies", "/opt/dependencies")
-        .withLogConsumer(SparkContainerUtils::consumeOutput)
-        .waitingFor(Wait.forLogMessage(waitMessage, 1))
-        .withStartupTimeout(Duration.of(10, ChronoUnit.MINUTES))
-        .dependsOn(mockServerContainer)
-        .withReuse(true)
-        .withCommand(command);
+    GenericContainer container =
+        new GenericContainer<>(DockerImageName.parse(SPARK_DOCKER_IMAGE))
+            .withNetwork(network)
+            .withNetworkAliases("spark")
+            .withLogConsumer(SparkContainerUtils::consumeOutput)
+            .waitingFor(Wait.forLogMessage(waitMessage, 1))
+            .withStartupTimeout(Duration.of(10, ChronoUnit.MINUTES))
+            .dependsOn(mockServerContainer)
+            .withReuse(true)
+            .withCommand(command);
+
+    final Path buildDir = Paths.get("build").toAbsolutePath();
+    mountPath(container, buildDir.resolve("gcloud"), Paths.get("/opt/gcloud"));
+    mountPath(container, HOST_RESOURCES_DIR.resolve("test_data"), Paths.get("/test_data"));
+    mountPath(
+        container, HOST_RESOURCES_DIR.resolve("spark_scripts"), Paths.get("/opt/spark_scripts"));
+    mountPath(container, buildDir.resolve("libs"), Paths.get("/opt/libs"));
+    mountPath(container, buildDir.resolve("dependencies"), Paths.get("/opt/dependencies"));
+    mountPath(container, HOST_LOG4J_PROPERTIES_PATH, CONTAINER_LOG4J_PROPERTIES_PATH);
+    mountPath(container, HOST_LOG4J2_PROPERTIES_PATH, CONTAINER_LOG4J2_PROPERTIES_PATH);
+
+    return container;
   }
 
   static GenericContainer<?> makeKafkaContainer(Network network) {
@@ -87,7 +144,7 @@ public class SparkContainerUtils {
     return makePysparkContainerWithDefaultConf(
         network,
         "http://openlineageclient:1080",
-        ".*ShutdownHookManager: Shutdown hook called.*",
+        SPARK_DOCKER_CONTAINER_WAIT_MESSAGE,
         mockServerContainer,
         namespace,
         urlParams,
@@ -119,7 +176,6 @@ public class SparkContainerUtils {
       List<String> sparkConfigParams,
       String... command) {
 
-    //    String urlParamsString = urlParams.isEmpty() ?
     String paramString = "";
     if (!urlParams.isEmpty()) {
       paramString = "?" + String.join("&", urlParams);
@@ -165,7 +221,7 @@ public class SparkContainerUtils {
         network, waitMessage, mockServerContainer, sparkSubmit.toArray(new String[0]));
   }
 
-  public static void addSparkConfig(List command, String value) {
+  public static void addSparkConfig(List<String> command, String value) {
     command.add("--conf");
     command.add(value);
   }
