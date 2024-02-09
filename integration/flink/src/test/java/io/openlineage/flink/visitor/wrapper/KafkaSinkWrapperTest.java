@@ -89,6 +89,16 @@ class KafkaSinkWrapperTest {
   }
 
   @Test
+  @SneakyThrows
+  void testGetDynamicKafkaTopic() {
+    try (MockedStatic<WrapperUtils> mockedStatic = mockStatic(WrapperUtils.class)) {
+      when(WrapperUtils.getFieldValue(serializationSchema.getClass(), serializationSchema, "topic"))
+          .thenReturn(Optional.ofNullable("topic"));
+      assertEquals("topic", wrapper.getKafkaTopic());
+    }
+  }
+
+  @Test
   void testGetAvroSchema() {
     try (MockedStatic<WrapperUtils> mockedStatic = mockStatic(WrapperUtils.class)) {
       RegistryAvroSerializationSchema avroSerializationSchema =
