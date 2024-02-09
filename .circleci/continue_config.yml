@@ -493,7 +493,8 @@ jobs:
       - run: |
           sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
           sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-      - run: ./gradlew --no-daemon --console=plain integrationTest -x test   -Pspark.version=<< parameters.spark-version >>
+      - run: ./gradlew --no-daemon --console=plain app:buildDockerImage -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.12
+      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=<< parameters.spark-version >>
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport
       - store_test_results:
           path: app/build/test-results/integrationTest

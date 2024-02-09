@@ -5,6 +5,7 @@ plugins {
     id("io.freefair.lombok")
     id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
+    id("io.openlineage.docker-build")
     id 'java-test-fixtures'
     id "com.adarshr.test-logger" version "3.2.0"
     id "org.gradle.test-retry" version "1.5.8"
@@ -26,12 +27,18 @@ archivesBaseName = 'openlineage-spark-app'
 ext {
     assertjVersion = '3.25.1'
     bigqueryVersion = '0.29.0'
-    sparkVersion = project.getProperty('spark.version')
     postgresqlVersion = '42.7.1'
     mockitoVersion = '4.11.0'
     testcontainersVersion = '1.19.3'
     junit5Version = '5.10.1'
+
+    sparkVersion = findProperty("spark.version")
+    scalaBinaryVersion = findProperty("scala.binary.version")
     shortVersion = sparkVersion.substring(0, 3)
+
+    sparkVersionFmt = sparkVersion.replace(".", "")
+    scalaBinaryVersionFmt = scalaBinaryVersion.replace(".", "")
+    dockerImageBuildTaskName = "buildDockerImageSpark${sparkVersionFmt}Scala${scalaBinaryVersionFmt}"
 
     versionsMap = [
             "3.5": ["module": "spark35", "scala": "2.12", "delta": "NA", "gcs": "hadoop3-2.2.9", "iceberg": "NA", "hadoopclient": "3.3.4"],
@@ -169,6 +176,7 @@ def commonTestConfiguration = {
             'junit.platform.output.capture.stdout': 'true',
             'junit.platform.output.capture.stderr': 'true',
             'spark.version'                       : sparkVersion,
+            'scala.binary.version'                : scalaBinaryVersion,
             'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
             'kafka.package.version'               : "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}",
             'mockserver.logLevel'                 : 'ERROR'
@@ -354,3 +362,22 @@ tasks.named("pmdTest") {
     mustRunAfter("shadowJar")
 }
 
+if (sparkVersion == '2.4.6') {
+    tasks.register("buildDockerImage") {
+        dependsOn()
+        group = "docker"
+        description = "This is a no-op, because the manifest file is configured to build an image for Spark 2.4.8, and " +
+                "the Apache Spark folks decided not to include the Hadoop JARs with the 2.12 variant of 2.4.8. " +
+                "I'm not sure why. Any way this means we don't build this image, for the time being. This will be fixed in " +
+                "the future. At the same time, Bitnami never produced a Spark 2.4.8 image."
+        doLast {
+            println("This task is a no-op. See the task description for more information.")
+        }
+    }
+} else {
+    tasks.register("buildDockerImage") {
+        dependsOn(tasks.named(dockerImageBuildTaskName))
+        group = "docker"
+        description = "Builds the docker image specified by the properties 'spark.version' and 'scala.binary.version'"
+    }
+}
