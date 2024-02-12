@@ -55,6 +55,11 @@ configurations {
     }
 }
 
+configurations.testImplementation {
+    exclude group: 'org.slf4j', module: 'slf4j-reload4j'
+    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+}
+
 final def mainSourceSet = sourceSets.main
 final def testSourceSet = sourceSets.test
 
@@ -65,7 +70,7 @@ addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, sp
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&gcsDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&hadoopClientDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&icebergDependencies)
-addDependenciesToConfiguration(additionalJarsConfigurationName, spark, scala, this.&additionalJars)
+addDependenciesToConfiguration(testSourceSet.runtimeOnlyConfigurationName, spark, scala, this.&runtimeOnlyJars)
 
 dependencies {
     implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
@@ -116,8 +121,11 @@ dependencies {
         exclude group: 'org.mock-server.mockserver-client-java'
     }
 
-    testRuntimeOnly("ch.qos.logback:logback-classic:1.4.14")
-    testRuntimeOnly("org.slf4j:slf4j-api:2.0.10")
+    testRuntimeOnly("org.slf4j:slf4j-api:1.7.36")
+    testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.22.1"))
+    testRuntimeOnly("org.apache.logging.log4j:log4j-api")
+    testRuntimeOnly("org.apache.logging.log4j:log4j-core")
+    testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl")
 
     integrationTestFixtures(project(path: ":scala-fixtures", configuration: activeRuntimeElementsConfiguration))
 }
@@ -234,7 +242,7 @@ tasks.withType(Test).configureEach {
         showStandardStreams = true
     }
     forkEvery 1
-    maxParallelForks 5
+    maxParallelForks 3
     systemProperties = testSystemProperties(spark, scala)
     retry {
         boolean isCiServer = System.getenv().containsKey("CI")
@@ -383,6 +391,31 @@ tasks.named("assemble") {
     dependsOn(tasks.named("shadowJar"))
 }
 
+tasks.register("dumpDependencies") {
+    // This task will not have any actions by default
+    doLast {
+        // Retrieve the configuration name from a project property
+        String configurationName = project.hasProperty('configuration') ? project.property('configuration') : null
+
+        if (configurationName == null) {
+            println 'No configuration specified. Use -Pconfiguration=<name> to specify one.'
+        } else {
+            // Check if the specified configuration exists
+            Configuration configuration = project.configurations.findByName(configurationName)
+            if (configuration != null) {
+                println "Dependencies for configuration '$configurationName':"
+                // Iterate over the dependencies and print them
+                configuration.dependencies.sort().forEach { dependency ->
+                    println " - ${dependency.group}:${dependency.name}:${dependency.version}"
+                }
+            } else {
+                println "Configuration '$configurationName' not found."
+            }
+        }
+    }
+}
+
+
 void addDependenciesToConfiguration(String configurationName, String spark, String scala, BiFunction<String, String, List<Dependency>> func) {
     def deps = func.apply(spark, scala)
     deps.each {
@@ -488,8 +521,8 @@ List<Dependency> hadoopClientDependencies(String spark, String scala) {
 List<Dependency> additionalJars(String spark, String scala) {
     final def registry = [
             "2.4.8": [
-                    dependencies.create("org.slf4j:slf4j-api:2.0.10"),
-                    dependencies.create("org.slf4j:slf4j-reload4j:2.0.10"),
+                    dependencies.create("org.slf4j:slf4j-api:1.7.16"),
+                    dependencies.create("org.slf4j:slf4j-log4j12:1.7.16"),
                     dependencies.create("org.apache.hadoop:hadoop-common:2.10.2", {
                         exclude(group: "org.slf4j")
                     }),
@@ -497,6 +530,10 @@ List<Dependency> additionalJars(String spark, String scala) {
                         exclude(group: "org.slf4j")
                     }),
                     dependencies.create("org.apache.hadoop:hadoop-mapreduce-client-common:2.10.2", {
+                        exclude(group: "org.slf4j")
+                    }),
+                    // Yes, believe it or not, the Spark binaries without hadoop exclude hive
+                    dependencies.create("org.apache.spark:spark-hive_${scala}:${spark}", {
                         exclude(group: "org.slf4j")
                     }),
             ],
