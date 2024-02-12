@@ -28,6 +28,8 @@ ext {
     scala = project.findProperty('scala.binary.version').toString()
     scalaFmt = scala.replace(".", "")
 
+    snowflakeVersion = snowflakeLookup[spark]
+
     activeRuntimeElementsConfiguration = "scala${scalaFmt}RuntimeElements"
 }
 
