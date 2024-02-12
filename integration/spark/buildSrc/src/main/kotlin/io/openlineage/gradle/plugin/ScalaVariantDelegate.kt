@@ -1,7 +1,7 @@
-/*
-* SPDX-License-Identifier: Apache-2.0
-* Copyright 2018-2023 contributors to the OpenLineage project
-*/
+/**
+ * Copyright 2018-2024 contributors to the OpenLineage project
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 package io.openlineage.gradle.plugin
 
@@ -139,6 +139,7 @@ class ScalaVariantDelegate(
                 "Assembles a jar archive containing the main classes compiled using Scala $scalaBinaryVersion variants of the Apache Spark libraries"
             group = "build"
             from(sourceSets[sourceSetName].output)
+            destinationDirectory.set(target.file(target.layout.buildDirectory.file("libs/$sourceSetName")))
             archiveFileName.set(archiveName)
             includeEmptyDirs = false
         }

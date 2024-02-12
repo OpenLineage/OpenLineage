@@ -1,7 +1,7 @@
-/*
-* SPDX-License-Identifier: Apache-2.0
-* Copyright 2018-2023 contributors to the OpenLineage project
-*/
+/**
+ * Copyright 2018-2024 contributors to the OpenLineage project
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 package io.openlineage.gradle.plugin
 
@@ -14,16 +14,10 @@ import org.gradle.api.provider.Property
  * Usage:
  * ```
  * commonConfig {
- *     pmdEnabled.set(true)
- *     lombokEnabled.set(true)
  *     lombokVersion.set("1.18.30")
- *     spotlessEnabled.set(true)
  * }
  * ```
  */
 interface CommonConfigPluginExtension {
-    val pmdEnabled: Property<Boolean>
-    val lombokEnabled: Property<Boolean>
     val lombokVersion: Property<String>
-    val spotlessEnabled: Property<Boolean>
 }
