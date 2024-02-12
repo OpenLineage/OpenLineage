@@ -185,6 +185,27 @@ def commonTestConfiguration = {
     classpath = project.sourceSets.test.runtimeClasspath
 }
 
+if (sparkVersion == '2.4.6') {
+    tasks.register("buildDockerImage") {
+        dependsOn()
+        group = "docker"
+        description = "This is a no-op, because the manifest file is configured to build an image for Spark 2.4.8, and " +
+                "the Apache Spark folks decided not to include the Hadoop JARs with the 2.12 variant of 2.4.8. " +
+                "I'm not sure why. Any way this means we don't build this image, for the time being. This will be fixed in " +
+                "the future. At the same time, Bitnami never produced a Spark 2.4.8 image."
+        doLast {
+            println("This task is a no-op. See the task description for more information.")
+        }
+    }
+} else {
+    tasks.register("buildDockerImage") {
+        dependsOn(tasks.named(dockerImageBuildTaskName))
+        group = "docker"
+        description = "Builds the docker image specified by the properties 'spark.version' and 'scala.binary.version'"
+    }
+}
+
+
 // These entries aren't considered "outputs" of any Gradle task, thus Gradle doesn't know about
 // them and won't clean them up when you run './gradlew clean'. This is a problem because
 // you may experience weird test failures, when running the tests using different versions of
@@ -360,24 +381,4 @@ classes {
 
 tasks.named("pmdTest") {
     mustRunAfter("shadowJar")
-}
-
-if (sparkVersion == '2.4.6') {
-    tasks.register("buildDockerImage") {
-        dependsOn()
-        group = "docker"
-        description = "This is a no-op, because the manifest file is configured to build an image for Spark 2.4.8, and " +
-                "the Apache Spark folks decided not to include the Hadoop JARs with the 2.12 variant of 2.4.8. " +
-                "I'm not sure why. Any way this means we don't build this image, for the time being. This will be fixed in " +
-                "the future. At the same time, Bitnami never produced a Spark 2.4.8 image."
-        doLast {
-            println("This task is a no-op. See the task description for more information.")
-        }
-    }
-} else {
-    tasks.register("buildDockerImage") {
-        dependsOn(tasks.named(dockerImageBuildTaskName))
-        group = "docker"
-        description = "Builds the docker image specified by the properties 'spark.version' and 'scala.binary.version'"
-    }
 }
