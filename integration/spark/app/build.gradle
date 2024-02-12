@@ -257,7 +257,7 @@ task copyDependencies(type: Copy) {
 }
 
 task integrationTest(type: Test) {
-    dependsOn shadowJar, copyDependencies
+    dependsOn shadowJar, copyDependencies, buildDockerImage
     retry {
         boolean isCiServer = System.getenv().containsKey("CI")
         if (isCiServer) {
