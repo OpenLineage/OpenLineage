@@ -53,6 +53,15 @@ public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
   }
 
   public Optional<UnknownEntryFacet> build(LogicalPlan root) {
+    try {
+      return buildFacet(root);
+    } catch (Exception exception) {
+      log.warn("Failed to serialize unknown entry facet: %s", exception);
+    }
+    return Optional.empty();
+  }
+
+  private Optional<UnknownEntryFacet> buildFacet(LogicalPlan root) {
     Optional<UnknownEntryFacet.FacetEntry> output = mapEntry(root);
     List<UnknownEntryFacet.FacetEntry> inputs =
         ScalaConversionUtils.fromSeq(root.collectLeaves()).stream()
