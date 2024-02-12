@@ -10,11 +10,11 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 
 abstract class DockerBuildPluginExtension @javax.inject.Inject constructor(p: Project) {
-    internal val dockerFileTemplate: RegularFileProperty = p.objects.fileProperty().convention(
-        p.layout.projectDirectory.file("docker/Dockerfile.template")
+    internal val dockerfile: RegularFileProperty = p.objects.fileProperty().convention(
+        p.layout.projectDirectory.file("docker/Dockerfile")
     )
 
-    internal val manifestFile: RegularFileProperty = p.objects.fileProperty().convention(
+    internal val manifest: RegularFileProperty = p.objects.fileProperty().convention(
         p.layout.projectDirectory.file("docker/manifest.json")
     )
 
@@ -26,12 +26,12 @@ abstract class DockerBuildPluginExtension @javax.inject.Inject constructor(p: Pr
         p.layout.buildDirectory.dir("docker")
     )
 
-    fun dockerfileTemplate(file: RegularFileProperty) {
-        dockerFileTemplate.set(file)
+    fun dockerfile(file: RegularFileProperty) {
+        dockerfile.set(file)
     }
 
-    fun manifestFile(file: RegularFileProperty) {
-        manifestFile.set(file)
+    fun manifest(file: RegularFileProperty) {
+        manifest.set(file)
     }
 
     fun downloadDir(dir: DirectoryProperty) {

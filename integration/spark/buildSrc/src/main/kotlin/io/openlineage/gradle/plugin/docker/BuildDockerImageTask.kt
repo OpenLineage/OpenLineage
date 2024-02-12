@@ -20,6 +20,9 @@ abstract class BuildDockerImageTask : DefaultTask() {
     }
 
     @get:Input
+    abstract val baseImageTag: Property<String>
+
+    @get:Input
     abstract val dockerImageName: Property<String>
 
     @get:Input
@@ -40,6 +43,8 @@ abstract class BuildDockerImageTask : DefaultTask() {
                 "build",
                 "-t",
                 dockerImage,
+                "--build-arg",
+                "BASE_IMAGE_TAG=${baseImageTag.get()}",
                 "."
             )
         }
