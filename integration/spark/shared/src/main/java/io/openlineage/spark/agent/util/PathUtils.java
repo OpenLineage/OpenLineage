@@ -58,13 +58,13 @@ public class PathUtils {
     URI uri;
 
     if (catalogTable.storage() != null && catalogTable.storage().locationUri().isDefined()) {
-      di = PathUtils.fromURI(catalogTable.storage().locationUri().get(), DEFAULT_SCHEME);
-      uri = catalogTable.storage().locationUri().get();
+      uri = prepareUriFromLocation(catalogTable);
+      di = PathUtils.fromURI(uri, DEFAULT_SCHEME);
     } else {
       // try to obtain location
       try {
         uri = prepareUriFromDefaultTablePath(catalogTable);
-        di = PathUtils.fromURI(uri);
+        di = PathUtils.fromURI(uri, DEFAULT_SCHEME);
       } catch (IllegalStateException e) {
         // session inactive - no way to find DatasetProvider
         throw new IllegalArgumentException(
@@ -93,6 +93,17 @@ public class PathUtils {
   private static URI prepareUriFromDefaultTablePath(CatalogTable catalogTable) {
     URI uri =
         SparkSession.active().sessionState().catalog().defaultTablePath(catalogTable.identifier());
+
+    return uri;
+  }
+
+  @SneakyThrows
+  private static URI prepareUriFromLocation(CatalogTable catalogTable) {
+    URI uri = catalogTable.storage().locationUri().get();
+
+    if (uri.getPath() != null && uri.getPath().startsWith("/") && uri.getScheme() == null) {      
+      uri = new URI(DEFAULT_SCHEME, null, uri.getPath(), null, null);
+    }
 
     return uri;
   }
