@@ -155,7 +155,7 @@ public class GoogleCloudIntegrationTest {
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   void testRddWriteToBucket() throws IOException {
     String sparkVersion = String.format("spark-%s", System.getProperty(SPARK_VERSION));
-    String scalaVersion = String.format("scala-%s", System.getProperty("scala.version"));
+    String scalaVersion = String.format("scala-%s", System.getProperty("scala.binary.version"));
     URI buckertUri =
         URI.create("gs://openlineage-spark-bigquery-integration/rdd-test")
             .resolve(sparkVersion)
