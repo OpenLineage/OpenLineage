@@ -569,6 +569,9 @@ List<Dependency> additionalJars(String spark, String scala) {
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
                         exclude(group: "org.slf4j")
                     }),
+                    // This version MUST match with the hadoop versions in the image
+                    dependencies.create("org.apache.hadoop:hadoop-common:3.3.4"),
+                    dependencies.create("org.apache.hadoop:hadoop-aws:3.3.4"),
             ],
     ]
 
