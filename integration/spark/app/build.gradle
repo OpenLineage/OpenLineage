@@ -241,13 +241,10 @@ tasks.named("shadowJar", ShadowJar.class) {
 }
 
 tasks.withType(Test).configureEach {
-    failFast = true
     testLogging {
         events("passed", "skipped", "failed")
         showStandardStreams = true
     }
-    forkEvery 1
-    maxParallelForks 3
     systemProperties = testSystemProperties(spark, scala)
     retry {
         boolean isCiServer = System.getenv().containsKey("CI")
