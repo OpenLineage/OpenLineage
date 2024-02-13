@@ -156,7 +156,10 @@ public class GoogleCloudIntegrationTest {
   void testRddWriteToBucket() throws IOException {
     String sparkVersion = String.format("spark-%s", System.getProperty(SPARK_VERSION));
     String scalaVersion = String.format("scala-%s", System.getProperty("scala.version"));
-    URI buckertUri = URI.create("gs://openlineage-spark-bigquery-integration/rdd-test").resolve(sparkVersion).resolve(scalaVersion);
+    URI buckertUri =
+        URI.create("gs://openlineage-spark-bigquery-integration/rdd-test")
+            .resolve(sparkVersion)
+            .resolve(scalaVersion);
     String pathPrefix = buckertUri.toString();
 
     URL url = Resources.getResource("test_data/data.txt");
