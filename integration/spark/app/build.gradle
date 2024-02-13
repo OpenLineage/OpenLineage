@@ -126,6 +126,10 @@ dependencies {
     testRuntimeOnly("org.apache.logging.log4j:log4j-api")
     testRuntimeOnly("org.apache.logging.log4j:log4j-core")
     testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl")
+    // Needed for GoogleCloudIntegrationTest
+    testRuntimeOnly("org.apache.spark:spark-mllib_${scala}:${spark}", {
+        exclude(group: "org.slf4j")
+    })
 
     integrationTestFixtures(project(path: ":scala-fixtures", configuration: activeRuntimeElementsConfiguration))
 }
