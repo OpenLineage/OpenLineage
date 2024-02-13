@@ -70,7 +70,6 @@ addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, sp
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&gcsDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&hadoopClientDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&icebergDependencies)
-addDependenciesToConfiguration(testSourceSet.runtimeOnlyConfigurationName, spark, scala, this.&runtimeOnlyJars)
 
 dependencies {
     implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
