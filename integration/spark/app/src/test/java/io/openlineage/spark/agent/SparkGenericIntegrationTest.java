@@ -13,8 +13,6 @@ import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -46,6 +44,7 @@ import org.slf4j.event.Level;
 public class SparkGenericIntegrationTest {
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
+
   private static final int MOCKSERVER_PORT = getAvailablePort();
   private static ClientAndServer mockServer;
   private static SparkSession spark;

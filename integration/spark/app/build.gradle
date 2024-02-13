@@ -229,13 +229,13 @@ tasks.named("shadowJar", ShadowJar.class) {
         exclude 'com.fasterxml.jackson.annotation.JsonIgnoreType'
     }
     manifest {
-        attributes(
-                'Created-By': "Gradle ${gradle.gradleVersion}",
-                'Built-By': System.getProperty('user.name'),
-                'Build-Jdk': System.getProperty('java.version'),
-                'Implementation-Title': project.name,
+        attributes([
+                'Created-By'            : "Gradle ${gradle.gradleVersion}",
+                'Built-By'              : System.getProperty('user.name'),
+                'Build-Jdk'             : System.getProperty('java.version'),
+                'Implementation-Title'  : project.name,
                 'Implementation-Version': project.version
-        )
+        ])
     }
     zip64 true
 }
@@ -362,13 +362,19 @@ def integrationTestDependencies = [
 tasks.register("integrationTest", Test.class) {
     group = "verification"
     dependsOn(integrationTestDependencies)
+    testClassesDirs = testSourceSet.output.classesDirs
+    classpath = files(tasks.shadowJar.outputs.files.singleFile, sourceSets.test.runtimeClasspath)
     useJUnitPlatform {
         includeTags("integration-test")
         excludeTags("databricks")
+        logger.warn("[IntegrationTest] hasDeltaDependencies: ${hasDeltaDependencies(spark, scala)}")
         if (!hasDeltaDependencies(spark, scala)) {
+            logger.warn("[IntegrationTest] Excluding delta tests")
             excludeTags("delta")
         }
+        logger.warn("[IntegrationTest] hasIcebergDependencies: ${hasIcebergDependencies(spark, scala)}")
         if (!hasIcebergDependencies(spark, scala)) {
+            logger.warn("[IntegrationTest] Excluding iceberg tests")
             excludeTags("iceberg")
         }
     }
@@ -377,11 +383,11 @@ tasks.register("integrationTest", Test.class) {
 tasks.register("databricksIntegrationTest", Test) {
     group = "verification"
     dependsOn(integrationTestDependencies)
-    useJUnitPlatform {
-        includeTags "databricks"
-    }
-    classpath = testSourceSet.runtimeClasspath
     testClassesDirs = testSourceSet.output.classesDirs
+    classpath = files(tasks.shadowJar.outputs.files.singleFile, sourceSets.test.runtimeClasspath)
+    useJUnitPlatform {
+        includeTags("databricks")
+    }
 }
 
 tasks.named("classes") {
