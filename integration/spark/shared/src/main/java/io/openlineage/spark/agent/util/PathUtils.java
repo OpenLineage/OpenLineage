@@ -101,7 +101,7 @@ public class PathUtils {
   private static URI prepareUriFromLocation(CatalogTable catalogTable) {
     URI uri = catalogTable.storage().locationUri().get();
 
-    if (uri.getPath() != null && uri.getPath().startsWith("/") && uri.getScheme() == null) {      
+    if (uri.getPath() != null && uri.getPath().startsWith("/") && uri.getScheme() == null) {
       uri = new URI(DEFAULT_SCHEME, null, uri.getPath(), null, null);
     }
 
