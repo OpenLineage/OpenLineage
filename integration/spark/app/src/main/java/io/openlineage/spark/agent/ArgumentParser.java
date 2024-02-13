@@ -44,7 +44,7 @@ public class ArgumentParser {
   public static final String SPARK_CONF_PARENT_RUN_ID = "spark.openlineage.parentRunId";
   public static final String SPARK_CONF_APP_NAME = "spark.openlineage.appName";
   public static final String SPARK_CONF_DISABLED_FACETS = "spark.openlineage.facets.disabled";
-  public static final String DEFAULT_DISABLED_FACETS = "[spark_unknown;]";
+  public static final String DEFAULT_DISABLED_FACETS = "[spark_unknown;spark.logicalPlan]";
   public static final String ARRAY_PREFIX_CHAR = "[";
   public static final String ARRAY_SUFFIX_CHAR = "]";
   public static final String DISABLED_FACETS_SEPARATOR = ";";
