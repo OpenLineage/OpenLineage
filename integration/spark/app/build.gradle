@@ -70,6 +70,7 @@ addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, sp
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&gcsDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&hadoopClientDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&icebergDependencies)
+addDependenciesToConfiguration(testSourceSet.runtimeOnlyConfigurationName, spark, scala, this.&runtimeOnlyDependencies)
 addDependenciesToConfiguration(additionalJarsConfigurationName, spark, scala, this.&additionalJars)
 
 dependencies {
@@ -572,6 +573,34 @@ List<Dependency> additionalJars(String spark, String scala) {
                     // This version MUST match with the hadoop versions in the image
                     dependencies.create("org.apache.hadoop:hadoop-common:3.3.4"),
                     dependencies.create("org.apache.hadoop:hadoop-aws:3.3.4"),
+                    dependencies.create("com.amazonaws:aws-java-sdk-bundle:1.12.262"),
+            ],
+    ]
+
+    return registry.get(spark, [])
+}
+
+List<Dependency> runtimeOnlyDependencies(String spark, String scala) {
+    final def registry = [
+            "3.2.4": [
+                    dependencies.create("org.apache.hadoop:hadoop-common:2.10.2"),
+                    dependencies.create("org.apache.hadoop:hadoop-aws:2.10.2"),
+                    dependencies.create("com.amazonaws:aws-java-sdk-bundle:1.11.901"),
+            ],
+            "3.3.4": [
+                    dependencies.create("org.apache.hadoop:hadoop-common:3.3.2"),
+                    dependencies.create("org.apache.hadoop:hadoop-aws:3.3.2"),
+                    dependencies.create("com.amazonaws:aws-java-sdk-bundle:1.11.1026"),
+            ],
+            "3.4.2": [
+                    dependencies.create("org.apache.hadoop:hadoop-common:3.3.4"),
+                    dependencies.create("org.apache.hadoop:hadoop-aws:3.3.4"),
+                    dependencies.create("com.amazonaws:aws-java-sdk-bundle:1.12.262"),
+            ],
+            "3.5.0": [
+                    dependencies.create("org.apache.hadoop:hadoop-common:3.3.4"),
+                    dependencies.create("org.apache.hadoop:hadoop-aws:3.3.4"),
+                    dependencies.create("com.amazonaws:aws-java-sdk-bundle:1.12.262"),
             ],
     ]
 
