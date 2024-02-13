@@ -70,6 +70,7 @@ addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, sp
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&gcsDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&hadoopClientDependencies)
 addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&icebergDependencies)
+addDependenciesToConfiguration(additionalJarsConfigurationName, spark, scala, this.&additionalJars)
 
 dependencies {
     implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
@@ -535,10 +536,31 @@ List<Dependency> additionalJars(String spark, String scala) {
                     dependencies.create("org.apache.spark:spark-hive_${scala}:${spark}", {
                         exclude(group: "org.slf4j")
                     }),
+                    dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
+                        exclude(group: "org.slf4j")
+                    }),
+            ],
+            "3.2.4": [
+                    dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
+                        exclude(group: "org.slf4j")
+                    }),
+            ],
+            "3.3.4": [
+                    dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
+                        exclude(group: "org.slf4j")
+                    }),
+            ],
+            "3.4.2": [
+                    dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
+                        exclude(group: "org.slf4j")
+                    }),
             ],
             "3.5.0": [
                     dependencies.create("org.slf4j:slf4j-api:2.0.10"),
                     dependencies.create("org.slf4j:slf4j-reload4j:2.0.10"),
+                    dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
+                        exclude(group: "org.slf4j")
+                    }),
             ],
     ]
 
