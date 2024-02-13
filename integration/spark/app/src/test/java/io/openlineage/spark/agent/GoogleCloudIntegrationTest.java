@@ -83,6 +83,7 @@ public class GoogleCloudIntegrationTest {
             .appName("GoogleCloudIntegrationTest")
             .config("spark.driver.host", LOCAL_IP)
             .config("spark.driver.bindAddress", LOCAL_IP)
+            .config("spark.ui.enabled", false)
             .config("spark.sql.shuffle.partitions", 1)
             .config("spark.sql.warehouse.dir", "file:/tmp/iceberg/")
             .config("spark.driver.extraJavaOptions", "-Dderby.system.home=/tmp/gctest")
