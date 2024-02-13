@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
 
 public class CircuitBreakerConfigTypeIdResolver extends TypeIdResolverBase {
-
   private JavaType superType;
 
   @Override
@@ -21,14 +20,7 @@ public class CircuitBreakerConfigTypeIdResolver extends TypeIdResolverBase {
 
   @Override
   public String idFromValue(Object value) {
-    if (value instanceof JavaRuntimeCircuitBreaker) {
-      return "javaRuntime";
-    } else if (value instanceof SimpleMemoryCircuitBreaker) {
-      return "simpleMemory";
-    } else if (value instanceof TestCircuitBreaker) {
-      return "test";
-    }
-    throw new UnsupportedOperationException("Unsupported circuit breaker " + value);
+    return CircuitBreakerResolver.resolveCircuitBreakerTypeByConfigClass(value.getClass());
   }
 
   @Override
@@ -38,14 +30,9 @@ public class CircuitBreakerConfigTypeIdResolver extends TypeIdResolverBase {
 
   @Override
   public JavaType typeFromId(DatabindContext context, String id) {
-    if (id.equalsIgnoreCase("javaRuntime")) {
-      return context.constructSpecializedType(superType, JavaRuntimeCircuitBreakerConfig.class);
-    } else if (id.equalsIgnoreCase("simpleMemory")) {
-      return context.constructSpecializedType(superType, SimpleMemoryCircuitBreakerConfig.class);
-    } else if (id.equalsIgnoreCase("test")) {
-      return context.constructSpecializedType(superType, TestCircuitBreakerConfig.class);
-    }
-    throw new UnsupportedOperationException("Unsupported circuit breaker of type " + id);
+    Class<? extends CircuitBreakerConfig> clazz =
+        CircuitBreakerResolver.resolveCircuitBreakerConfigByType(id);
+    return context.constructSpecializedType(superType, clazz);
   }
 
   @Override

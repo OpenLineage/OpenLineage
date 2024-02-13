@@ -19,8 +19,8 @@ public class CircuitBreakerFactory {
     } else if (circuitBreakerConfig instanceof SimpleMemoryCircuitBreakerConfig) {
       return new SimpleMemoryCircuitBreaker(
           (SimpleMemoryCircuitBreakerConfig) circuitBreakerConfig);
-    } else if (circuitBreakerConfig instanceof TestCircuitBreakerConfig) {
-      return new TestCircuitBreaker((TestCircuitBreakerConfig) circuitBreakerConfig);
+    } else if (circuitBreakerConfig instanceof StaticCircuitBreakerConfig) {
+      return new StaticCircuitBreaker((StaticCircuitBreakerConfig) circuitBreakerConfig);
     }
 
     return new NoOpCircuitBreaker();

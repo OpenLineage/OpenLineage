@@ -14,16 +14,17 @@ import java.util.concurrent.Future;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public abstract class CommonCircuitBreaker implements CircuitBreaker {
+public abstract class ExecutorCircuitBreaker implements CircuitBreaker {
 
-  private Integer circuitCheckIntervalInMillis = CIRCUIT_CHECK_INTERVAL_IN_MILLIS;
+  private Integer circuitCheckIntervalInMillis;
 
-  public CommonCircuitBreaker(Integer circuitCheckIntervalInMillis) {
+  public ExecutorCircuitBreaker(Integer circuitCheckIntervalInMillis) {
     this.circuitCheckIntervalInMillis = circuitCheckIntervalInMillis;
   }
 
+  @Override
   public <T> T run(Callable<T> callable) {
-    if (isClosed()) {
+    if (currentState().isClosed()) {
       log.warn("CircuitBreaker closed preventing callable to be run: {}", this);
       return null;
     }
@@ -38,10 +39,13 @@ public abstract class CommonCircuitBreaker implements CircuitBreaker {
                   "Starting CircuitBreaker in background {} with interval {}",
                   this,
                   getCheckIntervalMillis());
-              while (isOpen()) {
+              CircuitBreakerState circuitBreakerState = currentState();
+              while (!circuitBreakerState.isClosed()) {
                 Thread.sleep(getCheckIntervalMillis());
+                circuitBreakerState = currentState();
               }
-              log.warn("CircuitBreaker cancelling OpenLineage code");
+              log.warn(
+                  "CircuitBreaker cancelling OpenLineage code: " + circuitBreakerState.getReason());
               futureOpenLineage.cancel(true); // interrupt other thread
               return null;
             });
@@ -54,14 +58,16 @@ public abstract class CommonCircuitBreaker implements CircuitBreaker {
     } catch (ExecutionException | InterruptedException | CancellationException e) {
       futureOpenLineage.cancel(true);
       futureCircuitBreaker.cancel(true);
-      log.debug("Got error in safelyRun callable: {}", e.getMessage(), e.getCause());
-      result = null;
+      log.warn("Got error in run callable: {}", e.getMessage(), e.getCause());
+      executor.shutdownNow();
+      return null;
     } finally {
       executor.shutdownNow();
     }
     return result;
   }
 
+  @Override
   public int getCheckIntervalMillis() {
     return circuitCheckIntervalInMillis;
   }

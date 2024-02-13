@@ -17,7 +17,7 @@ import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class SimpleMemoryCircuitBreakerTest {
+class SimpleMemoryCircuitBreakerTest {
   long MEGABYTE = 1024L * 1024L;
   SimpleMemoryCircuitBreakerConfig config = mock(SimpleMemoryCircuitBreakerConfig.class);
   SimpleMemoryCircuitBreaker circuitBreaker = new SimpleMemoryCircuitBreaker(config);
@@ -26,7 +26,7 @@ public class SimpleMemoryCircuitBreakerTest {
   @Test
   void testWhenThresholdIsEmpty() {
     when(config.getMemoryThreshold()).thenReturn(null);
-    assertFalse(circuitBreaker.isClosed());
+    assertFalse(circuitBreaker.currentState().isClosed());
   }
 
   @Test
@@ -39,7 +39,9 @@ public class SimpleMemoryCircuitBreakerTest {
       when(RuntimeUtils.getGarbageCollectorMXBeans()).thenReturn(Collections.singletonList(gcBean));
       when(gcBean.getCollectionTime()).thenReturn(1000l);
       when(gcBean.getCollectionCount()).thenReturn(1l);
-      assertTrue(circuitBreaker.isClosed());
+      assertTrue(circuitBreaker.currentState().isClosed());
+      assertThat(circuitBreaker.currentState().getReason().get())
+          .isEqualTo("Circuit breaker tripped at memory 19.99% (freeMemoryThreshold 20%)");
     }
   }
 
@@ -50,17 +52,17 @@ public class SimpleMemoryCircuitBreakerTest {
       when(RuntimeUtils.totalMemory()).thenReturn(26000L * MEGABYTE - MEGABYTE);
       when(RuntimeUtils.freeMemory()).thenReturn(2000L * MEGABYTE + MEGABYTE);
       when(RuntimeUtils.maxMemory()).thenReturn(30000L * MEGABYTE);
-      assertFalse(circuitBreaker.isClosed());
+      assertFalse(circuitBreaker.currentState().isClosed());
     }
   }
 
   @Test
   void testWhenThresholdIsWrong() {
     when(config.getMemoryThreshold()).thenReturn(0);
-    assertFalse(circuitBreaker.isClosed());
+    assertFalse(circuitBreaker.currentState().isClosed());
 
     when(config.getMemoryThreshold()).thenReturn(101);
-    assertFalse(circuitBreaker.isClosed());
+    assertFalse(circuitBreaker.currentState().isClosed());
   }
 
   @Test

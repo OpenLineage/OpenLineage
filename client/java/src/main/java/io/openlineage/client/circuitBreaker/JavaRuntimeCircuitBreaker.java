@@ -17,7 +17,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class JavaRuntimeCircuitBreaker extends CommonCircuitBreaker {
+public class JavaRuntimeCircuitBreaker extends ExecutorCircuitBreaker {
   private volatile GarbageCollectorMXBean oldGenGCBeanCached = null;
   private final JavaRuntimeCircuitBreakerConfig config;
 
@@ -42,11 +42,11 @@ public class JavaRuntimeCircuitBreaker extends CommonCircuitBreaker {
   }
 
   @Override
-  public boolean isClosed() {
+  public CircuitBreakerState currentState() {
     if (!isPercentageValueValid(config.getMemoryThreshold())
         || !isPercentageValueValid(config.getGcCpuThreshold())) {
       log.warn("Invalid memory threshold configured {}", config.getMemoryThreshold());
-      return false;
+      return new CircuitBreakerState(false);
     }
 
     long currentTimeInNanoseconds = System.nanoTime();
@@ -56,7 +56,7 @@ public class JavaRuntimeCircuitBreaker extends CommonCircuitBreaker {
     if (elapsedTime <= 0) {
       lastTimestampInNanoseconds.set(currentTimeInNanoseconds);
       lastTotalGCTimeNS.set(gcCpuTime);
-      return false;
+      return new CircuitBreakerState(false);
     }
     double percentageFreeMemory =
         100 * ((freeMemory() + (maxMemory() - totalMemory())) / (double) maxMemory());
@@ -66,17 +66,17 @@ public class JavaRuntimeCircuitBreaker extends CommonCircuitBreaker {
 
     int freeMemoryThreshold = config.getMemoryThreshold();
     int gcCPUThreshold = config.getGcCpuThreshold();
-    log.debug(
-        "Circuit breaker: percentage free memory {}%  GC CPU time percentage {}% (freeMemoryThreshold {}, gcCPUThreshold {})",
-        percentageFreeMemory, gcCpuTimePercentage, freeMemoryThreshold, gcCPUThreshold);
+
+    String reason =
+        String.format(
+            "Circuit breaker tripped at memory %.2f%%  GC CPU time %.2f%% (freeMemoryThreshold %d%%, gcCPUThreshold %d%%)",
+            percentageFreeMemory, gcCpuTimePercentage, freeMemoryThreshold, gcCPUThreshold);
+    log.debug(reason);
 
     if (gcCpuTimePercentage >= gcCPUThreshold && percentageFreeMemory <= freeMemoryThreshold) {
-      log.warn(
-          "Circuit breaker tripped at memory {}%  GC CPU time {}%",
-          percentageFreeMemory, gcCpuTimePercentage);
-      return true;
+      return new CircuitBreakerState(true, reason);
     }
-    return false;
+    return new CircuitBreakerState(false);
   }
 
   /**
@@ -89,7 +89,7 @@ public class JavaRuntimeCircuitBreaker extends CommonCircuitBreaker {
 
   private long getGCCount() {
     long gcCpuCount = 0;
-    long collectorCount = 0;
+    long collectorCount;
     for (GarbageCollectorMXBean gcBean : ManagementFactory.getGarbageCollectorMXBeans()) {
       collectorCount = gcBean.getCollectionCount();
       if (collectorCount != -1) {
@@ -100,8 +100,18 @@ public class JavaRuntimeCircuitBreaker extends CommonCircuitBreaker {
   }
 
   /**
-   * Bean with the least amount of gc counts == old gen GC Bean.
+   * Returns old generation Garbage Collection bean. Refer to
    *
+   * @see <a
+   *     href"https://opensource.com/article/22/6/garbage-collection-java-virtual-machine-">this</a>
+   *     to get more details on Java garbage collection. This method retrieves a list of {@link
+   *     GarbageCollectorMXBean} and identifies the one corresponding to old generartion. This is
+   *     just a bean with the least amount of gc counts with an exception of two corner case
+   *     scenarios. First, in case of tie the amount of collection count is equal for young and old
+   *     gen gc beans. Secondly, garbage collection can occur at the moment of running a method.
+   *     This can be identified by comparing total amount of garbage collections at the beginning
+   *     and at the end, while checking if a tie has occurred. In both scenarios above, we don't
+   *     want to save found bean as cached.
    * @return GarbageCollector bean for the old (tenured) generation pool
    */
   private GarbageCollectorMXBean getOldGenGCBean() {
@@ -144,10 +154,5 @@ public class JavaRuntimeCircuitBreaker extends CommonCircuitBreaker {
         return lowestGCCountBean;
       }
     }
-  }
-
-  @Override
-  public String getType() {
-    return "javaRuntime";
   }
 }

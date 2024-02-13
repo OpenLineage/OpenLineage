@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.openlineage.client.OpenLineageYaml;
-import io.openlineage.client.circuitBreaker.TestCircuitBreakerConfig;
+import io.openlineage.client.circuitBreaker.StaticCircuitBreakerConfig;
 import io.openlineage.client.transports.ApiKeyTokenProvider;
 import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.client.transports.HttpConfig;
@@ -147,12 +147,13 @@ class ArgumentParserTest {
   void testCircuitBreakerConfig() {
     SparkConf sparkConf =
         new SparkConf()
-            .set("spark.openlineage.circuitBreaker.type", "test")
+            .set("spark.openlineage.circuitBreaker.type", "static")
             .set("spark.openlineage.circuitBreaker.valuesReturned", "false,true");
 
     OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
-    assertThat(openLineageYaml.getCircuitBreaker()).isInstanceOf(TestCircuitBreakerConfig.class);
-    assertThat(((TestCircuitBreakerConfig) openLineageYaml.getCircuitBreaker()).getValuesReturned())
+    assertThat(openLineageYaml.getCircuitBreaker()).isInstanceOf(StaticCircuitBreakerConfig.class);
+    assertThat(
+            ((StaticCircuitBreakerConfig) openLineageYaml.getCircuitBreaker()).getValuesReturned())
         .isEqualTo("false,true");
   }
 }

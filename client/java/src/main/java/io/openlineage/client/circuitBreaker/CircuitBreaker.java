@@ -11,11 +11,7 @@ public interface CircuitBreaker {
 
   int CIRCUIT_CHECK_INTERVAL_IN_MILLIS = 1000;
 
-  boolean isClosed();
-
-  default boolean isOpen() {
-    return !isClosed();
-  }
+  CircuitBreakerState currentState();
 
   /**
    * Runs callable and breaks it when circuit breaker is closed
@@ -29,6 +25,4 @@ public interface CircuitBreaker {
   default int getCheckIntervalMillis() {
     return CIRCUIT_CHECK_INTERVAL_IN_MILLIS;
   }
-
-  String getType();
 }

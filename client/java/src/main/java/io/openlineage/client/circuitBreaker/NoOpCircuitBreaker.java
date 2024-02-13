@@ -10,17 +10,18 @@ import lombok.extern.slf4j.Slf4j;
 
 /** Non-closing circuit breaker which always runs callable. */
 @Slf4j
-public class NoOpCircuitBreaker extends CommonCircuitBreaker {
+public class NoOpCircuitBreaker extends ExecutorCircuitBreaker {
 
   public NoOpCircuitBreaker() {
     super(0);
   }
 
   @Override
-  public boolean isClosed() {
-    return false;
+  public CircuitBreakerState currentState() {
+    return new CircuitBreakerState(false);
   }
 
+  @Override
   public <T> T run(Callable<T> callable) {
     try {
       return callable.call();
@@ -28,10 +29,5 @@ public class NoOpCircuitBreaker extends CommonCircuitBreaker {
       log.error("OpenLineage callable failed to execute. Swallowing the exception {}", e);
       return null;
     }
-  }
-
-  @Override
-  public String getType() {
-    return "noop";
   }
 }

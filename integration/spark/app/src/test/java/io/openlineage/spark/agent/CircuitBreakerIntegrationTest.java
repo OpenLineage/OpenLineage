@@ -72,7 +72,8 @@ public class CircuitBreakerIntegrationTest {
             .config(
                 "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/circuit-breaker")
-            .config("spark.openlineage.circuitBreaker.type", "test") // turn on test circuit breaker
+            .config(
+                "spark.openlineage.circuitBreaker.type", "static") // turn on test circuit breaker
             .config("spark.openlineage.circuitBreaker.valuesReturned", "true,true")
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .getOrCreate();

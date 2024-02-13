@@ -10,34 +10,33 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 
-public class TestCircuitBreaker extends CommonCircuitBreaker {
+/**
+ * Static circuit breaker used mainly for the integration tests. Its config contains a sequence of
+ * boolean values determining behaviour of isClosed method in a sequence of the calls.
+ */
+public class StaticCircuitBreaker extends ExecutorCircuitBreaker {
 
-  private final TestCircuitBreakerConfig config;
+  private final StaticCircuitBreakerConfig config;
   private int currentIndex;
 
-  public TestCircuitBreaker(@NonNull final TestCircuitBreakerConfig config) {
+  public StaticCircuitBreaker(@NonNull final StaticCircuitBreakerConfig config) {
     super(config.getCircuitCheckIntervalInMillis());
     this.config = config;
     this.currentIndex = 0;
   }
 
   @Override
-  public boolean isClosed() {
+  public CircuitBreakerState currentState() {
     if (currentIndex >= getValuesAsList().size()) {
-      return true;
+      return new CircuitBreakerState(true);
     }
     currentIndex++;
-    return getValuesAsList().get(currentIndex - 1);
+    return new CircuitBreakerState(getValuesAsList().get(currentIndex - 1));
   }
 
   private List<Boolean> getValuesAsList() {
     return Arrays.stream(config.getValuesReturned().split(","))
         .map(s -> Boolean.valueOf(s))
         .collect(Collectors.toList());
-  }
-
-  @Override
-  public String getType() {
-    return "test";
   }
 }

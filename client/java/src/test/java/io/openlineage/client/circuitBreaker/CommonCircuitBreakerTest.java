@@ -12,7 +12,7 @@ import io.openlineage.client.OpenLineageYaml;
 import java.util.concurrent.Callable;
 import org.junit.jupiter.api.Test;
 
-public class CommonCircuitBreakerTest {
+class CommonCircuitBreakerTest {
 
   OpenLineageYaml openLineageYaml = mock(OpenLineageYaml.class);
   Callable<Object> callableWithException =
@@ -23,7 +23,7 @@ public class CommonCircuitBreakerTest {
   @Test
   void testCallableNotRunWhenCircuitBreakerClosed() {
     CircuitBreaker circuitBreaker =
-        new CircuitBreakerFactory(new TestCircuitBreakerConfig("true")).build();
+        new CircuitBreakerFactory(new StaticCircuitBreakerConfig("true")).build();
     assertThat(circuitBreaker.run(callableWithException)).isNull();
   }
 
@@ -43,7 +43,7 @@ public class CommonCircuitBreakerTest {
   @Test
   void verifyCircuitBreakerInterruptsCallable() {
     CircuitBreaker circuitBreaker =
-        new CircuitBreakerFactory(new TestCircuitBreakerConfig("false,false,true", 50)).build();
+        new CircuitBreakerFactory(new StaticCircuitBreakerConfig("false,false,true", 50)).build();
     Callable<Object> longLastingCallable =
         (() -> {
           Thread.sleep(2000);
@@ -61,7 +61,7 @@ public class CommonCircuitBreakerTest {
   @Test
   void verifyCallableSucceeds() {
     CircuitBreaker circuitBreaker =
-        new CircuitBreakerFactory(new TestCircuitBreakerConfig("false,false,false,false", 50))
+        new CircuitBreakerFactory(new StaticCircuitBreakerConfig("false,false,false,false", 50))
             .build();
     Callable<Integer> longLastingCallable =
         (() -> {

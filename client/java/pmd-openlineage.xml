@@ -7,6 +7,8 @@
     <description>
         Rules for Debugging OpenLineage
     </description>
+    <exclude-pattern>.*/java/io/openlineage/client/OpenLineage.java</exclude-pattern> <!-- Generated code within Java client -->
+    <exclude-pattern>.*/java/io/openlineage/server/OpenLineage.java</exclude-pattern>
     <rule ref="category/java/errorprone.xml">
         <exclude name="EmptyCatchBlock"/> <!-- Openlineage should not fail Spark job -->
         <exclude name="UseProperClassLoader"/>

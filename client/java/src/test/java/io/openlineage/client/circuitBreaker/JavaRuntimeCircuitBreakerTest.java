@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class JavaRuntimeCircuitBreakerTest {
+class JavaRuntimeCircuitBreakerTest {
   long MEGABYTE = 1024L * 1024L;
   JavaRuntimeCircuitBreakerConfig config = mock(JavaRuntimeCircuitBreakerConfig.class);
   JavaRuntimeCircuitBreaker circuitBreaker;
@@ -51,11 +51,11 @@ public class JavaRuntimeCircuitBreakerTest {
   @Test
   void testWhenThresholdIsEmpty() {
     when(config.getMemoryThreshold()).thenReturn(null);
-    assertFalse(circuitBreaker.isClosed());
+    assertFalse(circuitBreaker.currentState().isClosed());
 
     when(config.getMemoryThreshold()).thenReturn(20);
     when(config.getGcCpuThreshold()).thenReturn(null);
-    assertFalse(circuitBreaker.isClosed());
+    assertFalse(circuitBreaker.currentState().isClosed());
   }
 
   @Test
@@ -68,9 +68,12 @@ public class JavaRuntimeCircuitBreakerTest {
           .thenReturn(Collections.singletonList(oldGcBean));
 
       // first run to collect elapsed time
-      circuitBreaker.isClosed();
+      circuitBreaker.currentState().isClosed();
 
-      assertTrue(circuitBreaker.isClosed());
+      assertTrue(circuitBreaker.currentState().isClosed());
+      assertThat(circuitBreaker.currentState().getReason().get())
+          .startsWith("Circuit breaker tripped at memory 19.99%  GC CPU time ")
+          .endsWith("(freeMemoryThreshold 20%, gcCPUThreshold 10%)");
     }
   }
 
@@ -84,9 +87,9 @@ public class JavaRuntimeCircuitBreakerTest {
       when(RuntimeUtils.getGarbageCollectorMXBeans())
           .thenReturn(Collections.singletonList(oldGcBean));
       // first run to collect elapsed time
-      circuitBreaker.isClosed();
+      circuitBreaker.currentState().isClosed();
 
-      assertFalse(circuitBreaker.isClosed());
+      assertFalse(circuitBreaker.currentState().isClosed());
     }
   }
 
@@ -101,13 +104,13 @@ public class JavaRuntimeCircuitBreakerTest {
       when(RuntimeUtils.getGarbageCollectorMXBeans())
           .thenReturn(Collections.singletonList(oldGcBean));
       // first run to collect elapsed time
-      circuitBreaker.isClosed();
+      circuitBreaker.currentState().isClosed();
 
       when(oldGcBean.getCollectionTime()).thenReturn(0l);
       when(oldGcBean.getCollectionCount()).thenReturn(1l);
       when(oldGcBean.getName()).thenReturn("gcName");
 
-      assertFalse(circuitBreaker.isClosed());
+      assertFalse(circuitBreaker.currentState().isClosed());
     }
   }
 
@@ -122,24 +125,24 @@ public class JavaRuntimeCircuitBreakerTest {
       when(RuntimeUtils.getGarbageCollectorMXBeans())
           .thenReturn(Collections.singletonList(oldGcBean));
       // first run to collect elapsed time
-      circuitBreaker.isClosed();
+      circuitBreaker.currentState().isClosed();
 
-      assertTrue(circuitBreaker.isClosed());
+      assertTrue(circuitBreaker.currentState().isClosed());
 
       // assure it gets open
       when(config.getMemoryThreshold()).thenReturn(-1);
-      assertFalse(circuitBreaker.isClosed());
+      assertFalse(circuitBreaker.currentState().isClosed());
 
       when(config.getMemoryThreshold()).thenReturn(101);
-      assertFalse(circuitBreaker.isClosed());
+      assertFalse(circuitBreaker.currentState().isClosed());
 
       when(config.getMemoryThreshold()).thenReturn(20);
-      assertTrue(circuitBreaker.isClosed()); // should be closed again
+      assertTrue(circuitBreaker.currentState().isClosed()); // should be closed again
 
       when(config.getGcCpuThreshold()).thenReturn(101);
-      assertFalse(circuitBreaker.isClosed());
+      assertFalse(circuitBreaker.currentState().isClosed());
       when(config.getGcCpuThreshold()).thenReturn(-1);
-      assertFalse(circuitBreaker.isClosed());
+      assertFalse(circuitBreaker.currentState().isClosed());
     }
   }
 
@@ -161,8 +164,8 @@ public class JavaRuntimeCircuitBreakerTest {
       when(RuntimeUtils.getGarbageCollectorMXBeans())
           .thenReturn(Collections.singletonList(youngerGcBean));
       // first run to collect elapsed time
-      circuitBreaker.isClosed();
-      assertFalse(circuitBreaker.isClosed());
+      circuitBreaker.currentState().isClosed();
+      assertFalse(circuitBreaker.currentState().isClosed());
 
       // should be closed if both gc beans present
       when(RuntimeUtils.getGarbageCollectorMXBeans())
@@ -170,9 +173,9 @@ public class JavaRuntimeCircuitBreakerTest {
 
       // create new circuit breaker to reload gc beans
       JavaRuntimeCircuitBreaker circuitBreaker = new JavaRuntimeCircuitBreaker(config);
-      circuitBreaker.isClosed();
+      circuitBreaker.currentState().isClosed();
 
-      assertTrue(circuitBreaker.isClosed());
+      assertTrue(circuitBreaker.currentState().isClosed());
     }
   }
 
@@ -188,16 +191,16 @@ public class JavaRuntimeCircuitBreakerTest {
           .thenReturn(Arrays.asList(youngerGcBean, oldGcBean));
 
       // first run to collect elapsed time
-      circuitBreaker.isClosed();
+      circuitBreaker.currentState().isClosed();
 
       // should be open when tie with new circuit breaker to reload gc beans
       JavaRuntimeCircuitBreaker circuitBreaker = new JavaRuntimeCircuitBreaker(config);
       when(youngerGcBean.getCollectionCount()).thenReturn(2l);
-      assertFalse(circuitBreaker.isClosed());
+      assertFalse(circuitBreaker.currentState().isClosed());
 
       // should be closed when count increased -> old gc bean is closing
       when(youngerGcBean.getCollectionCount()).thenReturn(3l);
-      assertTrue(circuitBreaker.isClosed());
+      assertTrue(circuitBreaker.currentState().isClosed());
     }
   }
 }

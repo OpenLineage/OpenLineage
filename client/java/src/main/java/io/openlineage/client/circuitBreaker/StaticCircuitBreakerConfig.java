@@ -20,11 +20,11 @@ import lombok.With;
 @EqualsAndHashCode
 @AllArgsConstructor
 @With
-public final class TestCircuitBreakerConfig implements CircuitBreakerConfig {
+public final class StaticCircuitBreakerConfig implements CircuitBreakerConfig {
   @Getter @Setter private String valuesReturned;
   @Getter @Setter private Integer circuitCheckIntervalInMillis = CIRCUIT_CHECK_INTERVAL_IN_MILLIS;
 
-  public TestCircuitBreakerConfig(String valuesReturned) {
+  public StaticCircuitBreakerConfig(String valuesReturned) {
     this(valuesReturned, CIRCUIT_CHECK_INTERVAL_IN_MILLIS);
   }
 }
