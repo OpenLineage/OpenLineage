@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage.RunEvent;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
@@ -153,7 +154,10 @@ public class GoogleCloudIntegrationTest {
   @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   void testRddWriteToBucket() throws IOException {
-    String pathPrefix = "gs://openlineage-spark-bigquery-integration/rdd-test";
+    String sparkVersion = String.format("spark-%s", System.getProperty(SPARK_VERSION));
+    String scalaVersion = String.format("scala-%s", System.getProperty("scala.version"));
+    URI buckertUri = URI.create("gs://openlineage-spark-bigquery-integration/rdd-test").resolve(sparkVersion).resolve(scalaVersion);
+    String pathPrefix = buckertUri.toString();
 
     URL url = Resources.getResource("test_data/data.txt");
     JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
@@ -186,12 +190,14 @@ public class GoogleCloudIntegrationTest {
 
     List<RunEvent> eventsEmitted = MockServerUtils.getEventsEmitted(mockServer);
 
+    String uriPath = buckertUri.getPath();
+
     assertThat(eventsEmitted.get(eventsEmitted.size() - 1).getOutputs().get(0))
-        .hasFieldOrPropertyWithValue("name", "/rdd-test/output/data.csv")
+        .hasFieldOrPropertyWithValue("name", String.format("%s/output/data.csv", uriPath))
         .hasFieldOrPropertyWithValue("namespace", "gs://openlineage-spark-bigquery-integration");
 
     assertThat(eventsEmitted.get(eventsEmitted.size() - 2).getInputs().get(0))
-        .hasFieldOrPropertyWithValue("name", "/rdd-test/input/data.csv")
+        .hasFieldOrPropertyWithValue("name", String.format("%s/input/data.csv", uriPath))
         .hasFieldOrPropertyWithValue("namespace", "gs://openlineage-spark-bigquery-integration");
   }
 }
