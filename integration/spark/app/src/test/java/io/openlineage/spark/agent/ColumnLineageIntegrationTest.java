@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.MockServerUtils.getAvailablePort;
 import static org.mockserver.model.HttpRequest.request;
 
 import java.util.ArrayList;
@@ -48,7 +49,7 @@ public class ColumnLineageIntegrationTest {
   private static Network network = Network.newNetwork();
   private static SparkSession spark;
   public static final int POSTGRES_PORT = 5432;
-  private static final int MOCKSERVER_PORT = 1083;
+  private static final int MOCKSERVER_PORT = getAvailablePort();
 
   private static int mappedPort;
   private static ClientAndServer mockServer;

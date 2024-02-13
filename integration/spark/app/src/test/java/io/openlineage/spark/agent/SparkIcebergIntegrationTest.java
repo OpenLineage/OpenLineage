@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.MockServerUtils.getAvailablePort;
 import static io.openlineage.spark.agent.MockServerUtils.getEventsEmittedWithJobName;
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,7 +51,7 @@ public class SparkIcebergIntegrationTest {
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
-  private static final int MOCKSERVER_PORT = 1081;
+  private static final int MOCKSERVER_PORT = getAvailablePort();
 
   private static ClientAndServer mockServer;
 

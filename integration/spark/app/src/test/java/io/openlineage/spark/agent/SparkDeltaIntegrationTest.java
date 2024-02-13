@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.MockServerUtils.getAvailablePort;
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.from_json;
@@ -56,7 +57,7 @@ public class SparkDeltaIntegrationTest {
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
-  private static final int MOCKSERVER_PORT = 1082;
+  private static final int MOCKSERVER_PORT = getAvailablePort();
 
   private static ClientAndServer mockServer;
 

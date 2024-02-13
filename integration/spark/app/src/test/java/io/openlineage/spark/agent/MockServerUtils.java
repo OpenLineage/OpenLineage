@@ -12,6 +12,8 @@ import static org.mockserver.model.JsonBody.json;
 
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClientUtils;
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -29,6 +31,14 @@ import org.mockserver.model.JsonBody;
 import org.mockserver.model.RequestDefinition;
 
 public class MockServerUtils {
+
+  static int getAvailablePort() {
+    try (ServerSocket socket = new ServerSocket(0)) {
+      return socket.getLocalPort();
+    } catch (IOException e) {
+      throw new IllegalStateException("Could not find an available port", e);
+    }
+  }
 
   static void verifyEvents(MockServerClient mockServerClient, String... eventFiles) {
     verifyEvents(mockServerClient, Collections.emptyMap(), eventFiles);
