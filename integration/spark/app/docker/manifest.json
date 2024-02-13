@@ -1,0 +1,74 @@
+[
+  {
+    "baseImageTag": "2.4.6",
+    "scalaBinaryVersion": "2.12",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-2.4.8/spark-2.4.8-bin-without-hadoop-scala-2.12.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-2.4.8/spark-2.4.8-bin-without-hadoop-scala-2.12.tgz.asc",
+    "sparkVersion": "2.4.8"
+  },
+  {
+    "baseImageTag": "3.2.4",
+    "scalaBinaryVersion": "2.12",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.2.4/spark-3.2.4-bin-hadoop3.2.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.2.4/spark-3.2.4-bin-hadoop3.2.tgz.asc",
+    "sparkVersion": "3.2.4"
+  },
+  {
+    "baseImageTag": "3.2.4",
+    "scalaBinaryVersion": "2.13",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.2.4/spark-3.2.4-bin-hadoop3.2-scala2.13.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.2.4/spark-3.2.4-bin-hadoop3.2-scala2.13.tgz.asc",
+    "sparkVersion": "3.2.4"
+  },
+  {
+    "baseImageTag": "3.3.4",
+    "scalaBinaryVersion": "2.12",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.3.4/spark-3.3.4-bin-hadoop3.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.3.4/spark-3.3.4-bin-hadoop3.tgz.asc",
+    "sparkVersion": "3.3.4"
+  },
+  {
+    "baseImageTag": "3.3.4",
+    "scalaBinaryVersion": "2.13",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.3.4/spark-3.3.4-bin-hadoop3-scala2.13.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.3.4/spark-3.3.4-bin-hadoop3-scala2.13.tgz.asc",
+    "sparkVersion": "3.3.4"
+  },
+  {
+    "baseImageTag": "3.4.2",
+    "scalaBinaryVersion": "2.12",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.4.2/spark-3.4.2-bin-hadoop3.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.4.2/spark-3.4.2-bin-hadoop3.tgz.asc",
+    "sparkVersion": "3.4.2"
+  },
+  {
+    "baseImageTag": "3.4.2",
+    "scalaBinaryVersion": "2.13",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.4.2/spark-3.4.2-bin-hadoop3-scala2.13.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.4.2/spark-3.4.2-bin-hadoop3-scala2.13.tgz.asc",
+    "sparkVersion": "3.4.2"
+  },
+  {
+    "baseImageTag": "3.5.0",
+    "scalaBinaryVersion": "2.12",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.5.0/spark-3.5.0-bin-hadoop3.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.5.0/spark-3.5.0-bin-hadoop3.tgz.asc",
+    "sparkVersion": "3.5.0"
+  },
+  {
+    "baseImageTag": "3.5.0",
+    "scalaBinaryVersion": "2.13",
+    "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.5.0/spark-3.5.0-bin-hadoop3-scala2.13.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.5.0/spark-3.5.0-bin-hadoop3-scala2.13.tgz.asc",
+    "sparkVersion": "3.5.0"
+  }
+]
