@@ -4,11 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import csv
+import logging
 import sys
 import textwrap
 from datetime import datetime
 
 import pendulum
+import pytz
 import rich_click as click
 from dateutil.relativedelta import relativedelta
 from github import Github
@@ -32,6 +34,8 @@ option_github_token = click.option(
     ),
     envvar="GITHUB_TOKEN",
 )
+
+utc = pytz.UTC
 
 
 class ContributorStats:
@@ -67,7 +71,7 @@ class ContributorStats:
             for week in contributor.weeks:
                 alltime_additions += week.a
                 alltime_deletions += week.d
-                if date_start < week.w < date_end:
+                if date_start.replace(tzinfo=utc) < week.w < date_end.replace(tzinfo=utc):
                     period_additions += week.a
                     period_deletions += week.d
                     period_commits += week.c
@@ -133,14 +137,18 @@ class ContributorStats:
         )
         for pull in pulls:
             if pull.user.login in self.logins:
-                if date_start < pull.closed_at < date_end:
+                if date_start.replace(tzinfo=utc) < pull.closed_at < date_end.replace(tzinfo=utc):
                     self.logins[pull.user.login]["pulls"] += 1
                     commit = self.repo.get_commit(sha=pull.merge_commit_sha)
                     self.logins[pull.user.login]["total"] += commit.stats.total
-            elif date_start < pull.closed_at < date_end:
+            elif date_start.replace(tzinfo=utc) < pull.closed_at < date_end.replace(tzinfo=utc):
                 self.logins[pull.user.login] = {"pulls": 1, "total": 0}
-                commit = self.repo.get_commit(sha=pull.merge_commit_sha)
-                self.logins[pull.user.login]["total"] += commit.stats.total
+                try:
+                    commit = self.repo.get_commit(sha=pull.merge_commit_sha)
+                    self.logins[pull.user.login]["total"] += commit.stats.total
+                except AssertionError:
+                    logging.exception("Skipping null commit")
+                    continue
 
     def add_pulls(self):
         """adds PR data to rows dataset"""
