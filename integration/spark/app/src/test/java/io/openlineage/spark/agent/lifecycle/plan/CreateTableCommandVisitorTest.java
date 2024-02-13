@@ -38,7 +38,7 @@ class CreateTableCommandVisitorTest {
   }
 
   @Test
-  void testCreateTableCommand() {
+  void CreateTableCommandVisitorTest() {
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
@@ -48,7 +48,7 @@ class CreateTableCommandVisitorTest {
     assertEquals(
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE,
         outputDataset.getFacets().getLifecycleStateChange().getLifecycleStateChange());
-    assertEquals("/some-location", outputDataset.getName());
+    assertEquals("some-location", outputDataset.getName());
     assertEquals("file", outputDataset.getNamespace());
   }
 }
