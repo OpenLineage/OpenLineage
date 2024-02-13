@@ -179,8 +179,10 @@ jobs:
       spark-version:
         type: string
     working_directory: ~/openlineage/integration/spark
-    machine:
-      image: ubuntu-2004:current
+    # machine:
+    #   image: ubuntu-2004:current
+    docker:
+      - image: cimg/openjdk:11.0
     resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
@@ -196,9 +198,9 @@ jobs:
             - v1-integration-spark-{{ .Branch }}
       - attach_workspace:
           at: ~/.m2/repository/io/openlineage/
-      - run: |
-          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-          sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
+      # - run: |
+      #     sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+      #     sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
       - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.12
       - run:
           when: on_fail
@@ -224,8 +226,10 @@ jobs:
       spark-version:
         type: string
     working_directory: ~/openlineage/integration/spark
-    machine:
-      image: ubuntu-2004:current
+    docker:
+      - image: cimg/openjdk:11.0
+    # machine:
+    #   image: ubuntu-2004:current
     resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
@@ -241,9 +245,9 @@ jobs:
             - v1-integration-spark-{{ .Branch }}
       - attach_workspace:
           at: ~/.m2/repository/io/openlineage/
-      - run: |
-          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-          sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
+      # - run: |
+      #     sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+      #     sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
       - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.13
       - run:
           when: on_fail
@@ -516,8 +520,10 @@ jobs:
       spark-version:
         type: string
     working_directory: ~/openlineage/integration/spark
-    machine:
-      image: ubuntu-2004:current
+    # machine:
+    #   image: ubuntu-2004:current
+    docker:
+      - image: cimg/openjdk:11.0
     resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
@@ -556,8 +562,10 @@ jobs:
       spark-version:
         type: string
     working_directory: ~/openlineage/integration/spark
-    machine:
-      image: ubuntu-2004:current
+    # machine:
+    #   image: ubuntu-2004:current
+    docker:
+      - image: cimg/openjdk:11.0
     resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
