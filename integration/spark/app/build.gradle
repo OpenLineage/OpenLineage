@@ -131,7 +131,13 @@ dependencies {
     testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl")
     // Needed for GoogleCloudIntegrationTest
     testRuntimeOnly("org.apache.spark:spark-mllib_${scala}:${spark}", {
-        exclude(group: "org.slf4j")
+        /* If you don't exclude this, but things happen. Specifically:
+        SparkReadWriteIntegTest.testExternalRDDWithS3Bucket will fail with this error:
+        java.lang.UnsupportedClassVersionError: com/sun/istack/Pool has been compiled by a more
+        recent version of the Java Runtime (class file version 55.0), this version of the
+        Java Runtime only recognizes class file versions up to 52.0 */
+        exclude(group: "org.glassfish.jaxb", module: "jaxb-runtime")
+        exclude(group: "org.apache.spark", module: "spark-graphx_${scala}")
     })
 
     integrationTestFixtures(project(path: ":scala-fixtures", configuration: activeRuntimeElementsConfiguration))
@@ -577,10 +583,6 @@ List<Dependency> additionalJars(String spark, String scala) {
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
                         exclude(group: "org.slf4j")
                     }),
-                    // This version MUST match with the hadoop versions in the image
-                    dependencies.create("org.apache.hadoop:hadoop-common:3.3.4"),
-                    dependencies.create("org.apache.hadoop:hadoop-aws:3.3.4"),
-                    dependencies.create("com.amazonaws:aws-java-sdk-bundle:1.12.262"),
             ],
     ]
 
