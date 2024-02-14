@@ -77,11 +77,8 @@ public class CommandPlanVisitor
     PartialFunction<LogicalPlan, Collection<InputDataset>> delegateFn =
         delegate(
             context.getInputDatasetQueryPlanVisitors(), context.getInputDatasetBuilders(), event);
-    return input
-        .map(in -> in.collect(delegateFn))
-        .map(ScalaConversionUtils::fromSeq)
-        .orElse(Collections.emptyList())
-        .stream()
+    return input.map(in -> in.collect(delegateFn)).map(ScalaConversionUtils::fromSeq)
+        .orElse(Collections.emptyList()).stream()
         .flatMap(Collection::stream)
         .collect(Collectors.toList());
   }
