@@ -121,6 +121,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.dataformat'
         exclude group: 'org.mock-server.mockserver-client-java'
     }
+    testImplementation("org.mock-server:mockserver-junit-jupiter-no-dependencies:5.14.0")
     testImplementation("org.skyscreamer:jsonassert:1.5.1")
 
     testRuntimeOnly("org.slf4j:slf4j-api:1.7.36")
@@ -379,6 +380,9 @@ tasks.register("integrationTest", Test.class) {
         }
     }
     systemProperties.put("test.results.dir", buildDirectory.dir("test-results/${name}/o").get().asFile.absolutePath)
+    setForkEvery(1)
+    maxParallelForks = 8
+    setMaxHeapSize("1024m")
 }
 
 tasks.register("databricksIntegrationTest", Test) {
