@@ -5,7 +5,6 @@
 
 package io.openlineage.spark.agent;
 
-import static io.openlineage.spark.agent.MockServerUtils.getAvailablePort;
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
@@ -49,7 +48,7 @@ import org.slf4j.event.Level;
 public class GoogleCloudIntegrationTest {
 
   private static final String LOCAL_IP = "127.0.0.1";
-  private static final int MOCKSERVER_PORT = getAvailablePort();
+  private static final int MOCKSERVER_PORT = 1082;
   private static final String SPARK_3 = "(3.*)";
   private static final String SPARK_3_3 = "(3\\.[3-9].*)";
   private static final String SPARK_VERSION = "spark.version";
