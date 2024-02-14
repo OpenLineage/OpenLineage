@@ -52,7 +52,7 @@ public class PlanUtils {
    * @param <T>
    * @param <R>
    * @return
-   */
+   */ 
   public static <T, R> Collection<R> applyAll(
       List<? extends PartialFunction<T, ? extends Collection<R>>> fns, T arg) {
     PartialFunction<T, Collection<R>> fn = merge(fns);
