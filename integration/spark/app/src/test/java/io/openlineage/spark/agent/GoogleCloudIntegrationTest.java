@@ -7,7 +7,6 @@ package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
@@ -17,6 +16,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaRDD;
@@ -38,40 +38,37 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
-import org.mockserver.configuration.Configuration;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.integration.ClientAndServer;
-import org.slf4j.event.Level;
 
 @Tag("integration-test")
 @Tag("google-cloud")
 @Slf4j
-public class GoogleCloudIntegrationTest {
-
+@ExtendWith(MockServerExtension.class)
+public class GoogleCloudIntegrationTest implements MockServerAware {
   private static final String LOCAL_IP = "127.0.0.1";
-  private static final int MOCKSERVER_PORT = 1082;
   private static final String SPARK_3 = "(3.*)";
   private static final String SPARK_3_3 = "(3\\.[3-9].*)";
   private static final String SPARK_VERSION = "spark.version";
-  private static ClientAndServer mockServer;
-  static SparkSession spark;
+  private static SparkSession spark;
+
+  private ClientAndServer mockServer;
+
+  @Override
+  public void setClientAndServer(ClientAndServer clientAndServer) {
+    this.mockServer = Objects.requireNonNull(clientAndServer);
+  }
 
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
-    Configuration configuration = new Configuration();
-    configuration.logLevel(Level.ERROR);
-    mockServer = ClientAndServer.startClientAndServer(configuration, MOCKSERVER_PORT);
-    mockServer
-        .when(request("/api/v1/lineage"))
-        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
-    mockServer.stop();
   }
 
   @BeforeEach
@@ -105,7 +102,6 @@ public class GoogleCloudIntegrationTest {
             .config(
                 "spark.hadoop.fs.gs.impl", "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem")
             .config("spark.hadoop.google.cloud.auth.service.account.enable", "true")
-            .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .getOrCreate();
 
     spark.sparkContext().setLogLevel("WARN");

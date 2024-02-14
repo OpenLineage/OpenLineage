@@ -41,45 +41,41 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.mockserver.configuration.Configuration;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.MatchType;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.RegexBody;
-import org.slf4j.event.Level;
 
 @Tag("integration-test")
 @Tag("delta")
 @Slf4j
-public class SparkDeltaIntegrationTest {
+@ExtendWith(MockServerExtension.class)
+public class SparkDeltaIntegrationTest implements MockServerAware {
 
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
-  private static final int MOCKSERVER_PORT = 1083;
+  private static SparkSession spark;
 
-  private static ClientAndServer mockServer;
+  private ClientAndServer mockServer;
 
-  static SparkSession spark;
+  @Override
+  public void setClientAndServer(ClientAndServer clientAndServer) {
+    this.mockServer = clientAndServer;
+  }
 
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
     FileUtils.deleteDirectory(new File("/tmp/delta/"));
-    Configuration configuration = new Configuration();
-    configuration.logLevel(Level.ERROR);
-    mockServer = ClientAndServer.startClientAndServer(configuration, MOCKSERVER_PORT);
-    mockServer
-        .when(request("/api/v1/lineage"))
-        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
-    mockServer.stop();
   }
 
   @BeforeEach

@@ -5,15 +5,12 @@
 
 package io.openlineage.spark.agent;
 
-import static io.openlineage.spark.agent.MockServerUtils.getEmittedEvents;
+import static io.openlineage.spark.agent.MockServerUtils.getEventsEmitted;
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -32,6 +29,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockserver.integration.ClientAndServer;
 
 /**
  * This class contains Spark non-container integration tests that do not fit into other integration
@@ -39,17 +38,19 @@ import org.junit.jupiter.api.Test;
  */
 @Tag("integration-test")
 @Slf4j
-class SparkGenericIntegrationTest {
+@ExtendWith(MockServerExtension.class)
+public class SparkGenericIntegrationTest implements MockServerAware {
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
   private static SparkSession spark;
 
-  private static final Path TEST_RESULTS_DIR = Paths.get(System.getProperty("test.results.dir"));
-  private static final Path TEST_CLASS_RESULTS_DIR =
-      TEST_RESULTS_DIR.resolve(SparkGenericIntegrationTest.class.getSimpleName());
-  private static final Path TEST_RESULTS_FILE_PATH =
-      TEST_CLASS_RESULTS_DIR.resolve("sparkEmitsApplicationLevelEvents.json");
+  private ClientAndServer mockServer;
+
+  @Override
+  public void setClientAndServer(ClientAndServer clientAndServer) {
+    this.mockServer = clientAndServer;
+  }
 
   @BeforeAll
   @SneakyThrows
@@ -66,8 +67,6 @@ class SparkGenericIntegrationTest {
   @BeforeEach
   @SneakyThrows
   public void beforeEach() {
-    Files.deleteIfExists(TEST_RESULTS_FILE_PATH);
-    Files.createDirectories(TEST_CLASS_RESULTS_DIR);
     spark =
         SparkSession.builder()
             .master("local[*]")
@@ -75,21 +74,23 @@ class SparkGenericIntegrationTest {
             .config("spark.driver.host", LOCAL_IP)
             .config("spark.driver.bindAddress", LOCAL_IP)
             .config("spark.sql.shuffle.partitions", 1)
-            .config("spark.openlineage.transport.type", "file")
-            .config("spark.openlineage.transport.location", TEST_RESULTS_FILE_PATH.toString())
+            .config("spark.openlineage.transport.type", "http")
+            .config(
+                "spark.openlineage.transport.url",
+                "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/generic-namespace")
             .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
             .config("spark.openlineage.debugFacet", "disabled")
-            .config("spark.openlineage.namespace", "generic-namespace")
             .config("spark.openlineage.parentJobName", "parent-job")
             .config("spark.openlineage.parentRunId", "bd9c2467-3ed7-4fdc-85c2-41ebf5c73b40")
             .config("spark.openlineage.parentJobNamespace", "parent-namespace")
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .getOrCreate();
+
+    spark.sparkContext().setLogLevel("WARN");
   }
 
-  @SneakyThrows
   @Test
-  void sparkEmitsApplicationLevelEvents() {
+  public void sparkEmitsApplicationLevelEvents() {
     Dataset<Row> df = createTempDataset();
 
     Dataset<Row> agg = df.groupBy("a").count();
@@ -97,17 +98,13 @@ class SparkGenericIntegrationTest {
 
     spark.stop();
     verifyEvents(
-        TEST_RESULTS_FILE_PATH,
-        node ->
-            !node.get("eventType")
-                .asText()
-                .equals("RUNNING"), // ignore RUNNING events from the comparison
+        mockServer,
         "applicationLevelStartApplication.json",
         "applicationLevelStartJob.json",
         "applicationLevelCompleteJob.json",
         "applicationLevelCompleteApplication.json");
 
-    List<OpenLineage.RunEvent> events = getEmittedEvents(TEST_RESULTS_FILE_PATH);
+    List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
     assertThat(
             events.stream()
                 .map(
