@@ -257,6 +257,9 @@ tasks.withType(Test).configureEach {
             maxFailures = 3
         }
     }
+    setForkEvery(1)
+    maxParallelForks = 5
+    setMaxHeapSize("1024m")
 }
 
 tasks.named("assemble") {
@@ -380,9 +383,6 @@ tasks.register("integrationTest", Test.class) {
         }
     }
     systemProperties.put("test.results.dir", buildDirectory.dir("test-results/${name}/o").get().asFile.absolutePath)
-    setForkEvery(1)
-    maxParallelForks = 8
-    setMaxHeapSize("1024m")
 }
 
 tasks.register("databricksIntegrationTest", Test) {
