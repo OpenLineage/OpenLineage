@@ -48,7 +48,8 @@ class SparkGenericIntegrationTest {
   private static final Path TEST_RESULTS_DIR = Paths.get(System.getProperty("test.results.dir"));
   private static final Path TEST_CLASS_RESULTS_DIR =
       TEST_RESULTS_DIR.resolve(SparkGenericIntegrationTest.class.getSimpleName());
-  private static final Path TEST_RESULTS_FILE_PATH = TEST_CLASS_RESULTS_DIR.resolve("sparkEmitsApplicationLevelEvents.json");
+  private static final Path TEST_RESULTS_FILE_PATH =
+      TEST_CLASS_RESULTS_DIR.resolve("sparkEmitsApplicationLevelEvents.json");
 
   @BeforeAll
   @SneakyThrows
