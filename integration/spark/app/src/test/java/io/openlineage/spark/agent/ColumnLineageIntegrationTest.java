@@ -60,8 +60,8 @@ public class ColumnLineageIntegrationTest {
   public ColumnLineageIntegrationTest(ClientAndServer mockServer) {
     this.mockServer = mockServer;
     mockServer
-            .when(request("/api/v1/lineage"))
-            .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
+        .when(request("/api/v1/lineage"))
+        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
   }
 
   @Container private static PostgreSQLContainer metastoreContainer;
@@ -98,7 +98,7 @@ public class ColumnLineageIntegrationTest {
   @BeforeEach
   public void reset() {
     mockServer.clear(request(), ClearType.LOG);
-    //Thread.sleep(1000);
+    // Thread.sleep(1000);
   }
 
   @Test

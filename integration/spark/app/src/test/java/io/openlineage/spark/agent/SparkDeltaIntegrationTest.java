@@ -55,7 +55,9 @@ import org.mockserver.model.RegexBody;
 @Tag("delta")
 @Slf4j
 @ExtendWith(MockServerExtension.class)
-@MockServerSettings(ports = {SparkDeltaIntegrationTest.MOCK_SERVER_PORT}, perTestSuite = true)
+@MockServerSettings(
+    ports = {SparkDeltaIntegrationTest.MOCK_SERVER_PORT},
+    perTestSuite = true)
 public class SparkDeltaIntegrationTest {
   public static final int MOCK_SERVER_PORT = 1082;
 
@@ -69,8 +71,8 @@ public class SparkDeltaIntegrationTest {
   SparkDeltaIntegrationTest(ClientAndServer clientAndServer) {
     this.mockServer = clientAndServer;
     this.mockServer
-            .when(request("/api/v1/lineage"))
-            .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
+        .when(request("/api/v1/lineage"))
+        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
   }
 
   @BeforeAll
@@ -109,7 +111,7 @@ public class SparkDeltaIntegrationTest {
             .config("spark.driver.bindAddress", LOCAL_IP)
             .config("spark.ui.enabled", false)
             .config("spark.sql.shuffle.partitions", 1)
-                .config("spark.files", "file://" + log4j + "," + "file://" + log4j2)
+            .config("spark.files", "file://" + log4j + "," + "file://" + log4j2)
             .config("spark.sql.warehouse.dir", "file:/tmp/delta/")
             .config("spark.openlineage.transport.type", "http")
             .config(

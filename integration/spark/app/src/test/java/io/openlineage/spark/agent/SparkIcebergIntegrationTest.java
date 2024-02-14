@@ -39,24 +39,25 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockserver.configuration.Configuration;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.junit.jupiter.MockServerExtension;
 import org.mockserver.junit.jupiter.MockServerSettings;
 import org.mockserver.model.ClearType;
 import org.mockserver.model.HttpRequest;
-import org.slf4j.event.Level;
 
 @Tag("integration-test")
 @Tag("iceberg")
 @Slf4j
 @ExtendWith(MockServerExtension.class)
-@MockServerSettings(ports = {SparkIcebergIntegrationTest.MOCK_SERVER_PORT}, perTestSuite = true)
+@MockServerSettings(
+    ports = {SparkIcebergIntegrationTest.MOCK_SERVER_PORT},
+    perTestSuite = true)
 public class SparkIcebergIntegrationTest {
   public static final int MOCK_SERVER_PORT = 1084;
 
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
+
   private static SparkSession spark;
 
   private final ClientAndServer mockServer;
@@ -64,8 +65,8 @@ public class SparkIcebergIntegrationTest {
   public SparkIcebergIntegrationTest(ClientAndServer mockServer) {
     this.mockServer = mockServer;
     this.mockServer
-            .when(request("/api/v1/lineage"))
-            .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
+        .when(request("/api/v1/lineage"))
+        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
   }
 
   @BeforeAll
