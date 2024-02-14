@@ -88,7 +88,7 @@ public class DeltaHandler implements CatalogHandler {
     URI uri = prepareUriFromPath(path);
 
     DatasetIdentifier di = PathUtils.fromPath(path, DEFAULT_SCHEME);
-    
+
     return di.withSymlink(
         identifier.toString(),
         StringUtils.substringBeforeLast(
@@ -100,7 +100,9 @@ public class DeltaHandler implements CatalogHandler {
   private static URI prepareUriFromPath(Path path) {
     URI uri = path.toUri();
 
-    if (uri.getPath() != null && uri.getPath().startsWith(DEFAULT_SEPARATOR) && uri.getScheme() == null) {
+    if (uri.getPath() != null
+        && uri.getPath().startsWith(DEFAULT_SEPARATOR)
+        && uri.getScheme() == null) {
       uri = new URI(DEFAULT_SCHEME, null, uri.getPath(), null, null);
     }
 
