@@ -38,11 +38,13 @@ import scala.Tuple2;
 public class ArgumentParser {
 
   public static final String SPARK_CONF_NAMESPACE = "spark.openlineage.namespace";
-  public static final String SPARK_CONF_JOB_NAME = "spark.openlineage.parentJobName";
+  public static final String SPARK_CONF_PARENT_JOB_NAMESPACE =
+      "spark.openlineage.parentJobNamespace";
+  public static final String SPARK_CONF_PARENT_JOB_NAME = "spark.openlineage.parentJobName";
   public static final String SPARK_CONF_PARENT_RUN_ID = "spark.openlineage.parentRunId";
   public static final String SPARK_CONF_APP_NAME = "spark.openlineage.appName";
   public static final String SPARK_CONF_DISABLED_FACETS = "spark.openlineage.facets.disabled";
-  public static final String DEFAULT_DISABLED_FACETS = "[spark_unknown;]";
+  public static final String DEFAULT_DISABLED_FACETS = "[spark_unknown;spark.logicalPlan]";
   public static final String ARRAY_PREFIX_CHAR = "[";
   public static final String ARRAY_SUFFIX_CHAR = "]";
   public static final String DISABLED_FACETS_SEPARATOR = ";";
@@ -55,9 +57,10 @@ public class ArgumentParser {
       "spark.openlineage.facets.custom_environment_variables";
 
   @Builder.Default private String namespace = "default";
-  @Builder.Default private String jobName = "default";
+  @Builder.Default private String parentJobName = null;
+  @Builder.Default private String parentJobNamespace = null;
   @Builder.Default private String parentRunId = null;
-  @Builder.Default private String appName = null;
+  @Builder.Default private String overriddenAppName = null;
   @Builder.Default private OpenLineageYaml openLineageYaml = new OpenLineageYaml();
 
   public static ArgumentParser parse(SparkConf conf) {
@@ -71,9 +74,12 @@ public class ArgumentParser {
     }
     findSparkConfigKey(conf, SPARK_CONF_APP_NAME)
         .filter(str -> !str.isEmpty())
-        .ifPresent(builder::appName);
+        .ifPresent(builder::overriddenAppName);
+
     findSparkConfigKey(conf, SPARK_CONF_NAMESPACE).ifPresent(builder::namespace);
-    findSparkConfigKey(conf, SPARK_CONF_JOB_NAME).ifPresent(builder::jobName);
+    findSparkConfigKey(conf, SPARK_CONF_PARENT_JOB_NAME).ifPresent(builder::parentJobName);
+    findSparkConfigKey(conf, SPARK_CONF_PARENT_JOB_NAMESPACE)
+        .ifPresent(builder::parentJobNamespace);
     findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID).ifPresent(builder::parentRunId);
     builder.openLineageYaml(extractOpenlineageConfFromSparkConf(conf));
     return builder.build();

@@ -1,9 +1,14 @@
 plugins {
+    id("java-library")
+    id("pmd")
+    id("com.diffplug.spotless")
+    id("io.freefair.lombok")
+    id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
+    id("io.openlineage.docker-build")
     id 'java-test-fixtures'
     id "com.adarshr.test-logger" version "3.2.0"
     id "org.gradle.test-retry" version "1.5.8"
-    id "com.github.johnrengelman.shadow" version "8.1.1"
 }
 
 configurations {
@@ -22,20 +27,26 @@ archivesBaseName = 'openlineage-spark-app'
 ext {
     assertjVersion = '3.25.1'
     bigqueryVersion = '0.29.0'
-    sparkVersion = project.getProperty('spark.version')
     postgresqlVersion = '42.7.1'
     mockitoVersion = '4.11.0'
     testcontainersVersion = '1.19.3'
     junit5Version = '5.10.1'
+
+    sparkVersion = findProperty("spark.version")
+    scalaBinaryVersion = findProperty("scala.binary.version")
     shortVersion = sparkVersion.substring(0, 3)
 
+    sparkVersionFmt = sparkVersion.replace(".", "")
+    scalaBinaryVersionFmt = scalaBinaryVersion.replace(".", "")
+    dockerImageBuildTaskName = "buildDockerImageSpark${sparkVersionFmt}Scala${scalaBinaryVersionFmt}"
+
     versionsMap = [
-            "3.5": ["module": "spark35", "scala": "2.12", "delta": "NA", "gcs": "hadoop3-2.2.9", "snowflake": "2.13.0-spark_3.4", "iceberg": "NA", "hadoopclient": "3.3.4"],
-            "3.4": ["module": "spark34", "scala": "2.12", "delta": "2.4.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.13.0-spark_3.4", "iceberg": "iceberg-spark-runtime-3.4_2.12:1.3.0", "hadoopclient": "3.3.4"],
-            "3.3": ["module": "spark33", "scala": "2.12", "delta": "2.1.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.3", "iceberg": "iceberg-spark-runtime-3.3_2.12:0.14.0", "hadoopclient": "3.3.4"],
-            "3.2": ["module": "spark32", "scala": "2.12", "delta": "1.1.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.2", "iceberg": "iceberg-spark-runtime-3.2_2.12:0.14.0", "hadoopclient": "3.3.4"],
-            "3.1": ["module": "spark31", "scala": "2.12", "delta": "1.0.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.1", "iceberg": "iceberg-spark-runtime-3.1_2.12:0.13.0", "hadoopclient": "3.3.4"],
-            "2.4": ["module": "spark2", "scala": "2.11", "delta": "NA", "gcs": "hadoop2-2.2.9", "snowflake": "2.9.3-spark_2.4", "iceberg": "NA", "hadoopclient": "2.10.2"]
+            "3.5": ["module": "spark35", "scala": "2.12", "delta": "NA", "gcs": "hadoop3-2.2.9", "iceberg": "NA", "hadoopclient": "3.3.4"],
+            "3.4": ["module": "spark34", "scala": "2.12", "delta": "2.4.0", "gcs": "hadoop3-2.2.9", "iceberg": "iceberg-spark-runtime-3.4_2.12:1.3.0", "hadoopclient": "3.3.4"],
+            "3.3": ["module": "spark33", "scala": "2.12", "delta": "2.1.0", "gcs": "hadoop3-2.2.9", "iceberg": "iceberg-spark-runtime-3.3_2.12:0.14.0", "hadoopclient": "3.3.4"],
+            "3.2": ["module": "spark32", "scala": "2.12", "delta": "1.1.0", "gcs": "hadoop3-2.2.9", "iceberg": "iceberg-spark-runtime-3.2_2.12:0.14.0", "hadoopclient": "3.3.4"],
+            "3.1": ["module": "spark31", "scala": "2.12", "delta": "1.0.0", "gcs": "hadoop3-2.2.9", "iceberg": "iceberg-spark-runtime-3.1_2.12:0.13.0", "hadoopclient": "3.3.4"],
+            "2.4": ["module": "spark2", "scala": "2.11", "delta": "NA", "gcs": "hadoop2-2.2.9", "iceberg": "NA", "hadoopclient": "2.10.2"]
     ]
     versions = versionsMap[shortVersion]
 }
@@ -72,12 +83,6 @@ dependencies {
         exclude group: 'javax.jms'
     }
 
-    compileOnly("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
-        exclude group: 'com.google.guava:guava'
-        exclude group: 'org.apache.spark:spark-core_2.11'
-        exclude group: 'org.apache.spark:spark-sql_2.11'
-        exclude group: 'org.apache.spark:spark-catalyst_2.11'
-    }
 
     testFixturesApi platform('org.junit:junit-bom:5.10.1')
     testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
@@ -107,14 +112,6 @@ dependencies {
         }
     }
 
-    if (versions.snowflake != "NA") {
-        testFixturesApi("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
-            exclude group: 'com.google.guava:guava'
-            exclude group: 'org.apache.spark:spark-core_${versions.scala}'
-            exclude group: 'org.apache.spark:spark-sql_${versions.scala}'
-            exclude group: 'org.apache.spark:spark-catalyst_${versions.scala}'
-        }
-    }
 
     testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}"
     testFixturesApi("com.google.cloud.spark:spark-bigquery-with-dependencies_${versions.scala}:${bigqueryVersion}") {
@@ -179,6 +176,7 @@ def commonTestConfiguration = {
             'junit.platform.output.capture.stdout': 'true',
             'junit.platform.output.capture.stderr': 'true',
             'spark.version'                       : sparkVersion,
+            'scala.binary.version'                : scalaBinaryVersion,
             'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
             'kafka.package.version'               : "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}",
             'mockserver.logLevel'                 : 'ERROR'
@@ -186,6 +184,27 @@ def commonTestConfiguration = {
 
     classpath = project.sourceSets.test.runtimeClasspath
 }
+
+if (sparkVersion == '2.4.6') {
+    tasks.register("buildDockerImage") {
+        dependsOn()
+        group = "docker"
+        description = "This is a no-op, because the manifest file is configured to build an image for Spark 2.4.8, and " +
+                "the Apache Spark folks decided not to include the Hadoop JARs with the 2.12 variant of 2.4.8. " +
+                "I'm not sure why. Any way this means we don't build this image, for the time being. This will be fixed in " +
+                "the future. At the same time, Bitnami never produced a Spark 2.4.8 image."
+        doLast {
+            println("This task is a no-op. See the task description for more information.")
+        }
+    }
+} else {
+    tasks.register("buildDockerImage") {
+        dependsOn(tasks.named(dockerImageBuildTaskName))
+        group = "docker"
+        description = "Builds the docker image specified by the properties 'spark.version' and 'scala.binary.version'"
+    }
+}
+
 
 // These entries aren't considered "outputs" of any Gradle task, thus Gradle doesn't know about
 // them and won't clean them up when you run './gradlew clean'. This is a problem because
@@ -259,7 +278,7 @@ task copyDependencies(type: Copy) {
 }
 
 task integrationTest(type: Test) {
-    dependsOn shadowJar, copyDependencies
+    dependsOn shadowJar, copyDependencies, buildDockerImage
     retry {
         boolean isCiServer = System.getenv().containsKey("CI")
         if (isCiServer) {
@@ -363,4 +382,3 @@ classes {
 tasks.named("pmdTest") {
     mustRunAfter("shadowJar")
 }
-

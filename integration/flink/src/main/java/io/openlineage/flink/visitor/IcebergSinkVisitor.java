@@ -21,6 +21,8 @@ import org.apache.iceberg.Table;
 
 @Slf4j
 public class IcebergSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
+  private static final String ICEBERG_FILES_COMMITTER =
+      "org.apache.iceberg.flink.sink.IcebergFilesCommitter";
 
   public IcebergSinkVisitor(@NonNull OpenLineageContext context) {
     super(context);
@@ -29,11 +31,11 @@ public class IcebergSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
   @Override
   public boolean isDefinedAt(Object sink) {
     return sink instanceof OneInputTransformation
-        && ((OneInputTransformation) sink)
-            .getOperatorFactory()
-            .getStreamOperatorClass(ClassLoader.getSystemClassLoader())
-            .getCanonicalName()
-            .equals("org.apache.iceberg.flink.sink.IcebergFilesCommitter");
+        && ICEBERG_FILES_COMMITTER.equals(
+            ((OneInputTransformation) sink)
+                .getOperatorFactory()
+                .getStreamOperatorClass(ClassLoader.getSystemClassLoader())
+                .getCanonicalName());
   }
 
   @Override

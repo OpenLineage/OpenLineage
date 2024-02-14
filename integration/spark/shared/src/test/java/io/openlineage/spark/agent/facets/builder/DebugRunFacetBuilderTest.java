@@ -21,7 +21,7 @@ public class DebugRunFacetBuilderTest {
   private static OpenLineageContext openLineageContext =
       mock(OpenLineageContext.class, RETURNS_DEEP_STUBS);
   private static SparkContext sparkContext = mock(SparkContext.class);
-  private static DebugRunFacetBuilder builder = new DebugRunFacetBuilder(openLineageContext);;
+  private static DebugRunFacetBuilder builder = new DebugRunFacetBuilder(openLineageContext);
   private static SparkConf conf = mock(SparkConf.class);
 
   @BeforeAll

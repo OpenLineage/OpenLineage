@@ -1,17 +1,15 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
+    id("java-library")
+    id("pmd")
+    id("com.diffplug.spotless")
+    id("io.freefair.lombok")
+    id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
     id 'maven-publish'
     id 'signing'
     id 'jacoco'
-    id "com.github.johnrengelman.shadow" version "8.1.1"
-}
-
-commonConfig {
-    pmdEnabled = false
-    lombokEnabled = false
-    spotlessEnabled = false
 }
 
 archivesBaseName = 'openlineage-spark'
@@ -32,6 +30,7 @@ dependencies {
     implementation(project(path: ":spark33"))
     implementation(project(path: ":spark34"))
     implementation(project(path: ":spark35"))
+    implementation(project(path: ":snowflake"))
 }
 
 
@@ -154,6 +153,7 @@ shadowJar {
         exclude(project(":spark33"))
         exclude(project(":spark34"))
         exclude(project(":spark35"))
+        exclude (project(":snowflake"))
         exclude(project(":app"))
     }
     dependencies {

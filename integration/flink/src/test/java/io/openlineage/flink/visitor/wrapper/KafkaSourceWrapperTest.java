@@ -27,6 +27,8 @@ import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.subscriber.KafkaSubscriber;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
 import org.apache.flink.formats.avro.AvroDeserializationSchema;
+import org.apache.flink.formats.avro.AvroRowDataDeserializationSchema;
+import org.apache.flink.streaming.connectors.kafka.KafkaDeserializationSchema;
 import org.apache.flink.streaming.connectors.kafka.internals.KafkaPartitionDiscoverer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -91,6 +93,37 @@ class KafkaSourceWrapperTest {
     FieldUtils.writeField(kafkaSource, DESERIALIZATION_SCHEMA, deserializationSchema, true);
     FieldUtils.writeField(
         deserializationSchema, DESERIALIZATION_SCHEMA, avroDeserializationSchema, true);
+
+    assertEquals(Optional.of(schema), wrapper.getAvroSchema());
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDynamicAvroSchema() {
+    KafkaRecordDeserializationSchema deserializationSchema =
+        (KafkaRecordDeserializationSchema)
+            mock(
+                Class.forName(
+                    "org.apache.flink.connector.kafka.source.reader.deserializer.KafkaDeserializationSchemaWrapper"));
+
+    KafkaDeserializationSchema dynamicDeserializationSchema =
+        (KafkaDeserializationSchema)
+            mock(
+                Class.forName(
+                    "org.apache.flink.streaming.connectors.kafka.table.DynamicKafkaDeserializationSchema"));
+
+    AvroRowDataDeserializationSchema avroDeserializationSchema =
+        mock(AvroRowDataDeserializationSchema.class);
+    TypeInformation typeInformation = mock(TypeInformation.class);
+    when(avroDeserializationSchema.getProducedType()).thenReturn(typeInformation);
+    when(typeInformation.getTypeClass())
+        .thenReturn(this.getClass()); // test class contains getClassSchema method
+
+    FieldUtils.writeField(kafkaSource, DESERIALIZATION_SCHEMA, deserializationSchema, true);
+    FieldUtils.writeField(
+        deserializationSchema, "kafkaDeserializationSchema", dynamicDeserializationSchema, true);
+    FieldUtils.writeField(
+        dynamicDeserializationSchema, "valueDeserialization", avroDeserializationSchema, true);
 
     assertEquals(Optional.of(schema), wrapper.getAvroSchema());
   }

@@ -38,9 +38,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * This class runs integration test for a Spark job written in scala. All the other tests run python
- * spark scripts instead. Having a Scala job allows us to test `toDF`/`rdd` methods which are
- * slightly different for Spark jobs written in Scala.
+ * This class runs integration test for a Spark job written in scala. Having a Scala job allows us
+ * to test `toDF`/`rdd` methods which are slightly different for Spark jobs written in Scala.
  *
  * <p>The integration test relies on bitnami/spark docker image. It requires `spark.version` to
  * specify which Spark version should be tested. It also requires `openlineage.spark.jar` system
@@ -157,7 +156,7 @@ public class SparkScalaContainerTest {
                       .map(r -> r.getBodyAsString())
                       .map(event -> OpenLineageClientUtils.runEventFromJson(event))
                       .collect(Collectors.toList());
-              RunEvent lastEvent = events.get(events.size() - 1);
+              RunEvent lastEvent = events.get(events.size() - 2);
 
               assertThat(events).isNotEmpty();
               assertThat(lastEvent.getOutputs().get(0))

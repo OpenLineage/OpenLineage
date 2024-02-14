@@ -50,7 +50,7 @@ public class CassandraSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
   @Override
   public List<OpenLineage.OutputDataset> apply(Object object) {
     log.debug("Apply sink {} in CassandraSinkVisitor", object);
-    CassandraSinkWrapper sinkWrapper = null;
+    CassandraSinkWrapper sinkWrapper;
     if (object instanceof RichOutputFormat) {
       sinkWrapper = createWrapperForOutputFormat(object);
     } else {

@@ -44,7 +44,7 @@ public class UrlParser {
     get(elements, "namespaces", 3)
         .ifPresent(p -> parsedProperties.put(ArgumentParser.SPARK_CONF_NAMESPACE, p));
     get(elements, "jobs", 5)
-        .ifPresent(p -> parsedProperties.put(ArgumentParser.SPARK_CONF_JOB_NAME, p));
+        .ifPresent(p -> parsedProperties.put(ArgumentParser.SPARK_CONF_PARENT_JOB_NAME, p));
     get(elements, "runs", 7)
         .ifPresent(p -> parsedProperties.put(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, p));
     get(elements, "api", 1)

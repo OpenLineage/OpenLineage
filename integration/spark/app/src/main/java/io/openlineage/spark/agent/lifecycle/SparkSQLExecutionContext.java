@@ -9,6 +9,7 @@ import static io.openlineage.client.OpenLineage.RunEvent.EventType.COMPLETE;
 import static io.openlineage.client.OpenLineage.RunEvent.EventType.FAIL;
 import static io.openlineage.client.OpenLineage.RunEvent.EventType.RUNNING;
 import static io.openlineage.client.OpenLineage.RunEvent.EventType.START;
+import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
@@ -19,11 +20,9 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
@@ -43,6 +42,10 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 class SparkSQLExecutionContext implements ExecutionContext {
 
   private static final String NO_EXECUTION_INFO = "No execution info {}";
+  private static final String SPARK_JOB_TYPE = "JOB";
+  private static final String SPARK_INTEGRATION = "SPARK";
+  private static final String SPARK_PROCESSING_TYPE_BATCH = "BATCH";
+  private static final String SPARK_PROCESSING_TYPE_STREAMING = "STREAMING";
   private final long executionId;
   private final OpenLineageContext olContext;
   private final EventEmitter eventEmitter;
@@ -85,12 +88,13 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     RunEvent event =
         runEventBuilder.buildRun(
-            buildParentFacet(),
+            buildApplicationParentFacet(),
             openLineage
                 .newRunEventBuilder()
                 .eventTime(toZonedTime(startEvent.time()))
                 .eventType(eventType),
             buildJob(olContext.getQueryExecution().get()),
+            getJobFacetsBuilder(olContext.getQueryExecution().get()),
             startEvent);
 
     log.debug("Posting event for start {}: {}", executionId, event);
@@ -124,12 +128,13 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     RunEvent event =
         runEventBuilder.buildRun(
-            buildParentFacet(),
+            buildApplicationParentFacet(),
             openLineage
                 .newRunEventBuilder()
                 .eventTime(toZonedTime(endEvent.time()))
                 .eventType(eventType),
             buildJob(olContext.getQueryExecution().get()),
+            getJobFacetsBuilder(olContext.getQueryExecution().get()),
             endEvent);
 
     log.debug("Posting event for end {}: {}", executionId, OpenLineageClientUtils.toJson(event));
@@ -150,12 +155,13 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     RunEvent event =
         runEventBuilder.buildRun(
-            buildParentFacet(),
+            buildApplicationParentFacet(),
             openLineage
                 .newRunEventBuilder()
                 .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
                 .eventType(RUNNING),
             buildJob(olContext.getQueryExecution().get()),
+            getJobFacetsBuilder(olContext.getQueryExecution().get()),
             stageSubmitted);
 
     log.debug("Posting event for stage submitted {}: {}", executionId, event);
@@ -175,12 +181,13 @@ class SparkSQLExecutionContext implements ExecutionContext {
     }
     RunEvent event =
         runEventBuilder.buildRun(
-            buildParentFacet(),
+            buildApplicationParentFacet(),
             openLineage
                 .newRunEventBuilder()
                 .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
                 .eventType(RUNNING),
             buildJob(olContext.getQueryExecution().get()),
+            getJobFacetsBuilder(olContext.getQueryExecution().get()),
             stageCompleted);
 
     log.debug("Posting event for stage completed {}: {}", executionId, event);
@@ -212,12 +219,13 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     RunEvent event =
         runEventBuilder.buildRun(
-            buildParentFacet(),
+            buildApplicationParentFacet(),
             openLineage
                 .newRunEventBuilder()
                 .eventTime(toZonedTime(jobStart.time()))
                 .eventType(eventType),
             buildJob(olContext.getQueryExecution().get()),
+            getJobFacetsBuilder(olContext.getQueryExecution().get()),
             jobStart);
 
     log.debug("Posting event for start {}: {}", executionId, event);
@@ -255,30 +263,24 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     RunEvent event =
         runEventBuilder.buildRun(
-            buildParentFacet(),
+            buildApplicationParentFacet(),
             openLineage
                 .newRunEventBuilder()
                 .eventTime(toZonedTime(jobEnd.time()))
                 .eventType(eventType),
             buildJob(olContext.getQueryExecution().get()),
+            getJobFacetsBuilder(olContext.getQueryExecution().get()),
             jobEnd);
 
     log.debug("Posting event for end {}: {}", executionId, event);
     eventEmitter.emit(event);
   }
 
-  private Optional<OpenLineage.ParentRunFacet> buildParentFacet() {
-    return eventEmitter
-        .getParentRunId()
-        .map(
-            runId ->
-                PlanUtils.parentRunFacet(
-                    runId, eventEmitter.getParentJobName(), eventEmitter.getJobNamespace()));
-  }
-
-  protected ZonedDateTime toZonedTime(long time) {
-    Instant i = Instant.ofEpochMilli(time);
-    return ZonedDateTime.ofInstant(i, ZoneOffset.UTC);
+  private OpenLineage.ParentRunFacet buildApplicationParentFacet() {
+    return PlanUtils.parentRunFacet(
+        eventEmitter.getApplicationRunId(),
+        eventEmitter.getApplicationJobName(),
+        eventEmitter.getJobNamespace());
   }
 
   protected OpenLineage.JobBuilder buildJob(QueryExecution queryExecution) {
@@ -290,11 +292,40 @@ class SparkSQLExecutionContext implements ExecutionContext {
       node = ((WholeStageCodegenExec) node).child();
     }
 
-    String name = eventEmitter.getAppName().orElse(sparkContext.appName());
+    String name = eventEmitter.getOverriddenAppName().orElse(sparkContext.appName());
     return openLineage
         .newJobBuilder()
         .namespace(this.eventEmitter.getJobNamespace())
         .name(normalizeName(name) + "." + normalizeName(node.nodeName()));
+  }
+
+  /**
+   * Getting the job type facet for Spark jobs. Values: job type: `JOB`, job integration: `SPARK`,
+   * processing type: can be `batch` or `streaming` based on
+   * queryExecution.optimizedPlan().isStreaming()
+   *
+   * @param queryExecution
+   * @return OpenLineage.JobTypeJobFacet
+   */
+  private OpenLineage.JobTypeJobFacet getJobTypeJobFacet(QueryExecution queryExecution) {
+    final String processingType;
+    // Determine processing type
+    if (queryExecution.optimizedPlan().isStreaming()) {
+      processingType = SPARK_PROCESSING_TYPE_STREAMING;
+    } else {
+      processingType = SPARK_PROCESSING_TYPE_BATCH;
+    }
+
+    return openLineage
+        .newJobTypeJobFacetBuilder()
+        .jobType(SPARK_JOB_TYPE)
+        .processingType(processingType)
+        .integration(SPARK_INTEGRATION)
+        .build();
+  }
+
+  private OpenLineage.JobFacetsBuilder getJobFacetsBuilder(QueryExecution queryExecution) {
+    return openLineage.newJobFacetsBuilder().jobType(getJobTypeJobFacet(queryExecution));
   }
 
   // normalizes string, changes CamelCase to snake_case and replaces all non-alphanumerics with '_'

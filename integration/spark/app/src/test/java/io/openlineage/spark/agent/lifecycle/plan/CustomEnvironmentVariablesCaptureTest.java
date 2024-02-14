@@ -75,7 +75,7 @@ class CustomEnvironmentVariablesCaptureTest {
 
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(RunEvent.class);
 
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, Mockito.atLeast(2))
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, Mockito.atLeast(2))
         .emit(lineageEvent.capture());
     List<RunEvent> events = lineageEvent.getAllValues();
     Optional<RunEvent> startEvent =
@@ -83,6 +83,7 @@ class CustomEnvironmentVariablesCaptureTest {
             .filter(
                 e ->
                     e.getEventType().equals(EventType.START)
+                        && e.getRun().getFacets() != null
                         && e.getRun()
                                 .getFacets()
                                 .getAdditionalProperties()

@@ -5,6 +5,7 @@
 
 package io.openlineage.spark3.agent.utils;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -12,12 +13,15 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.DatasetFacet;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +33,8 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
+import org.apache.spark.sql.types.IntegerType$;
+import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -214,5 +220,46 @@ class PlanUtils3Test {
     assertEquals(
         Optional.empty(),
         PlanUtils3.getDatasetIdentifier(openLineageContext, dataSourceV2Relation));
+  }
+
+  @Test
+  void testFromDataSourceV2RelationForBuiltInLineage() throws URISyntaxException {
+    Map<String, String> properties = new HashMap<>();
+    properties.put("openlineage.dataset.name", "some-name");
+    properties.put("openlineage.dataset.namespace", "some-namespace");
+    properties.put(
+        "openlineage.dataset.facets.customFacet",
+        "{"
+            + "\"property\": \"value\","
+            + "\"_producer\": \"https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client\""
+            + "}");
+
+    StructType schema =
+        new StructType(
+            new StructField[] {new StructField("key", IntegerType$.MODULE$, false, null)});
+
+    when(dataSourceV2Relation.schema()).thenReturn(schema);
+    when(table.properties()).thenReturn(properties);
+    when(openLineageContext.getOpenLineage())
+        .thenReturn(
+            new OpenLineage(
+                new URI("https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client")));
+
+    DatasetFactory<OpenLineage.OutputDataset> datasetFactory =
+        DatasetFactory.output(openLineageContext);
+
+    final List<OpenLineage.OutputDataset> result =
+        PlanUtils3.fromDataSourceV2Relation(
+            datasetFactory, openLineageContext, dataSourceV2Relation);
+
+    assertEquals(1, result.size());
+    assertThat(result.get(0))
+        .hasFieldOrPropertyWithValue("name", "some-name")
+        .hasFieldOrPropertyWithValue("namespace", "some-namespace");
+
+    DatasetFacet datasetFacet =
+        result.get(0).getFacets().getAdditionalProperties().get("customFacet");
+    assertThat(datasetFacet.getAdditionalProperties())
+        .hasFieldOrPropertyWithValue("property", "value");
   }
 }

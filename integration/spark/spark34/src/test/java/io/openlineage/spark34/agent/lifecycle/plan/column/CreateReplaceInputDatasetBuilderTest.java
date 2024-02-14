@@ -18,7 +18,6 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Optional;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
@@ -41,7 +40,7 @@ import scala.Option;
 public class CreateReplaceInputDatasetBuilderTest {
   OpenLineageContext openLineageContext =
       OpenLineageContext.builder()
-          .sparkSession(Optional.of(mock(SparkSession.class)))
+          .sparkSession(mock(SparkSession.class))
           .sparkContext(mock(SparkContext.class))
           .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
           .build();

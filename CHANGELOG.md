@@ -2,9 +2,24 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...HEAD)
 
+
 ### Added
+* **FLINK: bump default Flink version to 1.18.1 (https://github.com/OpenLineage/OpenLineage/pull/2418) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
+  *Support Flink 1.18.1 as it is newly released 
+* **FLINK: support Flink Kafka dynamic source and sink (https://github.com/OpenLineage/OpenLineage/pull/2417) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
+  *Support Flink Kafka Table Connector use cases for topic and schema extraction
+* **Spark: integration now emits intermediate, application level events wrapping entire job execution** [`#1672`](https://github.com/OpenLineage/OpenLineage/issues/1672) [@mobuchowski](https://github.com/mobuchowski)  
+    *Previously, Spark event model described only single actions, potentially linked only to some parent run.
 * **Flink: support multi topic Kafka Sink.** [`#2372`](https://github.com/OpenLineage/OpenLineage/pull/2372) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Support multi topic kafka sinks. Limitations: `recordSerializer` need to implement `KafkaTopicsDescriptor`. Please refer to [limitations](https://openlineage.io/docs/integrations/flink/#limitations) sections in documentation.*
+* **Spark: support built-in lineage within `DataSourceV2Relation`** [`#2394`](https://github.com/OpenLineage/OpenLineage/pull/2394) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Enable built-in lineage extraction within from `DataSourceV2Relation` lineage nodes.*
+* **Spark: Add support for `JobTypeJobFacet` properties.** [`#2410`](https://github.com/OpenLineage/OpenLineage/pull/2410) [@mattiabertorello](https://github.com/mattiabertorello)
+  *Support job type properties within the Spark Job facet.*
+* **DBT: Add support for `JobTypeJobFacet` properties.** [`#2411`](https://github.com/OpenLineage/OpenLineage/pull/2411) [@mattiabertorello](https://github.com/mattiabertorello)
+  *Support job type properties within the DBT Job facet.*
+* **Spark: stop sending  `spark.LogicalPlan` facet by default** [`#2433`](https://github.com/OpenLineage/OpenLineage/pull/2433) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *`spark.LogicalPlan` has been added to default value of `spark.openlineage.facets.disabled`.*
 
 ## [1.8.0](https://github.com/OpenLineage/OpenLineage/compare/1.7.0...1.8.0) - 2024-01-19
 

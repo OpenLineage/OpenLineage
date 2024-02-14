@@ -189,7 +189,8 @@ class UrlParserTest {
     assertEquals(parsed.getOrDefault(ArgumentParser.SPARK_CONF_HTTP_URL, "NOT_DEFINED"), url);
     assertEquals(
         parsed.getOrDefault(ArgumentParser.SPARK_CONF_NAMESPACE, "NOT_DEFINED"), namespace);
-    assertEquals(parsed.getOrDefault(ArgumentParser.SPARK_CONF_JOB_NAME, "NOT_DEFINED"), jobName);
+    assertEquals(
+        parsed.getOrDefault(ArgumentParser.SPARK_CONF_PARENT_JOB_NAME, "NOT_DEFINED"), jobName);
     assertEquals(
         parsed.getOrDefault(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, "NOT_DEFINED"), runId);
     assertEquals(parsed.getOrDefault(ArgumentParser.SPARK_CONF_APP_NAME, "NOT_DEFINED"), appName);

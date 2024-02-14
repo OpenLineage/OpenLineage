@@ -10,7 +10,9 @@ import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
+import io.openlineage.spark.api.Vendors;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collections;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
@@ -35,24 +37,29 @@ public class ContextFactory {
   }
 
   public Optional<ExecutionContext> createSparkSQLExecutionContext(long executionId) {
-    return Optional.ofNullable(SQLExecution.getQueryExecution(executionId))
-        .map(
-            queryExecution -> {
-              SparkSession sparkSession = queryExecution.sparkSession();
-              OpenLineageContext olContext =
-                  OpenLineageContext.builder()
-                      .sparkSession(Optional.of(sparkSession))
-                      .sparkContext(sparkSession.sparkContext())
-                      .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-                      .queryExecution(queryExecution)
-                      .customEnvironmentVariables(
-                          this.openLineageEventEmitter.getCustomEnvironmentVariables())
-                      .build();
-              OpenLineageRunEventBuilder runEventBuilder =
-                  new OpenLineageRunEventBuilder(olContext, handlerFactory);
-              return new SparkSQLExecutionContext(
-                  executionId, openLineageEventEmitter, olContext, runEventBuilder);
-            });
+    QueryExecution queryExecution = SQLExecution.getQueryExecution(executionId);
+    if (queryExecution == null) {
+      log.error("Query execution is null: can't emit event for executionId {}", executionId);
+      return Optional.empty();
+    }
+    SparkSession sparkSession = queryExecution.sparkSession();
+    OpenLineageContext olContext =
+        OpenLineageContext.builder()
+            .sparkSession(sparkSession)
+            .sparkContext(sparkSession.sparkContext())
+            .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .queryExecution(queryExecution)
+            .customEnvironmentVariables(
+                this.openLineageEventEmitter
+                    .getCustomEnvironmentVariables()
+                    .orElse(Collections.emptyList()))
+            .vendors(Vendors.getVendors())
+            .build();
+    OpenLineageRunEventBuilder runEventBuilder =
+        new OpenLineageRunEventBuilder(olContext, handlerFactory);
+    return Optional.of(
+        new SparkSQLExecutionContext(
+            executionId, openLineageEventEmitter, olContext, runEventBuilder));
   }
 
   public Optional<ExecutionContext> createSparkSQLExecutionContext(
@@ -63,12 +70,15 @@ public class ContextFactory {
               SparkSession sparkSession = queryExecution.sparkSession();
               OpenLineageContext olContext =
                   OpenLineageContext.builder()
-                      .sparkSession(Optional.of(sparkSession))
+                      .sparkSession(sparkSession)
                       .sparkContext(sparkSession.sparkContext())
                       .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                       .queryExecution(queryExecution)
                       .customEnvironmentVariables(
-                          this.openLineageEventEmitter.getCustomEnvironmentVariables())
+                          this.openLineageEventEmitter
+                              .getCustomEnvironmentVariables()
+                              .orElse(Collections.emptyList()))
+                      .vendors(Vendors.getVendors())
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, handlerFactory);

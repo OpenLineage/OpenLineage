@@ -25,9 +25,12 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.UUID;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import org.apache.spark.scheduler.SparkListenerApplicationEnd;
+import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.StageInfo;
 import org.apache.spark.sql.SaveMode;
@@ -66,9 +69,18 @@ class OpenLineageSparkListenerTest {
     when(plan.sparkContext()).thenReturn(sparkContext);
     when(plan.nodeName()).thenReturn("execute");
 
+    when(emitter.getJobNamespace()).thenReturn("ns_name");
+    when(emitter.getParentJobName()).thenReturn(Optional.of("parent_name"));
+    when(emitter.getParentJobNamespace()).thenReturn(Optional.of("parent_namespace"));
+    when(emitter.getParentRunId())
+        .thenReturn(Optional.of(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b")));
+    when(emitter.getApplicationRunId())
+        .thenReturn(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
+    when(emitter.getApplicationJobName()).thenReturn("test_rdd");
+
     olContext =
         OpenLineageContext.builder()
-            .sparkSession(Optional.of(sparkSession))
+            .sparkSession(sparkSession)
             .sparkContext(sparkSession.sparkContext())
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(qe)
@@ -188,6 +200,34 @@ class OpenLineageSparkListenerTest {
         listener.onOtherEvent(event);
       }
     }
+
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+
+    verify(emitter, times(1)).emit(lineageEvent.capture());
+  }
+
+  @Test
+  void testApplicationStartEvent() {
+    OpenLineageSparkListener listener = new OpenLineageSparkListener();
+    OpenLineageSparkListener.init(new StaticExecutionContextFactory(emitter));
+    SparkListenerApplicationStart event = mock(SparkListenerApplicationStart.class);
+
+    listener.onApplicationStart(event);
+
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+
+    verify(emitter, times(1)).emit(lineageEvent.capture());
+  }
+
+  @Test
+  void testApplicationEndEvent() {
+    OpenLineageSparkListener listener = new OpenLineageSparkListener();
+    OpenLineageSparkListener.init(new StaticExecutionContextFactory(emitter));
+    SparkListenerApplicationEnd event = mock(SparkListenerApplicationEnd.class);
+
+    listener.onApplicationEnd(event);
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);

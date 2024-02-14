@@ -19,7 +19,7 @@ import scala.PartialFunction;
  * VisitorFactory#getOutputVisitors(SQLContext, String)} to retrieve Visitors for {@link
  * OpenLineage.OutputDataset}
  */
-interface VisitorFactory {
+public interface VisitorFactory {
 
   static boolean classPresent(String className) {
     try {

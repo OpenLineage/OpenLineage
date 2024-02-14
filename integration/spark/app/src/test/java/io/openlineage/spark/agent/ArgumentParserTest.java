@@ -66,15 +66,15 @@ class ArgumentParserTest {
     SparkConf sparkConf =
         new SparkConf()
             .set(ArgumentParser.SPARK_CONF_NAMESPACE, NS_NAME)
-            .set(ArgumentParser.SPARK_CONF_JOB_NAME, JOB_NAME)
+            .set(ArgumentParser.SPARK_CONF_PARENT_JOB_NAME, JOB_NAME)
             .set(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, RUN_ID)
             .set(ArgumentParser.SPARK_CONF_APP_NAME, APP_NAME);
 
     ArgumentParser argumentParser = ArgumentParser.parse(sparkConf);
     assertEquals(NS_NAME, argumentParser.getNamespace());
-    assertEquals(JOB_NAME, argumentParser.getJobName());
+    assertEquals(JOB_NAME, argumentParser.getParentJobName());
     assertEquals(RUN_ID, argumentParser.getParentRunId());
-    assertEquals(APP_NAME, argumentParser.getAppName());
+    assertEquals(APP_NAME, argumentParser.getOverriddenAppName());
   }
 
   @Test

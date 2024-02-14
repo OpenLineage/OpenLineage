@@ -63,8 +63,8 @@ public class JobNameHook implements RunEventBuilderHook {
 
   private String buildJobName(Job job, RunEvent runEvent) {
     // first, look if the job name is not present in the context
-    if (!openLineageContext.getJobName().isEmpty()) {
-      return openLineageContext.getJobName().get(0);
+    if (openLineageContext.getJobName() != null) {
+      return openLineageContext.getJobName();
     }
 
     StringBuilder jobNameBuilder = new StringBuilder();
@@ -101,7 +101,7 @@ public class JobNameHook implements RunEventBuilderHook {
       jobName = jobName.replace(".", "_");
     }
 
-    openLineageContext.getJobName().add(jobName);
+    openLineageContext.setJobName(jobName);
 
     return jobName;
   }

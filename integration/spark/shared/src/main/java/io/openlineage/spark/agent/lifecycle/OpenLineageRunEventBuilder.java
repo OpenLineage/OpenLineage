@@ -191,9 +191,10 @@ class OpenLineageRunEventBuilder {
   }
 
   RunEvent buildRun(
-      Optional<ParentRunFacet> parentRunFacet,
+      ParentRunFacet applicationParentRunFacet,
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
+      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
       SparkListenerStageSubmitted event) {
     Stage stage = stageMap.get(event.stageInfo().stageId());
     RDD<?> rdd = stage.rdd();
@@ -203,13 +204,15 @@ class OpenLineageRunEventBuilder {
 
     nodes.addAll(Rdds.flattenRDDs(rdd));
 
-    return populateRun(parentRunFacet, runEventBuilder, jobBuilder, nodes);
+    return populateRun(
+        applicationParentRunFacet, runEventBuilder, jobBuilder, jobFacetsBuilder, nodes);
   }
 
   RunEvent buildRun(
-      Optional<ParentRunFacet> parentRunFacet,
+      ParentRunFacet applicationParentRunFacet,
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
+      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
       SparkListenerStageCompleted event) {
     Stage stage = stageMap.get(event.stageInfo().stageId());
     RDD<?> rdd = stage.rdd();
@@ -219,55 +222,75 @@ class OpenLineageRunEventBuilder {
 
     nodes.addAll(Rdds.flattenRDDs(rdd));
 
-    return populateRun(parentRunFacet, runEventBuilder, jobBuilder, nodes);
+    return populateRun(
+        applicationParentRunFacet, runEventBuilder, jobBuilder, jobFacetsBuilder, nodes);
   }
 
   RunEvent buildRun(
-      Optional<ParentRunFacet> parentRunFacet,
+      ParentRunFacet applicationParentRunFacet,
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
+      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
       SparkListenerSQLExecutionStart event) {
-    return buildRun(parentRunFacet, runEventBuilder, jobBuilder, event, Optional.empty());
+    return buildRun(
+        applicationParentRunFacet,
+        runEventBuilder,
+        jobBuilder,
+        jobFacetsBuilder,
+        event,
+        Optional.empty());
   }
 
   RunEvent buildRun(
-      Optional<ParentRunFacet> parentRunFacet,
+      ParentRunFacet applicationParentRunFacet,
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
+      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
       SparkListenerSQLExecutionEnd event) {
-    return buildRun(parentRunFacet, runEventBuilder, jobBuilder, event, Optional.empty());
+    return buildRun(
+        applicationParentRunFacet,
+        runEventBuilder,
+        jobBuilder,
+        jobFacetsBuilder,
+        event,
+        Optional.empty());
   }
 
   RunEvent buildRun(
-      Optional<ParentRunFacet> parentRunFacet,
+      ParentRunFacet parentRunFacet,
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
+      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
       SparkListenerJobStart event) {
     return buildRun(
         parentRunFacet,
         runEventBuilder,
         jobBuilder,
+        jobFacetsBuilder,
         event,
         Optional.ofNullable(jobMap.get(event.jobId())));
   }
 
   RunEvent buildRun(
-      Optional<ParentRunFacet> parentRunFacet,
+      ParentRunFacet applicationParentRunFacet,
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
+      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
       SparkListenerJobEnd event) {
     return buildRun(
-        parentRunFacet,
+        applicationParentRunFacet,
         runEventBuilder,
         jobBuilder,
+        jobFacetsBuilder,
         event,
         Optional.ofNullable(jobMap.get(event.jobId())));
   }
 
   private RunEvent buildRun(
-      Optional<ParentRunFacet> parentRunFacet,
+      ParentRunFacet applicationParentRunFacet,
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
+      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
       Object event,
       Optional<ActiveJob> job) {
     List<Object> nodes = new ArrayList<>();
@@ -278,21 +301,21 @@ class OpenLineageRunEventBuilder {
           nodes.addAll(Rdds.flattenRDDs(j.finalStage().rdd()));
         });
 
-    return populateRun(parentRunFacet, runEventBuilder, jobBuilder, nodes);
+    return populateRun(
+        applicationParentRunFacet, runEventBuilder, jobBuilder, jobFacetsBuilder, nodes);
   }
 
   private RunEvent populateRun(
-      Optional<ParentRunFacet> parentRunFacet,
+      ParentRunFacet applicationParentRunFacet,
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
+      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
       List<Object> nodes) {
     OpenLineage openLineage = openLineageContext.getOpenLineage();
 
     RunFacetsBuilder runFacetsBuilder = openLineage.newRunFacetsBuilder();
-    OpenLineage.JobFacetsBuilder jobFacetsBuilder =
-        openLineageContext.getOpenLineage().newJobFacetsBuilder();
 
-    parentRunFacet.ifPresent(runFacetsBuilder::parent);
+    runFacetsBuilder.parent(applicationParentRunFacet);
     OpenLineage.JobFacets jobFacets = buildJobFacets(nodes, jobFacetBuilders, jobFacetsBuilder);
     List<InputDataset> inputDatasets = buildInputDatasets(nodes);
     List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);

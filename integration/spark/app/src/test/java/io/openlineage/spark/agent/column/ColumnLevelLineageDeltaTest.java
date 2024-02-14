@@ -19,7 +19,6 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -84,7 +83,7 @@ public class ColumnLevelLineageDeltaTest {
 
     context =
         OpenLineageContext.builder()
-            .sparkSession(Optional.of(spark))
+            .sparkSession(spark)
             .sparkContext(spark.sparkContext())
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(queryExecution)

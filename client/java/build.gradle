@@ -40,9 +40,9 @@ repositories {
 }
 
 ext {
-    assertjVersion = '3.25.2'
+    assertjVersion = '3.25.3'
     jacksonVersion = "2.15.3"
-    junit5Version = '5.10.1'
+    junit5Version = '5.10.2'
     lombokVersion = '1.18.30'
     mockitoVersion = '5.2.0'
     isReleaseVersion = !version.endsWith('SNAPSHOT')

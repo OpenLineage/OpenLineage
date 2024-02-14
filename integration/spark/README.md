@@ -92,20 +92,21 @@ The following parameters can be specified in the Spark configuration:
 Parameters configuring the Spark integration
 
 
-| Parameter                                             | Definition                                                                                                                                                                         | Example                                |
--------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------
-| spark.openlineage.transport.type                      | The transport type used for event emit, default type is `console`                                                                                                                  | http                                   |
-| spark.openlineage.namespace                           | The default namespace to be applied for any jobs submitted                                                                                                                         | MyNamespace                            |
-| spark.openlineage.parentJobName                       | The job name to be used for the parent job facet                                                                                                                                   | ParentJobName                          |
-| spark.openlineage.parentRunId                         | The RunId of the parent job that initiated this Spark job                                                                                                                          | xxxx-xxxx-xxxx-xxxx                    |
-| spark.openlineage.appName                             | Custom value overwriting Spark app name in events                                                                                                                                  | AppName                                |
-| spark.openlineage.facets.disabled                     | List of facets to disable, enclosed in `[]` (required from 0.21.x) and separated by `;`, default is `[spark_unknown;]` (currently must contain `;`)                                | \[spark_unknown;spark.logicalPlan\]    |
-| spark.openlineage.facets.custom_environment_variables | List of environment variables to include in EnvironmentRunFacet, enclosed in `[]` (required from 0.21.x) and separated by `;`, default is empty                                    | \[CUSTOM_ENV_VAR;\]                    |
-| spark.openlineage.capturedProperties                  | comma separated list of properties to be captured in spark properties facet (default `spark.master`, `spark.app.name`)                                                             | "spark.example1,spark.example2"        |
-| spark.openlineage.dataset.removePath.pattern          | Java regular expression that removes `?<remove>` named group from dataset path. Can be used to last path subdirectories from paths like `s3://my-whatever-path/year=2023/month=04` | `(.*)(?<remove>\/.*\/.*)`              |
-| spark.openlineage.jobName.appendDatasetName           | Decides whether output dataset name should be appended to job name. By default `true`.                                                                                             | false                                  |
-| spark.openlineage.jobName.replaceDotWithUnderscore    | Replaces dots in job name with underscore. Can be used to mimic legacy behaviour on Databricks platform. By default `false`.                                                       | false                                  |
-| spark.openlineage.debugFacet                          | Determines whether debug facet shall be generated and included within the event. Set `enabled` to turn it on. By default, facet is disabled.                                       | enabled                                |
+| Parameter                                             | Definition                                                                                                                                                                         | Example                             |
+-------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------
+| spark.openlineage.transport.type                      | The transport type used for event emit, default type is `console`                                                                                                                  | http                                |
+| spark.openlineage.namespace                           | The default namespace to be applied for any jobs submitted                                                                                                                         | MyNamespace                         |
+| spark.openlineage.parentJobNamespace                  | The job namespace to be used for the parent job facet                                                                                                                              | ParentJobNamespace                  |
+| spark.openlineage.parentJobName                       | The job name to be used for the parent job facet                                                                                                                                   | ParentJobName                       |
+| spark.openlineage.parentRunId                         | The RunId of the parent job that initiated this Spark job                                                                                                                          | xxxx-xxxx-xxxx-xxxx                 |
+| spark.openlineage.appName                             | Custom value overwriting Spark app name in events                                                                                                                                  | AppName                             |
+| spark.openlineage.facets.disabled                     | List of facets to disable, enclosed in `[]` (required from 0.21.x) and separated by `;`, default is `[spark_unknown;spark.logicalPlan]` (currently must contain `;`)               | \[spark_unknown;spark.logicalPlan\] |
+| spark.openlineage.facets.custom_environment_variables | List of environment variables to include in EnvironmentRunFacet, enclosed in `[]` (required from 0.21.x) and separated by `;`, default is empty                                    | \[CUSTOM_ENV_VAR;\]                 |
+| spark.openlineage.capturedProperties                  | comma separated list of properties to be captured in spark properties facet (default `spark.master`, `spark.app.name`)                                                             | "spark.example1,spark.example2"     |
+| spark.openlineage.dataset.removePath.pattern          | Java regular expression that removes `?<remove>` named group from dataset path. Can be used to last path subdirectories from paths like `s3://my-whatever-path/year=2023/month=04` | `(.*)(?<remove>\/.*\/.*)`           |
+| spark.openlineage.jobName.appendDatasetName           | Decides whether output dataset name should be appended to job name. By default `true`.                                                                                             | false                               |
+| spark.openlineage.jobName.replaceDotWithUnderscore    | Replaces dots in job name with underscore. Can be used to mimic legacy behaviour on Databricks platform. By default `false`.                                                       | false                               |
+| spark.openlineage.debugFacet                          | Determines whether debug facet shall be generated and included within the event. Set `enabled` to turn it on. By default, facet is disabled.                                       | enabled                             |
 
 ### HTTP
 
@@ -364,6 +365,49 @@ check a `MapPartitionsRDD`'s dependencies. The `RDD` for each `Stage` can be eva
 `org.apache.spark.scheduler.SparkListenerStageCompleted` event occurs. When a
 `org.apache.spark.scheduler.SparkListenerJobEnd` event is encountered, the last `Stage` for the
 `ActiveJob` can be evaluated.
+
+## Spark extensions' built-in lineage extraction
+
+Spark ecosystem comes with a plenty of pluggable extensions like iceberg, delta or spark-bigquery-connector
+to name a few. Extensions modify logical plan of the job and inject its own classes from which lineage shall be 
+extracted. This is adding extra complexity, as it makes `openlineage-spark` codebase
+dependent on the extension packages. The complexity grows more when multiple versions
+of the same extension need to be supported. 
+
+### Spark DataSource V2 API Extensions
+
+Some extensions rely on Spark DataSource V2 API and implement TableProvider, Table, ScanBuilder etc.
+that are used within Spark to create `DataSourceV2Relation` instances.
+
+A logical plan node `DataSourceV2Relation` contains `Table` field with a properties map of type
+`Map<String, String>`. `openlineage-spark` uses this map to extract dataset information for lineage
+event from `DataSourceV2Relation`. It is checking for the properties `openlineage.dataset.name` and
+`openlineage.dataset.namespace`. If they are present, it uses them to identify a dataset. Please 
+be aware that namespace and name need to conform to [naming convention](https://github.com/OpenLineage/OpenLineage/blob/main/spec/Naming.md).
+
+Properties can be also used to pass any dataset facet. For example:
+```
+openlineage.dataset.facets.customFacet={"property1": "value1", "property2": "value2"}
+```
+will enrich dataset with `customFacet`:
+```json
+"inputs": [{
+    "name": "...",
+    "namespace": "...",
+    "facets": {
+        "customFacet": {
+            "property1": "value1",
+            "property2": "value2",
+            "_producer": "..."
+        },
+        "schema": { }
+}]
+```
+
+The approach can be used for standard facets
+from OpenLineage spec as well. `schema` does not need to be passed through the properties as 
+it is derived within `openlineage-spark` from `DataSourceV2Relation`. Custom facets are automatically
+filled with `_producer` field.
 
 ## Contributing
 

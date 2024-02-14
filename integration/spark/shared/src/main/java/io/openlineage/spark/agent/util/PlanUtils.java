@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent.util;
 
+import static io.openlineage.spark.agent.lifecycle.ExecutionContext.CAMEL_TO_SNAKE_CASE;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import java.io.IOException;
@@ -13,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -193,7 +196,7 @@ public class PlanUtils {
         .run(new OpenLineage.ParentRunFacetRunBuilder().runId(parentRunId).build())
         .job(
             new OpenLineage.ParentRunFacetJobBuilder()
-                .name(parentJob)
+                .name(parentJob.replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT))
                 .namespace(parentJobNamespace)
                 .build())
         .build();
