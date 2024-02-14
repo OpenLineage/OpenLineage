@@ -23,7 +23,7 @@ import org.apache.spark.sql.internal.StaticSQLConf;
 @Slf4j
 public class PathUtils {
 
-  private static final String DEFAULT_SCHEME = "file" ;
+  private static final String DEFAULT_SCHEME = "file";
   private static final String DEFAULT_SEPARATOR = "/";
   private static Optional<SparkConf> sparkConf = Optional.empty();
 
