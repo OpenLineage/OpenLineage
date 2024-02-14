@@ -179,7 +179,7 @@ public class GoogleCloudIntegrationTest {
         .save(pathPrefix);
 
     // prepare some file in GS
-    String inputPath = String.format("%s/input/data.csv", pathPrefix, pathPrefix);
+    String inputPath = String.format("%s/input/data.csv", pathPrefix);
     textFile.saveAsTextFile(inputPath);
 
     // read from GS and write to another location in GS
