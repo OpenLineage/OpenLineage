@@ -24,6 +24,7 @@ import org.apache.spark.sql.internal.StaticSQLConf;
 public class PathUtils {
 
   private static final String DEFAULT_SCHEME = "file";
+  private static final String DEFAULT_SEPARATOR = "/";
   private static Optional<SparkConf> sparkConf = Optional.empty();
 
   public static DatasetIdentifier fromPath(Path path) {
@@ -101,7 +102,9 @@ public class PathUtils {
   private static URI prepareUriFromLocation(CatalogTable catalogTable) {
     URI uri = catalogTable.storage().locationUri().get();
 
-    if (uri.getPath() != null && uri.getPath().startsWith("/") && uri.getScheme() == null) {
+    if (uri.getPath() != null
+        && uri.getPath().startsWith(DEFAULT_SEPARATOR)
+        && uri.getScheme() == null) {
       uri = new URI(DEFAULT_SCHEME, null, uri.getPath(), null, null);
     }
 
@@ -112,7 +115,7 @@ public class PathUtils {
   private static DatasetIdentifier prepareHiveDatasetIdentifier(
       CatalogTable catalogTable, URI metastoreUri) {
     String qualifiedName = nameFromTableIdentifier(catalogTable.identifier());
-    if (!qualifiedName.startsWith("/")) {
+    if (!qualifiedName.startsWith(DEFAULT_SEPARATOR)) {
       qualifiedName = String.format("/%s", qualifiedName);
     }
     return PathUtils.fromPath(
