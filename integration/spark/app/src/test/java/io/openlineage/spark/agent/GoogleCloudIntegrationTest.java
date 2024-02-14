@@ -14,6 +14,7 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import lombok.SneakyThrows;
@@ -75,6 +76,13 @@ public class GoogleCloudIntegrationTest {
   @BeforeEach
   @SneakyThrows
   public void beforeEach() {
+    java.nio.file.Path resourcesDir = Paths.get(System.getProperty("resources.dir"));
+    java.nio.file.Path log4j = resourcesDir.resolve("log4j.properties").toAbsolutePath();
+    java.nio.file.Path log4j2 = resourcesDir.resolve("log4j2.properties").toAbsolutePath();
+
+    System.setProperty("log4j.configuration", log4j.toString());
+    System.setProperty("log4j.configurationFile", log4j2.toString());
+
     spark =
         SparkSession.builder()
             .master("local[*]")
@@ -114,7 +122,9 @@ public class GoogleCloudIntegrationTest {
   void testReadAndWriteFromBigquery() {
     String PROJECT_ID = "openlineage-ci";
     String DATASET_ID = "airflow_integration";
-    String versionName = System.getProperty(SPARK_VERSION).replace(".", "_");
+    String sparkVersion = System.getProperty(SPARK_VERSION).replace(".", "_");
+    String scalaBinaryVersion = System.getProperty("scala.binary.version").replace(".", "_");
+    String versionName = String.format("%s_%s", sparkVersion, scalaBinaryVersion);
 
     String source_table = String.format("%s.%s.%s_source", PROJECT_ID, DATASET_ID, versionName);
     String target_table = String.format("%s.%s.%s_target", PROJECT_ID, DATASET_ID, versionName);
