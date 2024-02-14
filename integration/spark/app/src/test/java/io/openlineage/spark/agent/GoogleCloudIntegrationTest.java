@@ -159,7 +159,10 @@ public class GoogleCloudIntegrationTest {
     String sparkVersion = String.format("spark-%s", System.getProperty(SPARK_VERSION));
     String scalaVersion = String.format("scala-%s", System.getProperty("scala.binary.version"));
     URI buckertUri =
-        URI.create(String.format("gs://openlineage-spark-bigquery-integration/rdd-test/spark-%s/scala-%s", sparkVersion, scalaVersion));
+        URI.create(
+            String.format(
+                "gs://openlineage-spark-bigquery-integration/rdd-test/spark-%s/scala-%s",
+                sparkVersion, scalaVersion));
     String pathPrefix = buckertUri.toString();
 
     URL url = Resources.getResource("test_data/data.txt");
