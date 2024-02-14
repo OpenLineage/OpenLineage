@@ -508,7 +508,7 @@ List<Dependency> hadoopClientDependencies(String spark, String scala) {
     final def registry = [
             "2.4.8": "2.10.2",
             "3.2.4": "3.3.4",
-            "3.3.4": "3.3.4",
+            "3.3.4": "3.3.2",
             "3.4.2": "3.3.4",
             "3.5.0": "3.3.4",
     ]
@@ -583,24 +583,44 @@ List<Dependency> additionalJars(String spark, String scala) {
 List<Dependency> runtimeOnlyDependencies(String spark, String scala) {
     final def registry = [
             "3.2.4": [
-                    dependencies.create("org.apache.hadoop:hadoop-common:2.10.2"),
-                    dependencies.create("org.apache.hadoop:hadoop-aws:2.10.2"),
-                    dependencies.create("com.amazonaws:aws-java-sdk-bundle:1.11.901"),
+//                    dependencies.create("org.apache.hadoop:hadoop-common:3.3.1"),
+//                    dependencies.create("org.apache.hadoop:hadoop-aws:3.3.1"),
+//                    dependencies.create("com.amazonaws:aws-java-sdk-bundle:1.11.901"),
+                    dependencies.create("org.apache.spark:spark-hadoop-cloud_${scala}:${spark}", {
+                        exclude group: 'com.fasterxml.jackson.core'
+                        exclude group: 'org.apache.hadoop', module: 'hadoop-azure'
+                        exclude group: 'org.apache.hadoop', module: 'hadoop-openstack'
+                    }),
             ],
             "3.3.4": [
-                    dependencies.create("org.apache.hadoop:hadoop-common:3.3.2"),
-                    dependencies.create("org.apache.hadoop:hadoop-aws:3.3.2"),
-                    dependencies.create("com.amazonaws:aws-java-sdk-bundle:1.11.1026"),
+//                    dependencies.create("org.apache.hadoop:hadoop-common:3.3.2"),
+//                    dependencies.create("org.apache.hadoop:hadoop-aws:3.3.2"),
+//                    dependencies.create("com.amazonaws:aws-java-sdk-bundle:1.11.1026"),
+                    dependencies.create("org.apache.spark:spark-hadoop-cloud_${scala}:${spark}", {
+                        exclude group: 'com.fasterxml.jackson.core'
+                        exclude group: 'org.apache.hadoop', module: 'hadoop-azure'
+                        exclude group: 'org.apache.hadoop', module: 'hadoop-openstack'
+                    }),
             ],
             "3.4.2": [
-                    dependencies.create("org.apache.hadoop:hadoop-common:3.3.4"),
-                    dependencies.create("org.apache.hadoop:hadoop-aws:3.3.4"),
-                    dependencies.create("com.amazonaws:aws-java-sdk-bundle:1.12.262"),
+//                    dependencies.create("org.apache.hadoop:hadoop-common:3.3.4"),
+//                    dependencies.create("org.apache.hadoop:hadoop-aws:3.3.4"),
+//                    dependencies.create("com.amazonaws:aws-java-sdk-bundle:1.12.262"),
+                    dependencies.create("org.apache.spark:spark-hadoop-cloud_${scala}:${spark}", {
+                        exclude group: 'com.fasterxml.jackson.core'
+                        exclude group: 'org.apache.hadoop', module: 'hadoop-azure'
+                        exclude group: 'org.apache.hadoop', module: 'hadoop-openstack'
+                    }),
             ],
             "3.5.0": [
-                    dependencies.create("org.apache.hadoop:hadoop-common:3.3.4"),
-                    dependencies.create("org.apache.hadoop:hadoop-aws:3.3.4"),
-                    dependencies.create("com.amazonaws:aws-java-sdk-bundle:1.12.262"),
+//                    dependencies.create("org.apache.hadoop:hadoop-common:3.3.4"),
+//                    dependencies.create("org.apache.hadoop:hadoop-aws:3.3.4"),
+//                    dependencies.create("com.amazonaws:aws-java-sdk-bundle:1.12.262"),
+                    dependencies.create("org.apache.spark:spark-hadoop-cloud_${scala}:${spark}", {
+                        exclude group: 'com.fasterxml.jackson.core'
+                        exclude group: 'org.apache.hadoop', module: 'hadoop-azure'
+                        exclude group: 'org.apache.hadoop', module: 'hadoop-openstack'
+                    }),
             ],
     ]
 
