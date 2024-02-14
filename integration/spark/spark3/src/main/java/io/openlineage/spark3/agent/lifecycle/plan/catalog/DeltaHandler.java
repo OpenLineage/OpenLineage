@@ -87,7 +87,7 @@ public class DeltaHandler implements CatalogHandler {
     return di.withSymlink(
         identifier.toString(),
         StringUtils.substringBeforeLast(
-            di.getName(), File.separator), // parent location from a name becomes a namespace
+            path.toString(), File.separator), // parent location from a name becomes a namespace
         DatasetIdentifier.SymlinkType.TABLE);
   }
 
