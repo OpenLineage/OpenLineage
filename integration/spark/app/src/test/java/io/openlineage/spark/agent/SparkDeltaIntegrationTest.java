@@ -17,6 +17,7 @@ import static org.mockserver.model.JsonBody.json;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
 import lombok.SneakyThrows;
@@ -43,7 +44,10 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.junit.jupiter.MockServerExtension;
+import org.mockserver.junit.jupiter.MockServerSettings;
 import org.mockserver.matchers.MatchType;
+import org.mockserver.model.ClearType;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.RegexBody;
 
@@ -51,18 +55,22 @@ import org.mockserver.model.RegexBody;
 @Tag("delta")
 @Slf4j
 @ExtendWith(MockServerExtension.class)
-public class SparkDeltaIntegrationTest implements MockServerAware {
+@MockServerSettings(ports = {SparkDeltaIntegrationTest.MOCK_SERVER_PORT}, perTestSuite = true)
+public class SparkDeltaIntegrationTest {
+  public static final int MOCK_SERVER_PORT = 1082;
 
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
   private static SparkSession spark;
 
-  private ClientAndServer mockServer;
+  private final ClientAndServer mockServer;
 
-  @Override
-  public void setClientAndServer(ClientAndServer clientAndServer) {
+  SparkDeltaIntegrationTest(ClientAndServer clientAndServer) {
     this.mockServer = clientAndServer;
+    this.mockServer
+            .when(request("/api/v1/lineage"))
+            .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
   }
 
   @BeforeAll
@@ -81,9 +89,18 @@ public class SparkDeltaIntegrationTest implements MockServerAware {
   @BeforeEach
   @SneakyThrows
   public void beforeEach() {
-    mockServer
-        .when(request("/api/v1/lineage"))
-        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
+    mockServer.clear(request(), ClearType.LOG);
+
+    java.nio.file.Path resourcesDir = Paths.get(System.getProperty("resources.dir"));
+
+    java.nio.file.Path log4j = resourcesDir.resolve("log4j.properties").toAbsolutePath();
+    java.nio.file.Path log4j2 = resourcesDir.resolve("log4j2.properties").toAbsolutePath();
+
+    System.setProperty("log4j.configuration", log4j.toString());
+    System.setProperty("log4j.configurationFile", log4j2.toString());
+    System.setProperty("log4j2.configurationFile", log4j2.toString());
+    System.setProperty("derby.system.home", "/tmp/delta/derby");
+
     spark =
         SparkSession.builder()
             .master("local[*]")
@@ -92,8 +109,8 @@ public class SparkDeltaIntegrationTest implements MockServerAware {
             .config("spark.driver.bindAddress", LOCAL_IP)
             .config("spark.ui.enabled", false)
             .config("spark.sql.shuffle.partitions", 1)
+                .config("spark.files", "file://" + log4j + "," + "file://" + log4j2)
             .config("spark.sql.warehouse.dir", "file:/tmp/delta/")
-            .config("spark.driver.extraJavaOptions", "-Dderby.system.home=/tmp/delta/derby")
             .config("spark.openlineage.transport.type", "http")
             .config(
                 "spark.openlineage.transport.url",

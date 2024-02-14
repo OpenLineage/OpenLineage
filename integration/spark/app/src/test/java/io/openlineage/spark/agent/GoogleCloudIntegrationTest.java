@@ -40,23 +40,25 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.junit.jupiter.MockServerExtension;
+import org.mockserver.junit.jupiter.MockServerSettings;
 
 @Tag("integration-test")
 @Tag("google-cloud")
 @Slf4j
 @ExtendWith(MockServerExtension.class)
-public class GoogleCloudIntegrationTest implements MockServerAware {
+@MockServerSettings(ports = {1081})
+public class GoogleCloudIntegrationTest {
   private static final String LOCAL_IP = "127.0.0.1";
   private static final String SPARK_3 = "(3.*)";
   private static final String SPARK_3_3 = "(3\\.[3-9].*)";
   private static final String SPARK_VERSION = "spark.version";
   private static SparkSession spark;
 
-  private ClientAndServer mockServer;
+  private final ClientAndServer mockServer;
 
-  @Override
-  public void setClientAndServer(ClientAndServer clientAndServer) {
-    this.mockServer = Objects.requireNonNull(clientAndServer);
+  public GoogleCloudIntegrationTest(ClientAndServer mockServer) {
+    this.mockServer = mockServer;
   }
 
   @BeforeAll
