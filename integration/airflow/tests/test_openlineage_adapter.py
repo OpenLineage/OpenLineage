@@ -13,6 +13,7 @@ from openlineage.airflow.extractors import TaskMetadata
 from openlineage.client.facet import (
     DocumentationJobFacet,
     ExternalQueryRunFacet,
+    JobTypeJobFacet,
     NominalTimeRunFacet,
     OwnershipJobFacet,
     OwnershipJobFacetOwners,
@@ -126,7 +127,10 @@ def test_emit_start_event():
             job=Job(
                 namespace="default",
                 name="job",
-                facets={"documentation": DocumentationJobFacet(description="description")},
+                facets={
+                    "documentation": DocumentationJobFacet(description="description"),
+                    "jobType": JobTypeJobFacet(processingType="BATCH", integration="AIRFLOW", jobType="TASK"),
+                },
             ),
             producer=_PRODUCER,
             inputs=[],
@@ -200,6 +204,7 @@ def test_emit_start_event_with_additional_information():
                         ]
                     ),
                     "sql": SqlJobFacet(query="SELECT 1;"),
+                    "jobType": JobTypeJobFacet(processingType="BATCH", integration="AIRFLOW", jobType="TASK"),
                 },
             ),
             producer=_PRODUCER,
@@ -238,7 +243,9 @@ def test_emit_complete_event():
             job=Job(
                 namespace="default",
                 name="job",
-                facets={},
+                facets={
+                    "jobType": JobTypeJobFacet(processingType="BATCH", integration="AIRFLOW", jobType="TASK")
+                },
             ),
             producer=_PRODUCER,
             inputs=[],
@@ -286,7 +293,14 @@ def test_emit_complete_event_with_additional_information():
                     "externalQuery": ExternalQueryRunFacet(externalQueryId="123", source="source"),
                 },
             ),
-            job=Job(namespace="default", name="job", facets={"sql": SqlJobFacet(query="SELECT 1;")}),
+            job=Job(
+                namespace="default",
+                name="job",
+                facets={
+                    "sql": SqlJobFacet(query="SELECT 1;"),
+                    "jobType": JobTypeJobFacet(processingType="BATCH", integration="AIRFLOW", jobType="TASK"),
+                },
+            ),
             producer=_PRODUCER,
             inputs=[
                 Dataset(namespace="bigquery", name="a.b.c"),
@@ -323,7 +337,9 @@ def test_emit_fail_event():
             job=Job(
                 namespace="default",
                 name="job",
-                facets={},
+                facets={
+                    "jobType": JobTypeJobFacet(processingType="BATCH", integration="AIRFLOW", jobType="TASK")
+                },
             ),
             producer=_PRODUCER,
             inputs=[],
@@ -371,7 +387,14 @@ def test_emit_fail_event_with_additional_information():
                     "externalQuery": ExternalQueryRunFacet(externalQueryId="123", source="source"),
                 },
             ),
-            job=Job(namespace="default", name="job", facets={"sql": SqlJobFacet(query="SELECT 1;")}),
+            job=Job(
+                namespace="default",
+                name="job",
+                facets={
+                    "sql": SqlJobFacet(query="SELECT 1;"),
+                    "jobType": JobTypeJobFacet(processingType="BATCH", integration="AIRFLOW", jobType="TASK"),
+                },
+            ),
             producer=_PRODUCER,
             inputs=[
                 Dataset(namespace="bigquery", name="a.b.c"),
