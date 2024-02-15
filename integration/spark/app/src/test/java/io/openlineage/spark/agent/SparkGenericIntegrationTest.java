@@ -8,7 +8,6 @@ package io.openlineage.spark.agent;
 import static io.openlineage.spark.agent.MockServerUtils.getEventsEmitted;
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
@@ -31,11 +30,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.integration.ClientAndServer;
-import org.mockserver.junit.jupiter.MockServerExtension;
-import org.mockserver.junit.jupiter.MockServerSettings;
-import org.mockserver.model.ClearType;
 
 /**
  * This class contains Spark non-container integration tests that do not fit into other integration
@@ -43,43 +38,33 @@ import org.mockserver.model.ClearType;
  */
 @Tag("integration-test")
 @Slf4j
-@ExtendWith(MockServerExtension.class)
-@MockServerSettings(
-    ports = {SparkGenericIntegrationTest.MOCK_SERVER_PORT},
-    perTestSuite = true)
 public class SparkGenericIntegrationTest {
-  public static final int MOCK_SERVER_PORT = 1083;
 
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
+  private static final int MOCK_SERVER_PORT = 1083;
   private static SparkSession spark;
-
-  private final ClientAndServer mockServer;
-
-  public SparkGenericIntegrationTest(ClientAndServer mockServer) {
-    this.mockServer = mockServer;
-    this.mockServer
-        .when(request("/api/v1/lineage"))
-        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
-  }
+  private static ClientAndServer mockServer;
 
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
+    mockServer = MockServerUtils.createAndConfigureMockServer(MOCK_SERVER_PORT);
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
+    MockServerUtils.stopMockServer(mockServer);
   }
 
   @BeforeEach
   @SneakyThrows
   public void beforeEach() {
-    mockServer.clear(request(), ClearType.LOG);
+    MockServerUtils.clearRequests(mockServer);
 
     java.nio.file.Path resourcesDir = Paths.get(System.getProperty("resources.dir"));
 
@@ -100,7 +85,7 @@ public class SparkGenericIntegrationTest {
             .config("spark.openlineage.transport.type", "http")
             .config(
                 "spark.openlineage.transport.url",
-                "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/generic-namespace")
+                "http://localhost:" + mockServer.getPort() + "/api/v1/lineage")
             .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
             .config("spark.openlineage.debugFacet", "disabled")
             .config("spark.openlineage.parentJobName", "parent-job")
@@ -108,12 +93,10 @@ public class SparkGenericIntegrationTest {
             .config("spark.openlineage.parentJobNamespace", "parent-namespace")
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .getOrCreate();
-
-    spark.sparkContext().setLogLevel("WARN");
   }
 
   @Test
-  public void sparkEmitsApplicationLevelEvents() {
+  void sparkEmitsApplicationLevelEvents() {
     Dataset<Row> df = createTempDataset();
 
     Dataset<Row> agg = df.groupBy("a").count();
