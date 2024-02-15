@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Paths;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -149,10 +149,13 @@ public class GoogleCloudIntegrationTest {
 
     first.write().format("bigquery").option("table", target_table).mode("overwrite").save();
 
+    HashMap<String, String> replacements = new HashMap<>();
+    replacements.put("{spark_version}", sparkVersion.replace(".", "_"));
+    replacements.put("{scala_version}", scalaBinaryVersion.replace(".", "_"));
+
     verifyEvents(
         mockServer,
-        Collections.singletonMap(
-            "{spark_version}", System.getProperty(SPARK_VERSION).replace(".", "_")),
+        replacements,
         "pysparkBigquerySaveStart.json",
         "pysparkBigqueryInsertStart.json",
         "pysparkBigqueryInsertEnd.json",
