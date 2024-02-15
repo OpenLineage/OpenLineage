@@ -110,7 +110,7 @@ public class PathUtils {
       // Normalize the URI if it is already a file scheme but has three slashes
       String path = uri.getPath();
       if (uri.toString().startsWith(DEFAULT_SCHEME + ":///")) {
-          uri = new URI(DEFAULT_SCHEME, null, path, null, null);
+        uri = new URI(DEFAULT_SCHEME, null, path, null, null);
       }
     }
 
