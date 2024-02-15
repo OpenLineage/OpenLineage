@@ -20,6 +20,8 @@
   *Support job type properties within the DBT Job facet.*
 * **Spark: stop sending  `spark.LogicalPlan` facet by default** [`#2433`](https://github.com/OpenLineage/OpenLineage/pull/2433) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *`spark.LogicalPlan` has been added to default value of `spark.openlineage.facets.disabled`.*
+* **Airflow: Add support for `JobTypeJobFacet` properties.** [`#2412`](https://github.com/OpenLineage/OpenLineage/pull/2412) [@mattiabertorello](https://github.com/mattiabertorello)
+  *Support job type properties within the Airflow Job facet.*
 
 ## [1.8.0](https://github.com/OpenLineage/OpenLineage/compare/1.7.0...1.8.0) - 2024-01-19
 
