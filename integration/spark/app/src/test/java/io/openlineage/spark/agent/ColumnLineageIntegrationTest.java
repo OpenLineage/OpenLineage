@@ -45,7 +45,7 @@ import org.testcontainers.utility.DockerImageName;
 @ExtendWith(MockServerExtension.class)
 @MockServerSettings(ports = {ColumnLineageIntegrationTest.MOCKSERVER_PORT})
 public class ColumnLineageIntegrationTest {
-  public static final int MOCKSERVER_PORT = 1080;
+  public static final int MOCKSERVER_PORT = 1090;
   private static final String LOCAL_IP = "127.0.0.1";
   private static final String database = "test";
   private static final String username = "test";
