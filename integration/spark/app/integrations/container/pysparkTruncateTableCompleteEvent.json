@@ -17,7 +17,7 @@
         "symlinks": {
           "identifiers": [
             {
-              "namespace": "/tmp/truncate_test",
+              "namespace": "file:/tmp/truncate_test",
               "name": "default.truncate_table_test",
               "type": "TABLE"
             }
