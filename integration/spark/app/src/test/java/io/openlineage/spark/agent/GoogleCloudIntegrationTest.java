@@ -38,44 +38,40 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.integration.ClientAndServer;
-import org.mockserver.junit.jupiter.MockServerExtension;
-import org.mockserver.junit.jupiter.MockServerSettings;
 
 @Tag("integration-test")
 @Tag("google-cloud")
 @Slf4j
-@ExtendWith(MockServerExtension.class)
-@MockServerSettings(ports = {1081})
 public class GoogleCloudIntegrationTest {
+  private static final int MOCKSERVER_PORT = 3000;
   private static final String LOCAL_IP = "127.0.0.1";
   private static final String SPARK_3 = "(3.*)";
   private static final String SPARK_3_3 = "(3\\.[3-9].*)";
   private static final String SPARK_VERSION = "spark.version";
   private static SparkSession spark;
-
-  private final ClientAndServer mockServer;
-
-  public GoogleCloudIntegrationTest(ClientAndServer mockServer) {
-    this.mockServer = mockServer;
-  }
+  private static ClientAndServer mockServer;
 
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
+    mockServer = new ClientAndServer(MOCKSERVER_PORT);
+    MockServerUtils.configureStandardExpectation(mockServer);
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
+    MockServerUtils.stopMockServer(mockServer);
   }
 
   @BeforeEach
   @SneakyThrows
   public void beforeEach() {
+    MockServerUtils.clearRequests(mockServer);
+
     java.nio.file.Path resourcesDir = Paths.get(System.getProperty("resources.dir"));
     java.nio.file.Path log4j = resourcesDir.resolve("log4j.properties").toAbsolutePath();
     java.nio.file.Path log4j2 = resourcesDir.resolve("log4j2.properties").toAbsolutePath();
@@ -97,7 +93,7 @@ public class GoogleCloudIntegrationTest {
             .config("spark.openlineage.transport.type", "http")
             .config(
                 "spark.openlineage.transport.url",
-                "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/gc-namespace")
+                "http://localhost:" + mockServer.getPort() + "/api/v1/lineage")
             .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
             .config("spark.openlineage.debugFacet", "disabled")
             .config("parentProject", "openlineage-ci")
@@ -113,8 +109,6 @@ public class GoogleCloudIntegrationTest {
                 "spark.hadoop.fs.gs.impl", "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem")
             .config("spark.hadoop.google.cloud.auth.service.account.enable", "true")
             .getOrCreate();
-
-    spark.sparkContext().setLogLevel("WARN");
   }
 
   @Test
@@ -171,7 +165,7 @@ public class GoogleCloudIntegrationTest {
     URI buckertUri =
         URI.create(
             String.format(
-                "gs://openlineage-spark-bigquery-integration/rdd-test/spark-%s/scala-%s",
+                "gs://openlineage-spark-bigquery-integration/rdd-test/spark-%s/scala-%s/",
                 sparkVersion, scalaVersion));
     String pathPrefix = buckertUri.toString();
 
