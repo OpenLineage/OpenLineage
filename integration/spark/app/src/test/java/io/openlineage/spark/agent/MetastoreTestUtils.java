@@ -5,6 +5,9 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.SparkContainerProperties.SCALA_BINARY_VERSION;
+import static io.openlineage.spark.agent.SparkContainerProperties.SPARK_VERSION;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.Map;
@@ -16,8 +19,11 @@ import org.apache.spark.sql.SparkSession;
 
 public class MetastoreTestUtils {
   private static final String LOCAL_IP = "127.0.0.1";
-  private static final String VERSION = System.getProperty("spark.version");
-  private static final String BASE_PATH = "gs://openlineage-ci-testing/warehouse/" + VERSION;
+  private static final String BASE_PATH =
+      String.format(
+              "gs://openlineage-ci-testing/warehouse/spark-%s/scala-%s",
+              SPARK_VERSION, SCALA_BINARY_VERSION)
+          .replace(".", "_");
   private static final String GCLOUD_KEY = "GCLOUD_SERVICE_KEY";
   private static final Map<String, String> GOOGLE_SA_PROPERTIES = parseGoogleSAProperties();
 
@@ -27,7 +33,7 @@ public class MetastoreTestUtils {
       String appName, String metastoreName, int mappedPort, Boolean isIceberg) {
     SparkConf conf =
         new SparkConf()
-            .setAppName(appName + VERSION)
+            .setAppName(appName + SPARK_VERSION)
             .setMaster("local[*]")
             .set("spark.driver.host", LOCAL_IP)
             .set("org.jpox.autoCreateSchema", "true")
