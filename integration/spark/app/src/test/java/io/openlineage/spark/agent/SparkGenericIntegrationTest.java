@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -66,10 +65,8 @@ public class SparkGenericIntegrationTest {
   public void beforeEach() {
     MockServerUtils.clearRequests(mockServer);
 
-    java.nio.file.Path resourcesDir = Paths.get(System.getProperty("resources.dir"));
-
-    java.nio.file.Path log4j = resourcesDir.resolve("log4j.properties").toAbsolutePath();
-    java.nio.file.Path log4j2 = resourcesDir.resolve("log4j2.properties").toAbsolutePath();
+    java.nio.file.Path log4j = SparkContainerProperties.HOST_LOG4J_PROPERTIES_PATH;
+    java.nio.file.Path log4j2 = SparkContainerProperties.HOST_LOG4J2_PROPERTIES_PATH;
 
     System.setProperty("log4j.configuration", log4j.toString());
     System.setProperty("log4j.configurationFile", log4j2.toString());
