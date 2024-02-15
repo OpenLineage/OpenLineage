@@ -35,6 +35,7 @@ public class FileTransport extends Transport {
     emit(OpenLineageClientUtils.toJson(runEvent));
   }
 
+  @Override
   public void emit(String eventAsJson) {
     try {
       FileUtils.writeStringToFile(

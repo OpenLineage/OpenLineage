@@ -6,8 +6,11 @@
 package io.openlineage.flink.visitor.lifecycle;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageYaml;
+import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.EventEmitter;
+import io.openlineage.flink.client.FlinkConfigParser;
 import java.util.List;
 import java.util.UUID;
 import org.apache.flink.api.common.JobID;
@@ -23,6 +26,7 @@ public class FlinkExecutionContextFactory {
       JobID jobId,
       String jobType,
       List<Transformation<?>> transformations) {
+    OpenLineageYaml openLineageYaml = FlinkConfigParser.parse(configuration);
     return new FlinkExecutionContext.FlinkExecutionContextBuilder()
         .jobId(jobId)
         .processingType(jobType)
@@ -30,11 +34,12 @@ public class FlinkExecutionContextFactory {
         .jobNamespace(jobNamespace)
         .transformations(transformations)
         .runId(UUID.randomUUID())
+        .circuitBreaker(new CircuitBreakerFactory(openLineageYaml.getCircuitBreaker()).build())
         .openLineageContext(
             OpenLineageContext.builder()
                 .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_CLIENT_URI))
                 .build())
-        .eventEmitter(new EventEmitter(configuration))
+        .eventEmitter(new EventEmitter(openLineageYaml))
         .build();
   }
 }

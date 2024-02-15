@@ -22,6 +22,8 @@
   *`spark.LogicalPlan` has been added to default value of `spark.openlineage.facets.disabled`.*
 * **Airflow: Add support for `JobTypeJobFacet` properties.** [`#2412`](https://github.com/OpenLineage/OpenLineage/pull/2412) [@mattiabertorello](https://github.com/mattiabertorello)
   *Support job type properties within the Airflow Job facet.*
+* **Spark & Flink & Java client: Circuit breaker** [`#2407`](https://github.com/OpenLineage/OpenLineage/issues/2407) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Introduces circuit breaker mechanism to prevent from effects of over-instrumentation. Implemented within Java client serves both Flink and Spark integration. Follow Java client readme for more details.*
 
 ## [1.8.0](https://github.com/OpenLineage/OpenLineage/compare/1.7.0...1.8.0) - 2024-01-19
 

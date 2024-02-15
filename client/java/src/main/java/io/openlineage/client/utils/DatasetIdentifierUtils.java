@@ -5,6 +5,7 @@
 
 package io.openlineage.client.utils;
 
+import java.io.File;
 import java.net.URI;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -47,14 +48,14 @@ public class DatasetIdentifierUtils {
   }
 
   private static String removeFirstSlashIfSingleSlashInString(String name) {
-    if (name.chars().filter(x -> x == '/').count() == 1 && name.startsWith("/")) {
+    if (name.chars().filter(x -> x == File.separatorChar).count() == 1 && name.startsWith("/")) {
       return name.substring(1);
     }
     return name;
   }
 
   private static String removeLastSlash(String name) {
-    if (name.charAt(name.length() - 1) == '/') {
+    if (name.charAt(name.length() - 1) == File.separatorChar) {
       return name.substring(0, name.length() - 1);
     }
     return name;

@@ -1,0 +1,7 @@
+transport:
+  type: console
+circuitBreaker:
+  type: javaRuntime
+  memoryThreshold: 13
+  gcCpuThreshold: 7
+  circuitCheckIntervalInMillis: 200
