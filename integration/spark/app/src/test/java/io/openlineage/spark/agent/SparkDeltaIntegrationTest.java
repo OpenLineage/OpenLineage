@@ -42,43 +42,27 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockserver.integration.ClientAndServer;
-import org.mockserver.junit.jupiter.MockServerExtension;
-import org.mockserver.junit.jupiter.MockServerSettings;
 import org.mockserver.matchers.MatchType;
-import org.mockserver.model.ClearType;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.RegexBody;
 
 @Tag("integration-test")
 @Tag("delta")
 @Slf4j
-@ExtendWith(MockServerExtension.class)
-@MockServerSettings(
-    ports = {SparkDeltaIntegrationTest.MOCK_SERVER_PORT},
-    perTestSuite = true)
 public class SparkDeltaIntegrationTest {
-  public static final int MOCK_SERVER_PORT = 1082;
-
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
+  private static final int MOCK_SERVER_PORT = 1082;
   private static SparkSession spark;
-
-  private final ClientAndServer mockServer;
-
-  SparkDeltaIntegrationTest(ClientAndServer clientAndServer) {
-    this.mockServer = clientAndServer;
-    this.mockServer
-        .when(request("/api/v1/lineage"))
-        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
-  }
+  private static ClientAndServer mockServer;
 
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
+    mockServer = MockServerUtils.createAndConfigureMockServer(MOCK_SERVER_PORT);
     FileUtils.deleteDirectory(new File("/tmp/delta/"));
   }
 
@@ -86,12 +70,13 @@ public class SparkDeltaIntegrationTest {
   @SneakyThrows
   public static void afterAll() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
+    MockServerUtils.stopMockServer(mockServer);
   }
 
   @BeforeEach
   @SneakyThrows
   public void beforeEach() {
-    mockServer.clear(request(), ClearType.LOG);
+    MockServerUtils.clearRequests(mockServer);
 
     java.nio.file.Path resourcesDir = Paths.get(System.getProperty("resources.dir"));
 
@@ -128,6 +113,7 @@ public class SparkDeltaIntegrationTest {
                 "org.apache.spark.sql.delta.catalog.DeltaCatalog")
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
             .getOrCreate();
+
     FileSystem.get(spark.sparkContext().hadoopConfiguration())
         .delete(new Path("/tmp/delta/"), true);
   }
