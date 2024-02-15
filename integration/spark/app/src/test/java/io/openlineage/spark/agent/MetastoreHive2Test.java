@@ -30,55 +30,54 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
 @EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)")
 public class MetastoreHive2Test {
-  private static final String database = "hive2";
-  private static final String table = "test";
-  private static Network network = Network.newNetwork();
+  private static final String SPARK_VERSION = System.getProperty("spark.version");
+  private static final String SCALA_BINARY_VERSION = System.getProperty("scala.binary.version");
+  private static final String DATABASE = "hive3";
+  private static final String TABLE =
+      String.format("test_%s_%s", SPARK_VERSION, SCALA_BINARY_VERSION).replace(".", "_");
+  private static final Network NETWORK = Network.newNetwork();
+  @Container
+  private static final PostgreSQLContainer<?> METASTORE_CONTAINER =
+      SparkContainerUtils.makeMetastoreContainer(NETWORK);
   private static SparkSession spark;
   private static FileSystem fs;
 
-  @Container
-  private static PostgreSQLContainer metastoreContainer =
-      SparkContainerUtils.makeMetastoreContainer(network);
-
-  private static int mappedPort;
-
   @BeforeAll
   public static void setup() {
-    metastoreContainer.start();
-    mappedPort = metastoreContainer.getMappedPort(MetastoreTestUtils.POSTGRES_PORT);
+    METASTORE_CONTAINER.start();
     spark =
         SparkSession.builder()
             .config(
                 MetastoreTestUtils.getCommonSparkConf(
                     "MetastoreHive2Test",
                     "metastore23",
-                    metastoreContainer.getMappedPort(MetastoreTestUtils.POSTGRES_PORT),
+                    METASTORE_CONTAINER.getMappedPort(MetastoreTestUtils.POSTGRES_PORT),
                     false))
             .enableHiveSupport()
             .getOrCreate();
     fs = MetastoreTestUtils.getFileSystem(spark);
 
-    MetastoreTestUtils.removeDatabaseFiles(database, fs);
-    executeSql("DROP TABLE IF EXISTS %s.%s", database, table);
-    executeSql("DROP DATABASE IF EXISTS %s", database);
+    MetastoreTestUtils.removeDatabaseFiles(DATABASE, fs);
+    executeSql("DROP TABLE IF EXISTS %s.%s", DATABASE, TABLE);
+    executeSql("DROP DATABASE IF EXISTS %s", DATABASE);
   }
 
   @AfterAll
   public static void tearDown() {
-    metastoreContainer.stop();
-    MetastoreTestUtils.removeDatabaseFiles(database, fs);
+    METASTORE_CONTAINER.stop();
+    MetastoreTestUtils.removeDatabaseFiles(DATABASE, fs);
     spark.close();
   }
 
   @Test
   void IcebergTablesTest() {
-    executeSql("create database if not exists %s", database);
-    executeSql("drop table if exists %s.%s", database, table);
+    executeSql("create database if not exists %s", DATABASE);
+    executeSql("drop table if exists %s.%s", DATABASE, TABLE);
     executeSql(
         "create external table %s.%s (id int, value string) location '%s'",
-        database, table, MetastoreTestUtils.getTableLocation(database, table));
-    executeSql("insert into table %s.%s VALUES (1, 'value1'), (2, 'value2')", database, table);
-    Dataset<Row> rowDataset = executeSql(String.format("select * from %s.%s", database, table));
+        DATABASE, TABLE, MetastoreTestUtils.getTableLocation(DATABASE, TABLE));
+    executeSql("insert into table %s.%s VALUES (1, 'value1'), (2, 'value2')", DATABASE, TABLE);
+    Dataset<Row> rowDataset = executeSql(String.format("select * from %s.%s", DATABASE, TABLE));
     List<Row> rows = rowDataset.collectAsList();
     assertThat(rows.size()).isEqualTo(2);
     assertThat(rows.get(0).get(0)).isEqualTo(1);
