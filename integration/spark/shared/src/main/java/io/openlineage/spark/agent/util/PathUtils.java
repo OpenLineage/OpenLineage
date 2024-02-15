@@ -106,6 +106,12 @@ public class PathUtils {
         && uri.getPath().startsWith(DEFAULT_SEPARATOR)
         && uri.getScheme() == null) {
       uri = new URI(DEFAULT_SCHEME, null, uri.getPath(), null, null);
+    } else if (uri.getScheme() != null && uri.getScheme().equals(DEFAULT_SCHEME)) {
+      // Normalize the URI if it is already a file scheme but has three slashes
+      String path = uri.getPath();
+      if (uri.toString().startsWith(DEFAULT_SCHEME + ":///")) {
+          uri = new URI(DEFAULT_SCHEME, null, path, null, null);
+      }
     }
 
     return uri;
