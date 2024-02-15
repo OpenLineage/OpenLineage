@@ -36,9 +36,11 @@ public class MetastoreHive3Test {
   private static final String TABLE =
       String.format("test_%s_%s", SPARK_VERSION, SCALA_BINARY_VERSION).replace(".", "_");
   private static final Network NETWORK = Network.newNetwork();
+
   @Container
   private static final PostgreSQLContainer<?> METASTORE_CONTAINER =
       SparkContainerUtils.makeMetastoreContainer(NETWORK);
+
   private static SparkSession spark;
   private static FileSystem fs;
 
