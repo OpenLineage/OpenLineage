@@ -93,6 +93,7 @@ public class GoogleCloudIntegrationTest {
             .config("spark.sql.shuffle.partitions", 1)
             .config("spark.sql.warehouse.dir", "file:/tmp/iceberg/")
             .config("spark.driver.extraJavaOptions", "-Dderby.system.home=/tmp/gctest")
+            .config("spark.extraListeners", OpenLineageSparkListener.class.getCanonicalName())
             .config("spark.openlineage.transport.type", "http")
             .config(
                 "spark.openlineage.transport.url",
