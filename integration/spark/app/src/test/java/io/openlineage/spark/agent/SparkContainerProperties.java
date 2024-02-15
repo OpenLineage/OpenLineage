@@ -10,6 +10,7 @@ import java.nio.file.Paths;
 
 final class SparkContainerProperties {
   private SparkContainerProperties() {}
+
   public static final String SPARK_VERSION = System.getProperty("spark.version");
   public static final String SCALA_BINARY_VERSION = System.getProperty("scala.binary.version");
   public static final String SPARK_DOCKER_IMAGE = System.getProperty("spark.docker.image");
