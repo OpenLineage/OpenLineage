@@ -147,7 +147,8 @@ class LogicalPlanSerializer {
     "canonicalized",
     "constraints",
     "data",
-    "deltaLog"
+    "deltaLog",
+    "limitExpr"
   })
   @SuppressWarnings("PMD")
   abstract class ChildMixIn {}
