@@ -1,11 +1,11 @@
 {
   "eventType": "COMPLETE",
   "job": {
-    "namespace": "gc-namespace"
+    "namespace": "{NAMESPACE}"
   },
   "inputs": [{
     "namespace": "bigquery",
-    "name": "openlineage-ci.airflow_integration.{spark_version}_source",
+    "name": "{PROJECT_ID}.{DATASET_ID}.{SPARK_VERSION}_{SCALA_VERSION}_source",
     "facets": {
       "dataSource": {
         "name": "bigquery",
@@ -24,7 +24,7 @@
     "inputFacets": {}
   }],
   "outputs": [{
-    "namespace": "gs://openlineage-spark-bigquery-integration",
+    "namespace": "gs://{BUCKET_NAME}",
     "facets": {
       "schema": {
         "fields": [{
@@ -40,14 +40,14 @@
           "a": {
             "inputFields": [{
               "namespace": "namespace",
-              "name": "openlineage-ci.airflow_integration.{spark_version}_source",
+              "name": "{PROJECT_ID}.{DATASET_ID}.{SPARK_VERSION}_{SCALA_VERSION}_source",
               "field": "a"
             }]
           },
           "b": {
             "inputFields": [{
               "namespace": "namespace",
-              "name": "openlineage-ci.airflow_integration.{spark_version}_source",
+              "name": "{PROJECT_ID}.{DATASET_ID}.{SPARK_VERSION}_{SCALA_VERSION}_source",
               "field": "b"
             }]
           }

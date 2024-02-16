@@ -15,6 +15,8 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -29,23 +31,24 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
 @EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)")
+@Disabled(
+    "This test is feature incomplete, and needs to be fixed. It doesn't actually test any OpenLineage code.")
+// FIXME: This test does not configure the OpenLineageSparkListener, and thus does not make any
+//  assertions about the events that the listener would emit.
 public class MetastoreHive2Test {
   private static final String database = "hive2";
   private static final String table = "test";
-  private static Network network = Network.newNetwork();
+  private static final Network network = Network.newNetwork();
   private static SparkSession spark;
   private static FileSystem fs;
 
   @Container
-  private static PostgreSQLContainer metastoreContainer =
+  private static final PostgreSQLContainer<?> metastoreContainer =
       SparkContainerUtils.makeMetastoreContainer(network);
-
-  private static int mappedPort;
 
   @BeforeAll
   public static void setup() {
     metastoreContainer.start();
-    mappedPort = metastoreContainer.getMappedPort(MetastoreTestUtils.POSTGRES_PORT);
     spark =
         SparkSession.builder()
             .config(
@@ -57,10 +60,6 @@ public class MetastoreHive2Test {
             .enableHiveSupport()
             .getOrCreate();
     fs = MetastoreTestUtils.getFileSystem(spark);
-
-    MetastoreTestUtils.removeDatabaseFiles(database, fs);
-    executeSql("DROP TABLE IF EXISTS %s.%s", database, table);
-    executeSql("DROP DATABASE IF EXISTS %s", database);
   }
 
   @AfterAll
@@ -68,6 +67,13 @@ public class MetastoreHive2Test {
     metastoreContainer.stop();
     MetastoreTestUtils.removeDatabaseFiles(database, fs);
     spark.close();
+  }
+
+  @BeforeEach
+  void reset() {
+    executeSql("DROP TABLE IF EXISTS %s.%s", database, table);
+    executeSql("DROP DATABASE IF EXISTS %s", database);
+    MetastoreTestUtils.removeDatabaseFiles(database, fs);
   }
 
   @Test
@@ -80,7 +86,7 @@ public class MetastoreHive2Test {
     executeSql("insert into table %s.%s VALUES (1, 'value1'), (2, 'value2')", database, table);
     Dataset<Row> rowDataset = executeSql(String.format("select * from %s.%s", database, table));
     List<Row> rows = rowDataset.collectAsList();
-    assertThat(rows.size()).isEqualTo(2);
+    assertThat(rows).hasSize(2);
     assertThat(rows.get(0).get(0)).isEqualTo(1);
   }
 

@@ -5,7 +5,18 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_FIXTURES_JAR_PATH;
+import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_CONF_DIR;
+import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_JARS_DIR;
+import static io.openlineage.spark.agent.SparkContainerProperties.HOST_ADDITIONAL_CONF_DIR;
+import static io.openlineage.spark.agent.SparkContainerProperties.HOST_ADDITIONAL_JARS_DIR;
+import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LIB_DIR;
+import static io.openlineage.spark.agent.SparkContainerProperties.HOST_SCALA_FIXTURES_JAR_PATH;
+import static io.openlineage.spark.agent.SparkContainerProperties.SPARK_DOCKER_IMAGE;
+import static io.openlineage.spark.agent.SparkContainerUtils.SPARK_DOCKER_CONTAINER_WAIT_MESSAGE;
 import static io.openlineage.spark.agent.SparkContainerUtils.addSparkConfig;
+import static io.openlineage.spark.agent.SparkContainerUtils.mountFiles;
+import static io.openlineage.spark.agent.SparkContainerUtils.mountPath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockserver.model.HttpRequest.request;
@@ -19,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -49,7 +61,6 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 @Slf4j
 public class SparkScalaContainerTest {
-
   private static final Network network = Network.newNetwork();
 
   @Container
@@ -93,55 +104,62 @@ public class SparkScalaContainerTest {
     network.close();
   }
 
-  private GenericContainer createSparkContainer(String script) {
-    return new GenericContainer<>(
-            DockerImageName.parse("bitnami/spark:" + System.getProperty("spark.version")))
-        .withNetwork(network)
-        .withNetworkAliases("spark")
-        .withFileSystemBind("src/test/resources/spark_scala_scripts", "/opt/spark_scala_scripts")
-        .withFileSystemBind("src/test/resources/log4j.properties", "/opt/log4j.properties")
-        .withFileSystemBind("build/libs", "/opt/libs")
-        .withLogConsumer(SparkContainerUtils::consumeOutput)
-        .waitingFor(Wait.forLogMessage(".*scala> :quit.*", 1))
-        .withStartupTimeout(Duration.of(10, ChronoUnit.MINUTES))
-        .dependsOn(openLineageClientMockContainer)
-        .withReuse(true)
-        .withCommand(
-            sparkShellCommandForScript("/opt/spark_scala_scripts/" + script)
-                .toArray(new String[] {}));
+  @SneakyThrows
+  private GenericContainer createSparkContainer(final String className) {
+    List<String> commandParts = constructSparkSubmitCommand(className);
+    String command = String.join(" ", commandParts);
+    log.info("Container will be started with command: {}", command);
+
+    GenericContainer container =
+        new GenericContainer<>(DockerImageName.parse(SPARK_DOCKER_IMAGE))
+            .withNetwork(network)
+            .withNetworkAliases("spark")
+            .withLogConsumer(SparkContainerUtils::consumeOutput)
+            .waitingFor(Wait.forLogMessage(SPARK_DOCKER_CONTAINER_WAIT_MESSAGE, 1))
+            .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES))
+            .dependsOn(openLineageClientMockContainer)
+            .withCommand(command);
+
+    // mount the additional Jars
+    mountPath(container, HOST_SCALA_FIXTURES_JAR_PATH, CONTAINER_FIXTURES_JAR_PATH);
+    mountFiles(container, HOST_LIB_DIR, CONTAINER_SPARK_JARS_DIR);
+    mountFiles(container, HOST_ADDITIONAL_JARS_DIR, CONTAINER_SPARK_JARS_DIR);
+    mountFiles(container, HOST_ADDITIONAL_CONF_DIR, CONTAINER_SPARK_CONF_DIR);
+
+    return container;
   }
 
-  private List<String> sparkShellCommandForScript(String script) {
-    List<String> command = new ArrayList<>();
-    addSparkConfig(command, "spark.openlineage.transport.type=http");
+  private List<String> constructSparkSubmitCommand(String className) {
+    List<String> sparkSubmitCommand = new ArrayList<>();
+    sparkSubmitCommand.add("./bin/spark-submit");
+    sparkSubmitCommand.add("--master");
+    sparkSubmitCommand.add("local");
+    sparkSubmitCommand.add("--class");
+    sparkSubmitCommand.add(className);
+
+    addSparkConfig(sparkSubmitCommand, "spark.openlineage.transport.type=http");
     addSparkConfig(
-        command,
+        sparkSubmitCommand,
         "spark.openlineage.transport.url=http://openlineageclient:1080/api/v1/namespaces/scala-test");
-    addSparkConfig(command, "spark.openlineage.debugFacet=enabled");
-    addSparkConfig(command, "spark.extraListeners=" + OpenLineageSparkListener.class.getName());
-    addSparkConfig(command, "spark.sql.warehouse.dir=/tmp/warehouse");
-    addSparkConfig(command, "spark.sql.shuffle.partitions=1");
-    addSparkConfig(command, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
-    addSparkConfig(command, "spark.sql.warehouse.dir=/tmp/warehouse");
-    addSparkConfig(command, "spark.jars.ivy=/tmp/.ivy2/");
-    addSparkConfig(command, "spark.openlineage.facets.disabled=");
+    addSparkConfig(sparkSubmitCommand, "spark.openlineage.debugFacet=enabled");
     addSparkConfig(
-        command, "spark.driver.extraJavaOptions=-Dlog4j.configuration=/opt/log4j.properties");
+        sparkSubmitCommand, "spark.extraListeners=" + OpenLineageSparkListener.class.getName());
+    addSparkConfig(sparkSubmitCommand, "spark.sql.warehouse.dir=/tmp/warehouse");
+    addSparkConfig(sparkSubmitCommand, "spark.sql.shuffle.partitions=1");
+    addSparkConfig(
+        sparkSubmitCommand, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
+    addSparkConfig(sparkSubmitCommand, "spark.jars.ivy=/tmp/.ivy2/");
+    addSparkConfig(sparkSubmitCommand, "spark.openlineage.facets.disabled=");
+    addSparkConfig(sparkSubmitCommand, "spark.ui.enabled=false");
+    // Last, but not least, we add the path to the JAR
+    sparkSubmitCommand.add(CONTAINER_FIXTURES_JAR_PATH.toString());
 
-    List<String> sparkShell =
-        new ArrayList(Arrays.asList("./bin/spark-shell", "--master", "local", "-i", script));
-    sparkShell.addAll(command);
-    sparkShell.addAll(
-        Arrays.asList("--jars", "/opt/libs/" + System.getProperty("openlineage.spark.jar")));
-
-    log.info("Running spark-shell command: ", String.join(" ", sparkShell));
-
-    return sparkShell;
+    return sparkSubmitCommand;
   }
 
   @Test
   void testScalaUnionRddToParquet() {
-    spark = createSparkContainer("rdd_union.scala");
+    spark = createSparkContainer("io.openlineage.spark.test.RddUnion");
     spark.start();
 
     await()
