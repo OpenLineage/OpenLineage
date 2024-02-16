@@ -121,8 +121,6 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.dataformat'
         exclude group: 'org.mock-server.mockserver-client-java'
     }
-    testImplementation("org.mock-server:mockserver-junit-jupiter-no-dependencies:5.14.0")
-    testImplementation("org.skyscreamer:jsonassert:1.5.1")
 
     testRuntimeOnly("org.slf4j:slf4j-api:1.7.36")
     testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.22.1"))
