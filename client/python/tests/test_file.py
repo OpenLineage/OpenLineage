@@ -9,6 +9,7 @@ from os import listdir
 from os.path import isfile, join
 from typing import Any, Dict, List
 
+import pytest
 from openlineage.client import OpenLineageClient
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.transport.file import FileConfig, FileTransport
@@ -90,3 +91,24 @@ def test_client_with_file_transport_write_emits() -> None:
             test_event = test_event_set[i]
 
             assert_test_events(log_line, test_event)
+
+
+@pytest.mark.parametrize(
+    "append",
+    [
+        True,
+        False,
+    ],
+)
+def test_file_config_from_dict(append) -> None:
+    log_dir = tempfile.TemporaryDirectory()
+    file_path = join(log_dir.name, "logtest")
+
+    config = FileConfig.from_dict(params={"log_file_path": file_path, "append": append})
+    assert config.append is append
+    assert config.log_file_path == file_path
+
+
+def test_file_config_from_dict_no_file() -> None:
+    with pytest.raises(RuntimeError):
+        FileConfig.from_dict({})
