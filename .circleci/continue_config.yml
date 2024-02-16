@@ -341,7 +341,7 @@ jobs:
       - *checkout_project_root
       - attach_workspace:
           at: .
-      - run: pip install tox==3.27.1
+      - run: pip install uv tox==4.12.1
       - run: tox
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
