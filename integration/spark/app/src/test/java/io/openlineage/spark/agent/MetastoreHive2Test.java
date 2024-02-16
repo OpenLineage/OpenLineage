@@ -15,6 +15,8 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -29,59 +31,62 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
 @EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)")
+@Disabled(
+    "This test is feature incomplete, and needs to be fixed. It doesn't actually test any OpenLineage code.")
+// FIXME: This test does not configure the OpenLineageSparkListener, and thus does not make any
+//  assertions about the events that the listener would emit.
 public class MetastoreHive2Test {
-  private static final String SPARK_VERSION = System.getProperty("spark.version");
-  private static final String SCALA_BINARY_VERSION = System.getProperty("scala.binary.version");
-  private static final String DATABASE = "hive3";
-  private static final String TABLE =
-      String.format("test_%s_%s", SPARK_VERSION, SCALA_BINARY_VERSION).replace(".", "_");
-  private static final Network NETWORK = Network.newNetwork();
-
-  @Container
-  private static final PostgreSQLContainer<?> METASTORE_CONTAINER =
-      SparkContainerUtils.makeMetastoreContainer(NETWORK);
-
+  private static final String database = "hive2";
+  private static final String table = "test";
+  private static final Network network = Network.newNetwork();
   private static SparkSession spark;
   private static FileSystem fs;
 
+  @Container
+  private static final PostgreSQLContainer<?> metastoreContainer =
+      SparkContainerUtils.makeMetastoreContainer(network);
+
   @BeforeAll
   public static void setup() {
-    METASTORE_CONTAINER.start();
+    metastoreContainer.start();
     spark =
         SparkSession.builder()
             .config(
                 MetastoreTestUtils.getCommonSparkConf(
                     "MetastoreHive2Test",
                     "metastore23",
-                    METASTORE_CONTAINER.getMappedPort(MetastoreTestUtils.POSTGRES_PORT),
+                    metastoreContainer.getMappedPort(MetastoreTestUtils.POSTGRES_PORT),
                     false))
             .enableHiveSupport()
             .getOrCreate();
     fs = MetastoreTestUtils.getFileSystem(spark);
-
-    MetastoreTestUtils.removeDatabaseFiles(DATABASE, fs);
-    executeSql("DROP TABLE IF EXISTS %s.%s", DATABASE, TABLE);
-    executeSql("DROP DATABASE IF EXISTS %s", DATABASE);
   }
 
   @AfterAll
   public static void tearDown() {
-    METASTORE_CONTAINER.stop();
-    MetastoreTestUtils.removeDatabaseFiles(DATABASE, fs);
+    metastoreContainer.stop();
+    MetastoreTestUtils.removeDatabaseFiles(database, fs);
     spark.close();
+  }
+
+  @BeforeEach
+  void reset() {
+    executeSql("DROP TABLE IF EXISTS %s.%s", database, table);
+    executeSql("DROP DATABASE IF EXISTS %s", database);
+    MetastoreTestUtils.removeDatabaseFiles(database, fs);
   }
 
   @Test
   void IcebergTablesTest() {
-    executeSql("create database if not exists %s", DATABASE);
-    executeSql("drop table if exists %s.%s", DATABASE, TABLE);
+    executeSql("create database if not exists %s", database);
+    executeSql("drop table if exists %s.%s", database, table);
     executeSql(
         "create external table %s.%s (id int, value string) location '%s'",
-        DATABASE, TABLE, MetastoreTestUtils.getTableLocation(DATABASE, TABLE));
-    executeSql("insert into table %s.%s VALUES (1, 'value1'), (2, 'value2')", DATABASE, TABLE);
-    Dataset<Row> rowDataset = executeSql(String.format("select * from %s.%s", DATABASE, TABLE));
+        database, table, MetastoreTestUtils.getTableLocation(database, table));
+    executeSql("insert into table %s.%s VALUES (1, 'value1'), (2, 'value2')", database, table);
+    Dataset<Row> rowDataset = executeSql(String.format("select * from %s.%s", database, table));
     List<Row> rows = rowDataset.collectAsList();
-    assertThat(rows.size()).isEqualTo(2);
+    assertThat(rows).hasSize(2);
     assertThat(rows.get(0).get(0)).isEqualTo(1);
   }
 

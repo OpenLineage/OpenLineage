@@ -9,24 +9,36 @@ import static io.openlineage.spark.agent.SparkContainerProperties.SCALA_BINARY_V
 import static io.openlineage.spark.agent.SparkContainerProperties.SPARK_VERSION;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.SparkSession;
 
+@Slf4j
 public class MetastoreTestUtils {
   private static final String LOCAL_IP = "127.0.0.1";
-  private static final String BASE_PATH =
-      String.format(
-              "gs://openlineage-ci-testing/warehouse/spark-%s/scala-%s",
-              SPARK_VERSION, SCALA_BINARY_VERSION)
-          .replace(".", "_");
-  private static final String GCLOUD_KEY = "GCLOUD_SERVICE_KEY";
+  private static final String GS_BUCKET_NAME =
+      Optional.ofNullable(System.getenv("GCLOUD_METASTORE_BUCKET_NAME"))
+          .orElse("openlineage-ci-testing");
+  private static final URI BASE_URI = URI.create("gs://" + GS_BUCKET_NAME + "/");
+  public static final URI WAREHOUSE_URI = BASE_URI.resolve("warehouse/");
+  public static final String BASE_PATH =
+      WAREHOUSE_URI
+          .resolve("spark-" + SPARK_VERSION + "/")
+          .resolve("scala-" + SCALA_BINARY_VERSION)
+          .toString()
+          .replace(".", "-");
+  private static final File GCLOUD_KEY_FILE =
+      Paths.get("build/gcloud/gcloud-service-key.json").toAbsolutePath().toFile();
   private static final Map<String, String> GOOGLE_SA_PROPERTIES = parseGoogleSAProperties();
-
   public static final int POSTGRES_PORT = 5432;
 
   public static SparkConf getCommonSparkConf(
@@ -36,6 +48,7 @@ public class MetastoreTestUtils {
             .setAppName(appName + SPARK_VERSION)
             .setMaster("local[*]")
             .set("spark.driver.host", LOCAL_IP)
+            .set("spark.ui.enabled", "false")
             .set("org.jpox.autoCreateSchema", "true")
             .set(
                 "javax.jdo.option.ConnectionURL",
@@ -65,11 +78,10 @@ public class MetastoreTestUtils {
   }
 
   public static Map<String, String> parseGoogleSAProperties() {
-    String json = System.getenv(GCLOUD_KEY);
     ObjectMapper objectMapper = new ObjectMapper();
     Map<String, String> gcsProperties;
     try {
-      gcsProperties = objectMapper.readValue(json, Map.class);
+      gcsProperties = objectMapper.readValue(GCLOUD_KEY_FILE, Map.class);
     } catch (IOException e) {
       throw new RuntimeException("Couldn't parse properties from GCLOUD_KEY", e);
     }
