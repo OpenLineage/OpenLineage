@@ -15,7 +15,6 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -60,6 +59,7 @@ public class GoogleCloudIntegrationTest {
   private static final String SPARK_3 = "(3.*)";
   private static final String SPARK_3_3 = "(3\\.[3-9].*)";
   private static final String SPARK_VERSION = "spark.version";
+  private static final String CREDENTIALS_FILE = "build/gcloud/gcloud-service-key.json";
   private static SparkSession spark;
   private static ClientAndServer mockServer;
 
@@ -82,16 +82,6 @@ public class GoogleCloudIntegrationTest {
   @SneakyThrows
   public void beforeEach() {
     MockServerUtils.clearRequests(mockServer);
-
-    java.nio.file.Path resourcesDir = Paths.get(System.getProperty("resources.dir"));
-    java.nio.file.Path log4j = resourcesDir.resolve("log4j.properties").toAbsolutePath();
-    java.nio.file.Path log4j2 = resourcesDir.resolve("log4j2.properties").toAbsolutePath();
-
-    System.setProperty("log4j.configuration", log4j.toString());
-    System.setProperty("log4j.configurationFile", log4j2.toString());
-
-    String credentialsFile = "build/gcloud/gcloud-service-key.json";
-
     spark =
         SparkSession.builder()
             .master("local[*]")
@@ -111,12 +101,12 @@ public class GoogleCloudIntegrationTest {
             .config("spark.openlineage.debugFacet", "disabled")
             .config("spark.openlineage.namespace", NAMESPACE)
             .config("parentProject", PROJECT_ID)
-            .config("credentialsFile", credentialsFile)
+            .config("credentialsFile", CREDENTIALS_FILE)
             .config("temporaryGcsBucket", BUCKET_NAME)
             .config(
                 "spark.hadoop.fs.AbstractFileSystem.gs.impl",
                 "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS")
-            .config("spark.hadoop.google.cloud.auth.service.account.json.keyfile", credentialsFile)
+            .config("spark.hadoop.google.cloud.auth.service.account.json.keyfile", CREDENTIALS_FILE)
             .config(
                 "spark.hadoop.fs.gs.impl", "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem")
             .config("spark.hadoop.google.cloud.auth.service.account.enable", "true")

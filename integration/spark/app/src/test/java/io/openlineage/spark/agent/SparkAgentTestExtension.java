@@ -46,15 +46,6 @@ public class SparkAgentTestExtension
 
   @Override
   public void beforeAll(ExtensionContext context) throws Exception {
-    java.nio.file.Path resourcesDir = Paths.get(System.getProperty("resources.dir"));
-
-    java.nio.file.Path log4j = resourcesDir.resolve("log4j.properties").toAbsolutePath();
-    java.nio.file.Path log4j2 = resourcesDir.resolve("log4j2.properties").toAbsolutePath();
-
-    System.setProperty("log4j.configuration", log4j.toString());
-    System.setProperty("log4j.configurationFile", log4j2.toString());
-    System.setProperty("log4j2.configurationFile", log4j2.toString());
-
     when(SparkAgentTestExtension.EVENT_EMITTER.getJobNamespace()).thenReturn("ns_name");
     when(SparkAgentTestExtension.EVENT_EMITTER.getParentJobName())
         .thenReturn(Optional.of("parent_name"));

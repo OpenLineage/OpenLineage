@@ -17,7 +17,6 @@ import static org.mockserver.model.JsonBody.json;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
 import lombok.SneakyThrows;
@@ -77,15 +76,6 @@ public class SparkDeltaIntegrationTest {
   @SneakyThrows
   public void beforeEach() {
     MockServerUtils.clearRequests(mockServer);
-
-    java.nio.file.Path resourcesDir = Paths.get(System.getProperty("resources.dir"));
-
-    java.nio.file.Path log4j = resourcesDir.resolve("log4j.properties").toAbsolutePath();
-    java.nio.file.Path log4j2 = resourcesDir.resolve("log4j2.properties").toAbsolutePath();
-
-    System.setProperty("log4j.configuration", log4j.toString());
-    System.setProperty("log4j.configurationFile", log4j2.toString());
-    System.setProperty("log4j2.configurationFile", log4j2.toString());
     System.setProperty("derby.system.home", "/tmp/delta/derby");
 
     spark =

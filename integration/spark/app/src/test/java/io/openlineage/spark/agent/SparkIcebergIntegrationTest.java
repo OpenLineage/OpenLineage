@@ -15,7 +15,6 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -72,16 +71,6 @@ public class SparkIcebergIntegrationTest {
   @SneakyThrows
   public void beforeEach() {
     MockServerUtils.clearRequests(mockServer);
-
-    java.nio.file.Path resourcesDir = Paths.get(System.getProperty("resources.dir"));
-
-    java.nio.file.Path log4j = resourcesDir.resolve("log4j.properties").toAbsolutePath();
-    java.nio.file.Path log4j2 = resourcesDir.resolve("log4j2.properties").toAbsolutePath();
-
-    System.setProperty("log4j.configuration", log4j.toString());
-    System.setProperty("log4j.configurationFile", log4j2.toString());
-    System.setProperty("log4j2.configurationFile", log4j2.toString());
-
     spark =
         SparkSession.builder()
             .master("local[*]")

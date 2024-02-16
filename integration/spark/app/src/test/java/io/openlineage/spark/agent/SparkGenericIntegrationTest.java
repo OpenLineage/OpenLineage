@@ -64,14 +64,6 @@ public class SparkGenericIntegrationTest {
   @SneakyThrows
   public void beforeEach() {
     MockServerUtils.clearRequests(mockServer);
-
-    java.nio.file.Path log4j = SparkContainerProperties.HOST_LOG4J_PROPERTIES_PATH;
-    java.nio.file.Path log4j2 = SparkContainerProperties.HOST_LOG4J2_PROPERTIES_PATH;
-
-    System.setProperty("log4j.configuration", log4j.toString());
-    System.setProperty("log4j.configurationFile", log4j2.toString());
-    System.setProperty("log4j2.configurationFile", log4j2.toString());
-
     spark =
         SparkSession.builder()
             .master("local[*]")

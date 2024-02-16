@@ -173,6 +173,8 @@ def testSystemProperties = { String spark, String scala ->
             "spark.sql.warehouse.dir"             : sparkWarehouseDir.get().asFile.absolutePath,
             "spark.version"                       : spark,
             "scala.binary.version"                : scala,
+            "log4j.configuration"    : testResourcesDir.map { it.file("log4j.properties").asFile.absolutePath }.get(),
+            "log4j.configurationFile": testResourcesDir.map { it.file("log4j2.properties").asFile.absolutePath }.get(),
     ]
 }
 
