@@ -26,13 +26,14 @@ class FileConfig(Config):
             raise RuntimeError(msg)
 
         log_file_path = params["log_file_path"]
+        append = params.get("append", False)
 
-        with open(log_file_path, "a" if cls.append else "w") as log_file_handle:
+        with open(log_file_path, "a" if append else "w") as log_file_handle:
             if not log_file_handle.writable():
                 msg = f"Log file {log_file_path} is not writeable"
                 raise RuntimeError(msg)
 
-        return cls(log_file_path)
+        return cls(log_file_path=log_file_path, append=append)
 
 
 class FileTransport(Transport):
