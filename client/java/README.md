@@ -229,6 +229,11 @@ circuitBreaker:
   circuitCheckIntervalInMillis: 1000
 ```
 
+### Custom Circuit Breaker
+
+List of available circuit breakers can be extended with custom one loaded via ServiceLoader
+with own implementation of `io.openlineage.client.circuitBreaker.CircuitBreakerBuilder`. 
+
 ## Error Handling
 
 ```java

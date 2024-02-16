@@ -6,8 +6,10 @@ package io.openlineage.client.circuitBreaker;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
+import java.util.ServiceLoader;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class CircuitBreakerResolver {
 
@@ -40,9 +42,18 @@ public class CircuitBreakerResolver {
 
   private static CircuitBreakerBuilder getCircuitBreakerBuilder(
       Predicate<CircuitBreakerBuilder> predicate) {
-    Optional<CircuitBreakerBuilder> circuitBreakerBuilder =
-        builders.stream().filter(predicate).findFirst();
 
-    return circuitBreakerBuilder.orElse(new NoOpCircuitBreakerBuilder());
+    return Stream.concat(
+            builders.stream(),
+            StreamSupport.stream(CircuitBreakerServiceLoader.load().spliterator(), false))
+        .filter(predicate)
+        .findFirst()
+        .orElse(new NoOpCircuitBreakerBuilder());
+  }
+
+  static class CircuitBreakerServiceLoader {
+    static ServiceLoader<CircuitBreakerBuilder> load() {
+      return ServiceLoader.load(CircuitBreakerBuilder.class);
+    }
   }
 }
