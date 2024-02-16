@@ -96,7 +96,6 @@ public class SparkDeltaIntegrationTest {
             .config("spark.driver.bindAddress", LOCAL_IP)
             .config("spark.ui.enabled", false)
             .config("spark.sql.shuffle.partitions", 1)
-            .config("spark.files", "file://" + log4j + "," + "file://" + log4j2)
             .config("spark.sql.warehouse.dir", "file:/tmp/delta/")
             .config("spark.openlineage.transport.type", "http")
             .config(
