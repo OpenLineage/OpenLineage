@@ -318,6 +318,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: (cd ./../../client/java/ && ./gradlew --no-daemon --console=plain --stacktrace publishToMavenLocal)
+      - run: (cd ./../../integration/sql/iface-java && ./gradlew --no-daemon --console=plain --stacktrace publishToMavenLocal)
       - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail
@@ -325,9 +326,9 @@ jobs:
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport
       - run: ./gradlew --console=plain javadoc
       - store_test_results:
-          path: build/test-results/test
+          path: app/build/test-results/test
       - store_artifacts:
-          path: build/reports/tests/test
+          path: app/build/reports/tests/test
           destination: test-report
       - save_cache:
           key: v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
@@ -656,17 +657,18 @@ jobs:
             - v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-integration-flink-{{ .Branch }}
       - run: (cd ./../../client/java/ && ./gradlew --no-daemon --console=plain --stacktrace publishToMavenLocal)
+      - run: (cd ./../../integration/sql/iface-java && ./gradlew --no-daemon --console=plain --stacktrace publishToMavenLocal)
       - run: chmod -R 777 data/iceberg/db
       - run: ./gradlew --console=plain examples:stateful:build -Pflink.version=<< parameters.flink-version >>
       - run: ./gradlew --no-daemon --console=plain integrationTest --i -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail
-          command: cat build/test-results/integrationTest/TEST-*.xml
+          command: cat app/build/test-results/integrationTest/TEST-*.xml
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport
       - store_test_results:
-          path: build/test-results/integrationTest
+          path: app/build/test-results/integrationTest
       - store_artifacts:
-          path: build/reports/tests/integrationTest
+          path: app/build/reports/tests/integrationTest
           destination: test-report
       - save_cache:
           key: v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}

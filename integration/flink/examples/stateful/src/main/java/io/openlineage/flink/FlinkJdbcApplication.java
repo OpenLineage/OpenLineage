@@ -10,14 +10,16 @@ import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.SqlTimeTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
+import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
 import org.apache.flink.connector.jdbc.JdbcStatementBuilder;
-import org.apache.flink.connector.jdbc.internal.options.InternalJdbcConnectionOptions;
+import org.apache.flink.connector.jdbc.dialect.JdbcDialect;
 import org.apache.flink.types.Row;
 import org.apache.flink.connector.jdbc.JdbcInputFormat;
 import org.apache.flink.connector.jdbc.JdbcSink;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
+import javax.annotation.Nullable;
 import java.sql.Timestamp;
 import java.util.Properties;
 
@@ -60,12 +62,15 @@ public class FlinkJdbcApplication {
         dataStreamSource.addSink(JdbcSink.sink(
                 OUTPUT_QUERY,
                 TEST_ENTRY_JDBC_STATEMENT_BUILDER,
-                new InternalJdbcConnectionOptions.Builder()
-                        .setDBUrl(properties.getProperty("postgres.url"))
-                        .setDriverName(properties.getProperty("postgres.driver"))
-                        .setUsername(properties.getProperty("postgres.user"))
-                        .setTableName("sink_event")
-                        .setPassword(properties.getProperty("postgres.password")).build()));
+                new TestJdbcConnectionOptions(
+                        properties.getProperty("postgres.url"),
+                        "sink_event",
+                        properties.getProperty("postgres.driver"),
+                        properties.getProperty("postgres.user"),
+                        properties.getProperty("postgres.password"),
+                        null,
+                        1,
+                        1000)));
 
         env.registerJobListener(
                 OpenLineageFlinkJobListenerBuilder.create()
@@ -73,5 +78,29 @@ public class FlinkJdbcApplication {
                         .jobName("flink_examples_jdbc")
                         .build());
         env.execute("flink_examples_jdbc");
+    }
+
+    private static class TestJdbcConnectionOptions extends JdbcConnectionOptions {
+
+        private static final long serialVersionUID = 1L;
+
+        private final String tableName;
+        private final JdbcDialect dialect;
+        private final @Nullable Integer parallelism;
+
+        TestJdbcConnectionOptions(
+                String dbURL,
+                String tableName,
+                @Nullable String driverName,
+                @Nullable String username,
+                @Nullable String password,
+                JdbcDialect dialect,
+                @Nullable Integer parallelism,
+                int connectionCheckTimeoutSeconds) {
+            super(dbURL, driverName, username, password, connectionCheckTimeoutSeconds);
+            this.tableName = tableName;
+            this.dialect = dialect;
+            this.parallelism = parallelism;
+        }
     }
 }

@@ -1,5 +1,4 @@
 plugins {
-    id 'java'
     id 'java-library'
     id 'maven-publish'
     id 'signing'
@@ -68,7 +67,8 @@ ext {
 }
 
 dependencies {
-    implementation project(':')
+    implementation(project(path: ":app"))
+    implementation(project(path: ":shared"))
     configurations.all {
         exclude module: 'slf4j-log4j12'
         exclude module: 'log4j'

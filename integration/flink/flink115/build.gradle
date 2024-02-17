@@ -1,0 +1,129 @@
+/*
+/* Copyright 2018-2023 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+    id 'jacoco'
+    id "com.adarshr.test-logger" version "3.2.0"
+    id 'com.diffplug.spotless' version '6.25.0'
+    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id "pmd"
+    id 'io.franzbecker.gradle-lombok' version '5.0.0'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url = "https://packages.confluent.io/maven/"
+    }
+}
+
+pmd {
+    consoleOutput = true
+    toolVersion = "6.46.0"
+    rulesMinimumPriority = 5
+    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
+    ruleSets = []
+    ignoreFailures = true
+}
+
+pmdMain {
+    dependsOn shadowJar
+    reports {
+        html.required = true
+    }
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+group 'io.openlineage.flink'
+
+task sourceJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+def commonTestConfiguration = {
+    forkEvery 1
+    maxParallelForks 3
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+            'junit.platform.output.capture.stdout': 'true',
+            'junit.platform.output.capture.stderr': 'true',
+            '.flink.jar': "${archivesBaseName}-${project.version}.jar",
+    ]
+    classpath =  project.sourceSets.test.runtimeClasspath
+}
+
+test {
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
+}
+
+ext {
+    flinkVersion = project.getProperty('flink.flink115.version')
+    flinkVersionShort = flinkVersion.substring(0,4)
+    assertjVersion = '3.25.3'
+    junit5Version = '5.10.2'
+    mockitoVersion = '5.2.0'
+}
+
+dependencies {
+    implementation(project(path: ":shared"))
+    api "io.openlineage:openlineage-java:${project.version}"
+    api "io.openlineage:openlineage-sql-java:1.8.0"
+
+    testImplementation "org.apache.flink:flink-java:$flinkVersion"
+    testImplementation "org.apache.flink:flink-streaming-java:$flinkVersion"
+    testImplementation "org.apache.flink:flink-runtime-web:$flinkVersion"
+    testImplementation "org.apache.flink:flink-connector-base:$flinkVersion"
+    testImplementation "org.apache.flink:flink-connector-jdbc:${flinkVersion}"
+    testImplementation "org.apache.flink:flink-table-common:$flinkVersion"
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.hamcrest:hamcrest-library:2.2'
+    testImplementation 'org.mock-server:mockserver-client-java:5.12.0'
+    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.2.0'
+    testImplementation 'com.github.tomakehurst:wiremock:3.0.1'
+    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.22.1'
+
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+}
+
+task createVersionProperties(dependsOn: processResources) {
+    doLast {
+        File dir = new File("$buildDir/resources/main/io/openlineage/flink/client/")
+        dir.mkdirs()
+        new File("$buildDir/resources/main/io/openlineage/flink/client/version.properties").withWriter { w ->
+            Properties p = new Properties()
+            p['version'] = project.version.toString()
+            p.store w, null
+        }
+    }
+}
+
+classes {
+    dependsOn createVersionProperties
+}
