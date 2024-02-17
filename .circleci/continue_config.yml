@@ -169,7 +169,7 @@ jobs:
           ./gradlew --no-daemon publishToMavenLocal
           cd -
           # Publish *.jar
-          ./gradlew --no-daemon publish
+          ./gradlew --no-daemon publish -Pscala.binary.version=2.12
       - store_artifacts:
           path: ./build/libs
           destination: spark-client-artifacts
