@@ -222,6 +222,11 @@ tasks.named("shadowJar", ShadowJar.class) {
         exclude(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
     }
 
+    dependencies {
+        exclude(dependency("org.slf4j::"))
+        exclude("org/apache/commons/logging/**")
+    }
+
     relocate 'com.github.ok2c.hc5', 'io.openlineage.spark.shaded.com.github.ok2c.hc5'
     relocate 'org.apache.httpcomponents.client5', 'io.openlineage.spark.shaded.org.apache.httpcomponents.client5'
     relocate 'javassist', 'io.openlineage.spark.shaded.javassist'
@@ -231,8 +236,6 @@ tasks.named("shadowJar", ShadowJar.class) {
     relocate 'org.apache.commons.beanutils', 'io.openlineage.spark.shaded.org.apache.commons.beanutils'
     relocate 'org.apache.http', 'io.openlineage.spark.shaded.org.apache.http'
     relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
-    // TODO: Why are we relocating slf4j?
-    // relocate 'org.slf4j', 'io.openlineage.spark.shaded.org.slf4j'
     relocate('com.fasterxml.jackson', 'io.openlineage.spark.shaded.com.fasterxml.jackson') {
         exclude 'com.fasterxml.jackson.annotation.JsonIgnore'
         exclude 'com.fasterxml.jackson.annotation.JsonIgnoreProperties'
