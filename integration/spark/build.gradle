@@ -31,8 +31,8 @@ dependencies {
     implementation(project(path: ":snowflake"))
 }
 
-final def reportsDir = "${buildDir}/reports";
-final def coverageDir = "${reportsDir}/coverage";
+def reportsDir = "${buildDir}/reports";
+def coverageDir = "${reportsDir}/coverage";
 
 jacoco {
     toolVersion = '0.8.5'
