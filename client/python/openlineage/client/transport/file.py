@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import io
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
@@ -25,15 +26,7 @@ class FileConfig(Config):
             msg = "`log_file_path` key not passed to FileConfig"
             raise RuntimeError(msg)
 
-        log_file_path = params["log_file_path"]
-        append = params.get("append", False)
-
-        with open(log_file_path, "a" if append else "w") as log_file_handle:
-            if not log_file_handle.writable():
-                msg = f"Log file {log_file_path} is not writeable"
-                raise RuntimeError(msg)
-
-        return cls(log_file_path=log_file_path, append=append)
+        return cls(log_file_path=params["log_file_path"], append=params.get("append", False))
 
 
 class FileTransport(Transport):
@@ -47,8 +40,13 @@ class FileTransport(Transport):
         if self.config.append:
             log_file_path = self.config.log_file_path
         else:
-            timestr = datetime.now().strftime("%Y%m%d-%H%M%S.%f")
-            log_file_path = f"{self.config.log_file_path}-{timestr}"
+            time_str = datetime.now().strftime("%Y%m%d-%H%M%S.%f")
+            log_file_path = f"{self.config.log_file_path}-{time_str}"
 
-        with open(log_file_path, "a" if self.config.append else "w") as log_file_handle:
-            log_file_handle.write(Serde.to_json(event) + "\n")
+        try:
+            with open(log_file_path, "a" if self.config.append else "w") as log_file_handle:
+                log_file_handle.write(Serde.to_json(event) + "\n")
+        except (PermissionError, io.UnsupportedOperation) as error:
+            # If we lack write permissions or file is opened in wrong mode
+            msg = f"Log file `{log_file_path}` is not writeable"
+            raise RuntimeError(msg) from error
