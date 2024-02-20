@@ -207,15 +207,18 @@ def main():
             job_name=dbt_run_metadata.job_name,
             parent_run_metadata=parent_run_metadata,
         )
-
+    event: RunEvent
     for event in tqdm(
         events + [last_event],
         desc="Emitting OpenLineage events",
         initial=1,
         total=len(events) + 2,
     ):
-        client.emit(event)
-
+        try:
+            client.emit(event)
+        except Exception as e:
+            logger.warning("OpenLineage client failed to emit event %s runId %s. "
+                           "Exception: %s", event.eventType.value, event.run.runId, e, exc_info=True)
     logger.info(f"Emitted {len(events) + 2} openlineage events")
 
 
