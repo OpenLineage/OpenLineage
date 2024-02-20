@@ -28,6 +28,7 @@ For the schedule, meeting link, and agenda, visit the [wiki](https://wiki.lfaida
 | Benjamin Lampel | [@denimalpaca](https://github.com/denimalpaca) | Voting member |
 | Kengo Seki | [@sekikn](https://github.com/sekikn) | Voting member |
 | Minkyu Park | [@fm100](https://github.com/fm100) | Voting member |
+| Damien Hawes | [@d-m-h](https://github.com/d-m-h) | Voting member |
 
 ----
 SPDX-License-Identifier: Apache-2.0\
