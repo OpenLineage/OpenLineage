@@ -30,6 +30,7 @@ The current OpenLineage committers are:
 | Benji Lampel       | |
 | Kengo Seki         | |
 | Harel Shein        | |
+| Damien Hawes       | |
 
 To understand how to become an OpenLineage committer,
 read the [OpenLineage Governance Guide](GOVERNANCE.md).
