@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.catalog;
+package io.openlineage.spark.vendor.iceberg.agent.lifecycle.plan.catalog;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
@@ -11,6 +11,8 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.util.SparkConfUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogHandler;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import java.io.File;
 import java.net.URI;
 import java.util.Map;
@@ -19,7 +21,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.spark.SparkCatalog;

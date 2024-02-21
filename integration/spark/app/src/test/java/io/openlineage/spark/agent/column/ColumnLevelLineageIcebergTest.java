@@ -18,11 +18,14 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.DatasetBuilderFactoryProvider;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.Vendors;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.FileSystem;
@@ -120,9 +123,16 @@ class ColumnLevelLineageIcebergTest {
             .queryExecution(queryExecution)
             .build();
 
+    // Addd ColumnLevelLineage visitors for all Spark versions
+
     context
         .getColumnLevelLineageVisitors()
         .addAll(DatasetBuilderFactoryProvider.getInstance().getColumnLevelLineageVisitors(context));
+    List<ColumnLevelLineageVisitor> vendorsVisitors =
+        Vendors.getVendors().getEventHandlerFactories().stream()
+            .flatMap(v -> v.createColumnLevelLineageVisitors(context).stream())
+            .collect(Collectors.toList());
+    context.getColumnLevelLineageVisitors().addAll(vendorsVisitors);
 
     FileSystem.get(spark.sparkContext().hadoopConfiguration())
         .delete(new Path("/tmp/column_level_lineage/"), true);

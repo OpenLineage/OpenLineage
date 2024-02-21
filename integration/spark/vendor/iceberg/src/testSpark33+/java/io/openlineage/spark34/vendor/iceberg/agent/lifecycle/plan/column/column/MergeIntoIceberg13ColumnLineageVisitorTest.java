@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark32.agent.lifecycle.plan.column;
+package io.openlineage.spark34.vendor.iceberg.agent.lifecycle.plan.column.column;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -18,6 +18,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.column.InputFieldsCollector;
 import io.openlineage.spark3.agent.lifecycle.plan.column.OutputFieldsCollector;
+import io.openlineage.spark34.vendor.iceberg.agent.lifecycle.plan.column.MergeIntoIceberg13ColumnLineageVisitor;
 import java.util.Collections;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
@@ -25,18 +26,19 @@ import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
-import org.apache.spark.sql.catalyst.plans.logical.ReplaceData;
+import org.apache.spark.sql.catalyst.plans.logical.ReplaceIcebergData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
-public class MergeIntoIceberg013ColumnLineageVisitorTest {
+public class MergeIntoIceberg13ColumnLineageVisitorTest {
 
-  OpenLineageContext context = mock(OpenLineageContext.class);
-  ReplaceData replaceIcebergData = mock(ReplaceData.class);
-  MergeIntoIceberg013ColumnLineageVisitor visitor =
-      new MergeIntoIceberg013ColumnLineageVisitor(context);
-  ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
+  OpenLineageContext context = Mockito.mock(OpenLineageContext.class);
+  ReplaceIcebergData replaceIcebergData = Mockito.mock(ReplaceIcebergData.class);
+  MergeIntoIceberg13ColumnLineageVisitor visitor =
+      new MergeIntoIceberg13ColumnLineageVisitor(context);
+  ColumnLevelLineageBuilder builder = Mockito.mock(ColumnLevelLineageBuilder.class);
   private LogicalPlan target =
       mock(LogicalPlan.class, withSettings().extraInterfaces(NamedRelation.class));
   private Project project = mock(Project.class);

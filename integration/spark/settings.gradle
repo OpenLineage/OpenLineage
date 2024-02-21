@@ -11,3 +11,5 @@ include 'scala-fixtures'
 
 include 'snowflake'
 project(":snowflake").projectDir = file("./vendor/snowflake")
+include 'iceberg'
+project(":iceberg").projectDir = file("./vendor/iceberg")

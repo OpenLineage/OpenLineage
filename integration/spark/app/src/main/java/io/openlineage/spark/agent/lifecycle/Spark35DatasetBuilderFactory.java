@@ -28,7 +28,6 @@ import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuild
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
-import io.openlineage.spark33.agent.lifecycle.plan.ReplaceIcebergDataDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.CreateReplaceInputDatasetBuilder;
 import io.openlineage.spark35.agent.lifecycle.plan.CreateReplaceOutputDatasetBuilder;
 import java.util.Collection;
@@ -77,10 +76,6 @@ public class Spark35DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new SubqueryAliasOutputDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context))
             .add(new AlterTableCommandDatasetBuilder(context));
-
-    if (ReplaceIcebergDataDatasetBuilder.hasClasses()) {
-      builder.add(new ReplaceIcebergDataDatasetBuilder(context));
-    }
 
     if (DeltaUtils.hasMergeIntoCommandClass()) {
       builder.add(new MergeIntoCommandOutputDatasetBuilder(context));

@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.catalog;
+package io.openlineage.spark3.vendor.iceberg.agent.lifecycle.plan.catalog;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -15,24 +15,27 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.vendor.iceberg.agent.lifecycle.plan.catalog.IcebergHandler;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.iceberg.spark.SparkCatalog;
 import org.apache.iceberg.spark.source.SparkTable;
 import org.apache.spark.sql.RuntimeConfig;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
 import org.apache.spark.sql.connector.catalog.Identifier;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mockito;
 import scala.collection.immutable.Map;
 
 class IcebergHandlerTest {
 
-  private OpenLineageContext context = mock(OpenLineageContext.class);
+  private OpenLineageContext context = Mockito.mock(OpenLineageContext.class);
   private IcebergHandler icebergHandler = new IcebergHandler(context);
   private SparkSession sparkSession = mock(SparkSession.class);
   private RuntimeConfig runtimeConfig = mock(RuntimeConfig.class);
@@ -52,7 +55,7 @@ class IcebergHandlerTest {
                 "spark.sql.catalog.test.warehouse",
                 warehouseConf));
 
-    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkCatalog sparkCatalog = Mockito.mock(SparkCatalog.class);
     when(sparkCatalog.name()).thenReturn("test");
 
     DatasetIdentifier datasetIdentifier =
@@ -65,7 +68,7 @@ class IcebergHandlerTest {
     assertEquals(name, datasetIdentifier.getName());
     assertEquals(namespace, datasetIdentifier.getNamespace());
     assertEquals("database.schema.table", datasetIdentifier.getSymlinks().get(0).getName());
-    assertEquals(
+    Assertions.assertEquals(
         StringUtils.substringBeforeLast(name, "/"),
         datasetIdentifier.getSymlinks().get(0).getNamespace());
   }
@@ -82,7 +85,7 @@ class IcebergHandlerTest {
                 "thrift://metastore-host:10001",
                 "spark.sql.catalog.test.warehouse",
                 "/tmp/warehouse"));
-    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkCatalog sparkCatalog = Mockito.mock(SparkCatalog.class);
     when(sparkCatalog.name()).thenReturn("test");
 
     DatasetIdentifier datasetIdentifier =
@@ -112,7 +115,7 @@ class IcebergHandlerTest {
                 "http://lakehouse-host:8080",
                 "spark.sql.catalog.iceberg.warehouse",
                 "s3a://lakehouse/"));
-    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkCatalog sparkCatalog = Mockito.mock(SparkCatalog.class);
     when(sparkCatalog.name()).thenReturn("iceberg");
 
     DatasetIdentifier datasetIdentifier =
@@ -152,8 +155,8 @@ class IcebergHandlerTest {
 
   @Test
   void testGetVersionString() throws NoSuchTableException {
-    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
-    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    SparkCatalog sparkCatalog = Mockito.mock(SparkCatalog.class);
+    SparkTable sparkTable = Mockito.mock(SparkTable.class, RETURNS_DEEP_STUBS);
     Identifier identifier = Identifier.of(new String[] {"database", "schema"}, "table");
 
     when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
@@ -177,7 +180,7 @@ class IcebergHandlerTest {
                 "spark.sql.catalog.test.warehouse",
                 "/tmp/warehouse"));
 
-    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkCatalog sparkCatalog = Mockito.mock(SparkCatalog.class);
     when(sparkCatalog.name()).thenReturn("test");
 
     DatasetIdentifier datasetIdentifier =

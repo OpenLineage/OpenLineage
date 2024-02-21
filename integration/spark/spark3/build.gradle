@@ -25,7 +25,6 @@ ext {
     bigqueryVersion = "0.29.0"
     databricksVersion = "0.1.4"
     deltaVersion = "1.1.0"
-    icebergVersion = "1.4.3"
     jacksonVersion = "2.15.3"
     junit5Version = "5.10.1"
     lombokVersion = "1.18.30"
@@ -48,7 +47,6 @@ dependencies {
         exclude group: "com.fasterxml.jackson.module"
     }
     compileOnly("io.delta:delta-core_${scalaBinaryVersion}:${deltaVersion}")
-    compileOnly("org.apache.iceberg:iceberg-spark-runtime-3.2_${scalaBinaryVersion}:${icebergVersion}")
 
     // TODO: Convert this to testImplementation
     testFixturesApi(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
@@ -60,7 +58,6 @@ dependencies {
         exclude group: "com.fasterxml.jackson.module"
     }
     testFixturesApi("io.delta:delta-core_${scalaBinaryVersion}:${deltaVersion}")
-    testFixturesApi("org.apache.iceberg:iceberg-spark-runtime-3.2_${scalaBinaryVersion}:${icebergVersion}")
     testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
     testFixturesApi("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
@@ -79,7 +76,6 @@ dependencies {
         exclude group: "com.fasterxml.jackson.module"
     }
     scala212CompileOnly("io.delta:delta-core_2.12:${deltaVersion}")
-    scala212CompileOnly("org.apache.iceberg:iceberg-spark-runtime-3.2_2.12:${icebergVersion}")
 
     testScala212Implementation("org.apache.spark:spark-hive_2.12:${sparkVersion}")
     testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
@@ -90,7 +86,6 @@ dependencies {
         exclude group: "com.fasterxml.jackson.module"
     }
     testScala212Implementation("io.delta:delta-core_2.12:${deltaVersion}")
-    testScala212Implementation("org.apache.iceberg:iceberg-spark-runtime-3.2_2.12:${icebergVersion}")
 
     testScala212Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala212Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
@@ -110,7 +105,6 @@ dependencies {
         exclude group: "com.fasterxml.jackson.module"
     }
     scala213CompileOnly("io.delta:delta-core_2.13:${deltaVersion}")
-    scala213CompileOnly("org.apache.iceberg:iceberg-spark-runtime-3.2_2.13:${icebergVersion}")
 
     testScala213Implementation("org.apache.spark:spark-hive_2.13:${sparkVersion}")
     testScala213Implementation("org.apache.spark:spark-sql_2.13:${sparkVersion}")
@@ -121,7 +115,6 @@ dependencies {
         exclude group: "com.fasterxml.jackson.module"
     }
     testScala213Implementation("io.delta:delta-core_2.13:${deltaVersion}")
-    testScala213Implementation("org.apache.iceberg:iceberg-spark-runtime-3.2_2.13:${icebergVersion}")
 
     testScala213Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala213Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")

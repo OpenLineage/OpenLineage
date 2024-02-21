@@ -3,11 +3,12 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
+package io.openlineage.spark.vendor.iceberg.agent.lifecycle.plan.column.visitors;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;

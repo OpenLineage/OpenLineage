@@ -8,11 +8,13 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.lifecycle.plan.VendorSpark3;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
@@ -24,13 +26,20 @@ public class CatalogUtils3 {
   private static List<CatalogHandler> getHandlers(OpenLineageContext context) {
     List<CatalogHandler> handlers =
         Arrays.asList(
-            new IcebergHandler(context),
             new DeltaHandler(context),
             new DatabricksDeltaHandler(context),
             new DatabricksUnityV2Handler(context),
             new JdbcHandler(),
             new V2SessionCatalogHandler());
-    return handlers.stream().filter(CatalogHandler::hasClasses).collect(Collectors.toList());
+
+    Stream<CatalogHandler> vendors =
+        VendorSpark3.getVendors().stream()
+            .map(v -> v.getCatalogHandler(context))
+            .filter(Optional::isPresent)
+            .map(Optional::get);
+    return Stream.concat(handlers.stream(), vendors)
+        .filter(CatalogHandler::hasClasses)
+        .collect(Collectors.toList());
   }
 
   private static List<RelationHandler> getRelationHandlers() {

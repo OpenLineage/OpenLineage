@@ -31,6 +31,7 @@ dependencies {
     implementation(project(path: ":spark34"))
     implementation(project(path: ":spark35"))
     implementation(project(path: ":snowflake"))
+    implementation(project(path: ":iceberg"))
 }
 
 
@@ -153,7 +154,8 @@ shadowJar {
         exclude(project(":spark33"))
         exclude(project(":spark34"))
         exclude(project(":spark35"))
-        exclude (project(":snowflake"))
+        exclude(project(":snowflake"))
+        exclude(project(":iceberg"))
         exclude(project(":app"))
     }
     dependencies {
