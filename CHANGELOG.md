@@ -11,6 +11,8 @@
 * **SPARK: Build and test the Spark integration in the CI/CD pipelines with Scala 2.12 and Scala 2.13 (https://github.com/OpenLineage/OpenLineage/pull/2432) [@d-m-h](https://github.com/d-m-h)
     *Several new integration test steps were added*
 * **SPARK: Streamlined the testing of the 'app' module by removing unnecessary test types, such as 'beforeShadowJarTest' (https://github.com/OpenLineage/OpenLineage/pull/2432) [@d-m-h](https://github.com/d-m-h)
+* **SPARK: Added the capability to publish Scala 2.12 and 2.13 variants of `openlineage-spark`. (https://github.com/OpenLineage/OpenLineage/pull/2446) [@d-m-h](https://github.com/d-m-h)
+    *This means that the `openlineage-spark` integration can be run alongside Scala 2.12 and Scala 2.13 variants of Apache Spark.*
 
 ### Added
 * **FLINK: bump default Flink version to 1.18.1 (https://github.com/OpenLineage/OpenLineage/pull/2418) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
