@@ -4,21 +4,43 @@ The OpenLineage Spark Agent uses jvm instrumentation to emit OpenLineage metadat
 
 ## Installation
 
+### Version 1.8.0 or earlier
+
 Maven:
 
 ```xml
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-spark</artifactId>
-    <version>1.8.0</version>
+    <version>${OPEN_LINEAGE_VERSION}</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-spark:1.8.0'
+implementation("io.openlineage:openlineage-spark:${OPEN_LINEAGE_VERSION}")
 ```
+
+### Version 1.9.0 or later
+
+Maven:
+
+```xml
+<dependency>
+    <groupId>io.openlineage</groupId>
+    <artifactId>openlineage-spark_${SCALA_BINARY_VERSION}</artifactId>
+    <version>${OPEN_LINEAGE_VERSION}</version>
+</dependency>
+```
+
+or Gradle:
+
+```groovy
+implementation("io.openlineage:openlineage-spark_${SCALA_BINARY_VERSION}:${OPEN_LINEAGE_VERSION}")
+```
+
+**Replace `${SCALA_BINARY_VERSION}` with the appropriate Scala version, e.g., `2.12` or `2.13`.**
 
 ## Getting started
 
