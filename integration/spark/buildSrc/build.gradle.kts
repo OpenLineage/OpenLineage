@@ -35,9 +35,9 @@ gradlePlugin {
             implementationClass = "io.openlineage.gradle.plugin.ScalaVariantsPlugin"
         }
 
-        create("dockerBuild") {
-            id = "io.openlineage.docker-build"
-            implementationClass = "io.openlineage.gradle.plugin.docker.DockerBuildPlugin"
-        }
+//        create("dockerBuild") {
+//            id = "io.openlineage.docker-build"
+//            implementationClass = "io.openlineage.gradle.plugin.docker.DockerBuildPlugin"
+//        }
     }
 }
