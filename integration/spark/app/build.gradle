@@ -312,6 +312,14 @@ tasks.register("copyIntegrationTestFixtures", Copy) {
     description = "Copies integration test fixtures to the build directory"
     from(configurations.named(integrationTestFixturesConfigurationName))
     into(scalaFixturesJarPath)
+
+    doFirst {
+        logger.lifecycle("[{}] Copying integration test fixtures to {}", name, scalaFixturesJarPath.get().asFile.absolutePath)
+    }
+
+    doLast {
+        logger.lifecycle("[{}] Copying of integration test fixtures to {} complete", name, scalaFixturesJarPath.get().asFile.absolutePath)
+    }
 }
 
 tasks.register("copyAdditionalJars", Copy) {
@@ -321,6 +329,14 @@ tasks.register("copyAdditionalJars", Copy) {
     into(destAdditionalJarsDir)
 
     onlyIf({ configurations.named(additionalJarsConfigurationName).get().files.any() })
+
+    doFirst {
+        logger.lifecycle("[{}] Copying additional jars to {}", name, destAdditionalJarsDir.get().asFile.absolutePath)
+    }
+
+    doLast {
+        logger.lifecycle("[{}] Copying of additional jars to {} complete", name, destAdditionalJarsDir.get().asFile.absolutePath)
+    }
 }
 
 tasks.register("copyAdditionalConfiguration", Copy) {
@@ -328,6 +344,14 @@ tasks.register("copyAdditionalConfiguration", Copy) {
     description = "Copies additional spark configuration files to the build directory"
     from(srcAdditionalConfDir)
     into(destAdditionalConfDir)
+
+    doFirst {
+        logger.lifecycle("[{}] Copying additional configuration to {}", name, destAdditionalConfDir.get().asFile.absolutePath)
+    }
+
+    doLast {
+        logger.lifecycle("[{}] Copying of additional configuration to {} complete", name, destAdditionalConfDir.get().asFile.absolutePath)
+    }
 }
 
 tasks.register("copyDependencies", Copy) {
@@ -337,6 +361,14 @@ tasks.register("copyDependencies", Copy) {
     from(testSourceSet.runtimeClasspath)
     include "*.jar"
     into(dependenciesDir)
+
+    doFirst {
+        logger.lifecycle("[{}] Copying dependencies to {}", name, dependenciesDir.get().asFile.absolutePath)
+    }
+
+    doLast {
+        logger.lifecycle("[{}] Copying of dependencies to {} complete", name, dependenciesDir.get().asFile.absolutePath)
+    }
 }
 
 tasks.register("createVersionProperties") {
