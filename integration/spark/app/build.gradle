@@ -142,7 +142,8 @@ dependencies {
 }
 
 final def buildDirectory = layout.buildDirectory
-final def fixturesDir = buildDirectory.dir("fixtures")
+// This is a hack-y solution to get the jar from the scala-fixtures project
+final def scalaFixturesJarPath = configurations.getByName(integrationTestFixturesConfigurationName).singleFile
 final def destAdditionalJarsDir = buildDirectory.dir("additional/jars")
 final def srcAdditionalConfDir = layout.projectDirectory.dir("additional/conf")
 final def destAdditionalConfDir = buildDirectory.dir("additional/conf")
@@ -151,7 +152,6 @@ final def derbySystemHomeBase = buildDirectory.dir("var/run/derby")
 final def sparkWarehouseDir = buildDirectory.dir("var/run/spark-warehouse")
 final def testResourcesDir = buildDirectory.dir("resources/test")
 final def libsShadowDir = buildDirectory.dir("libs/shadow")
-final def scalaFixturesJarName = "openlineage-spark-scala-fixtures_${scala}-${project.version}.jar"
 
 def testSystemProperties = { String spark, String scala ->
     [
@@ -160,14 +160,15 @@ def testSystemProperties = { String spark, String scala ->
             "build.dir"                           : buildDirectory.get().asFile.absolutePath,
             "dependencies.dir"                    : dependenciesDir.get().asFile.absolutePath,
             "derby.system.home.base"              : derbySystemHomeBase.get().asFile.absolutePath,
-            "fixtures.dir"                        : fixturesDir.get().asFile.absolutePath,
+            // "fixtures.dir"                        : scalaFixturesJarPath.get().asFile.absolutePath,
             "junit.platform.output.capture.stderr": "true",
             "junit.platform.output.capture.stdout": "true",
             "kafka.package.version"               : "org.apache.spark:spark-sql-kafka-0-10_${scala}:${spark}",
             "lib.dir"                             : libsShadowDir.get().asFile.absolutePath,
             "mockserver.logLevel"                 : "ERROR",
             "resources.dir"                       : testResourcesDir.get().asFile.absolutePath,
-            "scala.fixtures.jar.name"             : scalaFixturesJarName.toString(),
+            "scala.fixtures.jar.path": scalaFixturesJarPath.absolutePath,
+            // "scala.fixtures.jar.name"             : scalaFixturesJarName.toString(),
             "spark.docker.image"                  : "openlineage/spark:spark-${spark}-scala-${scala}",
             "spark.home.dir"                      : "/opt/bitnami/spark",
             "spark.sql.warehouse.dir"             : sparkWarehouseDir.get().asFile.absolutePath,
@@ -306,10 +307,11 @@ tasks.register("cleanUp", Delete) {
 }
 
 tasks.register("copyIntegrationTestFixtures", Copy) {
+    enabled = false
     group = "copy"
     description = "Copies integration test fixtures to the build directory"
     from(configurations.named(integrationTestFixturesConfigurationName))
-    into(fixturesDir)
+    into(scalaFixturesJarPath)
 }
 
 tasks.register("copyAdditionalJars", Copy) {
