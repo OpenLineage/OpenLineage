@@ -24,9 +24,10 @@ final class SparkContainerProperties {
       HOST_RESOURCES_DIR.resolve("log4j.properties").toAbsolutePath();
   public static final Path HOST_LOG4J2_PROPERTIES_PATH =
       HOST_RESOURCES_DIR.resolve("log4j2.properties").toAbsolutePath();
-//  public static final Path HOST_FIXTURES_DIR =
-//      Paths.get(System.getProperty("fixtures.dir")).toAbsolutePath();
-  public static final Path HOST_SCALA_FIXTURES_JAR_PATH = Paths.get(System.getProperty("scala.fixtures.jar.path")).toAbsolutePath();
+  //  public static final Path HOST_FIXTURES_DIR =
+  //      Paths.get(System.getProperty("fixtures.dir")).toAbsolutePath();
+  public static final Path HOST_SCALA_FIXTURES_JAR_PATH =
+      Paths.get(System.getProperty("scala.fixtures.jar.path")).toAbsolutePath();
   public static final Path HOST_ADDITIONAL_JARS_DIR =
       Paths.get(System.getProperty("additional.jars.dir")).toAbsolutePath();
   public static final Path HOST_ADDITIONAL_CONF_DIR =
