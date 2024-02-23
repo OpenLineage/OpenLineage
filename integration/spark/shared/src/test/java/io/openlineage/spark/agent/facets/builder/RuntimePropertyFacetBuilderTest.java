@@ -11,6 +11,7 @@ import org.apache.spark.sql.RuntimeConfig;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.Test;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,6 +28,14 @@ public class RuntimePropertyFacetBuilderTest {
         when(runtimeConfig.get("mock-key1")).thenReturn("mock-value1");
         when(runtimeConfig.get("mock-key2")).thenReturn("mock-value2");
         when(session.conf()).thenReturn(runtimeConfig);
+
+        SparkSession oldSession;
+        try {
+            oldSession = SparkSession.active();
+        } catch (IllegalStateException ie) {
+            oldSession = null;
+        }
+
         SparkSession.setActiveSession(session);
         RuntimePropertyFacetBuilder builder = new RuntimePropertyFacetBuilder();
         Map<String, OpenLineage.RunFacet> runFacetMap = new HashMap<>();
@@ -40,6 +49,8 @@ public class RuntimePropertyFacetBuilderTest {
                                     .containsEntry("mock-key1", "mock-value1")
                                     .containsEntry("mock-key2", "mock-value2");
                         });
+
+        SparkSession.setActiveSession(oldSession);
 
     }
 }
