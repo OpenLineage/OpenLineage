@@ -11,6 +11,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import org.apache.spark.sql.SparkSession;
 
+import java.lang.IllegalStateException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -30,12 +31,14 @@ public class RuntimePropertyFacet extends OpenLineage.DefaultRunFacet {
 
     public RuntimePropertyFacet() {
         super(Versions.OPEN_LINEAGE_PRODUCER_URI);
-        SparkSession session = SparkSession.active();
-        runtimeProperties = new HashMap<>();
         try {
+            SparkSession session = SparkSession.active();
+            runtimeProperties = new HashMap<>();
             Arrays.asList(session.conf().get(ALLOWED_KEY).split(",")).forEach(item -> trySetRuntimeProperty(session, item));
-        } catch (NoSuchElementException e) {
+        } catch (NoSuchElementException ne) {
             log.info("spark.openlineage.capturedRuntimeProperties is not set in RuntimeConfig");
+        } catch (IllegalStateException ie) {
+            log.info("No active or default Spark session found");
         }
 
     }
