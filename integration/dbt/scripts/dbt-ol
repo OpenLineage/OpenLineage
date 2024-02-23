@@ -209,7 +209,6 @@ def main():
             job_name=dbt_run_metadata.job_name,
             parent_run_metadata=parent_run_metadata,
         )
-    event: RunEvent
     for event in tqdm(
         events + [last_event],
         desc="Emitting OpenLineage events",
