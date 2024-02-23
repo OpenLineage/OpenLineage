@@ -1,0 +1,3 @@
+transport:
+  type: http
+  url: http://doesnotexists:1080
