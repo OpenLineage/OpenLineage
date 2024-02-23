@@ -15,10 +15,12 @@
     *This means that the `openlineage-spark` integration can be run alongside Scala 2.12 and Scala 2.13 variants of Apache Spark.*
 
 ### Added
-* **FLINK: bump default Flink version to 1.18.1 (https://github.com/OpenLineage/OpenLineage/pull/2418) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
-  *Support Flink 1.18.1 as it is newly released 
-* **FLINK: support Flink Kafka dynamic source and sink (https://github.com/OpenLineage/OpenLineage/pull/2417) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
-  *Support Flink Kafka Table Connector use cases for topic and schema extraction
+* **FLINK: support Flink Jdbc connector.** [`#2436`](https://github.com/OpenLineage/OpenLineage/pull/2436) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
+  *Support lineage for Flink use cases that uses Jdbc connector.* 
+* **FLINK: bump default Flink version to 1.18.1.** [`#2418`](https://github.com/OpenLineage/OpenLineage/pull/2418) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
+  *Support Flink 1.18.1 as it is newly released.*
+* **FLINK: support Flink Kafka dynamic source and sink.** [`#2417`](https://github.com/OpenLineage/OpenLineage/pull/2417) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
+  *Support Flink Kafka Table Connector use cases for topic and schema extraction.*
 * **Spark: integration now emits intermediate, application level events wrapping entire job execution** [`#1672`](https://github.com/OpenLineage/OpenLineage/issues/1672) [@mobuchowski](https://github.com/mobuchowski)  
     *Previously, Spark event model described only single actions, potentially linked only to some parent run.
 * **Flink: support multi topic Kafka Sink.** [`#2372`](https://github.com/OpenLineage/OpenLineage/pull/2372) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
