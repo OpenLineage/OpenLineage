@@ -13,8 +13,8 @@ import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.ErrorFacet;
-import io.openlineage.spark.agent.facets.SparkVersionFacet;
 import io.openlineage.spark.agent.facets.RuntimePropertyFacet;
+import io.openlineage.spark.agent.facets.SparkVersionFacet;
 import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilderDelegate;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -277,7 +277,7 @@ class RddExecutionContext implements ExecutionContext {
         });
   }
 
-  private void addRuntimeProcessFacet(OpenLineage.RunFacetsBuilder b0){
+  private void addRuntimeProcessFacet(OpenLineage.RunFacetsBuilder b0) {
     b0.put("runtime_properties", new RuntimePropertyFacet());
   }
 
