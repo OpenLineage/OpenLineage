@@ -12,7 +12,6 @@ plugins {
     id("io.freefair.lombok")
     id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
-    id("io.openlineage.docker-build")
     id "com.adarshr.test-logger" version "3.2.0"
     id "org.gradle.test-retry" version "1.5.8"
 }
@@ -168,13 +167,13 @@ def testSystemProperties = { String spark, String scala ->
             "mockserver.logLevel"                 : "ERROR",
             "resources.dir"                       : testResourcesDir.get().asFile.absolutePath,
             "scala.fixtures.jar.name"             : scalaFixturesJarName.toString(),
-            "spark.docker.image"                  : "openlineage/spark:spark-${spark}-scala-${scala}",
+            "spark.docker.image"                  : "quay.io/openlineage/spark:spark-${spark}-scala-${scala}",
             "spark.home.dir"                      : "/opt/bitnami/spark",
             "spark.sql.warehouse.dir"             : sparkWarehouseDir.get().asFile.absolutePath,
             "spark.version"                       : spark,
             "scala.binary.version"                : scala,
-            "log4j.configuration"    : testResourcesDir.map { it.file("log4j.properties").asFile.absolutePath }.get(),
-            "log4j.configurationFile": testResourcesDir.map { it.file("log4j2.properties").asFile.absolutePath }.get(),
+            "log4j.configuration"                 : testResourcesDir.map { it.file("log4j.properties").asFile.absolutePath }.get(),
+            "log4j.configurationFile"             : testResourcesDir.map { it.file("log4j2.properties").asFile.absolutePath }.get(),
     ]
 }
 
@@ -354,22 +353,12 @@ tasks.register("createVersionProperties") {
     }
 }
 
-tasks.register("buildDockerImage") {
-    group = "docker"
-    description = "Selects the appropriate docker image build task based on the values of spark version and scala binary version"
-    def sparkFmt = spark.replace(".", "")
-    def scalaFmt = scala.replace(".", "")
-    def taskName = "buildDockerImageSpark${sparkFmt}Scala${scalaFmt}"
-    dependsOn(tasks.named(taskName))
-}
-
 def integrationTestDependencies = [
         tasks.named("shadowJar"),
         tasks.named("copyDependencies"),
         tasks.named("copyIntegrationTestFixtures"),
         tasks.named("copyAdditionalJars"),
         tasks.named("copyAdditionalConfiguration"),
-        tasks.named("buildDockerImage"),
 ]
 
 tasks.register("integrationTest", Test.class) {
