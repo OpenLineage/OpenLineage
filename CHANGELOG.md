@@ -2,7 +2,7 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.9.0...HEAD)
 
-## [1.9.0](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...1.9.0) - 2024-02-22
+## [1.9.0](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...1.9.0) - 2024-02-23
 ### Added
 * **Airflow: add support for `JobTypeJobFacet` properties** [`#2412`](https://github.com/OpenLineage/OpenLineage/pull/2412) [@mattiabertorello](https://github.com/mattiabertorello)  
     *Adds support for Job type properties within the Airflow Job facet.*
@@ -12,6 +12,8 @@
     *Adds support for Flink Kafka Table Connector use cases for topic and schema extraction.*
 * **Flink: support multi-topic Kafka Sink** [`#2372`](https://github.com/OpenLineage/OpenLineage/pull/2372) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Adds support for multi-topic Kafka sinks. Limitations: `recordSerializer` needs to implement `KafkaTopicsDescriptor`. Please refer to the [limitations](https://openlineage.io/docs/integrations/flink/#limitations) sections in documentation.*
+* **Flink: support lineage for JDBC connector** [`#2436`](https://github.com/OpenLineage/OpenLineage/pull/2436) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Adds support for use cases that employ this connector.*
 * **Java: extend circuit breaker loaded with `ServiceLoader`** [`#2435`](https://github.com/OpenLineage/OpenLineage/pull/2435) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Loads the circuit breaker builder with `ServiceLoader` as an addition to a list of implemented builders available within the existing package.*
 * **Spark: integration now emits intermediate, application level events wrapping entire job execution** [`#2371`](https://github.com/OpenLineage/OpenLineage/pull/2471) [@mobuchowski](https://github.com/mobuchowski)  
@@ -25,7 +27,7 @@
 * **Spark/Flink/Java: circuit breaker** [`#2407`](https://github.com/OpenLineage/OpenLineage/issues/2407) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Introduces a circuit breaker mechanism to prevent effects of over-instrumentation. Implemented within Java client, it serves both the Flink and Spark integration. Read the Java client README for more details.*
 * **Spark: add the capability to publish Scala 2.12 and 2.13 variants of `openlineage-spark`** [`#2446`](https://github.com/OpenLineage/OpenLineage/pull/2446) [@d-m-h](https://github.com/d-m-h)  
-    *Adds the capability to publish Scala 2.12 and 2.13 variants of `openlineage-spark`*
+    *Adds the capability to publish Scala 2.12 and 2.13 variants of `openlineage-spark`* 
 
 ### Changed
 * **Spark: enable the `app` module to be compiled with Scala 2.12 and Scala 2.13 variants of Apache Spark** (https://github.com/OpenLineage/OpenLineage/pull/2432) [@d-m-h](https://github.com/d-m-h)  
