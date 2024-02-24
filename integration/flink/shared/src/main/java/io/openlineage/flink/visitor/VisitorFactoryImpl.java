@@ -12,12 +12,11 @@ import io.openlineage.flink.api.DatasetFactory;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.utils.CassandraUtils;
 import io.openlineage.flink.utils.IcebergUtils;
+import io.openlineage.flink.utils.JdbcUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import io.openlineage.flink.utils.JdbcUtils;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

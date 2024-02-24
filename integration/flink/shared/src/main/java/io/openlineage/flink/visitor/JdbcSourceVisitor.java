@@ -8,14 +8,13 @@ package io.openlineage.flink.visitor;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.wrapper.JdbcSourceWrapper;
+import java.util.Collections;
+import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.jdbc.JdbcInputFormat;
 import org.apache.flink.connector.jdbc.table.JdbcRowDataInputFormat;
 import org.apache.flink.connector.jdbc.table.JdbcRowDataLookupFunction;
-
-import java.util.Collections;
-import java.util.List;
 
 @Slf4j
 public class JdbcSourceVisitor extends Visitor<OpenLineage.InputDataset> {

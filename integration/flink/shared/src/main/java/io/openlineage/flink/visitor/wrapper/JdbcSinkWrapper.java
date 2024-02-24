@@ -5,6 +5,7 @@
 
 package io.openlineage.flink.visitor.wrapper;
 
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
 import org.apache.flink.connector.jdbc.internal.GenericJdbcSinkFunction;
@@ -12,8 +13,6 @@ import org.apache.flink.connector.jdbc.internal.JdbcOutputFormat;
 import org.apache.flink.connector.jdbc.internal.connection.JdbcConnectionProvider;
 import org.apache.flink.connector.jdbc.internal.connection.SimpleJdbcConnectionProvider;
 import org.apache.flink.connector.jdbc.xa.JdbcXaSinkFunction;
-
-import java.util.Optional;
 
 @Slf4j
 public class JdbcSinkWrapper {
@@ -40,7 +39,9 @@ public class JdbcSinkWrapper {
     Optional<JdbcConnectionOptions> connectionOptionsOpt = getConnectionOptions();
     return connectionOptionsOpt
         .map(
-            connectionOptions -> WrapperUtils.<String>getFieldValue(connectionOptions.getClass(), connectionOptions, "tableName"))
+            connectionOptions ->
+                WrapperUtils.<String>getFieldValue(
+                    connectionOptions.getClass(), connectionOptions, "tableName"))
         .orElse(Optional.of(""));
   }
 
