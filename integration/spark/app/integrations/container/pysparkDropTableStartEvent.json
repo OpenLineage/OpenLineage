@@ -13,21 +13,6 @@
           "name": "file",
           "uri": "file"
         },
-        "schema": {
-          "fields": [
-            {
-              "name": "a",
-              "type": "string"
-            },
-            {
-              "name": "b",
-              "type": "string"
-            }
-          ]
-        },
-        "lifecycleStateChange" : {
-          "lifecycleStateChange" : "DROP"
-        },
         "symlinks": {
           "identifiers": [
             {
@@ -36,6 +21,9 @@
               "type": "TABLE"
             }
           ]
+        },
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "DROP"
         }
       }
     }
