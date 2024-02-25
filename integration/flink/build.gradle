@@ -51,6 +51,7 @@ archivesBaseName='openlineage-flink'
 ext {
     flinkVersion = project.getProperty('flink.version')
     flinkVersionShort = flinkVersion.substring(0,4)
+    isReleaseVersion = !version.endsWith('-SNAPSHOT')
 }
 
 dependencies {
