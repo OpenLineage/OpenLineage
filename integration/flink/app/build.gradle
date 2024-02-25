@@ -65,7 +65,7 @@ ext {
     lombokVersion = '1.18.30'
     jacksonVersion = "2.15.3"
     mockitoVersion = '5.2.0'
-    testcontainersVersion = '1.19.4'
+    testcontainersVersion = '1.19.6'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
