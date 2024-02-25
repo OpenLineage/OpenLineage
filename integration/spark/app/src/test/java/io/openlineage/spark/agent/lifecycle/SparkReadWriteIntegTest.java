@@ -710,9 +710,15 @@ class SparkReadWriteIntegTest {
     spark.conf().set("fs.s3a.secret.key", System.getenv("S3_SECRET_KEY"));
     spark.conf().set("fs.s3a.access.key", System.getenv("S3_ACCESS_KEY"));
 
-    String aDatasetName = "rdd_a_" + System.getProperty(SPARK_VERSION);
-    String bDatasetName = "rdd_b_" + System.getProperty(SPARK_VERSION);
-    String cDatasetName = "rdd_c_" + System.getProperty(SPARK_VERSION);
+    String sparkVersion = System.getProperty(SPARK_VERSION);
+    String scalaBinaryVersion = System.getProperty("scala.binary.version");
+
+    String aDatasetName =
+        String.format("rdd_a_%s_%s", sparkVersion, scalaBinaryVersion).replace(".", "_");
+    String bDatasetName =
+        String.format("rdd_b_%s_%s", sparkVersion, scalaBinaryVersion).replace(".", "_");
+    String cDatasetName =
+        String.format("rdd_c_%s_%s", sparkVersion, scalaBinaryVersion).replace(".", "_");
 
     String bucketUrl = System.getenv("S3_BUCKET");
 

@@ -1,3 +1,10 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+import java.util.function.BiFunction
+import java.util.function.Consumer
+import java.util.function.Function
+import java.util.stream.Collectors
+
 plugins {
     id("java-library")
     id("pmd")
@@ -5,50 +12,21 @@ plugins {
     id("io.freefair.lombok")
     id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
-    id("io.openlineage.docker-build")
-    id 'java-test-fixtures'
     id "com.adarshr.test-logger" version "3.2.0"
     id "org.gradle.test-retry" version "1.5.8"
 }
 
-configurations {
-    spark2.extendsFrom testImplementation
-    spark3.extendsFrom testImplementation
-    spark31.extendsFrom testImplementation
-    spark32.extendsFrom testImplementation
-    spark33.extendsFrom testImplementation
-    spark34.extendsFrom testImplementation
-    spark35.extendsFrom testImplementation
-    pysparkContainerOnly
-}
-
-archivesBaseName = 'openlineage-spark-app'
-
 ext {
+    spark = project.findProperty('spark.version').toString()
+    scala = project.findProperty('scala.binary.version').toString()
+    activeRuntimeElementsConfiguration = "scala" + scala.replace(".", "") + "RuntimeElements"
+
     assertjVersion = '3.25.1'
     bigqueryVersion = '0.29.0'
-    postgresqlVersion = '42.7.1'
-    mockitoVersion = '4.11.0'
-    testcontainersVersion = '1.19.3'
     junit5Version = '5.10.1'
-
-    sparkVersion = findProperty("spark.version")
-    scalaBinaryVersion = findProperty("scala.binary.version")
-    shortVersion = sparkVersion.substring(0, 3)
-
-    sparkVersionFmt = sparkVersion.replace(".", "")
-    scalaBinaryVersionFmt = scalaBinaryVersion.replace(".", "")
-    dockerImageBuildTaskName = "buildDockerImageSpark${sparkVersionFmt}Scala${scalaBinaryVersionFmt}"
-
-    versionsMap = [
-            "3.5": ["module": "spark35", "scala": "2.12", "delta": "NA", "gcs": "hadoop3-2.2.9", "iceberg": "NA", "hadoopclient": "3.3.4"],
-            "3.4": ["module": "spark34", "scala": "2.12", "delta": "2.4.0", "gcs": "hadoop3-2.2.9", "iceberg": "iceberg-spark-runtime-3.4_2.12:1.3.0", "hadoopclient": "3.3.4"],
-            "3.3": ["module": "spark33", "scala": "2.12", "delta": "2.1.0", "gcs": "hadoop3-2.2.9", "iceberg": "iceberg-spark-runtime-3.3_2.12:0.14.0", "hadoopclient": "3.3.4"],
-            "3.2": ["module": "spark32", "scala": "2.12", "delta": "1.1.0", "gcs": "hadoop3-2.2.9", "iceberg": "iceberg-spark-runtime-3.2_2.12:0.14.0", "hadoopclient": "3.3.4"],
-            "3.1": ["module": "spark31", "scala": "2.12", "delta": "1.0.0", "gcs": "hadoop3-2.2.9", "iceberg": "iceberg-spark-runtime-3.1_2.12:0.13.0", "hadoopclient": "3.3.4"],
-            "2.4": ["module": "spark2", "scala": "2.11", "delta": "NA", "gcs": "hadoop2-2.2.9", "iceberg": "NA", "hadoopclient": "2.10.2"]
-    ]
-    versions = versionsMap[shortVersion]
+    mockitoVersion = '4.11.0'
+    postgresqlVersion = '42.7.1'
+    testcontainersVersion = '1.19.3'
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
@@ -56,81 +34,86 @@ ext {
 // org.xerial.snappy.SnappyError: [FAILED_TO_LOAD_NATIVE_LIBRARY] no native library is found for os.name=Mac and os.arch=aarch64
 configurations.configureEach {
     resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-        if (details.requested.group == 'org.xerial.snappy' && details.requested.name == 'snappy-java') {
+        if (details.requested.group == "org.xerial.snappy" && details.requested.name == "snappy-java") {
             details.useVersion("[1.1.8.4,)")
         }
     }
 }
 
+final String additionalJarsConfigurationName = "additionalJars"
+final String integrationTestFixturesConfigurationName = "integrationTestFixtures"
+
+configurations {
+    create(additionalJarsConfigurationName) {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    create(integrationTestFixturesConfigurationName) {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
+
+configurations.testImplementation {
+    exclude group: 'org.slf4j', module: 'slf4j-reload4j'
+    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+}
+
+final def mainSourceSet = sourceSets.main
+final def testSourceSet = sourceSets.test
+
+// Q: So why are these dependencies hidden behind functions?
+// A: They are dependencies that are conditionally applied. Some versions of Spark don't have certain dependencies.
+addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&deltaDependencies)
+addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&bigqueryDependencies)
+addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&gcsDependencies)
+addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&hadoopClientDependencies)
+addDependenciesToConfiguration(testSourceSet.implementationConfigurationName, spark, scala, this.&icebergDependencies)
+addDependenciesToConfiguration(testSourceSet.runtimeOnlyConfigurationName, spark, scala, this.&runtimeOnlyDependencies)
+addDependenciesToConfiguration(additionalJarsConfigurationName, spark, scala, this.&additionalJars)
+
 dependencies {
-    implementation(project(path: ":shared"))
-    implementation(project(path: ":spark2"))
-    implementation(project(path: ":spark3"))
-    implementation(project(path: ":spark31"))
-    implementation(project(path: ":spark32"))
-    implementation(project(path: ":spark33"))
-    implementation(project(path: ":spark34"))
-    implementation(project(path: ":spark35"))
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.3'
+    implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
+    implementation(project(path: ":spark2", configuration: "scala212RuntimeElements"))
+    implementation(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
+    implementation(project(path: ":spark31", configuration: "scala212RuntimeElements"))
+    implementation(project(path: ":spark32", configuration: activeRuntimeElementsConfiguration))
+    implementation(project(path: ":spark33", configuration: activeRuntimeElementsConfiguration))
+    implementation(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
+    implementation(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.3")
 
-    compileOnly "org.apache.spark:spark-core_${versions.scala}:${sparkVersion}"
-    compileOnly "org.apache.spark:spark-sql_${versions.scala}:${sparkVersion}"
-    compileOnly("com.google.cloud.spark:spark-bigquery-with-dependencies_${versions.scala}:${bigqueryVersion}") {
-        exclude group: 'com.fasterxml.jackson.core'
-        exclude group: 'com.fasterxml.jackson.module'
-        exclude group: 'com.sun.jmx'
-        exclude group: 'com.sun.jdmk'
-        exclude group: 'javax.jms'
-    }
+    compileOnly("org.apache.spark:spark-core_${scala}:${spark}")
+    compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")
+    compileOnly("org.apache.spark:spark-hive_${scala}:${spark}")
+    compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scala}:${spark}")
 
-
-    testFixturesApi platform('org.junit:junit-bom:5.10.1')
-    testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
-    testFixturesApi "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
-
-    testFixturesApi "org.postgresql:postgresql:${postgresqlVersion}"
-    testFixturesApi 'org.hamcrest:hamcrest-library:2.2'
-    testFixturesApi 'org.xerial:sqlite-jdbc:3.45.0.0'
-    testFixturesApi "org.testcontainers:junit-jupiter:${testcontainersVersion}"
-    testFixturesApi "org.testcontainers:postgresql:${testcontainersVersion}"
-    testFixturesApi "org.testcontainers:mockserver:${testcontainersVersion}"
-    testFixturesApi "org.testcontainers:kafka:${testcontainersVersion}"
-
-    testFixturesApi "org.apache.spark:spark-core_${versions.scala}:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-sql_${versions.scala}:${sparkVersion}"
-    testFixturesApi "org.apache.spark:spark-hive_${versions.scala}:${sparkVersion}"
-    testFixturesApi("org.apache.spark:spark-mllib_${versions.scala}:${sparkVersion}") {
-        exclude group: 'org.glassfish.jaxb', module: 'jaxb-runtime'
-        exclude group: "org.apache.spark", module: "spark-graphx_${versions.scala}"
-    }
-    testFixturesApi 'commons-beanutils:commons-beanutils:1.9.4'
-    if (versions.module != "spark2") {
-        testFixturesApi("org.apache.spark:spark-hadoop-cloud_${versions.scala}:${sparkVersion}") {
-            exclude group: 'com.fasterxml.jackson.core'
-            exclude group: 'org.apache.hadoop', module: 'hadoop-azure'
-            exclude group: 'org.apache.hadoop', module: 'hadoop-openstack'
-        }
-    }
-
-
-    testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}"
-    testFixturesApi("com.google.cloud.spark:spark-bigquery-with-dependencies_${versions.scala}:${bigqueryVersion}") {
+    testImplementation("org.apache.spark:spark-core_${scala}:${spark}")
+    testImplementation("org.apache.spark:spark-sql_${scala}:${spark}")
+    testImplementation("org.apache.spark:spark-hive_${scala}:${spark}")
+    testImplementation("org.apache.spark:spark-sql-kafka-0-10_${scala}:${spark}")
+    testImplementation(platform("org.junit:junit-bom:${junit5Version}"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
+    testImplementation("org.postgresql:postgresql:${postgresqlVersion}")
+    testImplementation('org.hamcrest:hamcrest-library:2.2')
+    testImplementation('org.xerial:sqlite-jdbc:3.45.0.0')
+    testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:mockserver")
+    testImplementation("org.testcontainers:kafka")
+    testImplementation("commons-beanutils:commons-beanutils:1.9.4")
+    testImplementation("org.awaitility:awaitility:4.2.0")
+    testImplementation("org.assertj:assertj-core:${assertjVersion}")
+    testImplementation("org.mockito:mockito-core:${mockitoVersion}")
+    testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
+    testImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
+    testImplementation("com.databricks:databricks-sdk-java:0.4.0") {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }
-    testFixturesApi("com.databricks:databricks-sdk-java:0.4.0") {
-        exclude group: 'com.fasterxml.jackson.core'
-        exclude group: 'com.fasterxml.jackson.module'
-    }
-
-    testFixturesApi("org.apache.hadoop:hadoop-client:${versions.hadoopclient}") {
-        exclude group: 'org.apache.hadoop', module: 'hadoop-hdfs-client'
-        exclude group: 'org.apache.hadoop', module: 'hadoop-client'
-        exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-core'
-        exclude group: 'org.apache.hadoop', module: 'hadoop-yarn-common'
-        exclude group: 'com.fasterxml.jackson.core'
-    }
-    testFixturesApi("org.mock-server:mockserver-netty:5.14.0:shaded") {
+    testImplementation("org.mock-server:mockserver-netty:5.14.0:shaded") {
         exclude group: 'com.google.guava', module: 'guava'
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.datatype'
@@ -138,204 +121,111 @@ dependencies {
         exclude group: 'org.mock-server.mockserver-client-java'
     }
 
-    testFixturesApi group: 'org.awaitility', name: 'awaitility', version: '4.2.0'
-    testFixturesApi "org.assertj:assertj-core:${assertjVersion}"
-    testFixturesApi "org.mockito:mockito-core:${mockitoVersion}"
-    testFixturesApi "org.mockito:mockito-inline:${mockitoVersion}"
-    testFixturesApi "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testRuntimeOnly("org.slf4j:slf4j-api:1.7.36")
+    testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.22.1"))
+    testRuntimeOnly("org.apache.logging.log4j:log4j-api")
+    testRuntimeOnly("org.apache.logging.log4j:log4j-core")
+    testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl")
+    // Needed for GoogleCloudIntegrationTest
+    testRuntimeOnly("org.apache.spark:spark-mllib_${scala}:${spark}", {
+        /* If you don't exclude this, but things happen. Specifically:
+        SparkReadWriteIntegTest.testExternalRDDWithS3Bucket will fail with this error:
+        java.lang.UnsupportedClassVersionError: com/sun/istack/Pool has been compiled by a more
+        recent version of the Java Runtime (class file version 55.0), this version of the
+        Java Runtime only recognizes class file versions up to 52.0 */
+        exclude(group: "org.glassfish.jaxb", module: "jaxb-runtime")
+        exclude(group: "org.apache.spark", module: "spark-graphx_${scala}")
+    })
 
-    pysparkContainerOnly("com.google.cloud.bigdataoss:gcs-connector:${versions.gcs}:shaded") {
-        exclude group: 'com.google.guava', module: 'guava'
-    }
-    pysparkContainerOnly("com.google.guava:guava:30.1-jre")
-
-    if (versions.delta != "NA") {
-        testFixturesApi "io.delta:delta-core_${versions.scala}:${versions.delta}"
-    }
-
-    if (versions.iceberg != "NA") {
-        testFixturesApi "org.apache.iceberg:${versions.iceberg}"
-    }
-
-    if (versions.module != "spark2") {
-        testImplementation("com.google.cloud.bigdataoss:gcs-connector:hadoop3-2.2.9") {
-            exclude group: 'com.google.guava', module: 'guava'
-        }
-        pysparkContainerOnly("com.google.guava:guava:30.1-jre")
-    }
+    integrationTestFixtures(project(path: ":scala-fixtures", configuration: activeRuntimeElementsConfiguration))
 }
 
-def commonTestConfiguration = {
-    forkEvery 1
-    maxParallelForks 5
+final def buildDirectory = layout.buildDirectory
+final def fixturesDir = buildDirectory.dir("fixtures")
+final def destAdditionalJarsDir = buildDirectory.dir("additional/jars")
+final def srcAdditionalConfDir = layout.projectDirectory.dir("additional/conf")
+final def destAdditionalConfDir = buildDirectory.dir("additional/conf")
+final def dependenciesDir = buildDirectory.dir("dependencies")
+final def derbySystemHomeBase = buildDirectory.dir("var/run/derby")
+final def sparkWarehouseDir = buildDirectory.dir("var/run/spark-warehouse")
+final def testResourcesDir = buildDirectory.dir("resources/test")
+final def libsShadowDir = buildDirectory.dir("libs/shadow")
+final def scalaFixturesJarName = "openlineage-spark-scala-fixtures_${scala}-${project.version}.jar"
+
+def testSystemProperties = { String spark, String scala ->
+    [
+            "additional.conf.dir"                 : destAdditionalConfDir.get().asFile.absolutePath,
+            "additional.jars.dir"                 : destAdditionalJarsDir.get().asFile.absolutePath,
+            "build.dir"                           : buildDirectory.get().asFile.absolutePath,
+            "dependencies.dir"                    : dependenciesDir.get().asFile.absolutePath,
+            "derby.system.home.base"              : derbySystemHomeBase.get().asFile.absolutePath,
+            "fixtures.dir"                        : fixturesDir.get().asFile.absolutePath,
+            "junit.platform.output.capture.stderr": "true",
+            "junit.platform.output.capture.stdout": "true",
+            "kafka.package.version"               : "org.apache.spark:spark-sql-kafka-0-10_${scala}:${spark}",
+            "lib.dir"                             : libsShadowDir.get().asFile.absolutePath,
+            "mockserver.logLevel"                 : "ERROR",
+            "resources.dir"                       : testResourcesDir.get().asFile.absolutePath,
+            "scala.fixtures.jar.name"             : scalaFixturesJarName.toString(),
+            "spark.docker.image"                  : "quay.io/openlineage/spark:spark-${spark}-scala-${scala}",
+            "spark.home.dir"                      : "/opt/bitnami/spark",
+            "spark.sql.warehouse.dir"             : sparkWarehouseDir.get().asFile.absolutePath,
+            "spark.version"                       : spark,
+            "scala.binary.version"                : scala,
+            "log4j.configuration"                 : testResourcesDir.map { it.file("log4j.properties").asFile.absolutePath }.get(),
+            "log4j.configurationFile"             : testResourcesDir.map { it.file("log4j2.properties").asFile.absolutePath }.get(),
+    ]
+}
+
+tasks.named("test", Test.class) {
+    group = "verification"
+    useJUnitPlatform {
+        excludeTags("integration-test")
+        if (!hasDeltaDependencies(spark, scala)) {
+            excludeTags("delta")
+        }
+        if (!hasIcebergDependencies(spark, scala)) {
+            excludeTags "iceberg"
+        }
+    }
+    systemProperties = testSystemProperties(spark, scala)
+
     testLogging {
         events "passed", "skipped", "failed"
         showStandardStreams = true
     }
-    systemProperties = [
-            'junit.platform.output.capture.stdout': 'true',
-            'junit.platform.output.capture.stderr': 'true',
-            'spark.version'                       : sparkVersion,
-            'scala.binary.version'                : scalaBinaryVersion,
-            'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
-            'kafka.package.version'               : "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}",
-            'mockserver.logLevel'                 : 'ERROR'
-    ]
-
-    classpath = project.sourceSets.test.runtimeClasspath
 }
 
-if (sparkVersion == '2.4.6') {
-    tasks.register("buildDockerImage") {
-        dependsOn()
-        group = "docker"
-        description = "This is a no-op, because the manifest file is configured to build an image for Spark 2.4.8, and " +
-                "the Apache Spark folks decided not to include the Hadoop JARs with the 2.12 variant of 2.4.8. " +
-                "I'm not sure why. Any way this means we don't build this image, for the time being. This will be fixed in " +
-                "the future. At the same time, Bitnami never produced a Spark 2.4.8 image."
-        doLast {
-            println("This task is a no-op. See the task description for more information.")
-        }
-    }
-} else {
-    tasks.register("buildDockerImage") {
-        dependsOn(tasks.named(dockerImageBuildTaskName))
-        group = "docker"
-        description = "Builds the docker image specified by the properties 'spark.version' and 'scala.binary.version'"
-    }
+tasks.named("jar", Jar.class) {
+    archiveBaseName = "openlineage-spark-agent_${scala}"
+    destinationDirectory.set(layout.buildDirectory.dir("libs"))
 }
 
-
-// These entries aren't considered "outputs" of any Gradle task, thus Gradle doesn't know about
-// them and won't clean them up when you run './gradlew clean'. This is a problem because
-// you may experience weird test failures, when running the tests using different versions of
-// Apache Spark. Thus this take is a workaround to clean up these file(s) and folder(s).
-tasks.register("cleanUp", Delete) {
-    delete("derby.log", "metastore_db", "spark-warehouse")
-}
-
-tasks.withType(Test).configureEach {
-    failFast = true
-}
-
-task nonParallelTest(type: Test) {
-    dependsOn tasks.named("shadowJar"), tasks.named("cleanUp")
-    group = 'verification'
-    description = "Runs tests that cannot be run in parallel. For example test suites that require metastore_db"
-
-    maxParallelForks = 1
-
-    useJUnitPlatform {
-        includeTags("nonParallelTest")
-    }
-}
-
-task beforeShadowJarTest(type: Test) {
-    group = 'verification'
-    description = "Tests that depend that have to be run before shadowJar"
-    useJUnitPlatform {
-        includeTags("beforeShadowJarTest")
-    }
-}
-
-// wrócić do jednego test z jakąś metodą zwracającą konfigurację żeby spark3 działał
-test {
-    dependsOn nonParallelTest
-    useJUnitPlatform { i ->
-        excludeTags('integration-test', 'nonParallelTest', 'beforeShadowJarTest')
-        if (versions.delta == "NA") {
-            excludeTags 'delta'
-        }
-        if (versions.iceberg == "NA") {
-            excludeTags 'iceberg'
-        }
-    }
-    configure commonTestConfiguration
-    classpath = project.sourceSets.test.runtimeClasspath + configurations."${versions.module}"
-}
-
-task copyDependencies(type: Copy) {
-    dependsOn shadowJar
-    dependsOn(
-            ':spark2:jar', ':spark3:jar', ':spark31:jar',
-            ':spark32:jar', ':spark33:jar',
-            ':spark34:jar', ':spark35:jar'
-    )
-    dependsOn(
-            ':spark2:testFixturesJar', ':spark3:testFixturesJar', ':spark31:testFixturesJar',
-            ':spark32:testFixturesJar', ':spark33:testFixturesJar',
-            ':spark34:testFixturesJar', ':spark35:testFixturesJar'
-    )
-
-    dependsOn(':app:testFixturesJar', ':app:jar')
-    // delete the dependencies directory so we don't accidentally mix Spark 2 and Spark 3 dependencies
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    delete layout.buildDirectory.dir("dependencies")
-    def config = configurations."${versions.module}"
-    from config.getFiles() + configurations.pysparkContainerOnly.getFiles()
-    include "*.jar"
-    into layout.buildDirectory.dir("dependencies")
-}
-
-task integrationTest(type: Test) {
-    dependsOn shadowJar, copyDependencies, buildDockerImage
-    retry {
-        boolean isCiServer = System.getenv().containsKey("CI")
-        if (isCiServer) {
-            maxRetries = 3
-            maxFailures = 3
-        }
-    }
-    configure commonTestConfiguration
-    useJUnitPlatform {
-        includeTags "integration-test"
-        excludeTags "databricks"
-        if (!sparkVersion.startsWith('3')) {
-            excludeTags 'spark3'
-        }
-        if (versions.delta == "NA") {
-            excludeTags 'delta'
-        }
-        if (versions.iceberg == "NA") {
-            excludeTags 'iceberg'
-        }
-    }
-}
-
-task databricksIntegrationTest(type: Test) {
-    dependsOn shadowJar, copyDependencies
-    retry {
-        boolean isCiServer = System.getenv().containsKey("CI")
-        if (isCiServer) {
-            maxRetries = 3
-            maxFailures = 3
-        }
-    }
-    configure commonTestConfiguration
-    useJUnitPlatform {
-        includeTags "databricks"
-    }
-}
-
-assemble {
-    dependsOn shadowJar
-}
-
-shadowJar {
-    dependsOn beforeShadowJarTest
+tasks.named("shadowJar", ShadowJar.class) {
+    dependsOn(tasks.named("jar"))
+    group = "shadow"
+    archiveBaseName = "openlineage-spark-agent_${scala}"
+    archiveClassifier = "shadow"
+    destinationDirectory.set(libsShadowDir)
+    from(mainSourceSet.output)
+    configurations = [project.configurations.named(mainSourceSet.runtimeClasspathConfigurationName).get()]
 
     minimize() {
-        exclude(project(":shared"))
-        exclude(project(":spark2"))
-        exclude(project(":spark3"))
-        exclude(project(":spark31"))
-        exclude(project(":spark32"))
-        exclude(project(":spark33"))
-        exclude(project(":spark34"))
-        exclude(project(":spark35"))
+        exclude(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
+        exclude(project(path: ":spark2", configuration: "scala212RuntimeElements"))
+        exclude(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
+        exclude(project(path: ":spark31", configuration: "scala212RuntimeElements"))
+        exclude(project(path: ":spark32", configuration: activeRuntimeElementsConfiguration))
+        exclude(project(path: ":spark33", configuration: activeRuntimeElementsConfiguration))
+        exclude(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
+        exclude(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
     }
-    archiveClassifier = ''
-    // avoid conflict with any client version of that lib
+
+    dependencies {
+        exclude(dependency("org.slf4j::"))
+        exclude("org/apache/commons/logging/**")
+    }
+
     relocate 'com.github.ok2c.hc5', 'io.openlineage.spark.shaded.com.github.ok2c.hc5'
     relocate 'org.apache.httpcomponents.client5', 'io.openlineage.spark.shaded.org.apache.httpcomponents.client5'
     relocate 'javassist', 'io.openlineage.spark.shaded.javassist'
@@ -345,40 +235,371 @@ shadowJar {
     relocate 'org.apache.commons.beanutils', 'io.openlineage.spark.shaded.org.apache.commons.beanutils'
     relocate 'org.apache.http', 'io.openlineage.spark.shaded.org.apache.http'
     relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
-    relocate 'org.slf4j', 'io.openlineage.spark.shaded.org.slf4j'
     relocate('com.fasterxml.jackson', 'io.openlineage.spark.shaded.com.fasterxml.jackson') {
         exclude 'com.fasterxml.jackson.annotation.JsonIgnore'
         exclude 'com.fasterxml.jackson.annotation.JsonIgnoreProperties'
         exclude 'com.fasterxml.jackson.annotation.JsonIgnoreType'
     }
     manifest {
-        attributes(
-                'Created-By': "Gradle ${gradle.gradleVersion}",
-                'Built-By': System.getProperty('user.name'),
-                'Build-Jdk': System.getProperty('java.version'),
-                'Implementation-Title': project.name,
+        attributes([
+                'Created-By'            : "Gradle ${gradle.gradleVersion}",
+                'Built-By'              : System.getProperty('user.name'),
+                'Build-Jdk'             : System.getProperty('java.version'),
+                'Implementation-Title'  : project.name,
                 'Implementation-Version': project.version
-        )
+        ])
     }
     zip64 true
 }
 
-task createVersionProperties(dependsOn: processResources) {
+tasks.withType(Test).configureEach {
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = true
+    }
+    systemProperties = testSystemProperties(spark, scala)
+    retry {
+        boolean isCiServer = System.getenv().containsKey("CI")
+        if (isCiServer) {
+            maxRetries = 3
+            maxFailures = 3
+        }
+    }
+    setForkEvery(1)
+    maxParallelForks = 5
+    setMaxHeapSize("1024m")
+}
+
+tasks.named("assemble") {
+    dependsOn(tasks.named("shadowJar"))
+}
+
+tasks.register("dump") {
+    group = "debug"
     doLast {
-        File dir = new File("$buildDir/resources/main/io/openlineage/spark/agent/")
-        dir.mkdirs();
-        new File("$buildDir/resources/main/io/openlineage/spark/agent/version.properties").withWriter { w ->
+        Consumer<SourceSet> func = { SourceSet sourceSet ->
+            println("SOURCE SET: ${sourceSet.name}")
+            println("COMPILE CLASSPATH:")
+            sourceSet.compileClasspath.files.stream().filter { !it.absolutePath.contains(".gradle") }.sorted().forEach { println it }
+            println("\nRUNTIME CLASSPATH:")
+            sourceSet.runtimeClasspath.files.stream().filter { !it.absolutePath.contains(".gradle") }.sorted().forEach { println it }
+            println()
+        }
+
+        func.accept(mainSourceSet)
+        func.accept(testSourceSet)
+    }
+}
+
+// These entries aren't considered "outputs" of any Gradle task, thus Gradle doesn't know about
+// them and won't clean them up when you run './gradlew clean'. This is a problem because
+// you may experience weird test failures, when running the tests using different versions of
+// Apache Spark. Thus this take is a workaround to clean up these file(s) and folder(s).
+tasks.register("cleanUp", Delete) {
+    delete(derbySystemHomeBase)
+    delete(sparkWarehouseDir)
+    // some tests seem to create these directories in the 'app' directory,
+    // instead of using the build dir. This makes it hard to prevent conflicts (particularly in the metastore)
+    // when you run the tests with different versions of Apache Spark on the same machine.
+    delete("derby.log", "metastore_db", "spark-warehouse")
+}
+
+tasks.register("copyIntegrationTestFixtures", Copy) {
+    group = "copy"
+    description = "Copies integration test fixtures to the build directory"
+    from(configurations.named(integrationTestFixturesConfigurationName))
+    into(fixturesDir)
+}
+
+tasks.register("copyAdditionalJars", Copy) {
+    group = "copy"
+    description = "Copies additional jars to the build directory"
+    from(configurations.named(additionalJarsConfigurationName))
+    into(destAdditionalJarsDir)
+
+    onlyIf({ configurations.named(additionalJarsConfigurationName).get().files.any() })
+}
+
+tasks.register("copyAdditionalConfiguration", Copy) {
+    group = "copy"
+    description = "Copies additional spark configuration files to the build directory"
+    from(srcAdditionalConfDir)
+    into(destAdditionalConfDir)
+}
+
+tasks.register("copyDependencies", Copy) {
+    // delete the dependencies directory so we don"t accidentally mix Spark 2 and Spark 3 dependencies
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    delete(dependenciesDir)
+    from(testSourceSet.runtimeClasspath)
+    include "*.jar"
+    into(dependenciesDir)
+}
+
+tasks.register("createVersionProperties") {
+    group = "resources"
+    def processResourcesTask = tasks.named(mainSourceSet.processResourcesTaskName, ProcessResources.class)
+    dependsOn(processResourcesTask)
+    doLast {
+        def resourcesDir = processResourcesTask.get().getDestinationDir()
+        def destinationDir = resourcesDir.toPath().resolve("io/openlineage/spark/agent")
+        destinationDir.toFile().mkdirs()
+        def destinationFile = destinationDir.resolve("version.properties").toFile()
+        destinationFile.withWriter { w ->
             Properties p = new Properties()
-            p['version'] = project.version.toString()
+            p["version"] = project.version.toString()
             p.store w, null
         }
     }
 }
 
-classes {
-    dependsOn createVersionProperties
+def integrationTestDependencies = [
+        tasks.named("shadowJar"),
+        tasks.named("copyDependencies"),
+        tasks.named("copyIntegrationTestFixtures"),
+        tasks.named("copyAdditionalJars"),
+        tasks.named("copyAdditionalConfiguration"),
+]
+
+tasks.register("integrationTest", Test.class) {
+    group = "verification"
+    dependsOn(integrationTestDependencies)
+    testClassesDirs = testSourceSet.output.classesDirs
+    classpath = files(tasks.shadowJar.outputs.files.singleFile, sourceSets.test.runtimeClasspath)
+    useJUnitPlatform {
+        includeTags("integration-test")
+        excludeTags("databricks")
+        logger.warn("[IntegrationTest] hasDeltaDependencies: ${hasDeltaDependencies(spark, scala)}")
+        if (!hasDeltaDependencies(spark, scala)) {
+            logger.warn("[IntegrationTest] Excluding delta tests")
+            excludeTags("delta")
+        }
+        logger.warn("[IntegrationTest] hasIcebergDependencies: ${hasIcebergDependencies(spark, scala)}")
+        if (!hasIcebergDependencies(spark, scala)) {
+            logger.warn("[IntegrationTest] Excluding iceberg tests")
+            excludeTags("iceberg")
+        }
+    }
+    systemProperties.put("test.results.dir", buildDirectory.dir("test-results/${name}/o").get().asFile.absolutePath)
+}
+
+tasks.register("databricksIntegrationTest", Test) {
+    group = "verification"
+    dependsOn(integrationTestDependencies)
+    testClassesDirs = testSourceSet.output.classesDirs
+    classpath = files(tasks.shadowJar.outputs.files.singleFile, sourceSets.test.runtimeClasspath)
+    useJUnitPlatform {
+        includeTags("databricks")
+    }
+}
+
+tasks.named("classes") {
+    dependsOn(tasks.named("createVersionProperties"))
 }
 
 tasks.named("pmdTest") {
     mustRunAfter("shadowJar")
+}
+
+tasks.named("assemble") {
+    dependsOn(tasks.named("shadowJar"))
+}
+
+tasks.register("dumpDependencies") {
+    // This task will not have any actions by default
+    doLast {
+        // Retrieve the configuration name from a project property
+        String configurationName = project.hasProperty('configuration') ? project.property('configuration') : null
+
+        if (configurationName == null) {
+            println 'No configuration specified. Use -Pconfiguration=<name> to specify one.'
+        } else {
+            // Check if the specified configuration exists
+            Configuration configuration = project.configurations.findByName(configurationName)
+            if (configuration != null) {
+                println "Dependencies for configuration '$configurationName':"
+                // Iterate over the dependencies and print them
+                configuration.dependencies.sort().forEach { dependency ->
+                    println " - ${dependency.group}:${dependency.name}:${dependency.version}"
+                }
+            } else {
+                println "Configuration '$configurationName' not found."
+            }
+        }
+    }
+}
+
+
+void addDependenciesToConfiguration(String configurationName, String spark, String scala, BiFunction<String, String, List<Dependency>> func) {
+    def deps = func.apply(spark, scala)
+    deps.each {
+        dependencies.add(configurationName, it)
+    }
+}
+
+List<Dependency> bigqueryDependencies(String spark, String scala) {
+    return [
+            dependencies.create("com.google.cloud.spark:spark-bigquery-with-dependencies_${scala}:${bigqueryVersion}", {
+                exclude(group: 'com.fasterxml.jackson.core')
+                exclude(group: 'com.fasterxml.jackson.module')
+            })
+    ]
+}
+
+List<Dependency> icebergDependencies(String spark, String scala) {
+    def scalaVersion = scala == "2.12" ? "2.12.15" : "2.13.10"
+
+    final def registry = [
+            "3.2.4": [
+                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.2_${scala}:0.14.0"),
+                    dependencies.create("org.scala-lang:scala-library:${scalaVersion}"),
+                    dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
+                    dependencies.create("org.scala-lang.modules:scala-collection-compat_${scala}:2.11.0"),
+            ],
+            "3.3.4": [
+                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.3_${scala}:0.14.0"),
+                    dependencies.create("org.scala-lang:scala-library:${scalaVersion}"),
+                    dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
+                    dependencies.create("org.scala-lang.modules:scala-collection-compat_${scala}:2.11.0"),
+            ],
+            "3.4.2": [
+                    dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.4_${scala}:1.3.0"),
+                    dependencies.create("org.scala-lang:scala-library:${scalaVersion}"),
+                    dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
+                    dependencies.create("org.scala-lang.modules:scala-collection-compat_${scala}:2.11.0"),
+            ],
+    ]
+
+    return registry.get(spark, [])
+}
+
+List<Dependency> deltaDependencies(String spark, String scala) {
+    final def registry = [
+            "3.2.4": "1.1.0",
+            "3.3.4": "2.1.0",
+            "3.4.2": "2.4.0",
+    ]
+
+    def delta = registry.get(spark)
+    if (delta == null) {
+        return []
+    }
+    return [
+            dependencies.create("io.delta:delta-core_${scala}:$delta")
+    ]
+}
+
+List<Dependency> gcsDependencies(String spark, String scala) {
+    final def registry = [
+            "2.4.8": "hadoop2-2.2.9",
+            "3.2.4": "hadoop3-2.2.9",
+            "3.3.4": "hadoop3-2.2.9",
+            "3.4.2": "hadoop3-2.2.9",
+            "3.5.0": "hadoop3-2.2.9",
+    ]
+
+    def gcs = registry.get(spark)
+    if (gcs == null) {
+        return []
+    }
+    return [
+            dependencies.create("com.google.cloud.bigdataoss:gcs-connector:${gcs}:shaded", {
+                exclude(group: 'com.google.guava', module: 'guava')
+            })
+    ]
+}
+
+List<Dependency> hadoopClientDependencies(String spark, String scala) {
+    final def registry = [
+            "2.4.8": "2.10.2",
+            "3.2.4": "3.3.4",
+            "3.3.4": "3.3.2",
+            "3.4.2": "3.3.4",
+            "3.5.0": "3.3.4",
+    ]
+
+    def hadoopClient = registry.get(spark)
+    if (hadoopClient == null) {
+        return []
+    }
+    return [
+            dependencies.create("org.apache.hadoop:hadoop-client:${hadoopClient}", {
+                exclude(group: 'org.apache.hadoop', module: 'hadoop-hdfs-client')
+                exclude(group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-core')
+                exclude(group: 'org.apache.hadoop', module: 'hadoop-yarn-common')
+                exclude(group: 'com.fasterxml.jackson.core')
+            })
+    ]
+}
+
+List<Dependency> additionalJars(String spark, String scala) {
+    final def registry = [
+            "2.4.8": [
+                    dependencies.create("org.slf4j:slf4j-api:1.7.16"),
+                    dependencies.create("org.slf4j:slf4j-log4j12:1.7.16"),
+                    dependencies.create("org.apache.hadoop:hadoop-common:2.10.2", {
+                        exclude(group: "org.slf4j")
+                    }),
+                    dependencies.create("org.apache.hadoop:hadoop-mapreduce-client-core:2.10.2", {
+                        exclude(group: "org.slf4j")
+                    }),
+                    dependencies.create("org.apache.hadoop:hadoop-mapreduce-client-common:2.10.2", {
+                        exclude(group: "org.slf4j")
+                    }),
+                    // Yes, believe it or not, the Spark binaries without hadoop exclude hive
+                    dependencies.create("org.apache.spark:spark-hive_${scala}:${spark}", {
+                        exclude(group: "org.slf4j")
+                    }),
+                    dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
+                        exclude(group: "org.slf4j")
+                    }),
+            ],
+            "3.2.4": [
+                    dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
+                        exclude(group: "org.slf4j")
+                    }),
+            ],
+            "3.3.4": [
+                    dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
+                        exclude(group: "org.slf4j")
+                    }),
+            ],
+            "3.4.2": [
+                    dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
+                        exclude(group: "org.slf4j")
+                    }),
+            ],
+            "3.5.0": [
+                    dependencies.create("org.slf4j:slf4j-api:2.0.10"),
+                    dependencies.create("org.slf4j:slf4j-reload4j:2.0.10"),
+                    dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
+                        exclude(group: "org.slf4j")
+                    }),
+            ],
+    ]
+
+    return registry.get(spark, [])
+}
+
+List<Dependency> runtimeOnlyDependencies(String spark, String scala) {
+    return spark == "2.4.8"
+            ? Collections.<Dependency> emptyList()
+            : Collections.<Dependency> singletonList(
+            dependencies.create("org.apache.spark:spark-hadoop-cloud_${scala}:${spark}", {
+                exclude group: 'com.fasterxml.jackson.core'
+                exclude group: 'org.apache.hadoop', module: 'hadoop-azure'
+                exclude group: 'org.apache.hadoop', module: 'hadoop-openstack'
+            }))
+}
+
+boolean hasDeltaDependencies(String spark, String scala) {
+    return !deltaDependencies(spark, scala).isEmpty()
+}
+
+boolean hasIcebergDependencies(String spark, String scala) {
+    return !icebergDependencies(spark, scala).isEmpty()
+}
+
+static List<String> map(List<SourceSet> sourceSets, Function<SourceSet, String> func) {
+    return sourceSets.stream().map(func).collect(Collectors.toList())
 }

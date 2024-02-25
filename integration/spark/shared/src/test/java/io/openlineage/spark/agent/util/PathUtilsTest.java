@@ -177,7 +177,26 @@ class PathUtilsTest {
     assertThat(di.getNamespace()).isEqualTo("hdfs://namenode:8020");
     assertThat(di.getSymlinks()).hasSize(1);
     assertThat(di.getSymlinks().get(0).getName()).isEqualTo("db.table");
-    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("/warehouse");
+    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("hdfs://namenode:8020/warehouse");
+  }
+
+  @Test
+  void testFromCatalogWithDefaultStorageAndNoWarehouse() throws URISyntaxException {
+    sparkConf.remove("spark.hadoop.hive.metastore.uris");
+    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+    when(catalogStorageFormat.locationUri()).thenReturn(Option.apply(new URI("s3://s3-db/table")));
+
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(catalogTable.identifier()).thenReturn(tableIdentifier);
+    when(tableIdentifier.database()).thenReturn(Option.apply("db"));
+    when(tableIdentifier.table()).thenReturn("table");
+
+    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
+    assertThat(di.getName()).isEqualTo("table");
+    assertThat(di.getNamespace()).isEqualTo("s3://s3-db");
+    assertThat(di.getSymlinks()).hasSize(1);
+    assertThat(di.getSymlinks().get(0).getName()).isEqualTo("db.table");
+    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("s3://s3-db");
   }
 
   @Test
@@ -300,7 +319,7 @@ class PathUtilsTest {
               "foo",
               "hdfs://namenode",
               tableUri.getPath(),
-              "/user/hive/warehouse/foo.db",
+              "hdfs://namenode/user/hive/warehouse/foo.db",
               "foo.bar")
           .performTest();
     }

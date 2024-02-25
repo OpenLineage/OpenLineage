@@ -10,6 +10,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.io.File;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -30,6 +31,8 @@ import scala.Option;
 public class DeltaHandler implements CatalogHandler {
 
   private final OpenLineageContext context;
+  private static final String DEFAULT_SEPARATOR = "/";
+  private static final String DEFAULT_SCHEME = "file";
 
   public DeltaHandler(OpenLineageContext context) {
     this.context = context;
@@ -82,13 +85,28 @@ public class DeltaHandler implements CatalogHandler {
                     return getDefaultTablePath(session, identifier);
                   }
                 }));
+    URI uri = prepareUriFromPath(path);
 
-    DatasetIdentifier di = PathUtils.fromPath(path, "file");
+    DatasetIdentifier di = PathUtils.fromPath(path, DEFAULT_SCHEME);
+
     return di.withSymlink(
         identifier.toString(),
         StringUtils.substringBeforeLast(
-            di.getName(), File.separator), // parent location from a name becomes a namespace
+            uri.toString(), File.separator), // parent location from a name becomes a namespace
         DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @SneakyThrows
+  private static URI prepareUriFromPath(Path path) {
+    URI uri = path.toUri();
+
+    if (uri.getPath() != null
+        && uri.getPath().startsWith(DEFAULT_SEPARATOR)
+        && uri.getScheme() == null) {
+      uri = new URI(DEFAULT_SCHEME, null, uri.getPath(), null, null);
+    }
+
+    return uri;
   }
 
   private String getDefaultTablePath(SparkSession session, Identifier identifier) {

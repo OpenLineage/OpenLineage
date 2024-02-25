@@ -11,28 +11,27 @@ import static org.junit.Assert.assertEquals;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.execution.command.AlterTableAddPartitionCommand;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import scala.Option;
 import scala.Tuple2;
 import scala.collection.immutable.Map;
 
-@Tag("nonParallelTest")
 class AlterTableAddPartitionCommandVisitorTest {
 
   private static final String TABLE_5 = "table5";
-  SparkSession session;
+  private static SparkSession session;
   AlterTableAddPartitionCommandVisitor visitor;
   String database;
 
@@ -50,26 +49,33 @@ class AlterTableAddPartitionCommandVisitorTest {
 
   @BeforeAll
   @SneakyThrows
-  public static void beforeAll() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+  static void beforeAll() {
+    Path derbyHomeBase = Paths.get(System.getProperty("derby.system.home.base"));
+    System.setProperty(
+        "derby.system.home",
+        derbyHomeBase
+            .resolve(AlterTableAddPartitionCommandVisitorTest.class.getSimpleName())
+            .toString());
+
+    session =
+        SparkSession.builder()
+            .config("spark.sql.warehouse.dir", System.getProperty("spark.sql.warehouse.dir"))
+            .config("spark.sql.catalogImplementation", "hive")
+            .config("spark.ui.enabled", false)
+            .enableHiveSupport()
+            .master("local")
+            .getOrCreate();
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    session.stop();
+    System.clearProperty("derby.system.home");
   }
 
   @BeforeEach
   public void setup() {
-    session =
-        SparkSession.builder()
-            .config("spark.sql.warehouse.dir", "/tmp/warehouse")
-            .config("spark.sql.catalogImplementation", "hive")
-            .enableHiveSupport()
-            .master("local")
-            .getOrCreate();
-
     dropTables();
     session.sql(
         "CREATE TABLE `table5` (col2 varchar(31)) PARTITIONED BY (\n"

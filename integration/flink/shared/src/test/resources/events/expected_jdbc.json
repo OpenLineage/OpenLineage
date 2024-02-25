@@ -1,0 +1,15 @@
+{
+  "eventType" : "START",
+  "job" : {
+    "namespace" : "flink_job_namespace",
+    "name": "flink_examples_jdbc"
+  },
+  "inputs": [{
+    "namespace": "jdbc:postgresql://postgres:5432/postgres",
+    "name": "source_event"
+  }],
+  "outputs" : [{
+    "namespace" : "jdbc:postgresql://postgres:5432/postgres",
+    "name" : "sink_event"
+  }]
+}

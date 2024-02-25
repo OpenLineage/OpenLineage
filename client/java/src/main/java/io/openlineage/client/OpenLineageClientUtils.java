@@ -58,7 +58,7 @@ public final class OpenLineageClientUtils {
    *
    * @param disableFacets
    */
-  public static void configureObjectMapper(String[] disableFacets) {
+  public static void configureObjectMapper(String... disableFacets) {
     if (disableFacets == null) {
       return;
     }

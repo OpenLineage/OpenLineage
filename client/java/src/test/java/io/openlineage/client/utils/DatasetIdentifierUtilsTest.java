@@ -14,7 +14,7 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-public class DatasetIdentifierUtilsTest {
+class DatasetIdentifierUtilsTest {
 
   private static final String HOME_TEST = "/home/test";
   private static final String FILE = "file";

@@ -37,54 +37,47 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.mockserver.configuration.Configuration;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
-import org.slf4j.event.Level;
 
 @Tag("integration-test")
 @Tag("iceberg")
 @Slf4j
 public class SparkIcebergIntegrationTest {
+  private static final int MOCK_SERVER_PORT = 1084;
 
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
-  private static final int MOCKSERVER_PORT = 1081;
-
   private static ClientAndServer mockServer;
-
-  static SparkSession spark;
+  private static SparkSession spark;
 
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
     FileUtils.deleteDirectory(new File("/tmp/iceberg/"));
-    Configuration configuration = new Configuration();
-    configuration.logLevel(Level.ERROR);
-    mockServer = ClientAndServer.startClientAndServer(configuration, MOCKSERVER_PORT);
-    mockServer
-        .when(request("/api/v1/lineage"))
-        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
+    mockServer = MockServerUtils.createAndConfigureMockServer(MOCK_SERVER_PORT);
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
-    mockServer.stop();
+    MockServerUtils.stopMockServer(mockServer);
   }
 
   @BeforeEach
   @SneakyThrows
   public void beforeEach() {
+    MockServerUtils.clearRequests(mockServer);
     spark =
         SparkSession.builder()
             .master("local[*]")
             .appName("IcebergIntegrationTest")
             .config("spark.driver.host", LOCAL_IP)
             .config("spark.driver.bindAddress", LOCAL_IP)
+            .config("spark.ui.enabled", false)
             .config("spark.sql.shuffle.partitions", 1)
             .config("spark.sql.warehouse.dir", "file:/tmp/iceberg/")
             .config("spark.driver.extraJavaOptions", "-Dderby.system.home=/tmp/iceberg")
@@ -106,8 +99,6 @@ public class SparkIcebergIntegrationTest {
                 "spark.openlineage.dataset.removePath.pattern",
                 "(.*)(?<remove>\\_666)") // removes _666 from dataset name
             .getOrCreate();
-
-    spark.sparkContext().setLogLevel("WARN");
   }
 
   @Test

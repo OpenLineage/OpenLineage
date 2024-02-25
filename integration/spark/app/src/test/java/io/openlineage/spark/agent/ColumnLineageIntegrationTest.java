@@ -5,8 +5,6 @@
 
 package io.openlineage.spark.agent;
 
-import static org.mockserver.model.HttpRequest.request;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,10 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
-import org.mockserver.configuration.Configuration;
 import org.mockserver.integration.ClientAndServer;
-import org.slf4j.event.Level;
-import org.testcontainers.containers.Network;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -44,16 +40,14 @@ public class ColumnLineageIntegrationTest {
   private static final String database = "test";
   private static final String username = "test";
   private static final String password = "test";
-  private static String databaseUrl;
-  private static Network network = Network.newNetwork();
-  private static SparkSession spark;
   public static final int POSTGRES_PORT = 5432;
-  private static final int MOCKSERVER_PORT = 1083;
-
+  private static final int MOCKSERVER_PORT = 2000;
+  private static String databaseUrl;
+  private static SparkSession spark;
   private static int mappedPort;
   private static ClientAndServer mockServer;
 
-  @Container private static PostgreSQLContainer metastoreContainer;
+  @Container private static final PostgreSQLContainer<?> metastoreContainer;
 
   static {
     metastoreContainer =
@@ -64,7 +58,8 @@ public class ColumnLineageIntegrationTest {
             .withExposedPorts(POSTGRES_PORT)
             .withFileSystemBind(
                 "src/test/resources/column_lineage/init.sql",
-                "/docker-entrypoint-initdb.d/init.sql");
+                "/docker-entrypoint-initdb.d/init.sql",
+                BindMode.READ_ONLY);
   }
 
   @SneakyThrows
@@ -72,28 +67,31 @@ public class ColumnLineageIntegrationTest {
   public static void setup() {
     metastoreContainer.start();
     mappedPort = metastoreContainer.getMappedPort(MetastoreTestUtils.POSTGRES_PORT);
-    Configuration configuration = new Configuration();
-    configuration.logLevel(Level.ERROR);
-    mockServer = ClientAndServer.startClientAndServer(configuration, MOCKSERVER_PORT);
-    mockServer
-        .when(request("/api/v1/lineage"))
-        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
+
+    mockServer = MockServerUtils.createAndConfigureMockServer(MOCKSERVER_PORT);
+
     spark = getSparkSession();
     Arrays.asList("v2_source_1", "v2_source_2")
         .forEach(e -> spark.sql("drop table if exists " + e));
     getIcebergTable(spark, 1);
     getIcebergTable(spark, 2);
+
     databaseUrl = String.format("jdbc:postgresql://localhost:%s/%s", mappedPort, database);
+  }
+
+  @AfterAll
+  public static void tearDown() {
+    Arrays.asList("v2_source_1", "v2_source_2")
+        .forEach(e -> spark.sql("drop table if exists " + e));
+    metastoreContainer.stop();
+    MockServerUtils.stopMockServer(mockServer);
+    spark.close();
   }
 
   @SneakyThrows
   @BeforeEach
   public void reset() {
-    mockServer.reset();
-    mockServer
-        .when(request("/api/v1/lineage"))
-        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
-    Thread.sleep(1000);
+    MockServerUtils.clearRequests(mockServer);
   }
 
   @Test
@@ -152,15 +150,6 @@ public class ColumnLineageIntegrationTest {
     MockServerUtils.verifyEvents(mockServer, "columnLineageSingleInputComplete.json");
   }
 
-  @AfterAll
-  public static void tearDown() {
-    Arrays.asList("v2_source_1", "v2_source_2")
-        .forEach(e -> spark.sql("drop table if exists " + e));
-    metastoreContainer.stop();
-    mockServer.stop();
-    spark.close();
-  }
-
   private static SparkSession getSparkSession() {
     return SparkSession.builder()
         .master("local[*]")
@@ -173,7 +162,7 @@ public class ColumnLineageIntegrationTest {
         .config("spark.openlineage.transport.type", "http")
         .config(
             "spark.openlineage.transport.url",
-            "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/default")
+            "http://localhost:" + MOCKSERVER_PORT + "/api/v1/lineage")
         .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
         .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
         .config("spark.sql.catalog.spark_catalog", "org.apache.iceberg.spark.SparkCatalog")

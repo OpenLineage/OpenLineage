@@ -25,7 +25,7 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/ctas_load",
+            "namespace": "file:/tmp/ctas_load",
             "name": "default.tbl1",
             "type": "TABLE"
           }

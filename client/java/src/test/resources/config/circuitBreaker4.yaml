@@ -1,0 +1,6 @@
+transport:
+  type: console
+circuitBreaker:
+  type: simpleMemory
+  memoryThreshold: 13
+  circuitCheckIntervalInMillis: 200

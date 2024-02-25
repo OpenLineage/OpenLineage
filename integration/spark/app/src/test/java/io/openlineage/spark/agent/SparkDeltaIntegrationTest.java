@@ -41,62 +41,52 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.mockserver.configuration.Configuration;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.MatchType;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.RegexBody;
-import org.slf4j.event.Level;
 
 @Tag("integration-test")
 @Tag("delta")
 @Slf4j
 public class SparkDeltaIntegrationTest {
-
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
-  private static final int MOCKSERVER_PORT = 1082;
-
+  private static final int MOCK_SERVER_PORT = 1082;
+  private static SparkSession spark;
   private static ClientAndServer mockServer;
-
-  static SparkSession spark;
 
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
+    mockServer = MockServerUtils.createAndConfigureMockServer(MOCK_SERVER_PORT);
     FileUtils.deleteDirectory(new File("/tmp/delta/"));
-    Configuration configuration = new Configuration();
-    configuration.logLevel(Level.ERROR);
-    mockServer = ClientAndServer.startClientAndServer(configuration, MOCKSERVER_PORT);
-    mockServer
-        .when(request("/api/v1/lineage"))
-        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
-    mockServer.stop();
+    MockServerUtils.stopMockServer(mockServer);
   }
 
   @BeforeEach
   @SneakyThrows
   public void beforeEach() {
-    mockServer
-        .when(request("/api/v1/lineage"))
-        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
+    MockServerUtils.clearRequests(mockServer);
+    System.setProperty("derby.system.home", "/tmp/delta/derby");
+
     spark =
         SparkSession.builder()
             .master("local[*]")
             .appName("DeltaIntegrationTest")
             .config("spark.driver.host", LOCAL_IP)
             .config("spark.driver.bindAddress", LOCAL_IP)
+            .config("spark.ui.enabled", false)
             .config("spark.sql.shuffle.partitions", 1)
             .config("spark.sql.warehouse.dir", "file:/tmp/delta/")
-            .config("spark.driver.extraJavaOptions", "-Dderby.system.home=/tmp/delta/derby")
             .config("spark.openlineage.transport.type", "http")
             .config(
                 "spark.openlineage.transport.url",
@@ -112,6 +102,7 @@ public class SparkDeltaIntegrationTest {
                 "org.apache.spark.sql.delta.catalog.DeltaCatalog")
             .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
             .getOrCreate();
+
     FileSystem.get(spark.sparkContext().hadoopConfiguration())
         .delete(new Path("/tmp/delta/"), true);
   }

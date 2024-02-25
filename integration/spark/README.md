@@ -4,21 +4,43 @@ The OpenLineage Spark Agent uses jvm instrumentation to emit OpenLineage metadat
 
 ## Installation
 
+### Version 1.8.0 or earlier
+
 Maven:
 
 ```xml
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-spark</artifactId>
-    <version>1.8.0</version>
+    <version>1.9.0</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-spark:1.8.0'
+implementation("io.openlineage:openlineage-spark:1.9.0${OPEN_LINEAGE_VERSION}")
 ```
+
+### Version 1.9.0 or later
+
+Maven:
+
+```xml
+<dependency>
+    <groupId>io.openlineage</groupId>
+    <artifactId>openlineage-spark_${SCALA_BINARY_VERSION}</artifactId>
+    <version>1.9.0</version>
+</dependency>
+```
+
+or Gradle:
+
+```groovy
+implementation("io.openlineage:openlineage-spark_${SCALA_BINARY_VERSION}:${OPEN_LINEAGE_VERSION}")
+```
+
+**Replace `${SCALA_BINARY_VERSION}` with the appropriate Scala version, e.g., `2.12` or `2.13`.**
 
 ## Getting started
 
@@ -50,7 +72,7 @@ from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder.master('local')
          .appName('sample_spark')
-         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:1.8.0')
+         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:1.9.0')
          .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
          .config('spark.openlineage.transport.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
          .getOrCreate())
@@ -66,7 +88,7 @@ container):
 ```python
 from pyspark.sql import SparkSession
 
-file = "/home/jovyan/openlineage/libs/openlineage-spark-1.8.0.jar"
+file = "/home/jovyan/openlineage/libs/openlineage-spark-1.9.0.jar"
 
 spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .config('spark.jars', file)
@@ -107,6 +129,7 @@ Parameters configuring the Spark integration
 | spark.openlineage.jobName.appendDatasetName           | Decides whether output dataset name should be appended to job name. By default `true`.                                                                                             | false                               |
 | spark.openlineage.jobName.replaceDotWithUnderscore    | Replaces dots in job name with underscore. Can be used to mimic legacy behaviour on Databricks platform. By default `false`.                                                       | false                               |
 | spark.openlineage.debugFacet                          | Determines whether debug facet shall be generated and included within the event. Set `enabled` to turn it on. By default, facet is disabled.                                       | enabled                             |
+| spark.openlineage.circuitBreaker.*                    | Please refer to [client java](https://github.com/OpenLineage/OpenLineage/blob/main/client/java/README.md) **Circuit Breakers** section for more details.                           |                              |
 
 ### HTTP
 

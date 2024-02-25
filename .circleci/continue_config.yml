@@ -169,12 +169,13 @@ jobs:
           ./gradlew --no-daemon --console=plain publishToMavenLocal
           cd -
           # Publish *.jar
-          ./gradlew --no-daemon --console=plain publish
+          ./gradlew --no-daemon --console=plain clean publish -Pscala.binary.version=2.12
+          ./gradlew --no-daemon --console=plain clean publish -Pscala.binary.version=2.13
       - store_artifacts:
           path: ./build/libs
           destination: spark-client-artifacts
 
-  build-integration-spark:
+  build-integration-spark-scala-2_12:
     parameters:
       spark-version:
         type: string
@@ -199,13 +200,13 @@ jobs:
       - run: |
           sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
           sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-      - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pspark.version=<< parameters.spark-version >>
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.12
       - run:
           when: on_fail
           command: cat build/test-results/test/TEST-*.xml
-      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
-      - run: ./gradlew --no-daemon --console=plain --info check -x test -Pspark.version=<< parameters.spark-version >>
-      - run: ./gradlew --console=plain javadoc
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.12
+      - run: ./gradlew --no-daemon --console=plain --info check -x test -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.12
+      - run: ./gradlew --console=plain javadoc -Pscala.binary.version=2.12
       - store_test_results:
           path: build/test-results/test
       - store_artifacts:
@@ -218,6 +219,52 @@ jobs:
           key: v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.gradle
+
+  build-integration-spark-scala-2_13:
+    parameters:
+      spark-version:
+        type: string
+    working_directory: ~/openlineage/integration/spark
+    machine:
+      image: ubuntu-2004:current
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - restore_cache:
+          keys:
+            - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-integration-spark-{{ .Branch }}
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
+      - run: |
+          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+          sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.13
+      - run:
+          when: on_fail
+          command: cat build/test-results/test/TEST-*.xml
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.13
+      - run: ./gradlew --no-daemon --console=plain --info check -x test -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.13
+      - run: ./gradlew --console=plain javadoc -Pscala.binary.version=2.13
+      - store_test_results:
+          path: build/test-results/test
+      - store_artifacts:
+          path: build/reports/tests/test
+          destination: test-report
+      - store_artifacts:
+          path: build/reports/tests/pmd
+          destination: pmd-report
+      - save_cache:
+          key: v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
 
   release-integration-flink:
     working_directory: ~/openlineage/integration/flink
@@ -271,6 +318,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: (cd ./../../client/java/ && ./gradlew --no-daemon --console=plain --stacktrace publishToMavenLocal)
+      - run: (cd ./../../integration/sql/iface-java && ./gradlew --no-daemon --console=plain --stacktrace publishToMavenLocal)
       - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail
@@ -278,9 +326,9 @@ jobs:
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport
       - run: ./gradlew --console=plain javadoc
       - store_test_results:
-          path: build/test-results/test
+          path: app/build/test-results/test
       - store_artifacts:
-          path: build/reports/tests/test
+          path: app/build/reports/tests/test
           destination: test-report
       - save_cache:
           key: v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
@@ -465,7 +513,7 @@ jobs:
             - ./dist/*.whl
             - ./dist/*.tar.gz
 
-  integration-test-integration-spark:
+  integration-test-integration-spark-scala-2_12:
     parameters:
       spark-version:
         type: string
@@ -494,7 +542,47 @@ jobs:
           sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
           sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
       - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.12
-      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.12
+      - store_test_results:
+          path: app/build/test-results/integrationTest
+      - store_artifacts:
+          path: app/build/reports/tests/integrationTest
+          destination: test-report
+      - save_cache:
+          key: v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  integration-test-integration-spark-scala-2_13:
+    parameters:
+      spark-version:
+        type: string
+    working_directory: ~/openlineage/integration/spark
+    machine:
+      image: ubuntu-2004:current
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+    steps:
+      - *checkout_project_root
+      - gcp-cli/install
+      - gcp-cli/initialize
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - run: mkdir -p app/build/gcloud && echo $GCLOUD_SERVICE_KEY > app/build/gcloud/gcloud-service-key.json && chmod 644 app/build/gcloud/gcloud-service-key.json
+      - restore_cache:
+          keys:
+            - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-integration-spark-{{ .Branch }}
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
+      - run: |
+          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+          sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
+      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.13
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.13
       - store_test_results:
           path: app/build/test-results/integrationTest
       - store_artifacts:
@@ -569,17 +657,18 @@ jobs:
             - v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-integration-flink-{{ .Branch }}
       - run: (cd ./../../client/java/ && ./gradlew --no-daemon --console=plain --stacktrace publishToMavenLocal)
+      - run: (cd ./../../integration/sql/iface-java && ./gradlew --no-daemon --console=plain --stacktrace publishToMavenLocal)
       - run: chmod -R 777 data/iceberg/db
       - run: ./gradlew --console=plain examples:stateful:build -Pflink.version=<< parameters.flink-version >>
       - run: ./gradlew --no-daemon --console=plain integrationTest --i -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail
-          command: cat build/test-results/integrationTest/TEST-*.xml
+          command: cat app/build/test-results/integrationTest/TEST-*.xml
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport
       - store_test_results:
-          path: build/test-results/integrationTest
+          path: app/build/test-results/integrationTest
       - store_artifacts:
-          path: build/reports/tests/integrationTest
+          path: app/build/reports/tests/integrationTest
           destination: test-report
       - save_cache:
           key: v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}

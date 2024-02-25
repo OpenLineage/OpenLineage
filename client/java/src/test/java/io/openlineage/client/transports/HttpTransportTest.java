@@ -44,6 +44,7 @@ import org.mockito.ArgumentCaptor;
 class HttpTransportTest {
 
   @Test
+  @SuppressWarnings("PMD")
   void transportCreatedWithHttpConfig()
       throws URISyntaxException, NoSuchFieldException, IllegalAccessException {
     HttpConfig httpConfig = new HttpConfig();

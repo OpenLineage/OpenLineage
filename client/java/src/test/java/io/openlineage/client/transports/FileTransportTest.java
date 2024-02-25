@@ -16,7 +16,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class FileTransportTest {
+class FileTransportTest {
 
   private static final String FILE_LOCATION_DIR = "/tmp/openlineage_transport_test";
   private static final String FILE_LOCATION = FILE_LOCATION_DIR + "/events.log";
@@ -36,7 +36,7 @@ public class FileTransportTest {
 
   @Test
   @SneakyThrows
-  public void transportAppendsToFile() {
+  void transportAppendsToFile() {
     transport.emit(
         new OpenLineage(URI.create("http://test.producer"))
             .newRunEventBuilder()
@@ -50,7 +50,7 @@ public class FileTransportTest {
 
   @Test
   @SneakyThrows
-  public void transportCannotAppendToFileWhenFileNotWriteable() {
+  void transportCannotAppendToFileWhenFileNotWriteable() {
     fileConfig = new FileConfig();
     fileConfig.setLocation(FILE_LOCATION);
     transport = new FileTransport(fileConfig);
@@ -68,7 +68,7 @@ public class FileTransportTest {
 
   @Test
   @SneakyThrows
-  public void multipleEventsAreSeparatedByNewline() {
+  void multipleEventsAreSeparatedByNewline() {
     transport.emit("{some-event-1}");
     transport.emit("{some-event-2}");
 
@@ -81,7 +81,7 @@ public class FileTransportTest {
 
   @Test
   @SneakyThrows
-  public void newlinesAreRemovedFromWrittenEvents() {
+  void newlinesAreRemovedFromWrittenEvents() {
     transport.emit("some-event-\n-same-event");
     List<String> lines = FileUtils.readLines(new File(FILE_LOCATION));
 

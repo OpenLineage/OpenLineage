@@ -1,25 +1,59 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.9.0...HEAD)
 
-
+## [1.9.0](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...1.9.0) - 2024-02-23
 ### Added
-* **FLINK: bump default Flink version to 1.18.1 (https://github.com/OpenLineage/OpenLineage/pull/2418) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
-  *Support Flink 1.18.1 as it is newly released 
-* **FLINK: support Flink Kafka dynamic source and sink (https://github.com/OpenLineage/OpenLineage/pull/2417) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
-  *Support Flink Kafka Table Connector use cases for topic and schema extraction
-* **Spark: integration now emits intermediate, application level events wrapping entire job execution** [`#1672`](https://github.com/OpenLineage/OpenLineage/issues/1672) [@mobuchowski](https://github.com/mobuchowski)  
-    *Previously, Spark event model described only single actions, potentially linked only to some parent run.
-* **Flink: support multi topic Kafka Sink.** [`#2372`](https://github.com/OpenLineage/OpenLineage/pull/2372) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Support multi topic kafka sinks. Limitations: `recordSerializer` need to implement `KafkaTopicsDescriptor`. Please refer to [limitations](https://openlineage.io/docs/integrations/flink/#limitations) sections in documentation.*
+* **Airflow: add support for `JobTypeJobFacet` properties** [`#2412`](https://github.com/OpenLineage/OpenLineage/pull/2412) [@mattiabertorello](https://github.com/mattiabertorello)  
+    *Adds support for Job type properties within the Airflow Job facet.*
+* **dbt: add support for `JobTypeJobFacet` properties** [`#2411`](https://github.com/OpenLineage/OpenLineage/pull/2411) [@mattiabertorello](https://github.com/mattiabertorello)  
+    *Support Job type properties within the DBT Job facet.*
+* **Flink: support Flink Kafka dynamic source and sink** (https://github.com/OpenLineage/OpenLineage/pull/2417) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Adds support for Flink Kafka Table Connector use cases for topic and schema extraction.*
+* **Flink: support multi-topic Kafka Sink** [`#2372`](https://github.com/OpenLineage/OpenLineage/pull/2372) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds support for multi-topic Kafka sinks. Limitations: `recordSerializer` needs to implement `KafkaTopicsDescriptor`. Please refer to the [limitations](https://openlineage.io/docs/integrations/flink/#limitations) sections in documentation.*
+* **Flink: support lineage for JDBC connector** [`#2436`](https://github.com/OpenLineage/OpenLineage/pull/2436) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Adds support for use cases that employ this connector.*
+* **Java: extend circuit breaker loaded with `ServiceLoader`** [`#2435`](https://github.com/OpenLineage/OpenLineage/pull/2435) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Loads the circuit breaker builder with `ServiceLoader` as an addition to a list of implemented builders available within the existing package.*
+* **Spark: integration now emits intermediate, application level events wrapping entire job execution** [`#2371`](https://github.com/OpenLineage/OpenLineage/pull/2471) [@mobuchowski](https://github.com/mobuchowski)  
+    *Previously, the Spark event model described only single actions, potentially linked only to some parent run. Closes [`#1672`](https://github.com/OpenLineage/OpenLineage/issues/1672).*
 * **Spark: support built-in lineage within `DataSourceV2Relation`** [`#2394`](https://github.com/OpenLineage/OpenLineage/pull/2394) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Enable built-in lineage extraction within from `DataSourceV2Relation` lineage nodes.*
-* **Spark: Add support for `JobTypeJobFacet` properties.** [`#2410`](https://github.com/OpenLineage/OpenLineage/pull/2410) [@mattiabertorello](https://github.com/mattiabertorello)
-  *Support job type properties within the Spark Job facet.*
-* **DBT: Add support for `JobTypeJobFacet` properties.** [`#2411`](https://github.com/OpenLineage/OpenLineage/pull/2411) [@mattiabertorello](https://github.com/mattiabertorello)
-  *Support job type properties within the DBT Job facet.*
+    *Enables built-in lineage extraction within from `DataSourceV2Relation` lineage nodes.*
+* **Spark: add support for `JobTypeJobFacet` properties** [`#2410`](https://github.com/OpenLineage/OpenLineage/pull/2410) [@mattiabertorello](https://github.com/mattiabertorello)  
+    *Adds support for Job type properties within the Spark Job facet.*
 * **Spark: stop sending  `spark.LogicalPlan` facet by default** [`#2433`](https://github.com/OpenLineage/OpenLineage/pull/2433) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *`spark.LogicalPlan` has been added to default value of `spark.openlineage.facets.disabled`.*
+    *`spark.LogicalPlan` has been added to default value of `spark.openlineage.facets.disabled`.*
+* **Spark/Flink/Java: circuit breaker** [`#2407`](https://github.com/OpenLineage/OpenLineage/issues/2407) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Introduces a circuit breaker mechanism to prevent effects of over-instrumentation. Implemented within Java client, it serves both the Flink and Spark integration. Read the Java client README for more details.*
+* **Spark: add the capability to publish Scala 2.12 and 2.13 variants of `openlineage-spark`** [`#2446`](https://github.com/OpenLineage/OpenLineage/pull/2446) [@d-m-h](https://github.com/d-m-h)  
+    *Adds the capability to publish Scala 2.12 and 2.13 variants of `openlineage-spark`* 
+
+### Changed
+* **Spark: enable the `app` module to be compiled with Scala 2.12 and Scala 2.13 variants of Apache Spark** (https://github.com/OpenLineage/OpenLineage/pull/2432) [@d-m-h](https://github.com/d-m-h)  
+    *The `spark.binary.version` and `spark.version` properties control which variant to build.*
+* **Spark: enable Scala 2.13 support in the `app` module** [`#2432`](https://github.com/OpenLineage/OpenLineage/pull/2432) [@d-m-h](https://github.com/d-m-h)  
+    *Enables the `app` module to be built using both Scala 2.12 and Scala 2.13 variants of various Apache Spark versions, and enables the CI/CD pipeline to build and test them.*
+* **Spark: don't fail on exception of `UnknownEntryFacet` creation** [`#2431`](https://github.com/OpenLineage/OpenLineage/pull/2431) [@mobuchowski](https://github.com/mobuchowski)  
+    *Failure to generate `UnknownEntryFacet` was resulting in the event not being sent.*
+* **Spark: move Snowflake code into the vendor projects folders** [`#2405`](https://github.com/OpenLineage/OpenLineage/pull/2405) [@mattiabertorello](https://github.com/mattiabertorello)  
+    *Creates a `vendor` folder to isolate Snowflake-specific code from the main Spark integration, enhancing organization and flexibility.*
+
+### Fixed
+* **Flink: resolve PMD rule violation warnings** [`#2403`](https://github.com/OpenLineage/OpenLineage/pull/2403) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Resolves the PMD rule violation warnings in the Flink integration module.*
+* **Python: fix issue with file config creating additional file** [`#2447`](https://github.com/OpenLineage/OpenLineage/pull/2447) [@kacpermuda](https://github.com/kacpermuda)  
+    *`FileConfig` was creating an additional file when not in append mode. Closes [`#2439`](https://github.com/OpenLineage/OpenLineage/issues/2439).*
+* **Python: fix issue with append option in file config** [`#2441`](https://github.com/OpenLineage/OpenLineage/pull/2441) [@kacpermuda](https://github.com/kacpermuda)  
+    *`FileConfig` was ignoring the append key in YAML config. Closes [`#2440`](https://github.com/OpenLineage/OpenLineage/issues/2440)*
+* **Spark: fix integration catalog symlink without warehouse** [`#2379`](https://github.com/OpenLineage/OpenLineage/pull/2379) [@algorithmy1](https://github.com/algorithmy1)  
+    *In the case of symlinked Glue Catalog Tables, the parsing method was producing dataset names identical to the namespace.*
+* **Flink: fix `IcebergSourceWrapper` for Iceberg connector 1.17** [`#2409`](https://github.com/OpenLineage/OpenLineage/pull/2409) [@ensctom](https://github.com/ensctom)  
+    *In Flink 1.17, the Iceberg `catalogloader` was loading the catalog in the open function, causing the `loadTable` method to throw a `NullPointerException` error.*
+* **Spark: migrate `spark35`, `spark3`, `shared` modules to produce Scala 2.12 and Scala 2.13 variants** [`#2390`](https://github.com/OpenLineage/OpenLineage/pull/2390) [`#2385`](https://github.com/OpenLineage/OpenLineage/pull/2385)[`#2384`](https://github.com/OpenLineage/OpenLineage/pull/2384) [@d-m-h](https://github.com/d-m-h)  
+    *Migrates the three modules to use the refactored Gradle plugins. Also splits some tests into Scala 2.12- and Scala 2.13-specific versions.*
+* **Spark: conform the `spark2` module to the new build process** [`#2391`](https://github.com/OpenLineage/OpenLineage/pull/2391) [@d-m-h](https://github.com/d-m-h)  
+    *Due to a change in the Scala Collections API in Scala 2.13, `NoSuchMethodErrors` were being thrown when running the openlineage-spack connector in an Apache Spark runtime compiled using Scala 2.13.*
 
 ## [1.8.0](https://github.com/OpenLineage/OpenLineage/compare/1.7.0...1.8.0) - 2024-01-19
 
@@ -149,7 +183,7 @@
     *Uses the statsd component that already exists in the Airflow codebase and wraps the section that emits to event with a timer, as well as emitting a counter for exceptions in sending the event.*
 * **Airflow: add columns as schema facet for `airflow.lineage.Table` (if defined)** [`#2138`](https://github.com/OpenLineage/OpenLineage/pull/2138) [@erikalfthan](https://github.com/erikalfthan)  
     *Adds columns (if set) from `airflow.lineage.Table` inlets/outlets to the OpenLineage Dataset.*
-* **DBT: add SQLSERVER to supported dbt profile types** [`#2136`](https://github.com/OpenLineage/OpenLineage/pull/2136) [@erikalfthan](https://github.com/erikalfthan)  
+* **dbt: add SQLSERVER to supported dbt profile types** [`#2136`](https://github.com/OpenLineage/OpenLineage/pull/2136) [@erikalfthan](https://github.com/erikalfthan)  
     *Adds support for dbt-sqlserver, solving [#2129](https://github.com/OpenLineage/OpenLineage/issues/2129).*
 * **Spark: support for latest 3.5** [`2118`](https://github.com/OpenLineage/OpenLineage/pull/2118) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Integration tests are now run on Spark 3.5. Also upgrades 3.3 branch to 3.3.3. Please note that `delta` and `iceberg` are not supported for Spark `3.5` at this time.*

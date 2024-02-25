@@ -24,6 +24,7 @@ import org.apache.spark.sql.internal.StaticSQLConf;
 public class PathUtils {
 
   private static final String DEFAULT_SCHEME = "file";
+  private static final String DEFAULT_SEPARATOR = "/";
   private static Optional<SparkConf> sparkConf = Optional.empty();
 
   public static DatasetIdentifier fromPath(Path path) {
@@ -55,12 +56,16 @@ public class PathUtils {
       CatalogTable catalogTable, Optional<SparkConf> sparkConf) {
 
     DatasetIdentifier di;
+    URI uri;
+
     if (catalogTable.storage() != null && catalogTable.storage().locationUri().isDefined()) {
-      di = PathUtils.fromURI(catalogTable.storage().locationUri().get(), DEFAULT_SCHEME);
+      uri = prepareUriFromLocation(catalogTable);
+      di = PathUtils.fromURI(uri, DEFAULT_SCHEME);
     } else {
       // try to obtain location
       try {
-        di = prepareDatasetIdentifierFromDefaultTablePath(catalogTable);
+        uri = prepareUriFromDefaultTablePath(catalogTable);
+        di = PathUtils.fromURI(uri, DEFAULT_SCHEME);
       } catch (IllegalStateException e) {
         // session inactive - no way to find DatasetProvider
         throw new IllegalArgumentException(
@@ -77,27 +82,46 @@ public class PathUtils {
       return di.withSymlink(
           symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.TABLE);
     } else {
+
       return di.withSymlink(
           nameFromTableIdentifier(catalogTable.identifier()),
-          StringUtils.substringBeforeLast(di.getName(), File.separator),
+          StringUtils.substringBeforeLast(uri.toString(), File.separator),
           DatasetIdentifier.SymlinkType.TABLE);
     }
   }
 
   @SneakyThrows
-  private static DatasetIdentifier prepareDatasetIdentifierFromDefaultTablePath(
-      CatalogTable catalogTable) {
+  private static URI prepareUriFromDefaultTablePath(CatalogTable catalogTable) {
     URI uri =
         SparkSession.active().sessionState().catalog().defaultTablePath(catalogTable.identifier());
 
-    return PathUtils.fromURI(uri);
+    return uri;
+  }
+
+  @SneakyThrows
+  private static URI prepareUriFromLocation(CatalogTable catalogTable) {
+    URI uri = catalogTable.storage().locationUri().get();
+
+    if (uri.getPath() != null
+        && uri.getPath().startsWith(DEFAULT_SEPARATOR)
+        && uri.getScheme() == null) {
+      uri = new URI(DEFAULT_SCHEME, null, uri.getPath(), null, null);
+    } else if (uri.getScheme() != null && uri.getScheme().equals(DEFAULT_SCHEME)) {
+      // Normalize the URI if it is already a file scheme but has three slashes
+      String path = uri.getPath();
+      if (uri.toString().startsWith(DEFAULT_SCHEME + ":///")) {
+        uri = new URI(DEFAULT_SCHEME, null, path, null, null);
+      }
+    }
+
+    return uri;
   }
 
   @SneakyThrows
   private static DatasetIdentifier prepareHiveDatasetIdentifier(
       CatalogTable catalogTable, URI metastoreUri) {
     String qualifiedName = nameFromTableIdentifier(catalogTable.identifier());
-    if (!qualifiedName.startsWith("/")) {
+    if (!qualifiedName.startsWith(DEFAULT_SEPARATOR)) {
       qualifiedName = String.format("/%s", qualifiedName);
     }
     return PathUtils.fromPath(
