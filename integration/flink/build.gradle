@@ -129,6 +129,26 @@ jacocoTestReport {
     }
 }
 
+def validateReleaseVersionProperty = tasks.register("validateReleaseVersionProperty") {
+    group = "verification"
+    description = "Check if the isReleaseVersion property exists and is a boolean"
+    doLast {
+        if (project.hasProperty("isReleaseVersion")) {
+            if (project.property("isReleaseVersion") instanceof Boolean) {
+                logger.lifecycle("isReleaseVersion property exists and is a boolean")
+            } else {
+                throw new GradleException("isReleaseVersion property exists but is not a boolean")
+            }
+        } else {
+            throw new GradleException("isReleaseVersion property does not exist")
+        }
+    }
+}
+
+tasks.named("build").configure {
+    dependsOn(validateReleaseVersionProperty)
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
