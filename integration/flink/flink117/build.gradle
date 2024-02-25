@@ -83,7 +83,7 @@ ext {
     assertjVersion = '3.25.3'
     junit5Version = '5.10.2'
     mockitoVersion = '5.2.0'
-    jdbcVersion = '3.1.1-1.17'
+    jdbcVersion = '3.1.2-1.18'
 }
 
 dependencies {
