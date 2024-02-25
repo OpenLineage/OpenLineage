@@ -34,11 +34,11 @@ pmdMain {
 group 'io.openlineage.flink'
 
 repositories {
-    mavenLocal()
     mavenCentral()
     maven {
         url "https://packages.confluent.io/maven/"
     }
+    mavenLocal()
 }
 
 jar.enabled = false
