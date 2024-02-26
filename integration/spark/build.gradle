@@ -31,6 +31,20 @@ dependencies {
     implementation(project(path: ":snowflake"))
 }
 
+task sourceJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+javadoc {
+    options.tags = ["apiNote"]
+}
+
 def reportsDir = "${buildDir}/reports";
 def coverageDir = "${reportsDir}/coverage";
 
@@ -66,6 +80,9 @@ publishing {
             artifactId = "openlineage-spark_${scala}"
 
             from components.java
+
+            artifact sourceJar
+            artifact javadocJar
 
             pom {
                 name = "openlineage-spark_${scala}"
