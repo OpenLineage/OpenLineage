@@ -12,14 +12,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-spark</artifactId>
-    <version>1.9.0</version>
+    <version>1.9.1</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation("io.openlineage:openlineage-spark:1.9.0${OPEN_LINEAGE_VERSION}")
+implementation("io.openlineage:openlineage-spark:1.9.1${OPEN_LINEAGE_VERSION}")
 ```
 
 ### Version 1.9.0 or later
@@ -30,7 +30,7 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-spark_${SCALA_BINARY_VERSION}</artifactId>
-    <version>1.9.0</version>
+    <version>1.9.1</version>
 </dependency>
 ```
 
@@ -72,7 +72,7 @@ from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder.master('local')
          .appName('sample_spark')
-         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:1.9.0')
+         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:1.9.1')
          .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
          .config('spark.openlineage.transport.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
          .getOrCreate())
@@ -88,7 +88,7 @@ container):
 ```python
 from pyspark.sql import SparkSession
 
-file = "/home/jovyan/openlineage/libs/openlineage-spark-1.9.0.jar"
+file = "/home/jovyan/openlineage/libs/openlineage-spark-1.9.1.jar"
 
 spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .config('spark.jars', file)
