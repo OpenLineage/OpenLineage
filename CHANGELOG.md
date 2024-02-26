@@ -1,8 +1,6 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.9.0...HEAD)
-* **Flink: add common config gradle plugin** (https://github.com/OpenLineage/OpenLineage/pull/2461) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
-  *Add common config gradle plugin to simplify gradle files of Flink submodules.*
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...HEAD)
 
 ## [1.9.1](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...1.9.1) - 2024-02-26
 ### Added
@@ -16,6 +14,8 @@
     *Adds support for multi-topic Kafka sinks. Limitations: `recordSerializer` needs to implement `KafkaTopicsDescriptor`. Please refer to the [limitations](https://openlineage.io/docs/integrations/flink/#limitations) sections in documentation.*
 * **Flink: support lineage for JDBC connector** [`#2436`](https://github.com/OpenLineage/OpenLineage/pull/2436) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
     *Adds support for use cases that employ this connector.*
+* **Flink: add common config gradle plugin** (https://github.com/OpenLineage/OpenLineage/pull/2461) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Add common config gradle plugin to simplify gradle files of Flink submodules.*
 * **Java: extend circuit breaker loaded with `ServiceLoader`** [`#2435`](https://github.com/OpenLineage/OpenLineage/pull/2435) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Loads the circuit breaker builder with `ServiceLoader` as an addition to a list of implemented builders available within the existing package.*
 * **Spark: integration now emits intermediate, application level events wrapping entire job execution** [`#2371`](https://github.com/OpenLineage/OpenLineage/pull/2471) [@mobuchowski](https://github.com/mobuchowski)  
