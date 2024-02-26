@@ -1,12 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.9.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...HEAD)
 
-### Fixed
-* **Flink: Added the 'isReleaseVersion' property back to the build, enabling the Flink integration to be release** [`#2468`](https://github.com/OpenLineage/OpenLineage/pull/2468) [@d-m-h](https://github.com/d-m-h)  
-    *The 'isReleaseVersion' property was removed from the build, preventing the Flink integration from being released.*
-
-## [1.9.0](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...1.9.0) - 2024-02-23
+## [1.9.1](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...1.9.1) - 2024-02-26
 ### Added
 * **Airflow: add support for `JobTypeJobFacet` properties** [`#2412`](https://github.com/OpenLineage/OpenLineage/pull/2412) [@mattiabertorello](https://github.com/mattiabertorello)  
     *Adds support for Job type properties within the Airflow Job facet.*
@@ -46,6 +42,8 @@
 ### Fixed
 * **Flink: resolve PMD rule violation warnings** [`#2403`](https://github.com/OpenLineage/OpenLineage/pull/2403) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
     *Resolves the PMD rule violation warnings in the Flink integration module.*
+* **Flink: Added the 'isReleaseVersion' property back to the build, enabling the Flink integration to be release** [`#2468`](https://github.com/OpenLineage/OpenLineage/pull/2468) [@d-m-h](https://github.com/d-m-h)  
+    *The 'isReleaseVersion' property was removed from the build, preventing the Flink integration from being released.*
 * **Python: fix issue with file config creating additional file** [`#2447`](https://github.com/OpenLineage/OpenLineage/pull/2447) [@kacpermuda](https://github.com/kacpermuda)  
     *`FileConfig` was creating an additional file when not in append mode. Closes [`#2439`](https://github.com/OpenLineage/OpenLineage/issues/2439).*
 * **Python: fix issue with append option in file config** [`#2441`](https://github.com/OpenLineage/OpenLineage/pull/2441) [@kacpermuda](https://github.com/kacpermuda)  
