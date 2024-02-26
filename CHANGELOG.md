@@ -1,6 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.9.0...HEAD)
+* **Flink: add common config gradle plugin** (https://github.com/OpenLineage/OpenLineage/pull/2461) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+  *Add common config gradle plugin to simplify gradle files of Flink submodules.*
 
 ## [1.9.1](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...1.9.1) - 2024-02-26
 ### Added

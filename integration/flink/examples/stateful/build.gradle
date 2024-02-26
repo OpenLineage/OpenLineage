@@ -1,47 +1,15 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'signing'
     id 'jacoco'
-    id "com.adarshr.test-logger" version "3.2.0"
-    id 'com.diffplug.spotless' version '6.25.0'
-    id "com.github.johnrengelman.shadow" version "8.1.1"
-    id "pmd"
+    id "com.adarshr.test-logger"
+    id 'com.diffplug.spotless'
+    id "com.github.johnrengelman.shadow"
+    id 'io.openlineage.common-config'
     id "com.github.davidmc24.gradle.plugin.avro" version "1.9.1"
 }
 
-pmd {
-    consoleOutput = true
-    toolVersion = "6.46.0"
-    rulesMinimumPriority = 5
-    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
-    ruleSets = []
-    ignoreFailures = true
-}
-
-pmdMain {
-    dependsOn shadowJar
-    excludes = [
-        '**/InputEvent.java',
-        '**/OutputEvent.java',
-        '**/Counter.java',
-    ]
-    reports {
-        html.required = true
-    }
-}
-
 group 'io.openlineage.flink'
-
-repositories {
-    mavenCentral()
-    maven {
-        url "https://packages.confluent.io/maven/"
-    }
-    mavenLocal()
-}
-
-jar.enabled = false
 
 shadowJar {
     zip64 true
@@ -120,22 +88,11 @@ assemble {
 }
 
 spotless {
-    def disallowWildcardImports = {
-        String text = it
-        def regex = ~/import .*\.\*;/
-        def m = regex.matcher(text)
-        if (m.find()) {
-            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
-        }
-    }
     java {
         target project.fileTree(project.rootDir) {
             include 'build/classes/java/main/io/openlineage/flink/**/*.java'
             exclude '**/io/openlineage/flink/avro/**/*.*'
         }
-        googleJavaFormat()
-        removeUnusedImports()
-        custom 'disallowWildcardImports', disallowWildcardImports
     }
 }
 
