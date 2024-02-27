@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...HEAD)
+* **Flink: bump Flink JDBC connector version to 3.1.2-1.18 for Flink 1.18** (https://github.com/OpenLineage/OpenLineage/pull/2472) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+  *Bump Flink JDBC connector version to 3.1.2-1.18 for Flink 1.18.*
 
 ## [1.9.1](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...1.9.1) - 2024-02-26
 ### Added

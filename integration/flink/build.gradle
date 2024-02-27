@@ -30,6 +30,7 @@ dependencies {
     implementation(project(path: ":shared"))
     implementation(project(path: ":flink115"))
     implementation(project(path: ":flink117"))
+    implementation(project(path: ":flink118"))
 }
 
 task sourceJar(type: Jar) {

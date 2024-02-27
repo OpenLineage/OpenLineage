@@ -42,6 +42,7 @@ dependencies {
     implementation(project(path: ":shared"))
     implementation(project(path: ":flink115"))
     implementation(project(path: ":flink117"))
+    implementation(project(path: ":flink118"))
     api "io.openlineage:openlineage-java:${project.version}"
 
     compileOnly "org.projectlombok:lombok:${lombokVersion}"

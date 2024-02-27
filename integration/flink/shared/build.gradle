@@ -76,7 +76,7 @@ ext {
             "1.15": ["cassandra": "1.15.4", "kafka": flinkVersion, "jdbc": "1.15.4", "alternativeShort": "1.15"],
             "1.16": ["cassandra": "3.0.0-1.16", "kafka": flinkVersion, "jdbc": "1.16.3", "alternativeShort": "1.16"],
             "1.17": ["cassandra": "3.1.0-1.17", "kafka": flinkVersion, "jdbc": "3.1.1-1.17", "alternativeShort": "1.17"],
-            "1.18": ["cassandra": "3.1.0-1.17", "kafka": "3.0.2-1.18", "jdbc": "3.1.1-1.17", "alternativeShort": "1.17"]
+            "1.18": ["cassandra": "3.1.0-1.17", "kafka": "3.0.2-1.18", "jdbc": "3.1.2-1.18", "alternativeShort": "1.17"]
     ]
 
     versions = versionsMap[flinkVersionShort]
