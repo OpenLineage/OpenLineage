@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,12 +35,15 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 
 class HttpTransportTest {
 
@@ -294,5 +298,39 @@ class HttpTransportTest {
     client.emit(jobEvent());
 
     verify(http, times(1)).execute(any());
+  }
+
+  @Test
+  void testTimeout() {
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
+    config.setTimeout(2.5d); // 2.5 seconds
+
+    Builder builder = mock(Builder.class);
+    try (MockedStatic mocked = mockStatic(RequestConfig.class)) {
+      when(RequestConfig.custom()).thenReturn(builder);
+      when(builder.setConnectTimeout(2500)).thenReturn(builder);
+      when(builder.setConnectionRequestTimeout(2500)).thenReturn(builder);
+      when(builder.setSocketTimeout(2500)).thenReturn(builder);
+
+      new HttpTransport(config);
+    }
+  }
+
+  @Test
+  void testTimeoutInMillis() {
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
+    config.setTimeoutInMillis(3000); // 3 seconds
+
+    Builder builder = mock(Builder.class);
+    try (MockedStatic mocked = mockStatic(RequestConfig.class)) {
+      when(RequestConfig.custom()).thenReturn(builder);
+      when(builder.setConnectTimeout(3000)).thenReturn(builder);
+      when(builder.setConnectionRequestTimeout(3000)).thenReturn(builder);
+      when(builder.setSocketTimeout(3000)).thenReturn(builder);
+
+      new HttpTransport(config);
+    }
   }
 }
