@@ -33,6 +33,10 @@ dependencies = [
 optional-dependencies.kafka = [
   "confluent-kafka>=2.1.1",
 ]
+optional-dependencies.msk-iam = [
+  "aws-msk-iam-sasl-signer-python>=1.0.1",
+  "confluent-kafka>=2.1.1",
+]
 optional-dependencies.test = [
   "covdefaults>=2.3",
   "pytest>=7.3.1",
