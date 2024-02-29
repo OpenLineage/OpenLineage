@@ -316,9 +316,7 @@ jobs:
             - v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-integration-flink-{{ .Branch }}
       - attach_workspace:
-          at: .
-      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --console=plain --stacktrace publishToMavenLocal)
-      - run: (cd ./../../integration/sql/iface-java && ./gradlew --no-daemon --console=plain --stacktrace publishToMavenLocal)
+          at: ~/.m2/repository/io/openlineage/
       - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail
@@ -656,8 +654,8 @@ jobs:
           keys:
             - v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-integration-flink-{{ .Branch }}
-      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --console=plain --stacktrace publishToMavenLocal)
-      - run: (cd ./../../integration/sql/iface-java && ./gradlew --no-daemon --console=plain --stacktrace publishToMavenLocal)
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
       - run: chmod -R 777 data/iceberg/db
       - run: ./gradlew --console=plain examples:stateful:build -Pflink.version=<< parameters.flink-version >>
       - run: ./gradlew --no-daemon --console=plain integrationTest --i -Pflink.version=<< parameters.flink-version >>

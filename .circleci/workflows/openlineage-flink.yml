@@ -6,6 +6,7 @@ workflows:
             parameters:
               flink-version: [ '1.15.4', '1.16.2', '1.17.1', '1.18.1' ]
           requires:
+            - build-integration-sql-java
             - build-client-java
       - integration-test-integration-flink:
           matrix:
