@@ -14,6 +14,12 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
+import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
+import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.utils.AvroSchemaUtils;
+import io.openlineage.flink.utils.ProtobufUtils;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Properties;
@@ -22,6 +28,7 @@ import lombok.SneakyThrows;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericDatumWriter;
+import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.formats.avro.AvroSerializationSchema;
@@ -50,6 +57,8 @@ class KafkaSinkWrapperTest {
   private KafkaSinkWrapper wrapper;
   private KafkaRecordSerializationSchema serializationSchema =
       mock(KafkaRecordSerializationSchema.class);
+  private OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
+  private OpenLineage openLineage = new OpenLineage(mock(URI.class));
 
   @BeforeEach
   @SneakyThrows
@@ -62,7 +71,8 @@ class KafkaSinkWrapperTest {
             .setRecordSerializer(serializationSchema)
             .build();
 
-    wrapper = KafkaSinkWrapper.of(kafkaSink);
+    wrapper = new KafkaSinkWrapper(kafkaSink, openLineageContext);
+    when(openLineageContext.getOpenLineage()).thenReturn(openLineage);
   }
 
   @Test
@@ -101,21 +111,46 @@ class KafkaSinkWrapperTest {
   @Test
   void testGetAvroSchema() {
     try (MockedStatic<WrapperUtils> mockedStatic = mockStatic(WrapperUtils.class)) {
-      RegistryAvroSerializationSchema avroSerializationSchema =
-          mock(RegistryAvroSerializationSchema.class);
-      GenericDatumWriter genericDatumWriter = new GenericDatumWriter(schema);
-      when(WrapperUtils.getFieldValue(
-              serializationSchema.getClass(), serializationSchema, "valueSerializationSchema"))
-          .thenReturn(Optional.of(avroSerializationSchema));
+      try (MockedStatic<AvroSchemaUtils> avroSchemaUtils = mockStatic(AvroSchemaUtils.class)) {
+        RegistryAvroSerializationSchema avroSerializationSchema =
+            mock(RegistryAvroSerializationSchema.class);
+        GenericDatumWriter genericDatumWriter = new GenericDatumWriter(schema);
+        SchemaDatasetFacet schemaDatasetFacet = mock(SchemaDatasetFacet.class);
+        when(WrapperUtils.getFieldValue(
+                serializationSchema.getClass(), serializationSchema, "valueSerializationSchema"))
+            .thenReturn(Optional.of(avroSerializationSchema));
+        when(AvroSchemaUtils.convert(openLineage, schema)).thenReturn(schemaDatasetFacet);
 
-      when(WrapperUtils.invoke(
-              AvroSerializationSchema.class, avroSerializationSchema, "getDatumWriter"))
-          .thenReturn(Optional.of(genericDatumWriter));
+        when(WrapperUtils.invoke(
+                AvroSerializationSchema.class, avroSerializationSchema, "getDatumWriter"))
+            .thenReturn(Optional.of(genericDatumWriter));
 
-      when(WrapperUtils.getFieldValue(GenericDatumWriter.class, genericDatumWriter, "root"))
-          .thenReturn(Optional.of(schema));
+        when(WrapperUtils.getFieldValue(GenericDatumWriter.class, genericDatumWriter, "root"))
+            .thenReturn(Optional.of(schema));
 
-      assertEquals(schema, wrapper.getAvroSchema().get());
+        assertEquals(schemaDatasetFacet, wrapper.getSchemaFacet().get());
+      }
+    }
+  }
+
+  @Test
+  void testGetProtobufSchema() {
+    try (MockedStatic<WrapperUtils> mockedStatic = mockStatic(WrapperUtils.class)) {
+      try (MockedStatic<ProtobufUtils> protoSchemaUtils = mockStatic(ProtobufUtils.class)) {
+        SerializationSchema protobuSerializationSchema = mock(SerializationSchema.class);
+        SchemaDatasetFacet schemaDatasetFacet = mock(SchemaDatasetFacet.class);
+
+        when(WrapperUtils.getFieldValue(
+                serializationSchema.getClass(), serializationSchema, "valueSerializationSchema"))
+            .thenReturn(Optional.of(protobuSerializationSchema));
+
+        when(ProtobufUtils.convert(openLineage, protobuSerializationSchema))
+            .thenReturn(Optional.of(schemaDatasetFacet));
+        when(ProtobufUtils.isProtobufSerializationSchema(protobuSerializationSchema))
+            .thenReturn(true);
+
+        assertEquals(schemaDatasetFacet, wrapper.getSchemaFacet().get());
+      }
     }
   }
 
@@ -126,7 +161,7 @@ class KafkaSinkWrapperTest {
               serializationSchema.getClass(), serializationSchema, "valueSerializationSchema"))
           .thenReturn(Optional.empty());
 
-      assertFalse(wrapper.getAvroSchema().isPresent());
+      assertFalse(wrapper.getSchemaFacet().isPresent());
     }
   }
 
@@ -143,7 +178,7 @@ class KafkaSinkWrapperTest {
               AvroSerializationSchema.class, avroSerializationSchema, "getDatumWriter"))
           .thenReturn(Optional.empty());
 
-      assertFalse(wrapper.getAvroSchema().isPresent());
+      assertFalse(wrapper.getSchemaFacet().isPresent());
     }
   }
 

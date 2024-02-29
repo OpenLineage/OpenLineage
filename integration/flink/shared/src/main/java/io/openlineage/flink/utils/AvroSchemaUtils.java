@@ -12,9 +12,11 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 
 /** Utility class for translating Avro schema into open lineage schema */
+@Slf4j
 public class AvroSchemaUtils {
 
   /**
@@ -31,6 +33,7 @@ public class AvroSchemaUtils {
     avroSchema.getFields().stream()
         .forEach(
             avroField -> {
+              log.debug("Converting avro field {} to OpenLineage field", avroField);
               fields.add(
                   openLineage
                       .newSchemaDatasetFacetFieldsBuilder()

@@ -5,6 +5,7 @@
 
 package io.openlineage.flink.visitor.wrapper;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -12,7 +13,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
+import io.openlineage.flink.api.OpenLineageContext;
 import java.lang.reflect.Constructor;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +25,7 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 import lombok.SneakyThrows;
 import org.apache.avro.Schema;
+import org.apache.avro.SchemaBuilder;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -41,7 +47,17 @@ class KafkaSourceWrapperTest {
   private Properties props = mock(Properties.class);
   private KafkaRecordDeserializationSchema deserializationSchema =
       mock(KafkaRecordDeserializationSchema.class);
-  private static Schema schema = mock(Schema.class);
+  private OpenLineageContext context = mock(OpenLineageContext.class);
+  private static Schema schema =
+      SchemaBuilder.record("InputEvent")
+          .namespace("io.openlineage.flink.avro.event")
+          .fields()
+          .name("a")
+          .type()
+          .nullable()
+          .longType()
+          .noDefault()
+          .endRecord();
 
   private KafkaSource kafkaSource;
   private KafkaSourceWrapper wrapper;
@@ -49,12 +65,13 @@ class KafkaSourceWrapperTest {
   @BeforeEach
   @SneakyThrows
   public void setup() {
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(mock(URI.class)));
     Class kafkaSourceClass = Class.forName("org.apache.flink.connector.kafka.source.KafkaSource");
     Constructor<KafkaSource> constructor = kafkaSourceClass.getDeclaredConstructors()[0];
     constructor.setAccessible(true);
     kafkaSource =
         constructor.newInstance(kafkaSubscriber, null, null, null, deserializationSchema, props);
-    wrapper = KafkaSourceWrapper.of(kafkaSource);
+    wrapper = KafkaSourceWrapper.of(kafkaSource, context);
   }
 
   @Test
@@ -94,7 +111,11 @@ class KafkaSourceWrapperTest {
     FieldUtils.writeField(
         deserializationSchema, DESERIALIZATION_SCHEMA, avroDeserializationSchema, true);
 
-    assertEquals(Optional.of(schema), wrapper.getAvroSchema());
+    List<SchemaDatasetFacetFields> fields = wrapper.getSchemaFacet().get().getFields();
+    assertThat(fields).hasSize(1);
+    assertThat(fields.get(0))
+        .hasFieldOrPropertyWithValue("name", "a")
+        .hasFieldOrPropertyWithValue("type", "long");
   }
 
   @Test
@@ -125,7 +146,11 @@ class KafkaSourceWrapperTest {
     FieldUtils.writeField(
         dynamicDeserializationSchema, "valueDeserialization", avroDeserializationSchema, true);
 
-    assertEquals(Optional.of(schema), wrapper.getAvroSchema());
+    List<SchemaDatasetFacetFields> fields = wrapper.getSchemaFacet().get().getFields();
+    assertThat(fields).hasSize(1);
+    assertThat(fields.get(0))
+        .hasFieldOrPropertyWithValue("name", "a")
+        .hasFieldOrPropertyWithValue("type", "long");
   }
 
   @Test
@@ -141,13 +166,13 @@ class KafkaSourceWrapperTest {
     FieldUtils.writeField(
         deserializationSchema, DESERIALIZATION_SCHEMA, mock(DeserializationSchema.class), true);
 
-    assertEquals(Optional.empty(), wrapper.getAvroSchema());
+    assertEquals(Optional.empty(), wrapper.getSchemaFacet());
   }
 
   @Test
   @SneakyThrows
   void testGetAvroSchemaForEmptyDeserializationSchema() {
-    assertEquals(Optional.empty(), wrapper.getAvroSchema());
+    assertEquals(Optional.empty(), wrapper.getSchemaFacet());
   }
 
   @Test
@@ -159,7 +184,7 @@ class KafkaSourceWrapperTest {
     constructor.setAccessible(true);
     KafkaSubscriber kafkaSubscriber = KafkaSubscriber.getTopicListSubscriber(topics);
     kafkaSource = constructor.newInstance(kafkaSubscriber, null, null, null, null, props);
-    wrapper = KafkaSourceWrapper.of(kafkaSource);
+    wrapper = KafkaSourceWrapper.of(kafkaSource, context);
     FieldUtils.writeField(kafkaSubscriber, "topics", topics, true);
 
     assertEquals(topics, wrapper.getTopics());
@@ -176,7 +201,7 @@ class KafkaSourceWrapperTest {
     constructor.setAccessible(true);
     KafkaSubscriber kafkaSubscriber = KafkaSubscriber.getTopicPatternSubscriber(pattern);
     kafkaSource = constructor.newInstance(kafkaSubscriber, null, null, null, null, props);
-    wrapper = KafkaSourceWrapper.of(kafkaSource);
+    wrapper = KafkaSourceWrapper.of(kafkaSource, context);
     FieldUtils.writeField(kafkaSubscriber, "topicPattern", pattern, true);
 
     try (MockedStatic<WrapperUtils> wrapperUtils = mockStatic(WrapperUtils.class)) {

@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.13.1...HEAD)
 
+### Added
+* **Flink: support Protobuf format for sources and sinks** [`#2482`](https://github.com/OpenLineage/OpenLineage/pull/2482) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Extracts schema from Protobuf classes. Supports nested object types, `array` type, `map` type, `oneOf` and `any`.*
+
+
 ## [1.13.1](https://github.com/OpenLineage/OpenLineage/compare/1.12.0...1.13.1) - 2024-04-25
 ### Added
 * **Java: allow timeout for circuit breakers** [`#2609`](https://github.com/OpenLineage/OpenLineage/pull/2609) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  

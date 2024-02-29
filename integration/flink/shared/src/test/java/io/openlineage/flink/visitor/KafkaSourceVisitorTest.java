@@ -13,16 +13,16 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.wrapper.KafkaSourceWrapper;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import lombok.SneakyThrows;
-import org.apache.avro.Schema;
-import org.apache.avro.SchemaBuilder;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,16 +36,10 @@ class KafkaSourceVisitorTest {
   KafkaSourceWrapper wrapper = mock(KafkaSourceWrapper.class);
   Properties props = new Properties();
   OpenLineage openLineage = new OpenLineage(mock(URI.class));
-  Schema schema =
-      SchemaBuilder.record("InputEvent")
-          .namespace("io.openlineage.flink.avro.event")
-          .fields()
-          .name("a")
-          .type()
-          .nullable()
-          .longType()
-          .noDefault()
-          .endRecord();
+  SchemaDatasetFacet schema =
+      openLineage.newSchemaDatasetFacet(
+          Collections.singletonList(
+              openLineage.newSchemaDatasetFacetFields("a", "long", null, null)));
 
   @BeforeEach
   @SneakyThrows
@@ -65,11 +59,11 @@ class KafkaSourceVisitorTest {
     props.put("bootstrap.servers", "server1;server2");
 
     try (MockedStatic<KafkaSourceWrapper> mockedStatic = mockStatic(KafkaSourceWrapper.class)) {
-      when(KafkaSourceWrapper.of(kafkaSource)).thenReturn(wrapper);
+      when(KafkaSourceWrapper.of(kafkaSource, context)).thenReturn(wrapper);
 
       when(wrapper.getTopics()).thenReturn(Arrays.asList("topic1", "topic2"));
       when(wrapper.getProps()).thenReturn(props);
-      when(wrapper.getAvroSchema()).thenReturn(Optional.of(schema));
+      when(wrapper.getSchemaFacet()).thenReturn(Optional.of(schema));
 
       List<OpenLineage.InputDataset> inputDatasets = kafkaSourceVisitor.apply(kafkaSource);
       List<OpenLineage.SchemaDatasetFacetFields> fields =
@@ -89,7 +83,7 @@ class KafkaSourceVisitorTest {
   @SneakyThrows
   void testApplyWhenIllegalAccessExceptionThrown() {
     try (MockedStatic<KafkaSourceWrapper> mockedStatic = mockStatic(KafkaSourceWrapper.class)) {
-      when(KafkaSourceWrapper.of(kafkaSource)).thenReturn(wrapper);
+      when(KafkaSourceWrapper.of(kafkaSource, context)).thenReturn(wrapper);
 
       when(wrapper.getTopics()).thenThrow(new IllegalAccessException(""));
       List<OpenLineage.InputDataset> inputDatasets = kafkaSourceVisitor.apply(kafkaSource);

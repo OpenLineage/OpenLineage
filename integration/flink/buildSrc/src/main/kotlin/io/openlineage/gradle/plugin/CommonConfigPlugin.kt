@@ -79,6 +79,7 @@ class CommonConfigPlugin : Plugin<Project> {
 
         target.extensions.configure<SpotlessExtension> {
             java {
+                targetExclude("**/proto/**")
                 googleJavaFormat()
                 removeUnusedImports()
                 custom("disallowWildcardImports", disallowWildcardImports)
