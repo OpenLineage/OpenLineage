@@ -13,9 +13,9 @@ import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.ErrorFacet;
-import io.openlineage.spark.agent.facets.builder.SparkPropertyFacetBuilder;
 import io.openlineage.spark.agent.facets.SparkVersionFacet;
 import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilderDelegate;
+import io.openlineage.spark.agent.facets.builder.SparkPropertyFacetBuilder;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -242,7 +242,8 @@ class RddExecutionContext implements ExecutionContext {
     eventEmitter.emit(event);
   }
 
-  protected OpenLineage.RunFacets buildRunFacets(ErrorFacet jobError, OpenLineage ol, SparkListenerEvent event) {
+  protected OpenLineage.RunFacets buildRunFacets(
+      ErrorFacet jobError, OpenLineage ol, SparkListenerEvent event) {
     OpenLineage.RunFacetsBuilder runFacetsBuilder = ol.newRunFacetsBuilder();
     runFacetsBuilder.parent(buildApplicationParentFacet());
     if (jobError != null) {
