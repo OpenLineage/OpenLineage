@@ -47,7 +47,7 @@ ext {
 dependencies {
     implementation(project(path: ":shared"))
     api "io.openlineage:openlineage-java:${project.version}"
-    api "io.openlineage:openlineage-sql-java:1.8.0"
+    api "io.openlineage:openlineage-sql-java:${project.version}"
 
     testImplementation "org.apache.flink:flink-java:$flinkVersion"
     testImplementation "org.apache.flink:flink-streaming-java:$flinkVersion"
