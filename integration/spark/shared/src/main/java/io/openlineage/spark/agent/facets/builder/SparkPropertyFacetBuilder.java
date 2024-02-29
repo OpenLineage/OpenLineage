@@ -18,7 +18,9 @@ import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.SparkSession;
 import org.stringtemplate.v4.ST;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class SparkPropertyFacetBuilder
     extends CustomFacetBuilder<SparkListenerEvent, SparkPropertyFacet> {
   private static final Set<String> DEFAULT_ALLOWED_PROPERTIES =
@@ -53,7 +55,6 @@ public class SparkPropertyFacetBuilder
   @Override
   protected void build(
           SparkListenerEvent event, BiConsumer<String, ? super SparkPropertyFacet> consumer) {
-
     consumer.accept("spark_properties", buildFacet(event));
   }
 
