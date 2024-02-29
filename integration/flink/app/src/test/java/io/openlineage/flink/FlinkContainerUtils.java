@@ -134,7 +134,7 @@ public class FlinkContainerUtils {
   static GenericContainer<?> makeCassandraContainer(Network network) {
     try {
       GenericContainer container =
-          genericContainer(network, CASSANDRA_IMAGE, "cassandra")
+          genericContainer(network, CASSANDRA_IMAGE, "cassandra-server")
               .withExposedPorts(9042)
               .withEnv("CASSANDRA_SNITCH", "GossipingPropertyFileSnitch")
               .withEnv(

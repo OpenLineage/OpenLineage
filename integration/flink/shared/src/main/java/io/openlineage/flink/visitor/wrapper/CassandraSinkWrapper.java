@@ -12,8 +12,14 @@ import io.openlineage.flink.utils.CassandraUtils;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.streaming.connectors.cassandra.CassandraSinkBase;
+import org.apache.flink.streaming.connectors.cassandra.ClusterBuilder;
 
+@Slf4j
 public class CassandraSinkWrapper<T> {
+  public static final String CASSANDRA_OUTPUT_FORMAT_BASE_CLASS =
+      "org.apache.flink.batch.connectors.cassandra.CassandraOutputFormatBase";
   public static final String POJO_OUTPUT_CLASS_FIELD_NAME = "outputClass";
   public static final String POJO_CLASS_FIELD_NAME = "clazz";
   public static final String INSERT_QUERY_FIELD_NAME = "insertQuery";
@@ -37,23 +43,32 @@ public class CassandraSinkWrapper<T> {
     this.fieldName = fieldName;
   }
 
-  public String getKeySpace() {
-    if (hasInsertQuery) {
-      return extractFromQuery(1);
-    } else {
-      Class pojoClass = getField(fieldName);
-      Optional<Table> table = CassandraUtils.extractTableAnnotation(pojoClass);
-      return table.map(t -> t.keyspace()).orElseThrow();
+  public Optional<String> getNamespace() {
+    try {
+      Class outputFormatBase = Class.forName(CASSANDRA_OUTPUT_FORMAT_BASE_CLASS);
+      if (outputFormatBase.isAssignableFrom(sink.getClass())) {
+        Optional<ClusterBuilder> clusterBuilderOpt =
+            WrapperUtils.<ClusterBuilder>getFieldValue(outputFormatBase, sink, "builder");
+        return CassandraUtils.findNamespaceFromBuilder(clusterBuilderOpt);
+      } else if (sink instanceof CassandraSinkBase) {
+        Optional<ClusterBuilder> clusterBuilderOpt =
+            WrapperUtils.<ClusterBuilder>getFieldValue(CassandraSinkBase.class, sink, "builder");
+        return CassandraUtils.findNamespaceFromBuilder(clusterBuilderOpt);
+      }
+    } catch (ClassNotFoundException e) {
+      log.error("Failed load class required to infer the Cassandra namespace name", e);
     }
+
+    return Optional.of("");
   }
 
-  public String getTableName() {
+  public String getName() {
     if (hasInsertQuery) {
-      return extractFromQuery(2);
+      return String.join(".", extractFromQuery(1), extractFromQuery(2));
     } else {
       Class pojoClass = getField(fieldName);
       Optional<Table> table = CassandraUtils.extractTableAnnotation(pojoClass);
-      return table.map(t -> t.name()).orElseThrow();
+      return table.map(t -> String.join(".", t.keyspace(), t.name())).orElseThrow();
     }
   }
 
