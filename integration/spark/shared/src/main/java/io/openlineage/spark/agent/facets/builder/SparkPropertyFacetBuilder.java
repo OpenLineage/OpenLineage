@@ -8,17 +8,15 @@ package io.openlineage.spark.agent.facets.builder;
 import io.openlineage.spark.agent.facets.SparkPropertyFacet;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.SparkSession;
-import org.stringtemplate.v4.ST;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class SparkPropertyFacetBuilder
@@ -33,10 +31,10 @@ public class SparkPropertyFacetBuilder
     fillConfAndAllowerProperties(context.getSparkContext());
   }
 
-  public SparkPropertyFacetBuilder(){
+  public SparkPropertyFacetBuilder() {
     try {
-    SparkSession session = SparkSession.active();
-    fillConfAndAllowerProperties(session.sparkContext());
+      SparkSession session = SparkSession.active();
+      fillConfAndAllowerProperties(session.sparkContext());
     } catch (IllegalStateException ie) {
       log.info("No active or default Spark session found");
       conf = new SparkConf();
@@ -44,35 +42,35 @@ public class SparkPropertyFacetBuilder
     }
   }
 
-  private void fillConfAndAllowerProperties(SparkContext context){
+  private void fillConfAndAllowerProperties(SparkContext context) {
     conf = context.getConf();
     allowerProperties =
-            conf.contains(ALLOWED_PROPERTIES_KEY)
-                    ? Arrays.stream(conf.get(ALLOWED_PROPERTIES_KEY).split(",")).collect(Collectors.toSet())
-                    : DEFAULT_ALLOWED_PROPERTIES;
+        conf.contains(ALLOWED_PROPERTIES_KEY)
+            ? Arrays.stream(conf.get(ALLOWED_PROPERTIES_KEY).split(",")).collect(Collectors.toSet())
+            : DEFAULT_ALLOWED_PROPERTIES;
   }
 
   @Override
   protected void build(
-          SparkListenerEvent event, BiConsumer<String, ? super SparkPropertyFacet> consumer) {
+      SparkListenerEvent event, BiConsumer<String, ? super SparkPropertyFacet> consumer) {
     consumer.accept("spark_properties", buildFacet(event));
   }
 
-  public SparkPropertyFacet buildFacet(SparkListenerEvent event){
+  public SparkPropertyFacet buildFacet(SparkListenerEvent event) {
     Map<String, Object> m = new HashMap<>();
     Arrays.stream(conf.getAll())
-            .filter(t -> allowerProperties.contains(t._1))
-            .forEach(t -> m.putIfAbsent(t._1, t._2));
+        .filter(t -> allowerProperties.contains(t._1))
+        .forEach(t -> m.putIfAbsent(t._1, t._2));
     if (event instanceof SparkListenerJobStart) {
       SparkListenerJobStart startEvent = (SparkListenerJobStart) event;
       startEvent.properties().entrySet().stream()
-              .filter(e -> allowerProperties.contains(e.getKey()))
-              .forEach(e -> m.putIfAbsent(e.getKey().toString(), e.getValue()));
+          .filter(e -> allowerProperties.contains(e.getKey()))
+          .forEach(e -> m.putIfAbsent(e.getKey().toString(), e.getValue()));
     }
 
     try {
       SparkSession session = SparkSession.active();
-      allowerProperties.forEach(item -> m.putIfAbsent(item,session.conf().get(item)));
+      allowerProperties.forEach(item -> m.putIfAbsent(item, session.conf().get(item)));
     } catch (NoSuchElementException ne) {
       log.info("A key in capturedProperties not exists in Runtime Config");
     } catch (IllegalStateException ie) {
