@@ -12,6 +12,8 @@ import io.openlineage.flink.utils.CassandraUtils;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.flink.batch.connectors.cassandra.CassandraInputFormatBase;
+import org.apache.flink.streaming.connectors.cassandra.ClusterBuilder;
 
 public class CassandraSourceWrapper<T> {
   private static final Pattern SELECT_REGEXP =
@@ -33,23 +35,24 @@ public class CassandraSourceWrapper<T> {
     return new CassandraSourceWrapper(source, sourceClass, hasQuery);
   }
 
-  public String getKeyspace() {
-    if (hasQuery) {
-      return extractFromQuery(1);
-    } else {
-      Class pojoClass = getField(POJO_CLASS_FIELD_NAME);
-      Optional<Table> table = CassandraUtils.extractTableAnnotation(pojoClass);
-      return table.map(t -> t.keyspace()).orElseThrow();
+  public Optional<String> getNamespace() {
+    if (source instanceof CassandraInputFormatBase) {
+      Optional<ClusterBuilder> clusterBuilderOpt =
+          WrapperUtils.<ClusterBuilder>getFieldValue(
+              CassandraInputFormatBase.class, source, "builder");
+      return CassandraUtils.findNamespaceFromBuilder(clusterBuilderOpt);
     }
+
+    return Optional.of("");
   }
 
-  public String getTableName() {
+  public String getName() {
     if (hasQuery) {
-      return extractFromQuery(2);
+      return String.join(".", extractFromQuery(1), extractFromQuery(2));
     } else {
       Class pojoClass = getField(POJO_CLASS_FIELD_NAME);
       Optional<Table> table = CassandraUtils.extractTableAnnotation(pojoClass);
-      return table.map(t -> t.name()).orElseThrow();
+      return table.map(t -> String.join(".", t.keyspace(), t.name())).orElseThrow();
     }
   }
 
