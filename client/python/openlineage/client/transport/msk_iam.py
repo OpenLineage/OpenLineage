@@ -28,22 +28,12 @@ def _detect_running_region() -> None | str:
         boto3.DEFAULT_SESSION.region_name if boto3.DEFAULT_SESSION else None,
         boto3.Session().region_name,
     ]
-    region: None | str = None
+    region: str
     for region in easy_checks:
         if region:
             return region
 
-    # else query an external service
-    # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-identity-documents.html
-    import requests
-
-    try:
-        r = requests.get("http://169.254.169.254/latest/dynamic/instance-identity/document", timeout=1)
-        region = r.json().get("region")
-    except Exception:  # noqa: S110 BLE001
-        pass
-
-    return region
+    return None
 
 
 @attr.s
