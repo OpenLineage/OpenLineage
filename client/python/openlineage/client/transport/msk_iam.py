@@ -82,7 +82,7 @@ class MSKIAMTransport(KafkaTransport):
 
     def _setup_producer(self, config: dict) -> None:  # type: ignore[type-arg]
         try:
-            log.info("Setup the MSK transport with this configuration: %s", self.msk_config)
+            log.debug("Setup the MSK transport with this configuration: %s", self.msk_config)
 
             # https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md
             if self.msk_config.region is None:
