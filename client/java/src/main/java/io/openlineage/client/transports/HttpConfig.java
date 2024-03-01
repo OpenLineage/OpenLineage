@@ -22,7 +22,12 @@ import lombok.With;
 public final class HttpConfig implements TransportConfig {
   @Getter @Setter private URI url;
   @Getter @Setter private @Nullable String endpoint;
-  @Getter @Setter private @Nullable Double timeout;
+
+  @Getter @Setter
+  private @Nullable Double
+      timeout; // deprecated, will be removed in 1.13, assumes timeout is in seconds
+
+  @Getter @Setter private @Nullable Integer timeoutInMillis;
   @Getter @Setter private @Nullable TokenProvider auth;
   @Getter @Setter private @Nullable Map<String, String> urlParams;
   @Getter @Setter private @Nullable Map<String, String> headers;
