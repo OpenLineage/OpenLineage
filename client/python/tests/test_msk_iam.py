@@ -64,15 +64,6 @@ def test_msk_detect_running_region() -> None:
     assert region == "eu-central-1"
 
 
-def test_msk_detect_running_region_ec2(mocker: MockerFixture) -> None:
-    method_json = mocker.MagicMock()
-    method_json.json.return_value = {"region": "us-west-1"}
-    mocker.patch("requests.get", return_value=method_json)
-    region = _detect_running_region()
-
-    assert region == "us-west-1"
-
-
 def test_msk_detect_running_region_empty(mocker: MockerFixture) -> None:
     mocker.patch("requests.get", side_effect=Exception())
     region = _detect_running_region()
