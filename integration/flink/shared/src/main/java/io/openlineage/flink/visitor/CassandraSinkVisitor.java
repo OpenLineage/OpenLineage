@@ -64,7 +64,8 @@ public class CassandraSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
     }
 
     return Collections.singletonList(
-        createOutputDataset(context, sinkWrapper.getKeySpace(), sinkWrapper.getTableName()));
+        createOutputDataset(
+            context, (String) sinkWrapper.getNamespace().get(), sinkWrapper.getName()));
   }
 
   private CassandraSinkWrapper createWrapperForSink(Object object) {

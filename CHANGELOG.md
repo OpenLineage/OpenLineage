@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...HEAD)
+* **Flink: improve Cassandra lineage metadata** (https://github.com/OpenLineage/OpenLineage/pull/2479) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
+  *Use Cassandra cluster info as dataset namespace, and combine keyspace with table name as dataset name.*
 * **Flink: bump Flink JDBC connector version to 3.1.2-1.18 for Flink 1.18** (https://github.com/OpenLineage/OpenLineage/pull/2472) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
   *Bump Flink JDBC connector version to 3.1.2-1.18 for Flink 1.18.*
 

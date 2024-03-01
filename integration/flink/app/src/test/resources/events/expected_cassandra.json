@@ -5,11 +5,11 @@
     "name": "flink_examples_cassandra"
   },
   "inputs": [{
-    "namespace": "flink",
-    "name": "source_event"
+    "namespace": "cassandra://cassandra-server:9042",
+    "name": "flink.source_event"
   }],
   "outputs" : [{
-    "namespace" : "flink",
-    "name" : "sink_event"
+    "namespace" : "cassandra://cassandra-server:9042",
+    "name" : "flink.sink_event"
   }]
 }
