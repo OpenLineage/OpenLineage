@@ -115,9 +115,9 @@ class OpenLineageClientUtilsTest {
   void loadOpenLineageYaml_shouldDeserialiseYamlEncodedInputStreams() {
     String yamlString =
         "transport:\n"
-        + "  type: http\n"
-        + "  url: http://localhost:5050\n"
-        + "  endpoint: api/v1/lineage\n";
+            + "  type: http\n"
+            + "  url: http://localhost:5050\n"
+            + "  endpoint: api/v1/lineage\n";
     System.out.println(yamlString);
 
     byte[] bytes = yamlString.getBytes(StandardCharsets.UTF_8);
