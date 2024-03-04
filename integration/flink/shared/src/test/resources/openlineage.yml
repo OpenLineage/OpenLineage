@@ -1,3 +1,0 @@
-transport:
-  type: http
-  url: http://openlineageclient:1080
