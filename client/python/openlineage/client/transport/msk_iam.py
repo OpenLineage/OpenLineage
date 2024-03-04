@@ -14,22 +14,18 @@ log = logging.getLogger(__name__)
 
 
 def _detect_running_region() -> None | str:
-    """Dynamically determine the region from a running Glue job (or anything on EC2 for
-    that matter).
-    https://stackoverflow.com/questions/37514810/how-to-get-the-region-of-the-current-user-from-boto
-    """
+    """Dynamically determine the region."""
     import boto3  # type: ignore[import]
 
-    easy_checks = [
+    checks = [
         # check if set through ENV vars
         os.environ.get("AWS_REGION"),
-        os.environ.get("AWS_DEFAULT_REGION"),
         # else check if set in config or in boto already
         boto3.DEFAULT_SESSION.region_name if boto3.DEFAULT_SESSION else None,
         boto3.Session().region_name,
     ]
     region: str
-    for region in easy_checks:
+    for region in checks:
         if region:
             return region
 

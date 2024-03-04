@@ -57,7 +57,7 @@ def test_msk_detect_running_default_region() -> None:
     assert region == "eu-west-1"
 
 
-@mock.patch.dict(os.environ, {"AWS_REGION": "eu-central-1"})
+@mock.patch.dict(os.environ, {"AWS_DEFAULT_REGION": "eu-central-1"})
 def test_msk_detect_running_region() -> None:
     region = _detect_running_region()
 
