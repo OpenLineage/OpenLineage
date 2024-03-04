@@ -31,7 +31,9 @@ def lineage_run_id(task: "BaseOperator", task_instance: "TaskInstance"):
     )
 
 
-def lineage_parent_id(run_id: str, task: "BaseOperator", task_instance: "TaskInstance"):
+def lineage_parent_id(
+    task: "BaseOperator", task_instance: "TaskInstance", run_id: typing.Optional[str] = None
+):
     """
     Macro function which returns the generated job and run id for a given task. This
     can be used to forward the ids from a task to a child run so the job
@@ -41,12 +43,15 @@ def lineage_parent_id(run_id: str, task: "BaseOperator", task_instance: "TaskIns
     PythonOperator(
         task_id='render_template',
         python_callable=my_task_function,
-        op_args=['{{ lineage_parent_id(run_id, task, task_instance) }}'], # macro invoked
+        op_args=['{{ lineage_parent_id(task, task_instance) }}'], # macro invoked
         provide_context=False,
         dag=dag
     )
     """
-    job_name = OpenLineageAdapter.build_task_instance_run_id(
-        task_instance.dag_id, task.task_id, task_instance.execution_date, task_instance.try_number
+    return "/".join(
+        [
+            _JOB_NAMESPACE,
+            f"{task_instance.dag_id}.{task.task_id}",
+            run_id or lineage_run_id(task=task, task_instance=task_instance),
+        ]
     )
-    return f"{_JOB_NAMESPACE}/{job_name}/{run_id}"

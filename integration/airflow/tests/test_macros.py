@@ -32,11 +32,6 @@ def test_lineage_parent_id():
     )
     task = mock.MagicMock(task_id="task_id")
     actual = lineage_parent_id(run_id="run_id", task_instance=task_instance, task=task)
-    job_name = str(
-        uuid.uuid3(
-            uuid.NAMESPACE_URL,
-            f"{_DAG_NAMESPACE}.dag_id.task_id.execution_date.1",
-        )
-    )
+    job_name = f"{task_instance.dag_id}.{task.task_id}"
     expected = f"{_DAG_NAMESPACE}/{job_name}/run_id"
     assert actual == expected
