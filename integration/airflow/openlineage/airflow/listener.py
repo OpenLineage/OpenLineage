@@ -109,8 +109,15 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 
     def on_running():
         nonlocal task_instance
-        ti = copy.deepcopy(task_instance)
-        ti.render_templates()
+        try:
+            ti = copy.deepcopy(task_instance)
+        except Exception as err:
+            log.debug(
+                f"Creating a task instance copy failed; proceeding without rendering templates. Error: {err}"
+            )
+            ti = task_instance
+        else:
+            ti.render_templates()
 
         task = ti.task
         dag = task.dag
