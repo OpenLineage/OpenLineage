@@ -20,6 +20,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.openlineage.client.OpenLineage.RunEvent;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -27,7 +28,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -179,21 +183,38 @@ public final class OpenLineageClientUtils {
   }
 
   /**
-   * Loads and parses OpenLineage configuration from the provided paths.
+   * Loads and parses OpenLineage configuration from the provided paths. Throws an {@link
+   * OpenLineageClientException} if one of the following conditions are met:
+   *
+   * <ol>
+   *   <li>The provided configPathProvider is null
+   *   <li>No configuration file could be found at any of the provided paths
+   *   <li>Load the default configuration from the classpath if no file is found
+   * </ol>
    *
    * @param configPathProvider Provides the paths where the configuration files can be found.
    * @return An instance of {@link OpenLineageYaml} containing the parsed configuration.
-   * @throws OpenLineageClientException If an error occurs while reading or parsing the
-   *     configuration.
+   * @throws OpenLineageClientException According to the rules defined above.
    */
-  public static OpenLineageYaml loadOpenLineageYaml(ConfigPathProvider configPathProvider) {
+  public static OpenLineageYaml loadOpenLineageYaml(ConfigPathProvider configPathProvider)
+      throws OpenLineageClientException {
     try {
-      for (final Path path : configPathProvider.getPaths()) {
+      Objects.requireNonNull(configPathProvider);
+      List<Path> paths = configPathProvider.getPaths();
+      for (final Path path : paths) {
         if (Files.exists(path)) {
           return YML.readValue(path.toFile(), OpenLineageYaml.class);
         }
       }
-      throw new IllegalArgumentException();
+      String concatenatedPaths =
+          paths.stream().map(Path::toString).collect(Collectors.joining(";", "[", "]"));
+      throw new FileNotFoundException(
+          "No OpenLineage configuration file found at provided paths, looked in: "
+              + concatenatedPaths);
+    } catch (NullPointerException e) {
+      throw new OpenLineageClientException("ConfigPathProvider was null");
+    } catch (FileNotFoundException e) {
+      throw new OpenLineageClientException("No OpenLineage configuration file found");
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
     }
