@@ -91,11 +91,12 @@ dependencies {
     compileOnly "org.apache.flink:flink-streaming-java:$flinkVersion"
     compileOnly "org.apache.flink:flink-runtime-web:$flinkVersion"
     compileOnly "org.apache.flink:flink-table-common:$flinkVersion"
+    compileOnly "org.apache.flink:flink-connector-base:$flinkVersion"
     compileOnly "org.apache.flink:flink-connector-kafka:${versions.kafka}"
+    compileOnly "org.apache.flink:flink-connector-cassandra_2.12:${versions.cassandra}"
     compileOnly "org.apache.flink:flink-avro:$flinkVersion"
     compileOnly "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     compileOnly "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:$icebergVersion"
-    compileOnly "org.apache.flink:flink-connector-cassandra_2.12:${versions.cassandra}"
     compileOnly "org.apache.flink:flink-connector-jdbc:${versions.jdbc}"
 
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
