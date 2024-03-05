@@ -32,7 +32,7 @@ The current OpenLineage committers are:
 | Harel Shein        | |
 | Damien Hawes       | |
 | Kacper Muda        | |
-
+| Zhenqiu Huang      | |
 To understand how to become an OpenLineage committer,
 read the [OpenLineage Governance Guide](GOVERNANCE.md).
 
