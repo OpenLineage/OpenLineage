@@ -91,7 +91,7 @@ public final class OpenLineageClientUtils {
    * @return A JSON string representation of the object.
    * @throws UncheckedIOException If an I/O error occurs during conversion.
    */
-  public static String toJson(@NonNull final Object value) {
+  public static String toJson(@NonNull final Object value) throws UncheckedIOException {
     try {
       return MAPPER.writeValueAsString(value);
     } catch (JsonProcessingException e) {
@@ -108,7 +108,8 @@ public final class OpenLineageClientUtils {
    * @return An instance of the specified type.
    * @throws UncheckedIOException If an I/O error occurs during conversion.
    */
-  public static <T> T fromJson(@NonNull final String json, @NonNull final TypeReference<T> type) {
+  public static <T> T fromJson(@NonNull final String json, @NonNull final TypeReference<T> type)
+      throws UncheckedIOException {
     try {
       return MAPPER.readValue(json, type);
     } catch (IOException e) {
@@ -123,7 +124,7 @@ public final class OpenLineageClientUtils {
    * @return An instance of {@link RunEvent}.
    * @throws UncheckedIOException If an I/O error occurs during conversion.
    */
-  public static RunEvent runEventFromJson(@NonNull final String json) {
+  public static RunEvent runEventFromJson(@NonNull final String json) throws UncheckedIOException {
     return fromJson(json, new TypeReference<RunEvent>() {});
   }
 
@@ -169,16 +170,13 @@ public final class OpenLineageClientUtils {
    * @throws OpenLineageClientException If the given string does not conform to the URI
    *     specification.
    */
-  public static URI toUri(@NonNull final String urlString) {
+  public static URI toUri(@NonNull final String urlString) throws OpenLineageClientException {
     try {
       final String urlStringWithNoTrailingSlash =
           (urlString.endsWith("/") ? urlString.substring(0, urlString.length() - 1) : urlString);
       return new URI(urlStringWithNoTrailingSlash);
     } catch (URISyntaxException e) {
-      final OpenLineageClientException error =
-          new OpenLineageClientException("Malformed URI: " + urlString);
-      error.initCause(e);
-      throw error;
+      throw new OpenLineageClientException("Malformed URI: " + urlString, e);
     }
   }
 
@@ -228,7 +226,8 @@ public final class OpenLineageClientUtils {
    * @throws OpenLineageClientException If an error occurs while reading or parsing the
    *     configuration.
    */
-  public static OpenLineageYaml loadOpenLineageYaml(InputStream inputStream) {
+  public static OpenLineageYaml loadOpenLineageYaml(InputStream inputStream)
+      throws OpenLineageClientException {
     try {
       return deserializeInputStream(YML, inputStream);
     } catch (IOException e) {
@@ -247,7 +246,8 @@ public final class OpenLineageClientUtils {
    * @throws OpenLineageClientException If an error occurs while reading or parsing the
    *     configuration.
    */
-  public static OpenLineageYaml loadOpenLineageJson(InputStream inputStream) {
+  public static OpenLineageYaml loadOpenLineageJson(InputStream inputStream)
+      throws OpenLineageClientException {
     try {
       return deserializeInputStream(JSON, inputStream);
     } catch (IOException e) {
@@ -262,7 +262,7 @@ public final class OpenLineageClientUtils {
    * @param deserializer The {@link ObjectMapper} to use for deserialization.
    * @param inputStream The {@link InputStream} containing the configuration data.
    * @return An instance of {@link OpenLineageYaml}.
-   * @throws OpenLineageClientException If an error occurs during deserialization.
+   * @throws IOException If an error occurs while reading or parsing the configuration.
    */
   private static OpenLineageYaml deserializeInputStream(
       ObjectMapper deserializer, InputStream inputStream) throws IOException {
