@@ -1,18 +1,15 @@
 # Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import os
 import typing
 
-from openlineage.airflow.adapter import OpenLineageAdapter
+from openlineage.airflow.adapter import _DAG_NAMESPACE, OpenLineageAdapter
 
 if typing.TYPE_CHECKING:
-    from airflow.models import BaseOperator, TaskInstance
-
-_JOB_NAMESPACE = os.getenv("OPENLINEAGE_NAMESPACE", "default")
+    from airflow.models import TaskInstance
 
 
-def lineage_run_id(task: "BaseOperator", task_instance: "TaskInstance"):
+def lineage_run_id(task_instance: "TaskInstance"):
     """
     Macro function which returns the generated run id for a given task. This
     can be used to forward the run id from a task to a child run so the job
@@ -27,13 +24,14 @@ def lineage_run_id(task: "BaseOperator", task_instance: "TaskInstance"):
     )
     """
     return OpenLineageAdapter.build_task_instance_run_id(
-        task_instance.dag_id, task.task_id, task_instance.execution_date, task_instance.try_number
+        task_instance.dag_id,
+        task_instance.task.task_id,
+        task_instance.execution_date,
+        task_instance.try_number,
     )
 
 
-def lineage_parent_id(
-    task: "BaseOperator", task_instance: "TaskInstance", run_id: typing.Optional[str] = None
-):
+def lineage_parent_id(task_instance: "TaskInstance"):
     """
     Macro function which returns the generated job and run id for a given task. This
     can be used to forward the ids from a task to a child run so the job
@@ -50,8 +48,8 @@ def lineage_parent_id(
     """
     return "/".join(
         [
-            _JOB_NAMESPACE,
-            f"{task_instance.dag_id}.{task.task_id}",
-            run_id or lineage_run_id(task=task, task_instance=task_instance),
+            _DAG_NAMESPACE,
+            f"{task_instance.dag_id}.{task_instance.task.task_id}",
+            lineage_run_id(task_instance=task_instance),
         ]
     )
