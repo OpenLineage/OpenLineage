@@ -7,6 +7,10 @@
 * **Flink: bump Flink JDBC connector version to 3.1.2-1.18 for Flink 1.18** (https://github.com/OpenLineage/OpenLineage/pull/2472) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
   *Bump Flink JDBC connector version to 3.1.2-1.18 for Flink 1.18.*
 
+### Changed
+* **Java Client: Added a `OpenLineageClientUtils#loadOpenLineageJson(InputStream)` and changed `OpenLineageClientUtils#loadOpenLineageYaml(InputStream)` methods.** (https://github.com/OpenLineage/OpenLineage/pull/2490) [@d-m-h](https://github.com/d-m-h)
+    *This improves the explicitness of the methods. Previously, `loadOpenLineageYaml(InputStream)` wanted the `InputStream` to contain bytes that represented JSON.*
+
 ### Fixed
 * **Spark: fix `HttpTransport` timeout.** [`#2475`](https://github.com/OpenLineage/OpenLineage/pull/2475) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Existing `timeout` config parameter is ambiguous: implementation treats value as double in seconds, although documentation claims it's milliseconds. New config param `timeoutInMillis` is added. Existing `timeout` gets removed from docs and will be deprecated in 1.13.*
