@@ -44,6 +44,8 @@ public class VisitorFactoryImpl implements VisitorFactory {
       visitors.add(new JdbcSourceVisitor(context));
     }
 
+    visitors.add(new HybridSourceVisitor(context));
+
     return Collections.unmodifiableList(visitors);
   }
 
