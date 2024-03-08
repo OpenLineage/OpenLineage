@@ -15,28 +15,28 @@ public interface ColumnLevelLineageVisitor {
    * LogicalPlan on its node. This method will be called for each traversed node. Input information
    * should be put into builder.
    *
+   * @param context
    * @param node
-   * @param builder
    */
-  void collectInputs(LogicalPlan node, ColumnLevelLineageBuilder builder);
+  void collectInputs(ColumnLevelLineageContext context, LogicalPlan node);
 
   /**
    * Collect outputs for a given {@link LogicalPlan}. Column level lineage mechanism traverses
    * LogicalPlan on its node. This method will be called for each traversed node. Output information
    * should be put into builder.
    *
+   * @param context
    * @param node
-   * @param builder
    */
-  void collectOutputs(LogicalPlan node, ColumnLevelLineageBuilder builder);
+  void collectOutputs(ColumnLevelLineageContext context, LogicalPlan node);
 
   /**
    * Collect expressions for a given {@link LogicalPlan}. Column level lineage mechanism traverses
    * LogicalPlan on its node. This method will be called for each traversed node. Expression
    * dependency information should be put into builder.
    *
+   * @param context
    * @param node
-   * @param builder
    */
-  void collectExpressionDependencies(LogicalPlan node, ColumnLevelLineageBuilder builder);
+  void collectExpressionDependencies(ColumnLevelLineageContext context, LogicalPlan node);
 }

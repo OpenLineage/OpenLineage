@@ -35,6 +35,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.Partition;
 import org.apache.spark.SparkContext;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
@@ -161,7 +162,8 @@ class LogicalRelationDatasetBuilderTest {
       when(PlanUtils.getDirectoryPath(p1, hadoopConfig)).thenReturn(new Path("/tmp"));
       when(PlanUtils.getDirectoryPath(p2, hadoopConfig)).thenReturn(new Path("/tmp"));
 
-      List<OpenLineage.Dataset> datasets = builder.apply(logicalRelation);
+      List<OpenLineage.Dataset> datasets =
+          builder.apply(mock(SparkListenerEvent.class), logicalRelation);
       assertEquals(1, datasets.size());
       OpenLineage.Dataset ds = datasets.get(0);
       assertEquals("/tmp", ds.getName());
@@ -195,7 +197,8 @@ class LogicalRelationDatasetBuilderTest {
                 .toSeq());
 
     try (MockedStatic mocked = mockStatic(PlanUtils.class)) {
-      List<OpenLineage.Dataset> datasets = builder.apply(logicalRelation);
+      List<OpenLineage.Dataset> datasets =
+          builder.apply(mock(SparkListenerEvent.class), logicalRelation);
       assertEquals(1, datasets.size());
       OpenLineage.Dataset ds = datasets.get(0);
       assertEquals("/tmp/path.csv", ds.getName());
@@ -216,7 +219,7 @@ class LogicalRelationDatasetBuilderTest {
     when(lineageRelation.getLineageDatasetIdentifier(any())).thenReturn(datasetIdentifier);
     when(logicalRelation.schema()).thenReturn(structType);
 
-    List<Dataset> list = builder.apply(logicalRelation);
+    List<Dataset> list = builder.apply(mock(SparkListenerEvent.class), logicalRelation);
 
     assertThat(list).hasSize(1);
     assertThat(list.get(0).getName()).isEqualTo(datasetIdentifier.getName());

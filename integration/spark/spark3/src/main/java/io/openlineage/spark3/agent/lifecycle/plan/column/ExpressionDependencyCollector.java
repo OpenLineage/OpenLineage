@@ -6,9 +6,9 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ExtensionPlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.extension.scala.v1.ColumnLevelLineageNode;
 import io.openlineage.spark.extension.scala.v1.ExpressionDependency;
 import io.openlineage.spark.extension.scala.v1.ExpressionDependencyWithDelegate;
@@ -43,26 +43,23 @@ public class ExpressionDependencyCollector {
   private static final List<ExpressionDependencyVisitor> expressionDependencyVisitors =
       Arrays.asList(new UnionDependencyVisitor(), new IcebergMergeIntoDependencyVisitor());
 
-  static void collect(
-      OpenLineageContext context, LogicalPlan plan, ColumnLevelLineageBuilder builder) {
-
+  static void collect(ColumnLevelLineageContext context, LogicalPlan plan) {
     plan.foreach(
         node -> {
-          collectFromNode(context, node, builder);
+          collectFromNode(context, node);
           return scala.runtime.BoxedUnit.UNIT;
         });
   }
 
-  static void collectFromNode(
-      OpenLineageContext context, LogicalPlan node, ColumnLevelLineageBuilder builder) {
+  static void collectFromNode(ColumnLevelLineageContext context, LogicalPlan node) {
     expressionDependencyVisitors.stream()
         .filter(collector -> collector.isDefinedAt(node))
-        .forEach(collector -> collector.apply(node, builder));
+        .forEach(collector -> collector.apply(node, context.getBuilder()));
 
-    CustomCollectorsUtils.collectExpressionDependencies(context, node, builder);
+    CustomCollectorsUtils.collectExpressionDependencies(context, node);
     List<NamedExpression> expressions = new LinkedList<>();
     if (node instanceof ColumnLevelLineageNode) {
-      extensionColumnLineage(context, builder, (ColumnLevelLineageNode) node);
+      extensionColumnLineage(context, (ColumnLevelLineageNode) node);
     } else if (node instanceof Project) {
       expressions.addAll(
           ScalaConversionUtils.<NamedExpression>fromSeq(((Project) node).projectList()));
@@ -71,19 +68,22 @@ public class ExpressionDependencyCollector {
           ScalaConversionUtils.<NamedExpression>fromSeq(((Aggregate) node).aggregateExpressions()));
     } else if (node instanceof LogicalRelation) {
       if (((LogicalRelation) node).relation() instanceof JDBCRelation) {
-        JdbcColumnLineageCollector.extractExpressionsFromJDBC(node, builder);
+        JdbcColumnLineageCollector.extractExpressionsFromJDBC(node, context.getBuilder());
       }
     }
 
     expressions.stream()
-        .forEach(expr -> traverseExpression((Expression) expr, expr.exprId(), builder));
+        .forEach(
+            expr -> traverseExpression((Expression) expr, expr.exprId(), context.getBuilder()));
   }
 
   private static void extensionColumnLineage(
-      OpenLineageContext context, ColumnLevelLineageBuilder builder, ColumnLevelLineageNode node) {
+      ColumnLevelLineageContext context, ColumnLevelLineageNode node) {
     List<ExpressionDependency> deps =
         ScalaConversionUtils.<ExpressionDependency>fromSeq(
-            node.columnLevelLineageDependencies(ExtensionPlanUtils.context(context)).toSeq());
+            node.columnLevelLineageDependencies(
+                    ExtensionPlanUtils.context(context.getEvent(), context.getOlContext()))
+                .toSeq());
 
     deps.stream()
         .filter(e -> e instanceof ExpressionDependencyWithDelegate)
@@ -92,7 +92,9 @@ public class ExpressionDependencyCollector {
         .forEach(
             e ->
                 traverseExpression(
-                    (Expression) e.expression(), ExprId.apply(e.outputExprId().exprId()), builder));
+                    (Expression) e.expression(),
+                    ExprId.apply(e.outputExprId().exprId()),
+                    context.getBuilder()));
 
     deps.stream()
         .filter(e -> e instanceof ExpressionDependencyWithIdentifier)
@@ -102,9 +104,11 @@ public class ExpressionDependencyCollector {
                 ScalaConversionUtils.<OlExprId>fromSeq(d.inputExprIds().toSeq()).stream()
                     .forEach(
                         i ->
-                            builder.addDependency(
-                                ExprId.apply(d.outputExprId().exprId()),
-                                ExprId.apply(i.exprId()))));
+                            context
+                                .getBuilder()
+                                .addDependency(
+                                    ExprId.apply(d.outputExprId().exprId()),
+                                    ExprId.apply(i.exprId()))));
   }
 
   public static void traverseExpression(

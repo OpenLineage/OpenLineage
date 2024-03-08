@@ -13,6 +13,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.extension.scala.v1.LineageRelation;
 import java.util.Collections;
 import java.util.List;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 
 public class ExtensionLineageRelationHandler<D extends Dataset> {
@@ -25,14 +26,14 @@ public class ExtensionLineageRelationHandler<D extends Dataset> {
     this.context = context;
   }
 
-  public List<D> handleRelation(LogicalRelation x) {
+  public List<D> handleRelation(SparkListenerEvent event, LogicalRelation x) {
     if (!(x.relation() instanceof LineageRelation)) {
       return Collections.emptyList();
     }
 
     LineageRelation relation = (LineageRelation) x.relation();
     DatasetIdentifier di =
-        relation.getLineageDatasetIdentifier(ExtensionPlanUtils.context(context));
+        relation.getLineageDatasetIdentifier(ExtensionPlanUtils.context(event, context));
 
     if (x.schema() != null) {
       return Collections.singletonList(datasetFactory.getDataset(di, x.schema()));

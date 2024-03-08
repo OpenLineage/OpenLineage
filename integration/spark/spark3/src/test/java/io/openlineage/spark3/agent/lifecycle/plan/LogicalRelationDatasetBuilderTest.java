@@ -25,6 +25,7 @@ import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkContext;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.execution.datasources.FileIndex;
@@ -90,7 +91,8 @@ class LogicalRelationDatasetBuilderTest {
         when(DatasetVersionDatasetFacetUtils.extractVersionFromLogicalRelation(logicalRelation))
             .thenReturn(Optional.of(SOME_VERSION));
 
-        List<OpenLineage.Dataset> datasets = visitor.apply(logicalRelation);
+        List<OpenLineage.Dataset> datasets =
+            visitor.apply(mock(SparkListenerEvent.class), logicalRelation);
         assertEquals(1, datasets.size());
         OpenLineage.Dataset ds = datasets.get(0);
         assertEquals("/tmp", ds.getName());
@@ -118,7 +120,8 @@ class LogicalRelationDatasetBuilderTest {
             .thenReturn(Optional.of(SOME_VERSION));
         when(logicalRelation.schema()).thenReturn(schema);
 
-        List<OpenLineage.Dataset> datasets = visitor.apply(logicalRelation);
+        List<OpenLineage.Dataset> datasets =
+            visitor.apply(mock(SparkListenerEvent.class), logicalRelation);
         assertEquals(1, datasets.size());
         OpenLineage.Dataset ds = datasets.get(0);
         assertEquals("/tmp", ds.getName());

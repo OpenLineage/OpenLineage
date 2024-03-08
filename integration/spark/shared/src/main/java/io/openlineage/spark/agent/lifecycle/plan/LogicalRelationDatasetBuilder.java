@@ -97,8 +97,15 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
   @Override
   public List<D> apply(LogicalRelation logRel) {
+    // intentionally unimplemented
+    throw new UnsupportedOperationException("apply(LogicalPlay) is not implemented");
+  }
+
+  @Override
+  public List<D> apply(SparkListenerEvent event, LogicalRelation logRel) {
     if (logRel.relation() instanceof LineageRelation) {
-      return new ExtensionLineageRelationHandler<>(context, datasetFactory).handleRelation(logRel);
+      return new ExtensionLineageRelationHandler<>(context, datasetFactory)
+          .handleRelation(event, logRel);
     } else if (logRel.catalogTable() != null && logRel.catalogTable().isDefined()) {
       return handleCatalogTable(logRel);
     } else if (logRel.relation() instanceof HadoopFsRelation) {

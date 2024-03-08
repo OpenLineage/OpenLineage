@@ -19,6 +19,7 @@ import io.openlineage.spark.agent.lifecycle.plan.handlers.ExtensionLineageRelati
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.extension.scala.v1.LineageRelation;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.sources.BaseRelation;
 import org.junit.jupiter.api.Test;
@@ -43,9 +44,9 @@ class ExtensionLineageRelationHandlerTest {
     when(relation.schema()).thenReturn(null);
     when(relation.relation()).thenReturn((BaseRelation) lineageRelation);
 
-    assertThat(handler.handleRelation(relation)).isNotEmpty();
+    assertThat(handler.handleRelation(mock(SparkListenerEvent.class), relation)).isNotEmpty();
 
-    InputDataset dataset = handler.handleRelation(relation).get(0);
+    InputDataset dataset = handler.handleRelation(mock(SparkListenerEvent.class), relation).get(0);
     assertThat(dataset)
         .hasFieldOrPropertyWithValue("name", "name")
         .hasFieldOrPropertyWithValue("namespace", "namespace");
@@ -55,6 +56,6 @@ class ExtensionLineageRelationHandlerTest {
   @Test
   void testApplyWhenCalledForNonLineageRelation() {
     when(relation.relation()).thenReturn(mock(BaseRelation.class));
-    assertThat(handler.handleRelation(relation)).isEmpty();
+    assertThat(handler.handleRelation(mock(SparkListenerEvent.class), relation)).isEmpty();
   }
 }

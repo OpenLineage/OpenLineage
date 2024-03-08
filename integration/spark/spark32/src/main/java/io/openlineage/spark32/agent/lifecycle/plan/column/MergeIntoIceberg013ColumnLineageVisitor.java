@@ -5,7 +5,7 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan.column;
 
-import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.ReflectionUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -33,22 +33,22 @@ public class MergeIntoIceberg013ColumnLineageVisitor implements ColumnLevelLinea
   }
 
   @Override
-  public void collectInputs(LogicalPlan node, ColumnLevelLineageBuilder builder) {
+  public void collectInputs(ColumnLevelLineageContext context, LogicalPlan node) {
     if (node instanceof ReplaceData) {
-      InputFieldsCollector.collect(context, ((ReplaceData) node).child(), builder);
-      InputFieldsCollector.collect(context, (LogicalPlan) ((ReplaceData) node).table(), builder);
+      InputFieldsCollector.collect(context, ((ReplaceData) node).child());
+      InputFieldsCollector.collect(context, (LogicalPlan) ((ReplaceData) node).table());
     }
   }
 
   @Override
-  public void collectOutputs(LogicalPlan node, ColumnLevelLineageBuilder builder) {
+  public void collectOutputs(ColumnLevelLineageContext context, LogicalPlan node) {
     if (node instanceof ReplaceData) {
-      OutputFieldsCollector.collect(context, (LogicalPlan) ((ReplaceData) node).table(), builder);
+      OutputFieldsCollector.collect(context, (LogicalPlan) ((ReplaceData) node).table());
     }
   }
 
   @Override
-  public void collectExpressionDependencies(LogicalPlan node, ColumnLevelLineageBuilder builder) {
+  public void collectExpressionDependencies(ColumnLevelLineageContext context, LogicalPlan node) {
     if (node instanceof ReplaceData) {
       ReplaceData replaceIcebergData = (ReplaceData) node;
       NamedRelation namedRelation = replaceIcebergData.table();
@@ -65,9 +65,11 @@ public class MergeIntoIceberg013ColumnLineageVisitor implements ColumnLevelLinea
         }
 
         for (int i = 0; i < queryOutputs.size(); i++) {
-          builder.addDependency(
-              ((LogicalPlan) namedRelation).output().apply(i).exprId(),
-              queryOutputs.get(i).exprId());
+          context
+              .getBuilder()
+              .addDependency(
+                  ((LogicalPlan) namedRelation).output().apply(i).exprId(),
+                  queryOutputs.get(i).exprId());
         }
       }
     }

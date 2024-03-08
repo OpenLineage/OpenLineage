@@ -5,7 +5,7 @@
 
 package io.openlineage.spark34.agent.lifecycle.plan.column;
 
-import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.ReflectionUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -34,24 +34,22 @@ public class MergeIntoIceberg13ColumnLineageVisitor implements ColumnLevelLineag
   }
 
   @Override
-  public void collectInputs(LogicalPlan node, ColumnLevelLineageBuilder builder) {
+  public void collectInputs(ColumnLevelLineageContext context, LogicalPlan node) {
     if (node instanceof ReplaceIcebergData) {
-      InputFieldsCollector.collect(context, ((ReplaceIcebergData) node).child(), builder);
-      InputFieldsCollector.collect(
-          context, (LogicalPlan) ((ReplaceIcebergData) node).table(), builder);
+      InputFieldsCollector.collect(context, ((ReplaceIcebergData) node).child());
+      InputFieldsCollector.collect(context, (LogicalPlan) ((ReplaceIcebergData) node).table());
     }
   }
 
   @Override
-  public void collectOutputs(LogicalPlan node, ColumnLevelLineageBuilder builder) {
+  public void collectOutputs(ColumnLevelLineageContext context, LogicalPlan node) {
     if (node instanceof ReplaceIcebergData) {
-      OutputFieldsCollector.collect(
-          context, (LogicalPlan) ((ReplaceIcebergData) node).table(), builder);
+      OutputFieldsCollector.collect(context, (LogicalPlan) ((ReplaceIcebergData) node).table());
     }
   }
 
   @Override
-  public void collectExpressionDependencies(LogicalPlan node, ColumnLevelLineageBuilder builder) {
+  public void collectExpressionDependencies(ColumnLevelLineageContext context, LogicalPlan node) {
     if (node instanceof ReplaceIcebergData) {
       ReplaceIcebergData replaceIcebergData = (ReplaceIcebergData) node;
       NamedRelation namedRelation = replaceIcebergData.table();
@@ -68,9 +66,11 @@ public class MergeIntoIceberg13ColumnLineageVisitor implements ColumnLevelLineag
         }
 
         for (int i = 0; i < queryOutputs.size(); i++) {
-          builder.addDependency(
-              ((LogicalPlan) namedRelation).output().apply(i).exprId(),
-              queryOutputs.get(i).exprId());
+          context
+              .getBuilder()
+              .addDependency(
+                  ((LogicalPlan) namedRelation).output().apply(i).exprId(),
+                  queryOutputs.get(i).exprId());
         }
       }
     }

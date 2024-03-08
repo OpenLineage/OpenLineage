@@ -2,6 +2,9 @@ workflows:
   openlineage-spark:
     jobs:
       - build-integration-spark-interfaces-scala:
+          matrix:
+            parameters:
+              scala-binary-version: [ '2.12', '2.13' ]
           requires:
             - build-client-java
       - build-integration-spark-scala-2_12:

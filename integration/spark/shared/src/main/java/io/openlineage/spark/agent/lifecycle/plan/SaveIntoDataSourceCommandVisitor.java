@@ -94,7 +94,7 @@ public class SaveIntoDataSourceCommandVisitor
           outputDataset()
               .getDataset(
                   provider.getLineageDatasetIdentifier(
-                      ExtensionPlanUtils.context(context),
+                      ExtensionPlanUtils.context(event, context),
                       context.getSparkSession().get().sqlContext(),
                       command.options()),
                   getSchema(command)));
@@ -139,7 +139,6 @@ public class SaveIntoDataSourceCommandVisitor
     }
 
     SQLContext sqlContext = context.getSparkSession().get().sqlContext();
-
     try {
       if (command.dataSource() instanceof RelationProvider) {
         RelationProvider p = (RelationProvider) command.dataSource();

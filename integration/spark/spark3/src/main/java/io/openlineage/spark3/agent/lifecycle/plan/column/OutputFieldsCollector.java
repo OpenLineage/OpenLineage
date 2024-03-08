@@ -5,10 +5,9 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
-import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ExtensionPlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.extension.scala.v1.ColumnLevelLineageNode;
 import io.openlineage.spark.extension.scala.v1.DatasetFieldLineage;
 import io.openlineage.spark.extension.scala.v1.OutputDatasetField;
@@ -24,34 +23,35 @@ import org.apache.spark.sql.catalyst.plans.logical.Project;
 /** Class created to collect output fields with the corresponding ExprId from LogicalPlan. */
 public class OutputFieldsCollector {
 
-  public static void collect(
-      OpenLineageContext context, LogicalPlan plan, ColumnLevelLineageBuilder builder) {
+  public static void collect(ColumnLevelLineageContext context, LogicalPlan plan) {
     if (plan instanceof ColumnLevelLineageNode) {
-      extensionColumnLineage(context, (ColumnLevelLineageNode) plan, builder);
+      extensionColumnLineage(context, (ColumnLevelLineageNode) plan);
     } else {
       getOutputExpressionsFromRoot(plan).stream()
-          .forEach(expr -> builder.addOutput(expr.exprId(), expr.name()));
+          .forEach(expr -> context.getBuilder().addOutput(expr.exprId(), expr.name()));
     }
 
-    CustomCollectorsUtils.collectOutputs(context, plan, builder);
+    CustomCollectorsUtils.collectOutputs(context, plan);
 
-    if (!builder.hasOutputs()) {
+    if (!context.getBuilder().hasOutputs()) {
       // extract outputs from the children
       ScalaConversionUtils.<LogicalPlan>fromSeq(plan.children()).stream()
-          .forEach(childPlan -> collect(context, childPlan, builder));
+          .forEach(childPlan -> collect(context, childPlan));
     }
   }
 
   private static void extensionColumnLineage(
-      OpenLineageContext context, ColumnLevelLineageNode node, ColumnLevelLineageBuilder builder) {
+      ColumnLevelLineageContext context, ColumnLevelLineageNode node) {
     ScalaConversionUtils.<DatasetFieldLineage>fromSeq(
-            node.columnLevelLineageOutputs(ExtensionPlanUtils.context(context)).toSeq())
+            node.columnLevelLineageOutputs(
+                    ExtensionPlanUtils.context(context.getEvent(), context.getOlContext()))
+                .toSeq())
         .stream()
         .filter(df -> df instanceof OutputDatasetField)
         .forEach(
             o -> {
               OutputDatasetField of = (OutputDatasetField) o;
-              builder.addOutput(ExprId.apply(of.exprId().exprId()), of.field());
+              context.getBuilder().addOutput(ExprId.apply(of.exprId().exprId()), of.field());
             });
   }
 

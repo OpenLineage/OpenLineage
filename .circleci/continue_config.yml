@@ -481,6 +481,9 @@ jobs:
           ./gradlew --no-daemon --console=plain publish
 
   build-integration-spark-interfaces-scala:
+    parameters:
+      scala-binary-version:
+        type: string
     working_directory: ~/openlineage/integration/spark-interfaces-scala
     docker:
       - image: cimg/openjdk:8.0
@@ -490,17 +493,17 @@ jobs:
       - run:
           name: Generate cache key
           command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
       - restore_cache:
           keys:
             - v1-spark-interfaces-scala-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-spark-interfaces-scala-{{ .Branch }}
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - run: ./gradlew publishToMavenLocal --info
+      - run: ./gradlew publishToMavenLocal --info -Pscala.binary.version=<< parameters.scala-binary-version >>
       - persist_to_workspace:
           root: ~/.m2/repository/io/openlineage/
           paths:
-            - spark-interfaces-scala
+            - spark-interfaces-scala_<< parameters.scala-binary-version >>
       - save_cache:
           key: v1-spark-interfaces-scala-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
@@ -521,11 +524,9 @@ jobs:
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
 
-          # publish jar to maven local so it can be found by dependents
-          ./gradlew publishToMavenLocal --info
-
           # Publish *.jar
-          ./gradlew --no-daemon publish --info
+          ./gradlew --no-daemon --console=plain clean publish -Pscala.binary.version=2.12
+          ./gradlew --no-daemon --console=plain clean publish -Pscala.binary.version=2.13
       - store_artifacts:
           path: ./build/libs
           destination: spark-interfaces-scala-artifacts

@@ -43,7 +43,7 @@ public class SparkExtensionV1OutputDatasetBuilder
 
     List<OutputDatasetWithFacets> datasets =
         ScalaConversionUtils.<OutputDatasetWithFacets>fromSeq(
-            lineageNode.getOutputs(ExtensionPlanUtils.context(context)).toSeq());
+            lineageNode.getOutputs(ExtensionPlanUtils.context(event, context)).toSeq());
 
     // extract datasets with delegate
     List<OutputDataset> outputDatasets =

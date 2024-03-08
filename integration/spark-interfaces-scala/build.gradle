@@ -36,18 +36,17 @@ pmdTest {
 repositories {
     mavenLocal()
     mavenCentral()
-    maven {
-        url = 'https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot'
-    }
 }
 
 ext {
     isReleaseVersion = !version.endsWith('SNAPSHOT')
+    scala = project.findProperty("scala.binary.version").toString()
+    scalaLibrary = scala == "2.13" ? "2.13.13" : "2.12.19"
 }
 
 dependencies {
     api "io.openlineage:openlineage-java:${project.version}"
-    compileOnly "org.scala-lang:scala-library:${project.scalaVersion}.12"
+    compileOnly "org.scala-lang:scala-library:${scalaLibrary}"
     testImplementation 'org.scalatest:scalatest_${project.scalaVersion}:3.0.0'
 }
 
@@ -97,7 +96,7 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             groupId = 'io.openlineage'
-            artifactId = "spark-interfaces-scala"
+            artifactId = "spark-interfaces-scala_${scala}"
 
             from components.java
 
@@ -105,7 +104,7 @@ publishing {
             artifact javadocJar
 
             pom {
-                name = 'spark-interfaces-scala'
+                name = "spark-interfaces-scala_${scala}"
                 description = 'OpenLineage Spark interfaces'
                 url = 'https://github.com/OpenLineage/OpenLineage'
                 licenses {
@@ -164,7 +163,7 @@ signing {
     sign publishing.publications.mavenJava
 }
 
-archivesBaseName="spark-interfaces-scala"
+archivesBaseName="spark-interfaces-scala_${scala}"
 
 shadowJar {
     dependsOn test
@@ -174,10 +173,11 @@ shadowJar {
         exclude 'org/slf4j/**'
         exclude 'org/yaml/**'
         exclude 'org/apache/**'
-        exclude 'io/openlineage/server/**'
         exclude 'io/openlineage/client/OpenlineageClient**'
         exclude 'io/openlineage/client/OpenlineageYaml**'
+        exclude 'io/openlineage/client/circuitBreaker**'
         exclude 'io/openlineage/client/transports/**'
+        exclude 'io/openlineage/client/utils**'
     }
     archiveClassifier = ''
     // avoid conflict with any client version of that lib

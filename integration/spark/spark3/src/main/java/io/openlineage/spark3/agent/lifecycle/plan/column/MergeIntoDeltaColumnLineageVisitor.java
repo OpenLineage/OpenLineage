@@ -5,7 +5,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
-import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.List;
@@ -26,9 +26,9 @@ public abstract class MergeIntoDeltaColumnLineageVisitor implements ColumnLevelL
   }
 
   @Override
-  public void collectInputs(LogicalPlan node, ColumnLevelLineageBuilder builder) {
+  public void collectInputs(ColumnLevelLineageContext context, LogicalPlan node) {
     if (node instanceof MergeIntoCommand) {
-      InputFieldsCollector.collect(context, ((MergeIntoCommand) node).target(), builder);
+      InputFieldsCollector.collect(context, ((MergeIntoCommand) node).target());
 
       List<Expression> mergeActions =
           getMergeActions((MergeIntoCommand) node).collect(Collectors.toList());
@@ -41,34 +41,35 @@ public abstract class MergeIntoDeltaColumnLineageVisitor implements ColumnLevelL
               .filter(action -> action.child() instanceof AttributeReference)
               .filter(
                   action ->
-                      builder
+                      context
+                          .getBuilder()
                           .getOutputExprIdByFieldName(action.targetColNameParts().mkString())
                           .isPresent())
               .map(action -> ((AttributeReference) action.child()).exprId())
               .collect(Collectors.toList());
 
       List<ExprId> inputsToRemove =
-          builder.getInputs().keySet().stream()
+          context.getBuilder().getInputs().keySet().stream()
               .filter(id -> !mergeActionsExprIds.contains(id))
               .collect(Collectors.toList());
 
-      inputsToRemove.forEach(id -> builder.getInputs().remove(id));
+      inputsToRemove.forEach(id -> context.getBuilder().getInputs().remove(id));
 
-      InputFieldsCollector.collect(context, ((MergeIntoCommand) node).source(), builder);
+      InputFieldsCollector.collect(context, ((MergeIntoCommand) node).source());
     }
   }
 
   @Override
-  public void collectOutputs(LogicalPlan node, ColumnLevelLineageBuilder builder) {
+  public void collectOutputs(ColumnLevelLineageContext context, LogicalPlan node) {
     if (node instanceof MergeIntoCommand) {
-      OutputFieldsCollector.collect(context, ((MergeIntoCommand) node).target(), builder);
+      OutputFieldsCollector.collect(context, ((MergeIntoCommand) node).target());
     }
   }
 
   public abstract Stream<Expression> getMergeActions(MergeIntoCommand mergeIntoCommand);
 
   @Override
-  public void collectExpressionDependencies(LogicalPlan node, ColumnLevelLineageBuilder builder) {
+  public void collectExpressionDependencies(ColumnLevelLineageContext context, LogicalPlan node) {
     if (node instanceof MergeIntoCommand) {
       getMergeActions((MergeIntoCommand) node)
           .filter(action -> action instanceof DeltaMergeAction)
@@ -76,28 +77,33 @@ public abstract class MergeIntoDeltaColumnLineageVisitor implements ColumnLevelL
           .filter(action -> action.child() instanceof AttributeReference)
           .filter(
               action ->
-                  builder
+                  context
+                      .getBuilder()
                       .getOutputExprIdByFieldName(action.targetColNameParts().mkString())
                       .isPresent())
           .forEach(
               action ->
-                  builder.addDependency(
-                      builder
-                          .getOutputExprIdByFieldName(action.targetColNameParts().mkString())
-                          .get(),
-                      ((AttributeReference) action.child()).exprId()));
+                  context
+                      .getBuilder()
+                      .addDependency(
+                          context
+                              .getBuilder()
+                              .getOutputExprIdByFieldName(action.targetColNameParts().mkString())
+                              .get(),
+                          ((AttributeReference) action.child()).exprId()));
     }
   }
 
   private Stream<DeltaMergeAction> getMergeActionsAttributes(
-      LogicalPlan node, ColumnLevelLineageBuilder builder) {
+      ColumnLevelLineageContext context, LogicalPlan node) {
     return getMergeActions((MergeIntoCommand) node)
         .filter(action -> action instanceof DeltaMergeAction)
         .map(action -> (DeltaMergeAction) action)
         .filter(action -> action.child() instanceof AttributeReference)
         .filter(
             action ->
-                builder
+                context
+                    .getBuilder()
                     .getOutputExprIdByFieldName(action.targetColNameParts().mkString())
                     .isPresent());
   }

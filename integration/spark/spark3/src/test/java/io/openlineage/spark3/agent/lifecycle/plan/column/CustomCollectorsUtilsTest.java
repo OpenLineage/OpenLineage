@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
@@ -66,7 +67,9 @@ public class CustomCollectorsUtilsTest {
                     .build()));
 
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(
+                mock(SparkListenerEvent.class), context, outputSchema)
+            .get();
 
     assertEquals(
         INPUT_COL_NAME,

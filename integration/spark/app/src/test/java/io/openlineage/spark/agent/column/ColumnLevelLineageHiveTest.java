@@ -20,10 +20,12 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +44,7 @@ class ColumnLevelLineageHiveTest {
   private static final String T1_EXPECTED_NAME = "column_non_v2/t1";
   SparkSession spark;
   OpenLineageContext context;
+  SparkListenerEvent event = mock(SparkListenerSQLExecutionEnd.class);
   QueryExecution queryExecution = mock(QueryExecution.class);
 
   OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
@@ -102,7 +105,8 @@ class ColumnLevelLineageHiveTest {
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, schemaDatasetFacet)
+            .get();
 
     assertColumnDependsOn(facet, "a", FILE, T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "b", FILE, T1_EXPECTED_NAME, "b");
@@ -118,7 +122,8 @@ class ColumnLevelLineageHiveTest {
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, schemaDatasetFacet)
+            .get();
 
     assertColumnDependsOn(facet, "a", FILE, T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "b", FILE, T1_EXPECTED_NAME, "b");
@@ -127,6 +132,7 @@ class ColumnLevelLineageHiveTest {
   @Test
   void testWhenSchemaIsNull() {
     when(queryExecution.optimizedPlan()).thenReturn(mock(LogicalPlan.class));
-    assertDoesNotThrow(() -> ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, null));
+    assertDoesNotThrow(
+        () -> ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, null));
   }
 }
