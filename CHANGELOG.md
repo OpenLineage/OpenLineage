@@ -9,6 +9,10 @@
 * **Flink: bump Flink JDBC connector version to 3.1.2-1.18 for Flink 1.18** (https://github.com/OpenLineage/OpenLineage/pull/2472) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
   *Bump Flink JDBC connector version to 3.1.2-1.18 for Flink 1.18.*
 
+### Fixed
+* **Flink: fix 1.9.1 version.** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2507) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Fixes class not found issue when checking for Cassandra classes. Fixes maven pom dependency to subprojects.*
+
 ### Changed
 * **Java Client: Added a `OpenLineageClientUtils#loadOpenLineageJson(InputStream)` and changed `OpenLineageClientUtils#loadOpenLineageYaml(InputStream)` methods.** (https://github.com/OpenLineage/OpenLineage/pull/2490) [@d-m-h](https://github.com/d-m-h)
     *This improves the explicitness of the methods. Previously, `loadOpenLineageYaml(InputStream)` wanted the `InputStream` to contain bytes that represented JSON.*

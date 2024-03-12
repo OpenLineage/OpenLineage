@@ -126,6 +126,10 @@ publishing {
                     developerConnection = 'scm:git:ssh://github.com:OpenLineage/OpenLineage.git'
                     url = 'https://github.com/OpenLineage/OpenLineage'
                 }
+                withXml {
+                    Node pomNode = asNode()
+                    pomNode.remove(pomNode.get("dependencies"))
+                }
             }
         }
     }

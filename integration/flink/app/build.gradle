@@ -7,7 +7,6 @@ import io.franzbecker.gradle.lombok.task.DelombokTask
 
 plugins {
     id 'java-library'
-    id 'maven-publish'
     id 'jacoco'
     id 'com.adarshr.test-logger'
     id 'com.diffplug.spotless'
