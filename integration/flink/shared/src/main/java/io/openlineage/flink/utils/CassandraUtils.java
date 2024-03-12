@@ -20,20 +20,6 @@ public class CassandraUtils {
   public static final String CASSANDRA_MANAGER_CLASS = "com.datastax.driver.core.Cluster$Manager";
   public static final String CASSANDRA_NAMESPACE_PREFIX = "cassandra://";
 
-  public static boolean hasClasses() {
-    try {
-      CassandraUtils.class
-          .getClassLoader()
-          .loadClass("org.apache.flink.batch.connectors.cassandra.CassandraInputFormat");
-      return true;
-    } catch (Exception e) {
-      // swallow- we don't care
-      log.debug(
-          "Can't load class org.apache.flink.batch.connectors.cassandra.CassandraInputFormat");
-    }
-    return false;
-  }
-
   public static Optional<Table> extractTableAnnotation(Class pojo) {
     Annotation[] annotations = pojo.getAnnotations();
     for (Annotation annotation : annotations) {

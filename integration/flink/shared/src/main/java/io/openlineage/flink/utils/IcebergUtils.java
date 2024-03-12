@@ -14,18 +14,6 @@ import org.apache.iceberg.Table;
 
 public class IcebergUtils {
 
-  public static boolean hasClasses() {
-    try {
-      IcebergUtils.class
-          .getClassLoader()
-          .loadClass("org.apache.iceberg.flink.source.StreamingMonitorFunction");
-      return true;
-    } catch (Exception e) {
-      // swallow- we don't care
-    }
-    return false;
-  }
-
   public static OpenLineage.SchemaDatasetFacet getSchema(OpenLineageContext context, Table table) {
     List<SchemaDatasetFacetFields> fields =
         table.schema().columns().stream()
