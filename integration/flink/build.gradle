@@ -156,7 +156,13 @@ signing {
 }
 
 shadowJar {
-    minimize()
+    minimize() {
+        exclude(project(path: ":app"))
+        exclude(project(path: ":shared"))
+        exclude(project(path: ":flink115"))
+        exclude(project(path: ":flink117"))
+        exclude(project(path: ":flink118"))
+    }
     archiveClassifier = ''
     // avoid conflict with any client version of that lib
     relocate 'com.fasterxml.jackson', 'io.openlineage.flink.shaded.com.fasterxml.jackson'
