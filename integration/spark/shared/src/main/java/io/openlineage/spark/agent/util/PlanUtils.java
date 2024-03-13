@@ -37,12 +37,6 @@ import scala.runtime.AbstractPartialFunction;
  */
 @Slf4j
 public class PlanUtils {
-
-  public static final String SLASH_DELIMITER_USER_PASSWORD_REGEX =
-      "[A-Za-z0-9_%]+//?[A-Za-z0-9_%]*@";
-  public static final String COLON_DELIMITER_USER_PASSWORD_REGEX =
-      "([/|,])[A-Za-z0-9_%]+:?[A-Za-z0-9_%]*@";
-
   /**
    * Merge a list of {@link PartialFunction}s and return the first value where the function is
    * defined or empty list if no function matches the input.
