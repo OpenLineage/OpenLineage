@@ -61,8 +61,8 @@ class JdbcSourceVisitorTest {
     List<OpenLineage.InputDataset> inputDatasets = jdbcSourceVisitor.apply(source);
 
     assertEquals(1, inputDatasets.size());
-    assertEquals("jdbc:postgresql://host:port/database", inputDatasets.get(0).getNamespace());
-    assertEquals("jdbc_table", inputDatasets.get(0).getName());
+    assertEquals("postgres://host:port", inputDatasets.get(0).getNamespace());
+    assertEquals("database.jdbc_table", inputDatasets.get(0).getName());
   }
 
   private static Stream<Arguments> provideArguments() {

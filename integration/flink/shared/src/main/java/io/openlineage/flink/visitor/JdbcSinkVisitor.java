@@ -6,6 +6,8 @@
 package io.openlineage.flink.visitor;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.JdbcUtils;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.wrapper.JdbcSinkWrapper;
 import java.util.Collections;
@@ -53,8 +55,9 @@ public class JdbcSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
           String.format("Unsupported JDBC sink type %s", object.getClass().getCanonicalName()));
     }
 
-    return Collections.singletonList(
-        createOutputDataset(
-            context, sinkWrapper.getConnectionUrl(), sinkWrapper.getTableName().get()));
+    DatasetIdentifier di =
+        JdbcUtils.getDatasetIdentifierFromJdbcUrl(
+            sinkWrapper.getConnectionUrl(), sinkWrapper.getTableName().get());
+    return Collections.singletonList(createOutputDataset(context, di.getNamespace(), di.getName()));
   }
 }

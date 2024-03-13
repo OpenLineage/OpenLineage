@@ -8,6 +8,8 @@
   *Use Cassandra cluster info as dataset namespace, and combine keyspace with table name as dataset name.*
 * **Flink: bump Flink JDBC connector version to 3.1.2-1.18 for Flink 1.18** (https://github.com/OpenLineage/OpenLineage/pull/2472) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
   *Bump Flink JDBC connector version to 3.1.2-1.18 for Flink 1.18.*
+* **Flink: Fix dataset naming for JDBC datasets** (https://github.com/OpenLineage/OpenLineage/pull/2508) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Use common code for naming JDBC datasets for both Flink and Spark. Adjust to naming convention.*
 
 ### Fixed
 * **Flink: fix 1.9.1 version.** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2507) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
