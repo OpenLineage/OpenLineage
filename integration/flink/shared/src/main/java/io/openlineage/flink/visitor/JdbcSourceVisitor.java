@@ -6,6 +6,8 @@
 package io.openlineage.flink.visitor;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.JdbcUtils;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.wrapper.JdbcSourceWrapper;
 import java.util.Collections;
@@ -48,8 +50,9 @@ public class JdbcSourceVisitor extends Visitor<OpenLineage.InputDataset> {
           String.format("Unsupported JDBC Source type %s", object.getClass().getCanonicalName()));
     }
 
-    return Collections.singletonList(
-        createInputDataset(
-            context, sourceWrapper.getConnectionUrl(), sourceWrapper.getTableName().get()));
+    DatasetIdentifier di =
+        JdbcUtils.getDatasetIdentifierFromJdbcUrl(
+            sourceWrapper.getConnectionUrl(), sourceWrapper.getTableName().get());
+    return Collections.singletonList(createInputDataset(context, di.getNamespace(), di.getName()));
   }
 }

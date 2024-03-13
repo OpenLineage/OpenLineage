@@ -58,8 +58,8 @@ class JdbcSinkVisitorTest {
     List<OpenLineage.OutputDataset> outputDatasets = jdbcSinkVisitor.apply(source);
 
     assertEquals(1, outputDatasets.size());
-    assertEquals("jdbc:postgresql://host:port/database", outputDatasets.get(0).getNamespace());
-    assertEquals("jdbc_table", outputDatasets.get(0).getName());
+    assertEquals("postgres://host:port", outputDatasets.get(0).getNamespace());
+    assertEquals("database.jdbc_table", outputDatasets.get(0).getName());
   }
 
   private static Stream<Arguments> provideArguments() throws Exception {
