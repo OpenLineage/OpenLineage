@@ -7,7 +7,8 @@ package io.openlineage.spark.agent.lifecycle.plan.handlers;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.util.JdbcUtils;
+import io.openlineage.client.utils.JdbcUtils;
+import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.sql.ColumnMeta;
 import io.openlineage.sql.DbTableMeta;
@@ -45,7 +46,7 @@ public class JdbcRelationHandler<D extends OpenLineage.Dataset> {
   }
 
   public List<D> getDatasets(JDBCRelation relation, String url) {
-    Optional<SqlMeta> sqlMeta = JdbcUtils.extractQueryFromSpark(relation);
+    Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
     if (!sqlMeta.isPresent()) {
       return Collections.emptyList();
     }

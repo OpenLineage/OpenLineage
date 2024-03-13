@@ -6,8 +6,9 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.JdbcUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
-import io.openlineage.spark.agent.util.JdbcUtils;
+import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.sql.ColumnLineage;
 import io.openlineage.sql.ColumnMeta;
@@ -39,7 +40,7 @@ public class JdbcColumnLineageCollector {
       JDBCRelation relation,
       ColumnLevelLineageBuilder builder,
       List<DatasetIdentifier> datasetIdentifiers) {
-    Optional<SqlMeta> sqlMeta = JdbcUtils.extractQueryFromSpark(relation);
+    Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
     String jdbcUrl = relation.jdbcOptions().url();
     sqlMeta.ifPresent(
         meta -> {
@@ -73,7 +74,7 @@ public class JdbcColumnLineageCollector {
 
   public static void extractExpressionsFromJDBC(
       JDBCRelation relation, ColumnLevelLineageBuilder builder, List<Attribute> output) {
-    Optional<SqlMeta> sqlMeta = JdbcUtils.extractQueryFromSpark(relation);
+    Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
     sqlMeta.ifPresent(
         meta ->
             meta.columnLineage()
