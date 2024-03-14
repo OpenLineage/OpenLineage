@@ -194,7 +194,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
     circuitBreaker.run(
         () -> {
-          context.end(jobEnd);
+          if (context != null) {
+            context.end(jobEnd);
+          }
           return null;
         });
     if (sparkVersion.startsWith("3")) {
