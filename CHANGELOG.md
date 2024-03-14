@@ -1,27 +1,42 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.10.0...HEAD)
+
+## [1.10.0](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...1.10.0) - 2024-03-14
+
 ### Added
-* **Flink: support lineage for hybrid source** (https://github.com/OpenLineage/OpenLineage/pull/2491) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
-  *Support Hybrid source lineage for users who use Kafka and Iceberg Sources in backfill usecases.*
-* **Flink: improve Cassandra lineage metadata** (https://github.com/OpenLineage/OpenLineage/pull/2479) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
-  *Use Cassandra cluster info as dataset namespace, and combine keyspace with table name as dataset name.*
-* **Flink: bump Flink JDBC connector version to 3.1.2-1.18 for Flink 1.18** (https://github.com/OpenLineage/OpenLineage/pull/2472) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
-  *Bump Flink JDBC connector version to 3.1.2-1.18 for Flink 1.18.*
-* **Flink: Fix dataset naming for JDBC datasets** (https://github.com/OpenLineage/OpenLineage/pull/2508) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Use common code for naming JDBC datasets for both Flink and Spark. Adjust to naming convention.*
-
-### Fixed
-* **Flink: fix 1.9.1 version.** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2507) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Fixes class not found issue when checking for Cassandra classes. Fixes maven pom dependency to subprojects.*
-
-### Changed
-* **Java Client: Added a `OpenLineageClientUtils#loadOpenLineageJson(InputStream)` and changed `OpenLineageClientUtils#loadOpenLineageYaml(InputStream)` methods.** (https://github.com/OpenLineage/OpenLineage/pull/2490) [@d-m-h](https://github.com/d-m-h)
+* **Flink: support lineage for a hybrid source** [`#2491`](https://github.com/OpenLineage/OpenLineage/pull/2491) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Adds support for hybrid source lineage for users of Kafka and Iceberg sources in backfill usecases.*
+* **Flink: improve Cassandra lineage metadata** [`#2479`](https://github.com/OpenLineage/OpenLineage/pull/2479) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Cassandra cluster info to be used as the dataset namespace, and the keyspace to be combined with the table name as the dataset name.*
+* **Flink: bump Flink JDBC connector version** [`#2472`](https://github.com/OpenLineage/OpenLineage/pull/2472) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Bumps the Flink JDBC connector version to 3.1.2-1.18 for Flink 1.18.*
+* **Java: add a `OpenLineageClientUtils#loadOpenLineageJson(InputStream)` and change `OpenLineageClientUtils#loadOpenLineageYaml(InputStream)` methods** [`#2490`](https://github.com/OpenLineage/OpenLineage/pull/2490) [@d-m-h](https://github.com/d-m-h)  
     *This improves the explicitness of the methods. Previously, `loadOpenLineageYaml(InputStream)` wanted the `InputStream` to contain bytes that represented JSON.*
+* **Java: add info from the HTTP response to the client exception** [`#2486`](https://github.com/OpenLineage/OpenLineage/pull/2486) [@davidjgoss](https://github.com/davidjgoss)  
+    *Adds the status code and body as properties on the thrown exception when a non-success response is encountered in the HTTP transport.*
+* **Python: add support for MSK IAM authentication with a new transport** [`#2478`](https://github.com/OpenLineage/OpenLineage/pull/2478) [@mattiabertorello](https://github.com/mattiabertorello)  
+    *Eases publication of events to MSK with IAM authentication.*
 
 ### Fixed
-* **Spark: fix `HttpTransport` timeout.** [`#2475`](https://github.com/OpenLineage/OpenLineage/pull/2475) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Existing `timeout` config parameter is ambiguous: implementation treats value as double in seconds, although documentation claims it's milliseconds. New config param `timeoutInMillis` is added. Existing `timeout` gets removed from docs and will be deprecated in 1.13.*
+* **Airflow: proceed without rendering templates if `task_instance` copy fails** [`#2492`](https://github.com/OpenLineage/OpenLineage/pull/2492) [@kacpermuda](https://github.com/kacpermuda)  
+    *Airflow will now proceed without rendering templates if `task_instance` copy fails in `listener.on_task_instance_running`.*
+* **Spark: fix the `HttpTransport` timeout** [`#2475`](https://github.com/OpenLineage/OpenLineage/pull/2475) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *The existing `timeout` config parameter is ambiguous: implementation treats the value as double in seconds, although the documentation claims it's milliseconds. A new config param `timeoutInMillis` has been added. the Existing `timeout` has been removed from docs and will be deprecated in 1.13.*
+* **Spark: prevent NPE if the context is null** [`#2515`](https://github.com/OpenLineage/OpenLineage/pull/2515) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds a check for a null context before executing `end(jobEnd)`.*
+* **Flink: fix class not found issue for Cassandra** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2507) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+   *Fixes the class not found issue when checking for Cassandra classes. Also fixes the Maven POM dependency on subprojects.*
+* **Flink: refine the JDBC table name** [`#2512`](https://github.com/OpenLineage/OpenLineage/pull/2512) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Enables the JDBC table name with a schema prefix.*
+* **Flink: fix JDBC dataset naming** [`#2508`](https://github.com/OpenLineage/OpenLineage/pull/2508) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *For JDBC, the Flink integration is not adjusted to the Openlineage naming convention. There is code that extracts the dataset namespace/name from the JDBC connection url, but it's in the Spark integration. As a solution, this code has to be extracted into the Java client and reused by the Spark and Flink integrations.*
+* **Flink: fix failure due to missing Cassandra classes** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2507) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Flink is failing when no Cassandra classes are present on the class path. This is happening because of `CassandraUtils` class which has a static `hasClasses` method, but it imports Cassandra-related classes in the header. Also, the Flink subproject contains an unnecessary `maven-publish` plugin.*
+* **Flink: fix release runtime dependencies** [`#2504`](https://github.com/OpenLineage/OpenLineage/pull/2504) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *The shadow jar of Flink is not minimized, so some internal jars are listed as runtime dependences. This removes them from the final pom.xml file in the Flink module.*
+* **Spec: improve Cassandra lineage metadata** [`#2479`](https://github.com/OpenLineage/OpenLineage/pull/2479) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Following the namespace definition, we should use `cassandra://host:port`.*
 
 ## [1.9.1](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...1.9.1) - 2024-02-26
 ### Added
