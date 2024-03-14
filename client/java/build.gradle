@@ -13,7 +13,8 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id "com.adarshr.test-logger" version "3.2.0"
-    id 'com.diffplug.spotless' version '6.21.0'
+    // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
+    id 'com.diffplug.spotless' version '6.13.0'
     id "org.openapi.generator" version "6.6.0"
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
