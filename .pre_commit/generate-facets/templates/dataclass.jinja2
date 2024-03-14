@@ -1,0 +1,116 @@
+{%- import 'validators.jinja2' as validators -%}
+
+{%- set private_prefix = '' -%}
+{%- if class_name.endswith('Facet') -%}
+{%- set private_prefix = '_' -%}
+{%- endif -%}
+{%- if class_name != "ClassToBeSkipped" -%}
+{% for decorator in decorators -%}
+{{ decorator }}
+{% endfor -%}
+@define
+{%- if class_name.endswith("Event") -%}(kw_only=True){%- endif -%}
+{%- if base_class %}
+class {{ class_name }}({{ base_class }}):
+{%- else %}
+class {{ class_name }}:
+{%- endif %}
+{%- if description %}
+    """
+    {{ description | wordwrap(100) | indent(4)}}
+    """
+{%- endif %}
+{%- if not fields and not description %}
+    pass
+{%- endif %}
+{%- for field in fields if field.name not in [private_prefix+'schemaURL', private_prefix+'producer'] -%}
+    {%- if 'uuid' in field.type_hint -%}
+        {%- set type_hint = field.type_hint.replace('uuid', 'str') -%}
+    {%- elif 'date-time' in field.type_hint -%}
+        {%- set type_hint = field.type_hint.replace('date-time', 'str') -%}
+    {%- else -%}
+        {%- set type_hint = field.type_hint -%}
+    {%- endif -%}
+    {%- if field.field %}
+    {{ field.name }}: {{ type_hint }} = 
+        {%- if 'True' == validators.validator_needed(field.type_hint) -%} field(default={{ field.field }}
+        {%- else -%} {{ field.field }} {%- endif -%}
+    {%- else %}
+    {{ field.name }}: {{ type_hint }}
+    {%- if 'True' == validators.validator_needed(field.type_hint) %} = field() {%- endif -%}
+    {%- if not (field.required or (field.represented_default == 'None' and field.strip_default_none)) -%}
+        {%- if 'list' in type_hint -%}
+            {%- set default_value = 'factory=list' -%}
+        {%- elif 'dict' in type_hint -%}
+            {%- set default_value = 'factory=dict' -%}
+        {%- else -%}
+            {%- set default_value = 'default='+field.represented_default -%}
+        {%- endif -%}
+        = field({{ default_value }}
+        {%- if field.parent.reference.children | map(attribute='name') | join -%}, kw_only=True{%- endif -%}
+        )
+        {%- if 'factory' in default_value and "None" in type_hint %}  # type: ignore[assignment] {%- endif -%}
+    {%- endif -%}
+    {%- endif %}
+
+    {#- skip N815 rule for camel case -#}
+    {%- if field.name != field.name.lower()
+        and field.name != field.name.upper()
+        and ("_" not in field.name[1:] or "_" == field.name[0]) -%}  # noqa: N815 {% endif %}
+    {#- skip A003 rule -#}
+    {%- if field.name in ['type', 'sum', 'min', 'max', 'bytes'] -%}  # noqa: A003 {% endif %}
+    {%- if field.docstring %}
+    """
+    {{ field.docstring | wordwrap(100) | indent(4) }}
+    """
+    {%- endif -%}
+{%- endfor -%}
+{%- if class_name in ['BaseFacet', 'BaseEvent'] %}
+    {{ private_prefix }}producer: str = field(default="", kw_only=True)  # noqa: N815
+    {{ private_prefix }}schemaURL: str = field(  # noqa: N815
+        default="{{ _schemaURL }}", init=False)
+{%- endif -%}
+{%- if redact_fields -%}
+    {%- if base_class == 'RedactMixin' %}
+    _skip_redact
+    {%- else %}
+    _additional_skip_redact
+    {%- endif -%}: ClassVar[list[str]] = {{ redact_fields }}
+{%- endif -%}
+{%- if class_name in ['BaseFacet', 'BaseEvent'] %}
+    _base_skip_redact: ClassVar[list[str]] = ["{{ private_prefix }}producer", "{{ private_prefix }}schemaURL"]
+    _additional_skip_redact: ClassVar[list[str]] = []
+
+    def __attrs_post_init__(self) -> None:
+        import warnings
+        if self.{{ private_prefix }}producer:
+            warnings.warn(
+                "{{ private_prefix }}producer as argument is deprecated. Please use `set_producer` instead.",
+                DeprecationWarning,
+                stacklevel=2
+            )
+        else:
+            self.{{ private_prefix }}producer = PRODUCER
+        self.{{ private_prefix }}schemaURL = self._get_schema()
+
+    @property
+    def skip_redact(self) -> list[str]:
+        return self._base_skip_redact + self._additional_skip_redact
+{%- endif -%}
+{%- if _schemaURL %}
+    @staticmethod
+    def _get_schema() -> str:
+        return "{{ _schemaURL }}"
+{%- endif -%}
+{%- if class_name == 'ParentRunFacet' %}
+    @classmethod
+    def create(cls, runId: str, namespace: str, name: str) -> "ParentRunFacet":  # noqa: N803
+        return cls(
+            run=Run(runId=runId),
+            job=Job(namespace=namespace,name=name)
+        )
+{%- endif -%}
+{%- for field in fields -%}
+    {{ validators.validator(field.name, field.type_hint) }}
+{%- endfor -%}
+{%- endif -%}

@@ -5,7 +5,7 @@
     "OutputStatisticsOutputDatasetFacet": {
       "allOf": [
         {
-          "$ref": "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/OutputDatasetFacet"
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/OutputDatasetFacet"
         },
         {
           "type": "object",

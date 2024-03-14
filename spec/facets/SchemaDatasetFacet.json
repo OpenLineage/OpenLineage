@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-1-0/SchemaDatasetFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json",
   "$defs": {
     "SchemaDatasetFacetFields": {
       "type": "object",
@@ -32,7 +32,7 @@
     "SchemaDatasetFacet": {
       "allOf": [
         {
-          "$ref": "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/DatasetFacet"
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/DatasetFacet"
         },
         {
           "type": "object",

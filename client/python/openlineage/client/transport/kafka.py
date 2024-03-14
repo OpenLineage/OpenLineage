@@ -15,6 +15,7 @@ from packaging.version import Version
 
 if TYPE_CHECKING:
     from confluent_kafka import KafkaError, Message
+    from openlineage.client.client import Event
 log = logging.getLogger(__name__)
 
 _T = TypeVar("_T", bound="KafkaConfig")
@@ -85,7 +86,7 @@ class KafkaTransport(Transport):
 
         return f"run:{event.job.namespace}/{event.job.name}/{event.run.runId}"
 
-    def emit(self, event: RunEvent | DatasetEvent | JobEvent) -> None:
+    def emit(self, event: Event) -> None:
         if self._is_airflow_sqlalchemy:
             self._setup_producer(self.kafka_config.config)
 

@@ -83,12 +83,24 @@ class ExtesionDataSourceV2UtilsTest {
     properties.put("openlineage.dataset.facets.schema", OpenLineageClientUtils.toJson(schema));
 
     ExtesionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
+    OpenLineage.SchemaDatasetFacet schemaDatasetFacet =
+        openLineage.newSchemaDatasetFacet(
+            Arrays.asList(
+                openLineage
+                    .newSchemaDatasetFacetFieldsBuilder()
+                    .name("name")
+                    .type("user_id")
+                    .build(),
+                openLineage
+                    .newSchemaDatasetFacetFieldsBuilder()
+                    .name("type")
+                    .type("int64")
+                    .build()));
 
     assertThat(datasetFacetsBuilder.build().getSchema().get_producer().toString())
         .isEqualTo("https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client");
     assertThat(datasetFacetsBuilder.build().getSchema().get_schemaURL().toString())
-        .isEqualTo(
-            "https://openlineage.io/spec/facets/1-1-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet");
+        .isEqualTo(schemaDatasetFacet.get_schemaURL().toString());
     assertThat(datasetFacetsBuilder.build().getSchema().getFields().get(0))
         .hasFieldOrPropertyWithValue("name", "user_id")
         .hasFieldOrPropertyWithValue("type", "int64");

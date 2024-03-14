@@ -1,0 +1,21 @@
+{%- macro validator(name, type) -%}
+    {%- if 'date-time' in type %}
+    @{{ name }}.validator
+    def {{ name | lower }}_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        from dateutil import parser
+        parser.isoparse(value)
+        if "t" not in value.lower():
+            # make sure date-time contains time
+            msg = f"Parsed date-time has to contain time: {value}"
+            raise ValueError(msg)
+    {%- elif 'uuid' in type %}
+    @{{ name }}.validator
+    def {{ name | lower }}_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        from uuid import UUID
+        UUID(value)
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro validator_needed(type) -%}
+    {{ type in ['date-time', 'uuid'] }}
+{%- endmacro -%}
