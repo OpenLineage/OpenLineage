@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from openlineage.airflow.extractors import TaskMetadata
 from openlineage.airflow.extractors.dbapi_utils import execute_query_on_hook
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
-from openlineage.client.facet import BaseFacet, ExternalQueryRunFacet
+from openlineage.client.facet_v2 import BaseFacet, external_query_run
 from openlineage.common.provider.snowflake import fix_snowflake_sqlalchemy_uri
 
 
@@ -74,7 +74,7 @@ class SnowflakeExtractor(SqlExtractor):
         query_ids = self._get_query_ids()
         run_facets: Dict[str, BaseFacet] = {}
         if len(query_ids) == 1:
-            run_facets["externalQuery"] = ExternalQueryRunFacet(
+            run_facets["externalQuery"] = external_query_run.ExternalQueryRunFacet(
                 externalQueryId=query_ids[0], source=source.name
             )
         elif len(query_ids) > 1:

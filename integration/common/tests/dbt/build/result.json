@@ -115,7 +115,7 @@
         "eventType": "COMPLETE",
         "inputs": [
             {
-                "facets": {
+                "inputFacets": {
                     "dataQualityAssertions": {
                         "assertions": [
                             {

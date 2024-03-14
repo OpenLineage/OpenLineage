@@ -5,7 +5,7 @@ from typing import ClassVar, Dict, List
 
 import attr
 from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
-from openlineage.client.facet import BaseFacet
+from openlineage.client.facet_v2 import BaseFacet
 from openlineage.client.utils import RedactMixin
 
 from airflow.version import version as AIRFLOW_VERSION

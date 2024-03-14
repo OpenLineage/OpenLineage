@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pandas
 import pytest
-from openlineage.client.facet import SchemaField
+from openlineage.client.facet_v2 import schema_dataset
 from openlineage.common.provider.great_expectations import OpenLineageValidationAction
 from openlineage.common.provider.great_expectations.results import (
     GreatExpectationsAssertion,
@@ -236,10 +236,10 @@ def test_dataset_from_custom_sql(test_db_file, tmpdir):
     assert all(
         f in input_ds.facets["schema"].fields
         for f in [
-            SchemaField("name", "TEXT"),
-            SchemaField("birthdate", "TEXT"),
-            SchemaField("address", "TEXT"),
-            SchemaField("size", "INTEGER"),
+            schema_dataset.Field("name", "TEXT"),
+            schema_dataset.Field("birthdate", "TEXT"),
+            schema_dataset.Field("address", "TEXT"),
+            schema_dataset.Field("size", "INTEGER"),
         ]
     )
     assert len(input_ds.inputFacets) == 3
@@ -266,9 +266,9 @@ def test_dataset_from_custom_sql(test_db_file, tmpdir):
     assert all(
         f in input_ds.facets["schema"].fields
         for f in [
-            SchemaField("name", "TEXT"),
-            SchemaField("workplace", "TEXT"),
-            SchemaField("position", "TEXT"),
+            schema_dataset.Field("name", "TEXT"),
+            schema_dataset.Field("workplace", "TEXT"),
+            schema_dataset.Field("position", "TEXT"),
         ]
     )
     assert len(input_ds.inputFacets) == 3
@@ -332,10 +332,10 @@ def test_dataset_from_pandas_source(tmpdir):
     assert all(
         f in input_ds.facets["schema"].fields
         for f in [
-            SchemaField("name", "object"),
-            SchemaField("birthdate", "object"),
-            SchemaField("address", "object"),
-            SchemaField("size", "int64"),
+            schema_dataset.Field("name", "object"),
+            schema_dataset.Field("birthdate", "object"),
+            schema_dataset.Field("address", "object"),
+            schema_dataset.Field("size", "int64"),
         ]
     )
 

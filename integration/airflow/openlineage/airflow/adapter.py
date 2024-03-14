@@ -9,20 +9,21 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from openlineage.airflow.extractors import TaskMetadata
 from openlineage.airflow.utils import DagUtils, redact_with_exclusions
 from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
-from openlineage.client import OpenLineageClient, OpenLineageClientOptions, set_producer
-from openlineage.client.facet import (
-    BaseFacet,
-    DocumentationJobFacet,
-    ErrorMessageRunFacet,
-    JobTypeJobFacet,
-    NominalTimeRunFacet,
-    OwnershipJobFacet,
-    OwnershipJobFacetOwners,
-    ParentRunFacet,
-    ProcessingEngineRunFacet,
-    SourceCodeLocationJobFacet,
+from openlineage.client import OpenLineageClient, OpenLineageClientOptions
+from openlineage.client import set_producer_v2 as set_producer
+from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
+from openlineage.client.facet_v2 import (
+    JobFacet,
+    RunFacet,
+    documentation_job,
+    error_message_run,
+    job_type_job,
+    nominal_time_run,
+    ownership_job,
+    parent_run,
+    processing_engine_run,
+    source_code_location_job,
 )
-from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_static_uuid
 
 from airflow.stats import Stats
@@ -45,8 +46,8 @@ set_producer(_PRODUCER)
 # https://openlineage.io/docs/spec/facets/job-facets/job-type
 # They must be set after the `set_producer(_PRODUCER)`
 # otherwise the `JobTypeJobFacet._producer` will be set with the default value
-_JOB_TYPE_DAG = JobTypeJobFacet(jobType="DAG", integration="AIRFLOW", processingType="BATCH")
-_JOB_TYPE_TASK = JobTypeJobFacet(jobType="TASK", integration="AIRFLOW", processingType="BATCH")
+_JOB_TYPE_DAG = job_type_job.JobTypeJobFacet(jobType="DAG", integration="AIRFLOW", processingType="BATCH")
+_JOB_TYPE_TASK = job_type_job.JobTypeJobFacet(jobType="TASK", integration="AIRFLOW", processingType="BATCH")
 
 log = logging.getLogger(__name__)
 
@@ -129,7 +130,7 @@ class OpenLineageAdapter:
         nominal_end_time: str,
         owners: List[str],
         task: Optional[TaskMetadata],
-        run_facets: Optional[Dict[str, BaseFacet]] = None,  # Custom run facets
+        run_facets: Optional[Dict[str, RunFacet]] = None,  # Custom run facets
     ) -> str:
         """
         Emits openlineage event of type START
@@ -150,7 +151,7 @@ class OpenLineageAdapter:
         """
         from airflow.version import version as AIRFLOW_VERSION
 
-        processing_engine_version_facet = ProcessingEngineRunFacet(
+        processing_engine_version_facet = processing_engine_run.ProcessingEngineRunFacet(
             version=AIRFLOW_VERSION,
             name="Airflow",
             openlineageAdapterVersion=OPENLINEAGE_AIRFLOW_VERSION,
@@ -306,11 +307,12 @@ class OpenLineageAdapter:
             eventTime=DagUtils.to_iso_8601(dag_run.end_date),
             job=Job(name=dag_run.dag_id, namespace=_DAG_NAMESPACE, facets={"jobType": _JOB_TYPE_DAG}),
             run=Run(
-                runId=self.build_dag_run_id(
-                    dag_id=dag_run.dag_id,
-                    execution_date=dag_run.execution_date,
-                ),
-                facets={"errorMessage": ErrorMessageRunFacet(message=msg, programmingLanguage="python")},
+                runId=self.build_dag_run_id(dag_run.dag_id, dag_run.run_id),
+                facets={
+                    "errorMessage": error_message_run.ErrorMessageRunFacet(
+                        message=msg, programmingLanguage="python"
+                    )
+                },
             ),
             inputs=[],
             outputs=[],
@@ -326,14 +328,16 @@ class OpenLineageAdapter:
         job_name: Optional[str] = None,
         nominal_start_time: Optional[str] = None,
         nominal_end_time: Optional[str] = None,
-        run_facets: Dict[str, BaseFacet] = None,
+        run_facets: Dict[str, RunFacet] = None,
     ) -> Run:
-        facets: Dict[str, BaseFacet] = {}
+        facets: Dict[str, RunFacet] = {}
         if nominal_start_time:
-            facets.update({"nominalTime": NominalTimeRunFacet(nominal_start_time, nominal_end_time)})
+            facets.update(
+                {"nominalTime": nominal_time_run.NominalTimeRunFacet(nominal_start_time, nominal_end_time)}
+            )
         parent_name = parent_job_name or job_name
         if parent_run_id is not None and parent_name is not None:
-            parent_run_facet = ParentRunFacet.create(
+            parent_run_facet = parent_run.ParentRunFacet.create(
                 runId=parent_run_id,
                 namespace=_DAG_NAMESPACE,
                 name=parent_name,
@@ -352,23 +356,25 @@ class OpenLineageAdapter:
     @staticmethod
     def _build_job(
         job_name: str,
-        job_type: JobTypeJobFacet,
+        job_type: job_type_job.JobTypeJobFacet,
         job_description: Optional[str] = None,
         code_location: Optional[str] = None,
         owners: List[str] = None,
-        job_facets: Dict[str, BaseFacet] = None,
+        job_facets: Dict[str, JobFacet] = None,
     ):
-        facets: Dict[str, BaseFacet] = {}
+        facets: Dict[str, JobFacet] = {}
 
         if job_description:
-            facets.update({"documentation": DocumentationJobFacet(job_description)})
+            facets.update({"documentation": documentation_job.DocumentationJobFacet(job_description)})
         if code_location:
-            facets.update({"sourceCodeLocation": SourceCodeLocationJobFacet("", code_location)})
+            facets.update(
+                {"sourceCodeLocation": source_code_location_job.SourceCodeLocationJobFacet("", code_location)}
+            )
         if owners:
             facets.update(
                 {
-                    "ownership": OwnershipJobFacet(
-                        owners=[OwnershipJobFacetOwners(name=owner) for owner in owners]
+                    "ownership": ownership_job.OwnershipJobFacet(
+                        owners=[ownership_job.Owner(name=owner) for owner in owners]
                     )
                 }
             )

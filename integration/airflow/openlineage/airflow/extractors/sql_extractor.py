@@ -22,14 +22,11 @@ from openlineage.airflow.extractors.dbapi_utils import (
     get_table_schemas,
 )
 from openlineage.airflow.utils import get_connection
-from openlineage.client.facet import (
+from openlineage.client.facet_v2 import (
     BaseFacet,
-    ColumnLineageDatasetFacet,
-    ColumnLineageDatasetFacetFieldsAdditional,
-    ColumnLineageDatasetFacetFieldsAdditionalInputFields,
-    ExtractionError,
-    ExtractionErrorRunFacet,
-    SqlJobFacet,
+    column_lineage_dataset,
+    extraction_error_run,
+    sql_job,
 )
 from openlineage.common.dataset import Dataset, Source
 from openlineage.common.sql import DbTableMeta, SqlMeta, parse
@@ -61,7 +58,7 @@ class SqlExtractor(BaseExtractor):
 
     def extract(self) -> TaskMetadata:
         task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
-        job_facets = {"sql": SqlJobFacet(query=self._normalize_sql(self.operator.sql))}
+        job_facets = {"sql": sql_job.SQLJobFacet(query=self._normalize_sql(self.operator.sql))}
         run_facets: Dict = {}
 
         # (1) Parse sql statement to obtain input / output tables.
@@ -81,11 +78,11 @@ class SqlExtractor(BaseExtractor):
             )
 
         if sql_meta.errors:
-            run_facets["extractionError"] = ExtractionErrorRunFacet(
+            run_facets["extractionError"] = extraction_error_run.ExtractionErrorRunFacet(
                 totalTasks=len(self.operator.sql) if isinstance(self.operator.sql, list) else 1,
                 failedTasks=len(sql_meta.errors),
                 errors=[
-                    ExtractionError(
+                    extraction_error_run.Error(
                         errorMessage=error.message,
                         stackTrace=None,
                         task=error.origin_statement,
@@ -243,11 +240,11 @@ class SqlExtractor(BaseExtractor):
     def attach_column_facet(self, dataset: Dataset, database: Optional[str], sql_meta: SqlMeta) -> None:
         if not len(sql_meta.column_lineage):
             return
-        dataset.custom_facets["columnLineage"] = ColumnLineageDatasetFacet(
+        dataset.custom_facets["columnLineage"] = column_lineage_dataset.ColumnLineageDatasetFacet(
             fields={
-                column_lineage.descendant.name: ColumnLineageDatasetFacetFieldsAdditional(
+                column_lineage.descendant.name: column_lineage_dataset.Fields(
                     inputFields=[
-                        ColumnLineageDatasetFacetFieldsAdditionalInputFields(
+                        column_lineage_dataset.InputField(
                             namespace=dataset.source.name,
                             name=".".join(
                                 filter(

@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from openlineage.airflow.extractors.example_dag import python_task_getcwd
 from openlineage.airflow.extractors.python_extractor import PythonExtractor
-from openlineage.client.facet import SourceCodeJobFacet
+from openlineage.client.facet_v2 import source_code_job
 
 from airflow.operators.python_operator import PythonOperator
 
@@ -34,7 +34,7 @@ def test_extract_operator_code_disables_on_no_env():
 def test_extract_operator_code_enables_on_false():
     operator = PythonOperator(task_id="taskid", python_callable=callable)
     extractor = PythonExtractor(operator)
-    assert extractor.extract().job_facets["sourceCode"] == SourceCodeJobFacet("python", CODE)
+    assert extractor.extract().job_facets["sourceCode"] == source_code_job.SourceCodeJobFacet("python", CODE)
 
 
 def test_extract_dag_code_disables_on_no_env():
@@ -45,7 +45,7 @@ def test_extract_dag_code_disables_on_no_env():
 @patch.dict(os.environ, {"OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE": "False"})
 def test_extract_dag_code_enables_on_true():
     extractor = PythonExtractor(python_task_getcwd)
-    assert extractor.extract().job_facets["sourceCode"] == SourceCodeJobFacet(
+    assert extractor.extract().job_facets["sourceCode"] == source_code_job.SourceCodeJobFacet(
         "python", "<built-in function getcwd>"
     )
 
@@ -61,6 +61,6 @@ def test_extract_dag_code_env_disables_on_true():
 @patch.dict(os.environ, {"OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE": "asdftgeragdsfgawef"})
 def test_extract_dag_code_env_does_not_disable_on_random_string():
     extractor = PythonExtractor(python_task_getcwd)
-    assert extractor.extract().job_facets["sourceCode"] == SourceCodeJobFacet(
+    assert extractor.extract().job_facets["sourceCode"] == source_code_job.SourceCodeJobFacet(
         "python", "<built-in function getcwd>"
     )

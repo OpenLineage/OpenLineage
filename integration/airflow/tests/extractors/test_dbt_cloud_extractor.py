@@ -43,8 +43,8 @@ async def get_dbt_artifact_async(*args, **kwargs):
 
 
 def emit_event(event):
-    assert event.run.facets["parent"].run["runId"] == TASK_UUID
-    assert event.run.facets["parent"].job["name"] == "TestDBTCloudExtractor.task_id"
+    assert event.run.facets["parent"].run.runId == TASK_UUID
+    assert event.run.facets["parent"].job.name == "TestDBTCloudExtractor.task_id"
     assert event.job.namespace == "default"
     assert event.job.name.startswith("SANDBOX.TEST_SCHEMA.my_new_project")
 

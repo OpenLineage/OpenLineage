@@ -52,6 +52,7 @@ def test_lineage_parent_id():
         dag_run=mock.MagicMock(run_id="run_id"),
         execution_date=datetime(2020, 1, 1, 1, 1, 1, 0, tzinfo=timezone.utc),
         try_number=1,
+        dag_run=mock.MagicMock(run_id="run_id"),
     )
 
     call_result1 = lineage_parent_id(task_instance)

@@ -9,10 +9,10 @@ import warnings
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import attr
-from openlineage.client.facet import (
+from openlineage.client.facet_v2 import (
     BaseFacet,
-    ExternalQueryRunFacet,
-    OutputStatisticsOutputDatasetFacet,
+    external_query_run,
+    output_statistics_output_dataset,
 )
 from openlineage.common.dataset import Dataset, Source
 from openlineage.common.models import DbColumn, DbTableSchema
@@ -79,8 +79,10 @@ class BigQueryStatisticsDatasetFacet(BaseFacet):
     rowCount: int = attr.ib()
     size: int = attr.ib()
 
-    def to_openlineage(self) -> OutputStatisticsOutputDatasetFacet:
-        return OutputStatisticsOutputDatasetFacet(rowCount=self.rowCount, size=self.size)
+    def to_openlineage(self) -> output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet:
+        return output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
+            rowCount=self.rowCount, size=self.size
+        )
 
     @staticmethod
     def _get_schema() -> str:
@@ -124,7 +126,9 @@ class BigQueryDatasetsProvider:
         inputs = []
         outputs = []
         run_facets: Dict[str, BaseFacet] = {
-            "externalQuery": ExternalQueryRunFacet(externalQueryId=job_id, source="bigquery")
+            "externalQuery": external_query_run.ExternalQueryRunFacet(
+                externalQueryId=job_id, source="bigquery"
+            )
         }
         self.logger.debug("Extracting data from bigquery job: `%s`", job_id)
         try:

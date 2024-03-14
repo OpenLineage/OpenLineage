@@ -5,7 +5,7 @@
       "facets": {
         "sourceCode": {
           "language": "python",
-          "source": "def callable():\n    print(10)\n"
+          "sourceCode": "def callable():\n    print(10)\n"
         }
       },
       "name": "source_code_dag.python_task",
@@ -18,7 +18,7 @@
       "facets": {
         "sourceCode": {
           "language": "bash",
-          "source": "ls -halt && exit 0"
+          "sourceCode": "ls -halt && exit 0"
         }
       },
       "name": "source_code_dag.bash_task",
@@ -31,7 +31,7 @@
       "facets": {
         "sourceCode": {
           "language": "python",
-          "source": "def callable():\n    print(10)\n"
+          "sourceCode": "def callable():\n    print(10)\n"
         }
       },
       "name": "source_code_dag.python_task",
@@ -58,7 +58,7 @@
       "facets": {
         "sourceCode": {
           "language": "bash",
-          "source": "ls -halt && exit 0"
+          "sourceCode": "ls -halt && exit 0"
         }
       },
       "name": "source_code_dag.bash_task",

@@ -1,7 +1,7 @@
 # Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from openlineage.client import set_producer
+from openlineage.client import set_producer_v2 as set_producer
 
 from airflow import DAG
 from airflow.operators.bash_operator import BashOperator

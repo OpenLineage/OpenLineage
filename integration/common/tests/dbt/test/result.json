@@ -80,10 +80,10 @@
         "eventType": "COMPLETE",
         "inputs": [
             {
-                "facets": {
+                "inputFacets": {
                     "dataQualityAssertions": {
                         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "#/definitions/DataQualityAssertionsDatasetFacet",
+                        "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
                                 "column": "id",
@@ -137,7 +137,7 @@
         "eventType": "COMPLETE",
         "inputs": [
             {
-                "facets": {
+                "inputFacets": {
                     "dataQualityAssertions": {
                         "assertions": [
                             {
@@ -181,10 +181,10 @@
         "eventType": "COMPLETE",
         "inputs": [
             {
-                "facets": {
+                "inputFacets": {
                     "dataQualityAssertions": {
                         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "#/definitions/DataQualityAssertionsDatasetFacet",
+                        "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
                                 "column": "id",
@@ -214,7 +214,7 @@
             "facets": {
                 "parent": {
                     "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                    "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/ParentRunFacet",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
                     "job": {"name": "dbt-job-name", "namespace": "dbt"},
                     "run": {"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"}
                 },
@@ -232,10 +232,10 @@
         "eventType": "COMPLETE",
         "inputs": [
             {
-                "facets": {
+                "inputFacets": {
                     "dataQualityAssertions": {
                         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                        "_schemaURL": "#/definitions/DataQualityAssertionsDatasetFacet",
+                        "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DataQualityAssertionsDatasetFacet.json#/$defs/DataQualityAssertionsDatasetFacet",
                         "assertions": [
                             {
                                 "column": "id",
@@ -280,7 +280,7 @@
             "facets": {
                 "parent": {
                     "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-                    "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/ParentRunFacet",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
                     "job": {"name": "dbt-job-name", "namespace": "dbt"},
                     "run": {"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"}
                 },

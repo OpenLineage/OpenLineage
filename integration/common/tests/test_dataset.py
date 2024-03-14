@@ -2,12 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
-from openlineage.client.facet import (
-    DataSourceDatasetFacet,
-    SchemaDatasetFacet,
-    SchemaField,
+from openlineage.client.event_v2 import Dataset as OpenLineageDataset
+from openlineage.client.facet_v2 import (
+    datasource_dataset,
+    schema_dataset,
 )
-from openlineage.client.run import Dataset as OpenLineageDataset
 from openlineage.common.dataset import Dataset, Source
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
@@ -56,14 +55,14 @@ def test_dataset_to_openlineage(table_schema):
         namespace=source_name,
         name="public.discounts",
         facets={
-            "dataSource": DataSourceDatasetFacet(name=source_name, uri=source_name),
-            "schema": SchemaDatasetFacet(
+            "dataSource": datasource_dataset.DatasourceDatasetFacet(name=source_name, uri=source_name),
+            "schema": schema_dataset.SchemaDatasetFacet(
                 fields=[
-                    SchemaField(name="id", type="int4"),
-                    SchemaField(name="amount_off", type="int4"),
-                    SchemaField(name="customer_email", type="varchar"),
-                    SchemaField(name="starts_on", type="timestamp"),
-                    SchemaField(name="ends_on", type="timestamp"),
+                    schema_dataset.Field(name="id", type="int4"),
+                    schema_dataset.Field(name="amount_off", type="int4"),
+                    schema_dataset.Field(name="customer_email", type="varchar"),
+                    schema_dataset.Field(name="starts_on", type="timestamp"),
+                    schema_dataset.Field(name="ends_on", type="timestamp"),
                 ]
             ),
         },

@@ -11,10 +11,7 @@ from unittest import mock
 import pytz
 from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
 from openlineage.airflow.utils import try_import_from_string
-from openlineage.client.facet import (
-    ExternalQueryRunFacet,
-    OutputStatisticsOutputDatasetFacet,
-)
+from openlineage.client.facet_v2 import external_query_run, output_statistics_output_dataset
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.bigquery import (
     BigQueryErrorRunFacet,
@@ -115,7 +112,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         assert BigQueryStatisticsDatasetFacet(rowCount=20, size=321) == task_meta.outputs[0].facets["stats"]
 
         assert (
-            OutputStatisticsOutputDatasetFacet(rowCount=20, size=321)
+            output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(rowCount=20, size=321)
             == task_meta.outputs[0].outputFacets["outputStatistics"]
         )
 
@@ -127,7 +124,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         )
 
         assert (
-            ExternalQueryRunFacet(externalQueryId=bq_job_id, source="bigquery")
+            external_query_run.ExternalQueryRunFacet(externalQueryId=bq_job_id, source="bigquery")
             == task_meta.run_facets["externalQuery"]
         )
 
@@ -200,7 +197,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         assert job_run_facet.billedBytes == 0
 
         assert (
-            ExternalQueryRunFacet(externalQueryId=bq_job_id, source="bigquery")
+            external_query_run.ExternalQueryRunFacet(externalQueryId=bq_job_id, source="bigquery")
             == task_meta.run_facets["externalQuery"]
         )
 

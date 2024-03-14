@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
-from openlineage.client import set_producer
+from openlineage.client import set_producer_v2 as set_producer
 from openlineage.common.provider.dbt.processor import (
     DbtArtifactProcessor,
     DbtRunContext,
