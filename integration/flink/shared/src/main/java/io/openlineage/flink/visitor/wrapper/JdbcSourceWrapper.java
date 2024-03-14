@@ -56,7 +56,9 @@ public class JdbcSourceWrapper {
 
     return queryOpt
         .flatMap(query -> OpenLineageSql.parse(List.of(query)))
-        .map(sqlMeta -> sqlMeta.inTables().isEmpty() ? "" : sqlMeta.inTables().get(0).name());
+        .map(
+            sqlMeta ->
+                sqlMeta.inTables().isEmpty() ? "" : sqlMeta.inTables().get(0).qualifiedName());
   }
 
   private Optional<JdbcConnectionOptions> getConnectionOptions() {
