@@ -1,10 +1,12 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.10.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.10.2...HEAD)
 
-## [1.10.0](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...1.10.0) - 2024-03-14
+## [1.10.2](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...1.10.2) - 2024-03-15
 
 ### Added
+* **Dagster: add new provider for version 1.6.10** [`#2518`](https://github.com/OpenLineage/OpenLineage/pull/2518) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds the new provider required by the latest version of Dagster.*
 * **Flink: support lineage for a hybrid source** [`#2491`](https://github.com/OpenLineage/OpenLineage/pull/2491) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
     *Adds support for hybrid source lineage for users of Kafka and Iceberg sources in backfill usecases.*
 * **Flink: improve Cassandra lineage metadata** [`#2479`](https://github.com/OpenLineage/OpenLineage/pull/2479) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
