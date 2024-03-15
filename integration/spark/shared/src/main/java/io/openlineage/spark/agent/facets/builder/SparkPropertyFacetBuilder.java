@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.SparkSession;
 
@@ -53,6 +54,9 @@ public class SparkPropertyFacetBuilder
   @Override
   protected void build(
       SparkListenerEvent event, BiConsumer<String, ? super SparkPropertyFacet> consumer) {
+    if (!(event instanceOf SparkListenerJobStart) && !(event instanceOf SparkListenerJobEnd) {
+      return;
+    }
     consumer.accept("spark_properties", buildFacet(event));
   }
 
