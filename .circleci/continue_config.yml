@@ -1015,6 +1015,7 @@ workflows:
           context: release
           requires:
             - release-client-java
+            - build-integration-sql-java
       - release-proxy-backend:
           filters:
             tags:
