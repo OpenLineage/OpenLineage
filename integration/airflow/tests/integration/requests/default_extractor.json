@@ -21,6 +21,9 @@
 	}],
 	"run": {
 		"facets": {
+            "airflow_version": {
+                "taskInfo": "{{ 'true' if result == {} else result }}"
+            },
 			"parent": {
 				"job": {
 					"name": "parentjob",

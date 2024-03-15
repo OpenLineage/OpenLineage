@@ -17,6 +17,8 @@ from openlineage.airflow.facets import (
     AirflowRunArgsRunFacet,
     AirflowRunFacet,
     AirflowVersionRunFacet,
+    UnknownOperatorAttributeRunFacet,
+    UnknownOperatorInstance,
 )
 from openlineage.client.utils import RedactMixin
 from pendulum import from_timestamp
@@ -292,23 +294,35 @@ class TaskInstanceInfo(InfoJsonEncodable):
 
 class TaskInfo(InfoJsonEncodable):
     renames = {
-        "_BaseOperator__init_kwargs": "args",
         "_BaseOperator__from_mapped": "mapped",
         "_downstream_task_ids": "downstream_task_ids",
         "_upstream_task_ids": "upstream_task_ids",
+        "_is_setup": "is_setup",
+        "_is_teardown": "is_teardown",
     }
-    excludes = [
-        "_BaseOperator__instantiated",
-        "_dag",
-        "_hook",
-        "_log",
-        "_outlets",
-        "_inlets",
-        "_lock_for_execution",
-        "handler",
-        "params",
-        "python_callable",
-        "retry_delay",
+    includes = [
+        "task_id",
+        "depends_on_past",
+        "downstream_task_ids",
+        "execution_timeout",
+        "executor_config",
+        "ignore_first_depends_on_past",
+        "max_active_tis_per_dag",
+        "max_active_tis_per_dagrun",
+        "max_retry_delay",
+        "multiple_outputs",
+        "owner",
+        "priority_weight",
+        "queue",
+        "retries",
+        "retry_exponential_backoff",
+        "run_as_user",
+        "task_id",
+        "trigger_rule",
+        "upstream_task_ids",
+        "wait_for_downstream",
+        "wait_for_past_depends_before_skipping",
+        "weight_rule",
     ]
     casts = {
         "operator_class": lambda task: f"{get_operator_class(task).__module__}.{get_operator_class(task).__name__}",  # noqa: E501
@@ -340,18 +354,30 @@ def get_airflow_run_facet(
     task_uuid: str,
 ):
     return {
-        "airflow": json.loads(
-            json.dumps(
-                attr.asdict(
-                    AirflowRunFacet(
-                        dag=DagInfo(dag),
-                        dagRun=DagRunInfo(dag_run),
-                        taskInstance=TaskInstanceInfo(task_instance),
-                        task=TaskInfo(task),
-                        taskUuid=task_uuid,
+        "airflow": attr.asdict(
+            AirflowRunFacet(
+                dag=DagInfo(dag),
+                dagRun=DagRunInfo(dag_run),
+                taskInstance=TaskInstanceInfo(task_instance),
+                task=TaskInfo(task),
+                taskUuid=task_uuid,
+            )
+        )
+    }
+
+
+def get_unknown_source_attribute_run_facet(task: "BaseOperator", name: Optional[str] = None):
+    if not name:
+        name = get_operator_class(task).__name__
+    return {
+        "unknownSourceAttribute": attr.asdict(
+            UnknownOperatorAttributeRunFacet(
+                unknownItems=[
+                    UnknownOperatorInstance(
+                        name=name,
+                        properties=TaskInfo(task),
                     )
-                ),
-                default=str,
+                ]
             )
         )
     }
