@@ -30,6 +30,7 @@ dependencies {
     implementation(project(path: ":shared"))
     implementation(project(path: ":flink115"))
     implementation(project(path: ":flink117"))
+    implementation(project(path: ":flink118"))
 }
 
 task sourceJar(type: Jar) {
@@ -125,6 +126,10 @@ publishing {
                     developerConnection = 'scm:git:ssh://github.com:OpenLineage/OpenLineage.git'
                     url = 'https://github.com/OpenLineage/OpenLineage'
                 }
+                withXml {
+                    Node pomNode = asNode()
+                    pomNode.remove(pomNode.get("dependencies"))
+                }
             }
         }
     }
@@ -155,7 +160,13 @@ signing {
 }
 
 shadowJar {
-    minimize()
+    minimize() {
+        exclude(project(path: ":app"))
+        exclude(project(path: ":shared"))
+        exclude(project(path: ":flink115"))
+        exclude(project(path: ":flink117"))
+        exclude(project(path: ":flink118"))
+    }
     archiveClassifier = ''
     // avoid conflict with any client version of that lib
     relocate 'com.fasterxml.jackson', 'io.openlineage.flink.shaded.com.fasterxml.jackson'

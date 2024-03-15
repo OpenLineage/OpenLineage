@@ -8,7 +8,6 @@ import io.franzbecker.gradle.lombok.task.DelombokTask
 plugins {
     id 'java-library'
     id 'jacoco'
-    id 'maven-publish'
     id 'com.adarshr.test-logger'
     id 'com.diffplug.spotless'
     id 'com.github.johnrengelman.shadow'
@@ -76,7 +75,7 @@ ext {
             "1.15": ["cassandra": "1.15.4", "kafka": flinkVersion, "jdbc": "1.15.4", "alternativeShort": "1.15"],
             "1.16": ["cassandra": "3.0.0-1.16", "kafka": flinkVersion, "jdbc": "1.16.3", "alternativeShort": "1.16"],
             "1.17": ["cassandra": "3.1.0-1.17", "kafka": flinkVersion, "jdbc": "3.1.1-1.17", "alternativeShort": "1.17"],
-            "1.18": ["cassandra": "3.1.0-1.17", "kafka": "3.0.2-1.18", "jdbc": "3.1.1-1.17", "alternativeShort": "1.17"]
+            "1.18": ["cassandra": "3.1.0-1.17", "kafka": "3.0.2-1.18", "jdbc": "3.1.2-1.18", "alternativeShort": "1.17"]
     ]
 
     versions = versionsMap[flinkVersionShort]
@@ -84,18 +83,19 @@ ext {
 
 dependencies {
     api "io.openlineage:openlineage-java:${project.version}"
-    api "io.openlineage:openlineage-sql-java:1.8.0"
+    api "io.openlineage:openlineage-sql-java:${project.version}"
 
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     compileOnly "org.apache.flink:flink-java:$flinkVersion"
     compileOnly "org.apache.flink:flink-streaming-java:$flinkVersion"
     compileOnly "org.apache.flink:flink-runtime-web:$flinkVersion"
     compileOnly "org.apache.flink:flink-table-common:$flinkVersion"
+    compileOnly "org.apache.flink:flink-connector-base:$flinkVersion"
     compileOnly "org.apache.flink:flink-connector-kafka:${versions.kafka}"
+    compileOnly "org.apache.flink:flink-connector-cassandra_2.12:${versions.cassandra}"
     compileOnly "org.apache.flink:flink-avro:$flinkVersion"
     compileOnly "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     compileOnly "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:$icebergVersion"
-    compileOnly "org.apache.flink:flink-connector-cassandra_2.12:${versions.cassandra}"
     compileOnly "org.apache.flink:flink-connector-jdbc:${versions.jdbc}"
 
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"

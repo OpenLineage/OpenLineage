@@ -7,7 +7,6 @@ import io.franzbecker.gradle.lombok.task.DelombokTask
 
 plugins {
     id 'java-library'
-    id 'maven-publish'
     id 'jacoco'
     id 'com.adarshr.test-logger'
     id 'com.diffplug.spotless'
@@ -42,6 +41,7 @@ dependencies {
     implementation(project(path: ":shared"))
     implementation(project(path: ":flink115"))
     implementation(project(path: ":flink117"))
+    implementation(project(path: ":flink118"))
     api "io.openlineage:openlineage-java:${project.version}"
 
     compileOnly "org.projectlombok:lombok:${lombokVersion}"

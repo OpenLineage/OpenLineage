@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent.util;
 
+import static io.openlineage.client.utils.JdbcUtils.sanitizeJdbcUrl;
+
 import com.google.common.base.CharMatcher;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.sql.ColumnLineage;
@@ -27,25 +29,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 
 @Slf4j
-public class JdbcUtils {
-  /**
-   * JdbcUrl can contain username and password this method clean-up credentials from jdbcUrl and
-   * strip the jdbc prefix from the url
-   */
-  public static String sanitizeJdbcUrl(String jdbcUrl) {
-    return jdbcUrl
-        .replaceFirst("^jdbc:", "")
-        .replaceFirst("^postgresql:", "postgres:")
-        .replaceAll(PlanUtils.SLASH_DELIMITER_USER_PASSWORD_REGEX, "@")
-        .replaceAll(PlanUtils.COLON_DELIMITER_USER_PASSWORD_REGEX, "$1")
-        .replaceAll("(?<=[?,;&:)=])\\(?(?i)(?:user|username|password)=[^;&,)]+(?:[;&;)]|$)", "")
-        .replaceAll("\\?.+$", "");
-  }
-
-  public static DatasetIdentifier getDatasetIdentifierFromJdbcUrl(String jdbcUrl, String name) {
-    List<String> parts = Arrays.stream(name.split("\\.")).collect(Collectors.toList());
-    return getDatasetIdentifierFromJdbcUrl(jdbcUrl, parts);
-  }
+public class JdbcSparkUtils {
 
   /**
    * The algorithm for this method is as follows. First we parse URI and check if it includes path
