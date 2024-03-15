@@ -1,3 +1,8 @@
 rootProject.name = 'openlineage-flink'
 
+include 'shared'
+include 'flink115'
+include 'flink117'
+include 'flink118'
+include 'app'
 include 'examples:stateful'

@@ -6,7 +6,7 @@ requires = [
 
 [project]
 name = "openlineage-python"
-version = "1.9.0"
+version = "1.11.0"
 description = "OpenLineage Python Client"
 readme = "README.md"
 keywords = [
@@ -31,6 +31,10 @@ dependencies = [
   "requests>=2.20.0",
 ]
 optional-dependencies.kafka = [
+  "confluent-kafka>=2.1.1",
+]
+optional-dependencies.msk-iam = [
+  "aws-msk-iam-sasl-signer-python>=1.0.1",
   "confluent-kafka>=2.1.1",
 ]
 optional-dependencies.test = [

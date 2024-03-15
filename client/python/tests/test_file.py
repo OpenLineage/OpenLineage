@@ -2,13 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 import datetime
 import json
+import os
 import tempfile
 import time
 import uuid
 from os import listdir
-from os.path import isfile, join
+from os.path import exists, isfile, join
 from typing import Any, Dict, List
+from unittest import mock
 
+import pytest
 from openlineage.client import OpenLineageClient
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.transport.file import FileConfig, FileTransport
@@ -90,3 +93,102 @@ def test_client_with_file_transport_write_emits() -> None:
             test_event = test_event_set[i]
 
             assert_test_events(log_line, test_event)
+
+
+@pytest.mark.parametrize(
+    "append",
+    [
+        True,
+        False,
+    ],
+)
+@mock.patch("openlineage.client.transport.file.datetime")
+def test_file_transport_raises_error_with_non_writeable_file(mock_dt, append) -> None:
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime=datetime.datetime.now().isoformat(),
+        run=Run(runId=str(uuid.uuid4())),
+        job=Job(namespace="file", name="test"),
+        producer="prod",
+    )
+    mock_dt.now().strftime.return_value = "timestr"
+
+    with tempfile.TemporaryDirectory() as log_dir:
+        log_base_file_path = join(log_dir, "logtest")
+
+        config = FileConfig(log_file_path=log_base_file_path, append=append)
+        transport = FileTransport(config)
+
+        log_file_path = log_base_file_path if append else f"{log_base_file_path}-timestr"
+
+        # Create the file and make it read-only
+        with open(log_file_path, "w") as f:
+            f.write("This is a test file.")
+        os.chmod(log_file_path, 0o444)
+
+        with pytest.raises(RuntimeError, match=f"Log file `{log_file_path}` is not writeable"):
+            transport.emit(event)
+
+        os.remove(log_file_path)
+
+
+@pytest.mark.parametrize(
+    "append",
+    [
+        True,
+        False,
+    ],
+)
+def test_file_config_from_dict(append) -> None:
+    log_dir = tempfile.TemporaryDirectory()
+    file_path = join(log_dir.name, "logtest")
+
+    config = FileConfig.from_dict(params={"log_file_path": file_path, "append": append})
+    assert config.append is append
+    assert config.log_file_path == file_path
+
+
+def test_file_config_from_dict_no_file() -> None:
+    with pytest.raises(RuntimeError):
+        FileConfig.from_dict({})
+
+
+@pytest.mark.parametrize(
+    "append",
+    [
+        True,
+        False,
+    ],
+)
+def test_file_config_does_not_create_file_if_missing(append) -> None:
+    log_dir = tempfile.TemporaryDirectory()
+    file_path = join(log_dir.name, "test")
+
+    assert not exists(file_path)
+    FileConfig.from_dict(params={"log_file_path": file_path, "append": append})
+    assert not exists(file_path)
+
+
+@pytest.mark.parametrize(
+    "append",
+    [
+        True,
+        False,
+    ],
+)
+def test_file_config_append_mode_does_not_modify_file_if_exists(append) -> None:
+    log_dir = tempfile.TemporaryDirectory()
+    file_path = join(log_dir.name, "test-file")
+
+    with open(file_path, "w") as file:
+        file.write("test content")
+
+    assert exists(file_path)
+    FileConfig.from_dict(params={"log_file_path": file_path, "append": append})
+    assert exists(file_path)
+
+    with open(file_path) as file:
+        file_content = file.read()
+    assert file_content == "test content"
+
+    os.remove(file_path)

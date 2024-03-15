@@ -13,6 +13,7 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id "com.adarshr.test-logger" version "3.2.0"
+    // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
     id 'com.diffplug.spotless' version '6.13.0'
     id "org.openapi.generator" version "6.6.0"
     id "com.github.johnrengelman.shadow" version "7.1.2"
@@ -40,9 +41,9 @@ repositories {
 }
 
 ext {
-    assertjVersion = '3.25.2'
+    assertjVersion = '3.25.3'
     jacksonVersion = "2.15.3"
-    junit5Version = '5.10.1'
+    junit5Version = '5.10.2'
     lombokVersion = '1.18.30'
     mockitoVersion = '5.2.0'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
@@ -63,8 +64,8 @@ dependencies {
     implementation 'commons-logging:commons-logging:1.3.0'
     implementation 'org.slf4j:slf4j-api:1.7.36'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly 'org.apache.kafka:kafka-clients:3.6.1'
-    compileOnly 'com.amazonaws:amazon-kinesis-producer:0.15.9'
+    compileOnly 'org.apache.kafka:kafka-clients:3.7.0'
+    compileOnly 'com.amazonaws:amazon-kinesis-producer:0.15.10'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 

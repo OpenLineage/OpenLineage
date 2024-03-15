@@ -171,28 +171,29 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
               })
           .orElse(Collections.emptyList());
     } catch (Exception e) {
-      if ("com.databricks.backend.daemon.data.client.adl.AzureCredentialNotFoundExcepgittion"
-          .equals(e.getClass().getName())) {
-        // This is a fallback that can occur when hadoop configurations cannot be
-        // reached. This occurs in Azure Databricks when credential passthrough
-        // is enabled and you're attempting to get the data lake credentials.
-        // The Spark Listener context cannot use the user credentials
-        // thus we need a fallback.
-        // This is similar to the InsertIntoHadoopRelationVisitor's process for getting
-        // Datasets
-        List<D> inputDatasets = new ArrayList<D>();
-        List<Path> paths =
-            new ArrayList<>(ScalaConversionUtils.fromSeq(relation.location().rootPaths()));
-        for (Path p : paths) {
-          inputDatasets.add(datasetFactory.getDataset(p.toUri(), relation.schema()));
-        }
-        if (inputDatasets.isEmpty()) {
-          return Collections.emptyList();
-        } else {
-          return inputDatasets;
-        }
+      // This is a fallback that can occur when hadoop configurations cannot be
+      // reached. This occurs in Azure Databricks when credential passthrough
+      // is enabled and you're attempting to get the data lake credentials.
+      // The Spark Listener context cannot use the user credentials
+      // thus we need a fallback.
+      // This is similar to the InsertIntoHadoopRelationVisitor's process for getting
+      // Datasets
+      //
+      // This can also occur when running on a spark cluster with UnityCatalog enabled.
+      // An exception will get thrown claiming there is "no Credential Scope". Catching
+      // a specific exception such as the above azure databricks exception
+      // didn't seem to yield the correct results, so a catch all on exceptions here works
+      // for unity catalog.
+      List<D> inputDatasets = new ArrayList<D>();
+      List<Path> paths =
+          new ArrayList<>(ScalaConversionUtils.fromSeq(relation.location().rootPaths()));
+      for (Path p : paths) {
+        inputDatasets.add(datasetFactory.getDataset(p.toUri(), relation.schema()));
+      }
+      if (inputDatasets.isEmpty()) {
+        return Collections.emptyList();
       } else {
-        throw e;
+        return inputDatasets;
       }
     }
   }

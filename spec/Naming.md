@@ -58,6 +58,26 @@ Identifier:
 - Unique name: {database}.{table}
   - URI = mysql://{host}:{port}/{database}.{table}
 
+#### Cassandra:
+
+Datasource hierarchy:
+
+- Host
+- Port
+
+Naming hierarchy:
+
+- Keyspace
+- Table
+
+Identifier:
+
+- Namespace: cassandra://{host}:{port} of the service instance.
+  - Scheme = cassandra
+  - Authority = {host}:{port}
+- Unique name: {keyspace}.{table}
+  - URI = cassandra://{host}:{port}/{keyspace}.{table}
+
 #### Trino:
 
 Datasource hierarchy:

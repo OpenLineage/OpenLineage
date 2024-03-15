@@ -13,12 +13,16 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.openlineage.client.transports.HttpConfig;
+import io.openlineage.client.transports.TransportConfig;
+import java.io.ByteArrayInputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link OpenLineageClientUtils}. */
-public class OpenLineageClientUtilsTest {
+class OpenLineageClientUtilsTest {
   private static final String VALUE = "test";
   private static final Object OBJECT = new Object(VALUE);
   private static final TypeReference<Object> TYPE = new TypeReference<Object>() {};
@@ -30,13 +34,13 @@ public class OpenLineageClientUtilsTest {
   }
 
   @Test
-  public void testToJson() {
+  void testToJson() {
     final String actual = OpenLineageClientUtils.toJson(OBJECT);
     assertThat(actual).isEqualTo(JSON);
   }
 
   @Test
-  public void testToJson_withDisabledFacets() {
+  void testToJson_withDisabledFacets() {
     OpenLineageClientUtils.configureObjectMapper(new String[] {"excludedValue"});
     final String actual = OpenLineageClientUtils.toJson(new ObjectWithDisabledFacets("a", "b"));
 
@@ -45,8 +49,8 @@ public class OpenLineageClientUtilsTest {
   }
 
   @Test
-  public void testToJson_withDisabledFacetsIsNull() {
-    OpenLineageClientUtils.configureObjectMapper(null);
+  void testToJson_withDisabledFacetsIsNull() {
+    OpenLineageClientUtils.configureObjectMapper();
     final String actual = OpenLineageClientUtils.toJson(new ObjectWithDisabledFacets("a", "b"));
 
     assertThat(actual).contains("notExcludedValue");
@@ -54,18 +58,18 @@ public class OpenLineageClientUtilsTest {
   }
 
   @Test
-  public void testToJson_throwsOnNull() {
+  void testToJson_throwsOnNull() {
     assertThatNullPointerException().isThrownBy(() -> OpenLineageClientUtils.toJson(null));
   }
 
   @Test
-  public void testFromJson() {
+  void testFromJson() {
     final Object actual = OpenLineageClientUtils.fromJson(JSON, TYPE);
     assertThat(actual).isEqualToComparingFieldByField(OBJECT);
   }
 
   @Test
-  public void testFromJson_throwsOnNull() {
+  void testFromJson_throwsOnNull() {
     assertThatNullPointerException().isThrownBy(() -> OpenLineageClientUtils.fromJson(JSON, null));
     assertThatNullPointerException().isThrownBy(() -> OpenLineageClientUtils.fromJson(null, TYPE));
   }
@@ -79,7 +83,7 @@ public class OpenLineageClientUtilsTest {
   }
 
   @Test
-  public void testToUrl_throwsOnNull() {
+  void testToUrl_throwsOnNull() {
     assertThatNullPointerException().isThrownBy(() -> OpenLineageClientUtils.toUri(null));
   }
 
@@ -105,5 +109,56 @@ public class OpenLineageClientUtilsTest {
       this.excludedValue = excludedValue;
       this.notExcludedValue = notExcludedValue;
     }
+  }
+
+  @Test
+  void loadOpenLineageYaml_shouldDeserialiseYamlEncodedInputStreams() {
+    String yamlString =
+        "transport:\n"
+            + "  type: http\n"
+            + "  url: http://localhost:5050\n"
+            + "  endpoint: api/v1/lineage\n";
+    System.out.println(yamlString);
+
+    byte[] bytes = yamlString.getBytes(StandardCharsets.UTF_8);
+
+    OpenLineageYaml yaml =
+        OpenLineageClientUtils.loadOpenLineageYaml(new ByteArrayInputStream(bytes));
+    TransportConfig transportConfig = yaml.getTransportConfig();
+    assertThat(transportConfig).isNotNull();
+    assertThat(transportConfig).isInstanceOf(HttpConfig.class);
+    HttpConfig httpConfig = (HttpConfig) transportConfig;
+    assertThat(httpConfig.getUrl()).isEqualTo(URI.create("http://localhost:5050"));
+    assertThat(httpConfig.getEndpoint()).isEqualTo("api/v1/lineage");
+  }
+
+  @Test
+  void loadOpenLineageYaml_shouldFallbackAndDeserialiseJsonEncodedInputStreams() {
+    byte[] bytes =
+        "{\"transport\":{\"type\":\"http\",\"url\":\"https://localhost:1234/api/v1/lineage\"}}"
+            .getBytes(StandardCharsets.UTF_8);
+
+    OpenLineageYaml yaml =
+        OpenLineageClientUtils.loadOpenLineageYaml(new ByteArrayInputStream(bytes));
+    TransportConfig transportConfig = yaml.getTransportConfig();
+    assertThat(transportConfig).isNotNull();
+    assertThat(transportConfig).isInstanceOf(HttpConfig.class);
+    HttpConfig httpConfig = (HttpConfig) transportConfig;
+    assertThat(httpConfig.getUrl()).isEqualTo(URI.create("https://localhost:1234/api/v1/lineage"));
+  }
+
+  @Test
+  void loadOpenLineageJson_ShouldDeserialiseJsonEncodedInputStreams() {
+    byte[] bytes =
+        "{\"transport\":{\"type\":\"http\",\"url\":\"https://localhost:1234/api/v1/lineage\"}}"
+            .getBytes(StandardCharsets.UTF_8);
+
+    OpenLineageYaml yaml =
+        OpenLineageClientUtils.loadOpenLineageJson(new ByteArrayInputStream(bytes));
+    TransportConfig transportConfig = yaml.getTransportConfig();
+    assertThat(transportConfig).isNotNull();
+    assertThat(transportConfig).isInstanceOf(HttpConfig.class);
+    HttpConfig httpConfig = (HttpConfig) transportConfig;
+    assertThat(httpConfig.getUrl()).isEqualTo(URI.create("https://localhost:1234/api/v1/lineage"));
   }
 }

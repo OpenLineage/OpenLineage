@@ -2,37 +2,34 @@ import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
     id("java-library")
-    id("pmd")
-    id("com.diffplug.spotless")
-    id("io.freefair.lombok")
     id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
-    id 'maven-publish'
-    id 'signing'
-    id 'jacoco'
+    id("maven-publish")
+    id("signing")
+    id("jacoco")
 }
-
-archivesBaseName = 'openlineage-spark'
 
 ext {
-    isReleaseVersion = !version.endsWith('SNAPSHOT')
-    jacksonVersion = "2.13.2"
-    jacksonDatabindVersion = "2.13.2.2"
+    isReleaseVersion = !version.endsWith("SNAPSHOT")
+    scala = project.findProperty("scala.binary.version").toString()
+    scalaFmt = scala.replace(".", "")
 }
+
+final def archiveBaseName = "openlineage-spark_${scala}"
+final def activeRuntimeElementsConfiguration = "scala${scalaFmt}RuntimeElements"
 
 dependencies {
     implementation(project(path: ":app"))
-    implementation(project(path: ":shared"))
+    implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark2"))
-    implementation(project(path: ":spark3"))
+    implementation(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark31"))
-    implementation(project(path: ":spark32"))
-    implementation(project(path: ":spark33"))
-    implementation(project(path: ":spark34"))
-    implementation(project(path: ":spark35"))
+    implementation(project(path: ":spark32", configuration: activeRuntimeElementsConfiguration))
+    implementation(project(path: ":spark33", configuration: activeRuntimeElementsConfiguration))
+    implementation(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
+    implementation(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":snowflake"))
 }
-
 
 task sourceJar(type: Jar) {
     archiveClassifier = 'sources'
@@ -68,15 +65,19 @@ jacocoTestReport {
     }
 }
 
-tasks.withType(GenerateModuleMetadata) {
+tasks.withType(Jar).configureEach {
+    it.archiveBaseName = archiveBaseName
+}
+
+tasks.withType(GenerateModuleMetadata.class).configureEach {
     enabled = false
 }
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            groupId = 'io.openlineage'
-            artifactId = 'openlineage-spark'
+            groupId = "io.openlineage"
+            artifactId = "openlineage-spark_${scala}"
 
             from components.java
 
@@ -84,36 +85,35 @@ publishing {
             artifact javadocJar
 
             pom {
-                name = 'openlineage-spark'
-                description = 'OpenLineage Spark integration'
-                url = 'https://github.com/OpenLineage/OpenLineage'
+                name = "openlineage-spark_${scala}"
+                description = "OpenLineage Spark integration for Scala binary version ${scala}"
+                url = "https://github.com/OpenLineage/OpenLineage"
                 licenses {
                     license {
-                        name = 'The Apache License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        name = "The Apache License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
                     }
                 }
                 developers {
                     developer {
-                        id = 'openlineage'
-                        name = 'OpenLineage Project'
+                        id = "openlineage"
+                        name = "OpenLineage Project"
                     }
                 }
                 scm {
-                    connection = 'scm:git:git://github.com/OpenLineage/OpenLineage.git'
-                    developerConnection = 'scm:git:ssh://github.com:OpenLineage/OpenLineage.git'
-                    url = 'https://github.com/OpenLineage/OpenLineage'
+                    connection = "scm:git:git://github.com/OpenLineage/OpenLineage.git"
+                    developerConnection = "scm:git:ssh://github.com:OpenLineage/OpenLineage.git"
+                    url = "https://github.com/OpenLineage/OpenLineage"
                 }
             }
 
             pom.withXml {
-                asNode().dependencies.'*'.findAll() {
-                    it.groupId.text() == 'spark'
+                asNode().dependencies."*".findAll() {
+                    it.groupId.text() == "spark"
                 }.each() {
                     it.parent().remove(it)
                 }
             }
-
         }
     }
 
@@ -125,11 +125,12 @@ publishing {
 
     repositories {
         maven {
-            url = isReleaseVersion ? 'https://oss.sonatype.org/service/local/staging/deploy/maven2' :
-                    'https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot'
+            url = isReleaseVersion
+                    ? "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+                    : "https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot"
             credentials {
-                username = System.getenv('RELEASE_USERNAME')
-                password = System.getenv('RELEASE_PASSWORD')
+                username = System.getenv("RELEASE_USERNAME")
+                password = System.getenv("RELEASE_PASSWORD")
             }
         }
     }
@@ -144,61 +145,43 @@ signing {
 }
 
 shadowJar {
+    archiveClassifier = ""
+
     minimize() {
-        exclude(project(":shared"))
-        exclude(project(":spark2"))
-        exclude(project(":spark3"))
-        exclude(project(":spark31"))
-        exclude(project(":spark32"))
-        exclude(project(":spark33"))
-        exclude(project(":spark34"))
-        exclude(project(":spark35"))
-        exclude (project(":snowflake"))
-        exclude(project(":app"))
+        exclude(project(path: ":app"))
+        exclude(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
+        exclude(project(path: ":spark2"))
+        exclude(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
+        exclude(project(path: ":spark31"))
+        exclude(project(path: ":spark32", configuration: activeRuntimeElementsConfiguration))
+        exclude(project(path: ":spark33", configuration: activeRuntimeElementsConfiguration))
+        exclude(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
+        exclude(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
+        exclude(project(path: ":snowflake"))
     }
+
     dependencies {
-        exclude(dependency('org.slf4j::'))
-        exclude('org/apache/commons/logging/**')
+        exclude(dependency("org.slf4j::"))
+        exclude("org/apache/commons/logging/**")
     }
-    archiveClassifier = ''
-    // avoid conflict with any client version of that lib
-    relocate 'com.github.ok2c.hc5', 'io.openlineage.spark.shaded.com.github.ok2c.hc5'
-    relocate 'org.apache.httpcomponents.client5', 'io.openlineage.spark.shaded.org.apache.httpcomponents.client5'
-    relocate 'javassist', 'io.openlineage.spark.shaded.javassist'
-    relocate 'org.apache.hc', 'io.openlineage.spark.shaded.org.apache.hc'
-    relocate 'org.apache.commons.codec', 'io.openlineage.spark.shaded.org.apache.commons.codec'
-    relocate 'org.apache.commons.lang3', 'io.openlineage.spark.shaded.org.apache.commons.lang3'
-    relocate 'org.apache.commons.beanutils', 'io.openlineage.spark.shaded.org.apache.commons.beanutils'
-    relocate 'org.apache.http', 'io.openlineage.spark.shaded.org.apache.http'
-    relocate 'com.fasterxml.jackson', 'io.openlineage.spark.shaded.com.fasterxml.jackson'
+
+    relocate "com.github.ok2c.hc5", "io.openlineage.spark.shaded.com.github.ok2c.hc5"
+    relocate "org.apache.httpcomponents.client5", "io.openlineage.spark.shaded.org.apache.httpcomponents.client5"
+    relocate "javassist", "io.openlineage.spark.shaded.javassist"
+    relocate "org.apache.hc", "io.openlineage.spark.shaded.org.apache.hc"
+    relocate "org.apache.commons.codec", "io.openlineage.spark.shaded.org.apache.commons.codec"
+    relocate "org.apache.commons.lang3", "io.openlineage.spark.shaded.org.apache.commons.lang3"
+    relocate "org.apache.commons.beanutils", "io.openlineage.spark.shaded.org.apache.commons.beanutils"
+    relocate "org.apache.http", "io.openlineage.spark.shaded.org.apache.http"
+    relocate "com.fasterxml.jackson", "io.openlineage.spark.shaded.com.fasterxml.jackson"
     manifest {
         attributes(
-                'Created-By': "Gradle ${gradle.gradleVersion}",
-                'Built-By': System.getProperty('user.name'),
-                'Build-Jdk': System.getProperty('java.version'),
-                'Implementation-Title': project.name,
-                'Implementation-Version': project.version
+                "Created-By": "Gradle ${gradle.gradleVersion}",
+                "Built-By": System.getProperty("user.name"),
+                "Build-Jdk": System.getProperty("java.version"),
+                "Implementation-Title": project.name,
+                "Implementation-Version": project.version
         )
     }
     zip64 true
-}
-
-assemble {
-    dependsOn shadowJar
-}
-
-task createVersionProperties(dependsOn: processResources) {
-    doLast {
-        File dir = new File("$buildDir/resources/main/io/openlineage/spark/agent/")
-        dir.mkdirs();
-        new File("$buildDir/resources/main/io/openlineage/spark/agent/version.properties").withWriter { w ->
-            Properties p = new Properties()
-            p['version'] = project.version.toString()
-            p.store w, null
-        }
-    }
-}
-
-classes {
-    dependsOn createVersionProperties
 }

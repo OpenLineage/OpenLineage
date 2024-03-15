@@ -47,15 +47,19 @@ public final class HttpTransport extends Transport implements Closeable {
   private final Map<String, String> headers;
 
   public HttpTransport(@NonNull final HttpConfig httpConfig) {
-    this(withTimeout(httpConfig.getTimeout()), httpConfig);
+    this(withTimeout(httpConfig), httpConfig);
   }
 
-  private static CloseableHttpClient withTimeout(Double timeout) {
+  private static CloseableHttpClient withTimeout(HttpConfig httpConfig) {
     int timeoutMs;
-    if (timeout == null) {
-      timeoutMs = 5000;
+    if (httpConfig.getTimeout() != null) {
+      // deprecated approach, value in seconds as double provided
+      timeoutMs = (int) (httpConfig.getTimeout() * 1000);
+    } else if (httpConfig.getTimeoutInMillis() != null) {
+      timeoutMs = httpConfig.getTimeoutInMillis();
     } else {
-      timeoutMs = (int) (timeout * 1000);
+      // default one
+      timeoutMs = 5000;
     }
 
     RequestConfig config =
@@ -143,11 +147,8 @@ public final class HttpTransport extends Transport implements Closeable {
   private void throwOnHttpError(@NonNull HttpResponse response) throws IOException {
     final int code = response.getStatusLine().getStatusCode();
     if (code >= 400 && code < 600) { // non-2xx
-      String message =
-          String.format(
-              "code: %d, response: %s", code, EntityUtils.toString(response.getEntity(), UTF_8));
-
-      throw new OpenLineageClientException(message);
+      throw new HttpTransportResponseException(
+          code, EntityUtils.toString(response.getEntity(), UTF_8));
     }
   }
 

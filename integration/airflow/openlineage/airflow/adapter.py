@@ -14,6 +14,7 @@ from openlineage.client.facet import (
     BaseFacet,
     DocumentationJobFacet,
     ErrorMessageRunFacet,
+    JobTypeJobFacet,
     NominalTimeRunFacet,
     OwnershipJobFacet,
     OwnershipJobFacetOwners,
@@ -40,6 +41,11 @@ _PRODUCER = (
 
 set_producer(_PRODUCER)
 
+# https://openlineage.io/docs/spec/facets/job-facets/job-type
+# They must be set after the `set_producer(_PRODUCER)`
+# otherwise the `JobTypeJobFacet._producer` will be set with the default value
+_JOB_TYPE_DAG = JobTypeJobFacet(jobType="DAG", integration="AIRFLOW", processingType="BATCH")
+_JOB_TYPE_TASK = JobTypeJobFacet(jobType="TASK", integration="AIRFLOW", processingType="BATCH")
 
 log = logging.getLogger(__name__)
 
@@ -161,6 +167,7 @@ class OpenLineageAdapter:
                 code_location=code_location,
                 owners=owners,
                 job_facets=task.job_facets if task else None,
+                job_type=_JOB_TYPE_TASK,
             ),
             inputs=task.inputs if task else [],
             outputs=task.outputs if task else [],
@@ -198,7 +205,7 @@ class OpenLineageAdapter:
                 parent_run_id=parent_run_id,
                 run_facets=task.run_facets,
             ),
-            job=self._build_job(job_name, job_facets=task.job_facets),
+            job=self._build_job(job_name, job_facets=task.job_facets, job_type=_JOB_TYPE_TASK),
             inputs=task.inputs,
             outputs=task.outputs,
             producer=_PRODUCER,
@@ -233,7 +240,7 @@ class OpenLineageAdapter:
                 parent_run_id=parent_run_id,
                 run_facets=task.run_facets,
             ),
-            job=self._build_job(job_name, job_facets=task.job_facets),
+            job=self._build_job(job_name, job_facets=task.job_facets, job_type=_JOB_TYPE_TASK),
             inputs=task.inputs,
             outputs=task.outputs,
             producer=_PRODUCER,
@@ -250,7 +257,7 @@ class OpenLineageAdapter:
         event = RunEvent(
             eventType=RunState.START,
             eventTime=DagUtils.to_iso_8601(dag_run.start_date),
-            job=Job(name=dag_run.dag_id, namespace=_DAG_NAMESPACE),
+            job=Job(name=dag_run.dag_id, namespace=_DAG_NAMESPACE, facets={"jobType": _JOB_TYPE_DAG}),
             run=self._build_run(
                 run_id=self.build_dag_run_id(dag_run.dag_id, dag_run.run_id),
                 nominal_start_time=nominal_start_time,
@@ -266,7 +273,7 @@ class OpenLineageAdapter:
         event = RunEvent(
             eventType=RunState.COMPLETE,
             eventTime=DagUtils.to_iso_8601(dag_run.end_date),
-            job=Job(name=dag_run.dag_id, namespace=_DAG_NAMESPACE),
+            job=Job(name=dag_run.dag_id, namespace=_DAG_NAMESPACE, facets={"jobType": _JOB_TYPE_DAG}),
             run=Run(runId=self.build_dag_run_id(dag_run.dag_id, dag_run.run_id)),
             inputs=[],
             outputs=[],
@@ -278,7 +285,7 @@ class OpenLineageAdapter:
         event = RunEvent(
             eventType=RunState.FAIL,
             eventTime=DagUtils.to_iso_8601(dag_run.end_date),
-            job=Job(name=dag_run.dag_id, namespace=_DAG_NAMESPACE),
+            job=Job(name=dag_run.dag_id, namespace=_DAG_NAMESPACE, facets={"jobType": _JOB_TYPE_DAG}),
             run=Run(
                 runId=self.build_dag_run_id(dag_run.dag_id, dag_run.run_id),
                 facets={"errorMessage": ErrorMessageRunFacet(message=msg, programmingLanguage="python")},
@@ -325,6 +332,7 @@ class OpenLineageAdapter:
     @staticmethod
     def _build_job(
         job_name: str,
+        job_type: JobTypeJobFacet,
         job_description: Optional[str] = None,
         code_location: Optional[str] = None,
         owners: List[str] = None,
@@ -346,5 +354,7 @@ class OpenLineageAdapter:
             )
         if job_facets:
             facets = {**facets, **job_facets}
+
+        facets.update({"jobType": job_type})
 
         return Job(_DAG_NAMESPACE, job_name, facets)

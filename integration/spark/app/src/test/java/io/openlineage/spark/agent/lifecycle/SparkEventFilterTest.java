@@ -23,6 +23,7 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -34,12 +35,8 @@ public class SparkEventFilterTest {
 
   @Test
   @SneakyThrows
+  @DisabledIfSystemProperty(named = "spark.version", matches = "(2.*|3.[0-2].*)")
   void testCreateViewCommandEventGetsFiltered(SparkSession spark) {
-    // CreateViewCommand will not be filtered for Spark 3.2
-    if (spark.sparkContext().version().compareTo("3.3") < 0) {
-      return;
-    }
-
     Dataset<Row> dataset =
         spark.createDataFrame(
             ImmutableList.of(RowFactory.create(1L, "bat"), RowFactory.create(3L, "horse")),

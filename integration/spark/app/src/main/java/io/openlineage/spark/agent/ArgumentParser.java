@@ -44,7 +44,7 @@ public class ArgumentParser {
   public static final String SPARK_CONF_PARENT_RUN_ID = "spark.openlineage.parentRunId";
   public static final String SPARK_CONF_APP_NAME = "spark.openlineage.appName";
   public static final String SPARK_CONF_DISABLED_FACETS = "spark.openlineage.facets.disabled";
-  public static final String DEFAULT_DISABLED_FACETS = "[spark_unknown;]";
+  public static final String DEFAULT_DISABLED_FACETS = "[spark_unknown;spark.logicalPlan]";
   public static final String ARRAY_PREFIX_CHAR = "[";
   public static final String ARRAY_SUFFIX_CHAR = "]";
   public static final String DISABLED_FACETS_SEPARATOR = ";";
@@ -61,7 +61,7 @@ public class ArgumentParser {
   @Builder.Default private String parentJobNamespace = null;
   @Builder.Default private String parentRunId = null;
   @Builder.Default private String overriddenAppName = null;
-  @Builder.Default private OpenLineageYaml openLineageYaml = new OpenLineageYaml();
+  @Builder.Default @Getter private OpenLineageYaml openLineageYaml = new OpenLineageYaml();
 
   public static ArgumentParser parse(SparkConf conf) {
     ArgumentParserBuilder builder = ArgumentParser.builder();
@@ -126,7 +126,11 @@ public class ArgumentParser {
 
   private static List<Tuple2<String, String>> filterProperties(SparkConf conf) {
     return Arrays.stream(conf.getAllWithPrefix("spark.openlineage."))
-        .filter(e -> e._1.startsWith("transport") || e._1.startsWith("facets"))
+        .filter(
+            e ->
+                e._1.startsWith("transport")
+                    || e._1.startsWith("facets")
+                    || e._1.startsWith("circuitBreaker"))
         .collect(Collectors.toList());
   }
 

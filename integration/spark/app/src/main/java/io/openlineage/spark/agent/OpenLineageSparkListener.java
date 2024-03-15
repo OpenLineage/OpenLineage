@@ -11,6 +11,9 @@ import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
 import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.circuitBreaker.CircuitBreaker;
+import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
+import io.openlineage.client.circuitBreaker.NoOpCircuitBreaker;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -64,6 +67,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private final Function0<Option<SparkContext>> activeSparkContext =
       ScalaConversionUtils.toScalaFn(SparkContext$.MODULE$::getActive);
 
+  private static CircuitBreaker circuitBreaker = new NoOpCircuitBreaker();
+
   String sparkVersion = package$.MODULE$.SPARK_VERSION();
 
   private static final boolean isDisabled = checkIfDisabled();
@@ -90,16 +95,34 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a spark-sql (Dataset api) execution starts */
   private static void sparkSQLExecStart(SparkListenerSQLExecutionStart startEvent) {
     getSparkSQLExecutionContext(startEvent.executionId())
-        .ifPresent(context -> context.start(startEvent));
+        .ifPresent(
+            context ->
+                circuitBreaker.run(
+                    () -> {
+                      context.start(startEvent);
+                      return null;
+                    }));
   }
 
   /** called by the SparkListener when a spark-sql (Dataset api) execution ends */
   private static void sparkSQLExecEnd(SparkListenerSQLExecutionEnd endEvent) {
     ExecutionContext context = sparkSqlExecutionRegistry.remove(endEvent.executionId());
     if (context != null) {
-      context.end(endEvent);
+      circuitBreaker.run(
+          () -> {
+            context.end(endEvent);
+            return null;
+          });
     } else {
-      contextFactory.createSparkSQLExecutionContext(endEvent).ifPresent(c -> c.end(endEvent));
+      contextFactory
+          .createSparkSQLExecutionContext(endEvent)
+          .ifPresent(
+              c ->
+                  circuitBreaker.run(
+                      () -> {
+                        c.end(endEvent);
+                        return null;
+                      }));
     }
   }
 
@@ -150,7 +173,11 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
             context -> {
               // set it in the rddExecutionRegistry so jobEnd is called
               activeJob.ifPresent(context::setActiveJob);
-              context.start(jobStart);
+              circuitBreaker.run(
+                  () -> {
+                    context.start(jobStart);
+                    return null;
+                  });
             });
   }
 
@@ -165,9 +192,13 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       return;
     }
     ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
-    if (context != null) {
-      context.end(jobEnd);
-    }
+    circuitBreaker.run(
+        () -> {
+          if (context != null) {
+            context.end(jobEnd);
+          }
+          return null;
+        });
     if (sparkVersion.startsWith("3")) {
       jobMetrics.cleanUp(jobEnd.jobId());
     }
@@ -226,7 +257,11 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onApplicationEnd(SparkListenerApplicationEnd applicationEnd) {
-    emitApplicationEndEvent(applicationEnd.time());
+    circuitBreaker.run(
+        () -> {
+          emitApplicationEndEvent(applicationEnd.time());
+          return null;
+        });
     close();
     super.onApplicationEnd(applicationEnd);
   }
@@ -244,7 +279,11 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   @Override
   public void onApplicationStart(SparkListenerApplicationStart applicationStart) {
     initializeContextFactoryIfNotInitialized(applicationStart.appName());
-    emitApplicationStartEvent(applicationStart.time());
+    circuitBreaker.run(
+        () -> {
+          emitApplicationStartEvent(applicationStart.time());
+          return null;
+        });
   }
 
   private void initializeContextFactoryIfNotInitialized() {
@@ -276,6 +315,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     try {
       ArgumentParser args = ArgumentParser.parse(sparkConf);
       contextFactory = new ContextFactory(new EventEmitter(args, appName));
+      circuitBreaker =
+          new CircuitBreakerFactory(args.getOpenLineageYaml().getCircuitBreaker()).build();
     } catch (URISyntaxException e) {
       log.error("Unable to parse open lineage endpoint. Lineage events will not be collected", e);
     }

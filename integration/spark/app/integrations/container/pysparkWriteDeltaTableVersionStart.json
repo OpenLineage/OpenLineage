@@ -34,7 +34,7 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/delta",
+            "namespace": "file:/tmp/delta",
             "name": "default.versioned_input_table",
             "type": "TABLE"
           }

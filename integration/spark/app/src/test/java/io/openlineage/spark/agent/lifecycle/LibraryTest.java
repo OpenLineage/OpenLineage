@@ -38,7 +38,6 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -48,7 +47,6 @@ import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
 @Slf4j
-@Tag("beforeShadowJarTest")
 @ExtendWith(SparkAgentTestExtension.class)
 class LibraryTest {
 
@@ -127,7 +125,7 @@ class LibraryTest {
         .first()
         .hasFieldOrPropertyWithValue("namespace", "file");
 
-    assertThat(first.getInputs().get(0).getName()).endsWith("test/test_data");
+    assertThat(first.getInputs().get(0).getName()).endsWith("test_data");
     assertThat(first.getEventType()).isEqualTo(EventType.START);
 
     // verify second job event

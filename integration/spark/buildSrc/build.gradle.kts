@@ -1,6 +1,6 @@
 plugins {
     `kotlin-dsl`
-    kotlin("plugin.serialization") version "1.9.10"
+    kotlin("plugin.serialization") version "1.9.23"
 }
 
 repositories {
@@ -33,11 +33,6 @@ gradlePlugin {
         create("scalaVariants") {
             id = "io.openlineage.scala-variants"
             implementationClass = "io.openlineage.gradle.plugin.ScalaVariantsPlugin"
-        }
-
-        create("dockerBuild") {
-            id = "io.openlineage.docker-build"
-            implementationClass = "io.openlineage.gradle.plugin.docker.DockerBuildPlugin"
         }
     }
 }

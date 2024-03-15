@@ -7,10 +7,11 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.JdbcUtils;
 import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.BigQueryUtils;
-import io.openlineage.spark.agent.util.JdbcUtils;
+import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -135,7 +136,7 @@ public class InputFieldsCollector {
   }
 
   private static List<DatasetIdentifier> extractDatasetIdentifier(JDBCRelation relation) {
-    Optional<SqlMeta> sqlMeta = JdbcUtils.extractQueryFromSpark(relation);
+    Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
     return sqlMeta
         .map(
             meta ->

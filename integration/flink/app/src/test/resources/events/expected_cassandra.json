@@ -1,0 +1,15 @@
+{
+  "eventType" : "START",
+  "job" : {
+    "namespace" : "flink_job_namespace",
+    "name": "flink_examples_cassandra"
+  },
+  "inputs": [{
+    "namespace": "cassandra://cassandra-server:9042",
+    "name": "flink.source_event"
+  }],
+  "outputs" : [{
+    "namespace" : "cassandra://cassandra-server:9042",
+    "name" : "flink.sink_event"
+  }]
+}

@@ -44,17 +44,23 @@ class GetChanges:
                 for label in pull.labels:
                     if label.name != "documentation":
                         labels.append(label.name)
-                change_str = f"* **{labels[0]}: {pull.title}** [`#{pull.number}`]({pull.html_url}) [@{pull.user.login}]({pull.user.html_url})  "  # noqa: E501
+                try:
+                    change_str = f"* **{labels[0]}: {pull.title}** [`#{pull.number}`]({pull.html_url}) [@{pull.user.login}]({pull.user.html_url})  "  # noqa: E501
+                except IndexError:
+                    continue
                 """ Extracts one-line description if present """
-                beg = pull.body.find("One-line summary:") + 18
-                if beg == 17:  # noqa: PLR2004
-                    change_descrip_str = "    **"
-                else:
-                    test = pull.body.find("### Checklist")
-                    end = beg + 75 if test == -1 else test - 1
-                    descrip = pull.body[beg:end].split()
-                    descrip_str = " ".join(descrip)
-                    change_descrip_str = f"    *{descrip_str}*"
+                try:
+                    beg = pull.body.find("One-line summary:") + 18
+                    if beg == 17:  # noqa: PLR2004
+                        change_descrip_str = "    **"
+                    else:
+                        test = pull.body.find("### Checklist")
+                        end = beg + 75 if test == -1 else test - 1
+                        descrip = pull.body[beg:end].split()
+                        descrip_str = " ".join(descrip)
+                        change_descrip_str = f"    *{descrip_str}*"
+                except IndexError:
+                    continue
 
                 """ Checks for new contributor """
                 self.check_new_contributor(pull)
