@@ -20,6 +20,10 @@
 * **Python: add support for MSK IAM authentication with a new transport** [`#2478`](https://github.com/OpenLineage/OpenLineage/pull/2478) [@mattiabertorello](https://github.com/mattiabertorello)  
     *Eases publication of events to MSK with IAM authentication.*
 
+### Removed
+* **Airflow: remove redundant information from facets** [`#2524`](https://github.com/OpenLineage/OpenLineage/pull/2524) [@kacpermuda](https://github.com/kacpermuda)  
+    *Refines the operator's attribute inclusion logic in facets to include only those known to be important or compact, ensuring that custom operator attributes with substantial data do not inflate the event size.*
+
 ### Fixed
 * **Airflow: proceed without rendering templates if `task_instance` copy fails** [`#2492`](https://github.com/OpenLineage/OpenLineage/pull/2492) [@kacpermuda](https://github.com/kacpermuda)  
     *Airflow will now proceed without rendering templates if `task_instance` copy fails in `listener.on_task_instance_running`.*
