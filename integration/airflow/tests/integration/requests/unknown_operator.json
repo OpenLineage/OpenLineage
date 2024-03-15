@@ -12,6 +12,9 @@
  		},
  		"run": {
  			"facets": {
+				"airflow_version": {
+					"taskInfo": "{{ 'true' if result == {} else result }}"
+				},
  				"airflow_runArgs": {
  					"externalTrigger": false
  				},
