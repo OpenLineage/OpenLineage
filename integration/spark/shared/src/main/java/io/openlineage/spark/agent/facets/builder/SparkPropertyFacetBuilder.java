@@ -54,7 +54,7 @@ public class SparkPropertyFacetBuilder
   @Override
   protected void build(
       SparkListenerEvent event, BiConsumer<String, ? super SparkPropertyFacet> consumer) {
-    if (!(event instanceOf SparkListenerJobStart) && !(event instanceOf SparkListenerJobEnd)) {
+    if (!(event instanceof SparkListenerJobStart) && !(event instanceof SparkListenerJobEnd)) {
       return;
     }
     consumer.accept("spark_properties", buildFacet(event));
