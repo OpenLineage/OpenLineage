@@ -6,6 +6,7 @@
 package io.openlineage.client;
 
 import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
+import io.openlineage.client.metrics.MicrometerProvider;
 import io.openlineage.client.transports.NoopTransport;
 import io.openlineage.client.transports.Transport;
 import io.openlineage.client.transports.TransportFactory;
@@ -21,12 +22,18 @@ public final class Clients {
   }
 
   public static OpenLineageClient newClient(ConfigPathProvider configPathProvider) {
-    String isDisabled = Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED");
-    if (Boolean.parseBoolean(isDisabled)) {
+    if (isDisabled()) {
       return OpenLineageClient.builder().transport(new NoopTransport()).build();
     }
     final OpenLineageYaml openLineageYaml =
         OpenLineageClientUtils.loadOpenLineageYaml(configPathProvider);
+    return newClient(openLineageYaml);
+  }
+
+  public static OpenLineageClient newClient(OpenLineageYaml openLineageYaml) {
+    if (isDisabled()) {
+      return OpenLineageClient.builder().transport(new NoopTransport()).build();
+    }
     final TransportFactory factory = new TransportFactory(openLineageYaml.getTransportConfig());
     final Transport transport = factory.build();
     // ...
@@ -37,9 +44,17 @@ public final class Clients {
     }
 
     Optional.ofNullable(openLineageYaml.getCircuitBreaker())
-        .map(config -> new CircuitBreakerFactory(config))
+        .map(CircuitBreakerFactory::new)
         .ifPresent(f -> builder.circuitBreaker(f.build()));
 
+    Optional.ofNullable(openLineageYaml.getMetricsConfig())
+        .map(MicrometerProvider::addMeterRegistryFromConfig)
+        .ifPresent(builder::meterRegistry);
     return builder.transport(transport).build();
+  }
+
+  private static boolean isDisabled() {
+    String disabled = Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED");
+    return (Boolean.parseBoolean(disabled));
   }
 }

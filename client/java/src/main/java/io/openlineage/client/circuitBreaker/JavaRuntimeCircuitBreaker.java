@@ -5,10 +5,10 @@
 
 package io.openlineage.client.circuitBreaker;
 
-import static io.openlineage.client.circuitBreaker.RuntimeUtils.freeMemory;
-import static io.openlineage.client.circuitBreaker.RuntimeUtils.getGarbageCollectorMXBeans;
-import static io.openlineage.client.circuitBreaker.RuntimeUtils.maxMemory;
-import static io.openlineage.client.circuitBreaker.RuntimeUtils.totalMemory;
+import static io.openlineage.client.utils.RuntimeUtils.freeMemory;
+import static io.openlineage.client.utils.RuntimeUtils.getGarbageCollectorMXBeans;
+import static io.openlineage.client.utils.RuntimeUtils.maxMemory;
+import static io.openlineage.client.utils.RuntimeUtils.totalMemory;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
