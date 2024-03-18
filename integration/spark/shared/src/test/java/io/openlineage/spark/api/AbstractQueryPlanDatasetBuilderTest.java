@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.Versions;
@@ -192,6 +193,7 @@ class AbstractQueryPlanDatasetBuilderTest {
                 SparkContext.getOrCreate(new SparkConf().setAppName("test").setMaster(LOCAL)))
             .openLineage(openLineage)
             .queryExecution(queryExecution)
+            .meterRegistry(new SimpleMeterRegistry())
             .build();
     return context;
   }

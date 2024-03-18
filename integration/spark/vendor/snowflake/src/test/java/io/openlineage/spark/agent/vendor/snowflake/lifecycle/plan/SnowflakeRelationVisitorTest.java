@@ -10,6 +10,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -47,6 +48,7 @@ public class SnowflakeRelationVisitorTest {
   public void setUp() {
     when(session.sparkContext()).thenReturn(mock(SparkContext.class));
     when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    when(context.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
 
     when(relation.params().sfDatabase()).thenReturn("snowflake_db");
     when(relation.params().sfSchema()).thenReturn("snowflake_schema");
@@ -74,6 +76,7 @@ public class SnowflakeRelationVisitorTest {
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .customEnvironmentVariables(Collections.singletonList("TEST_VAR"))
             .vendors(Vendors.getVendors())
+            .meterRegistry(new SimpleMeterRegistry())
             .build();
 
     SnowflakeRelationVisitor visitor =
@@ -115,6 +118,7 @@ public class SnowflakeRelationVisitorTest {
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .customEnvironmentVariables(Collections.singletonList("TEST_VAR"))
             .vendors(Vendors.getVendors())
+            .meterRegistry(new SimpleMeterRegistry())
             .build();
 
     SnowflakeRelationVisitor visitor =

@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.facets;
 
+import io.micrometer.core.instrument.Tag;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import java.util.List;
@@ -24,17 +25,20 @@ public class DebugRunFacet extends OpenLineage.DefaultRunFacet {
   private final SystemDebugFacet system;
   private final SparkConfigDebugFacet config;
   private final LogicalPlanDebugFacet logicalPlan;
+  private final MetricsDebugFacet metrics;
 
   public DebugRunFacet(
       SparkConfigDebugFacet config,
       ClasspathDebugFacet classpath,
       SystemDebugFacet system,
-      LogicalPlanDebugFacet logicalPlan) {
+      LogicalPlanDebugFacet logicalPlan,
+      MetricsDebugFacet metricsDebugFacet) {
     super(Versions.OPEN_LINEAGE_PRODUCER_URI);
     this.config = config;
     this.classpath = classpath;
     this.system = system;
     this.logicalPlan = logicalPlan;
+    this.metrics = metricsDebugFacet;
   }
 
   /** Entries from SparkConf that can be valuable for debugging. */
@@ -105,5 +109,30 @@ public class DebugRunFacet extends OpenLineage.DefaultRunFacet {
     String id;
     String desc;
     List<String> children;
+  }
+
+  /**
+   * If enabled, DebugFacet will contain list of metric names, values and associated tags dumped at
+   * the point of emitting the event which DebugFacet is contained by. The metrics are generated
+   * using MeterRegistry micrometer mechanism, and are usually emitted via configured backend.
+   */
+  @Value
+  @Getter
+  public static class MetricsDebugFacet {
+    List<MetricsNode> metrics;
+  }
+
+  /** Each {@link MetricsNode} object holds a specific metric's name, value and associated tags. */
+  @Value
+  @Builder
+  public static class MetricsNode {
+    /** The name of the metric represented by this node. */
+    String name;
+
+    /** The value of the metric represented by this node. */
+    double value;
+
+    /** A list of {@link Tag} associated with this metric node. */
+    List<Tag> tags;
   }
 }

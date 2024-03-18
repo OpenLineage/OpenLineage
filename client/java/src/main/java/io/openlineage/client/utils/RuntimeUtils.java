@@ -25,6 +25,10 @@ public class RuntimeUtils {
     return Runtime.getRuntime().maxMemory();
   }
 
+  public static double getMemoryFractionUsage() {
+    return (100.0 * ((double) totalMemory())) / ((double) maxMemory());
+  }
+
   public static List<GarbageCollectorMXBean> getGarbageCollectorMXBeans() {
     return ManagementFactory.getGarbageCollectorMXBeans();
   }

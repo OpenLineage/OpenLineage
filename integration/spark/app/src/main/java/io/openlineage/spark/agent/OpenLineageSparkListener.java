@@ -9,11 +9,18 @@ import static io.openlineage.spark.agent.lifecycle.ExecutionContext.CAMEL_TO_SNA
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
 import io.openlineage.client.circuitBreaker.NoOpCircuitBreaker;
+import io.openlineage.client.metrics.MicrometerProvider;
+import io.openlineage.client.utils.RuntimeUtils;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -69,13 +76,16 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   private static CircuitBreaker circuitBreaker = new NoOpCircuitBreaker();
 
-  String sparkVersion = package$.MODULE$.SPARK_VERSION();
+  private static MeterRegistry meterRegistry;
+
+  private static String sparkVersion = package$.MODULE$.SPARK_VERSION();
 
   private static final boolean isDisabled = checkIfDisabled();
 
   /** called by the tests */
   public static void init(ContextFactory contextFactory) {
     OpenLineageSparkListener.contextFactory = contextFactory;
+    meterRegistry = contextFactory.getMeterRegistry();
     clear();
   }
 
@@ -96,17 +106,20 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private static void sparkSQLExecStart(SparkListenerSQLExecutionStart startEvent) {
     getSparkSQLExecutionContext(startEvent.executionId())
         .ifPresent(
-            context ->
-                circuitBreaker.run(
-                    () -> {
-                      context.start(startEvent);
-                      return null;
-                    }));
+            context -> {
+              meterRegistry.counter("openlineage.spark.event.sql.start").increment();
+              circuitBreaker.run(
+                  () -> {
+                    context.start(startEvent);
+                    return null;
+                  });
+            });
   }
 
   /** called by the SparkListener when a spark-sql (Dataset api) execution ends */
   private static void sparkSQLExecEnd(SparkListenerSQLExecutionEnd endEvent) {
     ExecutionContext context = sparkSqlExecutionRegistry.remove(endEvent.executionId());
+    meterRegistry.counter("openlineage.spark.event.sql.end").increment();
     if (context != null) {
       circuitBreaker.run(
           () -> {
@@ -133,6 +146,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       return;
     }
     initializeContextFactoryIfNotInitialized();
+    meterRegistry.counter("openlineage.spark.event.job.start").increment();
     Optional<ActiveJob> activeJob =
         asJavaOptional(
                 SparkSession.getDefaultSession()
@@ -192,6 +206,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       return;
     }
     ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
+    meterRegistry.counter("openlineage.spark.event.job.end").increment();
     circuitBreaker.run(
         () -> {
           if (context != null) {
@@ -257,6 +272,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onApplicationEnd(SparkListenerApplicationEnd applicationEnd) {
+    meterRegistry.counter("openlineage.spark.event.app.end").increment();
+    meterRegistry
+        .counter("openlineage.spark.event.app.end.memoryusage")
+        .increment(RuntimeUtils.getMemoryFractionUsage());
     circuitBreaker.run(
         () -> {
           emitApplicationEndEvent(applicationEnd.time());
@@ -271,14 +290,13 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     clear();
   }
 
-  /**
-   * Check the {@link SparkConf} for open lineage configuration.
-   *
-   * @param applicationStart
-   */
   @Override
   public void onApplicationStart(SparkListenerApplicationStart applicationStart) {
     initializeContextFactoryIfNotInitialized(applicationStart.appName());
+    meterRegistry.counter("openlineage.spark.event.app.start").increment();
+    meterRegistry
+        .counter("openlineage.spark.event.app.start.memoryusage")
+        .increment(RuntimeUtils.getMemoryFractionUsage());
     circuitBreaker.run(
         () -> {
           emitApplicationStartEvent(applicationStart.time());
@@ -314,12 +332,43 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     }
     try {
       ArgumentParser args = ArgumentParser.parse(sparkConf);
-      contextFactory = new ContextFactory(new EventEmitter(args, appName));
+      // Needs to be done before initializing OpenLineageClient
+      initializeMetrics(args.getOpenLineageYaml());
+      contextFactory = new ContextFactory(new EventEmitter(args, appName), meterRegistry);
       circuitBreaker =
           new CircuitBreakerFactory(args.getOpenLineageYaml().getCircuitBreaker()).build();
     } catch (URISyntaxException e) {
       log.error("Unable to parse open lineage endpoint. Lineage events will not be collected", e);
     }
+  }
+
+  private static void initializeMetrics(OpenLineageYaml openLineageYaml) {
+    meterRegistry =
+        MicrometerProvider.addMeterRegistryFromConfig(openLineageYaml.getMetricsConfig());
+    String disabledFacets;
+    if (openLineageYaml.getFacetsConfig() != null
+        && openLineageYaml.getFacetsConfig().getDisabledFacets() != null) {
+      disabledFacets = String.join(";", openLineageYaml.getFacetsConfig().getDisabledFacets());
+    } else {
+      disabledFacets = "";
+    }
+    meterRegistry
+        .config()
+        .commonTags(
+            Tags.of(
+                Tag.of("openlineage.spark.integration.version", Versions.getVersion()),
+                Tag.of("openlineage.spark.version", sparkVersion),
+                Tag.of("openlineage.spark.disabled.facets", disabledFacets)));
+    ((CompositeMeterRegistry) meterRegistry)
+        .getRegistries()
+        .forEach(
+            r ->
+                r.config()
+                    .commonTags(
+                        Tags.of(
+                            Tag.of("openlineage.spark.integration.version", Versions.getVersion()),
+                            Tag.of("openlineage.spark.version", sparkVersion),
+                            Tag.of("openlineage.spark.disabled.facets", disabledFacets))));
   }
 
   private void emitApplicationEvent(Long time, OpenLineage.RunEvent.EventType eventType) {

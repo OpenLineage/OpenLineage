@@ -10,6 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
@@ -41,6 +42,7 @@ class AlterTableDatasetBuilderTest {
           .sparkSession(mock(SparkSession.class))
           .sparkContext(mock(SparkContext.class))
           .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+          .meterRegistry(new SimpleMeterRegistry())
           .build();
 
   TableCatalog tableCatalog = mock(TableCatalog.class);

@@ -117,7 +117,7 @@ class ConfigTest {
   @Test
   void testCompositeMetricsConfigFromYaml() {
     OpenLineageClient client =
-        Clients.newClient(new TestConfigPathProvider("config/metrics-complex.yaml"));
+        Clients.newClient(new TestConfigPathProvider("config/metrics-composite.yaml"));
     CompositeMeterRegistry meterRegistry = (CompositeMeterRegistry) client.meterRegistry;
     assertThat(meterRegistry.getRegistries().iterator().next())
         .isInstanceOfSatisfying(

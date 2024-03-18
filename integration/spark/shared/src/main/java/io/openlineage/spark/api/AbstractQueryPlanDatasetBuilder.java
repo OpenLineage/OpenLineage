@@ -8,6 +8,7 @@ package io.openlineage.spark.api;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.spark.agent.lifecycle.UnknownEntryFacetListener;
+import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.lang.reflect.ParameterizedType;
@@ -90,8 +91,15 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
 
       @Override
       public List<D> apply(LogicalPlan x) {
-        unknownEntryFacetListener.accept(x);
+        if (!FacetUtils.isFacetDisabled(context, "spark_unknown")) {
+          unknownEntryFacetListener.accept(x);
+        }
         return builder.apply(event, (P) x);
+      }
+
+      @Override
+      public String internalClassName() {
+        return builder.getClass().getName();
       }
     };
   }
