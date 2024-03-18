@@ -323,7 +323,12 @@ class OpenLineageRunEventBuilder {
     openLineageContext
         .getQueryExecution()
         .filter(qe -> !FacetUtils.isFacetDisabled(openLineageContext, "spark_unknown"))
-        .flatMap(qe -> unknownEntryFacetListener.build(qe.optimizedPlan()))
+        .flatMap(
+            qe ->
+                openLineageContext
+                    .getMeterRegistry()
+                    .timer("openlineage.spark.unknownFacet.time")
+                    .record(() -> unknownEntryFacetListener.build(qe.optimizedPlan())))
         .ifPresent(facet -> runFacetsBuilder.put("spark_unknown", facet));
 
     RunFacets runFacets = buildRunFacets(nodes, runFacetBuilders, runFacetsBuilder);
@@ -406,16 +411,24 @@ class OpenLineageRunEventBuilder {
    */
   private <D> Function1<LogicalPlan, Collection<D>> visitLogicalPlan(
       PartialFunction<LogicalPlan, Collection<D>> inputVisitor) {
-    return ScalaConversionUtils.toScalaFn(
-        node ->
-            inputVisitor
-                .andThen(
-                    toScalaFn(
-                        ds -> {
-                          unknownEntryFacetListener.accept(node);
-                          return ds;
-                        }))
-                .applyOrElse(node, toScalaFn(n -> Collections.emptyList())));
+    return openLineageContext
+        .getMeterRegistry()
+        .timer("openlineage.spark.dataset.input.execution.time")
+        .record(
+            () ->
+                ScalaConversionUtils.toScalaFn(
+                    node ->
+                        inputVisitor
+                            .andThen(
+                                toScalaFn(
+                                    ds -> {
+                                      if (!FacetUtils.isFacetDisabled(
+                                          openLineageContext, "spark_unknown")) {
+                                        unknownEntryFacetListener.accept(node);
+                                      }
+                                      return ds;
+                                    }))
+                            .applyOrElse(node, toScalaFn(n -> Collections.emptyList()))));
   }
 
   private List<OutputDataset> buildOutputDatasets(List<Object> nodes) {
@@ -503,7 +516,17 @@ class OpenLineageRunEventBuilder {
       List<Object> events,
       Collection<CustomFacetBuilder<?, ? extends JobFacet>> builders,
       OpenLineage.JobFacetsBuilder jobFacetsBuilder) {
-    events.forEach(event -> builders.forEach(fn -> fn.accept(event, jobFacetsBuilder::put)));
+    events.forEach(
+        event ->
+            builders.forEach(
+                fn ->
+                    openLineageContext
+                        .getMeterRegistry()
+                        .timer(
+                            "openlineage.spark.facets.job.execution.time",
+                            "facet.builder",
+                            fn.getClass().getCanonicalName())
+                        .record(() -> fn.accept(event, jobFacetsBuilder::put))));
     return jobFacetsBuilder.build();
   }
 
@@ -511,7 +534,17 @@ class OpenLineageRunEventBuilder {
       List<Object> events,
       Collection<CustomFacetBuilder<?, ? extends RunFacet>> builders,
       RunFacetsBuilder runFacetsBuilder) {
-    events.forEach(event -> builders.forEach(fn -> fn.accept(event, runFacetsBuilder::put)));
+    events.forEach(
+        event ->
+            builders.forEach(
+                fn ->
+                    openLineageContext
+                        .getMeterRegistry()
+                        .timer(
+                            "openlineage.spark.facets.run.execution.time",
+                            "facet.builder",
+                            fn.getClass().getCanonicalName())
+                        .record(() -> fn.accept(event, runFacetsBuilder::put))));
     return runFacetsBuilder.build();
   }
 }

@@ -87,6 +87,10 @@ public abstract class QueryPlanVisitor<T extends LogicalPlan, D extends OpenLine
             });
   }
 
+  public String internalClassName() {
+    return this.getClass().getName();
+  }
+
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
     Type genericSuperclass = getClass().getGenericSuperclass();

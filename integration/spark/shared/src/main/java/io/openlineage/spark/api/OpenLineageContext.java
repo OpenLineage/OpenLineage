@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.api;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
@@ -125,4 +126,7 @@ public class OpenLineageContext {
    * project.
    */
   @Default @NonNull @Getter Vendors vendors = Vendors.empty();
+
+  /** Already set up MeterRegistry to use in ExecutionContext and Visitors */
+  @NonNull @Getter final MeterRegistry meterRegistry;
 }

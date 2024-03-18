@@ -14,6 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
@@ -64,6 +65,7 @@ class SparkSQLExecutionContextTest {
   void setup() {
     when(olContext.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(olContext.getOpenLineage()).thenReturn(openLineage);
+    when(olContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
     when(eventEmitter.getOverriddenAppName()).thenReturn(Optional.of("app-name"));
     when(queryExecution.executedPlan().nodeName()).thenReturn("some-node-name");
 

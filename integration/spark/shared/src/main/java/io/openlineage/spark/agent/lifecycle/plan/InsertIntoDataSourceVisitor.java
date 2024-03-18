@@ -9,9 +9,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.DatasetFacetsUtils;
+import io.openlineage.spark.agent.util.OpenLineageAbstractPartialFunction;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -32,9 +35,12 @@ public class InsertIntoDataSourceVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoDataSourceCommand command = (InsertIntoDataSourceCommand) x;
 
-    return PlanUtils.applyAll(
-            context.getOutputDatasetQueryPlanVisitors(), command.logicalRelation())
-        .stream()
+    OpenLineageAbstractPartialFunction<LogicalPlan, Collection<OpenLineage.OutputDataset>> fn =
+        PlanUtils.merge(context.getOutputDatasetQueryPlanVisitors());
+    if (!fn.isDefinedAt(command.logicalRelation())) {
+      return Collections.emptyList();
+    }
+    return fn.apply(command.logicalRelation()).stream()
         // constructed datasets don't include the output stats, so add that facet here
         .map(
             ds -> {

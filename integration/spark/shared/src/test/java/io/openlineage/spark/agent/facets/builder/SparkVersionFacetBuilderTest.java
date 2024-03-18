@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.facets.builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.spark.agent.Versions;
@@ -52,6 +53,7 @@ class SparkVersionFacetBuilderTest {
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .meterRegistry(new SimpleMeterRegistry())
                 .build());
     assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionEnd(1, 1L))).isTrue();
     assertThat(
@@ -76,6 +78,7 @@ class SparkVersionFacetBuilderTest {
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .meterRegistry(new SimpleMeterRegistry())
                 .build());
 
     Map<String, RunFacet> runFacetMap = new HashMap<>();

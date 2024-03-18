@@ -12,6 +12,8 @@ import io.openlineage.spark.agent.facets.DebugRunFacet.ClasspathDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanNode;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanNode.LogicalPlanNodeBuilder;
+import io.openlineage.spark.agent.facets.DebugRunFacet.MetricsDebugFacet;
+import io.openlineage.spark.agent.facets.DebugRunFacet.MetricsNode;
 import io.openlineage.spark.agent.facets.DebugRunFacet.SparkConfigDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.SystemDebugFacet;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -22,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -47,7 +50,8 @@ public class DebugRunFacetBuilderDelegate {
         buildSparkConfigDebugFacet(),
         buildClasspathDebugFacet(),
         buildSystemDebugFacet(),
-        buildLogicalPlanDebugFacet());
+        buildLogicalPlanDebugFacet(),
+        buildMetricsDebugFacet());
   }
 
   private SparkConfigDebugFacet buildSparkConfigDebugFacet() {
@@ -100,6 +104,42 @@ public class DebugRunFacetBuilderDelegate {
         .map(plan -> scanLogicalPlan(plan))
         .map(list -> new LogicalPlanDebugFacet(list))
         .orElse(null);
+  }
+
+  private MetricsDebugFacet buildMetricsDebugFacet() {
+    // We don't use other meters than gauge, counter and timer - add method here if you want to use
+    // them.
+    return new MetricsDebugFacet(
+        olContext.getMeterRegistry().getMeters().stream()
+            .map(
+                meter ->
+                    meter.match(
+                        gauge ->
+                            MetricsNode.builder()
+                                .name(gauge.getId().getName())
+                                .value(gauge.value())
+                                .tags(gauge.getId().getTags())
+                                .build(),
+                        counter ->
+                            MetricsNode.builder()
+                                .name(counter.getId().getName())
+                                .value(counter.count())
+                                .tags(counter.getId().getTags())
+                                .build(),
+                        timer ->
+                            MetricsNode.builder()
+                                .name(timer.getId().getName())
+                                .value(timer.totalTime(TimeUnit.MICROSECONDS))
+                                .tags(timer.getId().getTags())
+                                .build(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null))
+            .map(MetricsNode.class::cast)
+            .collect(Collectors.toList()));
   }
 
   private List<LogicalPlanNode> scanLogicalPlan(LogicalPlan node) {

@@ -15,6 +15,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.DatasetFactory;
@@ -41,6 +42,7 @@ class AppendDataDatasetBuilderTest {
           .sparkSession(mock(SparkSession.class))
           .sparkContext(mock(SparkContext.class))
           .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+          .meterRegistry(new SimpleMeterRegistry())
           .build();
   DatasetFactory<OpenLineage.OutputDataset> factory = mock(DatasetFactory.class);
   AppendDataDatasetBuilder builder = new AppendDataDatasetBuilder(context, factory);
