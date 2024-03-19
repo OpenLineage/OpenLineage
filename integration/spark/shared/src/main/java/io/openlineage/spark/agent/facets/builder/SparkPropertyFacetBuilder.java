@@ -15,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
-import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.SparkSession;
 
@@ -54,9 +53,6 @@ public class SparkPropertyFacetBuilder
   @Override
   protected void build(
       SparkListenerEvent event, BiConsumer<String, ? super SparkPropertyFacet> consumer) {
-    if (!(event instanceof SparkListenerJobStart) && !(event instanceof SparkListenerJobEnd)) {
-      return;
-    }
     consumer.accept("spark_properties", buildFacet(event));
   }
 
@@ -75,10 +71,8 @@ public class SparkPropertyFacetBuilder
     try {
       SparkSession session = SparkSession.active();
       allowerProperties.forEach(item -> m.putIfAbsent(item, session.conf().get(item)));
-    } catch (NoSuchElementException ne) {
-      log.info("A key in capturedProperties not exists in Runtime Config");
-    } catch (IllegalStateException ie) {
-      log.info("No active or default Spark session found");
+    } catch (RuntimeException e) {
+      log.info("Cannot add SparkPropertyFacet: Spark session is in a wrong status or a key in capturedProperties does not exist in run-time config");
     }
 
     return new SparkPropertyFacet(m);
