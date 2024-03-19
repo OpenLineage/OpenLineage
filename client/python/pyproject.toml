@@ -46,6 +46,13 @@ optional-dependencies.test = [
   "pyyaml>=5.4",
 ]
 
+optional-dependencies.docs = [
+  "sphinx>=7.0",
+  "beautifulsoup4>=4.12.0",
+  "sphinx-autodoc-typehints>=2.0.0",
+  "pydata-sphinx-theme>=0.13"
+]
+
 [tool.hatch.build]
 exclude = [".idea", ".ruff_cache", ".gitignore", "setup.cfg"]
 targets.wheel = {packages = ["openlineage"]}

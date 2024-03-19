@@ -80,6 +80,18 @@ jobs:
             - ./dist/*.tar.gz
             - ./dist/*.whl
 
+  publish-client-python-reference:
+    working_directory: ~/openlineage/client/python
+    docker:
+      - image: cimg/python:3.8
+    steps:
+      - *checkout_project_root
+      - add_ssh_keys:
+          fingerprints:
+            - "7d:bc:78:35:09:c9:25:04:63:f9:eb:4b:f1:f4:d1:91"
+      - run: pip install -U -e .[docs]
+      - run: cd docs && make html && python convert.py && ./release-api-reference.sh
+
   build-client-java:
     working_directory: ~/openlineage/client/java
     docker:
