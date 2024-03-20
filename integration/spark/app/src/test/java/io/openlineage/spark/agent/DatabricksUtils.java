@@ -189,10 +189,11 @@ public class DatabricksUtils {
             .build();
 
     log.info("Creating cluster");
+    Map<String, String> emptyHeaders = new HashMap<>();
     CreateClusterResponse response =
         workspace
             .apiClient()
-            .POST("/api/2.0/clusters/create", createCluster, CreateClusterResponse.class);
+            .POST("/api/2.0/clusters/create", createCluster, CreateClusterResponse.class, emptyHeaders);
 
     return response.getClusterId();
   }

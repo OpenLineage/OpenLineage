@@ -47,7 +47,7 @@ dependencies {
     compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
 
-    compileOnly("com.databricks:databricks-dbutils-scala_${scalaBinaryVersion}:${databricksVersion}") {
+    implementation("com.databricks:databricks-dbutils-scala_${scalaBinaryVersion}:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
     }
     compileOnly("com.google.cloud.spark:spark-bigquery-with-dependencies_${scalaBinaryVersion}:${bigqueryVersion}") {
@@ -94,7 +94,7 @@ dependencies {
     scala212CompileOnly("org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}")
     scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
 
-    scala212CompileOnly("com.databricks:databricks-dbutils-scala_2.12:${databricksVersion}") {
+    scala212Implementation("com.databricks:databricks-dbutils-scala_2.12:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
     }
     scala212CompileOnly("com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:${bigqueryVersion}") {
@@ -140,7 +140,7 @@ dependencies {
     scala213CompileOnly("org.apache.spark:spark-sql-kafka-0-10_2.13:${sparkVersion}")
     scala213CompileOnly("org.apache.spark:spark-sql_2.13:${sparkVersion}")
 
-    scala213CompileOnly("com.databricks:databricks-dbutils-scala_2.13:${databricksVersion}") {
+    scala213Implementation("com.databricks:databricks-dbutils-scala_2.13:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
     }
     scala213CompileOnly("com.google.cloud.spark:spark-bigquery-with-dependencies_2.13:${bigqueryVersion}") {
