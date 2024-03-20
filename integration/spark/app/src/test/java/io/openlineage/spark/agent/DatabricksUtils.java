@@ -193,7 +193,11 @@ public class DatabricksUtils {
     CreateClusterResponse response =
         workspace
             .apiClient()
-            .POST("/api/2.0/clusters/create", createCluster, CreateClusterResponse.class, emptyHeaders);
+            .POST(
+                "/api/2.0/clusters/create",
+                createCluster,
+                CreateClusterResponse.class,
+                emptyHeaders);
 
     return response.getClusterId();
   }
@@ -258,7 +262,9 @@ public class DatabricksUtils {
 
   @SneakyThrows
   private static List<RunEvent> fetchEventsEmitted(WorkspaceClient workspace) {
-    return workspace.dbfs().readAllLines(Paths.get(DBFS_EVENTS_FILE), StandardCharsets.UTF_8)
+    return workspace
+        .dbfs()
+        .readAllLines(Paths.get(DBFS_EVENTS_FILE), StandardCharsets.UTF_8)
         .stream()
         .map(event -> OpenLineageClientUtils.runEventFromJson(event))
         .collect(Collectors.toList());
