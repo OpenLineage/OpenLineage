@@ -94,6 +94,10 @@ tasks.named("build").configure {
     dependsOn(validateReleaseVersionProperty)
 }
 
+tasks.withType(GenerateModuleMetadata.class).configureEach {
+    enabled = false
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
