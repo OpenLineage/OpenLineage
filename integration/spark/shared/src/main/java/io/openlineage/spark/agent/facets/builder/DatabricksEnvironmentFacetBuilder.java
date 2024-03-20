@@ -110,7 +110,7 @@ public class DatabricksEnvironmentFacetBuilder
   private static Optional<DbfsUtils> getDbfsUtils()
       throws ClassNotFoundException, InstantiationException, IllegalAccessException,
           IllegalArgumentException, InvocationTargetException {
-    Class dbutilsClass = Class.forName("com.databricks.dbutils_v1.impl.DbfsUtilsImpl");
+    Class dbutilsClass = Class.forName("com.databricks.sdk.scala.dbutils.SdkDBUtilsImpl");
     Constructor[] dbutilsConstructors = dbutilsClass.getDeclaredConstructors();
     if (dbutilsConstructors.length == 0) {
       log.warn(
