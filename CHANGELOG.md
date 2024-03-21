@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.10.2...HEAD)
 
+
+### Fixed
+* **Flink: disable module metadata generation** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2531) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
+  *Fixes the issue flink module generated contains the internal libs that are not published*
+
 ## [1.10.2](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...1.10.2) - 2024-03-15
 
 ### Added
