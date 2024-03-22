@@ -40,6 +40,7 @@ public class FlinkExecutionContextFactory {
                 .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_CLIENT_URI))
                 .build())
         .eventEmitter(new EventEmitter(openLineageConfig))
+        .config(openLineageConfig)
         .build();
   }
 }

@@ -8,6 +8,7 @@ package io.openlineage.flink.visitor.lifecycle;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.JobFacets;
 import io.openlineage.client.OpenLineage.JobFacetsBuilder;
+import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunEventBuilder;
@@ -17,6 +18,9 @@ import io.openlineage.flink.TransformationUtils;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.CheckpointFacet;
 import io.openlineage.flink.client.EventEmitter;
+import io.openlineage.flink.client.FlinkOpenLineageConfig;
+import io.openlineage.flink.client.FlinkOpenLineageConfig.JobConfig;
+import io.openlineage.flink.client.FlinkOpenLineageConfig.JobOwnersConfig;
 import io.openlineage.flink.visitor.Visitor;
 import io.openlineage.flink.visitor.VisitorFactory;
 import io.openlineage.flink.visitor.VisitorFactoryImpl;
@@ -25,6 +29,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -50,6 +56,7 @@ public class FlinkExecutionContext implements ExecutionContext {
   private final String jobNamespace;
   private final String processingType;
   private final CircuitBreaker circuitBreaker;
+  private final FlinkOpenLineageConfig config;
 
   @Getter private final List<Transformation<?>> transformations;
 
@@ -154,7 +161,7 @@ public class FlinkExecutionContext implements ExecutionContext {
   private RunEventBuilder commonEventBuilder() {
     OpenLineage openLineage = openLineageContext.getOpenLineage();
     JobFacets jobFacets =
-        new JobFacetsBuilder()
+        buildOwnershipFacet(new JobFacetsBuilder())
             .jobType(
                 openLineage
                     .newJobTypeJobFacetBuilder()
@@ -168,6 +175,35 @@ public class FlinkExecutionContext implements ExecutionContext {
         .newRunEventBuilder()
         .job(openLineage.newJob(jobNamespace, jobName, jobFacets))
         .eventTime(ZonedDateTime.now());
+  }
+
+  private JobFacetsBuilder buildOwnershipFacet(JobFacetsBuilder builder) {
+    Optional.ofNullable(config)
+        .map(FlinkOpenLineageConfig::getJob)
+        .map(JobConfig::getOwners)
+        .map(JobOwnersConfig::getAdditionalProperties)
+        .filter(Objects::nonNull)
+        .ifPresent(
+            map -> {
+              List<OwnershipJobFacetOwners> ownersList = new ArrayList<>();
+              map.forEach(
+                  (type, name) ->
+                      ownersList.add(
+                          openLineageContext
+                              .getOpenLineage()
+                              .newOwnershipJobFacetOwnersBuilder()
+                              .name(name)
+                              .type(type)
+                              .build()));
+              builder.ownership(
+                  openLineageContext
+                      .getOpenLineage()
+                      .newOwnershipJobFacetBuilder()
+                      .owners(ownersList)
+                      .build());
+            });
+
+    return builder;
   }
 
   private List<OpenLineage.InputDataset> getInputDatasets(

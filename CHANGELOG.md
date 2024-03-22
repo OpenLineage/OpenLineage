@@ -13,6 +13,9 @@
   *Implement within circuit breaker an optional timeout which switches off OpenLineage integration code when exceeded.*
 * **Spark/Flink: Support yaml config files together with SparkConf & FlinkConf approaches.** [`#2583`](https://github.com/OpenLineage/OpenLineage/pull/2583) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
   *Support config entries being provided by both yaml file and integration specific configuration (SparkConf / FlinkConf). Allow each integration to have its specific config entries.*
+* **Spark & Flink: Job Ownership Facet** [`#2533`](https://github.com/OpenLineage/OpenLineage/pull/2533) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Enable configuration entries specifying ownership of the job that will result in `OwnershipJobFacet` attached to job facets.*
+
 
 ### Fixed
 * **Spark: fix PMD for test** [`#2588`](https://github.com/OpenLineage/OpenLineage/pull/2588) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
