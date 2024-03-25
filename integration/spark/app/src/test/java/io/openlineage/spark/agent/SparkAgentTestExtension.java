@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -159,6 +160,7 @@ public class SparkAgentTestExtension
         .sparkSession(sparkSession)
         .sparkContext(sparkSession.sparkContext())
         .openLineage(openLineage)
+        .openLineageYaml(mock(OpenLineageYaml.class))
         .customEnvironmentVariables(Arrays.asList("TEST_VAR"))
         .build();
   }

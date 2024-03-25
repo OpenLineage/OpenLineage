@@ -8,6 +8,7 @@ package io.openlineage.spark.api;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -125,4 +126,7 @@ public class OpenLineageContext {
    * project.
    */
   @Default @NonNull @Getter Vendors vendors = Vendors.empty();
+
+  /** Access to the config entries */
+  @Default @NonNull @Getter OpenLineageYaml openLineageYaml;
 }

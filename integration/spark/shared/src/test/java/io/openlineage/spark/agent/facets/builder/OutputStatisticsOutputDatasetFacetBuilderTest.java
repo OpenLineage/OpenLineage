@@ -6,9 +6,11 @@
 package io.openlineage.spark.agent.facets.builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDatasetFacet;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -50,6 +52,7 @@ class OutputStatisticsOutputDatasetFacetBuilderTest {
             OpenLineageContext.builder()
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .sparkContext(sparkContext)
+                .openLineageYaml(mock(OpenLineageYaml.class))
                 .build());
     assertThat(builder.isDefinedAt(new SparkListenerJobEnd(1, 1L, JobSucceeded$.MODULE$))).isTrue();
     assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionEnd(1L, 1L))).isFalse();
@@ -62,6 +65,7 @@ class OutputStatisticsOutputDatasetFacetBuilderTest {
             OpenLineageContext.builder()
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .sparkContext(sparkContext)
+                .openLineageYaml(mock(OpenLineageYaml.class))
                 .build());
     JobMetricsHolder.getInstance().addJobStages(1, Collections.singleton(1));
     TaskMetrics taskMetrics = new TaskMetrics();

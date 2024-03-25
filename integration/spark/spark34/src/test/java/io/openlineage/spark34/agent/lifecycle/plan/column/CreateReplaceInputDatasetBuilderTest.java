@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -43,6 +44,7 @@ public class CreateReplaceInputDatasetBuilderTest {
           .sparkSession(mock(SparkSession.class))
           .sparkContext(mock(SparkContext.class))
           .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+          .openLineageYaml(mock(OpenLineageYaml.class))
           .build();
   CreateReplaceInputDatasetBuilder builder =
       new CreateReplaceInputDatasetBuilder(openLineageContext);

@@ -12,6 +12,7 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunEventBuilder;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
+import io.openlineage.client.config.JobConfig;
 import io.openlineage.flink.SinkLineage;
 import io.openlineage.flink.TransformationUtils;
 import io.openlineage.flink.api.OpenLineageContext;
@@ -50,6 +51,7 @@ public class FlinkExecutionContext implements ExecutionContext {
   private final String jobNamespace;
   private final String processingType;
   private final CircuitBreaker circuitBreaker;
+  private final JobConfig jobConfig;
 
   @Getter private final List<Transformation<?>> transformations;
 
@@ -154,7 +156,7 @@ public class FlinkExecutionContext implements ExecutionContext {
   private RunEventBuilder commonEventBuilder() {
     OpenLineage openLineage = openLineageContext.getOpenLineage();
     JobFacets jobFacets =
-        new JobFacetsBuilder()
+        buildOwnershipFacet(new JobFacetsBuilder())
             .jobType(
                 openLineage
                     .newJobTypeJobFacetBuilder()
@@ -168,6 +170,29 @@ public class FlinkExecutionContext implements ExecutionContext {
         .newRunEventBuilder()
         .job(openLineage.newJob(jobNamespace, jobName, jobFacets))
         .eventTime(ZonedDateTime.now());
+  }
+
+  private JobFacetsBuilder buildOwnershipFacet(JobFacetsBuilder builder) {
+    if (jobConfig == null
+        || jobConfig.getJobOwners() == null
+        || jobConfig.getJobOwners().isEmpty()) {
+      return builder;
+    }
+
+    OpenLineage openLineage = openLineageContext.getOpenLineage();
+    builder.ownership(
+        openLineage.newOwnershipJobFacet(
+            jobConfig.getJobOwners().keySet().stream()
+                .map(
+                    key ->
+                        openLineage
+                            .newOwnershipJobFacetOwnersBuilder()
+                            .type(key)
+                            .name(jobConfig.getJobOwners().get(key))
+                            .build())
+                .collect(Collectors.toList())));
+
+    return builder;
   }
 
   private List<OpenLineage.InputDataset> getInputDatasets(

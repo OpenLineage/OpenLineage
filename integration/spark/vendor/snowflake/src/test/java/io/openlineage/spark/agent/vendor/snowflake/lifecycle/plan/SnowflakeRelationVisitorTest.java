@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.vendor.snowflake.lifecycle.SnowflakeRelationVisitor;
@@ -76,6 +77,7 @@ public class SnowflakeRelationVisitorTest {
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .customEnvironmentVariables(Collections.singletonList("TEST_VAR"))
             .vendors(Vendors.getVendors())
+            .openLineageYaml(mock(OpenLineageYaml.class))
             .build();
 
     SnowflakeRelationVisitor visitor =

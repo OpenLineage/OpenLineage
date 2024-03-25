@@ -6,9 +6,11 @@
 package io.openlineage.spark.agent.facets.builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunFacet;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -81,6 +83,7 @@ class LogicalPlanRunFacetBuilderTest {
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .queryExecution(queryExecution)
+                .openLineageYaml(mock(OpenLineageYaml.class))
                 .build());
     assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionStart(1L, "", "", "", null, 1L)))
         .isTrue();
@@ -104,6 +107,7 @@ class LogicalPlanRunFacetBuilderTest {
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .queryExecution(queryExecution)
+                .openLineageYaml(mock(OpenLineageYaml.class))
                 .build());
 
     sparkContext.conf().set("spark.openlineage.facets.disabled", "[spark.logicalPlan]");
@@ -123,6 +127,7 @@ class LogicalPlanRunFacetBuilderTest {
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .openLineageYaml(mock(OpenLineageYaml.class))
                 .build());
     assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionStart(1L, "", "", "", null, 1L)))
         .isFalse();
@@ -147,6 +152,7 @@ class LogicalPlanRunFacetBuilderTest {
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .queryExecution(queryExecution)
+                .openLineageYaml(mock(OpenLineageYaml.class))
                 .build());
     Map<String, RunFacet> facetMap = new HashMap<>();
     builder.build(new SparkListenerSQLExecutionEnd(1L, 1L), facetMap::put);

@@ -1,0 +1,6 @@
+transport:
+  type: console
+job:
+  owners:
+    team: "MyTeam1"
+    person: "John Smith"

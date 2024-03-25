@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.Versions;
 import java.util.Arrays;
 import java.util.Collection;
@@ -191,6 +192,7 @@ class AbstractQueryPlanDatasetBuilderTest {
             .sparkContext(
                 SparkContext.getOrCreate(new SparkConf().setAppName("test").setMaster(LOCAL)))
             .openLineage(openLineage)
+            .openLineageYaml(mock(OpenLineageYaml.class))
             .queryExecution(queryExecution)
             .build();
     return context;

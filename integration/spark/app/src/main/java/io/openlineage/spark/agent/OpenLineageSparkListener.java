@@ -314,7 +314,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     }
     try {
       ArgumentParser args = ArgumentParser.parse(sparkConf);
-      contextFactory = new ContextFactory(new EventEmitter(args, appName));
+      contextFactory =
+          new ContextFactory(new EventEmitter(args, appName), args.getOpenLineageYaml());
       circuitBreaker =
           new CircuitBreakerFactory(args.getOpenLineageYaml().getCircuitBreaker()).build();
     } catch (URISyntaxException e) {

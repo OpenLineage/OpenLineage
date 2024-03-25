@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.DatasetBuilderFactoryProvider;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
@@ -117,6 +118,7 @@ class ColumnLevelLineageIcebergTest {
             .sparkSession(spark)
             .sparkContext(spark.sparkContext())
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .openLineageYaml(mock(OpenLineageYaml.class))
             .queryExecution(queryExecution)
             .build();
 

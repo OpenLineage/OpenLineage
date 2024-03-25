@@ -5,9 +5,12 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import static org.mockito.Mockito.mock;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Versions;
@@ -44,7 +47,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
   public static final Semaphore semaphore = new Semaphore(NUM_PERMITS);
 
   public StaticExecutionContextFactory(EventEmitter eventEmitter) {
-    super(eventEmitter);
+    super(eventEmitter, mock(OpenLineageYaml.class));
     try {
       semaphore.acquire(NUM_PERMITS);
     } catch (Exception e) {
@@ -111,6 +114,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
                       .sparkSession(session)
                       .sparkContext(sparkContext)
                       .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                      .openLineageYaml(mock(OpenLineageYaml.class))
                       .customEnvironmentVariables(Arrays.asList("TEST_VAR"))
                       .queryExecution(qe)
                       .build();

@@ -66,6 +66,20 @@ class ConfigTest {
   }
 
   @Test
+  void testJobOwnershipConfigFromYaml() throws URISyntaxException {
+    Path configPath =
+        Paths.get(this.getClass().getClassLoader().getResource("config/jobOwnership.yaml").toURI());
+
+    OpenLineageYaml openLineageYaml =
+        OpenLineageClientUtils.loadOpenLineageYaml(new TestConfigPathProvider(configPath));
+
+    assertThat(openLineageYaml.getJobConfig().getJobOwners())
+        .hasSize(2)
+        .containsEntry("team", "MyTeam1")
+        .containsEntry("person", "John Smith");
+  }
+
+  @Test
   void testJavaRuntimeCircuitBreakerConfigFromYaml() throws URISyntaxException {
     Path configPath =
         Paths.get(

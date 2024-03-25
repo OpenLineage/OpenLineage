@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -82,6 +83,7 @@ class ColumnLevelLineageHiveTest {
             .sparkSession(spark)
             .sparkContext(spark.sparkContext())
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .openLineageYaml(mock(OpenLineageYaml.class))
             .queryExecution(queryExecution)
             .build();
 

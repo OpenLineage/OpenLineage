@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -41,6 +42,7 @@ class AppendDataDatasetBuilderTest {
           .sparkSession(mock(SparkSession.class))
           .sparkContext(mock(SparkContext.class))
           .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+          .openLineageYaml(mock(OpenLineageYaml.class))
           .build();
   DatasetFactory<OpenLineage.OutputDataset> factory = mock(DatasetFactory.class);
   AppendDataDatasetBuilder builder = new AppendDataDatasetBuilder(context, factory);

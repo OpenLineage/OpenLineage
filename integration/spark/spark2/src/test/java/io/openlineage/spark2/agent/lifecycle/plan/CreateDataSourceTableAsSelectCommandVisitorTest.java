@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandVisitor;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -51,6 +52,7 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
                 .sparkSession(session)
                 .sparkContext(session.sparkContext())
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .openLineageYaml(mock(OpenLineageYaml.class))
                 .build());
 
     CreateDataSourceTableAsSelectCommand command =

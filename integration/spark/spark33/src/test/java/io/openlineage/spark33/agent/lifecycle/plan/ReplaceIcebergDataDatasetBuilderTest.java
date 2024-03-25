@@ -18,6 +18,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
@@ -44,6 +45,7 @@ public class ReplaceIcebergDataDatasetBuilderTest {
           .sparkSession(mock(SparkSession.class))
           .sparkContext(mock(SparkContext.class))
           .openLineage(openLineage)
+          .openLineageYaml(mock(OpenLineageYaml.class))
           .build();
 
   ReplaceIcebergDataDatasetBuilder builder =

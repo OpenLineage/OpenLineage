@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -112,6 +113,7 @@ class LogicalRelationDatasetBuilderTest {
             .sparkContext(mock(SparkContext.class))
             .openLineage(openLineage)
             .queryExecution(qe)
+            .openLineageYaml(mock(OpenLineageYaml.class))
             .build();
     LogicalRelationDatasetBuilder visitor =
         new LogicalRelationDatasetBuilder<>(

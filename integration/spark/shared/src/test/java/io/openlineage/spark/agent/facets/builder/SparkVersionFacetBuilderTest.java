@@ -6,9 +6,11 @@
 package io.openlineage.spark.agent.facets.builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunFacet;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.SparkVersionFacet;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -52,6 +54,7 @@ class SparkVersionFacetBuilderTest {
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .openLineageYaml(mock(OpenLineageYaml.class))
                 .build());
     assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionEnd(1, 1L))).isTrue();
     assertThat(
@@ -76,6 +79,7 @@ class SparkVersionFacetBuilderTest {
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .openLineageYaml(mock(OpenLineageYaml.class))
                 .build());
 
     Map<String, RunFacet> runFacetMap = new HashMap<>();

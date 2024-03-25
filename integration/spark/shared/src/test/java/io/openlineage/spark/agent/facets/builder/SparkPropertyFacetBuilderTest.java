@@ -10,6 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.SparkPropertyFacet;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -75,6 +76,7 @@ public class SparkPropertyFacetBuilderTest {
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .openLineageYaml(mock(OpenLineageYaml.class))
                 .build());
 
     Map<String, OpenLineage.RunFacet> runFacetMap = new HashMap<>();

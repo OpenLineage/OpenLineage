@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
@@ -83,6 +84,7 @@ class OpenLineageSparkListenerTest {
             .sparkSession(sparkSession)
             .sparkContext(sparkSession.sparkContext())
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .openLineageYaml(mock(OpenLineageYaml.class))
             .queryExecution(qe)
             .build();
   }

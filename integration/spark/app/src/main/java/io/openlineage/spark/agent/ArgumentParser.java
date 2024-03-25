@@ -129,6 +129,7 @@ public class ArgumentParser {
         .filter(
             e ->
                 e._1.startsWith("transport")
+                    || e._1.startsWith("job.owners")
                     || e._1.startsWith("facets")
                     || e._1.startsWith("circuitBreaker"))
         .collect(Collectors.toList());

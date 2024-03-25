@@ -2,6 +2,9 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.10.2...HEAD)
 
+### Added
+* **Spark & Flink: Job Ownership Facet** [`#2533`](https://github.com/OpenLineage/OpenLineage/pull/2533) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Enable configuration entries specifying ownership of the job that will result in `OwnershipJobFacet` attached to job facets.*
 
 ### Fixed
 * **Flink: disable module metadata generation** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2531) [@HuangZhenQiu](https://github.com/HuangZhenQiu)

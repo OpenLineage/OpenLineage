@@ -6,9 +6,11 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunFacet;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory.TestRunFacetBuilder;
 import io.openlineage.spark.api.CustomFacetBuilder;
@@ -34,6 +36,7 @@ class InternalEventHandlerFactoryTest {
         OpenLineageContext.builder()
             .sparkContext(sparkContext)
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .openLineageYaml(mock(OpenLineageYaml.class))
             .build();
   }
 

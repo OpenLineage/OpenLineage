@@ -7,6 +7,7 @@ package io.openlineage.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
+import io.openlineage.client.config.JobConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
 import lombok.Getter;
@@ -24,4 +25,8 @@ public class OpenLineageYaml {
   @Getter
   @JsonProperty("circuitBreaker")
   private CircuitBreakerConfig circuitBreaker;
+
+  @Getter
+  @JsonProperty("job")
+  private JobConfig jobConfig;
 }

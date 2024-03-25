@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -26,9 +27,11 @@ public class ContextFactory {
 
   public final EventEmitter openLineageEventEmitter;
   private final OpenLineageEventHandlerFactory handlerFactory;
+  private final OpenLineageYaml openLineageYaml;
 
-  public ContextFactory(EventEmitter openLineageEventEmitter) {
+  public ContextFactory(EventEmitter openLineageEventEmitter, OpenLineageYaml openLineageYaml) {
     this.openLineageEventEmitter = openLineageEventEmitter;
+    this.openLineageYaml = openLineageYaml;
     handlerFactory = new InternalEventHandlerFactory();
   }
 
@@ -48,6 +51,7 @@ public class ContextFactory {
             .sparkSession(sparkSession)
             .sparkContext(sparkSession.sparkContext())
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .openLineageYaml(openLineageYaml)
             .queryExecution(queryExecution)
             .customEnvironmentVariables(
                 this.openLineageEventEmitter
@@ -73,6 +77,7 @@ public class ContextFactory {
                       .sparkSession(sparkSession)
                       .sparkContext(sparkSession.sparkContext())
                       .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                      .openLineageYaml(openLineageYaml)
                       .queryExecution(queryExecution)
                       .customEnvironmentVariables(
                           this.openLineageEventEmitter
