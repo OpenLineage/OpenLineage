@@ -15,9 +15,14 @@ if TYPE_CHECKING:
     from requests import Session
     from requests.adapters import HTTPAdapter
 
+from openlineage.client import event_v2
 from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 from openlineage.client.transport import Transport, TransportFactory, get_default_factory
 from openlineage.client.transport.http import HttpConfig, HttpTransport
+
+Event_v1 = Union[RunEvent, DatasetEvent, JobEvent]
+Event_v2 = Union[event_v2.RunEvent, event_v2.DatasetEvent, event_v2.JobEvent]
+Event = Union[Event_v1, Event_v2]
 
 
 @attr.s
@@ -62,7 +67,7 @@ class OpenLineageClient:
         elif transport:
             self.transport = transport
         else:
-            transport_config = None if "transport" not in self.config else self.config["transport"]
+            transport_config = self.config.get("transport", None)
             self.transport = factory.create(transport_config)
 
         self._filters: list[Filter] = []
@@ -86,10 +91,12 @@ class OpenLineageClient:
             ),
         )
 
-    def emit(self, event: Union[RunEvent, DatasetEvent | JobEvent]) -> None:  # noqa: UP007
-        if not (isinstance(event, (RunEvent, DatasetEvent, JobEvent))):
+    def emit(self, event: Event) -> None:
+        from typing import get_args
+
+        if type(event) not in get_args(Event):
             msg = "`emit` only accepts RunEvent, DatasetEvent, JobEvent classes"
-            raise ValueError(msg)  # noqa: TRY004
+            raise ValueError(msg)
         if not self.transport:
             log.error("Tried to emit OpenLineage event, but transport is not configured.")
             return
@@ -112,8 +119,8 @@ class OpenLineageClient:
 
     def filter_event(
         self,
-        event: Union[RunEvent, DatasetEvent, JobEvent],  # noqa: UP007
-    ) -> Union[RunEvent, DatasetEvent, JobEvent] | None:  # noqa: UP007
+        event: Event,
+    ) -> Event | None:
         """Filters jobs according to config-defined events"""
         for _filter in self._filters:
             if isinstance(event, RunEvent) and _filter.filter_event(event) is None:

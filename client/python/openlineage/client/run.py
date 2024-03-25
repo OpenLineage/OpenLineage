@@ -1,6 +1,7 @@
 # Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 import uuid
+import warnings
 from enum import Enum
 from typing import Any, ClassVar, Dict, List, Optional
 
@@ -8,6 +9,10 @@ import attr
 from dateutil import parser
 from openlineage.client.facet import NominalTimeRunFacet, ParentRunFacet
 from openlineage.client.utils import RedactMixin
+
+warnings.warn(
+    "This module is deprecated. Please use `openlineage.client.event_v2`.", DeprecationWarning, stacklevel=2
+)
 
 SCHEMA_URL = "https://openlineage.io/spec/1-0-5/OpenLineage.json#/definitions/RunEvent"
 
