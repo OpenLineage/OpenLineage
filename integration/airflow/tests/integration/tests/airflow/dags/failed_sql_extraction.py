@@ -30,7 +30,7 @@ dag = DAG(
 
 
 # Some sql-parser unsupported syntax
-sql = "CREATE TYPE myrowtype AS (f1 int, f2 text, f3 numeric)"
+sql = "DROP POLICY IF EXISTS name ON table_name"
 
 
 if parse_version(AIRFLOW_VERSION) < parse_version("2.5.0"):
