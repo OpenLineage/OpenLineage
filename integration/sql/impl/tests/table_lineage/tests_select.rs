@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_utils::*;
-use openlineage_sql::{parse_sql, BigQueryDialect, TableLineage};
+use openlineage_sql::{get_dialect, parse_sql, BigQueryDialect, DbTableMeta, TableLineage, QuoteStyle};
+use sqlparser::ast::Ident;
 
 #[test]
 fn select_simple() {
@@ -79,6 +80,33 @@ fn select_left_join() {
         TableLineage {
             in_tables: tables(vec!["table0", "table1"]),
             out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_single_backtick_identifier_bigquery() {
+    assert_eq!(
+        test_sql_dialect(
+            "SELECT * FROM `openlineage`.`dataset`.`table_34q845ur`",
+            "bigquery"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: vec![DbTableMeta {
+                database: Some("openlineage".to_string()),
+                schema: Some("dataset".to_string()),
+                name: "table_34q845ur".to_string(),
+                quote_style: Some(QuoteStyle {
+                    database: Some('`'),
+                    schema: Some('`'),
+                    name: Some('`'),
+                }),
+                provided_namespace: false,
+                provided_field_schema: false,
+            }],
+            out_tables: vec![],
         }
     )
 }
