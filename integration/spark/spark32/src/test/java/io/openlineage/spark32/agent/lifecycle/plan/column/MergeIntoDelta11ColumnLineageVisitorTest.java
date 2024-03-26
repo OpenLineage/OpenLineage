@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
@@ -25,14 +26,23 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.delta.commands.MergeIntoCommand;
 import org.apache.spark.sql.delta.files.TahoeFileIndex;
 import org.apache.spark.sql.types.StructType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.Option;
 
 public class MergeIntoDelta11ColumnLineageVisitorTest {
-  OpenLineageContext context = mock(OpenLineageContext.class);
+  OpenLineageContext olContext = mock(OpenLineageContext.class);
+  ColumnLevelLineageContext clContext = mock(ColumnLevelLineageContext.class);
   MergeIntoCommand command = mock(MergeIntoCommand.class);
-  MergeIntoDelta11ColumnLineageVisitor visitor = new MergeIntoDelta11ColumnLineageVisitor(context);
+  MergeIntoDelta11ColumnLineageVisitor visitor =
+      new MergeIntoDelta11ColumnLineageVisitor(olContext);
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
+
+  @BeforeEach
+  public void setup() {
+    when(clContext.getBuilder()).thenReturn(builder);
+    when(clContext.getOlContext()).thenReturn(olContext);
+  }
 
   @Test
   void testGetMergeActions() {
@@ -82,7 +92,7 @@ public class MergeIntoDelta11ColumnLineageVisitorTest {
                 Collections.singletonList(deltaMergeIntoNotMatchedClause)),
             Option.<StructType>empty());
 
-    visitor.collectExpressionDependencies(command, builder);
+    visitor.collectExpressionDependencies(clContext, command);
 
     verify(builder, times(1)).addDependency(parentExprId1, action1ExprId);
     verify(builder, times(1)).addDependency(parentExprId2, action2ExprId);

@@ -27,6 +27,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
@@ -36,6 +37,7 @@ import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.expressions.GenericRow;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
@@ -66,6 +68,7 @@ class ColumnLevelLineageIcebergTest {
   QueryExecution queryExecution = mock(QueryExecution.class);
 
   OpenLineageContext context;
+  SparkListenerEvent event = mock(SparkListenerSQLExecutionEnd.class);
   OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
   OpenLineage.SchemaDatasetFacet schemaDatasetFacet =
       openLineage.newSchemaDatasetFacet(
@@ -147,7 +150,8 @@ class ColumnLevelLineageIcebergTest {
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, schemaDatasetFacet)
+            .get();
 
     assertColumnDependsOn(facet, "a", FILE, T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "a", FILE, "/tmp/column_level_lineage/db.t2", "a");
@@ -165,7 +169,8 @@ class ColumnLevelLineageIcebergTest {
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, schemaDatasetFacet)
+            .get();
 
     assertColumnDependsOn(facet, "a", FILE, T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "b", FILE, T1_EXPECTED_NAME, "b");
@@ -187,7 +192,7 @@ class ColumnLevelLineageIcebergTest {
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, outputSchema).get();
 
     assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "d", FILE, T1_EXPECTED_NAME, "b");
@@ -208,7 +213,7 @@ class ColumnLevelLineageIcebergTest {
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     Optional<OpenLineage.ColumnLineageDatasetFacet> facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, wrongSchema);
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, wrongSchema);
 
     assertFalse(facet.isPresent());
   }
@@ -219,7 +224,7 @@ class ColumnLevelLineageIcebergTest {
     when(context.getQueryExecution()).thenReturn(Optional.empty());
     assertEquals(
         Optional.empty(),
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet));
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, schemaDatasetFacet));
   }
 
   @Test
@@ -230,7 +235,7 @@ class ColumnLevelLineageIcebergTest {
     when(queryExecution.optimizedPlan()).thenReturn(null);
     assertEquals(
         Optional.empty(),
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet));
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, schemaDatasetFacet));
   }
 
   @Test
@@ -260,7 +265,7 @@ class ColumnLevelLineageIcebergTest {
                     .build()));
 
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, outputSchema).get();
 
     assertColumnDependsOn(facet, "id", FILE, inputDfPath, "id");
     assertColumnDependsOn(facet, "col2", FILE, inputDfPath, "id");
@@ -282,7 +287,7 @@ class ColumnLevelLineageIcebergTest {
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, outputSchema).get();
 
     assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "b");
@@ -308,7 +313,7 @@ class ColumnLevelLineageIcebergTest {
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, outputSchema).get();
 
     assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "c", FILE, "/tmp/column_level_lineage/db.t2", "a");
@@ -328,7 +333,7 @@ class ColumnLevelLineageIcebergTest {
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, outputSchema).get();
 
     assertColumnDependsOn(facet, "a", FILE, T1_EXPECTED_NAME, "a");
   }
@@ -350,7 +355,7 @@ class ColumnLevelLineageIcebergTest {
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, outputSchema).get();
 
     assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "d", FILE, T1_EXPECTED_NAME, "b");
@@ -382,7 +387,7 @@ class ColumnLevelLineageIcebergTest {
     when(queryExecution.optimizedPlan()).thenReturn(plan);
 
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, outputSchema).get();
 
     assertColumnDependsOn(facet, "e", FILE, T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "f", FILE, T1_EXPECTED_NAME, "b");
@@ -429,7 +434,7 @@ class ColumnLevelLineageIcebergTest {
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
         io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils
-            .buildColumnLineageDatasetFacet(context, schemaDatasetFacet)
+            .buildColumnLineageDatasetFacet(event, context, schemaDatasetFacet)
             .get();
 
     assertColumnDependsOn(facet, "a", "file", T1_EXPECTED_NAME, "a");
