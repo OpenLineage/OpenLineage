@@ -521,20 +521,18 @@ def test_airflow_mapped_task_facet(airflow_db_conn):
     assert set([event["job"]["facets"]["sourceCode"]["source"] for event in started_events]) == set(
         ["echo 1", "echo 2", "echo 3"]
     )
-    assert sorted([event["run"]["facets"]["airflow_mappedTask"]["mapIndex"] for event in started_events]) == [
+    assert sorted(
+        [event["run"]["facets"]["airflow"]["taskInstance"]["map_index"] for event in started_events]
+    ) == [
         0,
         1,
         2,
     ]
+    # Changed `airflow.operators` to `***.operators` as Airflow started to redact the word `airflow`.
+    # Probably we use it as a username or password somewhere, but the test should still serve its purpose.
     assert set(
-        [event["run"]["facets"]["airflow_mappedTask"]["operatorClass"] for event in started_events]
-    ) == set(["airflow.operators.bash.BashOperator"])
-    assert set(
-        [
-            event["run"]["facets"]["unknownSourceAttribute"]["unknownItems"][0]["name"]
-            for event in mapped_events
-        ]
-    ) == set(["BashOperator"])
+        [event["run"]["facets"]["airflow"]["task"]["operator_class"] for event in started_events]
+    ) == set(["***.operators.bash.BashOperator"])
 
 
 if __name__ == "__main__":

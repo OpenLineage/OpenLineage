@@ -27,8 +27,10 @@
     ],
     "run": {
         "facets": {
-            "airflow_runArgs": {
-                "externalTrigger": false
+            "airflow": {
+                "dagRun": {
+                  "external_trigger": false
+                }
             },
             "parent": {
                 "job": {
@@ -88,8 +90,10 @@
     },
     "run": {
         "facets": {
-            "airflow_runArgs": {
-                "externalTrigger": false
+            "airflow": {
+                "dagRun": {
+                  "external_trigger": false
+                }
             },
             "parent": {
                 "job": {
@@ -213,8 +217,10 @@
     ],
     "run": {
         "facets": {
-            "airflow_runArgs": {
-                "externalTrigger": false
+            "airflow": {
+                "dagRun": {
+                  "external_trigger": false
+                }
             },
             "parent": {
                 "job": {
@@ -339,8 +345,10 @@
     ],
     "run": {
         "facets": {
-            "airflow_runArgs": {
-                "externalTrigger": false
+            "airflow": {
+                "dagRun": {
+                  "external_trigger": false
+                }
             },
             "parent": {
                 "job": {
@@ -412,8 +420,10 @@
     ],
     "run": {
         "facets": {
-            "airflow_runArgs": {
-                "externalTrigger": false
+            "airflow": {
+                "dagRun": {
+                  "external_trigger": false
+                }
             },
             "parent": {
                 "job": {
@@ -475,8 +485,10 @@
     "outputs": [],
     "run": {
         "facets": {
-            "airflow_runArgs": {
-                "externalTrigger": false
+            "airflow": {
+                "dagRun": {
+                  "external_trigger": false
+                }
             },
             "parent": {
                 "job": {
@@ -489,14 +501,6 @@
                     "name": "athena_dag",
                     "namespace": "food_delivery"
                 }
-            },
-            "unknownSourceAttribute": {
-                "unknownItems": [
-                    {
-                        "name": "PythonOperator",
-                        "type": "operator"
-                    }
-                ]
             }
         }
     }
@@ -515,15 +519,6 @@
     },
     "outputs": [],
     "run": {
-        "facets": {
-            "unknownSourceAttribute": {
-                "unknownItems": [
-                    {
-                        "name": "PythonOperator",
-                        "type": "operator"
-                    }
-                ]
-            }
-        }
+        "facets": "{{ 'true' if result == {} else result }}"
     }
 }]

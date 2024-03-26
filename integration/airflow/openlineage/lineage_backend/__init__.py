@@ -34,7 +34,6 @@ class Backend:
         from openlineage.airflow.utils import (
             DagUtils,
             get_airflow_run_facet,
-            get_custom_facets,
             get_dagrun_start_end,
             get_job_name,
             get_task_location,
@@ -71,7 +70,6 @@ class Backend:
             task=task_metadata,
             run_facets={
                 **task_metadata.run_facets,
-                **get_custom_facets(dagrun, operator, dagrun.external_trigger),
                 **get_airflow_run_facet(dagrun, dag, task_instance, operator, task_uuid),
             },
         )
