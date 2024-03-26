@@ -50,6 +50,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.ActiveJob;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
@@ -449,7 +450,12 @@ class OpenLineageRunEventBuilder {
               ds -> {
                 Map<String, DatasetFacet> dsFacetsMap = new HashMap(datasetFacetsMap);
                 ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(
-                        openLineageContext, ds.getFacets().getSchema())
+                        Optional.of(nodes.get(0))
+                            .filter(e -> e instanceof SparkListenerEvent)
+                            .map(e -> (SparkListenerEvent) e)
+                            .orElse(null),
+                        openLineageContext,
+                        ds.getFacets().getSchema())
                     .ifPresent(facet -> dsFacetsMap.put("columnLineage", facet));
                 return openLineage
                     .newOutputDatasetBuilder()

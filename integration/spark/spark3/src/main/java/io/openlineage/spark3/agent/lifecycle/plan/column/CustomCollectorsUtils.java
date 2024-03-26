@@ -5,7 +5,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
-import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.column.CustomColumnLineageVisitor;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -26,27 +26,45 @@ public class CustomCollectorsUtils {
 
     return Stream.concat(
         StreamSupport.stream(
-            Spliterators.spliteratorUnknownSize(
-                loader.iterator(), Spliterator.IMMUTABLE & Spliterator.DISTINCT),
-            false),
+                Spliterators.spliteratorUnknownSize(
+                    loader.iterator(), Spliterator.IMMUTABLE & Spliterator.DISTINCT),
+                false)
+            .map(
+                customVisitor ->
+                    new ColumnLevelLineageVisitor() {
+                      @Override
+                      public void collectInputs(
+                          ColumnLevelLineageContext context, LogicalPlan node) {
+                        customVisitor.collectInputs(node, context.getBuilder());
+                      }
+
+                      @Override
+                      public void collectOutputs(
+                          ColumnLevelLineageContext context, LogicalPlan node) {
+                        customVisitor.collectOutputs(node, context.getBuilder());
+                      }
+
+                      @Override
+                      public void collectExpressionDependencies(
+                          ColumnLevelLineageContext context, LogicalPlan node) {
+                        customVisitor.collectExpressionDependencies(node, context.getBuilder());
+                      }
+                    }),
         context.getColumnLevelLineageVisitors().stream());
   }
 
-  static void collectInputs(
-      OpenLineageContext context, LogicalPlan plan, ColumnLevelLineageBuilder builder) {
-    CustomCollectorsUtils.loadCollectors(context)
-        .forEach(collector -> collector.collectInputs(plan, builder));
+  static void collectInputs(ColumnLevelLineageContext context, LogicalPlan plan) {
+    CustomCollectorsUtils.loadCollectors(context.getOlContext())
+        .forEach(collector -> collector.collectInputs(context, plan));
   }
 
-  static void collectOutputs(
-      OpenLineageContext context, LogicalPlan plan, ColumnLevelLineageBuilder builder) {
-    CustomCollectorsUtils.loadCollectors(context)
-        .forEach(collector -> collector.collectOutputs(plan, builder));
+  static void collectOutputs(ColumnLevelLineageContext context, LogicalPlan plan) {
+    CustomCollectorsUtils.loadCollectors(context.getOlContext())
+        .forEach(collector -> collector.collectOutputs(context, plan));
   }
 
-  static void collectExpressionDependencies(
-      OpenLineageContext context, LogicalPlan plan, ColumnLevelLineageBuilder builder) {
-    CustomCollectorsUtils.loadCollectors(context)
-        .forEach(collector -> collector.collectExpressionDependencies(plan, builder));
+  static void collectExpressionDependencies(ColumnLevelLineageContext context, LogicalPlan plan) {
+    CustomCollectorsUtils.loadCollectors(context.getOlContext())
+        .forEach(collector -> collector.collectExpressionDependencies(context, plan));
   }
 }

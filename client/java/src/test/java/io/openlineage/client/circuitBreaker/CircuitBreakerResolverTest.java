@@ -16,7 +16,7 @@ import java.util.ServiceLoader;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class CircuitBreakerResolverTest {
+class CircuitBreakerResolverTest {
 
   @Test
   void testBuilderLoadedWithServiceLoader() {

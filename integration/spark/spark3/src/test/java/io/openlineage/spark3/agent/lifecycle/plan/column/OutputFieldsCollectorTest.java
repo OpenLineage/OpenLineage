@@ -10,6 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
@@ -28,8 +29,9 @@ class OutputFieldsCollectorTest {
 
   private static final String SOME_NAME = "some-name";
   LogicalPlan plan = mock(LogicalPlan.class);
+  OpenLineageContext olContext = mock(OpenLineageContext.class);
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
-  OpenLineageContext context = mock(OpenLineageContext.class);
+  ColumnLevelLineageContext clContext = mock(ColumnLevelLineageContext.class);
   Attribute attr1 = mock(Attribute.class);
   Attribute attr2 = mock(Attribute.class);
   ExprId exprId1 = mock(ExprId.class);
@@ -45,6 +47,8 @@ class OutputFieldsCollectorTest {
     when(attr2.name()).thenReturn("name2");
     when(attr2.exprId()).thenReturn(exprId2);
 
+    when(clContext.getBuilder()).thenReturn(builder);
+    when(clContext.getOlContext()).thenReturn(olContext);
     when(plan.output()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
     when(builder.hasOutputs()).thenReturn(true);
   }
@@ -53,7 +57,7 @@ class OutputFieldsCollectorTest {
   void verifyOutputAttributeIsCollected() {
     when(plan.output()).thenReturn(attrs);
 
-    OutputFieldsCollector.collect(context, plan, builder);
+    OutputFieldsCollector.collect(clContext, plan);
 
     Mockito.verify(builder, times(1)).addOutput(exprId1, "name1");
     Mockito.verify(builder, times(1)).addOutput(exprId2, "name2");
@@ -76,7 +80,7 @@ class OutputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    OutputFieldsCollector.collect(context, aggregate, builder);
+    OutputFieldsCollector.collect(clContext, aggregate);
 
     Mockito.verify(builder, times(1)).addOutput(exprId, SOME_NAME);
   }
@@ -98,7 +102,7 @@ class OutputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    OutputFieldsCollector.collect(context, project, builder);
+    OutputFieldsCollector.collect(clContext, project);
 
     Mockito.verify(builder, times(1)).addOutput(exprId, SOME_NAME);
   }
@@ -117,7 +121,7 @@ class OutputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    OutputFieldsCollector.collect(context, plan, builder);
+    OutputFieldsCollector.collect(clContext, plan);
 
     Mockito.verify(builder, times(1)).addOutput(exprId1, "name1");
     Mockito.verify(builder, times(1)).addOutput(exprId2, "name2");

@@ -22,6 +22,7 @@ import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
@@ -29,6 +30,7 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StringType$;
@@ -52,6 +54,7 @@ public class ColumnLevelLineageDeltaTest {
   QueryExecution queryExecution = mock(QueryExecution.class);
 
   OpenLineageContext context;
+  SparkListenerEvent event = mock(SparkListenerSQLExecutionEnd.class);
   OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
   OpenLineage.SchemaDatasetFacet schemaDatasetFacet =
       openLineage.newSchemaDatasetFacet(
@@ -144,7 +147,8 @@ public class ColumnLevelLineageDeltaTest {
 
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, schemaDatasetFacet)
+            .get();
 
     assertColumnDependsOn(facet, "a", "file", T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "a", "file", T2_EXPECTED_NAME, "a");

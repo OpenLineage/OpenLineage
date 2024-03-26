@@ -5,15 +5,25 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.extension.scala.v1.ColumnLevelLineageNode;
+import io.openlineage.spark.extension.scala.v1.ExpressionDependency;
+import io.openlineage.spark.extension.scala.v1.ExpressionDependencyWithDelegate;
+import io.openlineage.spark.extension.scala.v1.ExpressionDependencyWithIdentifier;
+import io.openlineage.spark.extension.scala.v1.OlExprId;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import org.apache.spark.sql.catalyst.expressions.Alias;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
@@ -28,6 +38,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata$;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import scala.Option;
@@ -36,7 +47,7 @@ import scala.collection.immutable.Seq;
 class ExpressionDependencyCollectorTest {
 
   ColumnLevelLineageBuilder builder = Mockito.mock(ColumnLevelLineageBuilder.class);
-  OpenLineageContext context = mock(OpenLineageContext.class);
+  ColumnLevelLineageContext context = mock(ColumnLevelLineageContext.class);
 
   ExprId exprId1 = mock(ExprId.class);
   ExprId exprId2 = mock(ExprId.class);
@@ -69,6 +80,12 @@ class ExpressionDependencyCollectorTest {
           Option.empty(),
           ScalaConversionUtils.asScalaSeqEmpty());
 
+  @BeforeEach
+  void setup() {
+    when(context.getBuilder()).thenReturn(builder);
+    when(context.getOlContext()).thenReturn(mock(OpenLineageContext.class));
+  }
+
   @Test
   void testCollectFromProjectPlan() {
     Project project =
@@ -78,7 +95,7 @@ class ExpressionDependencyCollectorTest {
             mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
 
-    ExpressionDependencyCollector.collect(context, plan, builder);
+    ExpressionDependencyCollector.collect(context, plan);
 
     verify(builder, times(1)).addDependency(aliasExprId1, exprId1);
     verify(builder, times(1)).addDependency(aliasExprId2, exprId2);
@@ -93,7 +110,7 @@ class ExpressionDependencyCollectorTest {
             mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, aggregate, null, null, false);
 
-    ExpressionDependencyCollector.collect(context, plan, builder);
+    ExpressionDependencyCollector.collect(context, plan);
 
     verify(builder, times(1)).addDependency(aliasExprId1, exprId1);
   }
@@ -129,9 +146,63 @@ class ExpressionDependencyCollectorTest {
             mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
 
-    ExpressionDependencyCollector.collect(context, plan, builder);
+    ExpressionDependencyCollector.collect(context, plan);
 
     verify(builder, times(1)).addDependency(rootAliasExprId, exprId1);
     verify(builder, times(1)).addDependency(rootAliasExprId, exprId2);
+  }
+
+  @Test
+  void testExtensionColumnLevelLineageWithIdentifier() {
+    LogicalPlan columnLineagePlanNode =
+        mock(LogicalPlan.class, withSettings().extraInterfaces(ColumnLevelLineageNode.class));
+
+    OlExprId outputExprId = new OlExprId(1L);
+    OlExprId inputExprId1 = new OlExprId(2L);
+    OlExprId inputExprId2 = new OlExprId(3L);
+
+    when(((ColumnLevelLineageNode) columnLineagePlanNode).columnLevelLineageDependencies(any()))
+        .thenReturn(
+            ScalaConversionUtils.fromList(
+                    Collections.<ExpressionDependency>singletonList(
+                        new ExpressionDependencyWithIdentifier(
+                            outputExprId,
+                            ScalaConversionUtils.fromList(Arrays.asList(inputExprId1, inputExprId2))
+                                .toList())))
+                .toList());
+
+    ExpressionDependencyCollector.collectFromNode(context, columnLineagePlanNode);
+
+    verify(builder, times(1)).addDependency(ExprId.apply(1L), ExprId.apply(2L));
+    verify(builder, times(1)).addDependency(ExprId.apply(1L), ExprId.apply(3L));
+  }
+
+  @Test
+  void testExtensionColumnLevelLineageWithDelegate() {
+    LogicalPlan columnLineagePlanNode =
+        mock(LogicalPlan.class, withSettings().extraInterfaces(ColumnLevelLineageNode.class));
+
+    when(((ColumnLevelLineageNode) columnLineagePlanNode).columnLevelLineageDependencies(any()))
+        .thenReturn(
+            ScalaConversionUtils.fromList(
+                    Collections.<ExpressionDependency>singletonList(
+                        new ExpressionDependencyWithDelegate(
+                            new OlExprId(1L),
+                            new AttributeReference(
+                                "name1",
+                                IntegerType$.MODULE$,
+                                false,
+                                Metadata$.MODULE$.empty(),
+                                ExprId.apply(2L),
+                                null))))
+                .toList());
+
+    ExpressionDependencyCollector.collectFromNode(context, columnLineagePlanNode);
+
+    verify(builder, times(1)).addDependency(ExprId.apply(1L), ExprId.apply(2L));
+  }
+
+  private Seq<NamedExpression> toScalaSeq(Collection<NamedExpression> expressions) {
+    return ScalaConversionUtils.<NamedExpression>fromList(new ArrayList(expressions));
   }
 }

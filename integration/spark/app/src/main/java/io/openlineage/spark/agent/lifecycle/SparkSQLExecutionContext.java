@@ -191,7 +191,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
             stageCompleted);
 
     log.debug("Posting event for stage completed {}: {}", executionId, event);
-
     eventEmitter.emit(event);
   }
 

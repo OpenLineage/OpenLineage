@@ -14,11 +14,13 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.util.DatasetFacetsUtils;
+import io.openlineage.spark.agent.util.ExtensionPlanUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.extension.scala.v1.LineageRelationProvider;
 import java.net.URI;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -61,6 +63,7 @@ public class SaveIntoDataSourceCommandVisitor
         return false;
       }
       return command.dataSource() instanceof SchemaRelationProvider
+          || command.dataSource() instanceof LineageRelationProvider
           || command.dataSource() instanceof RelationProvider;
     }
     return false;
@@ -84,6 +87,18 @@ public class SaveIntoDataSourceCommandVisitor
   @Override
   public List<OutputDataset> apply(SparkListenerEvent event, SaveIntoDataSourceCommand command) {
     BaseRelation relation;
+
+    if (command.dataSource() instanceof LineageRelationProvider) {
+      LineageRelationProvider provider = (LineageRelationProvider) command.dataSource();
+      return Collections.singletonList(
+          outputDataset()
+              .getDataset(
+                  provider.getLineageDatasetIdentifier(
+                      ExtensionPlanUtils.context(event, context),
+                      context.getSparkSession().get().sqlContext(),
+                      command.options()),
+                  getSchema(command)));
+    }
 
     // Kafka has some special handling because the Source and Sink relations require different
     // options. A KafkaRelation for writes uses the "topic" option, while the same relation for

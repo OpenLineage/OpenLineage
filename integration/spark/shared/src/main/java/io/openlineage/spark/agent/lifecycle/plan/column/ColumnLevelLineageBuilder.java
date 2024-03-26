@@ -13,7 +13,6 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.sql.ColumnMeta;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -85,14 +84,14 @@ public class ColumnLevelLineageBuilder {
   }
 
   /**
-   * Add dependency between parent expression and child expression. Evaluation of parent requires
-   * child.
+   * Add dependency between outputExprId expression and inputExprId expression. Evaluation of
+   * outputExprId requires inputExprId.
    *
-   * @param parent
-   * @param child
+   * @param outputExprId
+   * @param inputExprId
    */
-  public void addDependency(ExprId parent, ExprId child) {
-    exprDependencies.computeIfAbsent(parent, k -> new HashSet<>()).add(child);
+  public void addDependency(ExprId outputExprId, ExprId inputExprId) {
+    exprDependencies.computeIfAbsent(outputExprId, k -> new HashSet<>()).add(inputExprId);
   }
 
   public boolean hasOutputs() {
@@ -203,7 +202,7 @@ public class ColumnLevelLineageBuilder {
     dependentInputs.add(outputExprId);
     boolean continueSearch = true;
 
-    Set<ExprId> newDependentInputs = new HashSet<>(Arrays.asList(outputExprId));
+    Set<ExprId> newDependentInputs = Collections.singleton(outputExprId);
     while (continueSearch) {
       newDependentInputs =
           newDependentInputs.stream()
