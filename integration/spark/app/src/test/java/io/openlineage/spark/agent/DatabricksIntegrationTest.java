@@ -7,6 +7,7 @@ package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.DatabricksUtils.DBFS_EVENTS_FILE;
 import static io.openlineage.spark.agent.DatabricksUtils.init;
+import static io.openlineage.spark.agent.DatabricksUtils.platformVersion;
 import static io.openlineage.spark.agent.DatabricksUtils.runScript;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,6 +18,7 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
+import io.openlineage.client.OpenLineage.RunFacet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -77,10 +79,45 @@ public class DatabricksIntegrationTest {
     InputDataset inputDataset = lastEvent.getInputs().get(0);
 
     assertThat(outputDataset.getNamespace()).isEqualTo("dbfs");
-    assertThat(outputDataset.getName()).isEqualTo("/user/hive/warehouse/ctas");
+    assertThat(outputDataset.getName()).isEqualTo("/user/hive/warehouse/ctas_" + platformVersion());
 
     assertThat(inputDataset.getNamespace()).isEqualTo("dbfs");
-    assertThat(inputDataset.getName()).isEqualTo("/user/hive/warehouse/temp");
+    assertThat(inputDataset.getName()).isEqualTo("/user/hive/warehouse/temp_" + platformVersion());
+
+    // test DatabricksEnvironmentFacetBuilder handler
+    RunEvent eventWithDatabricksProperties =
+        runEvents.stream()
+            .filter(
+                r ->
+                    r.getRun()
+                        .getFacets()
+                        .getAdditionalProperties()
+                        .containsKey("environment-properties"))
+            .findFirst()
+            .get();
+
+    RunFacet environmentFacet =
+        eventWithDatabricksProperties
+            .getRun()
+            .getFacets()
+            .getAdditionalProperties()
+            .get("environment-properties");
+
+    Map<String, Object> properties =
+        (Map<String, Object>)
+            environmentFacet.getAdditionalProperties().get("environment-properties");
+
+    assertThat(properties.get("spark.databricks.job.type")).isEqualTo("python");
+
+    List<Object> mounts = (List<Object>) properties.get("mountPoints");
+
+    assertThat(mounts).isNotEmpty();
+    Map<String, String> mountInfo = (Map<String, String>) mounts.get(0);
+
+    assertThat(mountInfo).containsKeys("mountPoint", "source");
+
+    assertThat(mountInfo.get("mountPoint")).startsWith("/databricks");
+    assertThat(mountInfo.get("source")).startsWith("databricks");
   }
 
   @Test
@@ -117,7 +154,7 @@ public class DatabricksIntegrationTest {
 
     assertThat(completeEvent).isPresent();
     assertThat(completeEvent.get().getOutputs().get(0).getName())
-        .isEqualTo("/data/path/to/output/narrow_transformation");
+        .isEqualTo("/data/path/to/output/narrow_transformation_" + platformVersion());
   }
 
   @Test
@@ -148,7 +185,7 @@ public class DatabricksIntegrationTest {
 
     assertThat(completeEvent).isPresent();
     assertThat(completeEvent.get().getOutputs().get(0).getName())
-        .isEqualTo("/data/output/wide_transformation/result");
+        .isEqualTo("/data/output/wide_transformation/result_" + platformVersion());
   }
 
   @Test
@@ -174,8 +211,10 @@ public class DatabricksIntegrationTest {
             .get();
 
     // assert input and output are the same
-    assertThat(outputDataset.getNamespace()).isEqualTo(outputDataset.getNamespace());
-    assertThat(inputDataset.getName()).isEqualTo(inputDataset.getName());
+    // TODO: this assertions are not working
+    // https://github.com/OpenLineage/OpenLineage/issues/2543
+    //    assertThat(inputDataset.getNamespace()).isEqualTo(outputDataset.getNamespace());
+    // assertThat(inputDataset.getName()).isEqualTo(outputDataset.getName());
     assertThat(runEvents.size()).isLessThan(20);
   }
 
@@ -202,37 +241,41 @@ public class DatabricksIntegrationTest {
             .getAdditionalProperties();
 
     assertThat(event.getOutputs()).hasSize(1);
-    assertThat(event.getOutputs().get(0).getName()).endsWith("events");
+    assertThat(event.getOutputs().get(0).getName()).endsWith("events_" + platformVersion());
 
     assertThat(event.getInputs()).hasSize(2);
     assertThat(event.getInputs().stream().map(d -> d.getName()).collect(Collectors.toList()))
         .containsExactlyInAnyOrder(
-            "/user/hive/warehouse/test_db.db/updates", "/user/hive/warehouse/test_db.db/events");
+            "/user/hive/warehouse/test_db.db/updates_" + platformVersion(),
+            "/user/hive/warehouse/test_db.db/events_" + platformVersion());
 
     assertThat(fields).hasSize(2);
     assertThat(fields.get("last_updated_at").getInputFields()).hasSize(1);
     assertThat(fields.get("last_updated_at").getInputFields().get(0))
         .hasFieldOrPropertyWithValue("namespace", "dbfs")
-        .hasFieldOrPropertyWithValue("name", "/user/hive/warehouse/test_db.db/updates")
+        .hasFieldOrPropertyWithValue(
+            "name", "/user/hive/warehouse/test_db.db/updates_" + platformVersion())
         .hasFieldOrPropertyWithValue("field", "updated_at");
 
     assertThat(fields.get("event_id").getInputFields()).hasSize(2);
     assertThat(
             fields.get("event_id").getInputFields().stream()
-                .filter(e -> e.getName().endsWith("updates"))
+                .filter(e -> e.getName().endsWith("updates_" + platformVersion()))
                 .findFirst()
                 .get())
         .hasFieldOrPropertyWithValue("namespace", "dbfs")
-        .hasFieldOrPropertyWithValue("name", "/user/hive/warehouse/test_db.db/updates")
+        .hasFieldOrPropertyWithValue(
+            "name", "/user/hive/warehouse/test_db.db/updates_" + platformVersion())
         .hasFieldOrPropertyWithValue("field", "event_id");
 
     assertThat(
             fields.get("event_id").getInputFields().stream()
-                .filter(e -> e.getName().endsWith("events"))
+                .filter(e -> e.getName().endsWith("events_" + platformVersion()))
                 .findFirst()
                 .get())
         .hasFieldOrPropertyWithValue("namespace", "dbfs")
-        .hasFieldOrPropertyWithValue("name", "/user/hive/warehouse/test_db.db/events")
+        .hasFieldOrPropertyWithValue(
+            "name", "/user/hive/warehouse/test_db.db/events_" + platformVersion())
         .hasFieldOrPropertyWithValue("field", "event_id");
   }
 }
