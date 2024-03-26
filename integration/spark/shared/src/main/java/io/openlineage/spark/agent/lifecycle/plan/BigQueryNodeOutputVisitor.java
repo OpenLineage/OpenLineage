@@ -12,6 +12,7 @@ import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
 import com.google.cloud.spark.bigquery.SparkBigQueryConfig;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.ReflectionUtils;
+import io.openlineage.spark.agent.util.SparkSessionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
@@ -54,8 +55,9 @@ public class BigQueryNodeOutputVisitor
         && ((SaveIntoDataSourceCommand) plan).dataSource() instanceof BigQueryRelationProvider;
   }
 
-  private String getFromSaveIntoDataSourceCommand(SaveIntoDataSourceCommand saveCommand) {
-    SQLContext sqlContext = SparkSession.active().sqlContext();
+  private String getFromSaveIntoDataSourceCommand(
+      SaveIntoDataSourceCommand saveCommand, SparkSession session) {
+    SQLContext sqlContext = session.sqlContext();
     BigQueryRelationProvider bqRelationProvider =
         (BigQueryRelationProvider) saveCommand.dataSource();
     SparkBigQueryConfig config =
@@ -88,10 +90,15 @@ public class BigQueryNodeOutputVisitor
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan plan) {
     SaveIntoDataSourceCommand saveCommand = (SaveIntoDataSourceCommand) plan;
-    return Collections.singletonList(
-        factory.getDataset(
-            getFromSaveIntoDataSourceCommand(saveCommand),
-            BIGQUERY_NAMESPACE,
-            saveCommand.schema()));
+    Optional<SparkSession> session = SparkSessionUtils.activeSession();
+    if (session.isPresent()) {
+      return Collections.singletonList(
+          factory.getDataset(
+              getFromSaveIntoDataSourceCommand(saveCommand, session.get()),
+              BIGQUERY_NAMESPACE,
+              saveCommand.schema()));
+    } else {
+      return Collections.emptyList();
+    }
   }
 }

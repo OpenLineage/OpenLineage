@@ -90,7 +90,6 @@ public class PathUtils {
     }
   }
 
-  @SneakyThrows
   private static URI prepareUriFromDefaultTablePath(CatalogTable catalogTable) {
     URI uri =
         SparkSession.active().sessionState().catalog().defaultTablePath(catalogTable.identifier());
