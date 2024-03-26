@@ -8,6 +8,8 @@
 ### Fixed
 * **Flink: disable module metadata generation** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2531) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
   *Fixes the issue flink module generated contains the internal libs that are not published*
+* **Spark: fix access to active Spark session ** [`#2535`](https://github.com/OpenLineage/OpenLineage/pull/2535) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Always catch `IllegalStateException` when accessing `SparkSession`.*
 
 ## [1.10.2](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...1.10.2) - 2024-03-15
 
