@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.filters;
 
+import io.openlineage.spark.agent.util.SparkSessionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.Optional;
@@ -51,7 +52,7 @@ public class EventFilterUtils {
    * @return
    */
   static boolean isDeltaPlan() {
-    return Optional.of(SparkSession.active())
+    return SparkSessionUtils.activeSession()
         .map(SparkSession::sparkContext)
         .filter(context -> context != null)
         .map(SparkContext::conf)
