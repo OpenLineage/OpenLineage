@@ -5,11 +5,18 @@
 
 package io.openlineage.client;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Timer;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
+import io.openlineage.client.metrics.MicrometerProvider;
 import io.openlineage.client.transports.ConsoleTransport;
 import io.openlineage.client.transports.Transport;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,7 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 public final class OpenLineageClient {
   final Transport transport;
   final Optional<CircuitBreaker> circuitBreaker;
+  final MeterRegistry meterRegistry;
   final String[] disabledFacets;
+
+  Counter emitStart;
+  Counter emitComplete;
+  AtomicInteger engagedCircuitBreaker;
+  Timer emitTime;
 
   /** Creates a new {@code OpenLineageClient} object. */
   public OpenLineageClient() {
@@ -30,15 +43,23 @@ public final class OpenLineageClient {
   }
 
   public OpenLineageClient(@NonNull final Transport transport, String... disabledFacets) {
-    this(transport, null, disabledFacets);
+    this(transport, null, null, disabledFacets);
   }
 
   public OpenLineageClient(
-      @NonNull final Transport transport, CircuitBreaker circuitBreaker, String... disabledFacets) {
+      @NonNull final Transport transport,
+      CircuitBreaker circuitBreaker,
+      MeterRegistry meterRegistry,
+      String... disabledFacets) {
     this.transport = transport;
     this.disabledFacets = Arrays.copyOf(disabledFacets, disabledFacets.length);
     this.circuitBreaker = Optional.ofNullable(circuitBreaker);
+    if (meterRegistry == null) {
+      meterRegistry = MicrometerProvider.getMeterRegistry();
+    }
+    this.meterRegistry = meterRegistry;
 
+    initializeMetrics();
     OpenLineageClientUtils.configureObjectMapper(disabledFacets);
   }
 
@@ -54,10 +75,15 @@ public final class OpenLineageClient {
           "OpenLineageClient will emit lineage event: {}", OpenLineageClientUtils.toJson(runEvent));
     }
     if (circuitBreaker.isPresent() && circuitBreaker.get().currentState().isClosed()) {
+      engagedCircuitBreaker.set(1);
       log.warn("OpenLineageClient disabled with circuit breaker");
       return;
+    } else {
+      engagedCircuitBreaker.set(0);
     }
-    transport.emit(runEvent);
+    emitStart.increment();
+    emitTime.record(() -> transport.emit(runEvent));
+    emitComplete.increment();
   }
 
   /**
@@ -73,10 +99,15 @@ public final class OpenLineageClient {
           OpenLineageClientUtils.toJson(datasetEvent));
     }
     if (circuitBreaker.isPresent() && circuitBreaker.get().currentState().isClosed()) {
+      engagedCircuitBreaker.set(1);
       log.warn("OpenLineageClient disabled with circuit breaker");
       return;
+    } else {
+      engagedCircuitBreaker.set(0);
     }
-    transport.emit(OpenLineageClientUtils.toJson(datasetEvent));
+    emitStart.increment();
+    emitTime.record(() -> transport.emit(OpenLineageClientUtils.toJson(datasetEvent)));
+    emitComplete.increment();
   }
 
   /**
@@ -91,10 +122,33 @@ public final class OpenLineageClient {
           "OpenLineageClient will emit lineage event: {}", OpenLineageClientUtils.toJson(jobEvent));
     }
     if (circuitBreaker.isPresent() && circuitBreaker.get().currentState().isClosed()) {
+      engagedCircuitBreaker.set(1);
       log.warn("OpenLineageClient disabled with circuit breaker");
       return;
+    } else {
+      engagedCircuitBreaker.set(0);
     }
-    transport.emit(OpenLineageClientUtils.toJson(jobEvent));
+    emitStart.increment();
+    emitTime.record(() -> transport.emit(OpenLineageClientUtils.toJson(jobEvent)));
+    emitComplete.increment();
+  }
+
+  public void initializeMetrics() {
+    emitStart =
+        this.meterRegistry.counter(
+            "openlineage.emit.start", "openlineage.transport", transport.getClass().getName());
+    emitComplete =
+        this.meterRegistry.counter(
+            "openlineage.emit.complete", "openlineage.transport", transport.getClass().getName());
+    engagedCircuitBreaker =
+        this.meterRegistry.gauge(
+            "openlineage.circuitbreaker.engaged",
+            Collections.singletonList(
+                Tag.of("openlineage.circuitbreaker", circuitBreaker.getClass().getName())),
+            new AtomicInteger(0));
+    emitTime =
+        this.meterRegistry.timer(
+            "openlineage.emit.time", "openlineage.transport", transport.getClass().getName());
   }
 
   /**
@@ -121,6 +175,7 @@ public final class OpenLineageClient {
     private Transport transport;
     private String[] disabledFacets;
     private CircuitBreaker circuitBreaker;
+    private MeterRegistry meterRegistry;
 
     private Builder() {
       this.transport = DEFAULT_TRANSPORT;
@@ -137,6 +192,11 @@ public final class OpenLineageClient {
       return this;
     }
 
+    public Builder meterRegistry(@NonNull MeterRegistry meterRegistry) {
+      this.meterRegistry = meterRegistry;
+      return this;
+    }
+
     public Builder disableFacets(@NonNull String... disabledFacets) {
       this.disabledFacets = Arrays.copyOf(disabledFacets, disabledFacets.length);
       return this;
@@ -147,7 +207,7 @@ public final class OpenLineageClient {
      * OpenLineageClient.Builder}.
      */
     public OpenLineageClient build() {
-      return new OpenLineageClient(transport, circuitBreaker, disabledFacets);
+      return new OpenLineageClient(transport, circuitBreaker, meterRegistry, disabledFacets);
     }
   }
 }

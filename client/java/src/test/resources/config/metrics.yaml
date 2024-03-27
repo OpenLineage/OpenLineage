@@ -1,0 +1,4 @@
+transport:
+  type: console
+metrics:
+  type: simple

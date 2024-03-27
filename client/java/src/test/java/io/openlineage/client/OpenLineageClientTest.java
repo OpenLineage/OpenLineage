@@ -11,6 +11,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage.DatasetEvent;
 import io.openlineage.client.OpenLineage.JobEvent;
 import io.openlineage.client.OpenLineage.RunEvent;
@@ -23,7 +25,8 @@ class OpenLineageClientTest {
 
   CircuitBreaker circuitBreaker = mock(CircuitBreaker.class);
   Transport transport = mock(Transport.class);
-  OpenLineageClient client = new OpenLineageClient(transport, circuitBreaker);
+  MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  OpenLineageClient client = new OpenLineageClient(transport, circuitBreaker, meterRegistry);
 
   @Test
   void testCircuitBreakerFroEmitRunEvent() {
