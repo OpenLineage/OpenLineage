@@ -226,14 +226,7 @@ tasks.named("shadowJar", ShadowJar.class) {
         exclude("org/apache/commons/logging/**")
     }
 
-    relocate 'com.github.ok2c.hc5', 'io.openlineage.spark.shaded.com.github.ok2c.hc5'
-    relocate 'org.apache.httpcomponents.client5', 'io.openlineage.spark.shaded.org.apache.httpcomponents.client5'
-    relocate 'javassist', 'io.openlineage.spark.shaded.javassist'
-    relocate 'org.apache.hc', 'io.openlineage.spark.shaded.org.apache.hc'
-    relocate 'org.apache.commons.codec', 'io.openlineage.spark.shaded.org.apache.commons.codec'
-    relocate 'org.apache.commons.lang3', 'io.openlineage.spark.shaded.org.apache.commons.lang3'
-    relocate 'org.apache.commons.beanutils', 'io.openlineage.spark.shaded.org.apache.commons.beanutils'
-    relocate 'org.apache.http', 'io.openlineage.spark.shaded.org.apache.http'
+    // TODO: make integration test use build JAR rather than raw, pre-relocate code
     relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
     relocate('com.fasterxml.jackson', 'io.openlineage.spark.shaded.com.fasterxml.jackson') {
         exclude 'com.fasterxml.jackson.annotation.JsonIgnore'
