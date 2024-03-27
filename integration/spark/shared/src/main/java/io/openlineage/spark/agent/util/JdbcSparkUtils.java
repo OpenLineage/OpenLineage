@@ -8,7 +8,10 @@ package io.openlineage.spark.agent.util;
 import static io.openlineage.client.utils.JdbcUtils.sanitizeJdbcUrl;
 
 import com.google.common.base.CharMatcher;
+import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.JdbcUtils;
+import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.sql.ColumnLineage;
 import io.openlineage.sql.ColumnMeta;
 import io.openlineage.sql.DbTableMeta;
@@ -27,6 +30,8 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 
 @Slf4j
 public class JdbcSparkUtils {
@@ -77,6 +82,45 @@ public class JdbcSparkUtils {
     String name = String.join(".", parts);
 
     return new DatasetIdentifier(name, namespace);
+  }
+
+  public static <D extends OpenLineage.Dataset> List<D> getDatasets(
+      DatasetFactory<D> datasetFactory, SqlMeta meta, StructType schema, String url) {
+    if (meta.columnLineage().isEmpty()) {
+      DatasetIdentifier di =
+          JdbcUtils.getDatasetIdentifierFromJdbcUrl(url, meta.inTables().get(0).qualifiedName());
+      return Collections.singletonList(
+          datasetFactory.getDataset(di.getName(), di.getNamespace(), schema));
+    }
+    return meta.inTables().stream()
+        .map(
+            dbtm -> {
+              DatasetIdentifier di =
+                  JdbcUtils.getDatasetIdentifierFromJdbcUrl(url, dbtm.qualifiedName());
+              return datasetFactory.getDataset(
+                  di.getName(), di.getNamespace(), generateJDBCSchema(dbtm, schema, meta));
+            })
+        .collect(Collectors.toList());
+  }
+
+  private static StructType generateJDBCSchema(
+      DbTableMeta origin, StructType schema, SqlMeta sqlMeta) {
+    StructType originSchema = new StructType();
+    for (StructField f : schema.fields()) {
+      List<ColumnMeta> fields =
+          sqlMeta.columnLineage().stream()
+              .filter(cl -> cl.descendant().name().equals(f.name()))
+              .flatMap(
+                  cl ->
+                      cl.lineage().stream()
+                          .filter(
+                              cm -> cm.origin().isPresent() && cm.origin().get().equals(origin)))
+              .collect(Collectors.toList());
+      for (ColumnMeta cm : fields) {
+        originSchema = originSchema.add(cm.name(), f.dataType());
+      }
+    }
+    return originSchema;
   }
 
   public static Optional<SqlMeta> extractQueryFromSpark(JDBCRelation relation) {
