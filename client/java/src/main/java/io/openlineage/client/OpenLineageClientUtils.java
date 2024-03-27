@@ -45,8 +45,8 @@ public final class OpenLineageClientUtils {
 
   private static final ObjectMapper MAPPER = newObjectMapper();
 
-  private static final ObjectMapper YML = new ObjectMapper(new YAMLFactory());
-  private static final ObjectMapper JSON = new ObjectMapper(new JsonFactory());
+  private static final ObjectMapper YML = newObjectMapper(new YAMLFactory());
+  private static final ObjectMapper JSON = newObjectMapper();
 
   @JsonFilter("disabledFacets")
   public class DisabledFacetsMixin {}
@@ -58,7 +58,17 @@ public final class OpenLineageClientUtils {
    * @return A configured {@link ObjectMapper} instance.
    */
   public static ObjectMapper newObjectMapper() {
-    final ObjectMapper mapper = new ObjectMapper();
+    return newObjectMapper(new JsonFactory());
+  }
+
+  /**
+   * Creates a new {@link ObjectMapper} instance configured with modules for JDK8 and JavaTime,
+   * including settings to ignore unknown properties and to not write dates as timestamps.
+   *
+   * @return A configured {@link ObjectMapper} instance.
+   */
+  public static ObjectMapper newObjectMapper(JsonFactory jsonFactory) {
+    final ObjectMapper mapper = new ObjectMapper(jsonFactory);
     mapper.registerModule(new Jdk8Module());
     mapper.registerModule(new JavaTimeModule());
     mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);

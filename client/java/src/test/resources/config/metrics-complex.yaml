@@ -1,0 +1,6 @@
+transport:
+  type: console
+metrics:
+  type: composite
+  registries:
+    - type: simple
