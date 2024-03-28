@@ -41,7 +41,7 @@ repos:
         files: ^client/python/
         exclude: ^.*\.cfg$
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.5
+    rev: v0.2.2
     hooks:
       - id: ruff
         name: ruff-lint
@@ -84,3 +84,11 @@ repos:
         additional_dependencies: ["github.com/santhosh-tekuri/jsonschema/cmd/jv@latest"]
         entry: ./.pre_commit/json-schema/test-facets.sh
         files: ^spec/facets/.*\.json$
+      - id: generate_facets
+        name: Generate OpenLineage facets for Python client.
+        language: python
+        entry: python ./.pre_commit/generate-facets/generate.py
+        files: ^spec/.*\.json$|^client/python/facets\.py$
+        exclude: ^spec/tests/.*$
+        pass_filenames: false
+        additional_dependencies: ["ruff==0.2.2", "click", "datamodel-code-generator==0.25.4"]

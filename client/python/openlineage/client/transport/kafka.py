@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, TypeVar, Union
+from typing import TYPE_CHECKING, TypeVar
 
 import attr
 from openlineage.client.serde import Serde
@@ -13,7 +13,7 @@ from pkg_resources import parse_version
 
 if TYPE_CHECKING:
     from confluent_kafka import KafkaError, Message
-    from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
+    from openlineage.client.client import Event
 log = logging.getLogger(__name__)
 
 _T = TypeVar("_T", bound="KafkaConfig")
@@ -64,7 +64,7 @@ class KafkaTransport(Transport):
             self._setup_producer(self.kafka_config.config)
         log.debug("Constructing openlineage client to send events to topic %s", config.topic)
 
-    def emit(self, event: Union[RunEvent, DatasetEvent, JobEvent]) -> None:  # noqa: UP007
+    def emit(self, event: Event) -> None:
         if self._is_airflow_sqlalchemy:
             self._setup_producer(self.kafka_config.config)
         self.producer.produce(  # type: ignore[attr-defined]

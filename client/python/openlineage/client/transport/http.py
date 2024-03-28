@@ -5,14 +5,13 @@ from __future__ import annotations
 import inspect
 import logging
 import warnings
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import attr
 
 if TYPE_CHECKING:
-    from openlineage.client.client import OpenLineageClientOptions
-    from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
+    from openlineage.client.client import Event, OpenLineageClientOptions
     from requests.adapters import HTTPAdapter, Response
 
 from openlineage.client.serde import Serde
@@ -141,7 +140,7 @@ class HttpTransport(Transport):
         if self.session:
             self.session.mount(self.url, adapter)
 
-    def emit(self, event: Union[RunEvent, DatasetEvent, JobEvent]) -> Response:  # noqa: UP007
+    def emit(self, event: Event) -> Response:
         event_str = Serde.to_json(event)
         if self.session:
             resp = self.session.post(

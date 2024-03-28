@@ -18,10 +18,10 @@ class config.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeVar
 
 if TYPE_CHECKING:
-    from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
+    from openlineage.client.client import Event
 
 
 _T = TypeVar("_T", bound="Config")
@@ -37,7 +37,7 @@ class Transport:
     kind: str | None = None
     config_class: type[Config] = Config
 
-    def emit(self, event: Union[RunEvent, DatasetEvent, JobEvent]) -> Any:  # noqa: UP007
+    def emit(self, event: Event) -> Any:
         raise NotImplementedError
 
 
