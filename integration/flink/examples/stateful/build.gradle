@@ -6,6 +6,7 @@ plugins {
     id "com.github.johnrengelman.shadow"
     id 'io.openlineage.common-config'
     id "com.github.davidmc24.gradle.plugin.avro" version "1.9.1"
+    id "com.google.protobuf" version "0.9.4"
 }
 
 group 'io.openlineage.flink'
@@ -59,6 +60,7 @@ dependencies {
     implementation "org.apache.flink:flink-connector-cassandra_2.12:${versions.cassandra}"
     implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     implementation "org.apache.flink:flink-avro:$flinkVersion"
+    implementation "org.apache.flink:flink-protobuf:$flinkVersion"
     compileOnly "org.apache.flink:flink-table:$flinkVersion"
     compileOnly "org.apache.flink:flink-table-api-java:$flinkVersion"
     compileOnly "org.apache.flink:flink-table-api-java-bridge:$flinkVersion"
@@ -69,6 +71,7 @@ dependencies {
     implementation "com.typesafe:config:1.4.3"
     implementation "org.apache.avro:avro:1.11.3"
     implementation 'io.confluent:kafka-avro-serializer:7.6.0'
+    implementation 'io.confluent:kafka-protobuf-serializer:7.6.0'
     implementation 'io.confluent:kafka-schema-registry-client:7.6.0'
     implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.9.1'
     implementation 'org.postgresql:postgresql:42.7.2'
@@ -102,6 +105,9 @@ spotlessJava {
 avro {
     fieldVisibility = 'PUBLIC'
 }
+
+
+extractIncludeTestProto.enabled = false
 
 test {
     useJUnitPlatform()

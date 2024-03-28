@@ -35,9 +35,11 @@ public class KafkaSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
 
   @Override
   public List<OpenLineage.OutputDataset> apply(Object kafkaSink) {
-    KafkaSinkWrapper wrapper = KafkaSinkWrapper.of((KafkaSink) kafkaSink);
+    log.debug("extracting output dataset from KafkaSinkVisitor");
+    KafkaSinkWrapper wrapper = KafkaSinkWrapper.of((KafkaSink) kafkaSink, context);
     List<String> topics = wrapper.getTopicsOfMultiTopicSink();
     if (topics != null && !topics.isEmpty()) {
+      log.debug("topics present", topics);
       DatasetFacetsBuilder facetsBuilder = outputDataset().getDatasetFacetsBuilder();
       wrapper
           .getSchemaOfMultiTopicSink()
@@ -64,12 +66,7 @@ public class KafkaSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
       OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
           outputDataset().getDatasetFacetsBuilder();
 
-      wrapper
-          .getAvroSchema()
-          .map(
-              schema ->
-                  datasetFacetsBuilder.schema(
-                      AvroSchemaUtils.convert(context.getOpenLineage(), schema)));
+      wrapper.getSchemaFacet().map(facet -> datasetFacetsBuilder.schema(facet));
 
       log.debug("Kafka output topic: {}", di.getName());
       return Collections.singletonList(outputDataset().getDataset(di, datasetFacetsBuilder));

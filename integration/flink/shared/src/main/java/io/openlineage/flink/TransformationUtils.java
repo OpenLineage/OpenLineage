@@ -27,6 +27,7 @@ public class TransformationUtils {
   public List<SinkLineage> convertToVisitable(List<Transformation<?>> transformations) {
     List<SinkLineage> lineages = new ArrayList<>();
     for (Transformation<?> transformation : transformations) {
+      log.debug("convertToVisitable transformation: " + transformation);
       var sinkLineage = processSink(transformation);
       sinkLineage.ifPresent(lineages::add);
     }
@@ -37,10 +38,13 @@ public class TransformationUtils {
     List<Object> sources = new ArrayList<>();
     Object sink;
     if (transformation instanceof SinkTransformation) {
+      log.debug("Processing sink", transformation);
       sink = processSinkTransformation(transformation);
     } else if (transformation instanceof LegacySinkTransformation) {
+      log.debug("Processing legacy sink", transformation);
       sink = processLegacySinkTransformation(transformation);
     } else if (transformation instanceof OneInputTransformation) {
+      log.debug("Processing one input transformation", transformation);
       sink = transformation;
     } else {
       return Optional.empty();

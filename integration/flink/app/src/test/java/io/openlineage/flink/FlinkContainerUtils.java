@@ -24,7 +24,7 @@ import org.testcontainers.utility.MountableFile;
 
 public class FlinkContainerUtils {
 
-  private static final String CONFLUENT_VERSION = "6.2.1";
+  private static final String CONFLUENT_VERSION = "7.6.0";
   private static final String SCHEMA_REGISTRY_IMAGE = getRegistryImage();
   private static final String KAFKA_IMAGE = "wurstmeister/kafka:2.13-2.8.1";
   private static final String ZOOKEEPER_IMAGE = "confluentinc/cp-zookeeper:" + CONFLUENT_VERSION;
@@ -78,6 +78,7 @@ public class FlinkContainerUtils {
                 + "io.openlineage.flink.kafka.output:1:1,"
                 + "io.openlineage.flink.kafka.output1:1:1,"
                 + "io.openlineage.flink.kafka.output2:1:1,"
+                + "io.openlineage.flink.kafka.output_protobuf:1:1,"
                 + "io.openlineage.flink.kafka.input_no_schema_registry:1:1")
         .withEnv(
             "KAFKA_LOG4J_LOGGERS",
@@ -92,8 +93,14 @@ public class FlinkContainerUtils {
             MountableFile.forHostPath(Resources.getResource("InputEvent.avsc").getPath()),
             "/tmp/InputEvent.avsc")
         .withCopyFileToContainer(
+            MountableFile.forHostPath(Resources.getResource("InputEvent.proto").getPath()),
+            "/tmp/InputEvent.proto")
+        .withCopyFileToContainer(
             MountableFile.forHostPath(Resources.getResource("events.json").getPath()),
             "/tmp/events.json")
+        .withCopyFileToContainer(
+            MountableFile.forHostPath(Resources.getResource("events_proto.json").getPath()),
+            "/tmp/events_proto.json")
         .withCommand(
             "/bin/bash",
             "-c",
@@ -186,6 +193,10 @@ public class FlinkContainerUtils {
             .withCopyFileToContainer(
                 MountableFile.forHostPath(Resources.getResource("openlineage.yml").getPath()),
                 configPath)
+            .withCopyFileToContainer(
+                MountableFile.forHostPath(
+                    Resources.getResource("log4j-console.properties").getPath()),
+                "/opt/flink/conf/log4j-console.properties")
             .withCommand(
                 "standalone-job "
                     + String.format("--job-classname %s ", entrypointClass)
@@ -287,9 +298,6 @@ public class FlinkContainerUtils {
   }
 
   private static String getRegistryImage() {
-    if ("aarch64".equals(System.getProperty("os.arch"))) {
-      return "eugenetea/schema-registry-arm64:latest";
-    }
     return "confluentinc/cp-schema-registry:" + CONFLUENT_VERSION;
   }
 }

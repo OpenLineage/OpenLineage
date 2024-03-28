@@ -5,6 +5,10 @@
 
 package io.openlineage.flink.visitor.wrapper;
 
+import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
+import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.utils.AvroSchemaUtils;
+import io.openlineage.flink.utils.ProtobufUtils;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import java.util.Collections;
@@ -13,7 +17,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.avro.Schema;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.apache.flink.api.common.serialization.SerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
@@ -30,17 +33,20 @@ public class KafkaSinkWrapper {
 
   private final KafkaSink kafkaSink;
   private final KafkaRecordSerializationSchema serializationSchema;
+  private final OpenLineageContext context;
 
-  private KafkaSinkWrapper(KafkaSink kafkaSink) {
+  KafkaSinkWrapper(KafkaSink kafkaSink, OpenLineageContext context) {
     this.kafkaSink = kafkaSink;
+    this.context = context;
     this.serializationSchema =
         WrapperUtils.<KafkaRecordSerializationSchema>getFieldValue(
                 KafkaSink.class, kafkaSink, "recordSerializer")
             .get();
+    log.debug("serializationSchema is null: {}", serializationSchema == null);
   }
 
-  public static KafkaSinkWrapper of(KafkaSink kafkaSink) {
-    return new KafkaSinkWrapper(kafkaSink);
+  public static KafkaSinkWrapper of(KafkaSink kafkaSink, OpenLineageContext context) {
+    return new KafkaSinkWrapper(kafkaSink, context);
   }
 
   public Properties getKafkaProducerConfig() {
@@ -71,6 +77,7 @@ public class KafkaSinkWrapper {
   }
 
   public String getKafkaTopic() throws IllegalAccessException {
+    log.debug("Extracting topic from: {}", serializationSchema);
     Optional<Function<?, ?>> topicSelectorOpt =
         WrapperUtils.<Function<?, ?>>getFieldValue(
             serializationSchema.getClass(), serializationSchema, "topicSelector");
@@ -92,16 +99,29 @@ public class KafkaSinkWrapper {
     }
   }
 
-  public Optional<Schema> getAvroSchema() {
+  public Optional<SchemaDatasetFacet> getSchemaFacet() {
     Optional<SerializationSchema> optionalSchema =
         WrapperUtils.getFieldValue(
             serializationSchema.getClass(), serializationSchema, "valueSerializationSchema");
     if (optionalSchema.isPresent()) {
-      return AvroUtils.getAvroSchema(optionalSchema);
+      log.debug("valueSerializationSchema present {}", optionalSchema.get());
+      if (optionalSchema.get() instanceof AvroSerializationSchema) {
+        log.debug("extracting AvroSchema", optionalSchema.get());
+        return AvroUtils.getAvroSchema(optionalSchema)
+            .map(s -> AvroSchemaUtils.convert(context.getOpenLineage(), s));
+      } else if (ProtobufUtils.isProtobufSerializationSchema(optionalSchema.get())) {
+        log.debug("extracting Protobuf schema");
+        return ProtobufUtils.convert(context.getOpenLineage(), optionalSchema.get());
+      } else {
+        log.warn("Unsupported valueSerializationSchema {}", serializationSchema);
+        return Optional.empty();
+      }
     } else {
+      log.debug("getting valueSerialization field");
       return AvroUtils.getAvroSchema(
-          WrapperUtils.getFieldValue(
-              serializationSchema.getClass(), serializationSchema, "valueSerialization"));
+              WrapperUtils.getFieldValue(
+                  serializationSchema.getClass(), serializationSchema, "valueSerialization"))
+          .map(s -> AvroSchemaUtils.convert(context.getOpenLineage(), s));
     }
   }
 }

@@ -433,6 +433,18 @@ class ContainerTest {
             });
   }
 
+  @Test
+  void testProtobuf() {
+    Properties jobProperties = new Properties();
+    jobProperties.put("inputTopics", "io.openlineage.flink.kafka.input_protobuf");
+    jobProperties.put("outputTopics", "io.openlineage.flink.kafka.output_protobuf");
+    jobProperties.put("jobName", "flink_protobuf");
+    runUntilCheckpoint(
+        "io.openlineage.flink.FlinkProtobufApplication", jobProperties, generateEvents);
+
+    verify("events/expected_protobuf.json");
+  }
+
   @SneakyThrows
   private JsonBody readJson(Path path) {
     return json(new String(readAllBytes(path)), MatchType.ONLY_MATCHING_FIELDS);
