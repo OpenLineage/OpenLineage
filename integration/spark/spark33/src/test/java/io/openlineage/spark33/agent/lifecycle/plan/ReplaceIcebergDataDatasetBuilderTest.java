@@ -17,6 +17,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -44,6 +45,7 @@ public class ReplaceIcebergDataDatasetBuilderTest {
           .sparkSession(mock(SparkSession.class))
           .sparkContext(mock(SparkContext.class))
           .openLineage(openLineage)
+          .meterRegistry(new SimpleMeterRegistry())
           .build();
 
   ReplaceIcebergDataDatasetBuilder builder =

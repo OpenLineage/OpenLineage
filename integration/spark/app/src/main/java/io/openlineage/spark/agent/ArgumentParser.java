@@ -125,13 +125,7 @@ public class ArgumentParser {
   }
 
   private static List<Tuple2<String, String>> filterProperties(SparkConf conf) {
-    return Arrays.stream(conf.getAllWithPrefix("spark.openlineage."))
-        .filter(
-            e ->
-                e._1.startsWith("transport")
-                    || e._1.startsWith("facets")
-                    || e._1.startsWith("circuitBreaker"))
-        .collect(Collectors.toList());
+    return Arrays.stream(conf.getAllWithPrefix("spark.openlineage.")).collect(Collectors.toList());
   }
 
   private static List<String> getJsonPath(String keyPath) {

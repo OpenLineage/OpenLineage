@@ -29,7 +29,6 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import scala.PartialFunction;
 import scala.PartialFunction$;
-import scala.runtime.AbstractPartialFunction;
 
 /**
  * Utility functions for traversing a {@link
@@ -37,25 +36,6 @@ import scala.runtime.AbstractPartialFunction;
  */
 @Slf4j
 public class PlanUtils {
-  /**
-   * Merge a list of {@link PartialFunction}s and return the first value where the function is
-   * defined or empty list if no function matches the input.
-   *
-   * @param fns
-   * @param arg
-   * @param <T>
-   * @param <R>
-   * @return
-   */
-  public static <T, R> Collection<R> applyAll(
-      List<? extends PartialFunction<T, ? extends Collection<R>>> fns, T arg) {
-    PartialFunction<T, Collection<R>> fn = merge(fns);
-    if (fn.isDefinedAt(arg)) {
-      return fn.apply(arg);
-    }
-    return Collections.emptyList();
-  }
-
   /**
    * Given a list of {@link PartialFunction}s merge to produce a single function that will test the
    * input against each function one by one until a match is found or {@link
@@ -66,9 +46,11 @@ public class PlanUtils {
    * @param <D>
    * @return
    */
-  public static <T, D> PartialFunction<T, Collection<D>> merge(
+  public static <T, D> OpenLineageAbstractPartialFunction<T, Collection<D>> merge(
       Collection<? extends PartialFunction<T, ? extends Collection<D>>> fns) {
-    return new AbstractPartialFunction<T, Collection<D>>() {
+    return new OpenLineageAbstractPartialFunction<T, Collection<D>>() {
+      String appliedClassName;
+
       @Override
       public boolean isDefinedAt(T x) {
         return fns.stream()
@@ -96,6 +78,7 @@ public class PlanUtils {
                           x.getClass().getCanonicalName(),
                           collection);
                     }
+                    appliedClassName = x.getClass().getName();
                     return collection;
                   } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
                     log.error("Apply failed:", e);
@@ -105,6 +88,11 @@ public class PlanUtils {
             .filter(Objects::nonNull)
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
+      }
+
+      @Override
+      String appliedName() {
+        return appliedClassName;
       }
     };
   }

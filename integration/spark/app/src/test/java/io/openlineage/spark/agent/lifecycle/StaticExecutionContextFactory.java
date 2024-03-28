@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
@@ -43,8 +44,8 @@ public class StaticExecutionContextFactory extends ContextFactory {
   public static final int NUM_PERMITS = 5;
   public static final Semaphore semaphore = new Semaphore(NUM_PERMITS);
 
-  public StaticExecutionContextFactory(EventEmitter eventEmitter) {
-    super(eventEmitter);
+  public StaticExecutionContextFactory(EventEmitter eventEmitter, MeterRegistry meterRegistry) {
+    super(eventEmitter, meterRegistry);
     try {
       semaphore.acquire(NUM_PERMITS);
     } catch (Exception e) {
@@ -113,6 +114,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
                       .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                       .customEnvironmentVariables(Arrays.asList("TEST_VAR"))
                       .queryExecution(qe)
+                      .meterRegistry(getMeterRegistry())
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory());

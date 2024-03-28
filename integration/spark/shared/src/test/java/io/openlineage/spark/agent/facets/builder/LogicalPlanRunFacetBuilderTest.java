@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.facets.builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.spark.agent.Versions;
@@ -81,6 +82,7 @@ class LogicalPlanRunFacetBuilderTest {
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .queryExecution(queryExecution)
+                .meterRegistry(new SimpleMeterRegistry())
                 .build());
     assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionStart(1L, "", "", "", null, 1L)))
         .isTrue();
@@ -104,6 +106,7 @@ class LogicalPlanRunFacetBuilderTest {
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .queryExecution(queryExecution)
+                .meterRegistry(new SimpleMeterRegistry())
                 .build());
 
     sparkContext.conf().set("spark.openlineage.facets.disabled", "[spark.logicalPlan]");
@@ -123,6 +126,7 @@ class LogicalPlanRunFacetBuilderTest {
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .meterRegistry(new SimpleMeterRegistry())
                 .build());
     assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionStart(1L, "", "", "", null, 1L)))
         .isFalse();
@@ -147,6 +151,7 @@ class LogicalPlanRunFacetBuilderTest {
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .queryExecution(queryExecution)
+                .meterRegistry(new SimpleMeterRegistry())
                 .build());
     Map<String, RunFacet> facetMap = new HashMap<>();
     builder.build(new SparkListenerSQLExecutionEnd(1L, 1L), facetMap::put);
