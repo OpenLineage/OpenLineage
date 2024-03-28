@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import attr
 from openlineage.client.filter import Filter, create_filter
@@ -86,20 +86,20 @@ class OpenLineageClient:
             ),
         )
 
-    def emit(self, event: Union[RunEvent, DatasetEvent | JobEvent]) -> None:  # noqa: UP007
+    def emit(self, event: RunEvent | DatasetEvent | JobEvent) -> None:
         if not (isinstance(event, (RunEvent, DatasetEvent, JobEvent))):
             msg = "`emit` only accepts RunEvent, DatasetEvent, JobEvent classes"
             raise ValueError(msg)  # noqa: TRY004
+        if self._filters and self.filter_event(event) is None:
+            return
         if not self.transport:
             log.error("Tried to emit OpenLineage event, but transport is not configured.")
             return
+
         if log.isEnabledFor(logging.DEBUG):
             val = Serde.to_json(event).encode("utf-8")
             log.debug("OpenLineageClient will emit event %s", val)
-        if self._filters and self.filter_event(event) is None:
-            return
-        if event:
-            self.transport.emit(event)
+        self.transport.emit(event)
 
     @classmethod
     def from_environment(cls: type[_T]) -> _T:
@@ -112,8 +112,8 @@ class OpenLineageClient:
 
     def filter_event(
         self,
-        event: Union[RunEvent, DatasetEvent, JobEvent],  # noqa: UP007
-    ) -> Union[RunEvent, DatasetEvent, JobEvent] | None:  # noqa: UP007
+        event: RunEvent | DatasetEvent | JobEvent,
+    ) -> RunEvent | DatasetEvent | JobEvent | None:
         """Filters jobs according to config-defined events"""
         for _filter in self._filters:
             if isinstance(event, RunEvent) and _filter.filter_event(event) is None:
