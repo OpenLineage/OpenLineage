@@ -90,5 +90,9 @@ public final class OpenLineageSql {
           Optional.of(
               String.format("Error extracting native library '%s': %s", libName, e.getMessage()));
     }
+
+    if (loadError.isPresent()) {
+      System.err.println(loadError.get());
+    }
   }
 }
