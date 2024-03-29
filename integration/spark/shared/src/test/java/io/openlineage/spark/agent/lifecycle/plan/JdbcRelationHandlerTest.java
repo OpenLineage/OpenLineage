@@ -45,6 +45,7 @@ public class JdbcRelationHandlerTest {
   String invalidJdbc = "(test) SPARK_GEN_SUBQ_0";
   String url = "postgresql://localhost:5432/test";
   String mysqlUrl = "mysql://localhost:3306/test";
+  String unknownUrl = "unknown://localhost:1234/test";
   StructType schema =
       new StructType().add("k", DataTypes.IntegerType).add("j", DataTypes.StringType);
 
@@ -91,6 +92,12 @@ public class JdbcRelationHandlerTest {
 
   @Test
   void testHandlingJdbcDbTableAsSubQuery() {
+    CaseInsensitiveMap params =
+        CaseInsensitiveMap$.MODULE$.apply(
+            ScalaConversionUtils.fromJavaMap(
+                Collections.singletonMap(
+                    JDBCOptions$.MODULE$.JDBC_TABLE_NAME(), jdbcDbTableAsSubQuery)));
+    when(jdbcOptions.parameters()).thenReturn(params);
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcDbTableAsSubQuery);
     StructType schema1 =
         new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
@@ -118,6 +125,22 @@ public class JdbcRelationHandlerTest {
         .getDataset("test.jdbc_source1", "mysql://localhost:3306", schema1);
     verify(datasetFactory, times(1))
         .getDataset("test.jdbc_source2", "mysql://localhost:3306", schema2);
+  }
+
+  @Test
+  void testUnknownDialect() {
+    when(jdbcOptions.tableOrQuery()).thenReturn(jdbcQuery);
+    when(jdbcOptions.url()).thenReturn("jdbc:" + unknownUrl);
+    StructType schema1 =
+        new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
+    StructType schema2 = new StructType().add("j2", DataTypes.StringType);
+
+    jdbcRelationHandler.getDatasets(relation, unknownUrl);
+
+    verify(datasetFactory, times(1))
+        .getDataset("test.jdbc_source1", "unknown://localhost:1234", schema1);
+    verify(datasetFactory, times(1))
+        .getDataset("test.jdbc_source2", "unknown://localhost:1234", schema2);
   }
 
   @Test
