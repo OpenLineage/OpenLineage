@@ -14,9 +14,11 @@ The namespace and name of a datasource can be combined to form a URI (scheme:[//
 - Name = path (the datasets)
 
 ### Naming conventions for common data stores
+
 This list is not exhaustive, if a data store is missing, please create an issue or open a PR.
 
 ### Data Warehouses
+
 - [Athena](#Athena)
 - [Azure Cosmos DB](#Azure Cosmos DB)
 - [Azure Data Explorer](#Azure Data Explorer)
@@ -30,14 +32,15 @@ This list is not exhaustive, if a data store is missing, please create an issue 
 - [Trino](#Trino)
 
 ### Distributed file systems/blob stores
-- [ABFSS (Azure Data Lake Gen2)](#ABFSS (Azure Data Lake Gen2))
-- [DBFS (Databricks File System)](#DBFS (Databricks File System))
+
+- [ABFSS (Azure Data Lake Gen2)](#ABFSS "Azure Data Lake Gen2")
+- [DBFS (Databricks File System)](#DBFS "Databricks File System")
 - [GCS](#GCS)
 - [HDFS](#HDFS)
 - [Kafka](#Kafka)
 - [Local file system](#Local file system)
 - [S3](#S3)
-- [WASBS (Azure Blob Storage)](#WASBS (Azure Blob Storage))
+- [WASBS (Azure Blob Storage)](#WASBS "Azure Blob Storage")
 
 Datasets are called tables. Tables are organized into databases and schemas.
 
