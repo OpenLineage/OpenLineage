@@ -55,19 +55,17 @@ public class SnowflakeRelationVisitorTest {
             (new StructType(
                 new StructField[] {new StructField("name", StringType$.MODULE$, false, null)})));
 
-    TableName tableName = mock(TableName.class, RETURNS_DEEP_STUBS);
-    when(tableName.toString()).thenReturn("table");
-
-    Option<TableName> table = Option.apply(tableName);
-
-    when(relation.params().table()).thenReturn(table);
-
     when(relation.params().sfFullURL())
         .thenReturn("https://microsoft_partner.east-us-2.azure.snowflakecomputing.com");
   }
 
   @Test
   void testApplyDbTable() {
+    TableName tableName = mock(TableName.class, RETURNS_DEEP_STUBS);
+    when(tableName.toString()).thenReturn("table");
+
+    Option<TableName> table = Option.apply(tableName);
+    when(relation.params().table()).thenReturn(table);
 
     OpenLineageContext openLineageContext =
         OpenLineageContext.builder()
@@ -104,5 +102,46 @@ public class SnowflakeRelationVisitorTest {
         "snowflake://microsoft_partner.east-us-2.azure.snowflakecomputing.com", ds.getNamespace());
 
     assertEquals("snowflake_db.snowflake_schema.table", ds.getName());
+  }
+
+  @Test
+  void testApplyQuery() {
+    when(relation.params().query()).thenReturn(Option.apply("select * from some_table"));
+
+    OpenLineageContext openLineageContext =
+        OpenLineageContext.builder()
+            .sparkSession(session)
+            .sparkContext(session.sparkContext())
+            .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .customEnvironmentVariables(Collections.singletonList("TEST_VAR"))
+            .vendors(Vendors.getVendors())
+            .build();
+
+    SnowflakeRelationVisitor visitor =
+        new SnowflakeRelationVisitor<>(openLineageContext, DatasetFactory.output(context));
+
+    LogicalRelation lr =
+        new LogicalRelation(
+            relation,
+            ScalaConversionUtils.fromList(
+                Collections.singletonList(
+                    new AttributeReference(
+                        FIELD_NAME,
+                        StringType$.MODULE$,
+                        false,
+                        null,
+                        ExprId.apply(1L),
+                        ScalaConversionUtils.<String>asScalaSeqEmpty()))),
+            Option.empty(),
+            false);
+
+    List<OpenLineage.Dataset> datasets = visitor.apply(lr);
+
+    OpenLineage.Dataset ds = datasets.get(0);
+
+    assertEquals(
+        "snowflake://microsoft_partner.east-us-2.azure.snowflakecomputing.com", ds.getNamespace());
+
+    assertEquals("snowflake_db.snowflake_schema.some_table", ds.getName());
   }
 }

@@ -35,6 +35,7 @@ ext {
 
 dependencies {
     implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
+    implementation("io.openlineage:openlineage-sql-java:${project.version}")
 
     compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")
 

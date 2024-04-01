@@ -8,11 +8,11 @@ package io.openlineage.spark.agent.vendor.snowflake.lifecycle;
 import static io.openlineage.spark.agent.vendor.snowflake.Constants.SNOWFLAKE_CLASS_NAME;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.vendor.snowflake.lifecycle.plan.SnowflakeSaveIntoDataSourceCommandDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -65,9 +65,9 @@ public class SnowflakeRelationVisitor<D extends OpenLineage.Dataset>
     String sfFullURL = params.sfFullURL();
     Optional<String> dbtable =
         Optional.<TableName>ofNullable(params.table().getOrElse(null)).map(TableName::toString);
+    Optional<String> query = ScalaConversionUtils.asJavaOptional(params.query());
 
-    return Collections.singletonList(
-        SnowflakeDataset.getDataset(
-            factory, sfFullURL, sfDatabase, sfSchema, dbtable, relation.schema()));
+    return SnowflakeDataset.getDatasets(
+        factory, sfFullURL, sfDatabase, sfSchema, dbtable, query, relation.schema());
   }
 }
