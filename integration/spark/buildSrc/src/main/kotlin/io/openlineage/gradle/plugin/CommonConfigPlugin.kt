@@ -63,7 +63,6 @@ class CommonConfigPlugin : Plugin<Project> {
 
         target.repositories.mavenCentral()
         target.repositories.mavenLocal()
-        target.repositories.maven("https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot")
 
         target.tasks.withType<Test> {
             useJUnitPlatform()
