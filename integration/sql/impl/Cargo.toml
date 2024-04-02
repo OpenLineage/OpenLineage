@@ -14,4 +14,4 @@ crate-type = ["rlib"]
 [dependencies]
 anyhow = {workspace = true}
 
-sqlparser = {git = "https://github.com/OpenLineage/sqlparser-rs/", branch = "release"}
+sqlparser = {git = "https://github.com/OpenLineage/sqlparser-rs/", branch = "fix_snowflake_stage_no_parens"}

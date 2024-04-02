@@ -1,7 +1,6 @@
 // Copyright 2018-2023 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-mod bigquery;
 mod context;
 mod dialect;
 mod lineage;
@@ -9,7 +8,6 @@ mod visitor;
 
 use std::collections::HashSet;
 
-pub use bigquery::BigQueryDialect;
 use context::Context;
 pub use dialect::*;
 pub use lineage::*;

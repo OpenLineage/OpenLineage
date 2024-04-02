@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_utils::*;
-use openlineage_sql::{parse_sql, BigQueryDialect, TableLineage};
+use openlineage_sql::TableLineage;
 
 #[test]
 fn select_simple() {
@@ -84,16 +84,15 @@ fn select_left_join() {
 }
 
 #[test]
-fn select_bigquery_excaping() {
+fn select_bigquery_escaping() {
     assert_eq!(
-        parse_sql(
+        test_sql_dialect(
             "
             SELECT *
             FROM `random-project`.`dbt_test1`.`source_table`
             WHERE id = 1
             ",
-            &BigQueryDialect,
-            None
+            "bigquery"
         )
         .unwrap()
         .table_lineage,
@@ -145,6 +144,34 @@ fn select_with_table_generator() {
         TableLineage {
             in_tables: tables(vec!["test_schema.test_table"]),
             out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn select_window_function() {
+    assert_eq!(
+        test_sql(
+            "SELECT row_number() OVER (ORDER BY dt DESC), \
+               sum(foo) OVER (PARTITION BY a, b ORDER BY c, d \
+               ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW), \
+               avg(bar) OVER (ORDER BY a \
+               RANGE BETWEEN 1 PRECEDING AND 1 FOLLOWING), \
+               sum(bar) OVER (ORDER BY a \
+               RANGE BETWEEN INTERVAL '1' DAY PRECEDING AND INTERVAL '1 MONTH' FOLLOWING), \
+               COUNT(*) OVER (ORDER BY a \
+               RANGE BETWEEN INTERVAL '1 DAY' PRECEDING AND INTERVAL '1 DAY' FOLLOWING), \
+               max(baz) OVER (ORDER BY a \
+               ROWS UNBOUNDED PRECEDING), \
+               sum(qux) OVER (ORDER BY a \
+               GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING) \
+               FROM foo"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: vec![table("foo")],
+            out_tables: vec![],
         }
     )
 }
