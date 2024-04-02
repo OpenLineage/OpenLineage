@@ -43,3 +43,16 @@ fn alter_snowflake_swap_with() {
         }
     )
 }
+
+#[test]
+fn alter_multiple_operations() {
+    assert_eq!(
+        test_sql("ALTER TABLE IF EXISTS ONLY tab ADD COLUMN a TEXT, ADD COLUMN b INT")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![],
+            out_tables: vec![table("tab")],
+        }
+    )
+}
