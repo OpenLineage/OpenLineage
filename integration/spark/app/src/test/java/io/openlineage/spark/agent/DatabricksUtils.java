@@ -50,16 +50,26 @@ import org.jetbrains.annotations.NotNull;
 public class DatabricksUtils {
 
   public static final String CLUSTER_NAME = "openlineage-test-cluster";
-  public static final Map<String, String> PLATFORM_VERSIONS =
+  public static final Map<String, String> PLATFORM_VERSIONS_NAMES =
       Stream.of(
-              new AbstractMap.SimpleEntry<>("3.4.1", "13.3.x-scala2.12"),
+              new AbstractMap.SimpleEntry<>("3.4.2", "13.3.x-scala2.12"),
               new AbstractMap.SimpleEntry<>("3.5.0", "14.2.x-scala2.12"))
           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  public static final Map<String, String> PLATFORM_VERSIONS =
+      Stream.of(
+              new AbstractMap.SimpleEntry<>("3.4.2", "13.3"),
+              new AbstractMap.SimpleEntry<>("3.5.0", "14.2"))
+          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   public static final String NODE_TYPE = "Standard_DS3_v2";
-  public static final String DBFS_EVENTS_FILE = "dbfs:/databricks/openlineage/events.log";
   public static final String INIT_SCRIPT_FILE = "/Shared/open-lineage-init-script.sh";
   public static final String DBFS_CLUSTER_LOGS = "dbfs:/databricks/openlineage/cluster-logs";
   private static final String SPARK_VERSION = "spark.version";
+  public static final String DBFS_EVENTS_FILE =
+      "dbfs:/databricks/openlineage/events_" + platformVersion() + ".log";
+
+  public static String platformVersion() {
+    return PLATFORM_VERSIONS.get(System.getProperty(SPARK_VERSION)).replace(".", "_");
+  }
 
   @SneakyThrows
   static String init(WorkspaceClient workspace) {
@@ -72,18 +82,18 @@ public class DatabricksUtils {
     workspace.dbfs().delete(deleteClusterLogs);
 
     // check if cluster is available
-    String clusterId;
     Iterable<ClusterDetails> clusterDetails = workspace.clusters().list(new ListClustersRequest());
     if (clusterDetails != null) {
-      clusterId =
-          StreamSupport.stream(clusterDetails.spliterator(), false)
-              .filter(cl -> cl.getClusterName().equals(getClusterName()))
-              .map(cl -> cl.getClusterId())
-              .findAny()
-              .orElseGet(() -> createCluster(workspace));
-    } else {
-      clusterId = createCluster(workspace);
+      log.info("Encountered clusters to delete.");
+      StreamSupport.stream(clusterDetails.spliterator(), false)
+          .filter(cl -> cl.getClusterName().equals(getClusterName()))
+          .forEach(
+              cl -> {
+                log.info("Deleting a cluster {}-{}.", cl.getClusterName(), cl.getClusterId());
+                workspace.clusters().permanentDelete(cl.getClusterId());
+              });
     }
+    String clusterId = createCluster(workspace);
 
     log.info("Ensuring cluster is running");
     workspace.clusters().ensureClusterIsRunning(clusterId);
@@ -203,18 +213,20 @@ public class DatabricksUtils {
   }
 
   private static String getSparkPlatformVersion() {
-    if (!PLATFORM_VERSIONS.containsKey(System.getProperty(SPARK_VERSION))) {
-      log.error("Unsupported spark_version for databricks test");
+    if (!PLATFORM_VERSIONS_NAMES.containsKey(System.getProperty(SPARK_VERSION))) {
+      log.error("Unsupported spark_version for databricks test {}", SPARK_VERSION);
     }
 
-    return PLATFORM_VERSIONS.get(System.getProperty(SPARK_VERSION));
+    log.info(
+        "Databricks version {}", PLATFORM_VERSIONS_NAMES.get(System.getProperty(SPARK_VERSION)));
+    return PLATFORM_VERSIONS_NAMES.get(System.getProperty(SPARK_VERSION));
   }
 
   @SneakyThrows
   private static void uploadOpenlineageJar(WorkspaceClient workspace) {
     Path jarFile =
         Files.list(Paths.get("../build/libs/"))
-            .filter(p -> p.getFileName().toString().startsWith("openlineage-spark-"))
+            .filter(p -> p.getFileName().toString().startsWith("openlineage-spark_"))
             .filter(p -> p.getFileName().toString().endsWith("jar"))
             .findAny()
             .orElseThrow(() -> new RuntimeException("openlineage-spark jar not found"));
