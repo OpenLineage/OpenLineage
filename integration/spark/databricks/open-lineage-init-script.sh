@@ -6,7 +6,7 @@
 STAGE_DIR="/dbfs/databricks/openlineage"
 
 echo "BEGIN: Upload Spark Listener JARs"
-cp -f $STAGE_DIR/openlineage-spark-*.jar /mnt/driver-daemon/jars || { echo "Error copying Spark Listener library file"; exit 1;}
+cp -f $STAGE_DIR/openlineage-spark_*.jar /mnt/driver-daemon/jars || { echo "Error copying Spark Listener library file"; exit 1;}
 echo "END: Upload Spark Listener JARs"
 
 echo "BEGIN: Modify Spark config settings"

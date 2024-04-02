@@ -31,7 +31,15 @@ public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.Ou
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    ResolvedTable resolvedTable = ((ResolvedTable) ((DropTable) x).child());
+    DropTable dropTable = (DropTable) x;
+
+    if (!(dropTable.child() instanceof ResolvedTable)) {
+      log.warn(
+          "Unexpected child type. Expected ResolvedTable, got {}", dropTable.child().getClass());
+      return Collections.emptyList();
+    }
+
+    ResolvedTable resolvedTable = ((ResolvedTable) (dropTable).child());
     TableCatalog tableCatalog = resolvedTable.catalog();
     Map<String, String> tableProperties = resolvedTable.table().properties();
     Identifier identifier = resolvedTable.identifier();
