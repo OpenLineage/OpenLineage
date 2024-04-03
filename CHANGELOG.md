@@ -14,6 +14,8 @@
   *Always catch `IllegalStateException` when accessing `SparkSession`.*
 * **Spark: fix databricks environment.** [`#2537`](https://github.com/OpenLineage/OpenLineage/pull/2537) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Fix `ClassNotFoundError` occurring on databricks runtime, extend integration test to verify `DatabricksEnvironmentFacet`.*
+* **Spark: fixed memory leak in JobMetricsHolder.** [`#2565`](https://github.com/OpenLineage/OpenLineage/pull/2565) [@d-m-h](https://github.com/d-m-h)
+  *The JobMetricsHolder#cleanUp(int) method now correctly purges unneeded state from both maps.*
 
 ## [1.10.2](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...1.10.2) - 2024-03-15
 
