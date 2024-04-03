@@ -6,6 +6,8 @@
   *Adding the ability to support OpenLineage within Spark extensions' code. Refer to [README](https://github.com/OpenLineage/OpenLineage/tree/spark/built-in-lineage/integration/spark-interfaces-scala#readme) for more details.*
 * **Flink: support Flink 1.19.0** [`#2545`](https://github.com/OpenLineage/OpenLineage/pull/2545) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
   *Adding the integration test coverage for flink 1.19.0.
+* **Spec: add "fileCount" to dataset stat facets** [`#2562`](https://github.com/OpenLineage/OpenLineage/pull/2562) [@dolfinus](https://github.com/dolfinus)
+  *Adds "fileCount" field to DataQualityMetricsInputDatasetFacet and OutputStatisticsOutputDatasetFacet specification*
 
 ### Fixed
 * **Flink: disable module metadata generation** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2531) [@HuangZhenQiu](https://github.com/HuangZhenQiu)

@@ -81,6 +81,7 @@ class OpenLineageRunEventTest {
                         ol.newDataQualityMetricsInputDatasetFacetBuilder()
                             .rowCount(10L)
                             .bytes(20L)
+                            .fileCount(5L)
                             .columnMetrics(
                                 ol.newDataQualityMetricsInputDatasetFacetColumnMetricsBuilder()
                                     .put(
@@ -107,7 +108,12 @@ class OpenLineageRunEventTest {
                 "output",
                 null,
                 ol.newOutputDatasetOutputFacetsBuilder()
-                    .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10L, 20L))
+                    .outputStatistics(
+                        ol.newOutputStatisticsOutputDatasetFacetBuilder()
+                            .rowCount(10L)
+                            .size(20L)
+                            .fileCount(5L)
+                            .build())
                     .build()));
     OpenLineage.RunEvent runStateUpdate =
         ol.newRunEventBuilder()

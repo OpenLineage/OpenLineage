@@ -17,12 +17,13 @@
           "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
           "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/DataQualityMetricsInputDatasetFacet",
           "noRowCount": 1000,
-          "bytes": 1048576
+          "bytes": 1048576,
+          "fileCount": 5
         }
       }
     }
   ],
-  "outputs": [ ],
+  "outputs": [],
   "producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
   "schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/RunEvent"
 }

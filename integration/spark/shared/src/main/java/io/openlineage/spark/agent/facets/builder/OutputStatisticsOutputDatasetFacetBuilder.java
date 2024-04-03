@@ -39,13 +39,16 @@ public class OutputStatisticsOutputDatasetFacetBuilder
           "outputStatistics",
           context
               .getOpenLineage()
-              .newOutputStatisticsOutputDatasetFacet(
+              .newOutputStatisticsOutputDatasetFacetBuilder()
+              .rowCount(
                   Optional.of(metrics.get(JobMetricsHolder.Metric.WRITE_RECORDS))
                       .map(Number::longValue)
-                      .orElse(null),
+                      .orElse(null))
+              .size(
                   Optional.of(metrics.get(JobMetricsHolder.Metric.WRITE_BYTES))
                       .map(Number::longValue)
-                      .orElse(null)));
+                      .orElse(null))
+              .build());
     }
   }
 }

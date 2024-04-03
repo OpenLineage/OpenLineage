@@ -130,7 +130,7 @@ class OpenlineageParserTest < Test::Unit::TestCase
     err = assert_raise Fluent::ParserError do
       @parser.instance.parse(ol_event)
     end
-    assert_match(/Openlineage validation failed: (.+) "rowCount" is a required property/, err.message)
+    assert_match(/Openlineage validation failed: (.+) path \"\/outputs\/0\/outputFacets\/outputStatistics\/rowCount/, err.message)
   end
 
   private
