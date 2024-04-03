@@ -39,19 +39,20 @@ public class SnowflakeSaveIntoDataSourceCommandDatasetBuilder
 
       Map<String, String> options = ScalaConversionUtils.<String, String>fromMap(command.options());
       Optional<String> dbtable = Optional.ofNullable(options.get("dbtable"));
+      Optional<String> query = Optional.ofNullable(options.get("query"));
       String sfSchema = options.get("sfschema");
       String sfUrl = options.get("sfurl");
       String sfDatabase = options.get("sfdatabase");
 
-      return Collections.singletonList(
-          // Similar to Kafka, Snowflake also has some special handling. So we use the method
-          // below for extracting the dataset from Snowflake write operations.
-          SnowflakeDataset.getDataset(
-              outputDataset(), sfUrl, sfDatabase, sfSchema, dbtable, getSchema(command)
-              // command.schema() doesn't seem to contain the schema when tested with Azure
-              // Snowflake,
-              // so we use the helper to extract it from the logical plan.
-              ));
+      return
+      // Similar to Kafka, Snowflake also has some special handling. So we use the method
+      // below for extracting the dataset from Snowflake write operations.
+      SnowflakeDataset.getDatasets(
+          outputDataset(), sfUrl, sfDatabase, sfSchema, dbtable, query, getSchema(command)
+          // command.schema() doesn't seem to contain the schema when tested with Azure
+          // Snowflake,
+          // so we use the helper to extract it from the logical plan.
+          );
     } else {
       return Collections.emptyList();
     }
