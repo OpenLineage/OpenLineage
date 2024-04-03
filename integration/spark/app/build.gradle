@@ -22,7 +22,7 @@ ext {
     activeRuntimeElementsConfiguration = "scala" + scala.replace(".", "") + "RuntimeElements"
 
     assertjVersion = '3.25.1'
-    bigqueryVersion = '0.29.0'
+    bigqueryVersion = '0.35.1'
     junit5Version = '5.10.1'
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.1'
