@@ -20,9 +20,9 @@ This list is not exhaustive, if a data store is missing, please create an issue 
 ### Data Warehouses
 
 - [Athena](#Athena)
-- [Azure Cosmos DB](#Azure Cosmos DB)
-- [Azure Data Explorer](#Azure Data Explorer)
-- [Azure Synapse](#Azure Synapse)
+- [Azure Cosmos DB](#Azure-Cosmos-DB)
+- [Azure Data Explorer](#Azure-Data-Explorer)
+- [Azure Synapse](#Azure-Synapse)
 - [BigQuery](#BigQuery)
 - [Cassandra](#Cassandra)
 - [MySQL](#MySQL)
@@ -38,7 +38,7 @@ This list is not exhaustive, if a data store is missing, please create an issue 
 - [GCS](#GCS)
 - [HDFS](#HDFS)
 - [Kafka](#Kafka)
-- [Local file system](#Local file system)
+- [Local file system](#Local-file-system)
 - [S3](#S3)
 - [WASBS (Azure Blob Storage)](#WASBS "Azure Blob Storage")
 
