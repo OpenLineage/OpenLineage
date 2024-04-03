@@ -172,6 +172,7 @@ shadowJar {
     relocate "org.apache.commons.beanutils", "io.openlineage.spark.shaded.org.apache.commons.beanutils"
     relocate "org.apache.http", "io.openlineage.spark.shaded.org.apache.http"
     relocate "com.fasterxml.jackson", "io.openlineage.spark.shaded.com.fasterxml.jackson"
+    relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
     relocate "org.hdrhistogram", "io.openlineage.spark.shaded.org.hdrhistogram"
     relocate "org.latencyutils", "io.openlineage.spark.shaded.org.latencyutils"
     manifest {
