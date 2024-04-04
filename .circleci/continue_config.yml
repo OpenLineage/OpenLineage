@@ -529,6 +529,7 @@ jobs:
           # TODO remove, depend on client build in interfaces build
           cd ../../client/java
           ./gradlew --no-daemon --console=plain publishToMavenLocal
+          cd -
 
           ./gradlew --no-daemon --console=plain clean publishToMavenLocal -Pscala.binary.version=2.12
           ./gradlew --no-daemon --console=plain clean publishToMavenLocal -Pscala.binary.version=2.13
