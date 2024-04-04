@@ -312,4 +312,16 @@ class SparkContainerIntegrationTest {
 
     verifyEvents(mockServerClient, "pysparkRDDWithParquetComplete.json");
   }
+
+  @Test
+  void testDebugFacet() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network,
+        openLineageClientMockContainer,
+        "testEmitMetrics",
+        Collections.emptyList(),
+        Collections.singletonList("spark.openlineage.debugFacet=true"),
+        "spark_emit_metrics.py");
+    verifyEvents(mockServerClient, "pysparkMetricsEnd.json");
+  }
 }

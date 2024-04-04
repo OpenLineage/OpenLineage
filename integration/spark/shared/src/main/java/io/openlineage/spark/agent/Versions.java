@@ -21,7 +21,7 @@ public class Versions {
   }
 
   @SuppressWarnings("PMD")
-  private static String getVersion() {
+  public static String getVersion() {
     try {
       Properties properties = new Properties();
       InputStream is = Versions.class.getResourceAsStream("version.properties");
