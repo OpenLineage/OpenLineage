@@ -13,7 +13,7 @@ from openlineage.airflow.extractors.sagemaker_extractors import (
     SageMakerTrainingExtractor,
     SageMakerTransformExtractor,
 )
-from pkg_resources import parse_version
+from packaging.version import Version
 
 from airflow.models import DAG, TaskInstance
 from airflow.providers.amazon.aws.operators.sagemaker import (
@@ -69,7 +69,7 @@ class TestSageMakerProcessingExtractor(TestCase):
     @staticmethod
     def _get_ti(task):
         kwargs = {}
-        if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
+        if Version(AIRFLOW_VERSION) > Version("2.2.0"):
             kwargs["run_id"] = "test_run_id"  # change in 2.2.0
         task_instance = TaskInstance(
             task=task,
@@ -123,7 +123,7 @@ class TestSageMakerTransformExtractor(TestCase):
     @staticmethod
     def _get_ti(task):
         kwargs = {}
-        if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
+        if Version(AIRFLOW_VERSION) > Version("2.2.0"):
             kwargs["run_id"] = "test_run_id"  # change in 2.2.0
         task_instance = TaskInstance(
             task=task,
@@ -173,7 +173,7 @@ class TestSageMakerTrainingExtractor(TestCase):
     @staticmethod
     def _get_ti(task):
         kwargs = {}
-        if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
+        if Version(AIRFLOW_VERSION) > Version("2.2.0"):
             kwargs["run_id"] = "test_run_id"  # change in 2.2.0
         task_instance = TaskInstance(
             task=task,

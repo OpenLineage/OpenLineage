@@ -16,7 +16,7 @@ import requests
 from openlineage.client.run import RunState
 from openlineage.common.test import match, setup_jinja
 from openlineage.common.utils import get_from_nullable_chain
-from pkg_resources import parse_version
+from packaging.version import Version
 from retrying import retry
 
 env = setup_jinja()
@@ -42,7 +42,7 @@ SNOWFLAKE_AIRFLOW_TEST_VERSION = os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION"
 
 
 def IS_AIRFLOW_VERSION_ENOUGH(x):
-    return parse_version(os.environ.get("AIRFLOW_VERSION", "0.0.0")) >= parse_version(x)
+    return Version(os.environ.get("AIRFLOW_VERSION", "0.0.0")) >= Version(x)
 
 
 params = [

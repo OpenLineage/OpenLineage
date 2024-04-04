@@ -6,13 +6,13 @@
 import logging
 
 from openlineage.airflow.version import __version__
-from pkg_resources import parse_version
+from packaging.version import Version
 
 from airflow.version import version as AIRFLOW_VERSION
 
 __author__ = """OpenLineage"""
 
-if parse_version(AIRFLOW_VERSION) < parse_version("2.1.0"):  # type: ignore
+if Version(AIRFLOW_VERSION) < Version("2.1.0"):  # type: ignore
     logging.warning(
         f"""
         OpenLineage support for Airflow version {AIRFLOW_VERSION} is REMOVED.
@@ -20,7 +20,7 @@ if parse_version(AIRFLOW_VERSION) < parse_version("2.1.0"):  # type: ignore
         in order to continue using OpenLineage.
         """
     )
-elif parse_version(AIRFLOW_VERSION) >= parse_version("2.8.0b1"):  # type: ignore
+elif Version(AIRFLOW_VERSION) >= Version("2.8.0b1"):  # type: ignore
     logging.warning(
         f"""
         OpenLineage support for Airflow version {AIRFLOW_VERSION} is REMOVED.

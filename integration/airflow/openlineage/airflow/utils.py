@@ -20,8 +20,8 @@ from openlineage.airflow.facets import (
     UnknownOperatorInstance,
 )
 from openlineage.client.utils import RedactMixin
+from packaging.version import Version
 from pendulum import from_timestamp
-from pkg_resources import parse_version
 
 from airflow.models import DAG as AIRFLOW_DAG
 
@@ -537,7 +537,7 @@ def is_airflow_version_enough(x):
         from airflow.version import version as AIRFLOW_VERSION
     except ImportError:
         AIRFLOW_VERSION = "0.0.0"
-    return parse_version(AIRFLOW_VERSION) >= parse_version(x)
+    return Version(AIRFLOW_VERSION) >= Version(x)
 
 
 def getboolean(env, default: bool = False) -> bool:

@@ -19,7 +19,7 @@ from openlineage.client.facet import (
 )
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
-from pkg_resources import parse_version
+from packaging.version import Version
 
 from airflow.models import DAG, TaskInstance
 from airflow.providers.amazon.aws.operators.redshift_data import RedshiftDataOperator
@@ -86,7 +86,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
     @staticmethod
     def _get_ti(task, run_id):
         kwargs = {}
-        if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
+        if Version(AIRFLOW_VERSION) > Version("2.2.0"):
             kwargs["run_id"] = run_id
         else:
             kwargs["execution_date"] = datetime.utcnow().replace(tzinfo=pytz.utc)
@@ -175,7 +175,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
         )
 
     @pytest.mark.skipif(
-        parse_version(AIRFLOW_VERSION) >= parse_version("2.5.0"),
+        Version(AIRFLOW_VERSION) >= Version("2.5.0"),
         reason="Airflow >= 2.5.0",
     )
     @mock.patch(

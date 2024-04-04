@@ -5,7 +5,7 @@ import os
 
 # Provide empty plugin for older version
 from openlineage.airflow.macros import lineage_parent_id, lineage_run_id
-from pkg_resources import parse_version
+from packaging.version import Version
 
 from airflow.plugins_manager import AirflowPlugin
 from airflow.version import version as AIRFLOW_VERSION
@@ -14,8 +14,8 @@ from airflow.version import version as AIRFLOW_VERSION
 def _is_disabled():
     try:
         # If the Airflow provider is installed, skip running the openlineage-airflow plugin.
-        from airflow.providers.openlineage.plugins.openlineage import (
-            OpenLineageProviderPlugin,  # noqa: F401
+        from airflow.providers.openlineage.plugins.openlineage import (  # noqa: F401
+            OpenLineageProviderPlugin,
         )
 
         return True
@@ -25,8 +25,8 @@ def _is_disabled():
 
 
 if (
-    parse_version(AIRFLOW_VERSION) < parse_version("2.3.0.dev0")  # type: ignore
-    or parse_version(AIRFLOW_VERSION) >= parse_version("2.8.0.b1")  # type: ignore
+    Version(AIRFLOW_VERSION) < Version("2.3.0.dev0")  # type: ignore
+    or Version(AIRFLOW_VERSION) >= Version("2.8.0.b1")  # type: ignore
     or _is_disabled()
 ):
 
