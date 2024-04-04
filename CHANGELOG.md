@@ -1,25 +1,52 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.10.2...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.11.0...HEAD)
+
+## [1.11.0](https://github.com/OpenLineage/OpenLineage/compare/1.10.2...1.11.0) - 2024-04-04
+
 ### Added
+* **Common: add support for `SCRIPT`-type jobs in BigQuery [`#2564`](https://github.com/OpenLineage/OpenLineage/pull/2564) [@kacpermuda](https://github.com/kacpermuda)  
+    *In the case of `SCRIPT`-type jobs in BigQuery, no lineage was being extracted because the `SCRIPT` job had no lineage information - it only spawned child jobs that had that information. With this change, the integration extracts lineage information from child jobs when dealing with `SCRIPT`-type jobs.
 * **Spark: support for built-in lineage extraction** [`#2272`](https://github.com/OpenLineage/OpenLineage/pull/2272) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Adding the ability to support OpenLineage within Spark extensions' code. Refer to [README](https://github.com/OpenLineage/OpenLineage/tree/spark/built-in-lineage/integration/spark-interfaces-scala#readme) for more details.*
-* **Flink: support Flink 1.19.0** [`#2545`](https://github.com/OpenLineage/OpenLineage/pull/2545) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
-  *Adding the integration test coverage for flink 1.19.0.
-* **Spec: add "fileCount" to dataset stat facets** [`#2562`](https://github.com/OpenLineage/OpenLineage/pull/2562) [@dolfinus](https://github.com/dolfinus)
-  *Adds "fileCount" field to DataQualityMetricsInputDatasetFacet and OutputStatisticsOutputDatasetFacet specification*
+    *This PR adds a `spark-interfaces-scala` package that allows lineage extraction to be implemented within Spark extensions (Iceberg, Delta, GCS, etc.). The Openlineage integration, when traversing the query plan, verifies if nodes implement defined interfaces. If so, interface methods are used to extract lineage. Refer to the [README](https://github.com/OpenLineage/OpenLineage/tree/spark/built-in-lineage/integration/spark-interfaces-scala#readme) for more details.*
+* **Spark/Java: add support for Micrometer metrics** [`#2496`](https://github.com/OpenLineage/OpenLineage/pull/2496) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds a mechanism for forwarding metrics to any [Micrometer-compatible implementation](https://docs.micrometer.io/micrometer/reference/implementations.html). Included: `MeterRegistryyFactory`, `MicrometerProvider`, `StatsDMetricsBuilder`, metrics config in OpenLineage config, and a Java client implementation.*
+* **Spark: add support for telemetry mechanism** [`#2528`](https://github.com/OpenLineage/OpenLineage/pull/2528) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds timers, counters and additional instrumentation in order to implement Micrometer metrics collection.*
+* **Spark: support query option on table read** [`#2556`](https://github.com/OpenLineage/OpenLineage/pull/2556) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds support for the Spark-BigQuery connector's query input option, which executes a query directly on BigQuery, storing the result in an intermediate dataset, bypassing Spark's computation layer. Due to this, the lineage is retrieved using the SQL parser, similarly to `JDBCRelation`.*
+* **Spark: change `SparkPropertyFacetBuilder` to support recording Spark runtime** [`#2523`](https://github.com/OpenLineage/OpenLineage/pull/2523) [@Ruihua98](https://github.com/Ruihua98)  
+    *Modifies `SparkPropertyFacetBuilder` to capture the `RuntimeConfig` of the Spark session because the existing `SparkPropertyFacet` can only capture the static config of the Spark context. This facet will be added in both RDD-related and SQL-related runs.*
+* **Spec: add `fileCount` to dataset stat facets** [`#2562`](https://github.com/OpenLineage/OpenLineage/pull/2562) [@dolfinus](https://github.com/dolfinus)  
+    *Adds a `fileCount` field to `DataQualityMetricsInputDatasetFacet` and `OutputStatisticsOutputDatasetFacet` specification.*
 
 ### Fixed
-* **Flink: disable module metadata generation** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2531) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
-  *Fixes the issue flink module generated contains the internal libs that are not published*
-* **Spark: fix access to active Spark session ** [`#2535`](https://github.com/OpenLineage/OpenLineage/pull/2535) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Always catch `IllegalStateException` when accessing `SparkSession`.*
-* **Spark: fix databricks environment.** [`#2537`](https://github.com/OpenLineage/OpenLineage/pull/2537) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Fix `ClassNotFoundError` occurring on databricks runtime, extend integration test to verify `DatabricksEnvironmentFacet`.*
+* **dbt: `dbt-ol` should transparently exit with the same exit code as the child `dbt` process** [`#2560`](https://github.com/OpenLineage/OpenLineage/pull/2560) [@blacklight](https://github.com/blacklight)  
+    *Makes `dbt-ol` transparently exit with the same exit code as the child `dbt` process.*
+* **Flink: disable module metadata generation** [`#2531`](https://github.com/OpenLineage/OpenLineage/pull/2531) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Disables the module metadata generation for Flink to fix the problem of having gradle dependencies to submodules within `openlineage-flink.jar`.*
+* **Flink: fixes to version 1.19** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2507) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Fixes the class not found issue when checking for Cassandra classes. Also fixes the Maven pom dependency on subprojects.*
+* **Python: small improvements to `.emit()` method logging & annotations** [`#2539`](https://github.com/OpenLineage/OpenLineage/pull/2539) [@dolfinus](https://github.com/dolfinus)  
+    *Updates OpenLineage.emit debug messages and annotations.*
+* **SQL: show error message when OpenLineageSql cannot find native library** [`#2547`](https://github.com/OpenLineage/OpenLineage/pull/2547) [@dolfinus](https://github.com/dolfinus)  
+    *When the `OpenLineageSql` class could not load a native library, if returned `None` for all operations. But because the error message was suppressed, the user could not determine the reason.*
+* **SQL: update code to conform to upstream sqlparser-rs changes** [`#2510`](https://github.com/OpenLineage/OpenLineage/pull/2510) [@mobuchowski](https://github.com/mobuchowski)  
+    *Includes tests and cosmetic improvements.*
+* **Spark: fix access to active Spark session** [`#2535`](https://github.com/OpenLineage/OpenLineage/pull/2535) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Changes behavior so `IllegalStateException` is always caught when accessing `SparkSession`.*
+* **Spark: fix Databricks environment.** [`#2537`](https://github.com/OpenLineage/OpenLineage/pull/2537) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Fixes the `ClassNotFoundError` occurring on Databricks runtime and extends the integration test to verify `DatabricksEnvironmentFacet`.*
 * **Spark: fixed memory leak in JobMetricsHolder.** [`#2565`](https://github.com/OpenLineage/OpenLineage/pull/2565) [@d-m-h](https://github.com/d-m-h)
-  *The JobMetricsHolder#cleanUp(int) method now correctly purges unneeded state from both maps.*
+    *The `JobMetricsHolder#cleanUp(int)` method now correctly purges unneeded state from both maps.*
 * **Spark: fixed memory leak in `UnknownEntryFacetListener`.** [`#2557`](https://github.com/OpenLineage/OpenLineage/pull/2557) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
-  *Prevent storing state when facet is disabled, purge the state after populating run facets.*
+    *Prevents storing the state when a facet is disabled, purging the state after populating run facets.*
+* **Spark: fix parsing `JDBCOptions(table=...)` containing subquery** [`#2546`](https://github.com/OpenLineage/OpenLineage/pull/2546) [@dolfinus](https://github.com/dolfinus)  
+    *Prevents `openlineage-spark` from producing datasets with names like `database.(select * from table)` for JDBC sources.*
+* **Spark/Snowflake: support query option via SQL parser** [`#2563`](https://github.com/OpenLineage/OpenLineage/pull/2563) [@mobuchowski](https://github.com/mobuchowski)  
+    *When a Snowflake job is bypassing Spark's computation layer, now the SQL parser will be used to get the lineage.*
+* **Spark: always catch `IllegalStateException` when accessing `SparkSession`** [`#2535`](https://github.com/OpenLineage/OpenLineage/pull/2535) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *`IllegalStateException` was not being caught.*
 
 ## [1.10.2](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...1.10.2) - 2024-03-15
 
