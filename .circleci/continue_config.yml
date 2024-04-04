@@ -518,15 +518,25 @@ jobs:
       - run:
           name: Generate cache key
           command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+          
+          ./gradlew --no-daemon --console=plain clean publishToMavenLocal -Pscala.binary.version=2.12
+          ./gradlew --no-daemon --console=plain clean publishToMavenLocal -Pscala.binary.version=2.13
 
           # Publish *.jar
           ./gradlew --no-daemon --console=plain clean publish -Pscala.binary.version=2.12
           ./gradlew --no-daemon --console=plain clean publish -Pscala.binary.version=2.13
+      - persist_to_workspace:
+          root: ~/.m2/repository/io/openlineage/
+          paths:
+            - spark-interfaces-scala_2.12
+            - spark-interfaces-scala_2.13
       - store_artifacts:
           path: ./build/libs
           destination: spark-interfaces-scala-artifacts
@@ -1049,6 +1059,7 @@ workflows:
           requires:
             - release-client-java
             - build-integration-sql-java
+            - release-integration-spark-interfaces-scala
       - release-integration-sql-java:
           filters:
             tags:
