@@ -9,7 +9,6 @@ import os
 import subprocess
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
-from uuid import uuid4
 
 import attr
 from openlineage.airflow.facets import (
@@ -383,8 +382,21 @@ def get_unknown_source_attribute_run_facet(task: "BaseOperator", name: Optional[
     }
 
 
-def new_lineage_run_id(dag_run_id: str, task_id: str) -> str:
-    return str(uuid4())
+def get_unknown_source_attribute_run_facet(task: "BaseOperator", name: Optional[str] = None):
+    if not name:
+        name = get_operator_class(task).__name__
+    return {
+        "unknownSourceAttribute": attr.asdict(
+            UnknownOperatorAttributeRunFacet(
+                unknownItems=[
+                    UnknownOperatorInstance(
+                        name=name,
+                        properties=TaskInfo(task),
+                    )
+                ]
+            )
+        )
+    }
 
 
 def get_dagrun_start_end(dagrun: "DagRun", dag: "DAG"):
