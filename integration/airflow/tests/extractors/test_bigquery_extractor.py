@@ -120,6 +120,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         )
 
         assert len(task_meta.run_facets) == 2
+        job_details["configuration"]["query"].pop("query")
         assert (
             BigQueryJobRunFacet(cached=False, billedBytes=111149056, properties=json.dumps(job_details))
             == task_meta.run_facets["bigQuery_job"]
@@ -194,7 +195,9 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
 
         assert len(task_meta.run_facets) == 2
         print(task_meta.run_facets.keys())
-        assert task_meta.run_facets["bigQuery_job"] == BigQueryJobRunFacet(cached=True)
+        job_run_facet = task_meta.run_facets["bigQuery_job"]
+        assert job_run_facet.cached is True
+        assert job_run_facet.billedBytes == 0
 
         assert (
             ExternalQueryRunFacet(externalQueryId=bq_job_id, source="bigquery")

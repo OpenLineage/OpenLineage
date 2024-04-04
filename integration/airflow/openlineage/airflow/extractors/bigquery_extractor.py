@@ -48,7 +48,7 @@ class BigQueryExtractor(BaseExtractor):
 
         stats = BigQueryDatasetsProvider(client=client).get_facets(bigquery_job_id)
         inputs = stats.inputs
-        output = stats.output
+        outputs = stats.outputs
 
         for ds in inputs:
             ds.input_facets = self._get_input_facets()
@@ -59,7 +59,7 @@ class BigQueryExtractor(BaseExtractor):
         return TaskMetadata(
             name=get_job_name(task=self.operator),
             inputs=[ds.to_openlineage_dataset() for ds in inputs],
-            outputs=[output.to_openlineage_dataset()] if output else [],
+            outputs=[o.to_openlineage_dataset() for o in outputs],
             run_facets=run_facets,
             job_facets=job_facets,
         )
