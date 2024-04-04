@@ -526,6 +526,10 @@ jobs:
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
           
+          # TODO remove, depend on client build in interfaces build
+          cd ../../client/java
+          ./gradlew --no-daemon --console=plain publishToMavenLocal
+
           ./gradlew --no-daemon --console=plain clean publishToMavenLocal -Pscala.binary.version=2.12
           ./gradlew --no-daemon --console=plain clean publishToMavenLocal -Pscala.binary.version=2.13
 
