@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.11.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.11.1...HEAD)
 
-## [1.11.0](https://github.com/OpenLineage/OpenLineage/compare/1.10.2...1.11.0) - 2024-04-04
+## [1.11.1](https://github.com/OpenLineage/OpenLineage/compare/1.10.2...1.11.1) - 2024-04-04
 
 ### Added
 * **Common: add support for `SCRIPT`-type jobs in BigQuery [`#2564`](https://github.com/OpenLineage/OpenLineage/pull/2564) [@kacpermuda](https://github.com/kacpermuda)  
