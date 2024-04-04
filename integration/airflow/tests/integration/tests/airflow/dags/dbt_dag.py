@@ -8,7 +8,7 @@ from airflow.operators.bash import BashOperator
 from airflow.utils.dates import days_ago
 from airflow.version import version as AIRFLOW_VERSION
 
-PLUGIN_MACRO = "{{ macros.OpenLineagePlugin.lineage_parent_id(task, task_instance) }}"
+PLUGIN_MACRO = "{{ macros.OpenLineagePlugin.lineage_parent_id(task_instance) }}"
 
 
 PROJECT_DIR = "/opt/data/dbt/testproject"
