@@ -382,23 +382,6 @@ def get_unknown_source_attribute_run_facet(task: "BaseOperator", name: Optional[
     }
 
 
-def get_unknown_source_attribute_run_facet(task: "BaseOperator", name: Optional[str] = None):
-    if not name:
-        name = get_operator_class(task).__name__
-    return {
-        "unknownSourceAttribute": attr.asdict(
-            UnknownOperatorAttributeRunFacet(
-                unknownItems=[
-                    UnknownOperatorInstance(
-                        name=name,
-                        properties=TaskInfo(task),
-                    )
-                ]
-            )
-        )
-    }
-
-
 def get_dagrun_start_end(dagrun: "DagRun", dag: "DAG"):
     try:
         return dagrun.data_interval_start, dagrun.data_interval_end
