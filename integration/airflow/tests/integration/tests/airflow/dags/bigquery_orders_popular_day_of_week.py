@@ -106,7 +106,10 @@ t5 = BigQueryExecuteQueryOperator(
 t6 = BigQueryExecuteQueryOperator(
     task_id="bigquery_insert",
     gcp_conn_id="bq_conn",
+    # Adding mock declare / set allows us to test SCRIPT type job lineage
     sql=f"""
+    DECLARE mock_var BOOL;
+    SET mock_var = false;
     INSERT INTO `{PROJECT_ID}.{DATASET_ID}.{PREFIX}popular_orders_day_of_week` (order_day_of_week, order_placed_on, orders_placed)
     SELECT EXTRACT(DAYOFWEEK FROM order_placed_on) AS order_day_of_week,
         order_placed_on,

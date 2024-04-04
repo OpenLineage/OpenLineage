@@ -1,9 +1,11 @@
 # Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
+import copy
 import json
 import logging
 import traceback
+import warnings
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import attr
@@ -89,7 +91,21 @@ class BigQueryStatisticsDatasetFacet(BaseFacet):
 class BigQueryFacets:
     run_facets: Dict[str, BaseFacet] = attr.ib()
     inputs: List[Dataset] = attr.ib()
-    output: Optional[Dataset] = attr.ib(default=None)
+    outputs: List[Dataset] = attr.ib()
+    _output: Optional[Dataset] = attr.ib(default=None)
+
+    @property
+    def output(self) -> Optional[Dataset]:
+        warnings.warn(
+            "The 'output' attribute will be removed in a future version. Use 'outputs' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._output
+
+    @output.setter
+    def output(self, value: Optional[Dataset]) -> None:
+        self._output = value
 
 
 class BigQueryDatasetsProvider:
@@ -106,27 +122,33 @@ class BigQueryDatasetsProvider:
 
     def get_facets(self, job_id: str) -> BigQueryFacets:
         inputs = []
-        output = None
-        run_facets = {}
+        outputs = []
+        run_facets: Dict[str, BaseFacet] = {
+            "externalQuery": ExternalQueryRunFacet(externalQueryId=job_id, source="bigquery")
+        }
+        self.logger.debug("Extracting data from bigquery job: `%s`", job_id)
         try:
             try:
                 job = self.client.get_job(job_id=job_id)  # type: ignore
                 props = job._properties
 
-                run_stat_facet, dataset_stat_facet = self._get_output_statistics(props)
+                if get_from_nullable_chain(props, ["status", "state"]) != "DONE":
+                    raise ValueError(f"Trying to extract data from running bigquery job: `{job_id}`")
 
-                run_facets.update(
-                    {
-                        "bigQuery_job": run_stat_facet,
-                        "externalQuery": ExternalQueryRunFacet(externalQueryId=job_id, source="bigquery"),
-                    }
-                )
-                inputs = self._get_input_from_bq(props)
-                output = self._get_output_from_bq(props)
-                if output and dataset_stat_facet:
-                    output.custom_facets.update({"stats": dataset_stat_facet})
-                    output.output_facets.update({"outputStatistics": dataset_stat_facet.to_openlineage()})
+                run_facets["bigQuery_job"] = self._get_job_run_facet(props)
 
+                if get_from_nullable_chain(props, ["statistics", "numChildJobs"]):
+                    self.logger.debug("Found SCRIPT job. Extracting lineage from child jobs instead.")
+                    # SCRIPT job type has no input / output information but spawns child jobs that have one
+                    # https://cloud.google.com/bigquery/docs/information-schema-jobs#multi-statement_query_job
+                    for child_job_id in self.client.list_jobs(parent_job=job_id):
+                        child_job = self.client.get_job(job_id=child_job_id)  # type: ignore
+                        child_inputs, child_output = self._get_input_output(child_job._properties)
+                        inputs.extend(child_inputs)
+                        outputs.append(child_output)
+                else:
+                    inputs, _output = self._get_input_output(props)
+                    outputs.append(_output)
             finally:
                 # Ensure client has close() defined, otherwise ignore.
                 # NOTE: close() was introduced in python-bigquery v1.23.0
@@ -141,40 +163,75 @@ class BigQueryDatasetsProvider:
                     )
                 }
             )
-        return BigQueryFacets(run_facets, inputs, output)
+        outputs = self._deduplicate_outputs(outputs)
+        # For complex scripts there can be multiple outputs - in that case keep them all in `outputs` and
+        # leave the `output` empty to avoid providing misleading information. When the script has a single
+        # output (f.e. a single statement with some variable declarations), treat it as a regular non-script
+        # job and put the output in `output` as an addition to new `outputs`. `output` is deprecated.
+        return BigQueryFacets(
+            run_facets=run_facets,
+            inputs=list({i.name: i for i in inputs if i}.values()),
+            outputs=outputs,
+            output=outputs[0] if len(outputs) == 1 else None,
+        )
 
-    def _get_output_statistics(
-        self, properties
-    ) -> Tuple[BigQueryJobRunFacet, Optional[BigQueryStatisticsDatasetFacet]]:
-        stages = get_from_nullable_chain(properties, ["statistics", "query", "queryPlan"])
-        json_props = json.dumps(properties)
+    @staticmethod
+    def _deduplicate_outputs(outputs) -> List[Dataset]:
+        # Sources are the same so we can compare only names
+        final_outputs = {}
+        for single_output in outputs:
+            if not single_output:
+                continue
+            key = single_output.name
+            if key not in final_outputs:
+                final_outputs[key] = single_output
+                continue
 
-        if not stages:
-            if get_from_nullable_chain(properties, ["statistics", "query", "statementType"]) in [
-                "CREATE_VIEW",
-                "CREATE_TABLE",
-                "ALTER_TABLE",
-            ]:
-                return BigQueryJobRunFacet(cached=False), None
+            # No BigQueryStatisticsDatasetFacet is added to duplicated outputs as we can not determine
+            # if the rowCount or size can be summed together.
+            single_output.custom_facets.pop("stats", None)
+            single_output.output_facets.pop("outputStatistics", None)
+            final_outputs[key] = single_output
 
-            # we're probably getting cached results
-            if get_from_nullable_chain(properties, ["statistics", "query", "cacheHit"]):
-                return BigQueryJobRunFacet(cached=True), None
-            if get_from_nullable_chain(properties, ["status", "state"]) != "DONE":
-                raise ValueError("Trying to extract data from running bigquery job")
-            raise ValueError(f"BigQuery properties did not have required data: queryPlan - {json_props}")
+        return list(final_outputs.values())
 
-        out_stage = stages[-1]
-        out_rows = out_stage.get("recordsWritten", None)
-        out_bytes = out_stage.get("shuffleOutputBytes", None)
+    def _get_input_output(self, properties) -> Tuple[List[Dataset], Optional[Dataset]]:
+        dataset_stat_facet = self._get_statistics_dataset_facet(properties)
+        inputs = self._get_input_from_bq(properties)
+        output = self._get_output_from_bq(properties)
+
+        if output and dataset_stat_facet:
+            output.custom_facets.update({"stats": dataset_stat_facet})
+            output.output_facets.update({"outputStatistics": dataset_stat_facet.to_openlineage()})
+
+        return inputs, output
+
+    @staticmethod
+    def _get_job_run_facet(properties) -> BigQueryJobRunFacet:
+        if get_from_nullable_chain(properties, ["configuration", "query", "query"]):
+            # Exclude the query to avoid event size issues and duplicating SqlJobFacet information.
+            properties = copy.deepcopy(properties)
+            properties["configuration"]["query"].pop("query")
+        cache_hit = get_from_nullable_chain(properties, ["statistics", "query", "cacheHit"])
         billed_bytes = get_from_nullable_chain(properties, ["statistics", "query", "totalBytesBilled"])
         return BigQueryJobRunFacet(
-            cached=False,
+            cached=str(cache_hit).lower() == "true",
             billedBytes=int(billed_bytes) if billed_bytes else None,
-            properties=json_props,
-        ), BigQueryStatisticsDatasetFacet(
-            rowCount=int(out_rows), size=int(out_bytes)
-        ) if out_bytes and out_rows else None
+            properties=json.dumps(properties),
+        )
+
+    @staticmethod
+    def _get_statistics_dataset_facet(properties) -> Optional[BigQueryStatisticsDatasetFacet]:
+        query_plan = get_from_nullable_chain(properties, ["statistics", "query", "queryPlan"])
+        if not query_plan:
+            return None
+
+        out_stage = query_plan[-1]
+        out_rows = out_stage.get("recordsWritten", None)
+        out_bytes = out_stage.get("shuffleOutputBytes", None)
+        if out_bytes and out_rows:
+            return BigQueryStatisticsDatasetFacet(rowCount=int(out_rows), size=int(out_bytes))
+        return None
 
     def _get_input_from_bq(self, properties):
         bq_input_tables = get_from_nullable_chain(properties, ["statistics", "query", "referencedTables"])
