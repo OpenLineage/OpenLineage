@@ -18,6 +18,8 @@
   *Fix `ClassNotFoundError` occurring on databricks runtime, extend integration test to verify `DatabricksEnvironmentFacet`.*
 * **Spark: fixed memory leak in JobMetricsHolder.** [`#2565`](https://github.com/OpenLineage/OpenLineage/pull/2565) [@d-m-h](https://github.com/d-m-h)
   *The JobMetricsHolder#cleanUp(int) method now correctly purges unneeded state from both maps.*
+* **Spark: fixed memory leak in `UnknownEntryFacetListener`.** [`#2557`](https://github.com/OpenLineage/OpenLineage/pull/2557) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Prevent storing state when facet is disabled, purge the state after populating run facets.*
 
 ## [1.10.2](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...1.10.2) - 2024-03-15
 

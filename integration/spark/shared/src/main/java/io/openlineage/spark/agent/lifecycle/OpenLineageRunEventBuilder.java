@@ -330,6 +330,7 @@ class OpenLineageRunEventBuilder {
                     .timer("openlineage.spark.unknownFacet.time")
                     .record(() -> unknownEntryFacetListener.build(qe.optimizedPlan())))
         .ifPresent(facet -> runFacetsBuilder.put("spark_unknown", facet));
+    unknownEntryFacetListener.clear();
 
     RunFacets runFacets = buildRunFacets(nodes, runFacetBuilders, runFacetsBuilder);
     OpenLineage.RunBuilder runBuilder =
