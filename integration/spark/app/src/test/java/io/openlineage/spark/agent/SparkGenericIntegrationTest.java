@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.UnknownEntryFacetListener;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -114,6 +115,9 @@ public class SparkGenericIntegrationTest {
                     })
                 .collect(Collectors.toSet()))
         .hasSize(1);
+
+    // test UnknownEntryFacetListener clears its static list of visited nodes
+    assertThat(UnknownEntryFacetListener.getInstance().getVisitedNodesSize()).isEqualTo(0);
   }
 
   @Test
