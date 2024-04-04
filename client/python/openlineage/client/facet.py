@@ -145,10 +145,11 @@ class DataSourceDatasetFacet(BaseFacet):
 
 @attr.s
 class OutputStatisticsOutputDatasetFacet(BaseFacet):
-    rowCount: int = attr.ib()  # noqa: N815
+    rowCount: Optional[int] = attr.ib(default=None)  # noqa: N815
     size: Optional[int] = attr.ib(default=None)
+    fileCount: Optional[int] = attr.ib(default=None)  # noqa: N815
 
-    _additional_skip_redact: ClassVar[List[str]] = ["rowCount", "size"]
+    _additional_skip_redact: ClassVar[List[str]] = ["rowCount", "size", "fileCount"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -170,6 +171,7 @@ class ColumnMetric:
 class DataQualityMetricsInputDatasetFacet(BaseFacet):
     rowCount: Optional[int] = attr.ib(default=None)  # noqa: N815
     bytes: Optional[int] = attr.ib(default=None)  # noqa: A003
+    fileCount: Optional[int] = attr.ib(default=None)  # noqa: N815
     columnMetrics: Dict[str, ColumnMetric] = attr.ib(factory=dict)  # noqa: N815
 
     @staticmethod

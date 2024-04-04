@@ -227,6 +227,7 @@ class OpenLineageTest {
                             ol.newDataQualityMetricsInputDatasetFacetBuilder()
                                 .rowCount(10L)
                                 .bytes(20L)
+                                .fileCount(5L)
                                 .columnMetrics(
                                     ol.newDataQualityMetricsInputDatasetFacetColumnMetricsBuilder()
                                         .put(
@@ -258,7 +259,12 @@ class OpenLineageTest {
                         .build())
                 .outputFacets(
                     ol.newOutputDatasetOutputFacetsBuilder()
-                        .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10L, 20L))
+                        .outputStatistics(
+                            ol.newOutputStatisticsOutputDatasetFacetBuilder()
+                                .rowCount(10L)
+                                .size(20L)
+                                .fileCount(5L)
+                                .build())
                         .build())
                 .build());
 
@@ -296,6 +302,7 @@ class OpenLineageTest {
           inputDataset.getInputFacets().getDataQualityMetrics();
       assertEquals((Long) 10L, dq.getRowCount());
       assertEquals((Long) 20L, dq.getBytes());
+      assertEquals((Long) 5L, dq.getFileCount());
       DataQualityMetricsInputDatasetFacetColumnMetricsAdditional colMetrics =
           dq.getColumnMetrics().getAdditionalProperties().get("mycol");
       assertEquals((Double) 10D, colMetrics.getCount());
@@ -315,6 +322,7 @@ class OpenLineageTest {
       assertEquals(roundTrip(json), roundTrip(mapper.writeValueAsString(read)));
       assertEquals((Long) 10L, outputDataset.getOutputFacets().getOutputStatistics().getRowCount());
       assertEquals((Long) 20L, outputDataset.getOutputFacets().getOutputStatistics().getSize());
+      assertEquals((Long) 5L, outputDataset.getOutputFacets().getOutputStatistics().getFileCount());
 
       assertEquals(json, mapper.writeValueAsString(read));
     }

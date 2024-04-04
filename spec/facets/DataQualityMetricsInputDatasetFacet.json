@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-0/DataQualityMetricsInputDatasetFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-0-1/DataQualityMetricsInputDatasetFacet.json",
   "$defs": {
     "DataQualityMetricsInputDatasetFacet": {
       "allOf": [
@@ -17,6 +17,10 @@
             },
             "bytes": {
               "description": "The size in bytes",
+              "type": "integer"
+            },
+            "fileCount": {
+              "description": "The number of files evaluated",
               "type": "integer"
             },
             "columnMetrics": {
