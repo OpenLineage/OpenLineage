@@ -5,6 +5,8 @@
 ## [1.11.0](https://github.com/OpenLineage/OpenLineage/compare/1.10.2...1.11.0) - 2024-04-04
 
 ### Added
+* **Common: add support for `SCRIPT`-type jobs in BigQuery [`#2564`](https://github.com/OpenLineage/OpenLineage/pull/2564) [@kacpermuda](https://github.com/kacpermuda)  
+    *In the case of `SCRIPT`-type jobs in BigQuery, no lineage was being extracted because the `SCRIPT` job had no lineage information - it only spawned child jobs that had that information. With this change, the integration extracts lineage information from child jobs when dealing with `SCRIPT`-type jobs.
 * **Spark: support for built-in lineage extraction** [`#2272`](https://github.com/OpenLineage/OpenLineage/pull/2272) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *This PR adds a `spark-interfaces-scala` package that allows lineage extraction to be implemented within Spark extensions (Iceberg, Delta, GCS, etc.). The Openlineage integration, when traversing the query plan, verifies if nodes implement defined interfaces. If so, interface methods are used to extract lineage. Refer to the [README](https://github.com/OpenLineage/OpenLineage/tree/spark/built-in-lineage/integration/spark-interfaces-scala#readme) for more details.*
 * **Spark/Java: add support for Micrometer metrics** [`#2496`](https://github.com/OpenLineage/OpenLineage/pull/2496) [@mobuchowski](https://github.com/mobuchowski)  
