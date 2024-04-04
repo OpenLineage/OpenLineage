@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
@@ -119,6 +120,7 @@ class LogicalRelationDatasetBuilderTest {
             .sparkContext(mock(SparkContext.class))
             .openLineage(openLineage)
             .queryExecution(qe)
+            .meterRegistry(new SimpleMeterRegistry())
             .build();
     LogicalRelationDatasetBuilder visitor =
         new LogicalRelationDatasetBuilder<>(
