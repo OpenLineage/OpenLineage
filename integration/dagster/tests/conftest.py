@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from openlineage.dagster import __version__ as OPENLINEAGE_DAGSTER_VERSION
-from pkg_resources import parse_version
+from packaging.version import Version
 
 from dagster import (
     DagsterEvent,
@@ -200,13 +200,13 @@ def _make_dagster_event(event_type: DagsterEventType, pipeline_name: str, step_k
 def make_pipeline_run_with_external_pipeline_origin(
     repository_name: str,
 ):
-    parsed_dagster_version = parse_version(DAGSTER_VERSION)
+    parsed_dagster_version = Version(DAGSTER_VERSION)
     dagster_run_provider: DagsterRunProvider = None
-    if not dagster_run_provider and parsed_dagster_version <= parse_version("1.2.2"):
+    if not dagster_run_provider and parsed_dagster_version <= Version("1.2.2"):
         dagster_run_provider = DagsterRunLE1_2_2Provider()
-    if not dagster_run_provider and parsed_dagster_version <= parse_version("1.3.2"):
+    if not dagster_run_provider and parsed_dagster_version <= Version("1.3.2"):
         dagster_run_provider = DagsterRunLE1_3_2Provider()
-    if not dagster_run_provider and parsed_dagster_version <= parse_version("1.6.9"):
+    if not dagster_run_provider and parsed_dagster_version <= Version("1.6.9"):
         dagster_run_provider = DagsterRunLE1_6_9Provider()
     if not dagster_run_provider:
         dagster_run_provider = DagsterRunLatestProvider()

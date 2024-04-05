@@ -1,7 +1,7 @@
 # Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 from openlineage.client import set_producer
-from pkg_resources import parse_version
+from packaging.version import Version
 
 from airflow import DAG
 from airflow.providers.postgres.operators.postgres import PostgresOperator
@@ -33,7 +33,7 @@ dag = DAG(
 sql = "DROP POLICY IF EXISTS name ON table_name"
 
 
-if parse_version(AIRFLOW_VERSION) < parse_version("2.5.0"):
+if Version(AIRFLOW_VERSION) < Version("2.5.0"):
     t1 = PostgresOperator(task_id="fail", postgres_conn_id="food_delivery_db", sql=sql, dag=dag)
 else:
     from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator

@@ -29,6 +29,7 @@ dependencies = [
   "python-dateutil>=2.8.2",
   "pyyaml>=5.4",
   "requests>=2.20.0",
+  "packaging>=21.0",
 ]
 optional-dependencies.kafka = [
   "confluent-kafka>=2.1.1",
