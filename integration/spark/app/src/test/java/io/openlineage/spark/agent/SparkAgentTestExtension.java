@@ -15,6 +15,7 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Arrays;
@@ -59,7 +60,8 @@ public class SparkAgentTestExtension
     when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationJobName()).thenReturn("test_rdd");
 
     OpenLineageSparkListener.init(
-        new StaticExecutionContextFactory(EVENT_EMITTER, new SimpleMeterRegistry()));
+        new StaticExecutionContextFactory(
+            EVENT_EMITTER, new SimpleMeterRegistry(), new SparkOpenLineageConfig()));
   }
 
   @Override
@@ -163,6 +165,7 @@ public class SparkAgentTestExtension
         .openLineage(openLineage)
         .customEnvironmentVariables(Arrays.asList("TEST_VAR"))
         .meterRegistry(new SimpleMeterRegistry())
+        .openLineageConfig(new SparkOpenLineageConfig())
         .build();
   }
 }

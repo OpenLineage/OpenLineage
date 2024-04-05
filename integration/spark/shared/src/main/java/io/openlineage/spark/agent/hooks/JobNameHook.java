@@ -17,13 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class JobNameHook implements RunEventBuilderHook {
-
-  public static final String SPARK_CONF_JOB_NAME_APPEND_DATASET_NAME =
-      "spark.openlineage.jobName.appendDatasetName";
-
-  public static final String SPARK_CONF_JOB_NAME_REPLACE_DOT_WITH_UNDERSCORE =
-      "spark.openlineage.jobName.replaceDotWithUnderscore";
-
   private static final String JOB_NAME_PARTS_SEPARATOR = ".";
   private static final String INNER_SEPARATOR = "_";
 
@@ -36,13 +29,8 @@ public class JobNameHook implements RunEventBuilderHook {
   @Override
   public void preBuild(OpenLineage.RunEventBuilder runEventBuilder) {
     if (openLineageContext != null
-        && openLineageContext.getSparkContext() != null
-        && openLineageContext.getSparkContext().conf() != null
-        && !Boolean.valueOf(
-            openLineageContext
-                .getSparkContext()
-                .conf()
-                .get(SPARK_CONF_JOB_NAME_APPEND_DATASET_NAME, "true"))) {
+        && openLineageContext.getOpenLineageConfig() != null
+        && !openLineageContext.getOpenLineageConfig().getJobName().getAppendDatasetName()) {
       return;
     }
 
@@ -89,13 +77,8 @@ public class JobNameHook implements RunEventBuilderHook {
     String jobName = jobNameBuilder.toString();
 
     if (openLineageContext != null
-        && openLineageContext.getSparkContext() != null
-        && openLineageContext.getSparkContext().conf() != null
-        && Boolean.valueOf(
-            openLineageContext
-                .getSparkContext()
-                .conf()
-                .get(SPARK_CONF_JOB_NAME_REPLACE_DOT_WITH_UNDERSCORE, "false"))) {
+        && openLineageContext.getOpenLineageConfig() != null
+        && openLineageContext.getOpenLineageConfig().getJobName().getReplaceDotWithUnderscore()) {
       // replace dots with underscore to get consistent with legacy databricks integration
       // switched off by default
       jobName = jobName.replace(".", "_");

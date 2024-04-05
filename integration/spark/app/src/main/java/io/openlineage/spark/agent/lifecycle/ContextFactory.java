@@ -11,6 +11,7 @@ import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.Vendors;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
@@ -28,11 +29,16 @@ public class ContextFactory {
 
   public final EventEmitter openLineageEventEmitter;
   @Getter private final MeterRegistry meterRegistry;
+  @Getter private final SparkOpenLineageConfig config;
   private final OpenLineageEventHandlerFactory handlerFactory;
 
-  public ContextFactory(EventEmitter openLineageEventEmitter, MeterRegistry meterRegistry) {
+  public ContextFactory(
+      EventEmitter openLineageEventEmitter,
+      MeterRegistry meterRegistry,
+      SparkOpenLineageConfig config) {
     this.openLineageEventEmitter = openLineageEventEmitter;
     this.meterRegistry = meterRegistry;
+    this.config = config;
     handlerFactory = new InternalEventHandlerFactory();
   }
 
@@ -59,6 +65,7 @@ public class ContextFactory {
                     .orElse(Collections.emptyList()))
             .vendors(Vendors.getVendors())
             .meterRegistry(meterRegistry)
+            .openLineageConfig(config)
             .build();
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, handlerFactory);
@@ -85,6 +92,7 @@ public class ContextFactory {
                               .orElse(Collections.emptyList()))
                       .vendors(Vendors.getVendors())
                       .meterRegistry(meterRegistry)
+                      .openLineageConfig(config)
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, handlerFactory);

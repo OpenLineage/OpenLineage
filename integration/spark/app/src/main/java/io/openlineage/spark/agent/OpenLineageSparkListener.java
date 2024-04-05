@@ -15,7 +15,7 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineageYaml;
+import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
 import io.openlineage.client.circuitBreaker.NoOpCircuitBreaker;
@@ -24,6 +24,7 @@ import io.openlineage.client.utils.RuntimeUtils;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -331,24 +332,23 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       return;
     }
     try {
-      ArgumentParser args = ArgumentParser.parse(sparkConf);
+      SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
       // Needs to be done before initializing OpenLineageClient
-      initializeMetrics(args.getOpenLineageYaml());
-      contextFactory = new ContextFactory(new EventEmitter(args, appName), meterRegistry);
-      circuitBreaker =
-          new CircuitBreakerFactory(args.getOpenLineageYaml().getCircuitBreaker()).build();
+      initializeMetrics(config);
+      contextFactory = new ContextFactory(new EventEmitter(config, appName), meterRegistry, config);
+      circuitBreaker = new CircuitBreakerFactory(config.getCircuitBreaker()).build();
     } catch (URISyntaxException e) {
       log.error("Unable to parse open lineage endpoint. Lineage events will not be collected", e);
     }
   }
 
-  private static void initializeMetrics(OpenLineageYaml openLineageYaml) {
+  private static void initializeMetrics(OpenLineageConfig openLineageConfig) {
     meterRegistry =
-        MicrometerProvider.addMeterRegistryFromConfig(openLineageYaml.getMetricsConfig());
+        MicrometerProvider.addMeterRegistryFromConfig(openLineageConfig.getMetricsConfig());
     String disabledFacets;
-    if (openLineageYaml.getFacetsConfig() != null
-        && openLineageYaml.getFacetsConfig().getDisabledFacets() != null) {
-      disabledFacets = String.join(";", openLineageYaml.getFacetsConfig().getDisabledFacets());
+    if (openLineageConfig.getFacetsConfig() != null
+        && openLineageConfig.getFacetsConfig().getDisabledFacets() != null) {
+      disabledFacets = String.join(";", openLineageConfig.getFacetsConfig().getDisabledFacets());
     } else {
       disabledFacets = "";
     }

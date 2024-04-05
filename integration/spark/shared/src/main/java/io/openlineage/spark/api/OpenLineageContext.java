@@ -129,4 +129,10 @@ public class OpenLineageContext {
 
   /** Already set up MeterRegistry to use in ExecutionContext and Visitors */
   @NonNull @Getter final MeterRegistry meterRegistry;
+
+  /**
+   * Config container containing config entries from both SparkConf as well as openlineage.yaml
+   * file. All the configuration should be read from this object.
+   */
+  @NonNull @Getter final SparkOpenLineageConfig openLineageConfig;
 }

@@ -21,6 +21,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Arrays;
@@ -46,6 +47,7 @@ class ReplaceIcebergDataDatasetBuilderTest {
           .sparkContext(mock(SparkContext.class))
           .openLineage(openLineage)
           .meterRegistry(new SimpleMeterRegistry())
+          .openLineageConfig(new SparkOpenLineageConfig())
           .build();
 
   ReplaceIcebergDataDatasetBuilder builder =

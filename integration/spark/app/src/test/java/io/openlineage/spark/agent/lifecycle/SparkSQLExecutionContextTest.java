@@ -24,6 +24,7 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Optional;
 import java.util.UUID;
 import org.apache.spark.scheduler.JobFailed;
@@ -65,6 +66,7 @@ class SparkSQLExecutionContextTest {
   void setup() {
     when(olContext.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(olContext.getOpenLineage()).thenReturn(openLineage);
+    when(olContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
     when(olContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
     when(eventEmitter.getOverriddenAppName()).thenReturn(Optional.of("app-name"));
     when(queryExecution.executedPlan().nodeName()).thenReturn("some-node-name");

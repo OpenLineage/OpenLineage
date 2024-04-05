@@ -5,16 +5,24 @@
 
 package io.openlineage.client.transports;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.openlineage.client.MergeConfig;
 import java.util.Properties;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
 @ToString
-public final class KafkaConfig implements TransportConfig {
+@AllArgsConstructor
+public final class KafkaConfig implements TransportConfig, MergeConfig<KafkaConfig> {
   @Getter @Setter private String topicName;
   @Getter @Setter private String messageKey;
-  @Getter @Setter private Properties properties;
+
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  @Getter
+  @Setter
+  private Properties properties;
 
   KafkaConfig() {
     properties = new Properties();
@@ -40,5 +48,16 @@ public final class KafkaConfig implements TransportConfig {
   @Deprecated
   void setLocalServerId(String localServerId) {
     this.messageKey = localServerId;
+  }
+
+  @Override
+  public KafkaConfig mergeWithNonNull(io.openlineage.client.transports.KafkaConfig other) {
+    Properties p = new Properties();
+    p.putAll(mergePropertyWith(properties, other.properties));
+
+    return new KafkaConfig(
+        mergePropertyWith(topicName, other.topicName),
+        mergePropertyWith(messageKey, other.messageKey),
+        p);
   }
 }

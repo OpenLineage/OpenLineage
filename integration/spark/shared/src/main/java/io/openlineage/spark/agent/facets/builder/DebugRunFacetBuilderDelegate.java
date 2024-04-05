@@ -58,7 +58,7 @@ public class DebugRunFacetBuilderDelegate {
   private SparkConfigDebugFacet buildSparkConfigDebugFacet() {
     return SparkConfigDebugFacet.builder()
         .extraListeners(getSparkConfOrNull("spark.extraListeners"))
-        .openLineageConfig(getOpenLineageConfig())
+        .openLineageConfig(olContext.getOpenLineageConfig())
         .catalogClass(getCatalogClass())
         .extensions(getSparkConfOrNull("spark.sql.extensions"))
         .build();

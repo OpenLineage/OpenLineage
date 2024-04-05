@@ -141,8 +141,7 @@ javadoc {
         logging.removeStandardOutputListener(listener)
         logging.removeStandardErrorListener(listener)
         capturedOutput.each { e ->
-            if(e.toString() =~ " warning: " && !(e.toString() =~ "Config.java")) {
-                // doesn't count *Config.java classes with use failing `@with` annotation
+            if(e.toString() =~ " warning: ") {
                 throw new GradleException("You have some javadoc warnings, please fix them!");
             }
         }

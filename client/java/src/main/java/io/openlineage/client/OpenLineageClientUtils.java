@@ -202,18 +202,21 @@ public final class OpenLineageClientUtils {
    * </ol>
    *
    * @param configPathProvider Provides the paths where the configuration files can be found.
-   * @return An instance of {@link OpenLineageYaml} containing the parsed configuration.
+   * @param valueTypeRef The type to convert the JSON string into.
+   * @return An instance of {@link OpenLineageConfig} containing the parsed configuration.
    * @throws OpenLineageClientException According to the rules defined above.
+   * @param <T> generic type of merged config
    */
   @SuppressWarnings("PMD.AvoidCatchingNPE")
-  public static OpenLineageYaml loadOpenLineageYaml(ConfigPathProvider configPathProvider)
+  public static <T extends OpenLineageConfig> T loadOpenLineageConfigYaml(
+      ConfigPathProvider configPathProvider, TypeReference<T> valueTypeRef)
       throws OpenLineageClientException {
     try {
       Objects.requireNonNull(configPathProvider);
       List<Path> paths = configPathProvider.getPaths();
       for (final Path path : paths) {
         if (Files.exists(path)) {
-          return YML.readValue(path.toFile(), OpenLineageYaml.class);
+          return YML.readValue(path.toFile(), valueTypeRef);
         }
       }
       String concatenatedPaths =
@@ -234,19 +237,21 @@ public final class OpenLineageClientUtils {
    * Loads and parses OpenLineage YAML configuration from an {@link InputStream}.
    *
    * @param inputStream The {@link InputStream} from which to load the configuration.
-   * @return An instance of {@link OpenLineageYaml} containing the parsed YAML configuration.
+   * @param valueTypeRef The type to convert the JSON string into.
+   * @return An instance of {@link OpenLineageConfig} containing the parsed YAML configuration.
    * @throws OpenLineageClientException If an error occurs while reading or parsing the
    *     configuration.
+   * @param <T> generic type of merged config
    */
-  public static OpenLineageYaml loadOpenLineageYaml(InputStream inputStream)
-      throws OpenLineageClientException {
+  public static <T extends OpenLineageConfig> T loadOpenLineageConfigYaml(
+      InputStream inputStream, TypeReference<T> valueTypeRef) throws OpenLineageClientException {
     try {
-      return deserializeInputStream(YML, inputStream);
+      return deserializeInputStream(YML, inputStream, valueTypeRef);
     } catch (IOException e) {
       log.warn("Error deserializing OpenLineage YAML, falling back to JSON", e);
       // Some clients may actually pass in a JSON, because of how this method used to operate
       // So, we'll use OpenLineageClientUtils#loadOpenLineageJson(InputStream) as a fallback
-      return loadOpenLineageJson(inputStream);
+      return loadOpenLineageConfigJson(inputStream, valueTypeRef);
     }
   }
 
@@ -254,30 +259,34 @@ public final class OpenLineageClientUtils {
    * Loads and parses OpenLineage JSON configuration from an {@link InputStream}.
    *
    * @param inputStream The {@link InputStream} from which to load the configuration.
-   * @return An instance of {@link OpenLineageYaml} containing the parsed JSON configuration.
+   * @param valueTypeRef The type to convert the JSON string into.
+   * @return An instance of {@link OpenLineageConfig} containing the parsed JSON configuration.
    * @throws OpenLineageClientException If an error occurs while reading or parsing the
    *     configuration.
+   * @param <T> generic type of merged config
    */
-  public static OpenLineageYaml loadOpenLineageJson(InputStream inputStream)
-      throws OpenLineageClientException {
+  public static <T extends OpenLineageConfig> T loadOpenLineageConfigJson(
+      InputStream inputStream, TypeReference<T> valueTypeRef) throws OpenLineageClientException {
     try {
-      return deserializeInputStream(JSON, inputStream);
+      return deserializeInputStream(JSON, inputStream, valueTypeRef);
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
     }
   }
 
   /**
-   * Internal method to deserialize an {@link InputStream} into an {@link OpenLineageYaml} instance,
-   * using the specified {@link ObjectMapper} for either JSON or YAML.
+   * Internal method to deserialize an {@link InputStream} into an {@link OpenLineageConfig}
+   * instance, using the specified {@link ObjectMapper} for either JSON or YAML.
    *
    * @param deserializer The {@link ObjectMapper} to use for deserialization.
    * @param inputStream The {@link InputStream} containing the configuration data.
-   * @return An instance of {@link OpenLineageYaml}.
+   * @return An instance of {@link OpenLineageConfig}
    * @throws IOException If an error occurs while reading or parsing the configuration.
+   * @param <T> generic type of merged config
    */
-  private static OpenLineageYaml deserializeInputStream(
-      ObjectMapper deserializer, InputStream inputStream) throws IOException {
-    return deserializer.readValue(inputStream, OpenLineageYaml.class);
+  private static <T extends OpenLineageConfig> T deserializeInputStream(
+      ObjectMapper deserializer, InputStream inputStream, TypeReference<T> valueTypeRef)
+      throws IOException {
+    return deserializer.readValue(inputStream, valueTypeRef);
   }
 }

@@ -17,6 +17,7 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
 import java.util.Collections;
 import org.apache.spark.SparkContext;
@@ -45,6 +46,7 @@ class CreateReplaceInputDatasetBuilderTest {
           .sparkContext(mock(SparkContext.class))
           .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
           .meterRegistry(new SimpleMeterRegistry())
+          .openLineageConfig(new SparkOpenLineageConfig())
           .build();
   CreateReplaceInputDatasetBuilder builder =
       new CreateReplaceInputDatasetBuilder(openLineageContext);

@@ -9,7 +9,7 @@ import io.openlineage.client.Clients;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
-import io.openlineage.client.OpenLineageYaml;
+import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.transports.TransportFactory;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,12 +30,12 @@ public class EventEmitter {
   public static final String OPEN_LINEAGE_SCHEMA_FACET_URI =
       "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/SchemaDatasetFacet";
 
-  public EventEmitter(OpenLineageYaml openLineageYaml) {
-    if (openLineageYaml.getTransportConfig() != null) {
+  public EventEmitter(OpenLineageConfig openLineageConfig) {
+    if (openLineageConfig.getTransportConfig() != null) {
       // build emitter client based on flink configuration
       this.client =
           OpenLineageClient.builder()
-              .transport(new TransportFactory(openLineageYaml.getTransportConfig()).build())
+              .transport(new TransportFactory(openLineageConfig.getTransportConfig()).build())
               .build();
     } else {
       // build emitter default way - openlineage.yml file or system properties

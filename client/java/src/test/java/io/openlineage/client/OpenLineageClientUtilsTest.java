@@ -122,9 +122,10 @@ class OpenLineageClientUtilsTest {
 
     byte[] bytes = yamlString.getBytes(StandardCharsets.UTF_8);
 
-    OpenLineageYaml yaml =
-        OpenLineageClientUtils.loadOpenLineageYaml(new ByteArrayInputStream(bytes));
-    TransportConfig transportConfig = yaml.getTransportConfig();
+    OpenLineageConfig openLineageConfig =
+        OpenLineageClientUtils.loadOpenLineageConfigYaml(
+            new ByteArrayInputStream(bytes), new TypeReference<OpenLineageConfig>() {});
+    TransportConfig transportConfig = openLineageConfig.getTransportConfig();
     assertThat(transportConfig).isNotNull();
     assertThat(transportConfig).isInstanceOf(HttpConfig.class);
     HttpConfig httpConfig = (HttpConfig) transportConfig;
@@ -139,9 +140,10 @@ class OpenLineageClientUtilsTest {
         "{\"transport\":{\"type\":\"http\",\"url\":\"https://localhost:1234/api/v1/lineage\",\"compression\":\"gzip\"}}"
             .getBytes(StandardCharsets.UTF_8);
 
-    OpenLineageYaml yaml =
-        OpenLineageClientUtils.loadOpenLineageYaml(new ByteArrayInputStream(bytes));
-    TransportConfig transportConfig = yaml.getTransportConfig();
+    OpenLineageConfig openLineageConfig =
+        OpenLineageClientUtils.loadOpenLineageConfigYaml(
+            new ByteArrayInputStream(bytes), new TypeReference<OpenLineageConfig>() {});
+    TransportConfig transportConfig = openLineageConfig.getTransportConfig();
     assertThat(transportConfig).isNotNull();
     assertThat(transportConfig).isInstanceOf(HttpConfig.class);
     HttpConfig httpConfig = (HttpConfig) transportConfig;
@@ -155,9 +157,10 @@ class OpenLineageClientUtilsTest {
         "{\"transport\":{\"type\":\"http\",\"url\":\"https://localhost:1234/api/v1/lineage\",\"compression\":\"gzip\"}}"
             .getBytes(StandardCharsets.UTF_8);
 
-    OpenLineageYaml yaml =
-        OpenLineageClientUtils.loadOpenLineageJson(new ByteArrayInputStream(bytes));
-    TransportConfig transportConfig = yaml.getTransportConfig();
+    OpenLineageConfig openLineageConfig =
+        OpenLineageClientUtils.loadOpenLineageConfigJson(
+            new ByteArrayInputStream(bytes), new TypeReference<OpenLineageConfig>() {});
+    TransportConfig transportConfig = openLineageConfig.getTransportConfig();
     assertThat(transportConfig).isNotNull();
     assertThat(transportConfig).isInstanceOf(HttpConfig.class);
     HttpConfig httpConfig = (HttpConfig) transportConfig;

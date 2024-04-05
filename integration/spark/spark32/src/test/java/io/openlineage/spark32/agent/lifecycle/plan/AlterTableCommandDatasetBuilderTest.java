@@ -15,6 +15,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.HashMap;
@@ -44,6 +45,7 @@ class AlterTableCommandDatasetBuilderTest {
           .sparkContext(mock(SparkContext.class))
           .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
           .meterRegistry(new SimpleMeterRegistry())
+          .openLineageConfig(new SparkOpenLineageConfig())
           .build();
 
   TableCatalog tableCatalog = mock(TableCatalog.class);

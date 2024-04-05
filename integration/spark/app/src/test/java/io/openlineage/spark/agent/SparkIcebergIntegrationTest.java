@@ -365,7 +365,11 @@ class SparkIcebergIntegrationTest {
             "extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
 
     assertThat((Map<String, String>) configFacet.get("openLineageConfig"))
-        .containsKeys("namespace", "transport.type", "transport.url", "transport.endpoint");
+        .containsKeys("namespace");
+    assertThat(
+            (Map<String, String>)
+                ((Map<?, ?>) configFacet.get("openLineageConfig")).get("transport"))
+        .containsKeys("type", "url", "endpoint");
   }
 
   private Dataset<Row> createTempDataset() {

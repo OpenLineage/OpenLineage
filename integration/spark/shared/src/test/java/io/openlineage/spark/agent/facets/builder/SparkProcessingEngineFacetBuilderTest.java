@@ -12,6 +12,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -45,6 +46,7 @@ class SparkProcessingEngineFacetBuilderTest {
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .meterRegistry(new SimpleMeterRegistry())
+                .openLineageConfig(new SparkOpenLineageConfig())
                 .build());
     assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionEnd(1, 1L))).isTrue();
     assertThat(
@@ -70,6 +72,7 @@ class SparkProcessingEngineFacetBuilderTest {
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .meterRegistry(new SimpleMeterRegistry())
+                .openLineageConfig(new SparkOpenLineageConfig())
                 .build());
 
     Map<String, OpenLineage.RunFacet> runFacetMap = new HashMap<>();

@@ -13,6 +13,7 @@ import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -42,8 +43,9 @@ public class StaticExecutionContextFactory extends ContextFactory {
   public static final int NUM_PERMITS = 5;
   public static final Semaphore semaphore = new Semaphore(NUM_PERMITS);
 
-  public StaticExecutionContextFactory(EventEmitter eventEmitter, MeterRegistry meterRegistry) {
-    super(eventEmitter, meterRegistry);
+  public StaticExecutionContextFactory(
+      EventEmitter eventEmitter, MeterRegistry meterRegistry, SparkOpenLineageConfig config) {
+    super(eventEmitter, meterRegistry, config);
     try {
       semaphore.acquire(NUM_PERMITS);
     } catch (Exception e) {
@@ -113,6 +115,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
                       .customEnvironmentVariables(Arrays.asList("TEST_VAR"))
                       .queryExecution(qe)
                       .meterRegistry(getMeterRegistry())
+                      .openLineageConfig(new SparkOpenLineageConfig())
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory());

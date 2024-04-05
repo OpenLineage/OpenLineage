@@ -5,6 +5,7 @@
 
 package io.openlineage.client;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
 import io.openlineage.client.metrics.MicrometerProvider;
 import io.openlineage.client.transports.NoopTransport;
@@ -27,29 +28,30 @@ public final class Clients {
     if (isDisabled()) {
       return OpenLineageClient.builder().transport(new NoopTransport()).build();
     }
-    final OpenLineageYaml openLineageYaml =
-        OpenLineageClientUtils.loadOpenLineageYaml(configPathProvider);
-    return newClient(openLineageYaml);
+    final OpenLineageConfig openLineageConfig =
+        OpenLineageClientUtils.loadOpenLineageConfigYaml(
+            configPathProvider, new TypeReference<OpenLineageConfig>() {});
+    return newClient(openLineageConfig);
   }
 
-  public static OpenLineageClient newClient(OpenLineageYaml openLineageYaml) {
+  public static OpenLineageClient newClient(OpenLineageConfig openLineageConfig) {
     if (isDisabled()) {
       return OpenLineageClient.builder().transport(new NoopTransport()).build();
     }
-    final TransportFactory factory = new TransportFactory(openLineageYaml.getTransportConfig());
+    final TransportFactory factory = new TransportFactory(openLineageConfig.getTransportConfig());
     final Transport transport = factory.build();
     // ...
     OpenLineageClient.Builder builder = OpenLineageClient.builder();
 
-    if (openLineageYaml.getFacetsConfig() != null) {
-      builder.disableFacets(openLineageYaml.getFacetsConfig().getDisabledFacets());
+    if (openLineageConfig.getFacetsConfig() != null) {
+      builder.disableFacets(openLineageConfig.getFacetsConfig().getDisabledFacets());
     }
 
-    Optional.ofNullable(openLineageYaml.getCircuitBreaker())
+    Optional.ofNullable(openLineageConfig.getCircuitBreaker())
         .map(CircuitBreakerFactory::new)
         .ifPresent(f -> builder.circuitBreaker(f.build()));
 
-    Optional.ofNullable(openLineageYaml.getMetricsConfig())
+    Optional.ofNullable(openLineageConfig.getMetricsConfig())
         .map(MicrometerProvider::addMeterRegistryFromConfig)
         .ifPresent(builder::meterRegistry);
     return builder.transport(transport).build();
