@@ -57,7 +57,7 @@ public class DatasetIdentifierUtils {
   }
 
   private static String removeLastSlash(String name) {
-    if (name.charAt(name.length() - 1) == File.separatorChar) {
+    if (!name.isEmpty() && name.charAt(name.length() - 1) == File.separatorChar) {
       return name.substring(0, name.length() - 1);
     }
     return name;
