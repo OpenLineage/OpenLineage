@@ -44,7 +44,12 @@ class LineageProviderVisitorTest {
     OpenLineage.SchemaDatasetFacet schemaDatasetFacet =
         openLineage.newSchemaDatasetFacet(
             Collections.singletonList(
-                openLineage.newSchemaDatasetFacetFields("a", "INTEGER", "desc")));
+                openLineage
+                    .newSchemaDatasetFacetFieldsBuilder()
+                    .name("a")
+                    .type("INTEGER")
+                    .description("desc")
+                    .build()));
     ExampleLineageProvider provider =
         new ExampleLineageProvider("name", "namespace", schemaDatasetFacet);
 

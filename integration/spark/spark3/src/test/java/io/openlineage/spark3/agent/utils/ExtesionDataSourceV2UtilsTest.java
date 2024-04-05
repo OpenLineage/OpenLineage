@@ -88,7 +88,7 @@ public class ExtesionDataSourceV2UtilsTest {
         .isEqualTo("https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client");
     assertThat(datasetFacetsBuilder.build().getSchema().get_schemaURL().toString())
         .isEqualTo(
-            "https://openlineage.io/spec/facets/1-0-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet");
+            "https://openlineage.io/spec/facets/1-1-0/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet");
     assertThat(datasetFacetsBuilder.build().getSchema().getFields().get(0))
         .hasFieldOrPropertyWithValue("name", "user_id")
         .hasFieldOrPropertyWithValue("type", "int64");
@@ -104,7 +104,7 @@ public class ExtesionDataSourceV2UtilsTest {
             + "    },\n"
             + "    \"property4\": \"value4\","
             + "    \"_producer\": \"https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client\",\n"
-            + "    \"_schemaURL\": \"https://openlineage.io/spec/facets/1-0-0/SchemaDatasetFacet.json\"\n"
+            + "    \"_schemaURL\": \"https://openlineage.io/spec/facets/1-1-0/SchemaDatasetFacet.json\"\n"
             + "  }";
 
     properties.put("openlineage.dataset.facets.customFacet", facetJson);
@@ -127,7 +127,7 @@ public class ExtesionDataSourceV2UtilsTest {
     String facetJson =
         "{\n"
             + "    \"property\": \"value\","
-            + "    \"_schemaURL\": \"https://openlineage.io/spec/facets/1-0-0/SchemaDatasetFacet.json\"\n"
+            + "    \"_schemaURL\": \"https://openlineage.io/spec/facets/1-1-0/SchemaDatasetFacet.json\"\n"
             + "  }";
 
     properties.put("openlineage.dataset.facets.customFacet", facetJson);

@@ -46,7 +46,7 @@ import scala.collection.immutable.Map;
 
 class SaveIntoDataSourceCommandVisitorTest {
 
-  SaveIntoDataSourceCommand command = mock(SaveIntoDataSourceCommand.class);;
+  SaveIntoDataSourceCommand command = mock(SaveIntoDataSourceCommand.class);
   OpenLineageContext context = mock(OpenLineageContext.class);
   SaveIntoDataSourceCommandVisitor visitor = new SaveIntoDataSourceCommandVisitor(context);
   DatasetFactory datasetFactory = mock(DatasetFactory.class);
