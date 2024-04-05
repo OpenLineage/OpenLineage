@@ -4,6 +4,7 @@
 import typing
 
 from openlineage.airflow.adapter import _DAG_NAMESPACE, OpenLineageAdapter
+from openlineage.airflow.utils import get_job_name
 
 if typing.TYPE_CHECKING:
     from airflow.models import TaskInstance
@@ -49,7 +50,7 @@ def lineage_parent_id(task_instance: "TaskInstance"):
     return "/".join(
         [
             _DAG_NAMESPACE,
-            f"{task_instance.dag_id}.{task_instance.task.task_id}",
-            lineage_run_id(task_instance=task_instance),
+            get_job_name(task_instance),
+            lineage_run_id(task_instance),
         ]
     )
