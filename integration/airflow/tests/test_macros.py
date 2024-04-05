@@ -30,6 +30,7 @@ def test_lineage_parent_id():
     task_instance = mock.MagicMock(
         dag_id="dag_id",
         task=mock.MagicMock(task_id="task_id"),
+        task_id="task_id",
         execution_date="execution_date",
         try_number=1,
     )
