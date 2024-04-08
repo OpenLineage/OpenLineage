@@ -89,6 +89,8 @@ def deep_merge_dicts(dict1, dict2):
     For keys that exist in both dictionaries, the values from dict2 take precedence.
     If a key exists in both dictionaries and the values are dictionaries themselves,
     they are merged recursively.
+    This function merges only dictionaries. If key is of different type, e.g. list
+    it does not work properly.
     """
     merged = dict1.copy()
     for k, v in dict2.items():
@@ -213,7 +215,7 @@ def format_and_save_output(output: str, location: pathlib.Path):
 
     # run ruff lint
     with subprocess.Popen(
-        args=["ruff", tmpfile.name, "--fix"], stderr=subprocess.STDOUT, close_fds=True
+        args=["ruff", "check", tmpfile.name, "--fix"], stderr=subprocess.STDOUT, close_fds=True
     ) as lint_process:
         if lint_process.returncode:
             print(f"Ruff lint failed: {lint_process.returncode}")

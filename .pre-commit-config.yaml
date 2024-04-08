@@ -91,4 +91,4 @@ repos:
         files: ^spec/.*\.json$|^client/python/facets\.py$
         exclude: ^spec/tests/.*$
         pass_filenames: false
-        additional_dependencies: ["ruff==0.2.2", "click", "datamodel-code-generator==0.25.4"]
+        additional_dependencies: ["ruff==0.3.5", "click", "datamodel-code-generator==0.25.4"]

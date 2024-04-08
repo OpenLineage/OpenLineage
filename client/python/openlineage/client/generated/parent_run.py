@@ -39,6 +39,13 @@ class ParentRunFacet(RunFacet):
 
     @classmethod
     def create(cls, runId: str, namespace: str, name: str) -> ParentRunFacet:  # noqa: N803
+        import warnings
+
+        warnings.warn(
+            "ParentRunFacet.create method is deprecated. Please use class initializator instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return cls(run=Run(runId=runId), job=Job(namespace=namespace, name=name))
 
 
