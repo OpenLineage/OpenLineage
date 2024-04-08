@@ -225,26 +225,53 @@ To see an example of a working configuration, see [DAG](https://github.com/OpenL
 In addition to conventional logging approaches, the `openlineage-airflow` package provides an alternative way of configuring its logging behavior. By setting the `OPENLINEAGE_AIRFLOW_LOGGING` environment variable, you can establish the logging level for the `openlineage.airflow` and its child modules.
 
 ## Triggering Child Jobs
+
 Commonly, Airflow DAGs will trigger processes on remote systems, such as an Apache Spark or Apache
 Beam job. Those systems may have their own OpenLineage integrations and report their own
 job runs and dataset inputs/outputs. To propagate the job hierarchy, tasks must send their own run
 ids so that the downstream process can report the [ParentRunFacet](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#/definitions/ParentRunFacet)
 with the proper run id.
 
-The `lineage_run_id` and `lineage_parent_id` macros exists to inject the run id or whole parent run information
-of a given task into the arguments sent to a remote processing job's Airflow operator. The macro requires the 
-DAG `run_id` and the task to access the generated `run_id` for that task. For example, a Spark job can be triggered
-using the `DataProcPySparkOperator` with the correct parent `run_id` using the following configuration:
+These macros:
+  * `lineage_job_namespace()`
+  * `lineage_job_name(task_instance)`
+  * `lineage_run_id(task_instance)`
+
+allow injecting pieces of run information of a given Airflow task into the arguments sent to a remote processing job.
+For example, `SparkSubmitOperator` can be set up like this:
 
 ```python
-t1 = DataProcPySparkOperator(
-    task_id=job_name,
-    #required pyspark configuration,
-    job_name=job_name,
-    dataproc_pyspark_properties={
-        'spark.driver.extraJavaOptions':
-            f"-javaagent:{jar}={os.environ.get('OPENLINEAGE_URL')}/api/v1/namespaces/{os.getenv('OPENLINEAGE_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{macros.OpenLineagePlugin.lineage_run_id(task_instance)}}}}?api_key={os.environ.get('OPENLINEAGE_API_KEY')}"
-        dag=dag)
+SparkSubmitOperator(
+    task_id="my_task",
+    application="/script.py",
+    conf={
+      # separated components
+      "spark.openlineage.parentJobNamespace": "{{ macros.OpenLineagePlugin.lineage_job_namespace() }}",
+      "spark.openlineage.parentJobName": "{{ macros.OpenLineagePlugin.lineage_job_name(task_instance) }}",
+      "spark.openlineage.parentRunId": "{{ macros.OpenLineagePlugin.lineage_run_id(task_instance) }}",
+    },
+    dag=dag,
+)
+```
+
+Same information, but compacted to one string, can be passed using `linage_parent_id(task_instance)` macro:
+
+```python
+def my_task_function(templates_dict, **kwargs):
+    parent_job_namespace, parent_job_name, parent_run_id = templates_dict["parentRun"].split("/")
+    ...
+
+
+PythonOperator(
+    task_id="render_template",
+    python_callable=my_task_function,
+    templates_dict={
+        # joined components as one string `<namespace>/<name>/<run_id>`
+        "parentRun": "{{ macros.OpenLineageProviderPlugin.lineage_parent_id(task_instance) }}",
+    },
+    provide_context=False,
+    dag=dag,
+)
 ```
 
 ## Secrets redaction

@@ -4,7 +4,12 @@
 import os
 
 # Provide empty plugin for older version
-from openlineage.airflow.macros import lineage_parent_id, lineage_run_id
+from openlineage.airflow.macros import (
+    lineage_job_name,
+    lineage_job_namespace,
+    lineage_parent_id,
+    lineage_run_id,
+)
 from packaging.version import Version
 
 from airflow.plugins_manager import AirflowPlugin
@@ -32,7 +37,7 @@ if (
 
     class OpenLineagePlugin(AirflowPlugin):
         name = "OpenLineagePlugin"
-        macros = [lineage_run_id, lineage_parent_id]
+        macros = [lineage_run_id, lineage_parent_id, lineage_job_namespace, lineage_job_name]
 
 else:
     from openlineage.airflow import listener
@@ -41,4 +46,4 @@ else:
     class OpenLineagePlugin(AirflowPlugin):  # type: ignore
         name = "OpenLineagePlugin"
         listeners = [listener]
-        macros = [lineage_run_id, lineage_parent_id]
+        macros = [lineage_run_id, lineage_parent_id, lineage_job_namespace, lineage_job_name]
