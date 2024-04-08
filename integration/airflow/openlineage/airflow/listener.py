@@ -13,7 +13,6 @@ from openlineage.airflow.extractors import ExtractorManager
 from openlineage.airflow.utils import (
     DagUtils,
     get_airflow_run_facet,
-    get_custom_facets,
     get_dagrun_start_end,
     get_job_name,
     get_task_location,
@@ -150,7 +149,6 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
             owners=dag.owner.split(", "),
             task=task_metadata,
             run_facets={
-                **get_custom_facets(dagrun, task, dagrun.external_trigger, ti),
                 **get_airflow_run_facet(dagrun, dag, ti, task, task_uuid),
             },
         )

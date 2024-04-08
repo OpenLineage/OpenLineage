@@ -13,13 +13,11 @@ import pytest
 from openlineage.airflow.utils import (
     DagUtils,
     InfoJsonEncodable,
-    SafeStrDict,
     _is_name_redactable,
     get_connection,
     get_dagrun_start_end,
     get_location,
     redact_with_exclusions,
-    to_json_encodable,
     url_to_https,
 )
 from openlineage.client.utils import RedactMixin
@@ -27,7 +25,6 @@ from packaging.version import Version
 
 from airflow.models import DAG as AIRFLOW_DAG
 from airflow.models import DagModel
-from airflow.operators.dummy import DummyOperator
 from airflow.utils.dates import days_ago
 from airflow.utils.state import State
 from airflow.version import version as AIRFLOW_VERSION
@@ -103,31 +100,6 @@ def test_Version():
     assert Version("2.2.4") < Version("2.3.0.dev0")
     assert Version("1.10.15") < Version("2.3.0.dev0")
     assert Version("2.2.4.dev0") < Version("2.3.0.dev0")
-
-
-def test_to_json_encodable():
-    dag = AIRFLOW_DAG(
-        dag_id="test_dag",
-        schedule_interval="*/2 * * * *",
-        start_date=datetime.datetime.now(),
-        catchup=False,
-    )
-    task = DummyOperator(task_id="test_task", dag=dag)
-
-    encodable = to_json_encodable(task)
-    encoded = json.dumps(encodable)
-    decoded = json.loads(encoded)
-    assert decoded == encodable
-
-
-def test_safe_dict():
-    assert str(SafeStrDict({"a": 1})) == str({"a": 1})
-
-    class NotImplemented:
-        def __str__(self):
-            raise NotImplementedError
-
-    assert str(SafeStrDict({"a": NotImplemented()})) == str({})
 
 
 def test_info_json_encodable():

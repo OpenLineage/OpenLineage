@@ -14,8 +14,10 @@
     },
     "run": {
         "facets": {
-            "airflow_runArgs": {
-              "externalTrigger": false
+            "airflow": {
+				"dagRun": {
+				  "external_trigger": false
+				}
             }
         }
     }
@@ -36,8 +38,10 @@
     },
     "run": {
         "facets": {
-            "airflow_runArgs": {
-                "externalTrigger": false
+            "airflow": {
+              "dagRun": {
+                  "external_trigger": false
+                }
             }
         }
     }

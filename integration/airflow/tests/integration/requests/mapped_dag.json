@@ -13,23 +13,16 @@
     },
     "run": {
       "facets": {
-        "airflow_runArgs": {
-          "externalTrigger": false
+        "airflow": {
+          "dagRun": {
+            "external_trigger": false
+          }
         },
         "parent": {
           "job": {
             "name": "mapped_dag",
             "namespace": "food_delivery"
           }
-        },
-        "unknownSourceAttribute": {
-          "unknownItems": [
-            {
-              "type": "operator",
-              "name": "PythonOperator",
-              "properties": {}
-            }
-          ]
         }
       }
     }
@@ -47,25 +40,20 @@
     },
     "run": {
       "facets": {
-        "airflow_runArgs": {
-          "externalTrigger": false
+        "airflow": {
+          "dagRun": {
+            "external_trigger": false
+          },
+          "task": {
+            "mapped": true,
+            "operator_class": "***.operators.bash.BashOperator"
+          }
         },
         "parent": {
           "job": {
             "name": "mapped_dag",
             "namespace": "food_delivery"
           }
-        },
-        "airflow_mappedTask": {
-          "operatorClass": "airflow.operators.bash.BashOperator"
-        },
-        "unknownSourceAttribute": {
-          "unknownItems": [
-            {
-              "type": "operator",
-              "name": "BashOperator"
-            }
-          ]
         }
       }
     }
@@ -78,8 +66,10 @@
     },
     "run": {
       "facets": {
-        "airflow_runArgs": {
-          "externalTrigger": false
+        "airflow": {
+          "dagRun": {
+            "external_trigger": false
+          }
         },
         "parent": {
           "job": {
@@ -104,23 +94,16 @@
     },
     "run": {
       "facets": {
-        "airflow_runArgs": {
-          "externalTrigger": false
+        "airflow": {
+          "dagRun": {
+            "external_trigger": false
+          }
         },
         "parent": {
           "job": {
             "name": "mapped_dag",
             "namespace": "food_delivery"
           }
-        },
-        "unknownSourceAttribute": {
-          "unknownItems": [
-            {
-              "type": "operator",
-              "name": "PythonOperator",
-              "properties": {}
-            }
-          ]
         }
       }
     }
@@ -137,19 +120,7 @@
       "name": "mapped_dag.get_input",
       "namespace": "food_delivery"
     },
-    "run": {
-      "facets": {
-        "unknownSourceAttribute": {
-          "unknownItems": [
-            {
-              "type": "operator",
-              "name": "PythonOperator",
-              "properties": {}
-            }
-          ]
-        }
-      }
-    }
+    "run": {}
   },
   {
     "eventType": "COMPLETE",
@@ -162,18 +133,7 @@
       "name": "mapped_dag.multiply",
       "namespace": "food_delivery"
     },
-    "run": {
-      "facets": {
-        "unknownSourceAttribute": {
-          "unknownItems": [
-            {
-              "type": "operator",
-              "name": "BashOperator"
-            }
-          ]
-        }
-      }
-    }
+    "run": {}
   },
   {
     "eventType": "COMPLETE",

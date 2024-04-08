@@ -5,7 +5,7 @@ import logging
 from typing import List, Optional, Type
 
 from openlineage.airflow.extractors import BaseExtractor, Extractors, TaskMetadata
-from openlineage.airflow.utils import get_job_name, get_operator_class, get_unknown_source_attribute_run_facet
+from openlineage.airflow.utils import get_job_name, get_operator_class
 
 
 class ExtractorManager:
@@ -68,11 +68,7 @@ class ExtractorManager:
         else:
             self.log.debug(f"Unable to find an extractor. {task_info}")
 
-            # Only include the unkonwnSourceAttribute facet if there is no extractor
-            task_metadata = TaskMetadata(
-                name=get_job_name(task),
-                run_facets=get_unknown_source_attribute_run_facet(task=task),
-            )
+            task_metadata = TaskMetadata(name=get_job_name(task))
             inlets = task.get_inlet_defs()
             outlets = task.get_outlet_defs()
             self.extract_inlets_and_outlets(task_metadata, inlets, outlets)

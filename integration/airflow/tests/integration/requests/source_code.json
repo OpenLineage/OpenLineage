@@ -38,18 +38,7 @@
       "namespace": "food_delivery"
     },
     "run": {
-      "facets": {
-        "unknownSourceAttribute": {
-          "unknownItems": [
-            {
-              "type": "operator",
-              "name": "PythonOperator",
-              "properties": {
-              }
-            }
-          ]
-        }
-      }
+      "facets": {}
     }
   },
   {
@@ -65,18 +54,7 @@
       "namespace": "food_delivery"
     },
     "run": {
-      "facets": {
-        "unknownSourceAttribute": {
-          "unknownItems": [
-            {
-              "type": "operator",
-              "name": "BashOperator",
-              "properties": {
-              }
-            }
-          ]
-        }
-      }
+      "facets": {}
     }
   }
 ]

@@ -16,12 +16,11 @@
  		},
  		"run": {
  			"facets": {
-				"airflow_version": {
-					"taskInfo": "{{ 'true' if result == {} else result }}"
+ 				"airflow": {
+					"dagRun": {
+					  "external_trigger": false
+					}
 				},
- 				"airflow_runArgs": {
- 					"externalTrigger": false
- 				},
  				"parent": {
  					"job": {
  						"name": "custom_extractor",
