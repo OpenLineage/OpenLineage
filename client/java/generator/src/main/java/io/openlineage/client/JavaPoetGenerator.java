@@ -735,7 +735,12 @@ public class JavaPoetGenerator {
 
       @Override
       public TypeName visit(TypeResolver.EnumResolvedType enumType) {
-         return ClassName.get(containerClass, enumType.getParentName() + "." + enumType.getName());
+        return ClassName.get(containerClass, enumType.getParentName() + "." + enumType.getName());
+      }
+
+      @Override
+      public TypeName visit(TypeResolver.RefResolvedType refType) {
+        return ClassName.get(containerClass, refType.getName());
       }
     });
   }
