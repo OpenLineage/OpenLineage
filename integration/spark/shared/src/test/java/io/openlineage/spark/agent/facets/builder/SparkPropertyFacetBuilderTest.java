@@ -24,7 +24,8 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.junit.jupiter.api.Test;
 
-public class SparkPropertyFacetBuilderTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class SparkPropertyFacetBuilderTest {
 
   @Test
   void testBuildDefault() {

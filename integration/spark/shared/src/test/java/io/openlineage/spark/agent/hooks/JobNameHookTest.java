@@ -25,7 +25,8 @@ import org.apache.spark.sql.execution.QueryExecution;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class JobNameHookTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class JobNameHookTest {
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   QueryExecution queryExecution = mock(QueryExecution.class, RETURNS_DEEP_STUBS);
@@ -64,7 +65,7 @@ public class JobNameHookTest {
   }
 
   @Test
-  public void testPreBuildWhenAppendingDatasetNameToJobNameDisabled() {
+  void testPreBuildWhenAppendingDatasetNameToJobNameDisabled() {
     when(sparkConf.get("spark.openlineage.jobName.appendDatasetName", "true")).thenReturn("false");
 
     runEventBuilder = mock(OpenLineage.RunEventBuilder.class);
@@ -73,7 +74,7 @@ public class JobNameHookTest {
   }
 
   @Test
-  public void testPreBuild() {
+  void testPreBuild() {
     runEventBuilder.job(
         context
             .getOpenLineage()
@@ -95,7 +96,7 @@ public class JobNameHookTest {
   }
 
   @Test
-  public void testPreBuildWhenReplaceDotWithUnderscoreIsTrue() {
+  void testPreBuildWhenReplaceDotWithUnderscoreIsTrue() {
     when(sparkConf.get("spark.openlineage.jobName.replaceDotWithUnderscore", "false"))
         .thenReturn("true");
 
@@ -120,7 +121,7 @@ public class JobNameHookTest {
   }
 
   @Test
-  public void testPreBuildWhenNoOutputDataset() {
+  void testPreBuildWhenNoOutputDataset() {
     runEventBuilder.job(
         context.getOpenLineage().newJobBuilder().name("databricks_shell.append_data").build());
 
@@ -130,7 +131,7 @@ public class JobNameHookTest {
   }
 
   @Test
-  public void testPreBuildWhenNotADefaultName() {
+  void testPreBuildWhenNotADefaultName() {
     runEventBuilder.job(
         context.getOpenLineage().newJobBuilder().name("non-default-name.append_data").build());
 
@@ -140,7 +141,7 @@ public class JobNameHookTest {
   }
 
   @Test
-  public void testPreBuildWhenJobNamePresentInContext() {
+  void testPreBuildWhenJobNamePresentInContext() {
     when(context.getJobName()).thenReturn("some-job-name");
     runEventBuilder.job(context.getOpenLineage().newJobBuilder().build());
     builderHook.preBuild(runEventBuilder);

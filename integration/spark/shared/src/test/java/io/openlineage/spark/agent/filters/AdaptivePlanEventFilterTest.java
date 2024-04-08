@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class AdaptivePlanEventFilterTest {
+class AdaptivePlanEventFilterTest {
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   AdaptivePlanEventFilter filter = new AdaptivePlanEventFilter(context);

@@ -29,7 +29,8 @@ import org.apache.spark.sql.execution.QueryExecution;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class DebugRunFacetBuilderDelegateTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class DebugRunFacetBuilderDelegateTest {
 
   private static OpenLineageContext openLineageContext =
       mock(OpenLineageContext.class, RETURNS_DEEP_STUBS);
@@ -46,7 +47,7 @@ public class DebugRunFacetBuilderDelegateTest {
   }
 
   @Test
-  public void testSystemDebugFacet() {
+  void testSystemDebugFacet() {
     assertThat(delegate.buildFacet().getSystem())
         .hasFieldOrPropertyWithValue("javaVersion", SystemUtils.JAVA_VERSION)
         .hasFieldOrPropertyWithValue("javaVendor", SystemUtils.JAVA_VENDOR)

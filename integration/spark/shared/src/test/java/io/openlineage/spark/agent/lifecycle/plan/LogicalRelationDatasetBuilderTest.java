@@ -61,6 +61,7 @@ import org.mockito.MockedStatic;
 import org.postgresql.Driver;
 import scala.Option;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class LogicalRelationDatasetBuilderTest {
 
   SparkSession session = mock(SparkSession.class);

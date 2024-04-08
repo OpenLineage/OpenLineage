@@ -13,7 +13,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
@@ -30,7 +29,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.collection.immutable.Map$;
 
-public class JdbcRelationHandlerTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class JdbcRelationHandlerTest {
   JdbcRelationHandler jdbcRelationHandler;
   DatasetFactory datasetFactory = mock(DatasetFactory.class);
   JDBCRelation relation = mock(JDBCRelation.class);
@@ -84,7 +84,7 @@ public class JdbcRelationHandlerTest {
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcTable);
     when(relation.schema()).thenReturn(schema);
 
-    List<OpenLineage.Dataset> datasets = jdbcRelationHandler.getDatasets(relation, url);
+    jdbcRelationHandler.getDatasets(relation, url);
 
     verify(datasetFactory, times(1))
         .getDataset("test.tablename", "postgres://localhost:5432", schema);

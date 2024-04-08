@@ -16,7 +16,7 @@ import org.apache.spark.SparkContext;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class DebugRunFacetBuilderTest {
+class DebugRunFacetBuilderTest {
 
   private static OpenLineageContext openLineageContext =
       mock(OpenLineageContext.class, RETURNS_DEEP_STUBS);

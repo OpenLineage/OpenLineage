@@ -11,7 +11,7 @@ import java.util.Optional;
 import org.apache.spark.SparkConf;
 import org.junit.jupiter.api.Test;
 
-public class SparkConfUtilsTest {
+class SparkConfUtilsTest {
 
   SparkConf conf = new SparkConf().set("existing.property", "test");
 

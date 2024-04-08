@@ -31,7 +31,7 @@ import org.apache.spark.sql.types.StringType$;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class JdbcColumnLineageExpressionCollectorTest {
+class JdbcColumnLineageExpressionCollectorTest {
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
   ExprId exprId1 = ExprId.apply(20);
   ExprId exprId2 = ExprId.apply(21);

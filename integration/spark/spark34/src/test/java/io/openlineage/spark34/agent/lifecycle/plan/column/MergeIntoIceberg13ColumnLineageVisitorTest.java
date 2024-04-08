@@ -31,7 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class MergeIntoIceberg13ColumnLineageVisitorTest {
+class MergeIntoIceberg13ColumnLineageVisitorTest {
   OpenLineageContext olContext = mock(OpenLineageContext.class);
   ColumnLevelLineageContext clContext = mock(ColumnLevelLineageContext.class);
   ReplaceIcebergData replaceIcebergData = mock(ReplaceIcebergData.class);
@@ -52,6 +52,7 @@ public class MergeIntoIceberg13ColumnLineageVisitorTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testCollectInputsIsCalled() {
     LogicalPlan source = mock(LogicalPlan.class);
     LogicalPlan target =
@@ -70,6 +71,7 @@ public class MergeIntoIceberg13ColumnLineageVisitorTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testCollectOutputsIsCalled() {
     LogicalPlan source = mock(LogicalPlan.class);
     LogicalPlan target =

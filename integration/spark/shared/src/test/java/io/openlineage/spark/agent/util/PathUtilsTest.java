@@ -36,6 +36,7 @@ import scala.Some;
 import scala.Tuple2;
 
 @Slf4j
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class PathUtilsTest {
 
   private static final String HOME_TEST = "/home/test";
@@ -288,6 +289,7 @@ class PathUtilsTest {
   @Nested
   class WithHiveSupport {
     @Test
+    @SuppressWarnings("PMD")
     void testFromCatalogTableShouldReturnADatasetIdentifierWithTheActualScheme() {
       SparkConf sparkConf = new SparkConf();
       sparkConf.set("spark.sql.hive.metastore.uris", "thrift://127.0.0.1:9876");
@@ -309,6 +311,7 @@ class PathUtilsTest {
   @Nested
   class WithoutHiveSupport {
     @Test
+    @SuppressWarnings("PMD")
     void testFromCatalogTableShouldReturnADatasetIdentifierWithTheActualScheme() {
       SparkConf sparkConf = new SparkConf();
       URI tableUri = URI.create("hdfs://namenode/user/hive/warehouse/foo.db/bar");

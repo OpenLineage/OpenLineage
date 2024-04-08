@@ -43,7 +43,7 @@ import scala.Option;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
 
-public class CreateReplaceDatasetBuilderTest {
+class CreateReplaceDatasetBuilderTest {
 
   private static final String TABLE = "table";
   OpenLineageContext openLineageContext =

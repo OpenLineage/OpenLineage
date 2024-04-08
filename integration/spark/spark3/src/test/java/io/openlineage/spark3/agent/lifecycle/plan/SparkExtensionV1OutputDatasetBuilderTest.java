@@ -29,7 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.collection.JavaConverters;
 
-public class SparkExtensionV1OutputDatasetBuilderTest {
+class SparkExtensionV1OutputDatasetBuilderTest {
 
   OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
   OpenLineageContext context = mock(OpenLineageContext.class);

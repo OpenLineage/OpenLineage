@@ -30,6 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import scala.collection.immutable.Map;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class IcebergHandlerTest {
 
   private OpenLineageContext context = mock(OpenLineageContext.class);

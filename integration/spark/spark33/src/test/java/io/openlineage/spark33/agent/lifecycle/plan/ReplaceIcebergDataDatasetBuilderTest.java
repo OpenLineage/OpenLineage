@@ -37,7 +37,7 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class ReplaceIcebergDataDatasetBuilderTest {
+class ReplaceIcebergDataDatasetBuilderTest {
 
   OpenLineage openLineage = mock(OpenLineage.class);
   OpenLineageContext openLineageContext =

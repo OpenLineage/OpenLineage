@@ -24,6 +24,7 @@ class PlanUtilsTest {
 
   @ParameterizedTest
   @MethodSource()
+  @SuppressWarnings("PMD.UnusedPrivateMethod")
   private static Stream<Arguments> provideJdbcUrls() {
     return Stream.of(
         Arguments.of(

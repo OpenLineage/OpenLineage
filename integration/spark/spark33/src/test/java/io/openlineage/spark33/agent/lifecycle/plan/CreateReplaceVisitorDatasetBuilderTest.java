@@ -41,7 +41,7 @@ import org.mockito.MockedStatic;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
 
-public class CreateReplaceVisitorDatasetBuilderTest {
+class CreateReplaceVisitorDatasetBuilderTest {
 
   private static final String TABLE = "table";
   OpenLineageContext openLineageContext =

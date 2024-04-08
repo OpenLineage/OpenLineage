@@ -25,7 +25,8 @@ import org.apache.spark.SparkContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class RemovePathPatternUtilsTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class RemovePathPatternUtilsTest {
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   SparkConf conf;

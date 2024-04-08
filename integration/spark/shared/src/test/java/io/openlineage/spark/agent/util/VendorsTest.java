@@ -21,6 +21,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.junit.jupiter.api.Test;
 import scala.PartialFunction;
 
+@SuppressWarnings("PMD.JUnit5TestShouldBePackagePrivate")
 public class VendorsTest implements Vendor {
 
   static class VisitorFactoryTest implements VisitorFactory {
@@ -28,13 +29,13 @@ public class VendorsTest implements Vendor {
     @Override
     public List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> getInputVisitors(
         OpenLineageContext context) {
-      return null;
+      return Collections.emptyList();
     }
 
     @Override
     public List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> getOutputVisitors(
         OpenLineageContext context) {
-      return null;
+      return Collections.emptyList();
     }
   }
 

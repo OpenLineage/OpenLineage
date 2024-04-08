@@ -51,6 +51,7 @@ import org.mockito.MockedStatic;
 import scala.Option;
 import scala.collection.immutable.Seq;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class InputFieldsCollectorTest {
 
   private static final String FILE = "file";
