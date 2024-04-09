@@ -30,7 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.Option;
 
-public class MergeIntoDelta11ColumnLineageVisitorTest {
+class MergeIntoDelta11ColumnLineageVisitorTest {
   OpenLineageContext olContext = mock(OpenLineageContext.class);
   ColumnLevelLineageContext clContext = mock(ColumnLevelLineageContext.class);
   MergeIntoCommand command = mock(MergeIntoCommand.class);

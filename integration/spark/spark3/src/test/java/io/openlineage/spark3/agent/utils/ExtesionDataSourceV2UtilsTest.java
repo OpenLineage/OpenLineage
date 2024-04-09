@@ -26,7 +26,7 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ExtesionDataSourceV2UtilsTest {
+class ExtesionDataSourceV2UtilsTest {
   static final String DATASET_NAME = "some-dataset-name";
   static final String DATASET_NAMESPACE = "some-dataset-name";
 

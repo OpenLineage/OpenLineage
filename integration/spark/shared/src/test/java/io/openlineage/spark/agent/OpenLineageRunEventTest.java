@@ -30,7 +30,7 @@ class OpenLineageRunEventTest {
       new TypeReference<Map<String, Object>>() {};
 
   @Test
-  public void testSerializeRunEvent() throws IOException, URISyntaxException {
+  void testSerializeRunEvent() throws IOException, URISyntaxException {
     ObjectMapper mapper = OpenLineageClientUtils.newObjectMapper();
 
     ZonedDateTime dateTime = ZonedDateTime.parse("2021-01-01T00:00:01.000000000+00:00[UTC]");

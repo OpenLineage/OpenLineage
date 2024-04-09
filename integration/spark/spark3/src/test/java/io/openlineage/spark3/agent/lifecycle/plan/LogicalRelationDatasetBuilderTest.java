@@ -44,6 +44,7 @@ import org.mockito.MockedStatic;
 import scala.Option;
 import scala.collection.immutable.HashMap;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class LogicalRelationDatasetBuilderTest {
 
   private static final String SOME_VERSION = "version_1";

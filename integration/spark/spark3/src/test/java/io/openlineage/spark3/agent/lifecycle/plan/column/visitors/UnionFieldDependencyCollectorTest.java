@@ -14,7 +14,6 @@ import static org.mockito.Mockito.verify;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
@@ -25,7 +24,6 @@ import org.apache.spark.sql.catalyst.plans.logical.Union;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata$;
 import org.junit.jupiter.api.Test;
-import scala.collection.Seq;
 
 class UnionFieldDependencyCollectorTest {
 
@@ -72,11 +70,5 @@ class UnionFieldDependencyCollectorTest {
 
     // first element of a union is treated as an ancestor node
     verify(builder, times(1)).addDependency(exprId1, exprId2);
-  }
-
-  private Seq<NamedExpression> toScalaSeq(Collection<NamedExpression> expressions) {
-    return scala.collection.JavaConverters.collectionAsScalaIterableConverter(expressions)
-        .asScala()
-        .toSeq();
   }
 }

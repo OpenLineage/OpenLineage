@@ -27,7 +27,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class JdbcColumnLineageInputCollectorTest {
+class JdbcColumnLineageInputCollectorTest {
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
   JDBCRelation relation = mock(JDBCRelation.class);
   JDBCOptions jdbcOptions = mock(JDBCOptions.class);

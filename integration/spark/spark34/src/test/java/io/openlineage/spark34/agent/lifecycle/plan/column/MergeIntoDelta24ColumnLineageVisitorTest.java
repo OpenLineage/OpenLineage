@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
 
-public class MergeIntoDelta24ColumnLineageVisitorTest {
+class MergeIntoDelta24ColumnLineageVisitorTest {
 
   OpenLineageContext olContext = mock(OpenLineageContext.class);
   ColumnLevelLineageContext clContext = mock(ColumnLevelLineageContext.class);
@@ -66,6 +66,7 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testCollectInputsIsCalled() {
     LogicalPlan source = mock(LogicalPlan.class);
     LogicalPlan target = mock(LogicalPlan.class);
@@ -85,6 +86,7 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testCollectOutputsIsCalled() {
     LogicalPlan source = mock(LogicalPlan.class);
     LogicalPlan target = mock(LogicalPlan.class);

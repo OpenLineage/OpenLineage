@@ -21,9 +21,7 @@ import io.openlineage.spark.extension.scala.v1.ExpressionDependency;
 import io.openlineage.spark.extension.scala.v1.ExpressionDependencyWithDelegate;
 import io.openlineage.spark.extension.scala.v1.ExpressionDependencyWithIdentifier;
 import io.openlineage.spark.extension.scala.v1.OlExprId;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import org.apache.spark.sql.catalyst.expressions.Alias;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
@@ -200,9 +198,5 @@ class ExpressionDependencyCollectorTest {
     ExpressionDependencyCollector.collectFromNode(context, columnLineagePlanNode);
 
     verify(builder, times(1)).addDependency(ExprId.apply(1L), ExprId.apply(2L));
-  }
-
-  private Seq<NamedExpression> toScalaSeq(Collection<NamedExpression> expressions) {
-    return ScalaConversionUtils.<NamedExpression>fromList(new ArrayList(expressions));
   }
 }

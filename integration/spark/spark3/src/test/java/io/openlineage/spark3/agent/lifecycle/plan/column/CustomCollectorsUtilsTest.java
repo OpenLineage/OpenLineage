@@ -5,6 +5,9 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import static io.openlineage.spark3.agent.lifecycle.plan.CustomColumnLineageVisitorTestImpl.INPUT_COL_NAME;
+import static io.openlineage.spark3.agent.lifecycle.plan.CustomColumnLineageVisitorTestImpl.OUTPUT_COL_NAME;
+import static io.openlineage.spark3.agent.lifecycle.plan.CustomColumnLineageVisitorTestImpl.child;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -19,28 +22,21 @@ import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
-import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 @Slf4j
-public class CustomCollectorsUtilsTest {
+class CustomCollectorsUtilsTest {
 
-  public static final String OUTPUT_COL_NAME = "outputCol";
-  public static final String INPUT_COL_NAME = "inputCol";
-  public static ExprId childExprId = mock(ExprId.class);
-  public static ExprId parentExprId = mock(ExprId.class);
   static LogicalPlan plan = mock(LogicalPlan.class);
-  public static LogicalPlan child = mock(LogicalPlan.class);
-
   OpenLineageContext context = mock(OpenLineageContext.class);
   QueryExecution queryExecution = mock(QueryExecution.class);
 
   @Test
   @SneakyThrows
-  public void testCustomCollectorsAreApplied() {
+  void testCustomCollectorsAreApplied() {
     OpenLineage openLineage = new OpenLineage(new URI("some-url"));
     when(plan.children())
         .thenReturn(

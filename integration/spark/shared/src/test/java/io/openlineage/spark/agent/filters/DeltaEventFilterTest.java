@@ -36,8 +36,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.collection.immutable.Seq;
 
-public class DeltaEventFilterTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class DeltaEventFilterTest {
 
+  public static final String SPARK_SQL_EXTENSIONS = "spark.sql.extensions";
   OpenLineageContext context = mock(OpenLineageContext.class);
   DeltaEventFilter filter = new DeltaEventFilter(context);
   SparkSession sparkSession = mock(SparkSession.class);
@@ -57,7 +59,7 @@ public class DeltaEventFilterTest {
   void testNotDeltaIsNotDisabled() {
     try (MockedStatic mocked = mockStatic(SparkSession.class)) {
       when(SparkSession.active()).thenReturn(sparkSession);
-      when(sparkConf.get("spark.sql.extensions")).thenReturn("non-delta-extension");
+      when(sparkConf.get(SPARK_SQL_EXTENSIONS)).thenReturn("non-delta-extension");
 
       assertFalse(filter.isDisabled(sparkListenerEvent));
     }

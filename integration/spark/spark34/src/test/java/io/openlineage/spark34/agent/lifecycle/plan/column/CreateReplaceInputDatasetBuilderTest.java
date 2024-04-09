@@ -38,7 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.Option;
 
-public class CreateReplaceInputDatasetBuilderTest {
+class CreateReplaceInputDatasetBuilderTest {
   OpenLineageContext openLineageContext =
       OpenLineageContext.builder()
           .sparkSession(mock(SparkSession.class))
