@@ -9,28 +9,31 @@ from openlineage.client.utils import RedactMixin
 
 
 @define
-class Field(RedactMixin):
-    name: str
-    """
-    The name of the field.
-    """
-    type: str | None = field(default=None)
-    """
-    The type of the field.
-    """
-    description: str | None = field(default=None)
-    """
-    The description of the field.
-    """
-
-
-@define
 class SchemaDatasetFacet(DatasetFacet):
-    fields: list[Field] | None = field(factory=list)  # type: ignore[assignment]
-    """
-    The fields of the table.
-    """
+    fields: list[SchemaDatasetFacetFields] | None = field(factory=list)  # type: ignore[assignment]
+    """The fields of the data source."""
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet"
+        return "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet"
+
+
+@define
+class SchemaDatasetFacetFields(RedactMixin):
+    name: str
+    """The name of the field."""
+
+    type: str | None = field(default=None)
+    """The type of the field."""
+
+    description: str | None = field(default=None)
+    """The description of the field."""
+
+    fields: list[SchemaDatasetFacetFields] | None = field(factory=list)  # type: ignore[assignment]
+    """Nested struct fields."""
+
+    @staticmethod
+    def _get_schema() -> str:
+        return (
+            "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacetFields"
+        )

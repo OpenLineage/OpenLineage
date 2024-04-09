@@ -11,22 +11,18 @@ from openlineage.client.utils import RedactMixin
 @define
 class Error(RedactMixin):
     errorMessage: str  # noqa: N815
-    """
-    Text representation of extraction error message.
-    """
+    """Text representation of extraction error message."""
+
     stackTrace: str | None = field(default=None)  # noqa: N815
-    """
-    Stack trace of extraction error message
-    """
+    """Stack trace of extraction error message"""
+
     task: str | None = field(default=None)
     """
     Text representation of task that failed. This can be, for example, SQL statement that parser could
     not interpret.
     """
     taskNumber: int | None = field(default=None)  # noqa: N815
-    """
-    Order of task (counted from 0).
-    """
+    """Order of task (counted from 0)."""
 
 
 @define

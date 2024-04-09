@@ -13,13 +13,10 @@ from openlineage.client.utils import RedactMixin
 @define
 class Job(RedactMixin):
     namespace: str
-    """
-    The namespace containing that job
-    """
+    """The namespace containing that job"""
+
     name: str
-    """
-    The unique name for that job within that namespace
-    """
+    """The unique name for that job within that namespace"""
 
 
 @define
@@ -52,9 +49,7 @@ class ParentRunFacet(RunFacet):
 @define
 class Run(RedactMixin):
     runId: str = field()  # noqa: N815
-    """
-    The globally unique ID of the run associated with the job.
-    """
+    """The globally unique ID of the run associated with the job."""
 
     @runId.validator
     def runid_check(self, attribute: str, value: str) -> None:  # noqa: ARG002

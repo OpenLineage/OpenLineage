@@ -10,13 +10,10 @@ from openlineage.client.generated.base import RunFacet
 @define
 class ExternalQueryRunFacet(RunFacet):
     externalQueryId: str  # noqa: N815
-    """
-    Identifier for the external system
-    """
+    """Identifier for the external system"""
+
     source: str
-    """
-    source of the external query
-    """
+    """source of the external query"""
 
     @staticmethod
     def _get_schema() -> str:

@@ -7,12 +7,14 @@ import json
 import logging
 import os
 import pathlib
+import pkgutil
 import re
 import shutil
 import tempfile
 from collections import defaultdict
 
 import click
+import jinja2
 from datamodel_code_generator import DataModelType, PythonVersion
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model import get_data_model_types
@@ -20,6 +22,7 @@ from datamodel_code_generator.parser.jsonschema import JsonSchemaParser
 from datamodel_code_generator.types import Types
 
 log = logging.getLogger(__name__)
+
 
 def camel_to_snake(string: str) -> str:
     """Convert camel_case string to SnakeCase"""
@@ -40,11 +43,12 @@ NEW_MODEL.DEFAULT_IMPORTS = (
 )
 
 # locations definitions
+FILE_LOCATION = pathlib.Path(__file__).resolve().parent
 PARENT_LOCATION = pathlib.Path(__file__).resolve().parent.parent.parent
 BASE_SPEC_LOCATION = PARENT_LOCATION / "spec" / "OpenLineage.json"
 FACETS_SPEC_LOCATION = PARENT_LOCATION / "spec" / "facets"
 DEFAULT_OUTPUT_LOCATION = PARENT_LOCATION / "client" / "python" / "openlineage" / "client" / "generated"
-TEMPLATES_LOCATION = pathlib.Path(__file__).resolve().parent / "templates"
+TEMPLATES_LOCATION = FILE_LOCATION / "templates"
 PYTHON_CLIENT_LOCATION = PARENT_LOCATION / "client" / "python"
 
 # custom code
@@ -55,10 +59,8 @@ def set_producer(producer: str) -> None:
     global PRODUCER  # noqa: PLW0603
     PRODUCER = producer
 """
-HEADER = (
-    "# Copyright 2018-2024 contributors to the OpenLineage project\n"
-    "# SPDX-License-Identifier: Apache-2.0\n\n"
-)
+
+HEADER = (FILE_LOCATION / "header.py").resolve().read_text()
 
 # structures to customize code generation
 REDACT_FIELDS = {
@@ -197,7 +199,17 @@ def parse_and_generate(locations):
     return output
 
 
-def format_and_save_output(output: str, location: pathlib.Path):
+def generate_facet_v2_module(module_location):
+    modules = [name for _, name, _ in pkgutil.iter_modules([module_location]) if name != "base"]
+
+    facet_v2_template = (TEMPLATES_LOCATION / "facet_v2.jinja2").read_text()
+    output = jinja2.Environment(autoescape=True).from_string(facet_v2_template).render(facets_modules=modules)
+    format_and_save_output(
+        output=output, location=PYTHON_CLIENT_LOCATION / "openlineage" / "client" / "facet_v2.py"
+    )
+
+
+def format_and_save_output(output: str, location: pathlib.Path, add_set_producer_code: bool = False):
     """Adjust and format generated file."""
     import subprocess
 
@@ -207,9 +219,9 @@ def format_and_save_output(output: str, location: pathlib.Path):
         "w", prefix=location.stem.lower(), suffix=".py", dir=DEFAULT_OUTPUT_LOCATION.parent, delete=False
     ) as tmpfile:
         tmpfile.write(HEADER)
-        is_base_module = "from ." not in output
+        # is_base_module = "from ." not in output
         tmpfile.write(output.replace("from .OpenLineage", "from openlineage.client.generated.base"))
-        if is_base_module:
+        if add_set_producer_code:
             tmpfile.write(SET_PRODUCER_CODE)
         tmpfile.flush()
 
@@ -237,6 +249,7 @@ def format_and_save_output(output: str, location: pathlib.Path):
     if lint_process.returncode or format_process.returncode:
         log.warning("%s failed on ruff.", location)
 
+
 @click.command()
 @click.option("--output-location", type=pathlib.Path, default=DEFAULT_OUTPUT_LOCATION)
 def main(output_location):
@@ -251,7 +264,8 @@ def main(output_location):
         if path and not path.parent.exists():
             path.parent.mkdir(parents=True)
         if body:
-            format_and_save_output(body, path)
+            format_and_save_output(body, path, path.name == "open_lineage.py")
+    generate_facet_v2_module(DEFAULT_OUTPUT_LOCATION)
 
 
 if __name__ == "__main__":

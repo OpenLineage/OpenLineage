@@ -10,17 +10,13 @@ from openlineage.client.generated.base import JobFacet
 @define
 class JobTypeJobFacet(JobFacet):
     processingType: str  # noqa: N815
-    """
-    Job processing type like: BATCH or STREAMING
-    """
+    """Job processing type like: BATCH or STREAMING"""
+
     integration: str
-    """
-    OpenLineage integration type of this job: SPARK|DBT|AIRFLOW|FLINK
-    """
+    """OpenLineage integration type of this job: SPARK|DBT|AIRFLOW|FLINK"""
+
     jobType: str | None = field(default=None)  # noqa: N815
-    """
-    Run type like: QUERY|COMMAND|DAG|TASK|JOB|MODEL
-    """
+    """Run type like: QUERY|COMMAND|DAG|TASK|JOB|MODEL"""
 
     @staticmethod
     def _get_schema() -> str:

@@ -3,10 +3,14 @@
 {{ decorator }}
 {% endfor -%}
 class {{ class_name }}({{ base_class }}):
-{%- if description %}
+{%- if description -%}
+    {% if description | length > 100 %}
     """
-    {{ description | wordwrap(100) | indent(4) }}
+    {{ description | wordwrap(100) | indent(4)}}
     """
+    {%- else %}
+    """{{ description }}"""
+    {% endif -%}
 {%- endif %}
 {%- for field in fields %}
     {{ field.name }} = {{ field.default }}

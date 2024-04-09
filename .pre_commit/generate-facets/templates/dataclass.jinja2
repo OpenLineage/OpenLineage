@@ -21,10 +21,14 @@ class {{ class_name }}({{ base_class }}):
 class {{ class_name }}:
 {%- endif %}
 {#- wrap and indent class docstring if exists -#}
-{%- if description %}
+{%- if description -%}
+    {% if description | length > 100 %}
     """
     {{ description | wordwrap(100) | indent(4)}}
     """
+    {%- else %}
+    """{{ description }}"""
+    {% endif -%}
 {%- endif %}
 {#- pass statement for empty classes -#}
 {%- if not fields and not description %}
@@ -78,10 +82,14 @@ class {{ class_name }}:
     {%- if field.name in ['type', 'sum', 'min', 'max', 'bytes'] -%}  # noqa: A003 {% endif %}
     {#- add field docstring wrapped and indented -#}
     {%- if field.docstring %}
+    {%- if field.docstring | length > 100 %}
     """
-    {{ field.docstring | wordwrap(100) | indent(4) }}
+    {{ field.docstring | wordwrap(100) | indent(4)}}
     """
-    {%- endif -%}
+    {%- else %}
+    """{{ field.docstring }}"""
+    {% endif -%}
+    {%- endif %} 
 {%- endfor -%}
 {#- special case for producer and schemaURL fields -#}
 {%- if class_name in ['BaseFacet', 'BaseEvent'] %}

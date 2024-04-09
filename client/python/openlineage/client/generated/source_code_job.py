@@ -12,13 +12,11 @@ from openlineage.client.generated.base import JobFacet
 @define
 class SourceCodeJobFacet(JobFacet):
     language: str
-    """
-    Language in which source code of this job was written.
-    """
+    """Language in which source code of this job was written."""
+
     sourceCode: str  # noqa: N815
-    """
-    Source code of this job.
-    """
+    """Source code of this job."""
+
     _additional_skip_redact: ClassVar[list[str]] = ["language"]
 
     @staticmethod

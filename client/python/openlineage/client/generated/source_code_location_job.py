@@ -12,33 +12,26 @@ from openlineage.client.generated.base import JobFacet
 @define
 class SourceCodeLocationJobFacet(JobFacet):
     type: str
-    """
-    the source control system
-    """
+    """the source control system"""
+
     url: str
-    """
-    the full http URL to locate the file
-    """
+    """the full http URL to locate the file"""
+
     repoUrl: str | None = field(default=None)  # noqa: N815
-    """
-    the URL to the repository
-    """
+    """the URL to the repository"""
+
     path: str | None = field(default=None)
-    """
-    the path in the repo containing the source files
-    """
+    """the path in the repo containing the source files"""
+
     version: str | None = field(default=None)
-    """
-    the current version deployed (not a branch name, the actual unique version)
-    """
+    """the current version deployed (not a branch name, the actual unique version)"""
+
     tag: str | None = field(default=None)
-    """
-    optional tag name
-    """
+    """optional tag name"""
+
     branch: str | None = field(default=None)
-    """
-    optional branch name
-    """
+    """optional branch name"""
+
     _additional_skip_redact: ClassVar[list[str]] = ["type", "url"]
 
     @staticmethod

@@ -10,9 +10,7 @@ from openlineage.client.generated.base import DatasetFacet
 @define
 class DocumentationDatasetFacet(DatasetFacet):
     description: str
-    """
-    The description of the dataset.
-    """
+    """The description of the dataset."""
 
     @staticmethod
     def _get_schema() -> str:

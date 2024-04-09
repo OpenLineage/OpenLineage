@@ -11,9 +11,7 @@ from openlineage.client.utils import RedactMixin
 
 
 class LifecycleStateChange(Enum):
-    """
-    The lifecycle state change.
-    """
+    """The lifecycle state change."""
 
     ALTER = "ALTER"
     CREATE = "CREATE"
@@ -26,13 +24,10 @@ class LifecycleStateChange(Enum):
 @define
 class LifecycleStateChangeDatasetFacet(DatasetFacet):
     lifecycleStateChange: LifecycleStateChange  # noqa: N815
-    """
-    The lifecycle state change.
-    """
+    """The lifecycle state change."""
+
     previousIdentifier: PreviousIdentifier | None = field(default=None)  # noqa: N815
-    """
-    Previous name of the dataset in case of renaming it.
-    """
+    """Previous name of the dataset in case of renaming it."""
 
     @staticmethod
     def _get_schema() -> str:
@@ -41,9 +36,7 @@ class LifecycleStateChangeDatasetFacet(DatasetFacet):
 
 @define
 class PreviousIdentifier(RedactMixin):
-    """
-    Previous name of the dataset in case of renaming it.
-    """
+    """Previous name of the dataset in case of renaming it."""
 
     name: str
     namespace: str

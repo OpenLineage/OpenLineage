@@ -10,9 +10,7 @@ from openlineage.client.generated.base import JobFacet
 @define
 class DocumentationJobFacet(JobFacet):
     description: str
-    """
-    The description of the job.
-    """
+    """The description of the job."""
 
     @staticmethod
     def _get_schema() -> str:

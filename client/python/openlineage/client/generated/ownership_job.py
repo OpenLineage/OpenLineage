@@ -16,17 +16,13 @@ class Owner(RedactMixin):
     application:foo, user:jdoe, team:data
     """
     type: str | None = field(default=None)
-    """
-    The type of ownership (optional)
-    """
+    """The type of ownership (optional)"""
 
 
 @define
 class OwnershipJobFacet(JobFacet):
     owners: list[Owner] | None = field(factory=list)  # type: ignore[assignment]
-    """
-    The owners of the job.
-    """
+    """The owners of the job."""
 
     @staticmethod
     def _get_schema() -> str:

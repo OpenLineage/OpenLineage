@@ -39,12 +39,14 @@ from openlineage.client.generated.base import (
 )
 
 __all__ = [
+    "PRODUCER",
     "BaseFacet",
-    "JobFacet",
-    "RunFacet",
     "DatasetFacet",
     "InputDatasetFacet",
+    "JobFacet",
     "OutputDatasetFacet",
+    "RunFacet",
+    "set_producer",
     "column_lineage_dataset",
     "data_quality_assertions_dataset",
     "data_quality_metrics_input_dataset",
@@ -69,6 +71,4 @@ __all__ = [
     "sql_job",
     "storage_dataset",
     "symlinks_dataset",
-    "PRODUCER",
-    "set_producer",
 ]

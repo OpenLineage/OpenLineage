@@ -3,12 +3,32 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import MagicMock
+import os
+from unittest import mock
 
 from attr import define
 from openlineage.client.client import OpenLineageClient
-from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
-from openlineage.client.facet_v2 import PRODUCER, RunFacet, set_producer
+from openlineage.client.event_v2 import (
+    BaseEvent,
+    InputDataset,
+    Job,
+    OutputDataset,
+    Run,
+    RunEvent,
+    RunState,
+)
+from openlineage.client.facet_v2 import (
+    PRODUCER,
+    BaseFacet,
+    RunFacet,
+    data_quality_assertions_dataset,
+    documentation_job,
+    nominal_time_run,
+    output_statistics_output_dataset,
+    parent_run,
+    schema_dataset,
+    set_producer,
+)
 
 
 def test_set_producer():
@@ -19,7 +39,7 @@ def test_set_producer():
 
 
 def test_custom_facet() -> None:
-    session = MagicMock()
+    session = mock.MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
     @define
@@ -70,3 +90,105 @@ def test_custom_facet() -> None:
     }
 
     assert expected_event == event_sent
+
+
+#
+# def test_full_core_event_serializes_properly(facet_mocker, event_mocker) -> None:
+def test_full_core_event_serializes_properly() -> None:
+    session = mock.MagicMock()
+    client = OpenLineageClient(url="http://example.com", session=session)
+
+    set_producer("https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client")
+
+    event_init = BaseEvent.__attrs_post_init__
+    facet_init = BaseFacet.__attrs_post_init__
+
+    def set_test_schemaURL(self):  # noqa: N802
+        if getattr(self, "schemaURL", None):
+            event_init(self)
+            self.schemaURL = "http://test.schema.url"
+        else:
+            facet_init(self)
+            self._schemaURL = "http://test.schema.url"
+
+    with mock.patch.object(
+        BaseFacet, "__attrs_post_init__", autospec=True, side_effect=set_test_schemaURL
+    ), mock.patch.object(BaseEvent, "__attrs_post_init__", autospec=True, side_effect=set_test_schemaURL):
+        event = RunEvent(
+            eventType=RunState.COMPLETE,
+            eventTime="2020-12-28T19:51:01.641Z",
+            run=Run(
+                runId="ea041791-68bc-4ae1-bd89-4c8106a157e4",
+                facets={
+                    "nominalTime": nominal_time_run.NominalTimeRunFacet(
+                        nominalStartTime="2020-12-17T03:00:00.001Z", nominalEndTime="2020-12-17T04:00:00.001Z"
+                    ),
+                    "parent": parent_run.ParentRunFacet(
+                        run=parent_run.Run(runId="3f5e83fa-3480-44ff-99c5-ff943904e5e8"),
+                        job=parent_run.Job(namespace="my-scheduler-namespace", name="myjob.mytask"),
+                    ),
+                },
+            ),
+            job=Job(
+                namespace="my-scheduler-namespace",
+                name="myjob.mytask",
+                facets={"documentation": documentation_job.DocumentationJobFacet(description="string")},
+            ),
+            inputs=[
+                InputDataset(
+                    namespace="my-datasource-namespace",
+                    name="instance.schema.table",
+                    inputFacets={
+                        "dataQualityAssertions": data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet(  # noqa: E501
+                            assertions=[
+                                data_quality_assertions_dataset.Assertion(
+                                    assertion="row_count_equal_to", success=True
+                                ),
+                                data_quality_assertions_dataset.Assertion(
+                                    assertion="no_null_values", success=True, column="id"
+                                ),
+                            ]
+                        )
+                    },
+                    facets={
+                        "schema": schema_dataset.SchemaDatasetFacet(
+                            fields=[
+                                schema_dataset.SchemaDatasetFacetFields(
+                                    name="column1", type="VARCHAR", description="string"
+                                )
+                            ]
+                        )
+                    },
+                )
+            ],
+            outputs=[
+                OutputDataset(
+                    namespace="my-datasource-namespace",
+                    name="instance.schema.table",
+                    outputFacets={
+                        "outputStatistics": output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(  # noqa: E501
+                            rowCount=2000, size=2097152
+                        )
+                    },
+                    facets={
+                        "schema": schema_dataset.SchemaDatasetFacet(
+                            fields=[
+                                schema_dataset.SchemaDatasetFacetFields(
+                                    name="column1", type="VARCHAR", description="string"
+                                )
+                            ]
+                        )
+                    },
+                )
+            ],
+        )
+
+        client.emit(event)
+
+        event_sent = json.loads(session.post.call_args[0][1])
+
+        dirpath = os.path.dirname(os.path.realpath(__file__))
+        with open(os.path.join(dirpath, "example_full_event.json")) as f:
+            expected_event = json.load(f)
+
+        assert expected_event == event_sent

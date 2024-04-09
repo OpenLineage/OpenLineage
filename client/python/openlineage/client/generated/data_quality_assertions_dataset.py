@@ -13,9 +13,8 @@ from openlineage.client.utils import RedactMixin
 @define
 class Assertion(RedactMixin):
     assertion: str
-    """
-    Type of expectation test that dataset is subjected to
-    """
+    """Type of expectation test that dataset is subjected to"""
+
     success: bool
     column: str | None = field(default=None)
     """
@@ -27,9 +26,7 @@ class Assertion(RedactMixin):
 
 @define
 class DataQualityAssertionsDatasetFacet(InputDatasetFacet):
-    """
-    list of tests performed on dataset or dataset columns, and their results
-    """
+    """list of tests performed on dataset or dataset columns, and their results"""
 
     assertions: list[Assertion]
 

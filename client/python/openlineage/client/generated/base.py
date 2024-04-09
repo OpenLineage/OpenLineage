@@ -14,9 +14,8 @@ from openlineage.client.utils import RedactMixin
 @define(kw_only=True)
 class BaseEvent(RedactMixin):
     eventTime: str = field()  # noqa: N815
-    """
-    the time the event occurred at
-    """
+    """the time the event occurred at"""
+
     producer: str = field(default="", kw_only=True)
     schemaURL: str = field(  # noqa: N815
         default="https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/BaseEvent", init=False
@@ -58,9 +57,7 @@ class BaseEvent(RedactMixin):
 
 @define
 class BaseFacet(RedactMixin):
-    """
-    all fields of the base facet are prefixed with _ to avoid name conflicts in facets
-    """
+    """all fields of the base facet are prefixed with _ to avoid name conflicts in facets"""
 
     _producer: str = field(default="", kw_only=True)
     _schemaURL: str = field(  # noqa: N815
@@ -94,17 +91,14 @@ class BaseFacet(RedactMixin):
 @define
 class Dataset(RedactMixin):
     namespace: str
-    """
-    The namespace containing that dataset
-    """
+    """The namespace containing that dataset"""
+
     name: str
-    """
-    The unique name for that dataset within that namespace
-    """
+    """The unique name for that dataset within that namespace"""
+
     facets: dict[str, DatasetFacet] | None = field(factory=dict, kw_only=True)  # type: ignore[assignment]
-    """
-    The facets for this dataset
-    """
+    """The facets for this dataset"""
+
     _skip_redact: ClassVar[list[str]] = ["namespace", "name"]
 
     @staticmethod
@@ -123,14 +117,10 @@ class DatasetEvent(BaseEvent):
 
 @define
 class DatasetFacet(BaseFacet):
-    """
-    A Dataset Facet
-    """
+    """A Dataset Facet"""
 
     _deleted: bool | None = field(default=None, kw_only=True)
-    """
-    set to true to delete a facet
-    """
+    """set to true to delete a facet"""
 
     @staticmethod
     def _get_schema() -> str:
@@ -154,14 +144,11 @@ class EventType(Enum):
 
 @define
 class InputDataset(Dataset):
-    """
-    An input dataset
-    """
+    """An input dataset"""
 
     inputFacets: dict[str, InputDatasetFacet] | None = field(factory=dict)  # type: ignore[assignment]# noqa: N815
-    """
-    The input facets for this dataset.
-    """
+    """The input facets for this dataset."""
+
     _additional_skip_redact: ClassVar[list[str]] = ["namespace", "name"]
 
     @staticmethod
@@ -171,9 +158,7 @@ class InputDataset(Dataset):
 
 @define
 class InputDatasetFacet(BaseFacet):
-    """
-    An Input Dataset Facet
-    """
+    """An Input Dataset Facet"""
 
     @staticmethod
     def _get_schema() -> str:
@@ -183,17 +168,14 @@ class InputDatasetFacet(BaseFacet):
 @define
 class Job(RedactMixin):
     namespace: str
-    """
-    The namespace containing that job
-    """
+    """The namespace containing that job"""
+
     name: str
-    """
-    The unique name for that job within that namespace
-    """
+    """The unique name for that job within that namespace"""
+
     facets: dict[str, JobFacet] | None = field(factory=dict)  # type: ignore[assignment]
-    """
-    The job facets.
-    """
+    """The job facets."""
+
     _skip_redact: ClassVar[list[str]] = ["namespace", "name"]
 
     @staticmethod
@@ -205,13 +187,10 @@ class Job(RedactMixin):
 class JobEvent(BaseEvent):
     job: Job
     inputs: list[InputDataset] | None = field(factory=list)  # type: ignore[assignment]
-    """
-    The set of **input** datasets.
-    """
+    """The set of **input** datasets."""
+
     outputs: list[OutputDataset] | None = field(factory=list)  # type: ignore[assignment]
-    """
-    The set of **output** datasets.
-    """
+    """The set of **output** datasets."""
 
     @staticmethod
     def _get_schema() -> str:
@@ -220,14 +199,10 @@ class JobEvent(BaseEvent):
 
 @define
 class JobFacet(BaseFacet):
-    """
-    A Job Facet
-    """
+    """A Job Facet"""
 
     _deleted: bool | None = field(default=None, kw_only=True)
-    """
-    set to true to delete a facet
-    """
+    """set to true to delete a facet"""
 
     @staticmethod
     def _get_schema() -> str:
@@ -236,14 +211,11 @@ class JobFacet(BaseFacet):
 
 @define
 class OutputDataset(Dataset):
-    """
-    An output dataset
-    """
+    """An output dataset"""
 
     outputFacets: dict[str, OutputDatasetFacet] | None = field(factory=dict)  # type: ignore[assignment]# noqa: N815
-    """
-    The output facets for this dataset
-    """
+    """The output facets for this dataset"""
+
     _additional_skip_redact: ClassVar[list[str]] = ["namespace", "name"]
 
     @staticmethod
@@ -253,9 +225,7 @@ class OutputDataset(Dataset):
 
 @define
 class OutputDatasetFacet(BaseFacet):
-    """
-    An Output Dataset Facet
-    """
+    """An Output Dataset Facet"""
 
     @staticmethod
     def _get_schema() -> str:
@@ -265,13 +235,11 @@ class OutputDatasetFacet(BaseFacet):
 @define
 class Run(RedactMixin):
     runId: str = field()  # noqa: N815
-    """
-    The globally unique ID of the run associated with the job.
-    """
+    """The globally unique ID of the run associated with the job."""
+
     facets: dict[str, RunFacet] | None = field(factory=dict)  # type: ignore[assignment]
-    """
-    The run facets.
-    """
+    """The run facets."""
+
     _skip_redact: ClassVar[list[str]] = ["runId"]
 
     @staticmethod
@@ -296,13 +264,11 @@ class RunEvent(BaseEvent):
     For example to send additional metadata after the run is complete
     """
     inputs: list[InputDataset] | None = field(factory=list)  # type: ignore[assignment]
-    """
-    The set of **input** datasets.
-    """
+    """The set of **input** datasets."""
+
     outputs: list[OutputDataset] | None = field(factory=list)  # type: ignore[assignment]
-    """
-    The set of **output** datasets.
-    """
+    """The set of **output** datasets."""
+
     _additional_skip_redact: ClassVar[list[str]] = ["eventType", "eventTime"]
 
     @staticmethod
@@ -312,9 +278,7 @@ class RunEvent(BaseEvent):
 
 @define
 class RunFacet(BaseFacet):
-    """
-    A Run Facet
-    """
+    """A Run Facet"""
 
     @staticmethod
     def _get_schema() -> str:
@@ -323,9 +287,7 @@ class RunFacet(BaseFacet):
 
 @define
 class StaticDataset(Dataset):
-    """
-    A Dataset sent within static metadata events
-    """
+    """A Dataset sent within static metadata events"""
 
     @staticmethod
     def _get_schema() -> str:

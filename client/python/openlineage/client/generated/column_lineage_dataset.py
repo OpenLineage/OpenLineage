@@ -13,9 +13,7 @@ from openlineage.client.utils import RedactMixin
 @define
 class ColumnLineageDatasetFacet(DatasetFacet):
     fields: dict[str, Fields]
-    """
-    Column level lineage that maps output fields into input fields used to evaluate them.
-    """
+    """Column level lineage that maps output fields into input fields used to evaluate them."""
 
     @staticmethod
     def _get_schema() -> str:
@@ -26,9 +24,8 @@ class ColumnLineageDatasetFacet(DatasetFacet):
 class Fields(RedactMixin):
     inputFields: list[InputField]  # noqa: N815
     transformationDescription: str | None = field(default=None)  # noqa: N815
-    """
-    a string representation of the transformation applied
-    """
+    """a string representation of the transformation applied"""
+
     transformationType: str | None = field(default=None)  # noqa: N815
     """
     IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no
@@ -39,15 +36,12 @@ class Fields(RedactMixin):
 @define
 class InputField(RedactMixin):
     namespace: str
-    """
-    The input dataset namespace
-    """
+    """The input dataset namespace"""
+
     name: str
-    """
-    The input dataset name
-    """
+    """The input dataset name"""
+
     field: str
-    """
-    The input field
-    """
+    """The input field"""
+
     _skip_redact: ClassVar[list[str]] = ["namespace", "name", "field"]

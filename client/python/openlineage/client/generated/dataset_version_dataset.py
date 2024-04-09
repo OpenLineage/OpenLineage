@@ -10,9 +10,7 @@ from openlineage.client.generated.base import DatasetFacet
 @define
 class DatasetVersionDatasetFacet(DatasetFacet):
     datasetVersion: str  # noqa: N815
-    """
-    The version of the dataset.
-    """
+    """The version of the dataset."""
 
     @staticmethod
     def _get_schema() -> str:

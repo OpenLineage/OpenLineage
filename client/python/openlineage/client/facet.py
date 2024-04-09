@@ -175,7 +175,7 @@ class ColumnMetric:
 @attr.s
 class DataQualityMetricsInputDatasetFacet(BaseFacet):
     rowCount: Optional[int] = attr.ib(default=None)  # noqa: N815
-    bytes: Optional[int] = attr.ib(default=None)  # noqa: A003
+    bytes: Optional[int] = attr.ib(default=None)
     fileCount: Optional[int] = attr.ib(default=None)  # noqa: N815
     columnMetrics: Dict[str, ColumnMetric] = attr.ib(factory=dict)  # noqa: N815
 

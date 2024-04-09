@@ -10,13 +10,10 @@ from openlineage.client.generated.base import DatasetFacet
 @define
 class StorageDatasetFacet(DatasetFacet):
     storageLayer: str  # noqa: N815
-    """
-    Storage layer provider with allowed values: iceberg, delta.
-    """
+    """Storage layer provider with allowed values: iceberg, delta."""
+
     fileFormat: str | None = field(default=None)  # noqa: N815
-    """
-    File format with allowed values: parquet, orc, avro, json, csv, text, xml.
-    """
+    """File format with allowed values: parquet, orc, avro, json, csv, text, xml."""
 
     @staticmethod
     def _get_schema() -> str:

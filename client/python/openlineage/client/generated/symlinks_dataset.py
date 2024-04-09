@@ -11,17 +11,13 @@ from openlineage.client.utils import RedactMixin
 @define
 class Identifier(RedactMixin):
     namespace: str
-    """
-    The dataset namespace
-    """
+    """The dataset namespace"""
+
     name: str
-    """
-    The dataset name
-    """
+    """The dataset name"""
+
     type: str
-    """
-    Identifier type
-    """
+    """Identifier type"""
 
 
 @define
