@@ -1,6 +1,30 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.11.3...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.12.0...HEAD)
+
+## [1.12.0](https://github.com/OpenLineage/OpenLineage/compare/1.11.3...1.12.0) - 2024-04-09
+
+### Added
+* **Airflow: add `lineage_job_namespace` and `lineage_job_name` macros** [`#2582`](https://github.com/OpenLineage/OpenLineage/pull/2582) [@dolfinus](https://github.com/dolfinus)  
+    *Adds new Airflow macros `lineage_job_namespace()`, `lineage_job_name(task)` that return an Airflow namespace and Airflow job name, respectively.*
+* **Spec: Allow nested struct fields in `SchemaDatasetFacet`** [`#2548`](https://github.com/OpenLineage/OpenLineage/pull/2548) [@dolfinus](https://github.com/dolfinus)  
+    *Allows nested fields support to `SchemaDatasetFacet`.*
+
+### Fixed
+* **Spark: fix PMD for test** [`#2588`](https://github.com/OpenLineage/OpenLineage/pull/2588) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Clears `pmdTestScala212` from warnings that clutter the logs.*
+* **Dbt: propagate the dbt return code also when no OpenLineage events are emitted** [`#2591`](https://github.com/OpenLineage/OpenLineage/pull/2591) [@blacklight](https://github.com/blacklight)  
+    *`dbt-ol` now propagates the exit code of the underlying dbt process even if no lineage events are emitted.*
+* **Java: make sure string isn't empty to prevent going out of bounds** [`#2585`](https://github.com/OpenLineage/OpenLineage/pull/2585) [@harels](https://github.com/harels)  
+    *String lookup was not accounting for empty strings and causing a `java.lang.StringIndexOutOfBoundsException`.*
+* **Spark: use `HashSet` in column-level lineage instead of iterating through `LinkedList`** [`#2584`](https://github.com/OpenLineage/OpenLineage/pull/2584) [@mobuchowski](https://github.com/mobuchowski)  
+    *Takes advantage of performance gains available from using `HashSet` for collection.*
+* **Python: fix missing pkg_resources module on Python 3.12** [`#2572`](https://github.com/OpenLineage/OpenLineage/pull/2572) [@dolfinus](https://github.com/dolfinus)  
+    *Removes `pkg_resources` dependency and replaces it with the [packaging](https://packaging.pypa.io/en/latest/version.html) lib.*
+* **Airflow: fix format returned by `airflow.macros.lineage_parent_id`** [`#2578`](https://github.com/OpenLineage/OpenLineage/pull/2578) [@blacklight](https://github.com/blacklight)  
+    *Fixes the run format returned by the `lineage_parent_id` Airflow macro and simplifies the format of the `lineage_parent_id` and `lineage_run_id` macros.*
+* **Dagster: limit Dagster version to 1.6.9** [`#2579`](https://github.com/OpenLineage/OpenLineage/pull/2579) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds an upper limit on supported versions of Dagster as the integration is no longer actively maintained and recent releases introduce breaking changes.*
 
 ## [1.11.3](https://github.com/OpenLineage/OpenLineage/compare/1.10.2...1.11.3) - 2024-04-04
 
