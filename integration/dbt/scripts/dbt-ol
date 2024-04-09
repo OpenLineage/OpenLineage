@@ -181,12 +181,12 @@ def main():
                 "OpenLineage events not emitted: run_result file (%s) was not modified by dbt",
                 processor.run_result_path,
             )
-            return
+            return return_code
     except FileNotFoundError:
         logger.info(
             "OpenLineage events not emitted: did not find run_result file (%s)", processor.run_result_path
         )
-        return
+        return return_code
 
     try:
         events = processor.parse().events()
