@@ -63,6 +63,8 @@ class {{ class_name }}:
         {%- set type_hint = field.type_hint.replace('uuid', 'str') -%}
     {%- elif 'date-time' in field.type_hint -%}
         {%- set type_hint = field.type_hint.replace('date-time', 'str') -%}
+    {%- elif 'uri' in field.type_hint -%}
+        {%- set type_hint = field.type_hint.replace('uri', 'str') -%}
     {%- else -%}
         {%- set type_hint = field.type_hint -%}
     {%- endif -%}
@@ -120,7 +122,7 @@ class {{ class_name }}:
 {%- endfor -%}
 {#- special case for producer and schemaURL fields -#}
 {%- if class_name in ['BaseFacet', 'BaseEvent'] %}
-    {{ private_prefix }}producer: str = field(default="", kw_only=True)  # noqa: N815
+    {{ private_prefix }}producer: str = field(default='', kw_only=True)  # noqa: N815
     {{ private_prefix }}schemaURL: str = field(  # noqa: N815
         default="{{ _schemaURL }}", init=False)
 {%- endif -%}
@@ -139,15 +141,8 @@ class {{ class_name }}:
     _base_skip_redact: ClassVar[list[str]] = ["{{ private_prefix }}producer", "{{ private_prefix }}schemaURL"]
     _additional_skip_redact: ClassVar[list[str]] = []
 
-    def __attrs_post_init__(self) -> None:
-        import warnings
-        if self.{{ private_prefix }}producer:
-            warnings.warn(
-                "{{ private_prefix }}producer as argument is deprecated. Please use `set_producer` instead.",
-                DeprecationWarning,
-                stacklevel=2
-            )
-        else:
+    def __attrs_post_init__(self) -> None: 
+        if not self.{{ private_prefix }}producer:
             self.{{ private_prefix }}producer = PRODUCER
         self.{{ private_prefix }}schemaURL = self._get_schema()
 

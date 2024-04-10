@@ -6,8 +6,10 @@ import logging
 from typing import TYPE_CHECKING, Any, TypeVar
 
 import attr
+from openlineage.client import event_v2
 from openlineage.client.facet import ParentRunFacet
-from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
+from openlineage.client.facet_v2 import parent_run
+from openlineage.client.run import DatasetEvent, JobEvent
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields
@@ -70,21 +72,39 @@ class KafkaTransport(Transport):
             self._setup_producer(self.kafka_config.config)
         log.debug("Constructing openlineage client to send events to topic %s", config.topic)
 
-    def _get_message_key(self, event: RunEvent | DatasetEvent | JobEvent) -> str:
-        if isinstance(event, DatasetEvent):
+    def _get_message_key(self, event: Event) -> str:
+        if isinstance(event, (DatasetEvent, event_v2.DatasetEvent)):
             return f"dataset:{event.dataset.namespace}/{event.dataset.name}"
 
-        if isinstance(event, JobEvent):
+        if isinstance(event, (JobEvent, event_v2.JobEvent)):
             return f"job:{event.job.namespace}/{event.job.name}"
 
-        parent_run_facet: ParentRunFacet = event.run.facets.get("parent") or ParentRunFacet({}, {})
-        parent_job_namespace: str | None = parent_run_facet.job.get("namespace")
-        parent_job_name: str | None = parent_run_facet.job.get("name")
-        parent_run_id: str | None = parent_run_facet.run.get("runId")
+        run_facets: dict[str, Any] = event.run.facets or {}
+        parent_run_facet: ParentRunFacet | parent_run.ParentRunFacet = run_facets.get(
+            "parent"
+        ) or ParentRunFacet({}, {})
+        if isinstance(parent_run_facet, parent_run.ParentRunFacet):
+            (
+                parent_job_namespace,
+                parent_job_name,
+                parent_run_id,
+            ) = self._get_message_key_args_from_parent_run_facet_v2(parent_run_facet)
+        else:
+            parent_job_namespace: str | None = parent_run_facet.job.get("namespace")
+            parent_job_name: str | None = parent_run_facet.job.get("name")
+            parent_run_id: str | None = parent_run_facet.run.get("runId")
         if parent_job_namespace and parent_job_name and parent_run_id:
             return f"run:{parent_job_namespace}/{parent_job_name}/{parent_run_id}"
 
         return f"run:{event.job.namespace}/{event.job.name}/{event.run.runId}"
+
+    def _get_message_key_args_from_parent_run_facet_v2(
+        self, parent_run_facet: parent_run.ParentRunFacet
+    ) -> tuple[str, str, str]:
+        parent_job_namespace: str = parent_run_facet.job.namespace
+        parent_job_name: str = parent_run_facet.job.name
+        parent_run_id: str = parent_run_facet.run.runId
+        return parent_job_namespace, parent_job_name, parent_run_id
 
     def emit(self, event: Event) -> None:
         if self._is_airflow_sqlalchemy:

@@ -10,6 +10,13 @@ from attr import define, field
 from openlineage.client.constants import DEFAULT_PRODUCER
 from openlineage.client.utils import RedactMixin
 
+PRODUCER = DEFAULT_PRODUCER
+
+
+def set_producer(producer: str) -> None:
+    global PRODUCER  # noqa: PLW0603
+    PRODUCER = producer
+
 
 @define(kw_only=True)
 class BaseEvent(RedactMixin):
@@ -24,15 +31,7 @@ class BaseEvent(RedactMixin):
     _additional_skip_redact: ClassVar[list[str]] = []
 
     def __attrs_post_init__(self) -> None:
-        import warnings
-
-        if self.producer:
-            warnings.warn(
-                "producer as argument is deprecated. Please use `set_producer` instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-        else:
+        if not self.producer:
             self.producer = PRODUCER
         self.schemaURL = self._get_schema()
 
@@ -54,6 +53,24 @@ class BaseEvent(RedactMixin):
             msg = f"Parsed date-time has to contain time: {value}"
             raise ValueError(msg)
 
+    @producer.validator
+    def producer_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        from urllib.parse import urlparse
+
+        result = urlparse(value)
+        if value and not all([result.scheme, result.netloc]):
+            msg = "producer is not a valid URI"
+            raise ValueError(msg)
+
+    @schemaURL.validator
+    def schemaurl_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        from urllib.parse import urlparse
+
+        result = urlparse(value)
+        if value and not all([result.scheme, result.netloc]):
+            msg = "schemaURL is not a valid URI"
+            raise ValueError(msg)
+
 
 @define
 class BaseFacet(RedactMixin):
@@ -67,15 +84,7 @@ class BaseFacet(RedactMixin):
     _additional_skip_redact: ClassVar[list[str]] = []
 
     def __attrs_post_init__(self) -> None:
-        import warnings
-
-        if self._producer:
-            warnings.warn(
-                "_producer as argument is deprecated. Please use `set_producer` instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-        else:
+        if not self._producer:
             self._producer = PRODUCER
         self._schemaURL = self._get_schema()
 
@@ -86,6 +95,24 @@ class BaseFacet(RedactMixin):
     @staticmethod
     def _get_schema() -> str:
         return "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/BaseFacet"
+
+    @_producer.validator
+    def _producer_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        from urllib.parse import urlparse
+
+        result = urlparse(value)
+        if value and not all([result.scheme, result.netloc]):
+            msg = "_producer is not a valid URI"
+            raise ValueError(msg)
+
+    @_schemaURL.validator
+    def _schemaurl_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        from urllib.parse import urlparse
+
+        result = urlparse(value)
+        if value and not all([result.scheme, result.netloc]):
+            msg = "_schemaURL is not a valid URI"
+            raise ValueError(msg)
 
 
 @define
@@ -292,11 +319,3 @@ class StaticDataset(Dataset):
     @staticmethod
     def _get_schema() -> str:
         return "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/StaticDataset"
-
-
-PRODUCER = DEFAULT_PRODUCER
-
-
-def set_producer(producer: str) -> None:
-    global PRODUCER  # noqa: PLW0603
-    PRODUCER = producer

@@ -140,7 +140,6 @@ def parse_and_generate(locations):
                 "fields": clazz["redact_fields"],
                 "module_name": module_entry["module"],
             })
-    print(deep_merge_dicts(extra_redact_fields, extra_schema_urls))
 
     temporary_locations = []
     with tempfile.TemporaryDirectory() as tmp:
@@ -184,6 +183,10 @@ def parse_and_generate(locations):
         date_time_type.type = "date-time"
         parser.data_type_manager.type_map[Types.date_time] = date_time_type
 
+        uri_type = copy.deepcopy(parser.data_type_manager.type_map[Types.date_time])
+        uri_type.type = "uri"
+        parser.data_type_manager.type_map[Types.uri] = uri_type
+
         parser.parse(format_=False)
 
         # parse rest of spec
@@ -211,6 +214,21 @@ def generate_facet_v2_module(module_location):
     format_and_save_output(
         output=output, location=PYTHON_CLIENT_LOCATION / "openlineage" / "client" / "facet_v2.py"
     )
+def separate_imports(code):
+  """Separates a Python script code (as string) into imports and the rest."""
+  imports_section = []
+  rest_of_code = []
+  in_import = False
+  for line in code.splitlines():
+    if line.startswith(("import ", "from ")):
+      in_import = True
+    elif in_import and line.strip() == "":
+      in_import = False
+    if in_import:
+      imports_section.append(line)
+    else:
+      rest_of_code.append(line)
+  return ("\n".join(imports_section), "\n".join(rest_of_code))
 
 
 def format_and_save_output(output: str, location: pathlib.Path, add_set_producer_code: bool = False):
@@ -223,9 +241,12 @@ def format_and_save_output(output: str, location: pathlib.Path, add_set_producer
         "w", prefix=location.stem.lower(), suffix=".py", dir=DEFAULT_OUTPUT_LOCATION.parent, delete=False
     ) as tmpfile:
         tmpfile.write(HEADER)
-        tmpfile.write(output.replace("from .OpenLineage", "from openlineage.client.generated.base"))
+        output = output.replace("from .OpenLineage", "from openlineage.client.generated.base")
+        imports_section, rest_of_code = separate_imports(output)
+        tmpfile.write(imports_section)
         if add_set_producer_code:
             tmpfile.write(SET_PRODUCER_CODE)
+        tmpfile.write(rest_of_code)
         tmpfile.flush()
 
     # run ruff lint

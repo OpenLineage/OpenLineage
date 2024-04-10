@@ -14,7 +14,7 @@ class SourceCodeLocationJobFacet(JobFacet):
     type: str
     """the source control system"""
 
-    url: str
+    url: str = field()
     """the full http URL to locate the file"""
 
     repoUrl: str | None = field(default=None)  # noqa: N815
@@ -37,3 +37,12 @@ class SourceCodeLocationJobFacet(JobFacet):
     @staticmethod
     def _get_schema() -> str:
         return "https://openlineage.io/spec/facets/1-0-1/SourceCodeLocationJobFacet.json#/$defs/SourceCodeLocationJobFacet"
+
+    @url.validator
+    def url_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        from urllib.parse import urlparse
+
+        result = urlparse(value)
+        if value and not all([result.scheme, result.netloc]):
+            msg = "url is not a valid URI"
+            raise ValueError(msg)

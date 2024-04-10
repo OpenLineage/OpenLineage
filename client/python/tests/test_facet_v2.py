@@ -38,6 +38,11 @@ def test_set_producer():
     assert run_facet._producer == "http://test.producer"  # noqa: SLF001
 
 
+def test_set_producer_from_argument():
+    facet = BaseFacet(producer="http://another.producer")
+    assert facet._producer == "http://another.producer"  # noqa: SLF001
+
+
 def test_custom_facet() -> None:
     session = mock.MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
