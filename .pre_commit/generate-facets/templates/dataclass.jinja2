@@ -1,6 +1,25 @@
 {#- import attrs validators logic -#}
 {%- import 'validators.jinja2' as validators -%}
 
+{#- get current file name and convert int to snake case as in generate script -#}
+{%- set module = namespace(name='') -%}
+{%- macro camel_to_snake(name) -%}
+    {%- set snake_case = namespace(char_list=[]) -%}
+    {%- for char in name -%}
+        {%- if char is upper -%}
+            {%- if snake_case.char_list | length == 0 -%}
+                {%- set snake_case.char_list = snake_case.char_list + [ char.lower()] -%}
+            {%- else -%}
+                {%- set snake_case.char_list = snake_case.char_list + ['_', char.lower()] -%}
+            {%- endif -%}
+        {%- else -%}
+            {%- set snake_case.char_list = snake_case.char_list + [char] -%}
+        {%- endif -%}
+    {%- endfor -%}
+    {{ snake_case.char_list | join }}
+{%- endmacro -%}
+
+
 {#- for facet classes use alias to use _producer and _schemaURL attributes -#}
 {%- set private_prefix = '' -%}
 {%- if class_name.endswith('Facet') -%}
@@ -89,7 +108,15 @@ class {{ class_name }}:
     {%- else %}
     """{{ field.docstring }}"""
     {% endif -%}
-    {%- endif %} 
+    {%- endif %}
+    {%- if not module.name -%}
+    {%- set module.name = camel_to_snake(
+        field.parent.reference.path.split("#")[0]
+            | replace(".json", "")
+            | replace("Facet", "")
+            | replace("OpenLineage", "base")
+    ) -%}
+    {%- endif -%}
 {%- endfor -%}
 {#- special case for producer and schemaURL fields -#}
 {%- if class_name in ['BaseFacet', 'BaseEvent'] %}
@@ -97,13 +124,15 @@ class {{ class_name }}:
     {{ private_prefix }}schemaURL: str = field(  # noqa: N815
         default="{{ _schemaURL }}", init=False)
 {%- endif -%}
-{#-fields to be skipped in redaction -#}
-{%- if redact_fields -%}
+{#- try to match redfact fields per module_name -#}
+{%- set redact_fields = redactions | selectattr("module_name", "equalto", module.name) | first -%}
+{%- if redact_fields and redact_fields["fields"] -%}
     {%- if base_class == 'RedactMixin' %}
     _skip_redact
     {%- else %}
     _additional_skip_redact
-    {%- endif -%}: ClassVar[list[str]] = {{ redact_fields }}
+    {%- endif -%}: ClassVar[list[str]] = {{ redact_fields["fields"] }}
+{#- {%- else -%} # {{ module.name }} {{ redactions }} -#}
 {%- endif -%}
 {#- base classes have additional logic for deprecations and producer & schemaURL fields -#}
 {%- if class_name in ['BaseFacet', 'BaseEvent'] %}

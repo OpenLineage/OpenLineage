@@ -92,3 +92,10 @@ repos:
         exclude: ^spec/tests/.*$
         pass_filenames: false
         additional_dependencies: ["ruff==0.3.5", "click", "datamodel-code-generator==0.25.4"]
+      - id: check_facets_redactions
+        name: Check if all Facets have redacted fields defined
+        language: python
+        additional_dependencies: ["pyyaml"]
+        entry: python ./.pre_commit/check-redactions.py
+        always_run: true
+        pass_filenames: false

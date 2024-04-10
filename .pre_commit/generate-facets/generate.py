@@ -15,6 +15,7 @@ from collections import defaultdict
 
 import click
 import jinja2
+import yaml
 from datamodel_code_generator import DataModelType, PythonVersion
 from datamodel_code_generator.imports import Import
 from datamodel_code_generator.model import get_data_model_types
@@ -63,25 +64,17 @@ def set_producer(producer: str) -> None:
 HEADER = (FILE_LOCATION / "header.py").resolve().read_text()
 
 # structures to customize code generation
-REDACT_FIELDS = {
-    "Assertion": ["column"],
-    "InputField": ["namespace", "name", "field"],
-    "Dataset": ["namespace", "name"],
-    "InputDataset": ["namespace", "name"],
-    "OutputDataset": ["namespace", "name"],
-    "Job": ["namespace", "name"],
-    "Run": ["runId"],
-    "RunEvent": ["eventType", "eventTime"],
-    "NominalTimeRunFacet": ["nominalStartTime", "nominalEndTime"],
-    "ParentRunFacet": ["job", "run"],
-    "SourceCodeLocationJobFacet": ["type", "url"],
-    "DatasourceDatasetFacet": ["name", "uri"],
-    "OutputStatisticsOutputDatasetFacet": ["rowCount", "size"],
-    "SourceCodeJobFacet": ["language"],
-    "ErrorMessageRunFacet": ["programmingLanguage"],
-}
+REDACT_FIELDS = yaml.safe_load((PYTHON_CLIENT_LOCATION / "redact_fields.yml").read_text())
 SCHEMA_URLS = {}
 BASE_IDS = {}
+
+
+def get_redact_fields(module_name):
+    module_entry = next((entry for entry in REDACT_FIELDS if entry == module_name), None)
+    if not module_entry:
+        msg = f"{module_name} should be present in redact_fields"
+        raise ValueError(msg)
+    return {class_name: {"redact_fields": fields} for class_name, fields in module_entry}
 
 
 def deep_merge_dicts(dict1, dict2):
@@ -136,7 +129,18 @@ def parse_and_generate(locations):
     """Parse and generate data models from a given specification."""
 
     extra_schema_urls = {obj_name: {"_schemaURL": schema_url} for obj_name, schema_url in SCHEMA_URLS.items()}
-    extra_redact_fields = {obj_name: {"redact_fields": fields} for obj_name, fields in REDACT_FIELDS.items()}
+
+    extra_redact_fields = defaultdict(lambda: {"redactions": []})
+
+    for module_entry in REDACT_FIELDS:
+        for clazz in module_entry["classes"]:
+            class_name = clazz["class_name"]
+            # defaultdict automatically creates the key-value pair if not found
+            extra_redact_fields[class_name]["redactions"].append({
+                "fields": clazz["redact_fields"],
+                "module_name": module_entry["module"],
+            })
+    print(deep_merge_dicts(extra_redact_fields, extra_schema_urls))
 
     temporary_locations = []
     with tempfile.TemporaryDirectory() as tmp:
@@ -219,7 +223,6 @@ def format_and_save_output(output: str, location: pathlib.Path, add_set_producer
         "w", prefix=location.stem.lower(), suffix=".py", dir=DEFAULT_OUTPUT_LOCATION.parent, delete=False
     ) as tmpfile:
         tmpfile.write(HEADER)
-        # is_base_module = "from ." not in output
         tmpfile.write(output.replace("from .OpenLineage", "from openlineage.client.generated.base"))
         if add_set_producer_code:
             tmpfile.write(SET_PRODUCER_CODE)
