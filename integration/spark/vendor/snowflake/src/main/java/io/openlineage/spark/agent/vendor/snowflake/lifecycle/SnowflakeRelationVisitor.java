@@ -64,7 +64,7 @@ public class SnowflakeRelationVisitor<D extends OpenLineage.Dataset>
     String sfSchema = params.sfSchema();
     String sfFullURL = params.sfFullURL();
     Optional<String> dbtable =
-        Optional.<TableName>ofNullable(params.table().getOrElse(null)).map(TableName::toString);
+        ScalaConversionUtils.asJavaOptional(params.table()).map(TableName::toString);
     Optional<String> query = ScalaConversionUtils.asJavaOptional(params.query());
 
     return SnowflakeDataset.getDatasets(
