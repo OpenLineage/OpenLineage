@@ -17,21 +17,22 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 @Slf4j
 public class KafkaLineageStream extends LineageStream {
   private final String topicName;
-  private final String localServerId;
+  private final String messageKey;
   private final KafkaProducer<String, String> producer;
 
   public KafkaLineageStream(@NonNull final KafkaConfig kafkaConfig) {
     super(Type.KAFKA);
     this.topicName = kafkaConfig.getTopicName();
-    this.localServerId = kafkaConfig.getLocalServerId();
+    this.messageKey = kafkaConfig.getMessageKey();
     this.producer = new KafkaProducer<>(kafkaConfig.getProperties());
   }
 
   @Override
   public void collect(@NonNull String eventAsString) {
     log.debug("Received lineage event: {}", eventAsString);
+    // if messageKey is not set, then the event will be sent to a random partition
     final ProducerRecord<String, String> record =
-        new ProducerRecord<>(topicName, localServerId, eventAsString);
+        new ProducerRecord<>(topicName, messageKey, eventAsString);
     try {
       producer.send(record);
     } catch (Exception e) {
