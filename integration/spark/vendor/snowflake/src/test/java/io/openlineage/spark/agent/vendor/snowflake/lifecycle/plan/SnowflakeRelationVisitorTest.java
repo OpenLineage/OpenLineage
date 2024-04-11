@@ -109,6 +109,7 @@ public class SnowflakeRelationVisitorTest {
 
   @Test
   void testApplyQuery() {
+    when(relation.params().table()).thenReturn(Option.empty());
     when(relation.params().query()).thenReturn(Option.apply("select * from some_table"));
 
     OpenLineageContext openLineageContext =
