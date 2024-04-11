@@ -52,8 +52,8 @@ def load_config() -> dict[str, Any]:
     if file:
         try:
             with open(file) as f:
-                config: dict[str, Any] = yaml.safe_load(f)
-                return config
+                config: dict[str, Any] | None = yaml.safe_load(f)
+                return config or defaultdict(dict)
         except Exception:  # noqa: BLE001, S110
             # Just move to read env vars
             pass
