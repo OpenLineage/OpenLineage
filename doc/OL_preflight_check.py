@@ -111,9 +111,11 @@ def _check_openlineage_yml(file_path) -> bool:
         with open(file_path, "r") as file:
             content = file.read()
         if not content:
-            log.info("Empty file: `%s`", file_path)
-            return False
-        return True
+            raise ValueError(f"Empty file: `{file_path}`")
+        raise ValueError(
+                f"File found at `{file_path}` with the following content: `{content}`. "
+                "Make sure there the configuration is correct."
+            )
     log.info("File not found: `%s`", file_path)
     return False
 
@@ -202,7 +204,10 @@ def is_ol_accessible_and_enabled():
     if not _is_listener_accessible():
         _is_ol_disabled()
 
-    transport = _get_transport()
+    try:
+        transport = _get_transport()
+    except Exception as e:
+        raise ValueError("There was an error when trying to build transport.") from e
 
     if transport is None or transport.kind in ("noop", "console"):
         _debug_missing_transport()
