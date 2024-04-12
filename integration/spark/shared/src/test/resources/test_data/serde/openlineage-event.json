@@ -46,6 +46,7 @@
         "dataQualityMetrics": {
           "rowCount": 10,
           "bytes": 20,
+          "fileCount": 5,
           "columnMetrics": {
             "mycol": {
               "nullCount": 1,
@@ -70,7 +71,8 @@
       "outputFacets": {
         "outputStatistics": {
           "rowCount": 10,
-          "size": 20
+          "size": 20,
+          "fileCount": 5
         }
       }
     }

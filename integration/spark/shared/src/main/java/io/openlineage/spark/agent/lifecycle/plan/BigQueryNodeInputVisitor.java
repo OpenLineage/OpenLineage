@@ -7,16 +7,21 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
+import com.google.cloud.spark.bigquery.SparkBigQueryConfig;
+import com.google.cloud.spark.bigquery.direct.DirectBigQueryRelation;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.SqlUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import io.openlineage.spark.extension.scala.v1.LineageRelation;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
@@ -44,6 +49,7 @@ public class BigQueryNodeInputVisitor
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof LogicalRelation
+        && !(((LogicalRelation) plan).relation() instanceof LineageRelation)
         && ((LogicalRelation) plan).relation() instanceof BigQueryRelation;
   }
 
@@ -61,15 +67,33 @@ public class BigQueryNodeInputVisitor
   public List<OpenLineage.InputDataset> apply(LogicalPlan plan) {
     return bigQuerySupplier(plan)
         .map(s -> s.get())
-        .filter(relation -> getBigQueryTableName(relation).isPresent())
         .map(
-            relation ->
-                Collections.singletonList(
-                    factory.getDataset(
-                        getBigQueryTableName(relation).get(),
-                        BIGQUERY_NAMESPACE,
-                        relation.schema())))
-        .orElse(null);
+            relation -> {
+              if (relation instanceof DirectBigQueryRelation) {
+                List<OpenLineage.InputDataset> datasets =
+                    tryGetFromQuery((DirectBigQueryRelation) relation);
+                if (!datasets.isEmpty()) {
+                  return datasets;
+                }
+              }
+              return Collections.singletonList(
+                  factory.getDataset(
+                      getBigQueryTableName(relation).get(), BIGQUERY_NAMESPACE, relation.schema()));
+            })
+        .orElse(Collections.emptyList());
+  }
+
+  private List<OpenLineage.InputDataset> tryGetFromQuery(DirectBigQueryRelation relation) {
+    try {
+      SparkBigQueryConfig config =
+          (SparkBigQueryConfig) FieldUtils.readField(relation, "options", true);
+      if (config.getQuery().isPresent()) {
+        return SqlUtils.getDatasets(factory, config.getQuery().get(), "bigquery", "bigquery");
+      }
+    } catch (IllegalAccessException | IllegalArgumentException | NullPointerException e) {
+      log.error("Could not invoke method", e);
+    }
+    return Collections.emptyList();
   }
 
   /**

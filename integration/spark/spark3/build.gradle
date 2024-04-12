@@ -22,7 +22,8 @@ idea {
 
 ext {
     assertjVersion = "3.25.1"
-    bigqueryVersion = "0.29.0"
+    bigqueryVersion = "0.35.1"
+    micrometerVersion = "1.12.4"
     databricksVersion = "0.1.4"
     deltaVersion = "1.1.0"
     icebergVersion = "1.4.3"
@@ -83,6 +84,7 @@ dependencies {
 
     testScala212Implementation("org.apache.spark:spark-hive_2.12:${sparkVersion}")
     testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
+    testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
 
     testScala212Implementation("com.databricks:databricks-dbutils-scala_2.12:${databricksVersion}")
     testScala212Implementation("com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:${bigqueryVersion}") {
@@ -122,6 +124,7 @@ dependencies {
     }
     testScala213Implementation("io.delta:delta-core_2.13:${deltaVersion}")
     testScala213Implementation("org.apache.iceberg:iceberg-spark-runtime-3.2_2.13:${icebergVersion}")
+    testScala213Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
 
     testScala213Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala213Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")

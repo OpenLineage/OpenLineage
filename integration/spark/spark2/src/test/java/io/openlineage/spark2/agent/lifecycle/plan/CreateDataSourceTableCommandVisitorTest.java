@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableCommandVisitor;
@@ -50,6 +51,7 @@ class CreateDataSourceTableCommandVisitorTest {
                 .sparkSession(session)
                 .sparkContext(session.sparkContext())
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .meterRegistry(new SimpleMeterRegistry())
                 .build());
 
     CreateDataSourceTableCommand command =

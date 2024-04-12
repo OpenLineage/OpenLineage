@@ -26,6 +26,7 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.Run;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunFacets;
+import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
 import java.net.URI;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -227,6 +228,7 @@ class OpenLineageTest {
                             ol.newDataQualityMetricsInputDatasetFacetBuilder()
                                 .rowCount(10L)
                                 .bytes(20L)
+                                .fileCount(5L)
                                 .columnMetrics(
                                     ol.newDataQualityMetricsInputDatasetFacetColumnMetricsBuilder()
                                         .put(
@@ -247,6 +249,81 @@ class OpenLineageTest {
                                 .build())
                         .build())
                 .build());
+
+    SchemaDatasetFacet schemaFacet =
+        ol.newSchemaDatasetFacetBuilder()
+            .fields(
+                Arrays.asList(
+                    ol.newSchemaDatasetFacetFieldsBuilder().name("user_id").type("int64").build(),
+                    ol.newSchemaDatasetFacetFieldsBuilder()
+                        .name("phones")
+                        .type("array")
+                        .description("List of phone numbers")
+                        .fields(
+                            Arrays.asList(
+                                ol.newSchemaDatasetFacetFieldsBuilder()
+                                    .name("_element")
+                                    .type("string")
+                                    .build()))
+                        .build(),
+                    ol.newSchemaDatasetFacetFieldsBuilder()
+                        .name("addresses")
+                        .type("struct")
+                        .description("Has customer completed activation process")
+                        .fields(
+                            Arrays.asList(
+                                ol.newSchemaDatasetFacetFieldsBuilder()
+                                    .name("type")
+                                    .type("string")
+                                    .description("Address type, g.e. home, work, etc.")
+                                    .build(),
+                                ol.newSchemaDatasetFacetFieldsBuilder()
+                                    .name("country")
+                                    .type("string")
+                                    .description("Country name")
+                                    .build(),
+                                ol.newSchemaDatasetFacetFieldsBuilder()
+                                    .name("zip")
+                                    .type("string")
+                                    .description("Zip code")
+                                    .build(),
+                                ol.newSchemaDatasetFacetFieldsBuilder()
+                                    .name("state")
+                                    .type("string")
+                                    .description("State name")
+                                    .build(),
+                                ol.newSchemaDatasetFacetFieldsBuilder()
+                                    .name("street")
+                                    .type("string")
+                                    .description("Street name")
+                                    .build()))
+                        .build(),
+                    ol.newSchemaDatasetFacetFieldsBuilder()
+                        .name("custom_properties")
+                        .type("map")
+                        .fields(
+                            Arrays.asList(
+                                ol.newSchemaDatasetFacetFieldsBuilder()
+                                    .name("key")
+                                    .type("string")
+                                    .build(),
+                                ol.newSchemaDatasetFacetFieldsBuilder()
+                                    .name("value")
+                                    .type("union")
+                                    .fields(
+                                        Arrays.asList(
+                                            ol.newSchemaDatasetFacetFieldsBuilder()
+                                                .name("_0")
+                                                .type("string")
+                                                .build(),
+                                            ol.newSchemaDatasetFacetFieldsBuilder()
+                                                .name("_1")
+                                                .type("int64")
+                                                .build()))
+                                    .build()))
+                        .build()))
+            .build();
+
     List<OutputDataset> outputs =
         Arrays.asList(
             ol.newOutputDatasetBuilder()
@@ -255,10 +332,16 @@ class OpenLineageTest {
                 .facets(
                     ol.newDatasetFacetsBuilder()
                         .version(ol.newDatasetVersionDatasetFacet("output-version"))
+                        .schema(schemaFacet)
                         .build())
                 .outputFacets(
                     ol.newOutputDatasetOutputFacetsBuilder()
-                        .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10L, 20L))
+                        .outputStatistics(
+                            ol.newOutputStatisticsOutputDatasetFacetBuilder()
+                                .rowCount(10L)
+                                .size(20L)
+                                .fileCount(5L)
+                                .build())
                         .build())
                 .build());
 
@@ -294,17 +377,18 @@ class OpenLineageTest {
 
       DataQualityMetricsInputDatasetFacet dq =
           inputDataset.getInputFacets().getDataQualityMetrics();
-      assertEquals((Long) 10L, dq.getRowCount());
-      assertEquals((Long) 20L, dq.getBytes());
+      assertEquals(10L, dq.getRowCount());
+      assertEquals(20L, dq.getBytes());
+      assertEquals(5L, dq.getFileCount());
       DataQualityMetricsInputDatasetFacetColumnMetricsAdditional colMetrics =
           dq.getColumnMetrics().getAdditionalProperties().get("mycol");
-      assertEquals((Double) 10D, colMetrics.getCount());
-      assertEquals((Long) 10L, colMetrics.getDistinctCount());
-      assertEquals((Double) 30D, colMetrics.getMax());
-      assertEquals((Double) 5D, colMetrics.getMin());
-      assertEquals((Long) 1L, colMetrics.getNullCount());
-      assertEquals((Double) 3000D, colMetrics.getSum());
-      assertEquals((Double) 52D, colMetrics.getQuantiles().getAdditionalProperties().get("25"));
+      assertEquals(10D, colMetrics.getCount());
+      assertEquals(10L, colMetrics.getDistinctCount());
+      assertEquals(30D, colMetrics.getMax());
+      assertEquals(5D, colMetrics.getMin());
+      assertEquals(1L, colMetrics.getNullCount());
+      assertEquals(3000D, colMetrics.getSum());
+      assertEquals(52D, colMetrics.getQuantiles().getAdditionalProperties().get("25"));
 
       assertEquals(1, runStateUpdate.getOutputs().size());
       OutputDataset outputDataset = runStateUpdate.getOutputs().get(0);
@@ -312,10 +396,14 @@ class OpenLineageTest {
       assertEquals("output", outputDataset.getName());
       assertEquals("output-version", outputDataset.getFacets().getVersion().getDatasetVersion());
 
-      assertEquals(roundTrip(json), roundTrip(mapper.writeValueAsString(read)));
-      assertEquals((Long) 10L, outputDataset.getOutputFacets().getOutputStatistics().getRowCount());
-      assertEquals((Long) 20L, outputDataset.getOutputFacets().getOutputStatistics().getSize());
+      SchemaDatasetFacet outputDatasetSchema = outputDataset.getFacets().getSchema();
+      assertEquals(outputDatasetSchema, schemaFacet);
 
+      assertEquals(10L, outputDataset.getOutputFacets().getOutputStatistics().getRowCount());
+      assertEquals(20L, outputDataset.getOutputFacets().getOutputStatistics().getSize());
+      assertEquals(5L, outputDataset.getOutputFacets().getOutputStatistics().getFileCount());
+
+      assertEquals(roundTrip(json), roundTrip(mapper.writeValueAsString(read)));
       assertEquals(json, mapper.writeValueAsString(read));
     }
 

@@ -9,7 +9,7 @@ import attr
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields
-from pkg_resources import parse_version
+from packaging.version import Version
 
 if TYPE_CHECKING:
     from confluent_kafka import KafkaError, Message
@@ -103,8 +103,8 @@ def _check_if_airflow_sqlalchemy_context() -> bool:
     try:
         from airflow.version import version  # type: ignore[import]
 
-        parsed_version = parse_version(version)
-        if parse_version("2.3.0") <= parsed_version < parse_version("2.6.0"):
+        parsed_version = Version(version)
+        if Version("2.3.0") <= parsed_version < Version("2.6.0"):
             return True
     except ImportError:
         pass  # we want to leave it to false if airflow import fails

@@ -106,6 +106,7 @@ class LogicalPlanSerializer213Test {
             return ScalaConversionUtils.<LogicalPlan>asScalaSeqEmpty();
           }
 
+          @Override
           public LogicalPlan withNewChildrenInternal(IndexedSeq<LogicalPlan> newChildren) {
             return null;
           }
@@ -159,6 +160,7 @@ class LogicalPlanSerializer213Test {
             return ScalaConversionUtils.<LogicalPlan>asScalaSeqEmpty();
           }
 
+          @Override
           public LogicalPlan withNewChildrenInternal(IndexedSeq<LogicalPlan> newChildren) {
             return null;
           }

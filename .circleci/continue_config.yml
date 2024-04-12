@@ -480,6 +480,76 @@ jobs:
           # Publish *.jar
           ./gradlew --no-daemon --console=plain publish
 
+  build-integration-spark-interfaces-scala:
+    parameters:
+      scala-binary-version:
+        type: string
+    working_directory: ~/openlineage/integration/spark-interfaces-scala
+    docker:
+      - image: cimg/openjdk:8.0
+    resource_class: "medium"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
+      - restore_cache:
+          keys:
+            - v1-spark-interfaces-scala-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-spark-interfaces-scala-{{ .Branch }}
+      - run: ./gradlew publishToMavenLocal --info -Pscala.binary.version=<< parameters.scala-binary-version >>
+      - persist_to_workspace:
+          root: ~/.m2/repository/io/openlineage/
+          paths:
+            - spark-interfaces-scala_<< parameters.scala-binary-version >>
+      - save_cache:
+          key: v1-spark-interfaces-scala-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  release-integration-spark-interfaces-scala:
+    working_directory: ~/openlineage/integration/spark-interfaces-scala
+    docker:
+      - image: cimg/openjdk:8.0
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
+          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+          
+          # TODO remove, depend on client build in interfaces build
+          cd ../../client/java
+          ./gradlew --no-daemon --console=plain publishToMavenLocal
+          cd -
+
+          ./gradlew --no-daemon --console=plain clean publishToMavenLocal -Pscala.binary.version=2.12
+          ./gradlew --no-daemon --console=plain clean publishToMavenLocal -Pscala.binary.version=2.13
+
+          # Publish *.jar
+          ./gradlew --no-daemon --console=plain clean publish -Pscala.binary.version=2.12
+          ./gradlew --no-daemon --console=plain clean publish -Pscala.binary.version=2.13
+      - persist_to_workspace:
+          root: ~/.m2/repository/io/openlineage/
+          paths:
+            - spark-interfaces-scala_2.12
+            - spark-interfaces-scala_2.13
+      - store_artifacts:
+          path: ./build/libs
+          destination: spark-interfaces-scala-artifacts
+      - save_cache:
+          key: v1-release-spark-interfaces-scala-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.m2
+
   build-integration-sql-macos:
     working_directory: ~/openlineage/integration/sql
     macos:
@@ -900,7 +970,7 @@ jobs:
       - *checkout_project_root
       - restore_cache:
           keys:
-          - v1.1-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
+          - v1.2-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
 
       - run:
           name: Install Dependencies
@@ -913,8 +983,7 @@ jobs:
       - save_cache:
           paths:
             - ~/.cache/pre-commit
-            - ./venv
-          key: v1.1-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
+          key: v1.2-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
 
       - run:
           name: Run pre-commit
@@ -995,6 +1064,7 @@ workflows:
           requires:
             - release-client-java
             - build-integration-sql-java
+            - release-integration-spark-interfaces-scala
       - release-integration-sql-java:
           filters:
             tags:
@@ -1006,6 +1076,15 @@ workflows:
             - compile-integration-sql-java-linux-x86
             - compile-integration-sql-java-linux-arm
             - compile-integration-sql-java-macos-x86
+      - release-integration-spark-interfaces-scala:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
+          context: release
+          requires:
+            - release-client-java
       - release-integration-flink:
           filters:
             tags:

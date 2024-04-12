@@ -18,6 +18,20 @@ fn delete_from() {
 }
 
 #[test]
+fn delete_without_from_bigquery() {
+    assert_eq!(
+        test_sql_dialect("DELETE \"project.dataset.table\" WHERE 1", "bigquery")
+            .unwrap()
+            .table_lineage
+            .out_tables
+            .first()
+            .unwrap()
+            .qualified_name(),
+        "project.dataset.table"
+    )
+}
+
+#[test]
 fn delete_from_using() {
     assert_eq!(
         test_sql(

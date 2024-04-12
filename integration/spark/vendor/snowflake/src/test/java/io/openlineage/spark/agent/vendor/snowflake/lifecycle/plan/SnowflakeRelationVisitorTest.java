@@ -10,6 +10,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -47,6 +48,7 @@ public class SnowflakeRelationVisitorTest {
   public void setUp() {
     when(session.sparkContext()).thenReturn(mock(SparkContext.class));
     when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    when(context.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
 
     when(relation.params().sfDatabase()).thenReturn("snowflake_db");
     when(relation.params().sfSchema()).thenReturn("snowflake_schema");
@@ -55,19 +57,17 @@ public class SnowflakeRelationVisitorTest {
             (new StructType(
                 new StructField[] {new StructField("name", StringType$.MODULE$, false, null)})));
 
-    TableName tableName = mock(TableName.class, RETURNS_DEEP_STUBS);
-    when(tableName.toString()).thenReturn("table");
-
-    Option<TableName> table = Option.apply(tableName);
-
-    when(relation.params().table()).thenReturn(table);
-
     when(relation.params().sfFullURL())
         .thenReturn("https://microsoft_partner.east-us-2.azure.snowflakecomputing.com");
   }
 
   @Test
   void testApplyDbTable() {
+    TableName tableName = mock(TableName.class, RETURNS_DEEP_STUBS);
+    when(tableName.toString()).thenReturn("table");
+
+    Option<TableName> table = Option.apply(tableName);
+    when(relation.params().table()).thenReturn(table);
 
     OpenLineageContext openLineageContext =
         OpenLineageContext.builder()
@@ -76,6 +76,7 @@ public class SnowflakeRelationVisitorTest {
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .customEnvironmentVariables(Collections.singletonList("TEST_VAR"))
             .vendors(Vendors.getVendors())
+            .meterRegistry(new SimpleMeterRegistry())
             .build();
 
     SnowflakeRelationVisitor visitor =
@@ -104,5 +105,48 @@ public class SnowflakeRelationVisitorTest {
         "snowflake://microsoft_partner.east-us-2.azure.snowflakecomputing.com", ds.getNamespace());
 
     assertEquals("snowflake_db.snowflake_schema.table", ds.getName());
+  }
+
+  @Test
+  void testApplyQuery() {
+    when(relation.params().table()).thenReturn(Option.empty());
+    when(relation.params().query()).thenReturn(Option.apply("select * from some_table"));
+
+    OpenLineageContext openLineageContext =
+        OpenLineageContext.builder()
+            .sparkSession(session)
+            .sparkContext(session.sparkContext())
+            .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .customEnvironmentVariables(Collections.singletonList("TEST_VAR"))
+            .vendors(Vendors.getVendors())
+            .meterRegistry(new SimpleMeterRegistry())
+            .build();
+
+    SnowflakeRelationVisitor visitor =
+        new SnowflakeRelationVisitor<>(openLineageContext, DatasetFactory.output(context));
+
+    LogicalRelation lr =
+        new LogicalRelation(
+            relation,
+            ScalaConversionUtils.fromList(
+                Collections.singletonList(
+                    new AttributeReference(
+                        FIELD_NAME,
+                        StringType$.MODULE$,
+                        false,
+                        null,
+                        ExprId.apply(1L),
+                        ScalaConversionUtils.<String>asScalaSeqEmpty()))),
+            Option.empty(),
+            false);
+
+    List<OpenLineage.Dataset> datasets = visitor.apply(lr);
+
+    OpenLineage.Dataset ds = datasets.get(0);
+
+    assertEquals(
+        "snowflake://microsoft_partner.east-us-2.azure.snowflakecomputing.com", ds.getNamespace());
+
+    assertEquals("snowflake_db.snowflake_schema.some_table", ds.getName());
   }
 }

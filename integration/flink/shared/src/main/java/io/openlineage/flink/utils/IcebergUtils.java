@@ -21,8 +21,11 @@ public class IcebergUtils {
                 field ->
                     context
                         .getOpenLineage()
-                        .newSchemaDatasetFacetFields(
-                            field.name(), field.type().typeId().name(), field.doc()))
+                        .newSchemaDatasetFacetFieldsBuilder()
+                        .name(field.name())
+                        .type(field.type().typeId().name())
+                        .description(field.doc())
+                        .build())
             .collect(Collectors.toList());
     return context.getOpenLineage().newSchemaDatasetFacet(fields);
   }

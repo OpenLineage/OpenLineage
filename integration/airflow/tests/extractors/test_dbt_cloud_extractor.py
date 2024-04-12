@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 import pytest
 import pytz
 from openlineage.airflow.utils import try_import_from_string
-from pkg_resources import parse_version
+from packaging.version import Version
 from pytest_mock import MockerFixture
 
 from airflow.models import DAG, TaskInstance
@@ -79,7 +79,7 @@ class MockResponse:
 
 class TestDbtCloudExtractorE2E:
     @pytest.mark.skipif(
-        parse_version(AIRFLOW_VERSION) < parse_version("2.4.0"),
+        Version(AIRFLOW_VERSION) < Version("2.4.0"),
         reason="Airflow < 2.4.0",
     )
     def test_extractor(self, mocker: MockerFixture):

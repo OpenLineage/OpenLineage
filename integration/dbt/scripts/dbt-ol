@@ -22,7 +22,7 @@ from openlineage.common.provider.dbt import (
 )
 from tqdm import tqdm
 
-__version__ = "1.11.0"
+__version__ = "1.13.0"
 
 from openlineage.common.utils import parse_single_arg
 
@@ -106,7 +106,7 @@ for handler in openlineage_logger.handlers:
 
 
 def main():
-    logger.info(f"Running OpenLineage dbt wrapper version {__version__}")
+    logger.info("Running OpenLineage dbt wrapper version %s", __version__)
     logger.info("This wrapper will send OpenLineage events at the end of dbt execution.")
 
     args = sys.argv[1:]
@@ -167,8 +167,8 @@ def main():
 
     force_send_events = len(sys.argv) > 1 and sys.argv[1] == "send-events"
     if not force_send_events:
-        process = subprocess.Popen(["dbt"] + sys.argv[1:], stdout=sys.stdout, stderr=sys.stderr)
-        return_code = process.wait()
+        with subprocess.Popen(["dbt"] + sys.argv[1:], stdout=sys.stdout, stderr=sys.stderr) as process:
+            return_code = process.wait()
     else:
         logger.warning("Sending events for the last run without running the job")
         return_code = 0
@@ -178,15 +178,15 @@ def main():
     try:
         if os.stat(processor.run_result_path).st_mtime < pre_run_time and not force_send_events:
             logger.info(
-                f"OpenLineage events not emitted: run_result file "
-                f"({processor.run_result_path}) was not modified by dbt"
+                "OpenLineage events not emitted: run_result file (%s) was not modified by dbt",
+                processor.run_result_path,
             )
-            return
+            return return_code
     except FileNotFoundError:
         logger.info(
-            f"OpenLineage events not emitted:" f"did not find run_result file ({processor.run_result_path})"
+            "OpenLineage events not emitted: did not find run_result file (%s)", processor.run_result_path
         )
-        return
+        return return_code
 
     try:
         events = processor.parse().events()
@@ -209,6 +209,7 @@ def main():
             job_name=dbt_run_metadata.job_name,
             parent_run_metadata=parent_run_metadata,
         )
+
     for event in tqdm(
         events + [last_event],
         desc="Emitting OpenLineage events",
@@ -220,14 +221,15 @@ def main():
             emitted_events += 1
         except Exception as e:
             logger.warning(
-                "OpenLineage client failed to emit event %s runId %s. " "Exception: %s",
+                "OpenLineage client failed to emit event %s runId %s. Exception: %s",
                 event.eventType.value,
                 event.run.runId,
                 e,
                 exc_info=True,
             )
-    logger.info(f"Emitted {emitted_events} openlineage events")
+    logger.info("Emitted %d OpenLineage events", emitted_events)
+    return return_code
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

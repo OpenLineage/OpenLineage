@@ -13,121 +13,36 @@ The namespace and name of a datasource can be combined to form a URI (scheme:[//
 - Namespace = scheme:[//authority] (the datasource)
 - Name = path (the datasets)
 
-### Data warehouses/data bases
+### Naming conventions for common data stores
+
+This list is not exhaustive, if a data store is missing, please create an issue or open a PR.
+
+### Data Warehouses
+
+- [Athena](#Athena)
+- [Azure Cosmos DB](#Azure-Cosmos-DB)
+- [Azure Data Explorer](#Azure-Data-Explorer)
+- [Azure Synapse](#Azure-Synapse)
+- [BigQuery](#BigQuery)
+- [Cassandra](#Cassandra)
+- [MySQL](#MySQL)
+- [Postgres](#Postgres)
+- [Redshift](#Redshift)
+- [Snowflake](#Snowflake)
+- [Trino](#Trino)
+
+### Distributed file systems/blob stores
+
+- [ABFSS (Azure Data Lake Gen2)](#ABFSS "Azure Data Lake Gen2")
+- [DBFS (Databricks File System)](#DBFS "Databricks File System")
+- [GCS](#GCS)
+- [HDFS](#HDFS)
+- [Kafka](#Kafka)
+- [Local file system](#Local-file-system)
+- [S3](#S3)
+- [WASBS (Azure Blob Storage)](#WASBS "Azure Blob Storage")
 
 Datasets are called tables. Tables are organized into databases and schemas.
-
-#### Postgres:
-
-Datasource hierarchy:
-
-- Host
-- Port
-
-Naming hierarchy:
-
-- Database
-- Schema
-- Table
-
-Identifier:
-
-- Namespace: postgres://{host}:{port} of the service instance.
-  - Scheme = postgres
-  - Authority = {host}:{port}
-- Unique name: {database}.{schema}.{table}
-  - URI = postgres://{host}:{port}/{database}.{schema}.{table}
-
-#### MySQL:
-
-Datasource hierarchy:
-
-- Host
-- Port
-
-Naming hierarchy:
-
-- Database
-- Table
-
-Identifier:
-
-- Namespace: mysql://{host}:{port} of the service instance.
-  - Scheme = mysql
-  - Authority = {host}:{port}
-- Unique name: {database}.{table}
-  - URI = mysql://{host}:{port}/{database}.{table}
-
-#### Cassandra:
-
-Datasource hierarchy:
-
-- Host
-- Port
-
-Naming hierarchy:
-
-- Keyspace
-- Table
-
-Identifier:
-
-- Namespace: cassandra://{host}:{port} of the service instance.
-  - Scheme = cassandra
-  - Authority = {host}:{port}
-- Unique name: {keyspace}.{table}
-  - URI = cassandra://{host}:{port}/{keyspace}.{table}
-
-#### Trino:
-
-Datasource hierarchy:
-
-- Host
-- Port
-
-Naming hierarchy:
-
-- Catalog
-- Schema
-- Table
-
-Identifier:
-
-- Namespace: trino://{host}:{port} of the service instance.
-  - Scheme = trino
-  - Authority = {host}:{port}
-- Unique name: {catalog}.{schema}.{table}
-  - URI = trino://{host}:{port}/{catalog}.{schema}.{table}
-
-#### Redshift:
-
-Datasource hierarchy:
-
-- Host: examplecluster.\<XXXXXXXXXXXX>.us-west-2.redshift.amazonaws.com
-- Port: 5439
-
-OR
-
-- Cluster identifier
-- Region name
-- Port (defaults to 5439)
-
-Naming hierarchy:
-
-- Database
-- Schema
-- Table
-
-One can interact with Redshift using SQL or Data API. The combination of cluster identifier and region name is the only
-common unique ID available to both.
-
-Identifier:
-
-- Namespace: redshift://{cluster_identifier}.{region_name}:{port} of the cluster instance.
-  - Scheme = redshift
-  - Authority = {cluster_identifier}.{region_name}:{port}
-- Unique name: {database}.{schema}.{table}
-  - URI = redshift://{cluster_identifier}.{region_name}:{port}/{database}.{schema}.{table}
 
 #### Athena:
 
@@ -148,90 +63,6 @@ Identifier:
   - Authority = athena.{region_name}.amazonaws.com
 - Unique name: {catalog}.{database}.{table}
   - URI = awsathena://athena.{region_name}.amazonaws.com/{catalog}.{database}.{table}
-
-#### Snowflake
-
-See:
-
-- [Account Identifiers | Snowflake Documentation](https://docs.snowflake.com/en/user-guide/admin-account-identifier)
-- [Object Identifiers | Snowflake Documentation](https://docs.snowflake.com/en/sql-reference/identifiers.html)
-
-Datasource hierarchy:
-
-- account identifier (composite of organization name and account name)
-
-Naming hierarchy:
-
-- Database: {database name} => unique across the account
-- Schema: {schema name} => unique within the database
-- Table: {table name} => unique within the schema
-
-Identifier:
-
-- Namespace: snowflake://{organization name}-{account name}
-  - Scheme = snowflake
-  - Authority = {organization name}-{account name}
-- Name: {database}.{schema}.{table}
-  - URI = snowflake://{organization name}-{account name}/{database}.{schema}.{table}
-
-Snowflake resolves and stores names for databases, schemas, tables and columns differently depending on how they are
-[expressed in statements](https://docs.snowflake.com/en/sql-reference/identifiers-syntax) (e.g. unquoted vs quoted). The
-representation of names in OpenLineage events should be based on the canonical name that Snowflake stores. Specifically:
-
-- For dataset names, each period-delimited part (database/schema/table) should be in the simplest form it would take in
-  a statement i.e. quoted only if necessary. For example, a table `My Table` in schema `MY_SCHEMA` and in database
-  `MY_DATABASE` would be represented as `MY_DATABASE.MY_SCHEMA."My Table"`. If in doubt, check
-  [Snowflake's `ACCESS_HISTORY` view](https://docs.snowflake.com/en/sql-reference/account-usage/access_history) to see
-  how `objectName` is formed for a given table.
-- For column names, the canonical name should always be used verbatim.
-
-#### BigQuery
-
-See:
-[Creating and managing projects | Resource Manager Documentation](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
-[Introduction to datasets | BigQuery](https://cloud.google.com/bigquery/docs/datasets-intro)
-[Introduction to tables | BigQuery](https://cloud.google.com/bigquery/docs/tables-intro)
-
-Datasource hierarchy:
-
-- bigquery
-
-Naming hierarchy:
-
-- Project Name: {project name} => is not unique
-- Project number: {project number} => numeric: is unique across Google cloud
-- Project ID: {project id} => readable: is unique across Google cloud
-- dataset: {dataset name} => is unique within a project
-- table: {table name} => is unique within a dataset
-
-Identifier:
-
-- Namespace: bigquery
-  - Scheme = bigquery
-  - Authority =
-- Unique name: {project id}.{dataset name}.{table name}
-  - URI = bigquery:{project id}.{dataset name}.{table name}
-
-#### Azure Synapse:
-
-Datasource hierarchy:
-
-- Host: \<XXXXXXXXXXXX>.sql.azuresynapse.net
-- Port: 1433
-- Database: SQLPool1
-
-Naming hierarchy:
-
-- Schema
-- Table
-
-Identifier:
-
-- Namespace: sqlserver://{host}:{port};database={database};
-  - Scheme = sqlserver
-  - Authority = {host}:{port}
-- Unique name: {schema}.{table}
-  - URI = sqlserver://{host}:{port};database={database}/{schema}.{table}
 
 #### Azure Cosmos DB:
 
@@ -273,7 +104,233 @@ Identifier:
 - Unique name: {database}/{table}
   - URI = azurekusto://{host}.kusto.windows.net/{database}/{table}
 
+#### Azure Synapse:
+
+Datasource hierarchy:
+
+- Host: \<XXXXXXXXXXXX>.sql.azuresynapse.net
+- Port: 1433
+- Database: SQLPool1
+
+Naming hierarchy:
+
+- Schema
+- Table
+
+Identifier:
+
+- Namespace: sqlserver://{host}:{port};database={database};
+  - Scheme = sqlserver
+  - Authority = {host}:{port}
+- Unique name: {schema}.{table}
+  - URI = sqlserver://{host}:{port};database={database}/{schema}.{table}
+
+#### BigQuery
+
+See:
+[Creating and managing projects | Resource Manager Documentation](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
+[Introduction to datasets | BigQuery](https://cloud.google.com/bigquery/docs/datasets-intro)
+[Introduction to tables | BigQuery](https://cloud.google.com/bigquery/docs/tables-intro)
+
+Datasource hierarchy:
+
+- bigquery
+
+Naming hierarchy:
+
+- Project Name: {project name} => is not unique
+- Project number: {project number} => numeric: is unique across Google cloud
+- Project ID: {project id} => readable: is unique across Google cloud
+- dataset: {dataset name} => is unique within a project
+- table: {table name} => is unique within a dataset
+
+Identifier:
+
+- Namespace: bigquery
+  - Scheme = bigquery
+  - Authority =
+- Unique name: {project id}.{dataset name}.{table name}
+  - URI = bigquery:{project id}.{dataset name}.{table name}
+
+#### Cassandra:
+
+Datasource hierarchy:
+
+- Host
+- Port
+
+Naming hierarchy:
+
+- Keyspace
+- Table
+
+Identifier:
+
+- Namespace: cassandra://{host}:{port} of the service instance.
+  - Scheme = cassandra
+  - Authority = {host}:{port}
+- Unique name: {keyspace}.{table}
+  - URI = cassandra://{host}:{port}/{keyspace}.{table}
+
+#### MySQL:
+
+Datasource hierarchy:
+
+- Host
+- Port
+
+Naming hierarchy:
+
+- Database
+- Table
+
+Identifier:
+
+- Namespace: mysql://{host}:{port} of the service instance.
+  - Scheme = mysql
+  - Authority = {host}:{port}
+- Unique name: {database}.{table}
+  - URI = mysql://{host}:{port}/{database}.{table}
+
+#### Postgres:
+
+Datasource hierarchy:
+
+- Host
+- Port
+
+Naming hierarchy:
+
+- Database
+- Schema
+- Table
+
+Identifier:
+
+- Namespace: postgres://{host}:{port} of the service instance.
+  - Scheme = postgres
+  - Authority = {host}:{port}
+- Unique name: {database}.{schema}.{table}
+  - URI = postgres://{host}:{port}/{database}.{schema}.{table}
+
+#### Redshift:
+
+Datasource hierarchy:
+
+- Host: examplecluster.\<XXXXXXXXXXXX>.us-west-2.redshift.amazonaws.com
+- Port: 5439
+
+OR
+
+- Cluster identifier
+- Region name
+- Port (defaults to 5439)
+
+Naming hierarchy:
+
+- Database
+- Schema
+- Table
+
+One can interact with Redshift using SQL or Data API. The combination of cluster identifier and region name is the only
+common unique ID available to both.
+
+Identifier:
+
+- Namespace: redshift://{cluster_identifier}.{region_name}:{port} of the cluster instance.
+  - Scheme = redshift
+  - Authority = {cluster_identifier}.{region_name}:{port}
+- Unique name: {database}.{schema}.{table}
+  - URI = redshift://{cluster_identifier}.{region_name}:{port}/{database}.{schema}.{table}
+
+#### Snowflake
+
+See:
+
+- [Account Identifiers | Snowflake Documentation](https://docs.snowflake.com/en/user-guide/admin-account-identifier)
+- [Object Identifiers | Snowflake Documentation](https://docs.snowflake.com/en/sql-reference/identifiers.html)
+
+Datasource hierarchy:
+
+- account identifier (composite of organization name and account name)
+
+Naming hierarchy:
+
+- Database: {database name} => unique across the account
+- Schema: {schema name} => unique within the database
+- Table: {table name} => unique within the schema
+
+Identifier:
+
+- Namespace: snowflake://{organization name}-{account name}
+  - Scheme = snowflake
+  - Authority = {organization name}-{account name}
+- Name: {database}.{schema}.{table}
+  - URI = snowflake://{organization name}-{account name}/{database}.{schema}.{table}
+
+Snowflake resolves and stores names for databases, schemas, tables and columns differently depending on how they are
+[expressed in statements](https://docs.snowflake.com/en/sql-reference/identifiers-syntax) (e.g. unquoted vs quoted). The
+representation of names in OpenLineage events should be based on the canonical name that Snowflake stores. Specifically:
+
+- For dataset names, each period-delimited part (database/schema/table) should be in the simplest form it would take in
+  a statement i.e. quoted only if necessary. For example, a table `My Table` in schema `MY_SCHEMA` and in database
+  `MY_DATABASE` would be represented as `MY_DATABASE.MY_SCHEMA."My Table"`. If in doubt, check
+  [Snowflake's `ACCESS_HISTORY` view](https://docs.snowflake.com/en/sql-reference/account-usage/access_history) to see
+  how `objectName` is formed for a given table.
+- For column names, the canonical name should always be used verbatim.
+
+#### Trino:
+
+Datasource hierarchy:
+
+- Host
+- Port
+
+Naming hierarchy:
+
+- Catalog
+- Schema
+- Table
+
+Identifier:
+
+- Namespace: trino://{host}:{port} of the service instance.
+  - Scheme = trino
+  - Authority = {host}:{port}
+- Unique name: {catalog}.{schema}.{table}
+  - URI = trino://{host}:{port}/{catalog}.{schema}.{table}
+
 ### Distributed file systems/blob stores
+
+#### ABFSS (Azure Data Lake Gen2)
+
+Naming hierarchy:
+
+- service name => globally unique
+- Path
+
+Identifier :
+
+- Namespace: abfss://{container name}@{service name}
+  - Scheme = abfss
+  - Authority = service name
+- Unique name: {path}
+  - URI = abfss://{container name}@{service name}{path}
+
+#### DBFS (Databricks File System)
+
+Naming hierarchy:
+
+- workspace name: globally unique
+- Path
+
+Identifier :
+
+- Namespace: hdfs://{workspace name}
+  - Scheme = hdfs
+  - Authority = workspace name
+- Unique name: {path}
+  - URI = hdfs://{workspace name}{path}
 
 #### GCS
 
@@ -292,21 +349,6 @@ Identifier :
 - Unique name: {path}
   - URI = gs://{bucket name}{path}
 
-#### S3
-
-Naming hierarchy:
-
-- bucket name => globally unique
-- Path
-
-Identifier :
-
-- Namespace: s3://{bucket name}
-  - Scheme = s3
-  - Authority = {bucket name}
-- Unique name: {path}
-  - URI = s3://{bucket name}{path}
-
 #### HDFS
 
 Naming hierarchy:
@@ -321,51 +363,6 @@ Identifier :
   - Authority = {namenode host}:{namenode port}
 - Unique name: {path}
   - URI = hdfs://{namenode host}:{namenode port}{path}
-
-#### DBFS (Databricks File System)
-
-Naming hierarchy:
-
-- workspace name: globally unique
-- Path
-
-Identifier :
-
-- Namespace: hdfs://{workspace name}
-  - Scheme = hdfs
-  - Authority = workspace name
-- Unique name: {path}
-  - URI = hdfs://{workspace name}{path}
-
-#### ABFSS (Azure Data Lake Gen2)
-
-Naming hierarchy:
-
-- service name => globally unique
-- Path
-
-Identifier :
-
-- Namespace: abfss://{container name}@{service name}
-  - Scheme = abfss
-  - Authority = service name
-- Unique name: {path}
-  - URI = abfss://{container name}@{service name}{path}
-
-#### WASBS (Azure Blob Storage)
-
-Naming hierarchy:
-
-- service name => globally unique
-- Path
-
-Identifier :
-
-- Namespace: wasbs://{container name}@{service name}
-  - Scheme = wasbs
-  - Authority = service name
-- Unique name: {path}
-  - URI = wasbs://{container name}@{service name}{path}
 
 ### Kafka
 
@@ -400,6 +397,36 @@ Identifier :
   - Authority = {IP}:{port}
 - Unique name: {path}
   - URI = file://{IP}:{port}{path}
+
+#### S3
+
+Naming hierarchy:
+
+- bucket name => globally unique
+- Path
+
+Identifier :
+
+- Namespace: s3://{bucket name}
+  - Scheme = s3
+  - Authority = {bucket name}
+- Unique name: {path}
+  - URI = s3://{bucket name}{path}
+
+#### WASBS (Azure Blob Storage)
+
+Naming hierarchy:
+
+- service name => globally unique
+- Path
+
+Identifier :
+
+- Namespace: wasbs://{container name}@{service name}
+  - Scheme = wasbs
+  - Authority = service name
+- Unique name: {path}
+  - URI = wasbs://{container name}@{service name}{path}
 
 ## Jobs
 

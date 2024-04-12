@@ -13,7 +13,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
@@ -30,7 +29,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.collection.immutable.Map$;
 
-public class JdbcRelationHandlerTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class JdbcRelationHandlerTest {
   JdbcRelationHandler jdbcRelationHandler;
   DatasetFactory datasetFactory = mock(DatasetFactory.class);
   JDBCRelation relation = mock(JDBCRelation.class);
@@ -45,6 +45,7 @@ public class JdbcRelationHandlerTest {
   String invalidJdbc = "(test) SPARK_GEN_SUBQ_0";
   String url = "postgresql://localhost:5432/test";
   String mysqlUrl = "mysql://localhost:3306/test";
+  String unknownUrl = "unknown://localhost:1234/test";
   StructType schema =
       new StructType().add("k", DataTypes.IntegerType).add("j", DataTypes.StringType);
 
@@ -83,7 +84,7 @@ public class JdbcRelationHandlerTest {
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcTable);
     when(relation.schema()).thenReturn(schema);
 
-    List<OpenLineage.Dataset> datasets = jdbcRelationHandler.getDatasets(relation, url);
+    jdbcRelationHandler.getDatasets(relation, url);
 
     verify(datasetFactory, times(1))
         .getDataset("test.tablename", "postgres://localhost:5432", schema);
@@ -91,6 +92,12 @@ public class JdbcRelationHandlerTest {
 
   @Test
   void testHandlingJdbcDbTableAsSubQuery() {
+    CaseInsensitiveMap params =
+        CaseInsensitiveMap$.MODULE$.apply(
+            ScalaConversionUtils.fromJavaMap(
+                Collections.singletonMap(
+                    JDBCOptions$.MODULE$.JDBC_TABLE_NAME(), jdbcDbTableAsSubQuery)));
+    when(jdbcOptions.parameters()).thenReturn(params);
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcDbTableAsSubQuery);
     StructType schema1 =
         new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
@@ -118,6 +125,22 @@ public class JdbcRelationHandlerTest {
         .getDataset("test.jdbc_source1", "mysql://localhost:3306", schema1);
     verify(datasetFactory, times(1))
         .getDataset("test.jdbc_source2", "mysql://localhost:3306", schema2);
+  }
+
+  @Test
+  void testUnknownDialect() {
+    when(jdbcOptions.tableOrQuery()).thenReturn(jdbcQuery);
+    when(jdbcOptions.url()).thenReturn("jdbc:" + unknownUrl);
+    StructType schema1 =
+        new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
+    StructType schema2 = new StructType().add("j2", DataTypes.StringType);
+
+    jdbcRelationHandler.getDatasets(relation, unknownUrl);
+
+    verify(datasetFactory, times(1))
+        .getDataset("test.jdbc_source1", "unknown://localhost:1234", schema1);
+    verify(datasetFactory, times(1))
+        .getDataset("test.jdbc_source2", "unknown://localhost:1234", schema2);
   }
 
   @Test

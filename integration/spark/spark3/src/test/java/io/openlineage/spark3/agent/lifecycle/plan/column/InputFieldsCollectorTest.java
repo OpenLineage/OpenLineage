@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -50,12 +51,13 @@ import org.mockito.MockedStatic;
 import scala.Option;
 import scala.collection.immutable.Seq;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class InputFieldsCollectorTest {
 
   private static final String FILE = "file";
   private static final String SOME_NAME = "some-name";
-  OpenLineageContext context = mock(OpenLineageContext.class);
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
+  ColumnLevelLineageContext context = mock(ColumnLevelLineageContext.class);
 
   NamedExpression expression = mock(NamedExpression.class);
   ExprId exprId = mock(ExprId.class);
@@ -64,6 +66,8 @@ class InputFieldsCollectorTest {
 
   @BeforeEach
   void setup() {
+    when(context.getBuilder()).thenReturn(builder);
+    when(context.getOlContext()).thenReturn(mock(OpenLineageContext.class));
     when(attributeReference.exprId()).thenReturn(exprId);
     when(attributeReference.name()).thenReturn(SOME_NAME);
   }
@@ -81,8 +85,9 @@ class InputFieldsCollectorTest {
                 .toSeq());
 
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      when(PlanUtils3.getDatasetIdentifier(context, relation)).thenReturn(Optional.of(di));
-      InputFieldsCollector.collect(context, plan, builder);
+      when(PlanUtils3.getDatasetIdentifier(context.getOlContext(), relation))
+          .thenReturn(Optional.of(di));
+      InputFieldsCollector.collect(context, plan);
     }
     verify(builder, times(1)).addInput(exprId, di, SOME_NAME);
   }
@@ -103,8 +108,9 @@ class InputFieldsCollectorTest {
                 .toSeq());
 
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      when(PlanUtils3.getDatasetIdentifier(context, relation)).thenReturn(Optional.of(di));
-      InputFieldsCollector.collect(context, plan, builder);
+      when(PlanUtils3.getDatasetIdentifier(context.getOlContext(), relation))
+          .thenReturn(Optional.of(di));
+      InputFieldsCollector.collect(context, plan);
     }
     verify(builder, times(1)).addInput(exprId, di, SOME_NAME);
   }
@@ -127,7 +133,7 @@ class InputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    InputFieldsCollector.collect(context, plan, builder);
+    InputFieldsCollector.collect(context, plan);
     verify(builder, times(1)).addInput(exprId, new DatasetIdentifier("/tmp", FILE), SOME_NAME);
   }
 
@@ -157,7 +163,7 @@ class InputFieldsCollectorTest {
           when(PlanUtils.findRDDPaths(listRDD)).thenReturn(Collections.singletonList(path));
           when(PathUtils.fromURI(path.toUri())).thenReturn(new DatasetIdentifier("/tmp", FILE));
 
-          InputFieldsCollector.collect(context, plan, builder);
+          InputFieldsCollector.collect(context, plan);
           verify(builder, times(1))
               .addInput(exprId, new DatasetIdentifier("/tmp", FILE), SOME_NAME);
         }
@@ -183,7 +189,7 @@ class InputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    InputFieldsCollector.collect(context, plan, builder);
+    InputFieldsCollector.collect(context, plan);
     verify(builder, times(1)).addInput(exprId, new DatasetIdentifier("/tmp", FILE), SOME_NAME);
   }
 
@@ -202,7 +208,7 @@ class InputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    InputFieldsCollector.collect(context, plan, builder);
+    InputFieldsCollector.collect(context, plan);
     verify(builder, times(0)).addInput(any(), any(), any());
   }
 
@@ -223,7 +229,7 @@ class InputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    InputFieldsCollector.collect(context, plan, builder);
+    InputFieldsCollector.collect(context, plan);
     verify(builder, times(0)).addInput(any(), any(), any());
   }
 
@@ -249,7 +255,7 @@ class InputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    InputFieldsCollector.collect(context, plan, builder);
+    InputFieldsCollector.collect(context, plan);
     verify(builder, times(1))
         .addInput(
             exprId,

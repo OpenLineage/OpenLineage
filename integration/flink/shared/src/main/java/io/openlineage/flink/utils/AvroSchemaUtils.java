@@ -32,8 +32,12 @@ public class AvroSchemaUtils {
         .forEach(
             avroField -> {
               fields.add(
-                  openLineage.newSchemaDatasetFacetFields(
-                      avroField.name(), getTypeName(avroField.schema()), avroField.doc()));
+                  openLineage
+                      .newSchemaDatasetFacetFieldsBuilder()
+                      .name(avroField.name())
+                      .type(getTypeName(avroField.schema()))
+                      .description(avroField.doc())
+                      .build());
             });
 
     return builder.fields(fields).build();

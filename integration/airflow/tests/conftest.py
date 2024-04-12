@@ -6,7 +6,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-from pkg_resources import parse_version
+from packaging.version import Version
 
 from airflow.version import version as AIRFLOW_VERSION
 
@@ -15,14 +15,14 @@ log = logging.getLogger(__name__)
 collect_ignore = []
 
 
-if parse_version(AIRFLOW_VERSION) < parse_version("2.3.0"):
+if Version(AIRFLOW_VERSION) < Version("2.3.0"):
     collect_ignore.append("test_listener.py")
 
-if parse_version(AIRFLOW_VERSION) < parse_version("2.2.4"):
+if Version(AIRFLOW_VERSION) < Version("2.2.4"):
     collect_ignore.append("extractors/test_redshift_sql_extractor.py")
     collect_ignore.append("extractors/test_s3_extractor.py")
 
-if parse_version(AIRFLOW_VERSION) < parse_version("2.3.0"):
+if Version(AIRFLOW_VERSION) < Version("2.3.0"):
     collect_ignore.append("extractors/test_redshift_data_extractor.py")
     collect_ignore.append("extractors/test_sagemaker_extractors.py")
 

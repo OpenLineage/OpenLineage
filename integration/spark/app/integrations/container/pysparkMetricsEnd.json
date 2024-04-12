@@ -1,0 +1,34 @@
+{
+  "eventType": "COMPLETE",
+  "run": {
+    "facets": {
+      "debug": {
+        "metrics": {
+          "metrics": [{
+              "name" : "openlineage.spark.event.sql.start",
+              "tags" : [{
+                  "key": "openlineage.spark.disabled.facets"
+              }, {
+                "key" : "openlineage.spark.integration.version"
+              }, {
+                "key" : "openlineage.spark.version"
+              }]
+          }, {
+            "name" : "openlineage.spark.unknownFacet.time"
+          }]
+        }
+      }
+    }
+  },
+  "job": {
+    "namespace": "testEmitMetrics",
+    "name": "open_lineage_integration_emit_metrics.execute_create_table_command.emit_test_create_table_emit_test"
+  },
+  "inputs": [],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/emit_test/create_table_emit_test"
+    }
+  ]
+}

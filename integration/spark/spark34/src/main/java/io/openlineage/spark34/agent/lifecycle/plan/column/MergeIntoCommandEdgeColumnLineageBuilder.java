@@ -4,7 +4,7 @@
 */
 package io.openlineage.spark34.agent.lifecycle.plan.column;
 
-import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.ReflectionUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -48,11 +48,11 @@ public class MergeIntoCommandEdgeColumnLineageBuilder implements ColumnLevelLine
   }
 
   @Override
-  public void collectInputs(LogicalPlan node, ColumnLevelLineageBuilder builder) {
+  public void collectInputs(ColumnLevelLineageContext context, LogicalPlan node) {
     if (!node.getClass().getCanonicalName().endsWith(CLASS)) return;
 
     this.<LogicalPlan>getFieldFromNode(node, "target")
-        .ifPresent(target -> InputFieldsCollector.collect(context, target, builder));
+        .ifPresent(target -> InputFieldsCollector.collect(context, target));
 
     // remove builder target inputs that are not contained within merge actions
     List<ExprId> mergeActionsExprIds =
@@ -62,33 +62,34 @@ public class MergeIntoCommandEdgeColumnLineageBuilder implements ColumnLevelLine
             .filter(action -> action.child() instanceof AttributeReference)
             .filter(
                 action ->
-                    builder
+                    context
+                        .getBuilder()
                         .getOutputExprIdByFieldName(action.targetColNameParts().mkString())
                         .isPresent())
             .map(action -> ((AttributeReference) action.child()).exprId())
             .collect(Collectors.toList());
 
     List<ExprId> inputsToRemove =
-        builder.getInputs().keySet().stream()
+        context.getBuilder().getInputs().keySet().stream()
             .filter(id -> !mergeActionsExprIds.contains(id))
             .collect(Collectors.toList());
 
-    inputsToRemove.forEach(id -> builder.getInputs().remove(id));
+    inputsToRemove.forEach(id -> context.getBuilder().getInputs().remove(id));
 
     this.<LogicalPlan>getFieldFromNode(node, "source")
-        .ifPresent(source -> InputFieldsCollector.collect(context, source, builder));
+        .ifPresent(source -> InputFieldsCollector.collect(context, source));
   }
 
   @Override
-  public void collectOutputs(LogicalPlan node, ColumnLevelLineageBuilder builder) {
+  public void collectOutputs(ColumnLevelLineageContext context, LogicalPlan node) {
     if (!node.getClass().getCanonicalName().endsWith(CLASS)) return;
 
     this.<LogicalPlan>getFieldFromNode(node, "target")
-        .ifPresent(target -> OutputFieldsCollector.collect(context, target, builder));
+        .ifPresent(target -> OutputFieldsCollector.collect(context, target));
   }
 
   @Override
-  public void collectExpressionDependencies(LogicalPlan node, ColumnLevelLineageBuilder builder) {
+  public void collectExpressionDependencies(ColumnLevelLineageContext context, LogicalPlan node) {
     if (!node.getClass().getCanonicalName().endsWith(CLASS)) return;
 
     getMergeActions(node)
@@ -97,16 +98,20 @@ public class MergeIntoCommandEdgeColumnLineageBuilder implements ColumnLevelLine
         .filter(action -> action.child() instanceof AttributeReference)
         .filter(
             action ->
-                builder
+                context
+                    .getBuilder()
                     .getOutputExprIdByFieldName(action.targetColNameParts().mkString())
                     .isPresent())
         .forEach(
             action ->
-                builder.addDependency(
-                    builder
-                        .getOutputExprIdByFieldName(action.targetColNameParts().mkString())
-                        .get(),
-                    ((AttributeReference) action.child()).exprId()));
+                context
+                    .getBuilder()
+                    .addDependency(
+                        context
+                            .getBuilder()
+                            .getOutputExprIdByFieldName(action.targetColNameParts().mkString())
+                            .get(),
+                        ((AttributeReference) action.child()).exprId()));
   }
 
   public Stream<Expression> getMergeActions(LogicalPlan node) {

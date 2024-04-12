@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from openlineage.client import set_producer
-from pkg_resources import parse_version
+from packaging.version import Version
 
 from airflow import DAG
 from airflow.providers.postgres.operators.postgres import PostgresOperator
@@ -39,7 +39,7 @@ dag = DAG(
     description="Determines the popular day of week orders are placed.",
 )
 
-if parse_version(AIRFLOW_VERSION) < parse_version("2.5.0"):
+if Version(AIRFLOW_VERSION) < Version("2.5.0"):
     t1 = PostgresOperator(
         task_id="postgres_if_not_exists",
         postgres_conn_id="food_delivery_db",

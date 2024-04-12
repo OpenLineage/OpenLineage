@@ -9,26 +9,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.circuitBreaker.JavaRuntimeCircuitBreaker;
 import io.openlineage.client.circuitBreaker.JavaRuntimeCircuitBreakerConfig;
 import io.openlineage.client.circuitBreaker.SimpleMemoryCircuitBreaker;
 import io.openlineage.client.circuitBreaker.SimpleMemoryCircuitBreakerConfig;
+import io.openlineage.client.metrics.MicrometerProvider;
 import io.openlineage.client.transports.HttpTransport;
 import io.openlineage.client.transports.NoopTransport;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.SneakyThrows;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 class ConfigTest {
+  @BeforeEach
+  void clear() {
+    MicrometerProvider.clear();
+  }
+
   @Test
   void testLoadConfigFromYaml() throws URISyntaxException {
-    Path configPath =
-        Paths.get(this.getClass().getClassLoader().getResource("config/http.yaml").toURI());
-    OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(configPath));
+    OpenLineageClient client = Clients.newClient(new TestConfigPathProvider("config/http.yaml"));
     assertThat(client.transport).isInstanceOf(HttpTransport.class);
   }
 
@@ -37,9 +46,7 @@ class ConfigTest {
     try (MockedStatic mocked = mockStatic(Environment.class)) {
       when(Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED")).thenReturn("true");
 
-      Path configPath =
-          Paths.get(this.getClass().getClassLoader().getResource("config/http.yaml").toURI());
-      OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(configPath));
+      OpenLineageClient client = Clients.newClient(new TestConfigPathProvider("config/http.yaml"));
       assertThat(client.transport).isInstanceOf(NoopTransport.class);
     }
   }
@@ -49,28 +56,22 @@ class ConfigTest {
     try (MockedStatic mocked = mockStatic(Environment.class)) {
       when(Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED")).thenReturn("anything_else");
 
-      Path configPath =
-          Paths.get(this.getClass().getClassLoader().getResource("config/http.yaml").toURI());
-      OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(configPath));
+      OpenLineageClient client = Clients.newClient(new TestConfigPathProvider("config/http.yaml"));
       assertThat(client.transport).isInstanceOf(HttpTransport.class);
     }
   }
 
   @Test
   void testFacetsDisabledConfigFromYaml() throws URISyntaxException {
-    Path configPath =
-        Paths.get(this.getClass().getClassLoader().getResource("config/facets.yaml").toURI());
-    OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(configPath));
+    OpenLineageClient client = Clients.newClient(new TestConfigPathProvider("config/facets.yaml"));
 
     assertThat(client.disabledFacets).contains("facet1", "facet2");
   }
 
   @Test
   void testJavaRuntimeCircuitBreakerConfigFromYaml() throws URISyntaxException {
-    Path configPath =
-        Paths.get(
-            this.getClass().getClassLoader().getResource("config/circuitBreaker1.yaml").toURI());
-    OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(configPath));
+    OpenLineageClient client =
+        Clients.newClient(new TestConfigPathProvider("config/circuitBreaker1.yaml"));
 
     assertThat(client.circuitBreaker.get())
         .isInstanceOf(JavaRuntimeCircuitBreaker.class)
@@ -78,10 +79,7 @@ class ConfigTest {
 
     assertThat(client.circuitBreaker.get().getCheckIntervalMillis()).isEqualTo(1000);
 
-    configPath =
-        Paths.get(
-            this.getClass().getClassLoader().getResource("config/circuitBreaker2.yaml").toURI());
-    client = Clients.newClient(new TestConfigPathProvider(configPath));
+    client = Clients.newClient(new TestConfigPathProvider("config/circuitBreaker2.yaml"));
 
     assertThat(client.circuitBreaker.get())
         .isInstanceOf(JavaRuntimeCircuitBreaker.class)
@@ -91,20 +89,15 @@ class ConfigTest {
 
   @Test
   void testSimpleMemoryCircuitBreakerConfigFromYaml() throws URISyntaxException {
-    Path configPath =
-        Paths.get(
-            this.getClass().getClassLoader().getResource("config/circuitBreaker3.yaml").toURI());
-    OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(configPath));
+    OpenLineageClient client =
+        Clients.newClient(new TestConfigPathProvider("config/circuitBreaker3.yaml"));
 
     assertThat(client.circuitBreaker.get())
         .isInstanceOf(SimpleMemoryCircuitBreaker.class)
         .hasFieldOrPropertyWithValue("config", new SimpleMemoryCircuitBreakerConfig(13));
     assertThat(client.circuitBreaker.get().getCheckIntervalMillis()).isEqualTo(1000);
 
-    configPath =
-        Paths.get(
-            this.getClass().getClassLoader().getResource("config/circuitBreaker4.yaml").toURI());
-    client = Clients.newClient(new TestConfigPathProvider(configPath));
+    client = Clients.newClient(new TestConfigPathProvider("config/circuitBreaker4.yaml"));
 
     assertThat(client.circuitBreaker.get())
         .isInstanceOf(SimpleMemoryCircuitBreaker.class)
@@ -112,11 +105,36 @@ class ConfigTest {
     assertThat(client.circuitBreaker.get().getCheckIntervalMillis()).isEqualTo(200);
   }
 
+  @Test
+  void testSimpleMetricsConfigFromYaml() {
+    OpenLineageClient client = Clients.newClient(new TestConfigPathProvider("config/metrics.yaml"));
+    CompositeMeterRegistry meterRegistry = (CompositeMeterRegistry) client.meterRegistry;
+    assertThat(meterRegistry.getRegistries())
+        .hasOnlyElementsOfType(SimpleMeterRegistry.class)
+        .hasSize(1);
+  }
+
+  @Test
+  void testCompositeMetricsConfigFromYaml() {
+    OpenLineageClient client =
+        Clients.newClient(new TestConfigPathProvider("config/metrics-composite.yaml"));
+    CompositeMeterRegistry meterRegistry = (CompositeMeterRegistry) client.meterRegistry;
+    assertThat(meterRegistry.getRegistries().iterator().next())
+        .isInstanceOfSatisfying(
+            CompositeMeterRegistry.class,
+            x -> {
+              assertThat(new ArrayList<>(x.getRegistries()))
+                  .hasSize(1)
+                  .anyMatch(y -> y instanceof SimpleMeterRegistry);
+            });
+  }
+
   static class TestConfigPathProvider implements ConfigPathProvider {
     private final Path path;
 
-    public TestConfigPathProvider(Path path) {
-      this.path = path;
+    @SneakyThrows
+    public TestConfigPathProvider(String path) {
+      this.path = Paths.get(this.getClass().getClassLoader().getResource(path).toURI());
     }
 
     @Override

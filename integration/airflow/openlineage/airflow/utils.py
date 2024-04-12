@@ -9,7 +9,6 @@ import os
 import subprocess
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
-from uuid import uuid4
 
 import attr
 from openlineage.airflow.facets import (
@@ -21,8 +20,8 @@ from openlineage.airflow.facets import (
     UnknownOperatorInstance,
 )
 from openlineage.client.utils import RedactMixin
+from packaging.version import Version
 from pendulum import from_timestamp
-from pkg_resources import parse_version
 
 from airflow.models import DAG as AIRFLOW_DAG
 
@@ -383,10 +382,6 @@ def get_unknown_source_attribute_run_facet(task: "BaseOperator", name: Optional[
     }
 
 
-def new_lineage_run_id(dag_run_id: str, task_id: str) -> str:
-    return str(uuid4())
-
-
 def get_dagrun_start_end(dagrun: "DagRun", dag: "DAG"):
     try:
         return dagrun.data_interval_start, dagrun.data_interval_end
@@ -542,7 +537,7 @@ def is_airflow_version_enough(x):
         from airflow.version import version as AIRFLOW_VERSION
     except ImportError:
         AIRFLOW_VERSION = "0.0.0"
-    return parse_version(AIRFLOW_VERSION) >= parse_version(x)
+    return Version(AIRFLOW_VERSION) >= Version(x)
 
 
 def getboolean(env, default: bool = False) -> bool:

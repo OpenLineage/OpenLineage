@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.Versions;
@@ -14,6 +15,7 @@ import io.openlineage.spark.api.Vendors;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.Optional;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.SparkSession;
@@ -25,10 +27,12 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 public class ContextFactory {
 
   public final EventEmitter openLineageEventEmitter;
+  @Getter private final MeterRegistry meterRegistry;
   private final OpenLineageEventHandlerFactory handlerFactory;
 
-  public ContextFactory(EventEmitter openLineageEventEmitter) {
+  public ContextFactory(EventEmitter openLineageEventEmitter, MeterRegistry meterRegistry) {
     this.openLineageEventEmitter = openLineageEventEmitter;
+    this.meterRegistry = meterRegistry;
     handlerFactory = new InternalEventHandlerFactory();
   }
 
@@ -54,6 +58,7 @@ public class ContextFactory {
                     .getCustomEnvironmentVariables()
                     .orElse(Collections.emptyList()))
             .vendors(Vendors.getVendors())
+            .meterRegistry(meterRegistry)
             .build();
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, handlerFactory);
@@ -79,6 +84,7 @@ public class ContextFactory {
                               .getCustomEnvironmentVariables()
                               .orElse(Collections.emptyList()))
                       .vendors(Vendors.getVendors())
+                      .meterRegistry(meterRegistry)
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, handlerFactory);

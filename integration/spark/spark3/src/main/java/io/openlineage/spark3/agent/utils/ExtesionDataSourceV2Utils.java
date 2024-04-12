@@ -32,7 +32,7 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 
 /** Utility class to load serialized facets json string into a dataset builder */
 @Slf4j
-class BuiltInDataSourceV2Utils {
+class ExtesionDataSourceV2Utils {
 
   private static Map<String, TypeReference> predefinedFacets =
       new HashMap<String, TypeReference>() {
@@ -135,7 +135,7 @@ class BuiltInDataSourceV2Utils {
         relation.table().properties().get("openlineage.dataset.namespace"));
   }
 
-  public static boolean hasBuiltInLineage(DataSourceV2Relation relation) {
+  public static boolean hasExtensionLineage(DataSourceV2Relation relation) {
     return Optional.ofNullable(relation)
         .map(r -> r.table())
         .map(table -> table.properties())

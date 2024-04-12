@@ -5,19 +5,25 @@
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.extension.scala.v1.LineageRelation;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,6 +36,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.Partition;
 import org.apache.spark.SparkContext;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
@@ -42,6 +49,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.internal.SessionState;
+import org.apache.spark.sql.sources.BaseRelation;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -53,6 +61,7 @@ import org.mockito.MockedStatic;
 import org.postgresql.Driver;
 import scala.Option;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class LogicalRelationDatasetBuilderTest {
 
   SparkSession session = mock(SparkSession.class);
@@ -112,6 +121,7 @@ class LogicalRelationDatasetBuilderTest {
             .sparkContext(mock(SparkContext.class))
             .openLineage(openLineage)
             .queryExecution(qe)
+            .meterRegistry(new SimpleMeterRegistry())
             .build();
     LogicalRelationDatasetBuilder visitor =
         new LogicalRelationDatasetBuilder<>(
@@ -155,7 +165,8 @@ class LogicalRelationDatasetBuilderTest {
       when(PlanUtils.getDirectoryPath(p1, hadoopConfig)).thenReturn(new Path("/tmp"));
       when(PlanUtils.getDirectoryPath(p2, hadoopConfig)).thenReturn(new Path("/tmp"));
 
-      List<OpenLineage.Dataset> datasets = builder.apply(logicalRelation);
+      List<OpenLineage.Dataset> datasets =
+          builder.apply(mock(SparkListenerEvent.class), logicalRelation);
       assertEquals(1, datasets.size());
       OpenLineage.Dataset ds = datasets.get(0);
       assertEquals("/tmp", ds.getName());
@@ -189,10 +200,34 @@ class LogicalRelationDatasetBuilderTest {
                 .toSeq());
 
     try (MockedStatic mocked = mockStatic(PlanUtils.class)) {
-      List<OpenLineage.Dataset> datasets = builder.apply(logicalRelation);
+      List<OpenLineage.Dataset> datasets =
+          builder.apply(mock(SparkListenerEvent.class), logicalRelation);
       assertEquals(1, datasets.size());
       OpenLineage.Dataset ds = datasets.get(0);
       assertEquals("/tmp/path.csv", ds.getName());
     }
+  }
+
+  @Test
+  void testApplyForExtensionV1LineageRelation() {
+    DatasetIdentifier datasetIdentifier = new DatasetIdentifier("name", "namespace");
+    StructType structType =
+        new StructType(
+            new StructField[] {new StructField("field", StringType$.MODULE$, false, null)});
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    LineageRelation lineageRelation =
+        (LineageRelation)
+            mock(BaseRelation.class, withSettings().extraInterfaces(LineageRelation.class));
+    when(logicalRelation.relation()).thenReturn((BaseRelation) lineageRelation);
+    when(lineageRelation.getLineageDatasetIdentifier(any())).thenReturn(datasetIdentifier);
+    when(logicalRelation.schema()).thenReturn(structType);
+
+    List<Dataset> list = builder.apply(mock(SparkListenerEvent.class), logicalRelation);
+
+    assertThat(list).hasSize(1);
+    assertThat(list.get(0).getName()).isEqualTo(datasetIdentifier.getName());
+    assertThat(list.get(0).getNamespace()).isEqualTo(datasetIdentifier.getNamespace());
+    assertThat(list.get(0).getFacets().getSchema().getFields().get(0))
+        .hasFieldOrPropertyWithValue("name", "field");
   }
 }

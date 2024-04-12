@@ -1,7 +1,34 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-0/SchemaDatasetFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-1-0/SchemaDatasetFacet.json",
   "$defs": {
+    "SchemaDatasetFacetFields": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the field.",
+          "type": "string",
+          "example": "column1"
+        },
+        "type": {
+          "description": "The type of the field.",
+          "type": "string",
+          "example": "VARCHAR|INT|..."
+        },
+        "description": {
+          "description": "The description of the field.",
+          "type": "string"
+        },
+        "fields": {
+          "description": "Nested struct fields.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SchemaDatasetFacetFields"
+          }
+        }
+      },
+      "required": ["name"]
+    },
     "SchemaDatasetFacet": {
       "allOf": [
         {
@@ -11,27 +38,10 @@
           "type": "object",
           "properties": {
             "fields": {
-              "description": "The fields of the table.",
+              "description": "The fields of the data source.",
               "type": "array",
               "items": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "description": "The name of the field.",
-                    "type": "string",
-                    "example": "column1"
-                  },
-                  "type": {
-                    "description": "The type of the field.",
-                    "type": "string",
-                    "example": "VARCHAR|INT|..."
-                  },
-                  "description": {
-                    "description": "The description of the field.",
-                    "type": "string"
-                  }
-                },
-                "required": ["name"]
+                "$ref": "#/$defs/SchemaDatasetFacetFields"
               }
             }
           }

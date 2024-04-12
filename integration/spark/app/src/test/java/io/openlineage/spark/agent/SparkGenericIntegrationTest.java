@@ -11,7 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.UnknownEntryFacetListener;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -76,7 +78,7 @@ public class SparkGenericIntegrationTest {
                 "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/lineage")
             .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
-            .config("spark.openlineage.debugFacet", "disabled")
+            .config("spark.openlineage.debugFacet", "enabled")
             .config("spark.openlineage.namespace", "generic-namespace")
             .config("spark.openlineage.parentJobName", "parent-job")
             .config("spark.openlineage.parentRunId", "bd9c2467-3ed7-4fdc-85c2-41ebf5c73b40")
@@ -113,6 +115,45 @@ public class SparkGenericIntegrationTest {
                     })
                 .collect(Collectors.toSet()))
         .hasSize(1);
+
+    // test UnknownEntryFacetListener clears its static list of visited nodes
+    assertThat(UnknownEntryFacetListener.getInstance().getVisitedNodesSize()).isEqualTo(0);
+  }
+
+  @Test
+  @SneakyThrows
+  void sparkGathersMetrics() {
+    Dataset<Row> df = createTempDataset();
+
+    Dataset<Row> agg = df.groupBy("a").count();
+    agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
+    spark.stop();
+    List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
+    events.stream()
+        .map(
+            event -> {
+              Object debugFacet = event.getRun().getFacets().getAdditionalProperties().get("debug");
+              if (debugFacet != null) {
+                Object metricsFacet =
+                    ((OpenLineage.DefaultRunFacet) debugFacet)
+                        .getAdditionalProperties()
+                        .get("metrics");
+                List<Map<String, Object>> metrics =
+                    (List<Map<String, Object>>) ((Map<String, Object>) metricsFacet).get("metrics");
+                assertThat(
+                        metrics.stream()
+                            .filter(metric -> metric.get("name").equals("openlineage.emit.start"))
+                            .findFirst())
+                    .isPresent();
+                assertThat(
+                        metrics.stream()
+                            .filter(
+                                metric -> metric.get("name").equals("openlineage.emit.complete"))
+                            .findFirst())
+                    .isPresent();
+              }
+              return null;
+            });
   }
 
   private Dataset<Row> createTempDataset() {

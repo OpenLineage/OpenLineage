@@ -6,7 +6,7 @@ requires = [
 
 [project]
 name = "openlineage-python"
-version = "1.11.0"
+version = "1.13.0"
 description = "OpenLineage Python Client"
 readme = "README.md"
 keywords = [
@@ -29,6 +29,7 @@ dependencies = [
   "python-dateutil>=2.8.2",
   "pyyaml>=5.4",
   "requests>=2.20.0",
+  "packaging>=21.0",
 ]
 optional-dependencies.kafka = [
   "confluent-kafka>=2.1.1",

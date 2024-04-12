@@ -59,7 +59,7 @@ class GetChanges:
                         descrip = pull.body[beg:end].split()
                         descrip_str = " ".join(descrip)
                         change_descrip_str = f"    *{descrip_str}*"
-                except IndexError:
+                except (IndexError, AttributeError):
                     continue
 
                 """ Checks for new contributor """

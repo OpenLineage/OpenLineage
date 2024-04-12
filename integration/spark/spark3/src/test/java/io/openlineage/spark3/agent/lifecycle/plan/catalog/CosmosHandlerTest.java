@@ -14,7 +14,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.junit.jupiter.api.Test;
 
-public class CosmosHandlerTest {
+class CosmosHandlerTest {
 
   @Test
   void testGetDatasetIdentifier() {

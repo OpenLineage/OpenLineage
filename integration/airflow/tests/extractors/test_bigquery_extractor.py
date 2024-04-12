@@ -22,7 +22,7 @@ from openlineage.common.provider.bigquery import (
     BigQueryStatisticsDatasetFacet,
 )
 from openlineage.common.utils import get_from_nullable_chain
-from pkg_resources import parse_version
+from packaging.version import Version
 
 from airflow.models import DAG, TaskInstance
 from airflow.utils import timezone
@@ -120,6 +120,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         )
 
         assert len(task_meta.run_facets) == 2
+        job_details["configuration"]["query"].pop("query")
         assert (
             BigQueryJobRunFacet(cached=False, billedBytes=111149056, properties=json.dumps(job_details))
             == task_meta.run_facets["bigQuery_job"]
@@ -194,7 +195,9 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
 
         assert len(task_meta.run_facets) == 2
         print(task_meta.run_facets.keys())
-        assert task_meta.run_facets["bigQuery_job"] == BigQueryJobRunFacet(cached=True)
+        job_run_facet = task_meta.run_facets["bigQuery_job"]
+        assert job_run_facet.cached is True
+        assert job_run_facet.billedBytes == 0
 
         assert (
             ExternalQueryRunFacet(externalQueryId=bq_job_id, source="bigquery")
@@ -282,7 +285,7 @@ class TestBigQueryExtractor(unittest.TestCase):
     @staticmethod
     def _get_ti(task):
         kwargs = {}
-        if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
+        if Version(AIRFLOW_VERSION) > Version("2.2.0"):
             kwargs["run_id"] = "test_run_id"  # change in 2.2.0
         task_instance = TaskInstance(
             task=task,

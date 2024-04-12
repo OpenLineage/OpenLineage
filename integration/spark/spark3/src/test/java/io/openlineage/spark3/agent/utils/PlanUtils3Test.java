@@ -223,7 +223,7 @@ class PlanUtils3Test {
   }
 
   @Test
-  void testFromDataSourceV2RelationForBuiltInLineage() throws URISyntaxException {
+  void testFromDataSourceV2RelationForExtensionLineage() throws URISyntaxException {
     Map<String, String> properties = new HashMap<>();
     properties.put("openlineage.dataset.name", "some-name");
     properties.put("openlineage.dataset.namespace", "some-namespace");

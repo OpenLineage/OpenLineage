@@ -23,7 +23,7 @@ from openlineage.airflow.utils import (
     url_to_https,
 )
 from openlineage.client.utils import RedactMixin
-from pkg_resources import parse_version
+from packaging.version import Version
 
 from airflow.models import DAG as AIRFLOW_DAG
 from airflow.models import DagModel
@@ -76,7 +76,7 @@ def test_pendulum_to_iso_8601():
     assert DagUtils.to_iso_8601(tz.convert(dt)) == "2021-08-05T19:05:01.000000Z"
 
 
-@pytest.mark.skipif(parse_version(AIRFLOW_VERSION) < parse_version("2.4.0"), reason="Airflow < 2.4.0")
+@pytest.mark.skipif(Version(AIRFLOW_VERSION) < Version("2.4.0"), reason="Airflow < 2.4.0")
 def test_get_dagrun_start_end():
     dag = AIRFLOW_DAG("test", start_date=days_ago(1), schedule_interval="@once")
     AIRFLOW_DAG.bulk_write_to_db([dag])
@@ -91,18 +91,18 @@ def test_get_dagrun_start_end():
     assert get_dagrun_start_end(dagrun, dag) == (days_ago(1), days_ago(1))
 
 
-def test_parse_version():
-    assert parse_version("2.3.0") >= parse_version("2.3.0.dev0")
-    assert parse_version("2.3.0.dev0") >= parse_version("2.3.0.dev0")
-    assert parse_version("2.3.0.beta1") >= parse_version("2.3.0.dev0")
-    assert parse_version("2.3.1") >= parse_version("2.3.0.dev0")
-    assert parse_version("2.4.0") >= parse_version("2.3.0.dev0")
-    assert parse_version("3.0.0") >= parse_version("2.3.0.dev0")
-    assert parse_version("2.2.0") < parse_version("2.3.0.dev0")
-    assert parse_version("2.1.3") < parse_version("2.3.0.dev0")
-    assert parse_version("2.2.4") < parse_version("2.3.0.dev0")
-    assert parse_version("1.10.15") < parse_version("2.3.0.dev0")
-    assert parse_version("2.2.4.dev0") < parse_version("2.3.0.dev0")
+def test_Version():
+    assert Version("2.3.0") >= Version("2.3.0.dev0")
+    assert Version("2.3.0.dev0") >= Version("2.3.0.dev0")
+    assert Version("2.3.0.beta1") >= Version("2.3.0.dev0")
+    assert Version("2.3.1") >= Version("2.3.0.dev0")
+    assert Version("2.4.0") >= Version("2.3.0.dev0")
+    assert Version("3.0.0") >= Version("2.3.0.dev0")
+    assert Version("2.2.0") < Version("2.3.0.dev0")
+    assert Version("2.1.3") < Version("2.3.0.dev0")
+    assert Version("2.2.4") < Version("2.3.0.dev0")
+    assert Version("1.10.15") < Version("2.3.0.dev0")
+    assert Version("2.2.4.dev0") < Version("2.3.0.dev0")
 
 
 def test_to_json_encodable():

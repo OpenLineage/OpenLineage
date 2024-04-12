@@ -28,13 +28,13 @@ fn test_failing_statement_with_insert() {
             errors: vec![
                 ExtractionError {
                     index: 0,
-                    message: "Expected an SQL statement, found: FAILING".to_string(),
+                    message: "Expected an SQL statement, found: FAILING at Line: 1, Column 1".to_string(),
                     origin_statement: "FAILING STATEMENT;".to_string(),
                 },
                 ExtractionError {
                     index: 2,
                     message:
-                        "Expected SELECT, VALUES, or a subquery in the query body, found: FAILING"
+                        "Expected SELECT, VALUES, or a subquery in the query body, found: FAILING at Line: 1, Column 13"
                             .to_string(),
                     origin_statement: "INSERT ALSO FAILING".to_string(),
                 }

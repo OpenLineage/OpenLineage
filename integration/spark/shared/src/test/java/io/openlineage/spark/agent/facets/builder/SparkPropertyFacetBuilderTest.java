@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.SparkPropertyFacet;
@@ -23,7 +24,8 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.junit.jupiter.api.Test;
 
-public class SparkPropertyFacetBuilderTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class SparkPropertyFacetBuilderTest {
 
   @Test
   void testBuildDefault() {
@@ -75,6 +77,7 @@ public class SparkPropertyFacetBuilderTest {
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .meterRegistry(new SimpleMeterRegistry())
                 .build());
 
     Map<String, OpenLineage.RunFacet> runFacetMap = new HashMap<>();
