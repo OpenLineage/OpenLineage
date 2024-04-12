@@ -5,6 +5,7 @@
 
 package io.openlineage.client.transports;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.net.URI;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -20,6 +21,11 @@ import lombok.With;
 @ToString
 @With
 public final class HttpConfig implements TransportConfig {
+  public enum Compression {
+    @JsonProperty("gzip")
+    GZIP
+  };
+
   @Getter @Setter private URI url;
   @Getter @Setter private @Nullable String endpoint;
 
@@ -31,4 +37,5 @@ public final class HttpConfig implements TransportConfig {
   @Getter @Setter private @Nullable TokenProvider auth;
   @Getter @Setter private @Nullable Map<String, String> urlParams;
   @Getter @Setter private @Nullable Map<String, String> headers;
+  @Getter @Setter private @Nullable Compression compression;
 }

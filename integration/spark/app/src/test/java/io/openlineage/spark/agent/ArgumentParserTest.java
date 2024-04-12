@@ -96,7 +96,8 @@ class ArgumentParserTest {
             .set("spark.openlineage.transport.urlParams.test1", "test1")
             .set("spark.openlineage.transport.urlParams.test2", "test2")
             .set("spark.openlineage.transport.headers.testHeader1", "test1")
-            .set("spark.openlineage.transport.headers.testHeader2", "test2");
+            .set("spark.openlineage.transport.headers.testHeader2", "test2")
+            .set("spark.openlineage.transport.compression", "gzip");
 
     OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
     HttpConfig transportConfig = (HttpConfig) openLineageYaml.getTransportConfig();
@@ -108,6 +109,7 @@ class ArgumentParserTest {
     assertEquals(5000, transportConfig.getTimeout());
     assertEquals("test1", transportConfig.getHeaders().get("testHeader1"));
     assertEquals("test2", transportConfig.getHeaders().get("testHeader2"));
+    assertEquals(HttpConfig.Compression.GZIP, transportConfig.getCompression());
   }
 
   @Test

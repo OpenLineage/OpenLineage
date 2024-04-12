@@ -117,7 +117,8 @@ class OpenLineageClientUtilsTest {
         "transport:\n"
             + "  type: http\n"
             + "  url: http://localhost:5050\n"
-            + "  endpoint: api/v1/lineage\n";
+            + "  endpoint: api/v1/lineage\n"
+            + "  compression: gzip\n";
     System.out.println(yamlString);
 
     byte[] bytes = yamlString.getBytes(StandardCharsets.UTF_8);
@@ -130,12 +131,13 @@ class OpenLineageClientUtilsTest {
     HttpConfig httpConfig = (HttpConfig) transportConfig;
     assertThat(httpConfig.getUrl()).isEqualTo(URI.create("http://localhost:5050"));
     assertThat(httpConfig.getEndpoint()).isEqualTo("api/v1/lineage");
+    assertThat(httpConfig.getCompression()).isEqualTo(HttpConfig.Compression.GZIP);
   }
 
   @Test
   void loadOpenLineageYaml_shouldFallbackAndDeserialiseJsonEncodedInputStreams() {
     byte[] bytes =
-        "{\"transport\":{\"type\":\"http\",\"url\":\"https://localhost:1234/api/v1/lineage\"}}"
+        "{\"transport\":{\"type\":\"http\",\"url\":\"https://localhost:1234/api/v1/lineage\",\"compression\":\"gzip\"}}"
             .getBytes(StandardCharsets.UTF_8);
 
     OpenLineageYaml yaml =
@@ -145,12 +147,13 @@ class OpenLineageClientUtilsTest {
     assertThat(transportConfig).isInstanceOf(HttpConfig.class);
     HttpConfig httpConfig = (HttpConfig) transportConfig;
     assertThat(httpConfig.getUrl()).isEqualTo(URI.create("https://localhost:1234/api/v1/lineage"));
+    assertThat(httpConfig.getCompression()).isEqualTo(HttpConfig.Compression.GZIP);
   }
 
   @Test
   void loadOpenLineageJson_ShouldDeserialiseJsonEncodedInputStreams() {
     byte[] bytes =
-        "{\"transport\":{\"type\":\"http\",\"url\":\"https://localhost:1234/api/v1/lineage\"}}"
+        "{\"transport\":{\"type\":\"http\",\"url\":\"https://localhost:1234/api/v1/lineage\",\"compression\":\"gzip\"}}"
             .getBytes(StandardCharsets.UTF_8);
 
     OpenLineageYaml yaml =
@@ -160,5 +163,6 @@ class OpenLineageClientUtilsTest {
     assertThat(transportConfig).isInstanceOf(HttpConfig.class);
     HttpConfig httpConfig = (HttpConfig) transportConfig;
     assertThat(httpConfig.getUrl()).isEqualTo(URI.create("https://localhost:1234/api/v1/lineage"));
+    assertThat(httpConfig.getCompression()).isEqualTo(HttpConfig.Compression.GZIP);
   }
 }

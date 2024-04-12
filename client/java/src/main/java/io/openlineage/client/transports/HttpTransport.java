@@ -26,8 +26,10 @@ import lombok.NonNull;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.entity.GzipCompressingEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
@@ -45,6 +47,7 @@ public final class HttpTransport extends Transport implements Closeable {
   private @Nullable final TokenProvider tokenProvider;
 
   private final Map<String, String> headers;
+  private @Nullable final HttpConfig.Compression compression;
 
   public HttpTransport(@NonNull final HttpConfig httpConfig) {
     this(withTimeout(httpConfig), httpConfig);
@@ -82,6 +85,7 @@ public final class HttpTransport extends Transport implements Closeable {
     }
     this.tokenProvider = httpConfig.getAuth();
     this.headers = httpConfig.getHeaders() != null ? httpConfig.getHeaders() : new HashMap<>();
+    this.compression = httpConfig.getCompression();
   }
 
   private URI getUri(HttpConfig httpConfig) throws URISyntaxException {
@@ -122,7 +126,7 @@ public final class HttpTransport extends Transport implements Closeable {
       final HttpPost request = new HttpPost();
       request.setURI(uri);
       setHeaders(request);
-      request.setEntity(new StringEntity(eventAsJson, APPLICATION_JSON));
+      setBody(request, eventAsJson);
 
       try (CloseableHttpResponse response = http.execute(request)) {
         throwOnHttpError(response);
@@ -131,6 +135,14 @@ public final class HttpTransport extends Transport implements Closeable {
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
     }
+  }
+
+  private void setBody(HttpPost request, String body) {
+    HttpEntity entity = new StringEntity(body, APPLICATION_JSON);
+    if (compression == HttpConfig.Compression.GZIP) {
+      entity = new GzipCompressingEntity(entity);
+    }
+    request.setEntity(entity);
   }
 
   private void setHeaders(HttpPost request) {
