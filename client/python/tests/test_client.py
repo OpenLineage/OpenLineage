@@ -81,12 +81,16 @@ def test_client_sends_proper_json_with_minimal_run_event() -> None:
         ),
     )
 
-    session.post.assert_called_with(
-        "http://example.com/api/v1/lineage",
+    body = (
         '{"eventTime": "2021-11-03T10:53:52.427343", "eventType": "START", "inputs": [], "job": '
         '{"facets": {}, "name": "job", "namespace": "openlineage"}, "outputs": [], '
         '"producer": "producer", "run": {"facets": {}, "runId": '
-        f'"69f4acab-b87d-4fc0-b27b-8ea950370ff3"}}, "schemaURL": "{SCHEMA_URL}"}}',
+        f'"69f4acab-b87d-4fc0-b27b-8ea950370ff3"}}, "schemaURL": "{SCHEMA_URL}"}}'
+    )
+    session.post.assert_called_with(
+        url="http://example.com/api/v1/lineage",
+        data=body,
+        headers={},
         timeout=5.0,
         verify=True,
     )
@@ -105,12 +109,16 @@ def test_client_sends_proper_json_with_minimal_dataset_event() -> None:
         ),
     )
 
-    session.post.assert_called_with(
-        "http://example.com/api/v1/lineage",
+    body = (
         '{"dataset": {"facets": {}, "name": "my-ds", '
         '"namespace": "my-namespace"}, "eventTime": '
         '"2021-11-03T10:53:52.427343", "producer": "producer", '
-        '"schemaURL": "datasetSchemaUrl"}',
+        '"schemaURL": "datasetSchemaUrl"}'
+    )
+    session.post.assert_called_with(
+        url="http://example.com/api/v1/lineage",
+        data=body,
+        headers={},
         timeout=5.0,
         verify=True,
     )
@@ -129,12 +137,17 @@ def test_client_sends_proper_json_with_minimal_job_event() -> None:
         ),
     )
 
-    session.post.assert_called_with(
-        "http://example.com/api/v1/lineage",
+    body = (
         '{"eventTime": "2021-11-03T10:53:52.427343", '
         '"inputs": [], "job": {"facets": {}, "name": "job", "namespace": '
         '"openlineage"}, "outputs": [], "producer": "producer", '
-        '"schemaURL": "jobSchemaURL"}',
+        '"schemaURL": "jobSchemaURL"}'
+    )
+
+    session.post.assert_called_with(
+        url="http://example.com/api/v1/lineage",
+        data=body,
+        headers={},
         timeout=5.0,
         verify=True,
     )

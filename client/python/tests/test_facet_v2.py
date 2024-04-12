@@ -68,7 +68,7 @@ def test_custom_facet() -> None:
 
     client.emit(event)
 
-    event_sent = json.loads(session.post.call_args[0][1])
+    event_sent = json.loads(session.post.call_args.kwargs["data"])
 
     expected_event = {
         "eventType": "START",
@@ -190,7 +190,7 @@ def test_full_core_event_serializes_properly() -> None:
 
         client.emit(event)
 
-        event_sent = json.loads(session.post.call_args[0][1])
+        event_sent = json.loads(session.post.call_args.kwargs["data"])
 
         dirpath = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(dirpath, "example_full_event.json")) as f:
