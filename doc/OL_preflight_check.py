@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 import os
+import attr
 
 from packaging.version import Version
 
@@ -218,35 +219,8 @@ def is_ol_accessible_and_enabled():
 
 def validate_connection():
     transport = _get_transport()
-    config = extract_config(transport)
+    config = attr.asdict(transport.config)
     verify_backend(LINEAGE_BACKEND, config)
-
-
-def extract_config(transport):
-    if transport.kind == "http":
-        return _extract_http_config(transport)
-    elif transport.kind == "kafka":
-        return _extract_kafka_config(transport)
-    elif transport.kind == "file":
-        return _extract_file_config(transport)
-    raise ValueError("Unsupported transport type: ", transport.kind)
-
-
-def _extract_http_config(transport):
-    config = {
-        "url": transport.config.url,
-        "endpoint": transport.config.endpoint,
-        "auth": transport.config.auth,
-    }
-    return config
-
-
-def _extract_kafka_config(transport):
-    raise NotImplementedError("This feature is not implemented yet")
-
-
-def _extract_file_config(transport):
-    raise NotImplementedError("This feature is not implemented yet")
 
 
 def verify_backend(backend_type: str, config: dict):
