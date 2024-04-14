@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import attr
+from openlineage.client.facet import ParentRunFacet
+from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields
@@ -13,7 +15,6 @@ from packaging.version import Version
 
 if TYPE_CHECKING:
     from confluent_kafka import KafkaError, Message
-    from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 log = logging.getLogger(__name__)
 
 _T = TypeVar("_T", bound="KafkaConfig")
@@ -28,12 +29,15 @@ class KafkaConfig(Config):
     # Topic on which we should send messages
     topic: str = attr.ib()
 
+    # Explicit key for Kafka producer
+    messageKey: str | None = attr.ib(default=None)  # noqa: N815
+
     # Set to true if Kafka should flush after each event. The process that emits can be killed in
     # some cases - for example in Airflow integration, so flushing is desirable there.
     flush: bool = attr.ib(default=True)
 
     @classmethod
-    def from_dict(cls: type[_T], params: dict[str, str]) -> _T:
+    def from_dict(cls: type[_T], params: dict[str, Any]) -> _T:
         if "config" not in params:
             msg = "kafka `config` not passed to KafkaConfig"
             raise RuntimeError(msg)
@@ -57,6 +61,7 @@ class KafkaTransport(Transport):
     def __init__(self, config: KafkaConfig) -> None:
         self.topic = config.topic
         self.flush = config.flush
+        self.message_key = config.messageKey
         self.kafka_config = config
         self._is_airflow_sqlalchemy = _check_if_airflow_sqlalchemy_context()
         self.producer = None
@@ -64,11 +69,31 @@ class KafkaTransport(Transport):
             self._setup_producer(self.kafka_config.config)
         log.debug("Constructing openlineage client to send events to topic %s", config.topic)
 
-    def emit(self, event: Union[RunEvent, DatasetEvent, JobEvent]) -> None:  # noqa: UP007
+    def _get_message_key(self, event: RunEvent | DatasetEvent | JobEvent) -> str:
+        if isinstance(event, DatasetEvent):
+            return f"dataset:{event.dataset.namespace}/{event.dataset.name}"
+
+        if isinstance(event, JobEvent):
+            return f"job:{event.job.namespace}/{event.job.name}"
+
+        parent_run_facet: ParentRunFacet = event.run.facets.get("parent") or ParentRunFacet({}, {})
+        parent_job_namespace: str | None = parent_run_facet.job.get("namespace")
+        parent_job_name: str | None = parent_run_facet.job.get("name")
+        parent_run_id: str | None = parent_run_facet.run.get("runId")
+        if parent_job_namespace and parent_job_name and parent_run_id:
+            return f"run:{parent_job_namespace}/{parent_job_name}/{parent_run_id}"
+
+        return f"run:{event.job.namespace}/{event.job.name}/{event.run.runId}"
+
+    def emit(self, event: RunEvent | DatasetEvent | JobEvent) -> None:
         if self._is_airflow_sqlalchemy:
             self._setup_producer(self.kafka_config.config)
+
+        key = self.message_key or self._get_message_key(event)
+
         self.producer.produce(  # type: ignore[attr-defined]
             topic=self.topic,
+            key=key,
             value=Serde.to_json(event).encode("utf-8"),
             on_delivery=on_delivery,
         )
