@@ -5,12 +5,14 @@ from __future__ import annotations
 import re
 import typing
 
-if typing.TYPE_CHECKING:
-    from openlineage.client.run import RunEvent
+from openlineage.client.event_v2 import RunEvent as RunEvent_v2
+from openlineage.client.run import RunEvent
+
+RunEventType = typing.Union[RunEvent, RunEvent_v2]
 
 
 class Filter:
-    def filter_event(self, event: RunEvent) -> RunEvent | None:
+    def filter_event(self, event: RunEventType) -> RunEventType | None:
         ...
 
 
@@ -18,7 +20,7 @@ class ExactMatchFilter(Filter):
     def __init__(self, match: str) -> None:
         self.match = match
 
-    def filter_event(self, event: RunEvent) -> RunEvent | None:
+    def filter_event(self, event: RunEventType) -> RunEventType | None:
         if self.match == event.job.name:
             return None
         return event
@@ -28,7 +30,7 @@ class RegexFilter(Filter):
     def __init__(self, regex: str) -> None:
         self.pattern = re.compile(regex)
 
-    def filter_event(self, event: RunEvent) -> RunEvent | None:
+    def filter_event(self, event: RunEventType) -> RunEventType | None:
         if self.pattern.match(event.job.name):
             return None
         return event
