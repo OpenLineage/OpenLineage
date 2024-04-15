@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import gzip
 import inspect
 import logging
 import warnings
+from enum import Enum
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
@@ -28,6 +30,13 @@ class TokenProvider:
 
     def get_bearer(self) -> str | None:
         return None
+
+
+class HttpCompression(Enum):
+    GZIP = "gzip"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class ApiKeyTokenProvider(TokenProvider):
@@ -71,6 +80,7 @@ class HttpConfig(Config):
     # check TLS certificates
     verify: bool = attr.ib(default=True)
     auth: TokenProvider = attr.ib(factory=lambda: TokenProvider({}))
+    compression: HttpCompression | None = attr.ib(default=None)
     # not set by TransportFactory
     session: Session | None = attr.ib(default=None)
     # not set by TransportFactory
@@ -83,6 +93,9 @@ class HttpConfig(Config):
             raise RuntimeError(msg)
         specified_dict = get_only_specified_fields(cls, params)
         specified_dict["auth"] = create_token_provider(specified_dict.get("auth", {}))
+        compression = specified_dict.get("compression")
+        if compression:
+            specified_dict["compression"] = HttpCompression(compression)
         return cls(**specified_dict)
 
     @classmethod
@@ -132,6 +145,7 @@ class HttpTransport(Transport):
             self.session.headers.update(auth_headers)
         self.timeout = config.timeout
         self.verify = config.verify
+        self.compression = config.compression
 
         if config.adapter:
             self.set_adapter(config.adapter)
@@ -141,23 +155,23 @@ class HttpTransport(Transport):
             self.session.mount(self.url, adapter)
 
     def emit(self, event: Event) -> Response:
-        event_str = Serde.to_json(event)
+        body, headers = self._prepare_request(Serde.to_json(event))
+
         if self.session:
             resp = self.session.post(
-                urljoin(self.url, self.endpoint),
-                event_str,
+                url=urljoin(self.url, self.endpoint),
+                data=body,
+                headers=headers,
                 timeout=self.timeout,
                 verify=self.verify,
             )
         else:
-            headers = {
-                "Content-Type": "application/json",
-            }
+            headers["Content-Type"] = "application/json"
             headers.update(self._auth_headers(self.config.auth))
             with Session() as session:
                 resp = session.post(
-                    urljoin(self.url, self.endpoint),
-                    event_str,
+                    url=urljoin(self.url, self.endpoint),
+                    data=body,
                     headers=headers,
                     timeout=self.timeout,
                     verify=self.verify,
@@ -171,3 +185,9 @@ class HttpTransport(Transport):
         if bearer:
             return {"Authorization": bearer}
         return {}
+
+    def _prepare_request(self, event_str: str) -> tuple[bytes | str, dict[str, str]]:
+        if self.compression == HttpCompression.GZIP:
+            return gzip.compress(event_str.encode("utf-8")), {"Content-Encoding": "gzip"}
+
+        return event_str, {}
