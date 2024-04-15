@@ -31,6 +31,8 @@ public class FlinkConfigParserTest {
       ConfigOptions.key("openlineage.transport.auth.type").stringType().noDefaultValue();
   ConfigOption testHeaderOption =
       ConfigOptions.key("openlineage.transport.headers.testHeader").stringType().noDefaultValue();
+  ConfigOption testCompressionOption =
+      ConfigOptions.key("openlineage.transport.compression").stringType().noDefaultValue();
 
   ConfigOption disabledFacetsOption =
       ConfigOptions.key("openlineage.facets.disabled").stringType().noDefaultValue();
@@ -43,6 +45,7 @@ public class FlinkConfigParserTest {
     configuration.set(apiKeyOption, "some-api-key");
     configuration.set(authTypeOption, "api_key");
     configuration.set(testHeaderOption, "some-header");
+    configuration.set(testCompressionOption, "gzip");
 
     OpenLineageYaml openLineageYaml = FlinkConfigParser.parse(configuration);
 
@@ -52,6 +55,7 @@ public class FlinkConfigParserTest {
     assertEquals(new URI("http://some-url"), transportConfig.getUrl());
     assertThat(transportConfig.getAuth().getToken()).contains("some-api-key");
     assertEquals("some-header", transportConfig.getHeaders().get("testHeader"));
+    assertEquals(HttpConfig.Compression.GZIP, transportConfig.getCompression());
   }
 
   @Test

@@ -25,6 +25,8 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -33,9 +35,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
+import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.config.RequestConfig.Builder;
+import org.apache.http.client.entity.GzipCompressingEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -56,6 +61,7 @@ class HttpTransportTest {
     httpConfig.setEndpoint("/api/v1/lineage");
     httpConfig.setTimeout(5000.0);
     httpConfig.setUrlParams(singletonMap("param", "value"));
+    httpConfig.setCompression(HttpConfig.Compression.GZIP);
     ApiKeyTokenProvider auth = new ApiKeyTokenProvider();
     auth.setApiKey("test");
     httpConfig.setAuth(auth);
@@ -267,6 +273,52 @@ class HttpTransportTest {
         .containsEntry(CONTENT_TYPE, APPLICATION_JSON.toString())
         .containsEntry("testHeader1", "test1")
         .containsEntry("testHeader2", "test2");
+  }
+
+  @Test
+  void gzipCompression() throws IOException {
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
+    config.setCompression(HttpConfig.Compression.GZIP);
+
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
+    Transport transport = new HttpTransport(http, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
+    when(response.getStatusLine().getStatusCode()).thenReturn(200);
+    when(response.getEntity().isStreaming()).thenReturn(true);
+    Map<String, HttpPost> map = new HashMap<>();
+    when(http.execute(any(HttpUriRequest.class)))
+        .thenAnswer(
+            invocation -> {
+              map.put("test", invocation.getArgument(0));
+              return response;
+            });
+
+    client.emit(runEvent());
+
+    HttpEntity resultEntity = map.get("test").getEntity();
+    assertThat(resultEntity).isInstanceOf(GzipCompressingEntity.class);
+
+    GzipCompressingEntity gzippedEntity = (GzipCompressingEntity) resultEntity;
+    ByteArrayOutputStream compressedData = new ByteArrayOutputStream();
+    gzippedEntity.writeTo(compressedData);
+
+    GZIPInputStream uncompressedStream =
+        new GZIPInputStream(new ByteArrayInputStream(compressedData.toByteArray()));
+    ByteArrayOutputStream uncompressedData = new ByteArrayOutputStream();
+    int nRead;
+    byte[] buffer = new byte[1024];
+    while ((nRead = uncompressedStream.read(buffer, 0, buffer.length)) != -1) {
+      uncompressedData.write(buffer, 0, nRead);
+    }
+    uncompressedData.flush();
+
+    String body = new String(uncompressedData.toByteArray(), "UTF-8");
+    assertThat(body)
+        .isEqualTo(
+            "{\"producer\":\"http://test.producer\",\"schemaURL\":\"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent\",\"run\":{\"runId\":\"ea445b5c-22eb-457a-8007-01c7c52b6e54\"},\"job\":{\"namespace\":\"test-namespace\",\"name\":\"test-job\"}}");
   }
 
   @Test
