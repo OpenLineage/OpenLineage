@@ -6,7 +6,6 @@
 package io.openlineage.client.transports;
 
 public class KafkaTransportBuilder implements TransportBuilder {
-  private static final String DEFAULT_LINEAGE_SOURCE = "openlineage-java";
 
   @Override
   public TransportConfig getConfig() {
@@ -15,13 +14,7 @@ public class KafkaTransportBuilder implements TransportBuilder {
 
   @Override
   public Transport build(TransportConfig config) {
-    final KafkaConfig kafkaConfig = (KafkaConfig) config;
-    if (!kafkaConfig.hasLocalServerId()) {
-      // Set the local server ID to the lineage source when not specified
-      kafkaConfig.setLocalServerId(DEFAULT_LINEAGE_SOURCE);
-    }
-    kafkaConfig.getProperties().put("server.id", kafkaConfig.getLocalServerId());
-    return new KafkaTransport(kafkaConfig);
+    return new KafkaTransport((KafkaConfig) config);
   }
 
   @Override

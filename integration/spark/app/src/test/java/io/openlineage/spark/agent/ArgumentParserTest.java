@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 class ArgumentParserTest {
 
   private static final String NS_NAME = "ns_name";
+  private static final String JOB_NAMESPACE = "job_namespace";
   private static final String JOB_NAME = "job_name";
   private static final String URL = "http://localhost:5000";
   private static final String RUN_ID = "ea445b5c-22eb-457a-8007-01c7c52b6e54";
@@ -68,12 +69,14 @@ class ArgumentParserTest {
     SparkConf sparkConf =
         new SparkConf()
             .set(ArgumentParser.SPARK_CONF_NAMESPACE, NS_NAME)
+            .set(ArgumentParser.SPARK_CONF_PARENT_JOB_NAMESPACE, JOB_NAMESPACE)
             .set(ArgumentParser.SPARK_CONF_PARENT_JOB_NAME, JOB_NAME)
             .set(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, RUN_ID)
             .set(ArgumentParser.SPARK_CONF_APP_NAME, APP_NAME);
 
     ArgumentParser argumentParser = ArgumentParser.parse(sparkConf);
     assertEquals(NS_NAME, argumentParser.getNamespace());
+    assertEquals(JOB_NAMESPACE, argumentParser.getParentJobNamespace());
     assertEquals(JOB_NAME, argumentParser.getParentJobName());
     assertEquals(RUN_ID, argumentParser.getParentRunId());
     assertEquals(APP_NAME, argumentParser.getOverriddenAppName());
@@ -113,13 +116,31 @@ class ArgumentParserTest {
         new SparkConf()
             .set("spark.openlineage.transport.type", "kafka")
             .set("spark.openlineage.transport.topicName", "test")
-            .set("spark.openlineage.transport.localServerId", "test")
+            .set("spark.openlineage.transport.messageKey", "explicit-key")
             .set("spark.openlineage.transport.properties.test1", "test1")
             .set("spark.openlineage.transport.properties.test2", "test2");
     OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
     KafkaConfig transportConfig = (KafkaConfig) openLineageYaml.getTransportConfig();
     assertEquals("test", transportConfig.getTopicName());
-    assertEquals("test", transportConfig.getLocalServerId());
+    assertEquals("explicit-key", transportConfig.getMessageKey());
+    assertEquals("test1", transportConfig.getProperties().get("test1"));
+    assertEquals("test2", transportConfig.getProperties().get("test2"));
+  }
+
+  @Test
+  void testConfToKafkaConfigLegacyLocalServerId() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.transport.type", "kafka")
+            .set("spark.openlineage.transport.topicName", "test")
+            .set("spark.openlineage.transport.localServerId", "explicit-key")
+            .set("spark.openlineage.transport.properties.test1", "test1")
+            .set("spark.openlineage.transport.properties.test2", "test2");
+    OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
+    KafkaConfig transportConfig = (KafkaConfig) openLineageYaml.getTransportConfig();
+    assertEquals("test", transportConfig.getTopicName());
+    // Legacy LocalServerId should be mapped to messageKey
+    assertEquals("explicit-key", transportConfig.getMessageKey());
     assertEquals("test1", transportConfig.getProperties().get("test1"));
     assertEquals("test2", transportConfig.getProperties().get("test2"));
   }

@@ -1,11 +1,16 @@
 # Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+import warnings
 from enum import Enum
 from typing import Any, ClassVar, Dict, List, Optional
 
 import attr
 from openlineage.client.constants import DEFAULT_PRODUCER
 from openlineage.client.utils import RedactMixin
+
+warnings.warn(
+    "This module is deprecated. Please use `openlineage.client.facet_v2`.", DeprecationWarning, stacklevel=2
+)
 
 SCHEMA_URI = "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json"
 
@@ -85,7 +90,7 @@ class DocumentationJobFacet(BaseFacet):
 
 @attr.s
 class SourceCodeLocationJobFacet(BaseFacet):
-    type: str = attr.ib()  # noqa: A003
+    type: str = attr.ib()
     url: str = attr.ib()
 
     _additional_skip_redact: ClassVar[List[str]] = ["type", "url"]
@@ -116,7 +121,7 @@ class DocumentationDatasetFacet(BaseFacet):
 @attr.s
 class SchemaField(RedactMixin):
     name: str = attr.ib()
-    type: str = attr.ib()  # noqa: A003
+    type: str = attr.ib()
     description: Optional[str] = attr.ib(default=None)
 
     _do_not_redact: ClassVar[List[str]] = ["name", "type"]
@@ -160,17 +165,17 @@ class OutputStatisticsOutputDatasetFacet(BaseFacet):
 class ColumnMetric:
     nullCount: Optional[int] = attr.ib(default=None)  # noqa: N815
     distinctCount: Optional[int] = attr.ib(default=None)  # noqa: N815
-    sum: Optional[int] = attr.ib(default=None)  # noqa: A003
+    sum: Optional[int] = attr.ib(default=None)
     count: Optional[int] = attr.ib(default=None)
-    min: Optional[float] = attr.ib(default=None)  # noqa: A003
-    max: Optional[float] = attr.ib(default=None)  # noqa: A003
+    min: Optional[float] = attr.ib(default=None)
+    max: Optional[float] = attr.ib(default=None)
     quantiles: Optional[Dict[str, float]] = attr.ib(default=None)
 
 
 @attr.s
 class DataQualityMetricsInputDatasetFacet(BaseFacet):
     rowCount: Optional[int] = attr.ib(default=None)  # noqa: N815
-    bytes: Optional[int] = attr.ib(default=None)  # noqa: A003
+    bytes: Optional[int] = attr.ib(default=None)
     fileCount: Optional[int] = attr.ib(default=None)  # noqa: N815
     columnMetrics: Dict[str, ColumnMetric] = attr.ib(factory=dict)  # noqa: N815
 
@@ -241,7 +246,7 @@ class ErrorMessageRunFacet(BaseFacet):
 class SymlinksDatasetFacetIdentifiers:
     namespace: str = attr.ib()
     name: str = attr.ib()
-    type: str = attr.ib()  # noqa: A003
+    type: str = attr.ib()
 
 
 @attr.s
@@ -272,7 +277,7 @@ class StorageDatasetFacet(BaseFacet):
 @attr.s
 class OwnershipJobFacetOwners:
     name: str = attr.ib()
-    type: Optional[str] = attr.ib(default=None)  # noqa: A003
+    type: Optional[str] = attr.ib(default=None)
 
 
 @attr.s
@@ -344,7 +349,7 @@ class LifecycleStateChangeDatasetFacet(BaseFacet):
 @attr.s
 class OwnershipDatasetFacetOwners:
     name: str = attr.ib()
-    type: str = attr.ib()  # noqa: A003
+    type: str = attr.ib()
 
 
 @attr.s

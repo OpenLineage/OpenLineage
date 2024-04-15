@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 from openlineage.client.transport.transport import Config, Transport
 
 if TYPE_CHECKING:
-    from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
+    from openlineage.client.client import Event
 from openlineage.client.serde import Serde
 
 
@@ -36,7 +36,7 @@ class FileTransport(Transport):
     def __init__(self, config: FileConfig) -> None:
         self.config = config
 
-    def emit(self, event: RunEvent | DatasetEvent | JobEvent) -> None:
+    def emit(self, event: Event) -> None:
         if self.config.append:
             log_file_path = self.config.log_file_path
         else:
