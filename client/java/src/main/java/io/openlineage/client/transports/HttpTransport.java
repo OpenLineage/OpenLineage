@@ -92,7 +92,7 @@ public final class HttpTransport extends Transport implements Closeable {
     URI url = httpConfig.getUrl();
     if (url == null) {
       throw new OpenLineageClientException(
-          "url can't be null, try setting openlineage.transport.url in config");
+          "url can't be null, try setting transport.url in config");
     }
     URIBuilder builder = new URIBuilder(url);
     if (StringUtils.isNotBlank(url.getPath())) {
@@ -115,10 +115,27 @@ public final class HttpTransport extends Transport implements Closeable {
 
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
-    final String eventAsJson = OpenLineageClientUtils.toJson(runEvent);
-    emit(eventAsJson);
+    emit(OpenLineageClientUtils.toJson(runEvent));
   }
 
+  @Override
+  public void emit(@NonNull OpenLineage.DatasetEvent datasetEvent) {
+    emit(OpenLineageClientUtils.toJson(datasetEvent));
+  }
+
+  @Override
+  public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
+    emit(OpenLineageClientUtils.toJson(jobEvent));
+  }
+
+  /**
+   * @deprecated
+   *     <p>Since version 1.13.0.
+   *     <p>Will be removed in version 1.16.0.
+   *     <p>Please use {@link #emit(OpenLineage.DatasetEvent)} or {@link
+   *     #emit(OpenLineage.JobEvent)} instead
+   */
+  @Deprecated
   @Override
   public void emit(String eventAsJson) {
     log.debug("POST event on URL {}", uri);

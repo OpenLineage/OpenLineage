@@ -52,17 +52,47 @@ public final class KafkaTransport extends Transport {
     return "run:" + job.getNamespace() + "/" + job.getName();
   }
 
+  private String getMessageKey(@NonNull OpenLineage.DatasetEvent datasetEvent) {
+    final OpenLineage.Dataset dataset = datasetEvent.getDataset();
+    if (dataset == null) {
+      return null;
+    }
+
+    return "dataset:" + dataset.getNamespace() + "/" + dataset.getName();
+  }
+
+  private String getMessageKey(@NonNull OpenLineage.JobEvent jobEvent) {
+    final OpenLineage.Job job = jobEvent.getJob();
+    if (job == null) {
+      return null;
+    }
+
+    return "job:" + job.getNamespace() + "/" + job.getName();
+  }
+
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
-    final String eventAsJson = OpenLineageClientUtils.toJson(runEvent);
+    emit(OpenLineageClientUtils.toJson(runEvent), getMessageKey(runEvent));
+  }
 
-    String eventKey = messageKey;
-    if (eventKey == null) {
-      eventKey = getMessageKey(runEvent);
+  @Override
+  public void emit(@NonNull OpenLineage.DatasetEvent datasetEvent) {
+    emit(OpenLineageClientUtils.toJson(datasetEvent), getMessageKey(datasetEvent));
+  }
+
+  @Override
+  public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
+    emit(OpenLineageClientUtils.toJson(jobEvent), getMessageKey(jobEvent));
+  }
+
+  private void emit(String eventAsJson, String eventKey) {
+    String partitionKey = messageKey;
+    if (partitionKey == null) {
+      partitionKey = eventKey;
     }
 
     final ProducerRecord<String, String> record =
-        new ProducerRecord<>(topicName, eventKey, eventAsJson);
+        new ProducerRecord<>(topicName, partitionKey, eventAsJson);
     try {
       producer.send(record);
     } catch (Exception e) {

@@ -5,9 +5,14 @@
 
 package io.openlineage.client.transports;
 
+import static io.openlineage.client.Events.datasetEvent;
+import static io.openlineage.client.Events.jobEvent;
+import static io.openlineage.client.Events.runEvent;
+import static io.openlineage.client.Events.runEventWithParent;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageClientUtils;
 import java.io.File;
 import java.net.URI;
 import java.util.List;
@@ -36,16 +41,44 @@ class FileTransportTest {
 
   @Test
   @SneakyThrows
-  void transportAppendsToFile() {
-    transport.emit(
-        new OpenLineage(URI.create("http://test.producer"))
-            .newRunEventBuilder()
-            .job(new OpenLineage.JobBuilder().name("test-job").namespace("test-ns").build())
-            .build());
+  void transportEmitsRunEvent() {
+    OpenLineage.RunEvent event = runEvent();
+    String eventSerialized = OpenLineageClientUtils.toJson(event);
+
+    transport.emit(event);
+
     List<String> lines = FileUtils.readLines(new File(FILE_LOCATION));
 
     assertThat(lines.size()).isEqualTo(1);
-    assertThat(lines.get(0)).contains("test-job");
+    assertThat(lines.get(0)).isEqualTo(eventSerialized);
+  }
+
+  @Test
+  @SneakyThrows
+  void transportEmitsDatasetEvent() {
+    OpenLineage.DatasetEvent event = datasetEvent();
+    String eventSerialized = OpenLineageClientUtils.toJson(event);
+
+    transport.emit(event);
+
+    List<String> lines = FileUtils.readLines(new File(FILE_LOCATION));
+
+    assertThat(lines.size()).isEqualTo(1);
+    assertThat(lines.get(0)).isEqualTo(eventSerialized);
+  }
+
+  @Test
+  @SneakyThrows
+  void transportEmitsJobEvent() {
+    OpenLineage.JobEvent event = jobEvent();
+    String eventSerialized = OpenLineageClientUtils.toJson(event);
+
+    transport.emit(event);
+
+    List<String> lines = FileUtils.readLines(new File(FILE_LOCATION));
+
+    assertThat(lines.size()).isEqualTo(1);
+    assertThat(lines.get(0)).isEqualTo(eventSerialized);
   }
 
   @Test
@@ -55,13 +88,13 @@ class FileTransportTest {
     fileConfig.setLocation(FILE_LOCATION);
     transport = new FileTransport(fileConfig);
 
-    transport.emit("{some-event}");
+    transport.emit(runEvent());
 
     // make file unwritable
     new File(FILE_LOCATION).setWritable(false);
 
     // should not be written
-    transport.emit("{some-event}");
+    transport.emit(runEvent());
 
     assertThat(FileUtils.readLines(new File(FILE_LOCATION)).size()).isEqualTo(1);
   }
@@ -69,23 +102,37 @@ class FileTransportTest {
   @Test
   @SneakyThrows
   void multipleEventsAreSeparatedByNewline() {
-    transport.emit("{some-event-1}");
-    transport.emit("{some-event-2}");
+    OpenLineage.RunEvent event = runEvent();
+    OpenLineage.RunEvent anotherEvent = runEventWithParent();
+
+    transport.emit(event);
+    transport.emit(anotherEvent);
 
     List<String> lines = FileUtils.readLines(new File(FILE_LOCATION));
 
+    String eventSerialized = OpenLineageClientUtils.toJson(event);
+    String anotherEventSerialized = OpenLineageClientUtils.toJson(anotherEvent);
+
     assertThat(lines.size()).isEqualTo(2);
-    assertThat(lines.get(0)).isEqualTo("{some-event-1}");
-    assertThat(lines.get(1)).isEqualTo("{some-event-2}");
+    assertThat(lines.get(0)).isEqualTo(eventSerialized);
+    assertThat(lines.get(1)).isEqualTo(anotherEventSerialized);
   }
 
   @Test
   @SneakyThrows
   void newlinesAreRemovedFromWrittenEvents() {
-    transport.emit("some-event-\n-same-event");
+    OpenLineage.RunEvent event =
+        new OpenLineage(URI.create("http://test.producer"))
+            .newRunEventBuilder()
+            .job(new OpenLineage.JobBuilder().name("test-\n-job").namespace("test-\n-ns").build())
+            .build();
+
+    transport.emit(event);
     List<String> lines = FileUtils.readLines(new File(FILE_LOCATION));
 
     assertThat(lines.size()).isEqualTo(1);
-    assertThat(lines.get(0)).isEqualTo("some-event--same-event");
+    assertThat(lines.get(0))
+        .isEqualTo(
+            "{\"producer\":\"http://test.producer\",\"schemaURL\":\"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent\",\"job\":{\"namespace\":\"test-\\n-ns\",\"name\":\"test-\\n-job\"}}");
   }
 }

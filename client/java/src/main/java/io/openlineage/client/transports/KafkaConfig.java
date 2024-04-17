@@ -21,7 +21,10 @@ public final class KafkaConfig implements TransportConfig {
   }
 
   /**
-   * @deprecated Replaced by {@link #getMessageKey()} since v1.13.0, and will be removed in v1.16.0
+   * @deprecated
+   *     <p>Since version 1.13.0.
+   *     <p>Will be removed in version 1.16.0.
+   *     <p>Please use {@link #getMessageKey()} instead
    */
   @Deprecated
   String getLocalServerId() {
@@ -29,7 +32,10 @@ public final class KafkaConfig implements TransportConfig {
   }
 
   /**
-   * @deprecated Replaced by {@link #setMessageKey()} since v1.13.0, and will be removed in v1.16.0
+   * @deprecated
+   *     <p>Since version 1.13.0.
+   *     <p>Will be removed in version 1.16.0.
+   *     <p>Please use {@link #setMessageKey()} instead
    */
   @Deprecated
   void setLocalServerId(String localServerId) {

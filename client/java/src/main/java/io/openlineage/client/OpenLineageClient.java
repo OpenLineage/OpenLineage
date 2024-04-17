@@ -107,7 +107,7 @@ public final class OpenLineageClient {
       engagedCircuitBreaker.set(0);
     }
     emitStart.increment();
-    emitTime.record(() -> transport.emit(OpenLineageClientUtils.toJson(datasetEvent)));
+    emitTime.record(() -> transport.emit(datasetEvent));
     emitComplete.increment();
   }
 
@@ -130,7 +130,7 @@ public final class OpenLineageClient {
       engagedCircuitBreaker.set(0);
     }
     emitStart.increment();
-    emitTime.record(() -> transport.emit(OpenLineageClientUtils.toJson(jobEvent)));
+    emitTime.record(() -> transport.emit(jobEvent));
     emitComplete.increment();
   }
 
