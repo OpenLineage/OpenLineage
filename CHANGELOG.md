@@ -9,6 +9,8 @@
     *Adds new Airflow macros `lineage_job_namespace()`, `lineage_job_name(task)` that return an Airflow namespace and Airflow job name, respectively.*
 * **Spec: Allow nested struct fields in `SchemaDatasetFacet`** [`#2548`](https://github.com/OpenLineage/OpenLineage/pull/2548) [@dolfinus](https://github.com/dolfinus)  
     *Allows nested fields support to `SchemaDatasetFacet`.*
+* **Spark: enable timeout for circuit breakers.** [`#2609`](https://github.com/OpenLineage/OpenLineage/pull/2609) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Implement within circuit breaker an optional timeout which switches off OpenLineage integration code when exceeded.*
 
 ### Fixed
 * **Spark: fix PMD for test** [`#2588`](https://github.com/OpenLineage/OpenLineage/pull/2588) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  

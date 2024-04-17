@@ -24,6 +24,12 @@ public final class JavaRuntimeCircuitBreakerConfig implements CircuitBreakerConf
   @Getter @Setter private Integer memoryThreshold = 20;
   @Getter @Setter private Integer gcCpuThreshold = 10;
   @Getter @Setter private Integer circuitCheckIntervalInMillis = CIRCUIT_CHECK_INTERVAL_IN_MILLIS;
+  @Getter @Setter private Integer timeoutInSeconds = null;
+
+  public JavaRuntimeCircuitBreakerConfig(
+      int memoryThreshold, int gcCpuThreshold, int circuitCheckIntervalInMillis) {
+    this(memoryThreshold, gcCpuThreshold, circuitCheckIntervalInMillis, null);
+  }
 
   public JavaRuntimeCircuitBreakerConfig(int memoryThreshold, int gcCpuThreshold) {
     this(memoryThreshold, gcCpuThreshold, CIRCUIT_CHECK_INTERVAL_IN_MILLIS);

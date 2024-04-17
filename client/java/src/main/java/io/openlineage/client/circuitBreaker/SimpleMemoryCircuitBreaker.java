@@ -9,6 +9,8 @@ import static io.openlineage.client.utils.RuntimeUtils.freeMemory;
 import static io.openlineage.client.utils.RuntimeUtils.maxMemory;
 import static io.openlineage.client.utils.RuntimeUtils.totalMemory;
 
+import java.time.Duration;
+import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,6 +20,8 @@ public class SimpleMemoryCircuitBreaker extends ExecutorCircuitBreaker {
 
   public SimpleMemoryCircuitBreaker(@NonNull final SimpleMemoryCircuitBreakerConfig config) {
     super(config.getCircuitCheckIntervalInMillis());
+    this.timeout =
+        Optional.ofNullable(config.getTimeoutInSeconds()).map(s -> Duration.ofSeconds(s));
     this.config = config;
   }
 

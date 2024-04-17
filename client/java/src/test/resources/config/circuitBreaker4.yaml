@@ -4,3 +4,4 @@ circuitBreaker:
   type: simpleMemory
   memoryThreshold: 13
   circuitCheckIntervalInMillis: 200
+  timeoutInSeconds: 90
