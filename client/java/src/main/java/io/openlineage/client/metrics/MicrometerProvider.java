@@ -16,6 +16,7 @@ import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * MicrometerProvider is a class that manages global OpenLineage meter registry implementation that
@@ -48,7 +49,7 @@ public class MicrometerProvider {
       return Optional.empty();
     }
     Object type = config.get("type");
-    if (!(type instanceof String) || "".equals(type)) {
+    if (!(type instanceof String) || type == null || StringUtils.isEmpty((String) type)) {
       return Optional.empty();
     }
     return getConfigBuilder((String) type).map(x -> x.registry(config));

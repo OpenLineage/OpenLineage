@@ -55,9 +55,10 @@ public final class OpenLineageClient {
     this.disabledFacets = Arrays.copyOf(disabledFacets, disabledFacets.length);
     this.circuitBreaker = Optional.ofNullable(circuitBreaker);
     if (meterRegistry == null) {
-      meterRegistry = MicrometerProvider.getMeterRegistry();
+      this.meterRegistry = MicrometerProvider.getMeterRegistry();
+    } else {
+      this.meterRegistry = meterRegistry;
     }
-    this.meterRegistry = meterRegistry;
 
     initializeMetrics();
     OpenLineageClientUtils.configureObjectMapper(disabledFacets);

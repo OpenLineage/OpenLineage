@@ -204,6 +204,7 @@ public final class OpenLineageClientUtils {
    * @return An instance of {@link OpenLineageYaml} containing the parsed configuration.
    * @throws OpenLineageClientException According to the rules defined above.
    */
+  @SuppressWarnings("PMD.AvoidCatchingNPE")
   public static OpenLineageYaml loadOpenLineageYaml(ConfigPathProvider configPathProvider)
       throws OpenLineageClientException {
     try {
@@ -220,9 +221,9 @@ public final class OpenLineageClientUtils {
           "No OpenLineage configuration file found at provided paths, looked in: "
               + concatenatedPaths);
     } catch (NullPointerException e) {
-      throw new OpenLineageClientException("ConfigPathProvider was null");
+      throw new OpenLineageClientException("ConfigPathProvider was null", e);
     } catch (FileNotFoundException e) {
-      throw new OpenLineageClientException("No OpenLineage configuration file found");
+      throw new OpenLineageClientException("No OpenLineage configuration file found", e);
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
     }
