@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
-public class MetricsTest extends BaseMetricsTest {
+class MetricsTest extends BaseMetricsTest {
 
   @SneakyThrows
   @Test

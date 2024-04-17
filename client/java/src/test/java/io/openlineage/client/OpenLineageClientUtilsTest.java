@@ -119,7 +119,6 @@ class OpenLineageClientUtilsTest {
             + "  url: http://localhost:5050\n"
             + "  endpoint: api/v1/lineage\n"
             + "  compression: gzip\n";
-    System.out.println(yamlString);
 
     byte[] bytes = yamlString.getBytes(StandardCharsets.UTF_8);
 

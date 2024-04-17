@@ -56,12 +56,11 @@ public class JdbcUtils {
    */
   public static DatasetIdentifier getDatasetIdentifierFromJdbcUrl(
       String jdbcUrl, List<String> parts) {
-    jdbcUrl = sanitizeJdbcUrl(jdbcUrl);
-    String namespace = jdbcUrl;
+    String namespace = sanitizeJdbcUrl(jdbcUrl);
     String urlDatabase = null;
 
     try {
-      URI uri = new URI(jdbcUrl);
+      URI uri = new URI(namespace);
       String path = uri.getPath();
       if (path != null) {
         namespace = String.format("%s://%s", uri.getScheme(), uri.getAuthority());

@@ -308,10 +308,11 @@ class HttpTransportTest {
     GZIPInputStream uncompressedStream =
         new GZIPInputStream(new ByteArrayInputStream(compressedData.toByteArray()));
     ByteArrayOutputStream uncompressedData = new ByteArrayOutputStream();
-    int nRead;
     byte[] buffer = new byte[1024];
-    while ((nRead = uncompressedStream.read(buffer, 0, buffer.length)) != -1) {
+    int nRead = uncompressedStream.read(buffer, 0, buffer.length);
+    while (nRead != -1) {
       uncompressedData.write(buffer, 0, nRead);
+      nRead = uncompressedStream.read(buffer, 0, buffer.length);
     }
     uncompressedData.flush();
 
@@ -358,6 +359,7 @@ class HttpTransportTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testTimeout() {
     HttpConfig config = new HttpConfig();
     config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
@@ -375,6 +377,7 @@ class HttpTransportTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testTimeoutInMillis() {
     HttpConfig config = new HttpConfig();
     config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
