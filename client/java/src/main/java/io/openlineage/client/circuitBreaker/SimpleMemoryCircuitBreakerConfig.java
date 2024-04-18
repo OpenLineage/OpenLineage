@@ -23,8 +23,13 @@ import lombok.With;
 public final class SimpleMemoryCircuitBreakerConfig implements CircuitBreakerConfig {
   @Getter @Setter private Integer memoryThreshold = 20;
   @Getter @Setter private Integer circuitCheckIntervalInMillis = CIRCUIT_CHECK_INTERVAL_IN_MILLIS;
+  @Getter @Setter private Integer timeoutInSeconds = null;
 
   public SimpleMemoryCircuitBreakerConfig(int memoryThreshold) {
-    this(memoryThreshold, CIRCUIT_CHECK_INTERVAL_IN_MILLIS);
+    this(memoryThreshold, CIRCUIT_CHECK_INTERVAL_IN_MILLIS, null);
+  }
+
+  public SimpleMemoryCircuitBreakerConfig(int memoryThreshold, int circuitCheckIntervalInMillis) {
+    this(memoryThreshold, circuitCheckIntervalInMillis, null);
   }
 }

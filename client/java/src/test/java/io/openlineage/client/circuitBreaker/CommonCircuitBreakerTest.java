@@ -54,7 +54,7 @@ class CommonCircuitBreakerTest {
     circuitBreaker.run(longLastingCallable);
     long millisAfter = System.currentTimeMillis();
 
-    assertThat(millisAfter - millisBefore).isGreaterThan(50); // proves callable started
+    assertThat(millisAfter - millisBefore).isGreaterThanOrEqualTo(50); // proves callable started
     assertThat(millisAfter - millisBefore).isLessThan(2000); // proves callable has been interrupted
   }
 

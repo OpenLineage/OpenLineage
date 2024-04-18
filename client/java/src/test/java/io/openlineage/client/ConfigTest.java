@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.openlineage.client.circuitBreaker.ExecutorCircuitBreaker;
 import io.openlineage.client.circuitBreaker.JavaRuntimeCircuitBreaker;
 import io.openlineage.client.circuitBreaker.JavaRuntimeCircuitBreakerConfig;
 import io.openlineage.client.circuitBreaker.SimpleMemoryCircuitBreaker;
@@ -78,12 +79,13 @@ class ConfigTest {
         .hasFieldOrPropertyWithValue("config", new JavaRuntimeCircuitBreakerConfig(13, 10));
 
     assertThat(client.circuitBreaker.get().getCheckIntervalMillis()).isEqualTo(1000);
+    assertThat(((ExecutorCircuitBreaker) client.circuitBreaker.get()).getTimeout()).isEmpty();
 
     client = Clients.newClient(new TestConfigPathProvider("config/circuitBreaker2.yaml"));
 
     assertThat(client.circuitBreaker.get())
         .isInstanceOf(JavaRuntimeCircuitBreaker.class)
-        .hasFieldOrPropertyWithValue("config", new JavaRuntimeCircuitBreakerConfig(13, 7, 200));
+        .hasFieldOrPropertyWithValue("config", new JavaRuntimeCircuitBreakerConfig(13, 7, 200, 90));
     assertThat(client.circuitBreaker.get().getCheckIntervalMillis()).isEqualTo(200);
   }
 
@@ -96,12 +98,13 @@ class ConfigTest {
         .isInstanceOf(SimpleMemoryCircuitBreaker.class)
         .hasFieldOrPropertyWithValue("config", new SimpleMemoryCircuitBreakerConfig(13));
     assertThat(client.circuitBreaker.get().getCheckIntervalMillis()).isEqualTo(1000);
+    assertThat(((ExecutorCircuitBreaker) client.circuitBreaker.get()).getTimeout()).isEmpty();
 
     client = Clients.newClient(new TestConfigPathProvider("config/circuitBreaker4.yaml"));
 
     assertThat(client.circuitBreaker.get())
         .isInstanceOf(SimpleMemoryCircuitBreaker.class)
-        .hasFieldOrPropertyWithValue("config", new SimpleMemoryCircuitBreakerConfig(13, 200));
+        .hasFieldOrPropertyWithValue("config", new SimpleMemoryCircuitBreakerConfig(13, 200, 90));
     assertThat(client.circuitBreaker.get().getCheckIntervalMillis()).isEqualTo(200);
   }
 

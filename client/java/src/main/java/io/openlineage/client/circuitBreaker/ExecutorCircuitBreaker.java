@@ -5,6 +5,8 @@
 
 package io.openlineage.client.circuitBreaker;
 
+import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -17,9 +19,16 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class ExecutorCircuitBreaker implements CircuitBreaker {
 
   private Integer circuitCheckIntervalInMillis;
+  protected Optional<Duration> timeout;
 
   public ExecutorCircuitBreaker(Integer circuitCheckIntervalInMillis) {
     this.circuitCheckIntervalInMillis = circuitCheckIntervalInMillis;
+    this.timeout = Optional.empty();
+  }
+
+  public ExecutorCircuitBreaker(Integer circuitCheckIntervalInMillis, Duration timeout) {
+    this.circuitCheckIntervalInMillis = circuitCheckIntervalInMillis;
+    this.timeout = Optional.of(timeout);
   }
 
   @Override
@@ -29,8 +38,8 @@ public abstract class ExecutorCircuitBreaker implements CircuitBreaker {
       return null;
     }
 
-    // TODO: this method shall implement timeout in future
     ExecutorService executor = Executors.newCachedThreadPool();
+    long startTime = System.currentTimeMillis();
     Future<T> futureOpenLineage = executor.submit(callable);
     Future<T> futureCircuitBreaker =
         executor.submit(
@@ -40,12 +49,22 @@ public abstract class ExecutorCircuitBreaker implements CircuitBreaker {
                   this,
                   getCheckIntervalMillis());
               CircuitBreakerState circuitBreakerState = currentState();
-              while (!circuitBreakerState.isClosed()) {
+              boolean isTimeoutExceeded = false;
+              while (!circuitBreakerState.isClosed() && !isTimeoutExceeded) {
                 Thread.sleep(getCheckIntervalMillis());
                 circuitBreakerState = currentState();
+
+                Duration runningTime = Duration.ofMillis(System.currentTimeMillis() - startTime);
+                isTimeoutExceeded =
+                    timeout.map(t -> t.minus(runningTime).isNegative()).orElse(false);
               }
-              log.warn(
-                  "CircuitBreaker cancelling OpenLineage code: " + circuitBreakerState.getReason());
+              if (circuitBreakerState.isClosed()) {
+                log.warn(
+                    "CircuitBreaker cancelling OpenLineage code: {}",
+                    circuitBreakerState.getReason());
+              } else {
+                log.warn("CircuitBreaker timeout exceeded: {}", timeout.get());
+              }
               futureOpenLineage.cancel(true); // interrupt other thread
               return null;
             });
@@ -70,6 +89,10 @@ public abstract class ExecutorCircuitBreaker implements CircuitBreaker {
   @Override
   public int getCheckIntervalMillis() {
     return circuitCheckIntervalInMillis;
+  }
+
+  public Optional<Duration> getTimeout() {
+    return timeout;
   }
 
   protected boolean isPercentageValueValid(Integer value) {

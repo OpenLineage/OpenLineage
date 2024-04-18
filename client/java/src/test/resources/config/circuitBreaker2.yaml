@@ -5,3 +5,4 @@ circuitBreaker:
   memoryThreshold: 13
   gcCpuThreshold: 7
   circuitCheckIntervalInMillis: 200
+  timeoutInSeconds: 90
