@@ -20,7 +20,7 @@ def lineage_job_namespace():
     PythonOperator(
         task_id='render_template',
         python_callable=my_task_function,
-        op_args=['{{ lineage_job_namespace() }}'], # invoke macro
+        op_args=['{{ macros.OpenLineagePlugin.lineage_job_namespace() }}'],
         provide_context=False,
         dag=dag
     )
@@ -36,7 +36,7 @@ def lineage_job_name(task_instance: TaskInstance):
     PythonOperator(
         task_id='render_template',
         python_callable=my_task_function,
-        op_args=['{{ lineage_job_name(task_instance) }}'], # invoke macro
+        op_args=['{{ macros.OpenLineagePlugin.lineage_job_name(task_instance) }}'],
         provide_context=False,
         dag=dag
     )
@@ -53,7 +53,7 @@ def lineage_run_id(task_instance: TaskInstance):
     PythonOperator(
         task_id='render_template',
         python_callable=my_task_function,
-        op_args=['{{ lineage_run_id(task_instance) }}'], # invoke macro
+        op_args=['{{ macros.OpenLineagePlugin.lineage_run_id(task_instance) }}'],
         provide_context=False,
         dag=dag
     )
@@ -79,7 +79,7 @@ def lineage_parent_id(task_instance: TaskInstance):
     PythonOperator(
         task_id='render_template',
         python_callable=my_task_function,
-        op_args=['{{ lineage_parent_id(task_instance) }}'], # invoke macro
+        op_args=['{{ macros.OpenLineagePlugin.lineage_parent_id(task_instance) }}'],
         provide_context=False,
         dag=dag
     )
