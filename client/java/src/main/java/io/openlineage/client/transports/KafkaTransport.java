@@ -45,16 +45,11 @@ public final class KafkaTransport extends Transport {
         final OpenLineage.ParentRunFacetJob parentJob = parentRunFacet.getJob();
         final OpenLineage.ParentRunFacetRun parentRun = parentRunFacet.getRun();
         if (parentRun != null && parentJob != null) {
-          return "run:"
-              + parentJob.getNamespace()
-              + "/"
-              + parentJob.getName()
-              + "/"
-              + parentRun.getRunId().toString();
+          return "run:" + parentJob.getNamespace() + "/" + parentJob.getName();
         }
       }
     }
-    return "run:" + job.getNamespace() + "/" + job.getName() + "/" + run.getRunId().toString();
+    return "run:" + job.getNamespace() + "/" + job.getName();
   }
 
   @Override
