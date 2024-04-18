@@ -30,9 +30,6 @@ public abstract class MergeIntoDeltaColumnLineageVisitor implements ColumnLevelL
     if (node instanceof MergeIntoCommand) {
       InputFieldsCollector.collect(context, ((MergeIntoCommand) node).target());
 
-      List<Expression> mergeActions =
-          getMergeActions((MergeIntoCommand) node).collect(Collectors.toList());
-
       // remove builder target inputs that are not contained within merge actions
       List<ExprId> mergeActionsExprIds =
           getMergeActions((MergeIntoCommand) node)
@@ -92,19 +89,5 @@ public abstract class MergeIntoDeltaColumnLineageVisitor implements ColumnLevelL
                               .get(),
                           ((AttributeReference) action.child()).exprId()));
     }
-  }
-
-  private Stream<DeltaMergeAction> getMergeActionsAttributes(
-      ColumnLevelLineageContext context, LogicalPlan node) {
-    return getMergeActions((MergeIntoCommand) node)
-        .filter(action -> action instanceof DeltaMergeAction)
-        .map(action -> (DeltaMergeAction) action)
-        .filter(action -> action.child() instanceof AttributeReference)
-        .filter(
-            action ->
-                context
-                    .getBuilder()
-                    .getOutputExprIdByFieldName(action.targetColNameParts().mkString())
-                    .isPresent());
   }
 }

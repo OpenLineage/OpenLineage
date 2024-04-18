@@ -98,7 +98,7 @@ public class KustoRelationVisitor<D extends OpenLineage.Dataset>
   }
 
   private static Optional<String> getName(BaseRelation relation) {
-    String tableName = "";
+    String tableName;
     try {
       Object query = FieldUtils.readField(relation, "query", true);
       tableName = (String) query;

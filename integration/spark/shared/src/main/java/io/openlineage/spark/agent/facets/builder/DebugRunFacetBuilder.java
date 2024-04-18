@@ -31,7 +31,7 @@ public class DebugRunFacetBuilder extends CustomFacetBuilder<Object, DebugRunFac
     return Optional.of(openLineageContext.getSparkContext())
         .map(sc -> sc.conf())
         .map(conf -> conf.get("spark.openlineage.debugFacet", "disabled"))
-        .map(value -> value.equalsIgnoreCase("enabled"))
+        .map(value -> "enabled".equalsIgnoreCase(value))
         .orElse(false);
   }
 

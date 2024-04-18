@@ -106,6 +106,7 @@ public class JobNameHook implements RunEventBuilderHook {
     return jobName;
   }
 
+  @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
   private static String trimPath(String path) {
     if (path.lastIndexOf("/") > 0) {
       // is path

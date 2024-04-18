@@ -38,6 +38,7 @@ public class DeltaEventFilter implements EventFilter {
     this.context = context;
   }
 
+  @Override
   public boolean isDisabled(SparkListenerEvent event) {
     if (!isDeltaPlan()) {
       return false;

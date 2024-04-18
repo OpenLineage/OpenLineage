@@ -34,6 +34,7 @@ public class SparkNodesFilter implements EventFilter {
     this.context = context;
   }
 
+  @Override
   public boolean isDisabled(SparkListenerEvent event) {
     return getLogicalPlan(context)
         .map(plan -> plan.getClass().getCanonicalName())

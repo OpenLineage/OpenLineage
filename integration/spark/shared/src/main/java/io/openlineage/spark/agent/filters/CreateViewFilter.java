@@ -19,13 +19,13 @@ public class CreateViewFilter implements EventFilter {
     this.context = context;
   }
 
+  @Override
   public boolean isDisabled(SparkListenerEvent event) {
     return getLogicalPlan(context)
         .filter(plan -> plan instanceof CreateViewCommand)
         .filter(
-            plan ->
-                context.getSparkVersion().compareTo("3.3")
-                    >= 0) // CreateViewCommand is not filtered for lower spark versions as it breaks
+            // CreateViewCommand is not filtered for lower spark versions as it breaks
+            plan -> "3.3".compareTo(context.getSparkVersion()) < 0)
         // io.openlineage.spark.agent.lifecycle.SparkReadWriteIntegTest.testCacheReadFromFileWriteToParquet test
         .isPresent();
   }

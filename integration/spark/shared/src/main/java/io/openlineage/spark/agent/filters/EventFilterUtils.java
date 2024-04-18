@@ -57,7 +57,7 @@ public class EventFilterUtils {
         .filter(context -> context != null)
         .map(SparkContext::conf)
         .map(conf -> conf.get("spark.sql.extensions", ""))
-        .filter(extension -> extension.equals("io.delta.sql.DeltaSparkSessionExtension"))
+        .filter(extension -> "io.delta.sql.DeltaSparkSessionExtension".equals(extension))
         .isPresent();
   }
 }
