@@ -83,28 +83,40 @@ class KafkaTransport(Transport):
         parent_run_facet: ParentRunFacet | parent_run.ParentRunFacet = run_facets.get(
             "parent"
         ) or ParentRunFacet({}, {})
+
+        parent_job_namespace: str | None = None
+        parent_job_name: str | None = None
         if isinstance(parent_run_facet, parent_run.ParentRunFacet):
             (
                 parent_job_namespace,
                 parent_job_name,
-                parent_run_id,
             ) = self._get_message_key_args_from_parent_run_facet_v2(parent_run_facet)
         else:
-            parent_job_namespace: str | None = parent_run_facet.job.get("namespace")
-            parent_job_name: str | None = parent_run_facet.job.get("name")
-            parent_run_id: str | None = parent_run_facet.run.get("runId")
-        if parent_job_namespace and parent_job_name and parent_run_id:
-            return f"run:{parent_job_namespace}/{parent_job_name}/{parent_run_id}"
+            (
+                parent_job_namespace,
+                parent_job_name,
+            ) = self._get_message_key_args_from_parent_run_facet(parent_run_facet)
 
-        return f"run:{event.job.namespace}/{event.job.name}/{event.run.runId}"
+        if parent_job_namespace and parent_job_name:
+            return f"run:{parent_job_namespace}/{parent_job_name}"
+
+        return f"run:{event.job.namespace}/{event.job.name}"
+
+    def _get_message_key_args_from_parent_run_facet(
+        self,
+        parent_run_facet: ParentRunFacet,
+    ) -> tuple[str | None, str | None]:
+        parent_job_namespace = parent_run_facet.job.get("namespace")
+        parent_job_name = parent_run_facet.job.get("name")
+        return parent_job_namespace, parent_job_name
 
     def _get_message_key_args_from_parent_run_facet_v2(
-        self, parent_run_facet: parent_run.ParentRunFacet
-    ) -> tuple[str, str, str]:
+        self,
+        parent_run_facet: parent_run.ParentRunFacet,
+    ) -> tuple[str, str]:
         parent_job_namespace: str = parent_run_facet.job.namespace
         parent_job_name: str = parent_run_facet.job.name
-        parent_run_id: str = parent_run_facet.run.runId
-        return parent_job_namespace, parent_job_name, parent_run_id
+        return parent_job_namespace, parent_job_name
 
     def emit(self, event: Event) -> None:
         if self._is_airflow_sqlalchemy:

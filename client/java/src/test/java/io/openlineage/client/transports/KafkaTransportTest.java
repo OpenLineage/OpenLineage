@@ -49,8 +49,7 @@ class KafkaTransportTest {
     verify(producer, times(1)).send(captor.capture());
 
     assertThat(captor.getValue().topic()).isEqualTo("test-topic");
-    assertThat(captor.getValue().key())
-        .isEqualTo("run:test-namespace/test-job/ea445b5c-22eb-457a-8007-01c7c52b6e54");
+    assertThat(captor.getValue().key()).isEqualTo("run:test-namespace/test-job");
   }
 
   @Test
@@ -77,8 +76,7 @@ class KafkaTransportTest {
     verify(producer, times(1)).send(captor.capture());
 
     assertThat(captor.getValue().topic()).isEqualTo("test-topic");
-    assertThat(captor.getValue().key())
-        .isEqualTo("run:parent-namespace/parent-job/d9cb8e0b-a410-435e-a619-da5e87ba8508");
+    assertThat(captor.getValue().key()).isEqualTo("run:parent-namespace/parent-job");
   }
 
   @Test

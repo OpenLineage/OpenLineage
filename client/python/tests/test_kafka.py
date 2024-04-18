@@ -130,7 +130,7 @@ def test_client_with_kafka_transport_emits_run_event(run_event: RunEvent, mocker
     client.emit(run_event)
     transport.producer.produce.assert_called_once_with(
         topic="random-topic",
-        key="run:test-namespace/test-job/ea445b5c-22eb-457a-8007-01c7c52b6e54",
+        key="run:test-namespace/test-job",
         value=Serde.to_json(run_event).encode("utf-8"),
         on_delivery=ANY,
     )
@@ -154,7 +154,7 @@ def test_client_with_kafka_transport_emits_run_event_with_parent(
     client.emit(run_event_with_parent)
     transport.producer.produce.assert_called_once_with(
         topic="random-topic",
-        key="run:parent-namespace/parent-job/d9cb8e0b-a410-435e-a619-da5e87ba8508",
+        key="run:parent-namespace/parent-job",
         value=Serde.to_json(run_event_with_parent).encode("utf-8"),
         on_delivery=ANY,
     )
