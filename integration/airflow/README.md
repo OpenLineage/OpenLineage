@@ -267,7 +267,7 @@ PythonOperator(
     python_callable=my_task_function,
     templates_dict={
         # joined components as one string `<namespace>/<name>/<run_id>`
-        "parentRun": "{{ macros.OpenLineageProviderPlugin.lineage_parent_id(task_instance) }}",
+        "parentRun": "{{ macros.OpenLineagePlugin.lineage_parent_id(task_instance) }}",
     },
     provide_context=False,
     dag=dag,
