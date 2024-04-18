@@ -99,6 +99,7 @@ public class DatabricksEnvironmentFacetBuilder
   // If running on an older version, the constructor has no parameters.
   // If running on DBR 11 or above, you need to specify whether you allow mount operations (true or
   // false)
+  @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
   private static List<DatabricksMountpoint> getDatabricksMountpoints() {
     Class dbutilsClass;
     try {
@@ -125,7 +126,7 @@ public class DatabricksEnvironmentFacetBuilder
         return Collections.emptyList();
       }
     } else if (constructorParams.length == 1
-        && constructorParams[0].getName().equals("allowMountOperations")) {
+        && "allowMountOperations".equals(constructorParams[0].getName())) {
       log.debug("DbUtils constructor had one parameter named allowMountOperations");
       try {
         dbfsUtils = firstConstructor.newInstance(true);

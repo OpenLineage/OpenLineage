@@ -210,6 +210,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     }
   }
 
+  @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
   private boolean isSingleFileRelation(Collection<Path> paths, Configuration hadoopConfig) {
     if (paths.size() != 1) {
       return false;

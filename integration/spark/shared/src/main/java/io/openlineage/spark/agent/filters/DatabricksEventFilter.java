@@ -36,6 +36,7 @@ public class DatabricksEventFilter implements EventFilter {
     this.context = context;
   }
 
+  @Override
   public boolean isDisabled(SparkListenerEvent event) {
     return isSerializeFromObject() || isWriteIntoDeltaCommand() || isDisabledDatabricksPlan(event);
   }

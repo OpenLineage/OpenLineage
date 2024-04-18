@@ -89,25 +89,23 @@ public class IcebergHandler implements CatalogHandler {
     String warehouse = catalogConf.get(CatalogProperties.WAREHOUSE_LOCATION);
     DatasetIdentifier di = PathUtils.fromPath(new Path(warehouse, identifier.toString()));
 
-    if (catalogType.equals("hive")) {
+    if ("hive".equals(catalogType)) {
       di.withSymlink(
           getHiveIdentifier(
               session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
-    } else if (catalogType.equals("hadoop")) {
+    } else if ("hadoop".equals(catalogType)) {
       di.withSymlink(
           identifier.toString(),
           StringUtils.substringBeforeLast(
               di.getName(), File.separator), // parent location from a name becomes a namespace
           DatasetIdentifier.SymlinkType.TABLE);
-    } else if (catalogType.equals("rest")) {
+    } else if ("rest".equals(catalogType)) {
       di.withSymlink(
-          getRestIdentifier(
-              session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
-    } else if (catalogType.equals("nessie")) {
+          getRestIdentifier(catalogConf.get(CatalogProperties.URI), identifier.toString()));
+    } else if ("nessie".equals(catalogType)) {
       di.withSymlink(
-          getNessieIdentifier(
-              session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
-    } else if (catalogType.equals("glue")) {
+          getNessieIdentifier(catalogConf.get(CatalogProperties.URI), identifier.toString()));
+    } else if ("glue".equals(catalogType)) {
       di.withSymlink(
           identifier.toString(),
           StringUtils.substringBeforeLast(di.getName(), File.separator),
@@ -118,8 +116,7 @@ public class IcebergHandler implements CatalogHandler {
   }
 
   @SneakyThrows
-  private DatasetIdentifier.Symlink getNessieIdentifier(
-      SparkSession session, @Nullable String confUri, String table) {
+  private DatasetIdentifier.Symlink getNessieIdentifier(@Nullable String confUri, String table) {
 
     String uri = new URI(confUri).toString();
     return new DatasetIdentifier.Symlink(table, uri, DatasetIdentifier.SymlinkType.TABLE);
@@ -148,9 +145,7 @@ public class IcebergHandler implements CatalogHandler {
   }
 
   @SneakyThrows
-  private DatasetIdentifier.Symlink getRestIdentifier(
-      SparkSession session, @Nullable String confUri, String table) {
-
+  private DatasetIdentifier.Symlink getRestIdentifier(@Nullable String confUri, String table) {
     String uri = new URI(confUri).toString();
     return new DatasetIdentifier.Symlink(table, uri, DatasetIdentifier.SymlinkType.TABLE);
   }

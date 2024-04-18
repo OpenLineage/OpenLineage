@@ -34,20 +34,22 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 @Slf4j
 class ExtesionDataSourceV2Utils {
 
-  private static Map<String, TypeReference> predefinedFacets =
-      new HashMap<String, TypeReference>() {
-        {
-          put("documentation", new TypeReference<DocumentationDatasetFacet>() {});
-          put("dataSource", new TypeReference<DatasourceDatasetFacet>() {});
-          put("version", new TypeReference<DatasetVersionDatasetFacet>() {});
-          put("schema", new TypeReference<SchemaDatasetFacet>() {});
-          put("ownership", new TypeReference<OwnershipDatasetFacet>() {});
-          put("storage", new TypeReference<StorageDatasetFacet>() {});
-          put("columnLineage", new TypeReference<ColumnLineageDatasetFacet>() {});
-          put("symlinks", new TypeReference<SymlinksDatasetFacet>() {});
-          put("lifecycleStateChange", new TypeReference<LifecycleStateChangeDatasetFacet>() {});
-        }
-      };
+  public static final String OPENLINEAGE_DATASET_FACETS_PREFIX = "openlineage.dataset.facets.";
+  private static Map<String, TypeReference> predefinedFacets;
+
+  static {
+    predefinedFacets = new HashMap<String, TypeReference>();
+    predefinedFacets.put("documentation", new TypeReference<DocumentationDatasetFacet>() {});
+    predefinedFacets.put("dataSource", new TypeReference<DatasourceDatasetFacet>() {});
+    predefinedFacets.put("version", new TypeReference<DatasetVersionDatasetFacet>() {});
+    predefinedFacets.put("schema", new TypeReference<SchemaDatasetFacet>() {});
+    predefinedFacets.put("ownership", new TypeReference<OwnershipDatasetFacet>() {});
+    predefinedFacets.put("storage", new TypeReference<StorageDatasetFacet>() {});
+    predefinedFacets.put("columnLineage", new TypeReference<ColumnLineageDatasetFacet>() {});
+    predefinedFacets.put("symlinks", new TypeReference<SymlinksDatasetFacet>() {});
+    predefinedFacets.put(
+        "lifecycleStateChange", new TypeReference<LifecycleStateChangeDatasetFacet>() {});
+  }
 
   /**
    * Given a table properties, it adds facets to builders from string representation within
@@ -60,13 +62,13 @@ class ExtesionDataSourceV2Utils {
     Map<String, String> properties = relation.table().properties();
 
     predefinedFacets.keySet().stream()
-        .filter(field -> properties.containsKey("openlineage.dataset.facets." + field))
+        .filter(field -> properties.containsKey(OPENLINEAGE_DATASET_FACETS_PREFIX + field))
         .forEach(
             field -> {
               try {
                 Object o =
                     OpenLineageClientUtils.fromJson(
-                        properties.get("openlineage.dataset.facets." + field),
+                        properties.get(OPENLINEAGE_DATASET_FACETS_PREFIX + field),
                         predefinedFacets.get(field));
                 FieldUtils.writeField(builder, field, o, true);
               } catch (IllegalAccessException | RuntimeException e) {
@@ -76,7 +78,7 @@ class ExtesionDataSourceV2Utils {
 
     // custom facets
     properties.keySet().stream()
-        .filter(key -> key.startsWith("openlineage.dataset.facets."))
+        .filter(key -> key.startsWith(OPENLINEAGE_DATASET_FACETS_PREFIX))
         .map(key -> StringUtils.substringAfterLast(key, "."))
         .filter(key -> !predefinedFacets.containsKey(key))
         .forEach(
@@ -84,7 +86,7 @@ class ExtesionDataSourceV2Utils {
               try {
                 DatasetFacet datasetFacet =
                     OpenLineageClientUtils.fromJson(
-                        properties.get("openlineage.dataset.facets." + key),
+                        properties.get(OPENLINEAGE_DATASET_FACETS_PREFIX + key),
                         new TypeReference<DatasetFacet>() {});
                 builder.put(
                     key,

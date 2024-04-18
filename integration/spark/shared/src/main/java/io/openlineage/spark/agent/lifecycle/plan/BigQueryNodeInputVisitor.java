@@ -83,6 +83,7 @@ public class BigQueryNodeInputVisitor
         .orElse(Collections.emptyList());
   }
 
+  @SuppressWarnings("PMD.AvoidCatchingNPE")
   private List<OpenLineage.InputDataset> tryGetFromQuery(DirectBigQueryRelation relation) {
     try {
       SparkBigQueryConfig config =

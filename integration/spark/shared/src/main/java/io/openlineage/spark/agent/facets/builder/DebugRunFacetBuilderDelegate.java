@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -184,7 +185,7 @@ public class DebugRunFacetBuilderDelegate {
         .map(
             stream ->
                 stream
-                    .filter(tuple -> !tuple._1().toLowerCase().contains("key"))
+                    .filter(tuple -> !tuple._1().toLowerCase(Locale.getDefault()).contains("key"))
                     .collect(
                         Collectors.<Tuple2<String, String>, String, String>toMap(
                             t -> t._1(), t -> t._2())))
@@ -197,15 +198,6 @@ public class DebugRunFacetBuilderDelegate {
         .map(sparkSession -> sparkSession.catalog())
         .map(catalog -> catalog.getClass().getCanonicalName())
         .orElse(null);
-  }
-
-  private boolean isOnClassPath(String aClass) {
-    try {
-      this.getClass().getClassLoader().loadClass(aClass);
-      return true;
-    } catch (Exception e) {
-      return false;
-    }
   }
 
   private ClasspathDebugClassDetails toClasspathDebugClassDetails(String aClass) {

@@ -47,6 +47,7 @@ public class SqlUtils {
         .orElse(Collections.emptyList());
   }
 
+  @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
   private static String getName(String defaultDatabase, String defaultSchema, String parsedName) {
     // database and schema from parser have priority over default ones
     String[] parts = parsedName.split("\\.");
