@@ -43,21 +43,21 @@ class OpenLineageClientTest {
   void testCircuitBreakerFroEmitJobEvent() {
     when(circuitBreaker.currentState()).thenReturn(new CircuitBreakerState(true));
     client.emit(mock(JobEvent.class));
-    verify(transport, times(0)).emit(any(String.class));
+    verify(transport, times(0)).emit(any(JobEvent.class));
 
     when(circuitBreaker.currentState()).thenReturn(new CircuitBreakerState(false));
     client.emit(mock(JobEvent.class));
-    verify(transport, times(1)).emit(any(String.class));
+    verify(transport, times(1)).emit(any(JobEvent.class));
   }
 
   @Test
   void testCircuitBreakerFroEmitDatasetEvent() {
     when(circuitBreaker.currentState()).thenReturn(new CircuitBreakerState(true));
     client.emit(mock(DatasetEvent.class));
-    verify(transport, times(0)).emit(any(String.class));
+    verify(transport, times(0)).emit(any(DatasetEvent.class));
 
     when(circuitBreaker.currentState()).thenReturn(new CircuitBreakerState(false));
     client.emit(mock(DatasetEvent.class));
-    verify(transport, times(1)).emit(any(String.class));
+    verify(transport, times(1)).emit(any(DatasetEvent.class));
   }
 }

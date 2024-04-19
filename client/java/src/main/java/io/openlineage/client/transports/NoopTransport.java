@@ -6,6 +6,7 @@
 package io.openlineage.client.transports;
 
 import io.openlineage.client.OpenLineage;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -16,5 +17,11 @@ public class NoopTransport extends Transport {
   }
 
   @Override
-  public void emit(OpenLineage.RunEvent runEvent) {}
+  public void emit(@NonNull OpenLineage.RunEvent runEvent) {}
+
+  @Override
+  public void emit(@NonNull OpenLineage.DatasetEvent datasetEvent) {}
+
+  @Override
+  public void emit(@NonNull OpenLineage.JobEvent jobEvent) {}
 }

@@ -5,7 +5,9 @@
 
 package io.openlineage.client.transports;
 
+import static io.openlineage.client.Events.datasetEvent;
 import static io.openlineage.client.Events.emptyRunEvent;
+import static io.openlineage.client.Events.jobEvent;
 import static io.openlineage.client.Events.runEvent;
 import static io.openlineage.client.Events.runEventWithParent;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,7 +30,7 @@ import org.mockito.ArgumentCaptor;
 
 class KafkaTransportTest {
   @Test
-  void clientEmitsKafkaTransportForRunEvent() throws IOException {
+  void clientEmitsRunEventKafkaTransport() throws IOException {
     KafkaProducer<String, String> producer = mock(KafkaProducer.class);
     KafkaConfig config = new KafkaConfig();
 
@@ -57,7 +59,7 @@ class KafkaTransportTest {
   }
 
   @Test
-  void clientEmitsKafkaTransportForRunEventWithParent() throws IOException {
+  void clientEmitsRunEventWithParentKafkaTransport() throws IOException {
     KafkaProducer<String, String> producer = mock(KafkaProducer.class);
     KafkaConfig config = new KafkaConfig();
 
@@ -86,7 +88,7 @@ class KafkaTransportTest {
   }
 
   @Test
-  void clientEmitsKafkaTransportForRunEventWithExplicitMessageKey() throws IOException {
+  void clientEmitsRunEventKafkaTransportWithExplicitMessageKey() throws IOException {
     KafkaProducer<String, String> producer = mock(KafkaProducer.class);
     KafkaConfig config = new KafkaConfig();
 
@@ -116,7 +118,7 @@ class KafkaTransportTest {
   }
 
   @Test
-  void clientEmitsKafkaTransportForEmptyRunEvent() throws IOException {
+  void clientEmitsEmptyRunEventKafkaTransport() throws IOException {
     KafkaProducer<String, String> producer = mock(KafkaProducer.class);
     KafkaConfig config = new KafkaConfig();
 
@@ -141,6 +143,64 @@ class KafkaTransportTest {
 
     assertThat(captor.getValue().topic()).isEqualTo("test-topic");
     assertThat(captor.getValue().key()).isNull();
+    assertThat(captor.getValue().value()).isEqualTo(OpenLineageClientUtils.toJson(event));
+  }
+
+  @Test
+  void clientEmitsDatasetEventKafkaTransport() throws IOException {
+    KafkaProducer<String, String> producer = mock(KafkaProducer.class);
+    KafkaConfig config = new KafkaConfig();
+
+    Properties properties = new Properties();
+    properties.setProperty("bootstrap.servers", "localhost:9092;external:9092");
+
+    config.setTopicName("test-topic");
+    config.setProperties(properties);
+
+    KafkaTransport transport = new KafkaTransport(producer, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    when(producer.send(any(ProducerRecord.class))).thenReturn(mock(Future.class));
+
+    OpenLineage.DatasetEvent event = datasetEvent();
+    client.emit(event);
+
+    ArgumentCaptor<ProducerRecord<String, String>> captor =
+        ArgumentCaptor.forClass(ProducerRecord.class);
+
+    verify(producer, times(1)).send(captor.capture());
+
+    assertThat(captor.getValue().topic()).isEqualTo("test-topic");
+    assertThat(captor.getValue().key()).isEqualTo("dataset:test-namespace/test-dataset");
+    assertThat(captor.getValue().value()).isEqualTo(OpenLineageClientUtils.toJson(event));
+  }
+
+  @Test
+  void clientEmitsJobEventKafkaTransport() throws IOException {
+    KafkaProducer<String, String> producer = mock(KafkaProducer.class);
+    KafkaConfig config = new KafkaConfig();
+
+    Properties properties = new Properties();
+    properties.setProperty("bootstrap.servers", "localhost:9092;external:9092");
+
+    config.setTopicName("test-topic");
+    config.setProperties(properties);
+
+    KafkaTransport transport = new KafkaTransport(producer, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    when(producer.send(any(ProducerRecord.class))).thenReturn(mock(Future.class));
+
+    OpenLineage.JobEvent event = jobEvent();
+    client.emit(event);
+
+    ArgumentCaptor<ProducerRecord<String, String>> captor =
+        ArgumentCaptor.forClass(ProducerRecord.class);
+
+    verify(producer, times(1)).send(captor.capture());
+
+    assertThat(captor.getValue().topic()).isEqualTo("test-topic");
+    assertThat(captor.getValue().key()).isEqualTo("job:test-namespace/test-job");
     assertThat(captor.getValue().value()).isEqualTo(OpenLineageClientUtils.toJson(event));
   }
 }
