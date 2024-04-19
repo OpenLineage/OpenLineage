@@ -66,7 +66,7 @@ public class KinesisTransport extends Transport {
         this.producer.addUserRecord(
             new UserRecord(
                 streamName,
-                runEvent.getJob().getNamespace() + ":" + runEvent.getJob().getName(),
+                "run:" + runEvent.getJob().getNamespace() + "/" + runEvent.getJob().getName(),
                 ByteBuffer.wrap(eventAsJson.getBytes())));
 
     FutureCallback<UserRecordResult> callback =

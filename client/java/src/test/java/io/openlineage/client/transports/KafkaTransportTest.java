@@ -15,7 +15,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
+import io.openlineage.client.OpenLineageClientUtils;
 import java.io.IOException;
 import java.util.Properties;
 import java.util.concurrent.Future;
@@ -41,7 +43,8 @@ class KafkaTransportTest {
 
     when(producer.send(any(ProducerRecord.class))).thenReturn(mock(Future.class));
 
-    client.emit(runEvent());
+    OpenLineage.RunEvent event = runEvent();
+    client.emit(event);
 
     ArgumentCaptor<ProducerRecord<String, String>> captor =
         ArgumentCaptor.forClass(ProducerRecord.class);
@@ -50,6 +53,7 @@ class KafkaTransportTest {
 
     assertThat(captor.getValue().topic()).isEqualTo("test-topic");
     assertThat(captor.getValue().key()).isEqualTo("run:test-namespace/test-job");
+    assertThat(captor.getValue().value()).isEqualTo(OpenLineageClientUtils.toJson(event));
   }
 
   @Test
@@ -68,7 +72,8 @@ class KafkaTransportTest {
 
     when(producer.send(any(ProducerRecord.class))).thenReturn(mock(Future.class));
 
-    client.emit(runEventWithParent());
+    OpenLineage.RunEvent event = runEventWithParent();
+    client.emit(event);
 
     ArgumentCaptor<ProducerRecord<String, String>> captor =
         ArgumentCaptor.forClass(ProducerRecord.class);
@@ -77,6 +82,7 @@ class KafkaTransportTest {
 
     assertThat(captor.getValue().topic()).isEqualTo("test-topic");
     assertThat(captor.getValue().key()).isEqualTo("run:parent-namespace/parent-job");
+    assertThat(captor.getValue().value()).isEqualTo(OpenLineageClientUtils.toJson(event));
   }
 
   @Test
@@ -96,7 +102,8 @@ class KafkaTransportTest {
 
     when(producer.send(any(ProducerRecord.class))).thenReturn(mock(Future.class));
 
-    client.emit(runEventWithParent());
+    OpenLineage.RunEvent event = runEvent();
+    client.emit(event);
 
     ArgumentCaptor<ProducerRecord<String, String>> captor =
         ArgumentCaptor.forClass(ProducerRecord.class);
@@ -105,6 +112,7 @@ class KafkaTransportTest {
 
     assertThat(captor.getValue().topic()).isEqualTo("test-topic");
     assertThat(captor.getValue().key()).isEqualTo("explicit-key");
+    assertThat(captor.getValue().value()).isEqualTo(OpenLineageClientUtils.toJson(event));
   }
 
   @Test
@@ -123,7 +131,8 @@ class KafkaTransportTest {
 
     when(producer.send(any(ProducerRecord.class))).thenReturn(mock(Future.class));
 
-    client.emit(emptyRunEvent());
+    OpenLineage.RunEvent event = emptyRunEvent();
+    client.emit(event);
 
     ArgumentCaptor<ProducerRecord<String, String>> captor =
         ArgumentCaptor.forClass(ProducerRecord.class);
@@ -132,5 +141,6 @@ class KafkaTransportTest {
 
     assertThat(captor.getValue().topic()).isEqualTo("test-topic");
     assertThat(captor.getValue().key()).isNull();
+    assertThat(captor.getValue().value()).isEqualTo(OpenLineageClientUtils.toJson(event));
   }
 }
