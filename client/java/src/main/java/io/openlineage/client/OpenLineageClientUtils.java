@@ -65,6 +65,7 @@ public final class OpenLineageClientUtils {
    * Creates a new {@link ObjectMapper} instance configured with modules for JDK8 and JavaTime,
    * including settings to ignore unknown properties and to not write dates as timestamps.
    *
+   * @param jsonFactory JsonFactory
    * @return A configured {@link ObjectMapper} instance.
    */
   public static ObjectMapper newObjectMapper(JsonFactory jsonFactory) {

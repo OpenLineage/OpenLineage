@@ -14,11 +14,9 @@ public interface CircuitBreaker {
   CircuitBreakerState currentState();
 
   /**
-   * Runs callable and breaks it when circuit breaker is closed
-   *
-   * @param callable
-   * @return
-   * @param <T>
+   * @param callable The callable to be run
+   * @return result of callable
+   * @param <T> callable generic type
    */
   <T> T run(Callable<T> callable);
 

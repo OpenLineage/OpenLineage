@@ -401,7 +401,7 @@ public class JavaPoetGenerator {
   private MethodSpec factoryModelMethodUnderContainer(ObjectResolvedType type) {
     Builder factory = MethodSpec.methodBuilder("new" + type.getName())
         .addModifiers(PUBLIC)
-        .addJavadoc("Factory method for $N", type.getName())
+        .addJavadoc("Factory method for $N\n\n", type.getName())
         .returns(getTypeName(type));
 
     List<CodeBlock> factoryParams = new ArrayList<>();

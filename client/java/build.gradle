@@ -27,7 +27,7 @@ pmd {
     rulesMinimumPriority = 5
     ruleSetFiles = rootProject.files("pmd-openlineage.xml")
     ruleSets = []
-    ignoreFailures = true
+    ignoreFailures = false
 }
 
 pmdMain {
@@ -125,6 +125,28 @@ openApiGenerate {
 task sourceJar(type: Jar) {
     archiveClassifier='sources'
     from sourceSets.main.allJava
+}
+
+javadoc {
+    dependsOn delombok
+    failOnError = true
+
+    def capturedOutput = []
+    def listener = { capturedOutput << it } as StandardOutputListener
+    doFirst {
+        logging.addStandardErrorListener(listener)
+        logging.addStandardOutputListener(listener)
+    }
+    doLast {
+        logging.removeStandardOutputListener(listener)
+        logging.removeStandardErrorListener(listener)
+        capturedOutput.each { e ->
+            if(e.toString() =~ " warning: " && !(e.toString() =~ "Config.java")) {
+                // doesn't count *Config.java classes with use failing `@with` annotation
+                throw new GradleException("You have some javadoc warnings, please fix them!");
+            }
+        }
+    }
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {

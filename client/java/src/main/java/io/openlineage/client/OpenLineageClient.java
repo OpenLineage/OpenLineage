@@ -153,8 +153,8 @@ public final class OpenLineageClient {
   }
 
   /**
-   * Returns an new {@link OpenLineageClient.Builder} object for building {@link
-   * OpenLineageClient}s.
+   * @return an new {@link OpenLineageClient.Builder} object for building {@link
+   *     OpenLineageClient}s.
    */
   public static Builder builder() {
     return new Builder();
@@ -204,8 +204,8 @@ public final class OpenLineageClient {
     }
 
     /**
-     * Returns an {@link OpenLineageClient} object with the properties of this {@link
-     * OpenLineageClient.Builder}.
+     * @return an {@link OpenLineageClient} object with the properties of this {@link
+     *     OpenLineageClient.Builder}.
      */
     public OpenLineageClient build() {
       return new OpenLineageClient(transport, circuitBreaker, meterRegistry, disabledFacets);

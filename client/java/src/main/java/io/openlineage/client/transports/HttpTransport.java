@@ -169,7 +169,9 @@ public final class HttpTransport extends Transport implements Closeable {
     http.close();
   }
 
-  /** Returns an new {@link HttpTransport.Builder} object for building {@link HttpTransport}s. */
+  /**
+   * @return an new {@link HttpTransport.Builder} object for building {@link HttpTransport}s.
+   */
   public static Builder builder() {
     return new Builder();
   }
@@ -245,8 +247,8 @@ public final class HttpTransport extends Transport implements Closeable {
     }
 
     /**
-     * Returns an {@link HttpTransport} object with the properties of this {@link
-     * HttpTransport.Builder}.
+     * @return an {@link HttpTransport} object with the properties of this {@link
+     *     HttpTransport.Builder}.
      */
     public HttpTransport build() {
       if (httpClient != null) {

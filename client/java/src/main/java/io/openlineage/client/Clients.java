@@ -16,7 +16,9 @@ import java.util.Optional;
 public final class Clients {
   private Clients() {}
 
-  /** Returns a new {@code OpenLineageClient} object. */
+  /**
+   * @return a new {@code OpenLineageClient} object.
+   */
   public static OpenLineageClient newClient() {
     return newClient(new DefaultConfigPathProvider());
   }
