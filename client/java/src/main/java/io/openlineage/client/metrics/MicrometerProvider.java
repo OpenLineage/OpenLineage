@@ -72,6 +72,7 @@ public class MicrometerProvider {
    * Adds a MeterRegistry to the common OpenLineage meter registry.
    *
    * @param meterRegistry The MeterRegistry to
+   * @return MeterRegistry
    */
   public static MeterRegistry addMeterRegistry(MeterRegistry meterRegistry) {
     registry.add(meterRegistry);

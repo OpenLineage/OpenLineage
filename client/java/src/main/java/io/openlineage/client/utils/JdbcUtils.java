@@ -24,6 +24,7 @@ public class JdbcUtils {
    * JdbcUrl can contain username and password this method clean-up credentials from jdbcUrl and
    * strip the jdbc prefix from the url
    *
+   * @param jdbcUrl url to database
    * @return String
    */
   public static String sanitizeJdbcUrl(String jdbcUrl) {
