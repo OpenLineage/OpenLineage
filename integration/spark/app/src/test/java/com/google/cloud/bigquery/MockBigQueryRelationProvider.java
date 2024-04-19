@@ -49,6 +49,7 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
   public static final BigQuery BIG_QUERY = Mockito.mock(BigQuery.class);
   public static final MockInjector INJECTOR = new MockInjector();
 
+  @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
   public static Table makeTable(TableId id, StandardTableDefinition tableDefinition)
       throws InstantiationException, IllegalAccessException, InvocationTargetException,
           NoSuchMethodException {

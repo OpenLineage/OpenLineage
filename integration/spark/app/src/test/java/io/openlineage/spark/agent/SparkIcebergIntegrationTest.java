@@ -43,7 +43,7 @@ import org.mockserver.model.HttpRequest;
 @Tag("integration-test")
 @Tag("iceberg")
 @Slf4j
-public class SparkIcebergIntegrationTest {
+class SparkIcebergIntegrationTest {
   private static final int MOCK_SERVER_PORT = 1084;
 
   @SuppressWarnings("PMD")
@@ -305,6 +305,7 @@ public class SparkIcebergIntegrationTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void testDebugFacet() {
     clearTables("iceberg_temp", "temp");
     createTempDataset().createOrReplaceTempView("temp");

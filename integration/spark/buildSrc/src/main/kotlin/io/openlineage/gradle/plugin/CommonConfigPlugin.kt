@@ -86,6 +86,10 @@ class CommonConfigPlugin : Plugin<Project> {
         target.tasks.named<Pmd>("pmdMain") {
             this.reports.html.required.set(true)
         }
+        target.tasks.named<Pmd>("pmdTest") {
+            this.reports.html.required.set(true)
+            this.ruleSetFiles = target.rootProject.files("pmd-openlineage-test.xml")
+        }
     }
 
     private fun configureLombok(target: Project) = target.plugins.withType<LombokPlugin> {

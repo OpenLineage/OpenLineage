@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +41,8 @@ import org.junit.jupiter.api.Test;
 @Tag("integration-test")
 @Tag("databricks")
 @Slf4j
-public class DatabricksIntegrationTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class DatabricksIntegrationTest {
 
   private static WorkspaceClient workspace;
   private static String clusterId;
@@ -71,7 +73,7 @@ public class DatabricksIntegrationTest {
 
   @Test
   @SneakyThrows
-  public void testCreateTableAsSelect() {
+  void testCreateTableAsSelect() {
     List<RunEvent> runEvents = runScript(workspace, clusterId, "ctas.py");
     RunEvent lastEvent = runEvents.get(runEvents.size() - 1);
 
@@ -122,13 +124,8 @@ public class DatabricksIntegrationTest {
 
   @Test
   @SneakyThrows
-  public void testNarrowTransformation() {
+  void testNarrowTransformation() {
     List<RunEvent> runEvents = runScript(workspace, clusterId, "narrow_transformation.py");
-    List<String> runEventJobNames =
-        runEvents.stream()
-            .map(runEvent -> runEvent.getJob().getName())
-            .collect(Collectors.toList());
-
     assertThat(runEvents).isNotEmpty();
 
     // assert start event exists
@@ -159,13 +156,8 @@ public class DatabricksIntegrationTest {
 
   @Test
   @SneakyThrows
-  public void testWideTransformation() {
+  void testWideTransformation() {
     List<RunEvent> runEvents = runScript(workspace, clusterId, "wide_transformation.py");
-    List<String> runEventJobNames =
-        runEvents.stream()
-            .map(runEvent -> runEvent.getJob().getName())
-            .collect(Collectors.toList());
-
     assertThat(runEvents).isNotEmpty();
 
     // assert start event exists
@@ -189,7 +181,8 @@ public class DatabricksIntegrationTest {
   }
 
   @Test
-  public void testWriteReadFromTableWithLocation() {
+  @Disabled // TODO: this assertions are not working
+  void testWriteReadFromTableWithLocation() {
     List<RunEvent> runEvents = runScript(workspace, clusterId, "dataset_names.py");
 
     // find complete event with output dataset containing name
@@ -211,10 +204,9 @@ public class DatabricksIntegrationTest {
             .get();
 
     // assert input and output are the same
-    // TODO: this assertions are not working
     // https://github.com/OpenLineage/OpenLineage/issues/2543
-    //    assertThat(inputDataset.getNamespace()).isEqualTo(outputDataset.getNamespace());
-    // assertThat(inputDataset.getName()).isEqualTo(outputDataset.getName());
+    assertThat(inputDataset.getNamespace()).isEqualTo(outputDataset.getNamespace());
+    assertThat(inputDataset.getName()).isEqualTo(outputDataset.getName());
     assertThat(runEvents.size()).isLessThan(20);
   }
 

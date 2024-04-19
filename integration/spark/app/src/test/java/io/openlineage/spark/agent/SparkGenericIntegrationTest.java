@@ -39,7 +39,7 @@ import org.mockserver.integration.ClientAndServer;
  */
 @Tag("integration-test")
 @Slf4j
-public class SparkGenericIntegrationTest {
+class SparkGenericIntegrationTest {
 
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
@@ -107,7 +107,7 @@ public class SparkGenericIntegrationTest {
             events.stream()
                 .map(
                     event -> {
-                      if (event.getJob().getName().equals("generic_integration_test")) {
+                      if ("generic_integration_test".equals(event.getJob().getName())) {
                         return event.getRun().getRunId();
                       } else {
                         return event.getRun().getFacets().getParent().getRun().getRunId();
@@ -122,6 +122,7 @@ public class SparkGenericIntegrationTest {
 
   @Test
   @SneakyThrows
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void sparkGathersMetrics() {
     Dataset<Row> df = createTempDataset();
 
@@ -142,13 +143,13 @@ public class SparkGenericIntegrationTest {
                     (List<Map<String, Object>>) ((Map<String, Object>) metricsFacet).get("metrics");
                 assertThat(
                         metrics.stream()
-                            .filter(metric -> metric.get("name").equals("openlineage.emit.start"))
+                            .filter(metric -> "openlineage.emit.start".equals(metric.get("name")))
                             .findFirst())
                     .isPresent();
                 assertThat(
                         metrics.stream()
                             .filter(
-                                metric -> metric.get("name").equals("openlineage.emit.complete"))
+                                metric -> "openlineage.emit.complete".equals(metric.get("name")))
                             .findFirst())
                     .isPresent();
               }

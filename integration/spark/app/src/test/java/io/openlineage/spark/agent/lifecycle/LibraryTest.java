@@ -76,6 +76,7 @@ class LibraryTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void testRdd(@TempDir Path tmpDir, SparkSession spark) throws IOException {
     URL url = Resources.getResource("test_data/data.txt");
     JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());

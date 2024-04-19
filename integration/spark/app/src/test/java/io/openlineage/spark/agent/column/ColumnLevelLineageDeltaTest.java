@@ -44,7 +44,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @Tag("delta")
-public class ColumnLevelLineageDeltaTest {
+class ColumnLevelLineageDeltaTest {
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 

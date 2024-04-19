@@ -40,6 +40,8 @@ import org.mockito.Mockito;
 @ExtendWith(SparkAgentTestExtension.class)
 @Tag("custom_environment_variables_capture")
 class CustomEnvironmentVariablesCaptureTest {
+
+  @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
   protected static void setEnv(String key, String value) {
     try {
       Map<String, String> env = System.getenv();
