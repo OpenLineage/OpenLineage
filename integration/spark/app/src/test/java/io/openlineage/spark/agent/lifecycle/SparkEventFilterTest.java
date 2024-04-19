@@ -31,7 +31,7 @@ import org.mockito.Mockito;
 @ExtendWith(SparkAgentTestExtension.class)
 @Tag("integration-test")
 @Slf4j
-public class SparkEventFilterTest {
+class SparkEventFilterTest {
 
   @Test
   @SneakyThrows

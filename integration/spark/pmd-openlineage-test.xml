@@ -14,10 +14,12 @@
         <exclude name="BeanMembersShouldSerialize" />
         <exclude name="CloseResource" /> <!-- we don't deal with closeable resources -->
         <exclude name="MissingSerialVersionUID" />
+        <exclude name="AvoidDuplicateLiterals" />
     </rule>
     <rule ref="category/java/bestpractices.xml">
         <exclude name="GuardLogStatement" />
         <exclude name="JUnitAssertionsShouldIncludeMessage" />
+        <exclude name="AvoidUsingHardCodedIP" />
     </rule>
     <rule ref="category/java/bestpractices.xml/JUnitTestContainsTooManyAsserts">
         <properties>

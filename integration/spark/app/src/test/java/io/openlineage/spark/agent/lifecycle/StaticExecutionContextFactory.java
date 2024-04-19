@@ -13,8 +13,6 @@ import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -163,9 +161,5 @@ public class StaticExecutionContextFactory extends ContextFactory {
         emitter,
         olContext,
         new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory()));
-  }
-
-  private static ZonedDateTime getZonedTime() {
-    return ZonedDateTime.of(2021, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
   }
 }

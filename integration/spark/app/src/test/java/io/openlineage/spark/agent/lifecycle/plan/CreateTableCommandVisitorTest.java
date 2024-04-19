@@ -38,7 +38,7 @@ class CreateTableCommandVisitorTest {
   }
 
   @Test
-  void CreateTableCommandVisitorTest() {
+  void testCreateTableCommandVisitorTest() {
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();

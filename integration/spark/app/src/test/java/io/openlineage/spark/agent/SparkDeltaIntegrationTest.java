@@ -49,7 +49,8 @@ import org.mockserver.model.RegexBody;
 @Tag("integration-test")
 @Tag("delta")
 @Slf4j
-public class SparkDeltaIntegrationTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class SparkDeltaIntegrationTest {
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
@@ -329,6 +330,7 @@ public class SparkDeltaIntegrationTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testCustomEnvVar() {
     spark.sql("DROP TABLE IF EXISTS test");
     spark.sql("CREATE TABLE test (key INT, value STRING) using delta");
@@ -350,6 +352,7 @@ public class SparkDeltaIntegrationTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testNoDuplicateEventsForDelta() {
     clearTables("t1", "t2", "t3", "t4");
 

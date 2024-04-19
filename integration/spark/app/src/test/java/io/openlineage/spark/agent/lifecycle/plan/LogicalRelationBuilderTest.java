@@ -27,7 +27,7 @@ import org.mockito.Mockito;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
-public class LogicalRelationBuilderTest {
+class LogicalRelationBuilderTest {
 
   StructType structTypeSchema =
       new StructType(

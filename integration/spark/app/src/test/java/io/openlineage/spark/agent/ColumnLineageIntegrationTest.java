@@ -35,7 +35,7 @@ import org.testcontainers.utility.DockerImageName;
 @EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)")
 @Tag("integration-test")
 @Tag("iceberg")
-public class ColumnLineageIntegrationTest {
+class ColumnLineageIntegrationTest {
   private static final String LOCAL_IP = "127.0.0.1";
   private static final String database = "test";
   private static final String username = "test";
@@ -95,6 +95,7 @@ public class ColumnLineageIntegrationTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void columnLevelLineageTest() {
     Dataset<Row> df1 = getTable(spark);
     df1.registerTempTable("jdbc_result");
@@ -123,6 +124,7 @@ public class ColumnLineageIntegrationTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void columnLevelLineageSingleDestinationTest() {
     Dataset<Row> readDf =
         spark

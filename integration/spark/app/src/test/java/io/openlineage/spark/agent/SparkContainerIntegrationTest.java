@@ -294,6 +294,7 @@ class SparkContainerIntegrationTest {
 
   @Test
   @SneakyThrows
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testFacetsDisable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testFacetsDisable", "spark_facets_disable.py");

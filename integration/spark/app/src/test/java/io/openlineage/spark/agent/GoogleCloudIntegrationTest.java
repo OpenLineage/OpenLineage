@@ -5,7 +5,6 @@
 
 package io.openlineage.spark.agent;
 
-import static io.openlineage.spark.agent.MockServerUtils.getEventsEmitted;
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,7 +46,7 @@ import org.mockserver.integration.ClientAndServer;
 @Tag("google-cloud")
 @Slf4j
 @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
-public class GoogleCloudIntegrationTest {
+class GoogleCloudIntegrationTest {
   private static final String PROJECT_ID =
       Optional.ofNullable(System.getenv("GCLOUD_PROJECT_ID")).orElse("openlineage-ci");
   private static final String BUCKET_NAME =
@@ -200,8 +199,6 @@ public class GoogleCloudIntegrationTest {
       logRunEvents();
     }
 
-    List<RunEvent> events = getEventsEmitted(mockServer);
-
     verifyEvents(mockServer, replacements, "pysparkBigqueryQueryEnd.json");
   }
 
@@ -264,7 +261,6 @@ public class GoogleCloudIntegrationTest {
 
     List<RunEvent> eventsEmitted = MockServerUtils.getEventsEmitted(mockServer);
 
-    String path = baseUri.getPath();
     assertThat(eventsEmitted.get(eventsEmitted.size() - 1).getOutputs().get(0))
         .hasFieldOrPropertyWithValue("name", outputUri.getPath())
         .hasFieldOrPropertyWithValue(

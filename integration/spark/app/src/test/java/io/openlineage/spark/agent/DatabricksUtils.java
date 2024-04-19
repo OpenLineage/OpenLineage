@@ -12,7 +12,6 @@ import com.databricks.sdk.WorkspaceClient;
 import com.databricks.sdk.service.compute.ClusterDetails;
 import com.databricks.sdk.service.compute.CreateClusterResponse;
 import com.databricks.sdk.service.compute.ListClustersRequest;
-import com.databricks.sdk.service.files.CreateResponse;
 import com.databricks.sdk.service.files.Delete;
 import com.databricks.sdk.service.jobs.Source;
 import com.databricks.sdk.service.jobs.SparkPythonTask;
@@ -174,6 +173,12 @@ public class DatabricksUtils {
 
   @SneakyThrows
   private static String createCluster(WorkspaceClient workspace) {
+    HashMap<String, String> sparkConf = new HashMap<String, String>();
+    sparkConf.put("spark.openlineage.debugFacet", "enabled");
+    sparkConf.put("spark.openlineage.transport.type", "file");
+    sparkConf.put("spark.openlineage.transport.location", "/tmp/events.log");
+    sparkConf.put("spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener");
+    sparkConf.put("spark.openlineage.version", "v1");
     CreateCluster createCluster =
         CreateCluster.builder()
             .cluster_name(getClusterName())
@@ -183,18 +188,7 @@ public class DatabricksUtils {
             .num_workers(1L)
             .init_scripts(
                 new InitScript[] {new InitScript(new WorkspaceDestination(INIT_SCRIPT_FILE))})
-            .spark_conf(
-                new HashMap<String, String>() {
-                  {
-                    put("spark.openlineage.debugFacet", "enabled");
-                    put("spark.openlineage.transport.type", "file");
-                    put("spark.openlineage.transport.location", "/tmp/events.log");
-                    put(
-                        "spark.extraListeners",
-                        "io.openlineage.spark.agent.OpenLineageSparkListener");
-                    put("spark.openlineage.version", "v1");
-                  }
-                })
+            .spark_conf(sparkConf)
             .cluster_log_conf(new ClusterLogConf(new WorkspaceDestination(DBFS_CLUSTER_LOGS)))
             .build();
 
@@ -251,18 +245,16 @@ public class DatabricksUtils {
     }
 
     // upload to DBFS -> 12MB file upload need to go in chunks smaller than 1MB each
-    CreateResponse createResponse =
-        workspace.dbfs().create("dbfs:/databricks/openlineage/" + jarFile.getFileName());
-
     FileInputStream fis = new FileInputStream(jarFile.toString());
     OutputStream outputStream =
         workspace.dbfs().getOutputStream("dbfs:/databricks/openlineage/" + jarFile.getFileName());
 
     byte[] buf = new byte[500000]; // approx 0.5MB
-    int len = -1;
-    while ((len = fis.read(buf)) != -1) {
+    int len = fis.read(buf);
+    while (len != -1) {
       outputStream.write(buf, 0, len);
       outputStream.flush();
+      len = fis.read(buf);
     }
     outputStream.close();
   }
