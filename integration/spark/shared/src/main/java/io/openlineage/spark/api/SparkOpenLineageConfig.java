@@ -5,10 +5,12 @@
 
 package io.openlineage.spark.api;
 
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
+import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,6 +36,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   @Setter @Getter private String overriddenAppName;
   @Setter @NonNull private String debugFacet;
   @Setter private JobNameConfig jobName;
+  @Setter private JobConfig job;
 
   public SparkOpenLineageConfig(
       String namespace,
@@ -43,6 +46,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       String overriddenAppName,
       String debugFacet,
       JobNameConfig jobName,
+      JobConfig job,
       TransportConfig transportConfig,
       FacetsConfig facetsConfig,
       CircuitBreakerConfig circuitBreaker,
@@ -55,6 +59,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.overriddenAppName = overriddenAppName;
     this.debugFacet = debugFacet;
     this.jobName = jobName;
+    this.job = job;
   }
 
   public FacetsConfig getFacetsConfig() {
@@ -95,6 +100,19 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     @Setter @Getter @NonNull private Boolean replaceDotWithUnderscore = false;
   }
 
+  @Getter
+  @ToString
+  public static class JobConfig {
+    @Setter @Getter private JobOwnersConfig owners;
+  }
+
+  @Getter
+  @ToString
+  public static class JobOwnersConfig {
+    @JsonAnySetter @Setter @Getter @NonNull
+    private Map<String, String> additionalProperties = new HashMap<>();
+  }
+
   public SparkOpenLineageConfig mergeWithNonNull(SparkOpenLineageConfig other) {
     return new SparkOpenLineageConfig(
         mergeWithDefaultValue(namespace, other.namespace, DEFAULT_NAMESPACE),
@@ -104,6 +122,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(overriddenAppName, other.overriddenAppName),
         mergeWithDefaultValue(debugFacet, other.debugFacet, DEFAULT_DEBUG_FACET),
         mergePropertyWith(jobName, other.jobName),
+        mergePropertyWith(job, other.job),
         mergePropertyWith(transportConfig, other.transportConfig),
         mergePropertyWith(facetsConfig, other.facetsConfig),
         mergePropertyWith(circuitBreaker, other.circuitBreaker),

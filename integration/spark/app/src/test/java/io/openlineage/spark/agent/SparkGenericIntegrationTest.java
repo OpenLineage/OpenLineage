@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
+import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.lifecycle.UnknownEntryFacetListener;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +84,9 @@ class SparkGenericIntegrationTest {
             .config("spark.openlineage.namespace", "generic-namespace")
             .config("spark.openlineage.parentJobName", "parent-job")
             .config("spark.openlineage.parentRunId", "bd9c2467-3ed7-4fdc-85c2-41ebf5c73b40")
+            .config("spark.openlineage.parentJobNamespace", "parent-namespace")
+            .config("spark.openlineage.job.owners.team", "MyTeam")
+            .config("spark.openlineage.job.owners.person", "John Smith")
             .config("spark.openlineage.parentJobNamespace", "parent-namespace")
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .getOrCreate();
@@ -155,6 +160,34 @@ class SparkGenericIntegrationTest {
               }
               return null;
             });
+  }
+
+  @Test
+  void sparkEmitsJobOwnershipFacet() {
+    Dataset<Row> df = createTempDataset();
+    Dataset<Row> agg = df.groupBy("a").count();
+    agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
+
+    spark.stop();
+    verifyEvents(mockServer, "applicationLevelStartJob.json");
+
+    RunEvent event =
+        getEventsEmitted(mockServer).stream()
+            .filter(e -> !e.getJob().getName().equals("generic_integration_test"))
+            .findFirst()
+            .get();
+    List<OwnershipJobFacetOwners> owners = event.getJob().getFacets().getOwnership().getOwners();
+    assertThat(owners).hasSize(2);
+    assertThat(
+        owners.stream()
+            .filter(o -> o.getType().equals("team") && o.getName().equals("MyTeam"))
+            .findAny()
+            .isPresent());
+    assertThat(
+        owners.stream()
+            .filter(o -> o.getType().equals("person") && o.getName().equals("John Smith"))
+            .findAny()
+            .isPresent());
   }
 
   private Dataset<Row> createTempDataset() {

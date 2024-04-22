@@ -20,6 +20,7 @@ import io.openlineage.spark.agent.facets.builder.DebugRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.ErrorFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.OutputStatisticsOutputDatasetFacetBuilder;
+import io.openlineage.spark.agent.facets.builder.OwnershipJobFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkPropertyFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkVersionFacetBuilder;
@@ -223,6 +224,7 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                 generate(
                     eventHandlerFactories, factory -> factory.createJobFacetBuilders(context)));
 
+    listBuilder.add(new OwnershipJobFacetBuilder(context));
     return listBuilder.build();
   }
 
