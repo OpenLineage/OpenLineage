@@ -7,6 +7,7 @@ package io.openlineage.spark.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.io.Resources;
 import io.openlineage.client.circuitBreaker.StaticCircuitBreakerConfig;
@@ -32,6 +33,7 @@ class ArgumentParserTest {
   private static final String AUTH_TYPE = "api_key";
   private static final String API_KEY = "random_token";
   private SparkOpenLineageConfig config;
+  private static final String TEST_TOKEN = "TOKEN";
 
   @Test
   void testDefaults() {
@@ -216,5 +218,32 @@ class ArgumentParserTest {
 
     // API config from yaml file
     assertThat(httpConfig.getAuth().getToken()).isEqualTo("Bearer random_token");
+  }
+
+  @Test
+  void testConfToHttpConfigWithCustomTokenProvider() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.transport.type", "http")
+            .set(
+                "spark.openlineage.transport.auth.type", FakeTokenProvider.class.getCanonicalName())
+            .set("spark.openlineage.transport.auth.token", TEST_TOKEN);
+    OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
+    HttpConfig transportConfig = (HttpConfig) openLineageYaml.getTransportConfig();
+    assert (transportConfig.getAuth() != null);
+    assert (transportConfig.getAuth() instanceof FakeTokenProvider);
+    assertEquals(TEST_TOKEN, transportConfig.getAuth().getToken());
+  }
+
+  @Test
+  void testConfToHttpConfigWithInvalidCustomTokenProvider() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.transport.type", "http")
+            .set("spark.openlineage.transport.auth.type", "non.existing.TokenProvider")
+            .set("spark.openlineage.transport.auth.token", TEST_TOKEN);
+    assertThrows(
+        RuntimeException.class,
+        () -> ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf));
   }
 }
