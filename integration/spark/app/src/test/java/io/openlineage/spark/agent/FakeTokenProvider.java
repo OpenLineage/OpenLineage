@@ -6,7 +6,6 @@
 package io.openlineage.spark.agent;
 
 import io.openlineage.client.transports.TokenProvider;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
@@ -14,7 +13,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public class FakeTokenProvider implements TokenProvider {
-  @Getter @Setter private String token;
+  @Setter private String token;
 
   @Override
   public String getToken() {

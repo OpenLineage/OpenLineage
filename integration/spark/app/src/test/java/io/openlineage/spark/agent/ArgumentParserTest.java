@@ -228,7 +228,7 @@ class ArgumentParserTest {
             .set(
                 "spark.openlineage.transport.auth.type", FakeTokenProvider.class.getCanonicalName())
             .set("spark.openlineage.transport.auth.token", TEST_TOKEN);
-    OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
+    SparkOpenLineageConfig openLineageYaml = ArgumentParser.parse(sparkConf);
     HttpConfig transportConfig = (HttpConfig) openLineageYaml.getTransportConfig();
     assert (transportConfig.getAuth() != null);
     assert (transportConfig.getAuth() instanceof FakeTokenProvider);
@@ -242,8 +242,6 @@ class ArgumentParserTest {
             .set("spark.openlineage.transport.type", "http")
             .set("spark.openlineage.transport.auth.type", "non.existing.TokenProvider")
             .set("spark.openlineage.transport.auth.token", TEST_TOKEN);
-    assertThrows(
-        RuntimeException.class,
-        () -> ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf));
+    assertThrows(RuntimeException.class, () -> ArgumentParser.parse(sparkConf));
   }
 }
