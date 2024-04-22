@@ -181,6 +181,9 @@ shadowJar {
     relocate 'org.yaml', 'io.openlineage.flink.shaded.org.yaml'
     relocate 'org.apache.hc', 'io.openlineage.flink.shaded.org.apache.hc'
     relocate 'org.apache.commons.codec', 'io.openlineage.flink.shaded.org.apache.commons.codec'
+    relocate 'org.apache.commons.lang3', 'io.openlineage.flink.shaded.org.apache.commons.lang3'
+    relocate "org.hdrhistogram", "io.openlineage.spark.shaded.org.hdrhistogram"
+    relocate "org.latencyutils", "io.openlineage.spark.shaded.org.latencyutils"
     dependencies {
         exclude(dependency('org.slf4j::'))
     }

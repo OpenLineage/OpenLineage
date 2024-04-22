@@ -320,7 +320,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     SparkEnv sparkEnv = SparkEnv$.MODULE$.get();
     if (sparkEnv == null) {
       log.warn(
-          "Open lineage listener instantiated, but no configuration could be found. "
+          "OpenLineage listener instantiated, but no configuration could be found. "
               + "Lineage events will not be collected");
       return;
     }
@@ -338,7 +338,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       contextFactory = new ContextFactory(new EventEmitter(config, appName), meterRegistry, config);
       circuitBreaker = new CircuitBreakerFactory(config.getCircuitBreaker()).build();
     } catch (URISyntaxException e) {
-      log.error("Unable to parse open lineage endpoint. Lineage events will not be collected", e);
+      log.error("Unable to parse OpenLineage endpoint. Lineage events will not be collected", e);
     }
   }
 
