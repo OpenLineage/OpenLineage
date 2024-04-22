@@ -69,14 +69,13 @@ ext {
     mockitoVersion = '5.2.0'
     testcontainersVersion = '1.19.6'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
-    icebergVersion = "1.3.0"
 
     versionsMap = [
-            "1.15": ["cassandra": "1.15.4", "kafka": flinkVersion, "jdbc": "1.15.4", "alternativeShort": "1.15"],
-            "1.16": ["cassandra": "3.0.0-1.16", "kafka": flinkVersion, "jdbc": "1.16.3", "alternativeShort": "1.16"],
-            "1.17": ["cassandra": "3.1.0-1.17", "kafka": flinkVersion, "jdbc": "3.1.1-1.17", "alternativeShort": "1.17"],
-            "1.18": ["cassandra": "3.1.0-1.17", "kafka": "3.0.2-1.18", "jdbc": "3.1.2-1.18", "alternativeShort": "1.17"],
-            "1.19": ["cassandra": "3.1.0-1.17", "kafka": "3.0.2-1.18", "jdbc": "3.1.2-1.18", "alternativeShort": "1.17"]
+            "1.15": ["cassandra": "1.15.4", "kafka": flinkVersion, "jdbc": "1.15.4", "iceberg": "1.3.0", "alternativeShort": "1.15"],
+            "1.16": ["cassandra": "3.0.0-1.16", "kafka": flinkVersion, "jdbc": "1.16.3", "iceberg": "1.3.0", "alternativeShort": "1.16"],
+            "1.17": ["cassandra": "3.1.0-1.17", "kafka": flinkVersion, "jdbc": "3.1.1-1.17", "iceberg": "1.3.0", "alternativeShort": "1.17"],
+            "1.18": ["cassandra": "3.1.0-1.17", "kafka": "3.0.2-1.18", "jdbc": "3.1.2-1.18", "iceberg": "1.5.0", "alternativeShort": "1.18"],
+            "1.19": ["cassandra": "3.1.0-1.17", "kafka": "3.0.2-1.18", "jdbc": "3.1.2-1.18", "iceberg": "1.5.0", "alternativeShort": "1.18"]
     ]
 
     versions = versionsMap[flinkVersionShort]
@@ -96,7 +95,7 @@ dependencies {
     compileOnly "org.apache.flink:flink-connector-cassandra_2.12:${versions.cassandra}"
     compileOnly "org.apache.flink:flink-avro:$flinkVersion"
     compileOnly "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
-    compileOnly "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:$icebergVersion"
+    compileOnly "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:${versions.iceberg}"
     compileOnly "org.apache.flink:flink-connector-jdbc:${versions.jdbc}"
 
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -114,7 +113,7 @@ dependencies {
     testImplementation "org.apache.flink:flink-table-common:$flinkVersion"
     testImplementation "org.apache.flink:flink-avro:$flinkVersion"
     testImplementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
-    testImplementation "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:$icebergVersion"
+    testImplementation "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:${versions.iceberg}"
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
