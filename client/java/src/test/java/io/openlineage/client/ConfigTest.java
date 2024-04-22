@@ -17,6 +17,8 @@ import io.openlineage.client.circuitBreaker.JavaRuntimeCircuitBreakerConfig;
 import io.openlineage.client.circuitBreaker.SimpleMemoryCircuitBreaker;
 import io.openlineage.client.circuitBreaker.SimpleMemoryCircuitBreakerConfig;
 import io.openlineage.client.metrics.MicrometerProvider;
+import io.openlineage.client.transports.ConsoleConfig;
+import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.HttpTransport;
 import io.openlineage.client.transports.NoopTransport;
 import java.net.URISyntaxException;
@@ -144,5 +146,59 @@ class ConfigTest {
     public List<Path> getPaths() {
       return Collections.singletonList(this.path);
     }
+  }
+
+  @Test
+  void testOverwriteConfig() {
+    OpenLineageConfig base = new OpenLineageConfig();
+    OpenLineageConfig overwrite = new OpenLineageConfig();
+
+    base.setMetricsConfig(null);
+    overwrite.setMetricsConfig(Collections.singletonMap("k", "v"));
+
+    base.setTransportConfig(new HttpConfig());
+    overwrite.setTransportConfig(new ConsoleConfig());
+
+    OpenLineageConfig config = (OpenLineageConfig) base.mergeWith(overwrite);
+    assertThat(config.getMetricsConfig()).hasSize(1);
+    assertThat(config.getTransportConfig()).isInstanceOf(ConsoleConfig.class);
+  }
+
+  @Test
+  void testOverwriteConfigOverwritesDeepTransport() {
+    OpenLineageConfig base = new OpenLineageConfig();
+    OpenLineageConfig overwrite = new OpenLineageConfig();
+
+    HttpConfig baseHttpConfig = new HttpConfig();
+    HttpConfig overwriteHttpConfig = new HttpConfig();
+
+    baseHttpConfig.setEndpoint("endpoint1");
+    overwriteHttpConfig.setEndpoint("endpoint2");
+
+    base.setTransportConfig(baseHttpConfig);
+    overwrite.setTransportConfig(overwriteHttpConfig);
+
+    OpenLineageConfig config = (OpenLineageConfig) base.mergeWith(overwrite);
+    assertThat(((HttpConfig) config.getTransportConfig()).getEndpoint()).isEqualTo("endpoint2");
+  }
+
+  @Test
+  void testOverwriteDoesNotOverwriteCircuitBreakerWithDefaults() {
+    OpenLineageConfig base = new OpenLineageConfig();
+    OpenLineageConfig overwrite = new OpenLineageConfig();
+
+    JavaRuntimeCircuitBreakerConfig baseCircuitBreaker = new JavaRuntimeCircuitBreakerConfig();
+    JavaRuntimeCircuitBreakerConfig overwriteCircuitBreaker = new JavaRuntimeCircuitBreakerConfig();
+
+    base.setCircuitBreaker(baseCircuitBreaker);
+    overwrite.setCircuitBreaker(overwriteCircuitBreaker);
+
+    baseCircuitBreaker.setMemoryThreshold(10); // non default setting
+    overwriteCircuitBreaker.setMemoryThreshold(
+        JavaRuntimeCircuitBreakerConfig.DEFAULT_MEMORY_THRESHOLD); // default setting
+
+    base.mergeWith(overwrite);
+    assertThat(((JavaRuntimeCircuitBreakerConfig) base.getCircuitBreaker()).getMemoryThreshold())
+        .isEqualTo(10);
   }
 }

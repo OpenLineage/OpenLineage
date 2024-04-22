@@ -11,6 +11,8 @@
     *Allows nested fields support to `SchemaDatasetFacet`.*
 * **Spark: enable timeout for circuit breakers.** [`#2609`](https://github.com/OpenLineage/OpenLineage/pull/2609) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Implement within circuit breaker an optional timeout which switches off OpenLineage integration code when exceeded.*
+* **Spark/Flink: Support yaml config files together with SparkConf & FlinkConf approaches.** [`#2583`](https://github.com/OpenLineage/OpenLineage/pull/2583) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
+  *Support config entries being provided by both yaml file and integration specific configuration (SparkConf / FlinkConf). Allow each integration to have its specific config entries.*
 
 ### Fixed
 * **Spark: fix PMD for test** [`#2588`](https://github.com/OpenLineage/OpenLineage/pull/2588) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  

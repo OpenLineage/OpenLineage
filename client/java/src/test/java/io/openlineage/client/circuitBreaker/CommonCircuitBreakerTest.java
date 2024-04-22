@@ -6,15 +6,11 @@
 package io.openlineage.client.circuitBreaker;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
-import io.openlineage.client.OpenLineageYaml;
 import java.util.concurrent.Callable;
 import org.junit.jupiter.api.Test;
 
 class CommonCircuitBreakerTest {
-
-  OpenLineageYaml openLineageYaml = mock(OpenLineageYaml.class);
   Callable<Object> callableWithException =
       (() -> {
         throw new RuntimeException("This should not happen with closed circuit breaker");

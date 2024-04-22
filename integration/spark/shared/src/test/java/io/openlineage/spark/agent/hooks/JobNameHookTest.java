@@ -17,6 +17,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Collections;
 import java.util.Optional;
 import org.apache.spark.SparkConf;
@@ -33,16 +34,20 @@ class JobNameHookTest {
   JobNameHook builderHook = new JobNameHook(context);
   SparkConf sparkConf = mock(SparkConf.class);
   SparkContext sparkContext = mock(SparkContext.class);
+  SparkOpenLineageConfig config;
   OpenLineage.RunEventBuilder runEventBuilder;
   String jobName = null;
 
   @BeforeEach
   public void setup() {
+    config = new SparkOpenLineageConfig();
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
     when(context.getSparkContext()).thenReturn(sparkContext);
+    when(context.getOpenLineageConfig()).thenReturn(config);
     when(sparkContext.conf()).thenReturn(sparkConf);
-    when(sparkConf.get("spark.openlineage.jobName.appendDatasetName", "true")).thenReturn("true");
+
+    config.getJobName().setAppendDatasetName(true);
     runEventBuilder = context.getOpenLineage().newRunEventBuilder();
 
     when(context
@@ -66,7 +71,7 @@ class JobNameHookTest {
 
   @Test
   void testPreBuildWhenAppendingDatasetNameToJobNameDisabled() {
-    when(sparkConf.get("spark.openlineage.jobName.appendDatasetName", "true")).thenReturn("false");
+    config.getJobName().setAppendDatasetName(false);
 
     runEventBuilder = mock(OpenLineage.RunEventBuilder.class);
     builderHook.preBuild(runEventBuilder);
@@ -97,8 +102,7 @@ class JobNameHookTest {
 
   @Test
   void testPreBuildWhenReplaceDotWithUnderscoreIsTrue() {
-    when(sparkConf.get("spark.openlineage.jobName.replaceDotWithUnderscore", "false"))
-        .thenReturn("true");
+    config.getJobName().setReplaceDotWithUnderscore(true);
 
     runEventBuilder.job(
         context

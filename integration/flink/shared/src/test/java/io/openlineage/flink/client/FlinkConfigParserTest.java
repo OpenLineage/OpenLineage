@@ -9,18 +9,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.openlineage.client.OpenLineageYaml;
+import com.google.common.io.Resources;
 import io.openlineage.client.transports.HttpConfig;
 import java.net.URI;
 import lombok.SneakyThrows;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
 import org.apache.flink.configuration.Configuration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class FlinkConfigParserTest {
 
-  Configuration configuration = new Configuration();
+  Configuration configuration;
   ConfigOption transportTypeOption =
       ConfigOptions.key("openlineage.transport.type").stringType().noDefaultValue();
   ConfigOption urlOption =
@@ -37,6 +38,11 @@ public class FlinkConfigParserTest {
   ConfigOption disabledFacetsOption =
       ConfigOptions.key("openlineage.facets.disabled").stringType().noDefaultValue();
 
+  @BeforeEach
+  void beforeEach() {
+    configuration = new Configuration();
+  }
+
   @Test
   @SneakyThrows
   void testFlinkConfToTransportConfig() {
@@ -47,10 +53,10 @@ public class FlinkConfigParserTest {
     configuration.set(testHeaderOption, "some-header");
     configuration.set(testCompressionOption, "gzip");
 
-    OpenLineageYaml openLineageYaml = FlinkConfigParser.parse(configuration);
+    FlinkOpenLineageConfig config = FlinkConfigParser.parse(configuration);
 
-    assertTrue(openLineageYaml.getTransportConfig() instanceof HttpConfig);
-    HttpConfig transportConfig = (HttpConfig) openLineageYaml.getTransportConfig();
+    assertTrue(config.getTransportConfig() instanceof HttpConfig);
+    HttpConfig transportConfig = (HttpConfig) config.getTransportConfig();
 
     assertEquals(new URI("http://some-url"), transportConfig.getUrl());
     assertThat(transportConfig.getAuth().getToken()).contains("some-api-key");
@@ -63,8 +69,45 @@ public class FlinkConfigParserTest {
     configuration.set(transportTypeOption, "console");
     configuration.set(disabledFacetsOption, "[facet1;facet2]");
 
-    OpenLineageYaml openLineageYaml = FlinkConfigParser.parse(configuration);
+    FlinkOpenLineageConfig config = FlinkConfigParser.parse(configuration);
 
-    assertThat(openLineageYaml.getFacetsConfig().getDisabledFacets()[0]).isEqualTo("facet1");
+    assertThat(config.getFacetsConfig().getDisabledFacets()[0]).isEqualTo("facet1");
+  }
+
+  @Test
+  void testConfigReadFromYamlFile() {
+    String propertyBefore = System.getProperty("user.dir");
+    System.setProperty("user.dir", Resources.getResource("config").getPath());
+
+    FlinkOpenLineageConfig config = FlinkConfigParser.parse(new Configuration());
+    System.setProperty("user.dir", propertyBefore);
+
+    assertThat(config.getTransportConfig()).isInstanceOf(HttpConfig.class);
+
+    HttpConfig httpConfig = (HttpConfig) config.getTransportConfig();
+    assertThat(httpConfig.getUrl().toString()).isEqualTo("http://localhost:1010");
+    assertThat(httpConfig.getAuth().getToken()).isEqualTo("Bearer random_token");
+  }
+
+  @Test
+  void testFlinkConfOverwritesYamlFile() {
+    configuration.set(transportTypeOption, "http");
+    configuration.set(urlOption, "http://some-url");
+
+    String propertyBefore = System.getProperty("user.dir");
+    System.setProperty("user.dir", Resources.getResource("config").getPath());
+
+    FlinkOpenLineageConfig config = FlinkConfigParser.parse(configuration);
+    System.setProperty("user.dir", propertyBefore);
+
+    assertThat(config.getTransportConfig()).isInstanceOf(HttpConfig.class);
+
+    HttpConfig httpConfig = (HttpConfig) config.getTransportConfig();
+
+    // URL overwritten by SparkConf
+    assertThat(httpConfig.getUrl().toString()).isEqualTo("http://some-url");
+
+    // API config from yaml file
+    assertThat(httpConfig.getAuth().getToken()).isEqualTo("Bearer random_token");
   }
 }

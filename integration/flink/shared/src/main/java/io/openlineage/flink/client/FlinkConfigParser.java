@@ -5,11 +5,13 @@
 
 package io.openlineage.flink.client;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.openlineage.client.DefaultConfigPathProvider;
+import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
-import io.openlineage.client.OpenLineageYaml;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,11 +21,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.configuration.ConfigOptions;
 import org.apache.flink.configuration.Configuration;
 
 /** Class responsible for parsing Flink configuration to extract Openlineage entries. */
+@Slf4j
 public class FlinkConfigParser {
   public static final String ARRAY_PREFIX_CHAR = "[";
   public static final String ARRAY_SUFFIX_CHAR = "]";
@@ -32,7 +36,37 @@ public class FlinkConfigParser {
       new HashSet<>(
           Arrays.asList("transport.properties.", "transport.urlParams.", "transport.headers."));
 
-  public static OpenLineageYaml parse(Configuration configuration) {
+  public static FlinkOpenLineageConfig parse(Configuration configuration) {
+    // TRY READING CONFIG FROM FILE
+    Optional<FlinkOpenLineageConfig> configFromFile = extractOpenLineageConfFromFile();
+
+    FlinkOpenLineageConfig configFromFlinkConf = extractOpenLineageConfFromFlinkConf(configuration);
+    FlinkOpenLineageConfig targetConfig;
+    if (configFromFile.isPresent()) {
+      targetConfig = configFromFile.get().mergeWith(configFromFlinkConf);
+    } else {
+      targetConfig = configFromFlinkConf;
+    }
+
+    return targetConfig;
+  }
+
+  private static Optional<FlinkOpenLineageConfig> extractOpenLineageConfFromFile() {
+    Optional<FlinkOpenLineageConfig> configFromFile;
+    try {
+      configFromFile =
+          Optional.of(
+              OpenLineageClientUtils.loadOpenLineageConfigYaml(
+                  new DefaultConfigPathProvider(), new TypeReference<FlinkOpenLineageConfig>() {}));
+    } catch (OpenLineageClientException e) {
+      log.info("Couldn't log config from file, will read it from SparkConf");
+      configFromFile = Optional.empty();
+    }
+    return configFromFile;
+  }
+
+  private static FlinkOpenLineageConfig extractOpenLineageConfFromFlinkConf(
+      Configuration configuration) {
     // configuration
     List<String> configKeys =
         configuration.keySet().stream()
@@ -68,8 +102,9 @@ public class FlinkConfigParser {
       }
     }
     try {
-      return OpenLineageClientUtils.loadOpenLineageYaml(
-          new ByteArrayInputStream(objectMapper.writeValueAsBytes(objectNode)));
+      return OpenLineageClientUtils.loadOpenLineageConfigYaml(
+          new ByteArrayInputStream(objectMapper.writeValueAsBytes(objectNode)),
+          new TypeReference<FlinkOpenLineageConfig>() {});
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

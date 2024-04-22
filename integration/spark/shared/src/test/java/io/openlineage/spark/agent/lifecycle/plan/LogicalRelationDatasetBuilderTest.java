@@ -23,6 +23,7 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.extension.scala.v1.LineageRelation;
 import java.io.IOException;
 import java.net.URI;
@@ -122,6 +123,7 @@ class LogicalRelationDatasetBuilderTest {
             .openLineage(openLineage)
             .queryExecution(qe)
             .meterRegistry(new SimpleMeterRegistry())
+            .openLineageConfig(new SparkOpenLineageConfig())
             .build();
     LogicalRelationDatasetBuilder visitor =
         new LogicalRelationDatasetBuilder<>(

@@ -5,11 +5,13 @@
 
 package io.openlineage.spark.agent.facets;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.micrometer.core.instrument.Tag;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.List;
-import java.util.Map;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
@@ -44,11 +46,13 @@ public class DebugRunFacet extends OpenLineage.DefaultRunFacet {
   /** Entries from SparkConf that can be valuable for debugging. */
   @Value
   @Builder
+  @AllArgsConstructor
+  @JsonDeserialize(builder = SparkConfigDebugFacet.SparkConfigDebugFacetBuilder.class)
   public static class SparkConfigDebugFacet {
     // A comma-separated list of classes that implement SparkListener
     String extraListeners;
     // spark.openlineage. prefixed entries in Spark Conf with auth entries skipped
-    Map<String, String> openLineageConfig;
+    SparkOpenLineageConfig openLineageConfig;
     // spark.sql.catalog.spark_catalog
     String catalogClass;
     // A comma-separated list of extensions classes

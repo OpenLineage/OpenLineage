@@ -194,6 +194,7 @@ class AbstractQueryPlanDatasetBuilderTest {
             .openLineage(openLineage)
             .queryExecution(queryExecution)
             .meterRegistry(new SimpleMeterRegistry())
+            .openLineageConfig(new SparkOpenLineageConfig())
             .build();
     return context;
   }

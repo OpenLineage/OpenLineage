@@ -11,17 +11,13 @@ import java.util.Optional;
 
 public class FacetUtils {
 
-  private static final String SPARK_CONF_FACETS_DISABLED = "spark.openlineage.facets.disabled";
-  private static final String disabledFacetsSeparator = ";";
-
   public static boolean isFacetDisabled(OpenLineageContext context, String facetName) {
     return Optional.ofNullable(context)
-        .map(c -> c.getSparkContext())
-        .map(sparkContext -> sparkContext.getConf())
-        .flatMap(conf -> SparkConfUtils.findSparkConfigKey(conf, SPARK_CONF_FACETS_DISABLED))
-        .map(s -> s.replace("[", "").replace("]", ""))
-        .map(s -> s.split(disabledFacetsSeparator))
-        .map(facets -> Arrays.asList(facets).contains(facetName))
+        .map(c -> c.getOpenLineageConfig())
+        .map(c -> c.getFacetsConfig())
+        .map(c -> c.getDisabledFacets())
+        .map(c -> Arrays.asList(c))
+        .map(l -> l.contains(facetName))
         .orElse(false);
   }
 }

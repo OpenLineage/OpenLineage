@@ -24,6 +24,7 @@ import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.Properties;
@@ -87,6 +88,7 @@ class OpenLineageSparkListenerTest {
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(qe)
             .meterRegistry(new SimpleMeterRegistry())
+            .openLineageConfig(new SparkOpenLineageConfig())
             .build();
   }
 
@@ -116,7 +118,8 @@ class OpenLineageSparkListenerTest {
         .getOutputDatasetQueryPlanVisitors()
         .add(new InsertIntoHadoopFsRelationVisitor(olContext));
     ExecutionContext executionContext =
-        new StaticExecutionContextFactory(emitter, new SimpleMeterRegistry())
+        new StaticExecutionContextFactory(
+                emitter, new SimpleMeterRegistry(), new SparkOpenLineageConfig())
             .createSparkSQLExecutionContext(1L, emitter, qe, olContext);
 
     SparkListenerSQLExecutionStart event = mock(SparkListenerSQLExecutionStart.class);
@@ -192,7 +195,8 @@ class OpenLineageSparkListenerTest {
         .add(new InsertIntoHadoopFsRelationVisitor(olContext));
     OpenLineageSparkListener listener = new OpenLineageSparkListener();
     OpenLineageSparkListener.init(
-        new StaticExecutionContextFactory(emitter, new SimpleMeterRegistry()));
+        new StaticExecutionContextFactory(
+            emitter, new SimpleMeterRegistry(), new SparkOpenLineageConfig()));
 
     SparkListenerSQLExecutionEnd event = mock(SparkListenerSQLExecutionEnd.class);
     try (MockedStatic<EventFilterUtils> utils = mockStatic(EventFilterUtils.class)) {
@@ -216,7 +220,8 @@ class OpenLineageSparkListenerTest {
   void testApplicationStartEvent() {
     SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     OpenLineageSparkListener listener = new OpenLineageSparkListener();
-    OpenLineageSparkListener.init(new StaticExecutionContextFactory(emitter, meterRegistry));
+    OpenLineageSparkListener.init(
+        new StaticExecutionContextFactory(emitter, meterRegistry, new SparkOpenLineageConfig()));
     SparkListenerApplicationStart event = mock(SparkListenerApplicationStart.class);
 
     listener.onApplicationStart(event);
@@ -231,7 +236,8 @@ class OpenLineageSparkListenerTest {
   void testApplicationEndEvent() {
     OpenLineageSparkListener listener = new OpenLineageSparkListener();
     OpenLineageSparkListener.init(
-        new StaticExecutionContextFactory(emitter, new SimpleMeterRegistry()));
+        new StaticExecutionContextFactory(
+            emitter, new SimpleMeterRegistry(), new SparkOpenLineageConfig()));
     SparkListenerApplicationEnd event = mock(SparkListenerApplicationEnd.class);
 
     listener.onApplicationEnd(event);
@@ -246,7 +252,8 @@ class OpenLineageSparkListenerTest {
   void testCheckSparkApplicationEventsAreEmitted() {
     SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     OpenLineageSparkListener listener = new OpenLineageSparkListener();
-    OpenLineageSparkListener.init(new StaticExecutionContextFactory(emitter, meterRegistry));
+    OpenLineageSparkListener.init(
+        new StaticExecutionContextFactory(emitter, meterRegistry, new SparkOpenLineageConfig()));
     SparkListenerApplicationStart startEvent = mock(SparkListenerApplicationStart.class);
     SparkListenerApplicationEnd endEvent = mock(SparkListenerApplicationEnd.class);
 

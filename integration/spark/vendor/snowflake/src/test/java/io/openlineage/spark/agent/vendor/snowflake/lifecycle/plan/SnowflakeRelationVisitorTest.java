@@ -17,6 +17,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.vendor.snowflake.lifecycle.SnowflakeRelationVisitor;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.Vendors;
 import java.util.Collections;
 import java.util.List;
@@ -49,6 +50,7 @@ public class SnowflakeRelationVisitorTest {
     when(session.sparkContext()).thenReturn(mock(SparkContext.class));
     when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
     when(context.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
 
     when(relation.params().sfDatabase()).thenReturn("snowflake_db");
     when(relation.params().sfSchema()).thenReturn("snowflake_schema");
@@ -77,6 +79,7 @@ public class SnowflakeRelationVisitorTest {
             .customEnvironmentVariables(Collections.singletonList("TEST_VAR"))
             .vendors(Vendors.getVendors())
             .meterRegistry(new SimpleMeterRegistry())
+            .openLineageConfig(new SparkOpenLineageConfig())
             .build();
 
     SnowflakeRelationVisitor visitor =
@@ -120,6 +123,7 @@ public class SnowflakeRelationVisitorTest {
             .customEnvironmentVariables(Collections.singletonList("TEST_VAR"))
             .vendors(Vendors.getVendors())
             .meterRegistry(new SimpleMeterRegistry())
+            .openLineageConfig(new SparkOpenLineageConfig())
             .build();
 
     SnowflakeRelationVisitor visitor =
