@@ -40,6 +40,7 @@ public abstract class Transport {
    *     <p>Will be removed in version 1.16.0.
    *     <p>Please use {@link #emit(OpenLineage.DatasetEvent)} or {@link
    *     #emit(OpenLineage.JobEvent)} instead
+   * @param eventAsJson string json event
    */
   @Deprecated
   public void emit(String eventAsJson) {
