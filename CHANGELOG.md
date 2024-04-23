@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.12.0...HEAD)
 
+### Added
+* **Spark: add custom token provider support** [`#2613`](https://github.com/OpenLineage/OpenLineage/pull/2613) [@tnazarew](https://github.com/tnazarew)  
+    *Adds support for FQCN as `spark.openlineage.transport.auth.type`*
+
 ## [1.12.0](https://github.com/OpenLineage/OpenLineage/compare/1.11.3...1.12.0) - 2024-04-09
 
 ### Added
