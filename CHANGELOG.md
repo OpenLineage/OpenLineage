@@ -15,7 +15,8 @@
   *Support config entries being provided by both yaml file and integration specific configuration (SparkConf / FlinkConf). Allow each integration to have its specific config entries.*
 * **Spark & Flink: Job Ownership Facet** [`#2533`](https://github.com/OpenLineage/OpenLineage/pull/2533) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Enable configuration entries specifying ownership of the job that will result in `OwnershipJobFacet` attached to job facets.*
-
+* **Flink: bump up Flink Iceberg versions.** [`#2631`](https://github.com/OpenLineage/OpenLineage/pull/2631) [@HuangZhenQiu](https://github.com/HuangZhenQiu) 
+  *Bump Flink Iceberg dependencies versions for Flink 1.18 and Flink 1.19.*
 
 ### Fixed
 * **Spark: fix PMD for test** [`#2588`](https://github.com/OpenLineage/OpenLineage/pull/2588) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
