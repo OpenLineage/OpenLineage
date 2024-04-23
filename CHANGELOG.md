@@ -5,22 +5,24 @@
 ### Added
 * **Spark: add custom token provider support** [`#2613`](https://github.com/OpenLineage/OpenLineage/pull/2613) [@tnazarew](https://github.com/tnazarew)  
     *Adds support for FQCN as `spark.openlineage.transport.auth.type`*
+* **Spark: enable timeout for circuit breakers.** [`#2609`](https://github.com/OpenLineage/OpenLineage/pull/2609) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+    *Implement within circuit breaker an optional timeout which switches off OpenLineage integration code when exceeded.*
+* **Spark/Flink: Support yaml config files together with SparkConf & FlinkConf approaches.** [`#2583`](https://github.com/OpenLineage/OpenLineage/pull/2583) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+    *Support config entries being provided by both yaml file and integration specific configuration (SparkConf / FlinkConf). Allow each integration to have its specific config entries.*
+* **Spark & Flink: Job Ownership Facet** [`#2533`](https://github.com/OpenLineage/OpenLineage/pull/2533) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Enable configuration entries specifying ownership of the job that will result in `OwnershipJobFacet` attached to job facets.*
+* **Flink: bump up Flink Iceberg versions.** [`#2631`](https://github.com/OpenLineage/OpenLineage/pull/2631) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
+    *Bump Flink Iceberg dependencies versions for Flink 1.18 and Flink 1.19.*
+
+### Fixed
 
 ## [1.12.0](https://github.com/OpenLineage/OpenLineage/compare/1.11.3...1.12.0) - 2024-04-09
 
 ### Added
-* **Airflow: add `lineage_job_namespace` and `lineage_job_name` macros** [`#2582`](https://github.com/OpenLineage/OpenLineage/pull/2582) [@dolfinus](https://github.com/dolfinus)  
+* **Airflow: add `lineage_job_namespace` and `lineage_job_name` macros** [`#2582`](https://github.com/OpenLineage/OpenLineage/pull/2582) [@dolfinus](https://github.com/dolfinus)
     *Adds new Airflow macros `lineage_job_namespace()`, `lineage_job_name(task)` that return an Airflow namespace and Airflow job name, respectively.*
-* **Spec: Allow nested struct fields in `SchemaDatasetFacet`** [`#2548`](https://github.com/OpenLineage/OpenLineage/pull/2548) [@dolfinus](https://github.com/dolfinus)  
+* **Spec: Allow nested struct fields in `SchemaDatasetFacet`** [`#2548`](https://github.com/OpenLineage/OpenLineage/pull/2548) [@dolfinus](https://github.com/dolfinus)
     *Allows nested fields support to `SchemaDatasetFacet`.*
-* **Spark: enable timeout for circuit breakers.** [`#2609`](https://github.com/OpenLineage/OpenLineage/pull/2609) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Implement within circuit breaker an optional timeout which switches off OpenLineage integration code when exceeded.*
-* **Spark/Flink: Support yaml config files together with SparkConf & FlinkConf approaches.** [`#2583`](https://github.com/OpenLineage/OpenLineage/pull/2583) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
-  *Support config entries being provided by both yaml file and integration specific configuration (SparkConf / FlinkConf). Allow each integration to have its specific config entries.*
-* **Spark & Flink: Job Ownership Facet** [`#2533`](https://github.com/OpenLineage/OpenLineage/pull/2533) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Enable configuration entries specifying ownership of the job that will result in `OwnershipJobFacet` attached to job facets.*
-* **Flink: bump up Flink Iceberg versions.** [`#2631`](https://github.com/OpenLineage/OpenLineage/pull/2631) [@HuangZhenQiu](https://github.com/HuangZhenQiu) 
-  *Bump Flink Iceberg dependencies versions for Flink 1.18 and Flink 1.19.*
 
 ### Fixed
 * **Spark: fix PMD for test** [`#2588`](https://github.com/OpenLineage/OpenLineage/pull/2588) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
