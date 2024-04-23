@@ -56,10 +56,10 @@ class ArgumentParserTest {
         ArgumentParser.parse(
             new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "kinesis"));
 
-    assert (config.getTransportConfig() instanceof ConsoleConfig);
-    assert (configHttp.getTransportConfig() instanceof HttpConfig);
-    assert (configKafka.getTransportConfig() instanceof KafkaConfig);
-    assert (configKinesis.getTransportConfig() instanceof KinesisConfig);
+    assertThat(config.getTransportConfig()).isInstanceOf(ConsoleConfig.class);
+    assertThat(configHttp.getTransportConfig()).isInstanceOf(HttpConfig.class);
+    assertThat(configKafka.getTransportConfig()).isInstanceOf(KafkaConfig.class);
+    assertThat(configKinesis.getTransportConfig()).isInstanceOf(KinesisConfig.class);
   }
 
   @Test

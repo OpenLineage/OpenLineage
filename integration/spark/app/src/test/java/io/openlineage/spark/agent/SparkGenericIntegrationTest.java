@@ -173,19 +173,19 @@ class SparkGenericIntegrationTest {
 
     RunEvent event =
         getEventsEmitted(mockServer).stream()
-            .filter(e -> !e.getJob().getName().equals("generic_integration_test"))
+            .filter(e -> !"generic_integration_test".equals(e.getJob().getName()))
             .findFirst()
             .get();
     List<OwnershipJobFacetOwners> owners = event.getJob().getFacets().getOwnership().getOwners();
     assertThat(owners).hasSize(2);
     assertThat(
         owners.stream()
-            .filter(o -> o.getType().equals("team") && o.getName().equals("MyTeam"))
+            .filter(o -> "team".equals(o.getType()) && "MyTeam".equals(o.getName()))
             .findAny()
             .isPresent());
     assertThat(
         owners.stream()
-            .filter(o -> o.getType().equals("person") && o.getName().equals("John Smith"))
+            .filter(o -> "person".equals(o.getType()) && "John Smith".equals(o.getName()))
             .findAny()
             .isPresent());
   }

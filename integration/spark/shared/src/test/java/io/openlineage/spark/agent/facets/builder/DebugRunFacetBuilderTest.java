@@ -12,7 +12,6 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import org.apache.spark.SparkContext;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +19,6 @@ class DebugRunFacetBuilderTest {
 
   private static OpenLineageContext openLineageContext =
       mock(OpenLineageContext.class, RETURNS_DEEP_STUBS);
-  private static SparkContext sparkContext = mock(SparkContext.class);
   private static DebugRunFacetBuilder builder = new DebugRunFacetBuilder(openLineageContext);
   private static SparkOpenLineageConfig config = new SparkOpenLineageConfig();
 
