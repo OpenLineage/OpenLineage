@@ -26,7 +26,7 @@ import org.apache.spark.scheduler.SparkListenerEvent;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-public class OwnershipJobFacetBuilderTest {
+class OwnershipJobFacetBuilderTest {
 
   OpenLineageContext olContext = mock(OpenLineageContext.class);
   OwnershipJobFacetBuilder builder = new OwnershipJobFacetBuilder(olContext);
@@ -80,14 +80,14 @@ public class OwnershipJobFacetBuilderTest {
                 (OwnershipJobFacet facet) ->
                     facet.getOwners().size() == 2
                         && facet.getOwners().stream()
-                            .filter(o -> o.getName().equals("MyTeam") && o.getType().equals("team"))
+                            .filter(o -> "MyTeam".equals(o.getName()) && "team".equals(o.getType()))
                             .findAny()
                             .isPresent()
                         && facet.getOwners().stream()
                             .filter(
                                 o ->
-                                    o.getName().equals("John Smith")
-                                        && o.getType().equals("person"))
+                                    "John Smith".equals(o.getName())
+                                        && "person".equals(o.getType()))
                             .findAny()
                             .isPresent()));
   }

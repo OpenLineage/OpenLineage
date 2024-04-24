@@ -65,7 +65,7 @@ public class ArgumentParser {
     // TRY READING CONFIG FROM FILE
     Optional<SparkOpenLineageConfig> configFromFile = extractOpenLineageConfFromFile();
 
-    if (conf.get(SPARK_CONF_TRANSPORT_TYPE, "").equals("http")) {
+    if ("http".equals(conf.get(SPARK_CONF_TRANSPORT_TYPE, ""))) {
       findSparkConfigKey(conf, SPARK_CONF_HTTP_URL)
           .ifPresent(url -> UrlParser.parseUrl(url).forEach(conf::set));
     }
