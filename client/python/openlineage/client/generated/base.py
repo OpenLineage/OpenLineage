@@ -25,7 +25,7 @@ class BaseEvent(RedactMixin):
 
     producer: str = field(default="", kw_only=True)
     schemaURL: str = field(  # noqa: N815
-        default="https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/BaseEvent"
+        default="https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/BaseEvent", kw_only=True
     )
     _base_skip_redact: ClassVar[list[str]] = ["producer", "schemaURL"]
     _additional_skip_redact: ClassVar[list[str]] = []
@@ -78,7 +78,7 @@ class BaseFacet(RedactMixin):
 
     _producer: str = field(default="", kw_only=True)
     _schemaURL: str = field(  # noqa: N815
-        default="https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/BaseFacet"
+        default="https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/BaseFacet", kw_only=True
     )
     _base_skip_redact: ClassVar[list[str]] = ["_producer", "_schemaURL"]
     _additional_skip_redact: ClassVar[list[str]] = []

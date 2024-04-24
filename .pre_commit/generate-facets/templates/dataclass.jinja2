@@ -124,7 +124,7 @@ class {{ class_name }}:
 {%- if class_name in ['BaseFacet', 'BaseEvent'] %}
     {{ private_prefix }}producer: str = field(default='', kw_only=True)  # noqa: N815
     {{ private_prefix }}schemaURL: str = field(  # noqa: N815
-        default="{{ _schemaURL }}")
+        default="{{ _schemaURL }}", kw_only=True)
 {%- endif -%}
 {#- try to match redfact fields per module_name -#}
 {%- set redact_fields = redactions | selectattr("module_name", "equalto", module.name) | first -%}
