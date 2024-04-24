@@ -2,46 +2,40 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.13.0...HEAD)
 
-## [1.13.0](https://github.com/OpenLineage/OpenLineage/compare/1.12.0...1.13.0) - 2024-04-23
+## [1.13.0](https://github.com/OpenLineage/OpenLineage/compare/1.12.0...1.13.0) - 2024-04-24
 ### Added
 * **Java: allow timeout for circuit breakers** [`#2609`](https://github.com/OpenLineage/OpenLineage/pull/2609) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Extends the circuit breaker mechanism to contain a global timeout that stops running OpenLineage integration code when a specified amount of time is reached.*
-* **Python: generate Python facets from JSON schemas** [`#2520`](https://github.com/OpenLineage/OpenLineage/pull/2520) [@JDarDagran](https://github.com/JDarDagran)  
-    *Objects specified with JSON Schema needed to be manually developed and checked in Python, leading to many discrepancies, including wrong schema URLs. This adds a `datamodel-code-generator` for parsing JSON Schema and generating, e.g., Pydantic or dataclasses classes. In order to use attrs (which is more modern version of dataclasses) and overcome some limitations of the tool, a number of steps have been added in order to customize code to meet OpenLineage requirements. Included: updated references to the latest base JSON Schema spec for all child facets. **Please note**: newly generated code creates a v2 interface that will be implemented in existing integrations in a future release. The v2 interface introduces some breaking changes: facets are put into separate modules per JSON Schema spec file, some names are changed, and several classes are now `kw_only`.*
-* **Spark/Flink/Java: support YAML config files together with SparkConf/FlinkConf** [`#2583`](https://github.com/OpenLineage/OpenLineage/pull/2583) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Creates a `SparkOpenlineageConfig` and `FlinkOpenlineageConfig` for a more uniform configuration experience for the user. Renames OpenLineageYaml to OpenLineageConfig and modifies the code to use only OpenLineageConfig classes. Includes a doc update to mention that both ways can be used interchangeably and final documentation will merge all values provided.*
+    *Extends the circuit breaker mechanism to contain a global timeout that stops running OpenLineage integration code when a specified amount of time has elapsed.*
 * **Java: handle `DataSetEvent` and `JobEvent` in `Transport.emit`** [`#2611`](https://github.com/OpenLineage/OpenLineage/pull/2611) [@dolfinus](https://github.com/dolfinus)  
-    *Add overloads `Transport.emit(OpenLineage.DatasetEvent)` and `Transport.emit(OpenLineage.JobEvent)`, reusing the implementation of `Transport.emit(OpenLineage.RunEvent)`. Marks `Transport.emit(String)` as deprecated. It will be removed in 1.16.0.*
-* **Java/Python/Proxy: properly set Kafka messages key** [`#2571`](https://github.com/OpenLineage/OpenLineage/pull/2571) [@dolfinus](https://github.com/dolfinus)  
-    *A new `messageKey` option is added to `KafkaTransport` config of the Python and Java clients, as well as the Proxy. This option replaces the `localServerId` option, which is now deprecated. Default value is generated using the run id (for `RunEvent`), job name (for `JobEvent`) or dataset name (for `DatasetEvent`). This value is used by the Kafka producer to distribute messages along topic partitions, instead of sending all the events to the same partition. This allows for full utilization of Kafka performance.*
-* **Python: allow user to set Kafka message key** [`#2597`](https://github.com/OpenLineage/OpenLineage/pull/2597) [@dolfinus](https://github.com/dolfinus)  
-    *A new `messageKey` option is added to the `KafkaTransport` config of the Python client. The default value is generated using the run id (for `RunEvent`), job name (for `JobEvent`) or dataset name (for `DatasetEvent`). This value is used by the Kafka producer to distribute messages along topic partitions, instead of sending all the events to a random partition. This allows to read events from Kafka in the same order as sent by client.*
+    *Adds overloads `Transport.emit(OpenLineage.DatasetEvent)` and `Transport.emit(OpenLineage.JobEvent)`, reusing the implementation of `Transport.emit(OpenLineage.RunEvent)`. **Please note**: `Transport.emit(String)` is now deprecated and will be removed in 1.16.0.*
+* **Java/Python: add `GZIP` compression to `HttpTransport`** [`#2603`](https://github.com/OpenLineage/OpenLineage/pull/2603) [`#2604`](https://github.com/OpenLineage/OpenLineage/pull/2604) [@dolfinus](https://github.com/dolfinus)  
+    *Adds a `compression` option to `HttpTransport` config in the Java and Python clients, with `gzip` implementation.*
+* **Java/Python/Proxy: properly set Kafka message key** [`#2571`](https://github.com/OpenLineage/OpenLineage/pull/2571) [`#2597`](https://github.com/OpenLineage/OpenLineage/pull/2597) [`#2598`](https://github.com/OpenLineage/OpenLineage/pull/2598) [@dolfinus](https://github.com/dolfinus)  
+    *Adds a new `messageKey` option to `KafkaTransport` config in the Python and Java clients, as well as the Proxy. This option replaces the `localServerId` option, which is now deprecated. Default value is generated using the run id (for `RunEvent`), job name (for `JobEvent`) or dataset name (for `DatasetEvent`). This value is used by the Kafka producer to distribute messages along topic partitions, instead of sending all the events to the same partition. This allows for full utilization of Kafka performance advantages.*
+* **Python: generate Python facets from JSON schemas** [`#2520`](https://github.com/OpenLineage/OpenLineage/pull/2520) [@JDarDagran](https://github.com/JDarDagran)  
+    *Objects specified with JSON Schema needed to be manually developed and checked in Python, leading to many discrepancies, including wrong schema URLs. This adds a `datamodel-code-generator` for parsing JSON Schema and generating Pydantic or dataclasses classes, etc. In order to use `attrs` (a more modern version of dataclasses) and overcome some limitations of the tool, a number of steps have been added in order to customize code to meet OpenLineage requirements. Included: updated references to the latest base JSON Schema spec for all child facets. **Please note**: newly generated code creates a v2 interface that will be implemented in existing integrations in a future release. The v2 interface introduces some breaking changes: facets are put into separate modules per JSON Schema spec file, some names are changed, and several classes are now `kw_only`.*
+* **Spark/Flink/Java: support YAML config files together with SparkConf/FlinkConf** [`#2583`](https://github.com/OpenLineage/OpenLineage/pull/2583) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Creates a `SparkOpenlineageConfig` and `FlinkOpenlineageConfig` for a more uniform configuration experience for the user. Renames `OpenLineageYaml` to `OpenLineageConfig` and modifies the code to use only `OpenLineageConfig` classes. Includes a doc update to mention that both ways can be used interchangeably and final documentation will merge all values provided.*
 * **Spark: add custom token provider support** [`#2613`](https://github.com/OpenLineage/OpenLineage/pull/2613) [@tnazarew](https://github.com/tnazarew)  
-    *Adds support for FQCN as `spark.openlineage.transport.auth.type`.*
+    *Adds support for `FQCN` as `spark.openlineage.transport.auth.type`.*
 * **Spark: enable timeout for circuit breakers** [`#2609`](https://github.com/OpenLineage/OpenLineage/pull/2609) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Implement within circuit breaker an optional timeout that switches off the OpenLineage integration code when exceeded.*
+    *Implements within the circuit breaker an optional timeout that switches off the OpenLineage integration code.*
+* **Spark: add custom token provider support** [`#2613`](https://github.com/OpenLineage/OpenLineage/pull/2613) [@tnazarew](https://github.com/tnazarew)  
+    *Adds a `TokenProviderTypeIdResolver` to handle both `FQCN` and (for backward compatibility) `api_key` types in `spark.openlineage.transport.auth.type`.*
 * **Spark/Flink: support YAML config files together with `SparkConf` & `FlinkConf` approaches** [`#2583`](https://github.com/OpenLineage/OpenLineage/pull/2583) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Support config entries being provided by both YAML file and integration specific configuration (`SparkConf`/`FlinkConf`). Allows each integration to have its specific config entries.*
+    *Adds support for config entries being provided by both YAML file and integration-specific configuration (`SparkConf`/`FlinkConf`). Allows each integration to have its own config entries.*
 * **Spark/Flink: job ownership facet** [`#2533`](https://github.com/OpenLineage/OpenLineage/pull/2533) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)    
     *Enables configuration entries specifying ownership of the job that will result in an `OwnershipJobFacet` being attached to job facets.*
-* **Java: add `GZIP` compression to `HttpTransport`** [`#2603`](https://github.com/OpenLineage/OpenLineage/pull/2603) [@dolfinus](https://github.com/dolfinus)  
-    *Adds a `compression` option to `HttpTransport` config in the Java client, with `gzip` implementation.*
-* **client/python: [Python] Add GZIP compression to HttpTransport** [`#2604`](https://github.com/OpenLineage/OpenLineage/pull/2604) [@dolfinus](https://github.com/dolfinus)  
-    *Add `compression` option to `HttpTransport` config of Python client, with `gzip` implementation.*
-* **integration/spark: add custom token provider support** [`#2613`](https://github.com/OpenLineage/OpenLineage/pull/2613) [@tnazarew](https://github.com/tnazarew)  
-    *A `TokenProviderTypeIdResolver` is added to handle both FQCN and (for backward compatibility) `api_key` type in `spark.openlineage.transport.auth.type`.*
 
 ### Changed
-* **Proxy: rename `localServerId` to `messageKey`** [`#2598`](https://github.com/OpenLineage/OpenLineage/pull/2598) [@dolfinus](https://github.com/dolfinus)  
-    *The `localServerId` option of `KafkaLineageStream` Proxy config is renamed to `messageKey` to match the Java client implementation.*
 * **Java: sync Kinesis `partitionKey` format with Kafka implementation** [`#2620`](https://github.com/OpenLineage/OpenLineage/pull/2620) [@dolfinus](https://github.com/dolfinus)  
     *Changes the format of Kinesis `partitionKey` from `{jobNamespace}:{jobName}` to `run:{jobNamespace}/{jobName}` to match the Kafka transport implementation.*
     
 ### Fixed
 * **Python: make `load_config` return an empty dict instead of `None` when file empty** [`#2596`](https://github.com/OpenLineage/OpenLineage/pull/2596) [@kacpermuda](https://github.com/kacpermuda)  
-    *`utils.load_config()` now returns empty dict instead of `None` in the case of an empty file to prevent an `OpenLineageClient` crash.*
+    *`utils.load_config()` now returns an empty dict instead of `None` in the case of an empty file to prevent an `OpenLineageClient` crash.*
 * **Java: render lombok-generated methods in javadoc** [`#2614`](https://github.com/OpenLineage/OpenLineage/pull/2614) [@dolfinus](https://github.com/dolfinus)  
-    *Fix rendering of javadoc for methods generated by `lombok` annotations by adding a `delombok` step before javadoc.*
+    *Fixes rendering of javadoc for methods generated by `lombok` annotations by adding a `delombok` step.*
 * **Spark/Snowflake: parse NPE when query option is used and table is empty** [`#2599`](https://github.com/OpenLineage/OpenLineage/pull/2599) [@mobuchowski](https://github.com/mobuchowski)  
     *Fixes NPE when using query option when reading from Snowflake.*
 
@@ -50,30 +44,24 @@
 ### Added
 * **Airflow: add `lineage_job_namespace` and `lineage_job_name` macros** [`#2582`](https://github.com/OpenLineage/OpenLineage/pull/2582) [@dolfinus](https://github.com/dolfinus)
     *Adds new Airflow macros `lineage_job_namespace()`, `lineage_job_name(task)` that return an Airflow namespace and Airflow job name, respectively.*
-* **Spec: Allow nested struct fields in `SchemaDatasetFacet`** [`#2548`](https://github.com/OpenLineage/OpenLineage/pull/2548) [@dolfinus](https://github.com/dolfinus)
+* **Spec: allow nested struct fields in `SchemaDatasetFacet`** [`#2548`](https://github.com/OpenLineage/OpenLineage/pull/2548) [@dolfinus](https://github.com/dolfinus)
     *Allows nested fields support to `SchemaDatasetFacet`.*
 
-### Removed
-* **client/java: [Client] Remove runId from Kafka messageKey** [`#2615`](https://github.com/OpenLineage/OpenLineage/pull/2615) [@dolfinus](https://github.com/dolfinus)  
-    **
-
 ### Fixed
-* **Spark: fix PMD for test** [`#2588`](https://github.com/OpenLineage/OpenLineage/pull/2588) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Clears `pmdTestScala212` from warnings that clutter the logs.*
-* **Dbt: propagate the dbt return code also when no OpenLineage events are emitted** [`#2591`](https://github.com/OpenLineage/OpenLineage/pull/2591) [@blacklight](https://github.com/blacklight)  
-    *`dbt-ol` now propagates the exit code of the underlying dbt process even if no lineage events are emitted.*
-* **Java: make sure string isn't empty to prevent going out of bounds** [`#2585`](https://github.com/OpenLineage/OpenLineage/pull/2585) [@harels](https://github.com/harels)  
-    *String lookup was not accounting for empty strings and causing a `java.lang.StringIndexOutOfBoundsException`.*
-* **Spark: use `HashSet` in column-level lineage instead of iterating through `LinkedList`** [`#2584`](https://github.com/OpenLineage/OpenLineage/pull/2584) [@mobuchowski](https://github.com/mobuchowski)  
-    *Takes advantage of performance gains available from using `HashSet` for collection.*
-* **Python: fix missing pkg_resources module on Python 3.12** [`#2572`](https://github.com/OpenLineage/OpenLineage/pull/2572) [@dolfinus](https://github.com/dolfinus)  
-    *Removes `pkg_resources` dependency and replaces it with the [packaging](https://packaging.pypa.io/en/latest/version.html) lib.*
 * **Airflow: fix format returned by `airflow.macros.lineage_parent_id`** [`#2578`](https://github.com/OpenLineage/OpenLineage/pull/2578) [@blacklight](https://github.com/blacklight)  
     *Fixes the run format returned by the `lineage_parent_id` Airflow macro and simplifies the format of the `lineage_parent_id` and `lineage_run_id` macros.*
+* **Dbt: propagate the dbt return code also when no OpenLineage events are emitted** [`#2591`](https://github.com/OpenLineage/OpenLineage/pull/2591) [@blacklight](https://github.com/blacklight)  
+    *`dbt-ol` now propagates the exit code of the underlying dbt process even if no lineage events are emitted.*
 * **Dagster: limit Dagster version to 1.6.9** [`#2579`](https://github.com/OpenLineage/OpenLineage/pull/2579) [@JDarDagran](https://github.com/JDarDagran)  
     *Adds an upper limit on supported versions of Dagster as the integration is no longer actively maintained and recent releases introduce breaking changes.*
-* **client/java: [JAVA] fix javadoc for java client** [`#2624`](https://github.com/OpenLineage/OpenLineage/pull/2624) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    **
+* **Java: make sure string isn't empty to prevent going out of bounds** [`#2585`](https://github.com/OpenLineage/OpenLineage/pull/2585) [@harels](https://github.com/harels)  
+    *String lookup was not accounting for empty strings and causing a `java.lang.StringIndexOutOfBoundsException`.*
+* **Java: fix javadoc** [`#2624`](https://github.com/OpenLineage/OpenLineage/pull/2624) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Improves developer experience by fixing issues resulting in warnings on build.*
+* **Python: fix missing `pkg_resources` module on Python 3.12** [`#2572`](https://github.com/OpenLineage/OpenLineage/pull/2572) [@dolfinus](https://github.com/dolfinus)  
+    *Removes `pkg_resources` dependency and replaces it with the [packaging](https://packaging.pypa.io/en/latest/version.html) lib.*
+* **Spark: use `HashSet` in column-level lineage instead of iterating through `LinkedList`** [`#2584`](https://github.com/OpenLineage/OpenLineage/pull/2584) [@mobuchowski](https://github.com/mobuchowski)  
+    *Takes advantage of performance gains available from using `HashSet` for collection.*
 
 ## [1.11.3](https://github.com/OpenLineage/OpenLineage/compare/1.10.2...1.11.3) - 2024-04-04
 
