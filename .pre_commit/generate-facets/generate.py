@@ -161,7 +161,7 @@ def parse_and_generate(locations):
             special_field_name_prefix="",
             use_schema_description=True,
             field_constraints=True,
-            use_union_operator=True,
+            use_union_operator=False,
             use_standard_collections=True,
             base_class="openlineage.client.utils.RedactMixin",
             class_name="ClassToBeSkipped",

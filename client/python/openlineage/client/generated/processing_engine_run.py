@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 from attr import define, field
 from openlineage.client.generated.base import RunFacet
 
@@ -12,10 +14,10 @@ class ProcessingEngineRunFacet(RunFacet):
     version: str
     """Processing engine version. Might be Airflow or Spark version."""
 
-    name: str | None = field(default=None)
+    name: Optional[str] = field(default=None)
     """Processing engine name, e.g. Airflow or Spark"""
 
-    openlineageAdapterVersion: str | None = field(default=None)  # noqa: N815
+    openlineageAdapterVersion: Optional[str] = field(default=None)  # noqa: N815
     """OpenLineage adapter package version. Might be e.g. OpenLineage Airflow integration package version"""
 
     @staticmethod

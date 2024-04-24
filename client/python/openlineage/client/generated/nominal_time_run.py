@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 from attr import define, field
 from openlineage.client.generated.base import RunFacet
@@ -16,7 +16,7 @@ class NominalTimeRunFacet(RunFacet):
     An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal start time
     (included) of the run. AKA the schedule time
     """
-    nominalEndTime: str | None = field(default=None)  # noqa: N815
+    nominalEndTime: Optional[str] = field(default=None)  # noqa: N815
     """
     An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal end time
     (excluded) of the run. (Should be the nominal start time of the next run)

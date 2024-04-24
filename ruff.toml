@@ -54,6 +54,7 @@ ignore = [
     "T201",
     "COM812",
     "ISC001",
+    "UP007"
 ]
 
 [format]

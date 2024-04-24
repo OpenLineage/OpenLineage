@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 from attr import define, field
 from openlineage.client.constants import DEFAULT_PRODUCER
@@ -25,7 +25,7 @@ class BaseEvent(RedactMixin):
 
     producer: str = field(default="", kw_only=True)
     schemaURL: str = field(  # noqa: N815
-        default="https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/BaseEvent", init=False
+        default="https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/BaseEvent"
     )
     _base_skip_redact: ClassVar[list[str]] = ["producer", "schemaURL"]
     _additional_skip_redact: ClassVar[list[str]] = []
@@ -78,7 +78,7 @@ class BaseFacet(RedactMixin):
 
     _producer: str = field(default="", kw_only=True)
     _schemaURL: str = field(  # noqa: N815
-        default="https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/BaseFacet", init=False
+        default="https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/BaseFacet"
     )
     _base_skip_redact: ClassVar[list[str]] = ["_producer", "_schemaURL"]
     _additional_skip_redact: ClassVar[list[str]] = []
@@ -123,7 +123,7 @@ class Dataset(RedactMixin):
     name: str
     """The unique name for that dataset within that namespace"""
 
-    facets: dict[str, DatasetFacet] | None = field(factory=dict, kw_only=True)  # type: ignore[assignment]
+    facets: Optional[dict[str, DatasetFacet]] = field(factory=dict, kw_only=True)  # type: ignore[assignment]
     """The facets for this dataset"""
 
     _skip_redact: ClassVar[list[str]] = ["namespace", "name"]
@@ -146,7 +146,7 @@ class DatasetEvent(BaseEvent):
 class DatasetFacet(BaseFacet):
     """A Dataset Facet"""
 
-    _deleted: bool | None = field(default=None, kw_only=True)
+    _deleted: Optional[bool] = field(default=None, kw_only=True)
     """set to true to delete a facet"""
 
     @staticmethod
@@ -173,7 +173,7 @@ class EventType(Enum):
 class InputDataset(Dataset):
     """An input dataset"""
 
-    inputFacets: dict[str, InputDatasetFacet] | None = field(factory=dict)  # type: ignore[assignment]# noqa: N815
+    inputFacets: Optional[dict[str, InputDatasetFacet]] = field(factory=dict)  # type: ignore[assignment]# noqa: N815
     """The input facets for this dataset."""
 
     _additional_skip_redact: ClassVar[list[str]] = ["namespace", "name"]
@@ -200,7 +200,7 @@ class Job(RedactMixin):
     name: str
     """The unique name for that job within that namespace"""
 
-    facets: dict[str, JobFacet] | None = field(factory=dict)  # type: ignore[assignment]
+    facets: Optional[dict[str, JobFacet]] = field(factory=dict)  # type: ignore[assignment]
     """The job facets."""
 
     _skip_redact: ClassVar[list[str]] = ["namespace", "name"]
@@ -213,10 +213,10 @@ class Job(RedactMixin):
 @define(kw_only=True)
 class JobEvent(BaseEvent):
     job: Job
-    inputs: list[InputDataset] | None = field(factory=list)  # type: ignore[assignment]
+    inputs: Optional[list[InputDataset]] = field(factory=list)  # type: ignore[assignment]
     """The set of **input** datasets."""
 
-    outputs: list[OutputDataset] | None = field(factory=list)  # type: ignore[assignment]
+    outputs: Optional[list[OutputDataset]] = field(factory=list)  # type: ignore[assignment]
     """The set of **output** datasets."""
 
     @staticmethod
@@ -228,7 +228,7 @@ class JobEvent(BaseEvent):
 class JobFacet(BaseFacet):
     """A Job Facet"""
 
-    _deleted: bool | None = field(default=None, kw_only=True)
+    _deleted: Optional[bool] = field(default=None, kw_only=True)
     """set to true to delete a facet"""
 
     @staticmethod
@@ -240,7 +240,7 @@ class JobFacet(BaseFacet):
 class OutputDataset(Dataset):
     """An output dataset"""
 
-    outputFacets: dict[str, OutputDatasetFacet] | None = field(factory=dict)  # type: ignore[assignment]# noqa: N815
+    outputFacets: Optional[dict[str, OutputDatasetFacet]] = field(factory=dict)  # type: ignore[assignment]# noqa: N815
     """The output facets for this dataset"""
 
     _additional_skip_redact: ClassVar[list[str]] = ["namespace", "name"]
@@ -264,7 +264,7 @@ class Run(RedactMixin):
     runId: str = field()  # noqa: N815
     """The globally unique ID of the run associated with the job."""
 
-    facets: dict[str, RunFacet] | None = field(factory=dict)  # type: ignore[assignment]
+    facets: Optional[dict[str, RunFacet]] = field(factory=dict)  # type: ignore[assignment]
     """The run facets."""
 
     _skip_redact: ClassVar[list[str]] = ["runId"]
@@ -284,16 +284,16 @@ class Run(RedactMixin):
 class RunEvent(BaseEvent):
     run: Run
     job: Job
-    eventType: EventType | None = field(default=None)  # noqa: N815
+    eventType: Optional[EventType] = field(default=None)  # noqa: N815
     """
     the current transition of the run state. It is required to issue 1 START event and 1 of [ COMPLETE,
     ABORT, FAIL ] event per run. Additional events with OTHER eventType can be added to the same run.
     For example to send additional metadata after the run is complete
     """
-    inputs: list[InputDataset] | None = field(factory=list)  # type: ignore[assignment]
+    inputs: Optional[list[InputDataset]] = field(factory=list)  # type: ignore[assignment]
     """The set of **input** datasets."""
 
-    outputs: list[OutputDataset] | None = field(factory=list)  # type: ignore[assignment]
+    outputs: Optional[list[OutputDataset]] = field(factory=list)  # type: ignore[assignment]
     """The set of **output** datasets."""
 
     _additional_skip_redact: ClassVar[list[str]] = ["eventType", "eventTime"]

@@ -91,7 +91,7 @@ class {{ class_name }}:
         {%- if field.parent.reference.children | map(attribute='name') | join -%}, kw_only=True{%- endif -%}
         )
         {#- mypy complains when field is optional and may be dict or list -#}
-        {%- if 'factory' in default_value and "None" in type_hint %}  # type: ignore[assignment] {%- endif -%}
+        {%- if 'factory' in default_value and "Optional" in type_hint %}  # type: ignore[assignment] {%- endif -%}
     {%- endif -%}
     {%- endif %}
 
@@ -124,7 +124,7 @@ class {{ class_name }}:
 {%- if class_name in ['BaseFacet', 'BaseEvent'] %}
     {{ private_prefix }}producer: str = field(default='', kw_only=True)  # noqa: N815
     {{ private_prefix }}schemaURL: str = field(  # noqa: N815
-        default="{{ _schemaURL }}", init=False)
+        default="{{ _schemaURL }}")
 {%- endif -%}
 {#- try to match redfact fields per module_name -#}
 {%- set redact_fields = redactions | selectattr("module_name", "equalto", module.name) | first -%}
