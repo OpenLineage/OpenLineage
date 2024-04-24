@@ -23,6 +23,7 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier$;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat$;
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.CreateDataSourceTableAsSelectCommand;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata;
@@ -77,7 +78,7 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
                           "value", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
                     })),
             null,
-            null,
+            mock(LogicalPlan.class),
             Seq$.MODULE$.<String>empty());
 
     assertThat(visitor.isDefinedAt(command)).isTrue();

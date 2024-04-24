@@ -62,6 +62,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.job = job;
   }
 
+  @Override
   public FacetsConfig getFacetsConfig() {
     if (facetsConfig == null) {
       facetsConfig = new FacetsConfig();
@@ -113,6 +114,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     private Map<String, String> additionalProperties = new HashMap<>();
   }
 
+  @Override
   public SparkOpenLineageConfig mergeWithNonNull(SparkOpenLineageConfig other) {
     return new SparkOpenLineageConfig(
         mergeWithDefaultValue(namespace, other.namespace, DEFAULT_NAMESPACE),

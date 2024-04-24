@@ -80,7 +80,7 @@ class CommonConfigPlugin : Plugin<Project> {
             rulesMinimumPriority.set(5)
             ruleSetFiles = target.rootProject.files("pmd-openlineage.xml")
             ruleSets = listOf()
-            isIgnoreFailures = true
+            isIgnoreFailures = false
         }
 
         target.tasks.named<Pmd>("pmdMain") {
