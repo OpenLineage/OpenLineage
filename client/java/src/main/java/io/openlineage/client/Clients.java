@@ -6,6 +6,7 @@
 package io.openlineage.client;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
 import io.openlineage.client.metrics.MicrometerProvider;
 import io.openlineage.client.transports.NoopTransport;
@@ -53,7 +54,7 @@ public final class Clients {
 
     Optional.ofNullable(openLineageConfig.getMetricsConfig())
         .map(MicrometerProvider::addMeterRegistryFromConfig)
-        .ifPresent(builder::meterRegistry);
+        .ifPresent(f -> builder.meterRegistry((MeterRegistry) f)); // Java 8 requires cast here :(
     return builder.transport(transport).build();
   }
 
