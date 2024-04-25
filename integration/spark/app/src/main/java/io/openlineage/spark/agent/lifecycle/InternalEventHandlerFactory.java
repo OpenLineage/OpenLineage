@@ -18,6 +18,7 @@ import io.openlineage.spark.agent.facets.builder.CustomEnvironmentFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.DatabricksEnvironmentFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.DebugRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.ErrorFacetBuilder;
+import io.openlineage.spark.agent.facets.builder.GCPEnvironmentFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.OutputStatisticsOutputDatasetFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.OwnershipJobFacetBuilder;
@@ -25,6 +26,7 @@ import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBu
 import io.openlineage.spark.agent.facets.builder.SparkPropertyFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkVersionFacetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
+import io.openlineage.spark.agent.util.GCPUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
@@ -208,6 +210,8 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                 new SparkProcessingEngineRunFacetBuilder(context));
     if (DatabricksEnvironmentFacetBuilder.isDatabricksRuntime()) {
       listBuilder.add(new DatabricksEnvironmentFacetBuilder(context));
+    } else if (GCPUtils.isGCPRuntime()) {
+      listBuilder.add(new GCPEnvironmentFacetBuilder(context));
     } else if (context.getCustomEnvironmentVariables() != null) {
       listBuilder.add(new CustomEnvironmentFacetBuilder(context));
     }
