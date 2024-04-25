@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.13.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.13.1...HEAD)
 
-## [1.13.0](https://github.com/OpenLineage/OpenLineage/compare/1.12.0...1.13.0) - 2024-04-24
+## [1.13.1](https://github.com/OpenLineage/OpenLineage/compare/1.12.0...1.13.1) - 2024-04-25
 ### Added
 * **Java: allow timeout for circuit breakers** [`#2609`](https://github.com/OpenLineage/OpenLineage/pull/2609) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Extends the circuit breaker mechanism to contain a global timeout that stops running OpenLineage integration code when a specified amount of time has elapsed.*
@@ -12,6 +12,8 @@
     *Adds a `compression` option to `HttpTransport` config in the Java and Python clients, with `gzip` implementation.*
 * **Java/Python/Proxy: properly set Kafka message key** [`#2571`](https://github.com/OpenLineage/OpenLineage/pull/2571) [`#2597`](https://github.com/OpenLineage/OpenLineage/pull/2597) [`#2598`](https://github.com/OpenLineage/OpenLineage/pull/2598) [@dolfinus](https://github.com/dolfinus)  
     *Adds a new `messageKey` option to `KafkaTransport` config in the Python and Java clients, as well as the Proxy. This option replaces the `localServerId` option, which is now deprecated. Default value is generated using the run id (for `RunEvent`), job name (for `JobEvent`) or dataset name (for `DatasetEvent`). This value is used by the Kafka producer to distribute messages along topic partitions, instead of sending all the events to the same partition. This allows for full utilization of Kafka performance advantages.*
+* **Flink: add support for Micrometer metrics** [`#2633`](https://github.com/OpenLineage/OpenLineage/pull/2633) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds a mechanism for forwarding metrics to any [Micrometer-compatible implementation](https://docs.micrometer.io/micrometer/reference/implementations.html) for Flink as has been implemented for Spark. Included: `MeterRegistry`, `CompositeMeterRegistry`, `SimpleMeterRegistry`, and `MicrometerProvider`.*
 * **Python: generate Python facets from JSON schemas** [`#2520`](https://github.com/OpenLineage/OpenLineage/pull/2520) [@JDarDagran](https://github.com/JDarDagran)  
     *Objects specified with JSON Schema needed to be manually developed and checked in Python, leading to many discrepancies, including wrong schema URLs. This adds a `datamodel-code-generator` for parsing JSON Schema and generating Pydantic or dataclasses classes, etc. In order to use `attrs` (a more modern version of dataclasses) and overcome some limitations of the tool, a number of steps have been added in order to customize code to meet OpenLineage requirements. Included: updated references to the latest base JSON Schema spec for all child facets. **Please note**: newly generated code creates a v2 interface that will be implemented in existing integrations in a future release. The v2 interface introduces some breaking changes: facets are put into separate modules per JSON Schema spec file, some names are changed, and several classes are now `kw_only`.*
 * **Spark/Flink/Java: support YAML config files together with SparkConf/FlinkConf** [`#2583`](https://github.com/OpenLineage/OpenLineage/pull/2583) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
@@ -71,7 +73,7 @@
 * **Spark: support for built-in lineage extraction** [`#2272`](https://github.com/OpenLineage/OpenLineage/pull/2272) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *This PR adds a `spark-interfaces-scala` package that allows lineage extraction to be implemented within Spark extensions (Iceberg, Delta, GCS, etc.). The Openlineage integration, when traversing the query plan, verifies if nodes implement defined interfaces. If so, interface methods are used to extract lineage. Refer to the [README](https://github.com/OpenLineage/OpenLineage/tree/spark/built-in-lineage/integration/spark-interfaces-scala#readme) for more details.*
 * **Spark/Java: add support for Micrometer metrics** [`#2496`](https://github.com/OpenLineage/OpenLineage/pull/2496) [@mobuchowski](https://github.com/mobuchowski)  
-    *Adds a mechanism for forwarding metrics to any [Micrometer-compatible implementation](https://docs.micrometer.io/micrometer/reference/implementations.html). Included: `MeterRegistryyFactory`, `MicrometerProvider`, `StatsDMetricsBuilder`, metrics config in OpenLineage config, and a Java client implementation.*
+    *Adds a mechanism for forwarding metrics to any [Micrometer-compatible implementation](https://docs.micrometer.io/micrometer/reference/implementations.html). Included: `MeterRegistryFactory`, `MicrometerProvider`, `StatsDMetricsBuilder`, metrics config in OpenLineage config, and a Java client implementation.*
 * **Spark: add support for telemetry mechanism** [`#2528`](https://github.com/OpenLineage/OpenLineage/pull/2528) [@mobuchowski](https://github.com/mobuchowski)  
     *Adds timers, counters and additional instrumentation in order to implement Micrometer metrics collection.*
 * **Spark: support query option on table read** [`#2556`](https://github.com/OpenLineage/OpenLineage/pull/2556) [@mobuchowski](https://github.com/mobuchowski)  
