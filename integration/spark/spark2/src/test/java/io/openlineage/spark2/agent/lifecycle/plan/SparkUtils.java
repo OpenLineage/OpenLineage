@@ -11,6 +11,7 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable$;
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType;
 import org.apache.spark.sql.types.StructType;
+import scala.Option;
 import scala.collection.Map$;
 import scala.collection.Seq$;
 
@@ -26,17 +27,17 @@ public class SparkUtils {
         tableType,
         storageFormat,
         schema,
-        null,
+        Option.apply("provider"),
         Seq$.MODULE$.<String>empty(),
-        null,
+        Option.empty(),
         "",
         System.currentTimeMillis(),
         -1L,
         "",
         Map$.MODULE$.empty(),
-        null,
-        null,
-        null,
+        Option.empty(),
+        Option.empty(),
+        Option.empty(),
         Seq$.MODULE$.<String>empty(),
         false,
         true,
