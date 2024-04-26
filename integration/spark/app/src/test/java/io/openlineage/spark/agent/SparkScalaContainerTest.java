@@ -35,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -185,5 +186,107 @@ class SparkScalaContainerTest {
               assertThat(lastEvent.getInputs().stream().map(d -> d.getName()))
                   .contains("/tmp/scala-test/rdd_input1", "/tmp/scala-test/rdd_input2");
             });
+  }
+
+  @Test
+  void testKafka2KafkaStreamingProducesInputAndOutputDatasets() {
+    final Network network = Network.newNetwork();
+    final String className = "io.openlineage.spark.streaming.Kafka2KafkaJob";
+    final DockerImageName kafkaDockerImageName = DockerImageName.parse("docker.io/bitnami/kafka:3");
+
+    GenericContainer zookeeperContainer =
+        new GenericContainer(DockerImageName.parse("docker.io/bitnami/zookeeper:3.7"))
+            .withEnv("ALLOW_ANONYMOUS_LOGIN", "yes")
+            .withEnv("ZOO_AUTOPURGE_INTERVAL", "1")
+            .withNetwork(network)
+            .withNetworkAliases("zookeeper")
+            .withExposedPorts(2181);
+
+    GenericContainer kafkaContainer =
+        new GenericContainer(kafkaDockerImageName)
+            .withEnv("KAFKA_CFG_ZOOKEEPER_CONNECT", "zookeeper:2181")
+            .withEnv(
+                "KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP", "CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT")
+            .withEnv("KAFKA_CFG_LISTENERS", "CLIENT://:9092,EXTERNAL://:9093")
+            .withEnv(
+                "KAFKA_CFG_ADVERTISED_LISTENERS",
+                "CLIENT://kafka.broker.zero:9092,EXTERNAL://localhost:9093")
+            .withEnv("KAFKA_CFG_INTER_BROKER_LISTENER_NAME", "CLIENT")
+            .withEnv("ALLOW_PLAINTEXT_LISTENER", "yes")
+            .withEnv("KAFKA_ZOOKEEPER_TLS_VERIFY_HOSTNAME", "false")
+            .withEnv("KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE", "true")
+            .withNetwork(network)
+            .withNetworkAliases("kafka.broker.zero")
+            .withExposedPorts(9092, 9093)
+            .dependsOn(zookeeperContainer);
+
+    GenericContainer kafkaInitContainer =
+        new GenericContainer(kafkaDockerImageName)
+            .withEnv("KAFKA_CFG_ZOOKEEPER_CONNECT", "zookeeper:2181")
+            .withNetwork(network)
+            .dependsOn(zookeeperContainer, kafkaContainer)
+            .withCommand(
+                "/bin/bash",
+                "-c",
+                "/opt/bitnami/kafka/bin/kafka-topics.sh",
+                "--create",
+                "--topic",
+                "source-topic",
+                "--bootstrap-server",
+                "kafka.broker.zero:9092");
+
+    zookeeperContainer.start();
+    kafkaContainer.start();
+    kafkaInitContainer.start();
+
+    GenericContainer spark =
+        new GenericContainer<>(DockerImageName.parse(SPARK_DOCKER_IMAGE))
+            .dependsOn(kafkaContainer)
+            .waitingFor(Wait.forLogMessage(SPARK_DOCKER_CONTAINER_WAIT_MESSAGE, 1))
+            .withLogConsumer(SparkContainerUtils::consumeOutput)
+            .withNetwork(network)
+            .withStartupTimeout(Duration.ofMinutes(2));
+
+    List<String> command = new ArrayList<>();
+    command.add("./bin/spark-submit");
+    command.add("--master");
+    command.add("local[*]");
+    command.add("--class");
+    command.add(className);
+    command.add("--packages");
+    command.add(System.getProperty("kafka.package.version"));
+
+    addSparkConfig(command, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
+    addSparkConfig(command, "spark.extraListeners=" + OpenLineageSparkListener.class.getName());
+    addSparkConfig(command, "spark.jars.ivy=/tmp/.ivy2/");
+    addSparkConfig(command, "spark.openlineage.debugFacet=enabled");
+    addSparkConfig(
+        command, "spark.openlineage.facets.disabled=[schema;spark_unknown;spark.logicalPlan]");
+    addSparkConfig(command, "spark.openlineage.transport.type=console");
+    addSparkConfig(command, "spark.sql.shuffle.partitions=1");
+    addSparkConfig(command, "spark.sql.warehouse.dir=/tmp/warehouse");
+    addSparkConfig(command, "spark.ui.enabled=false");
+    command.add(CONTAINER_FIXTURES_JAR_PATH.toString());
+
+    // mount the additional Jars
+    mountPath(spark, HOST_SCALA_FIXTURES_JAR_PATH, CONTAINER_FIXTURES_JAR_PATH);
+    mountFiles(spark, HOST_LIB_DIR, CONTAINER_SPARK_JARS_DIR);
+    mountFiles(spark, HOST_ADDITIONAL_JARS_DIR, CONTAINER_SPARK_JARS_DIR);
+    mountFiles(spark, HOST_ADDITIONAL_CONF_DIR, CONTAINER_SPARK_CONF_DIR);
+
+    final String commandStr = String.join(" ", command);
+    log.info("Command is {}", commandStr);
+
+    spark.withCommand(commandStr);
+
+    spark.start();
+
+    Awaitility.await().atMost(Duration.ofSeconds(60)).until(() -> !spark.isRunning());
+
+    kafkaInitContainer.stop();
+    kafkaContainer.stop();
+    zookeeperContainer.stop();
+
+    Assertions.fail("Add proper assertions");
   }
 }
