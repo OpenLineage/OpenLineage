@@ -10,9 +10,11 @@ import static io.openlineage.spark.agent.filters.EventFilterUtils.getLogicalPlan
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.Repartition;
 import org.apache.spark.sql.execution.command.CreateDatabaseCommand;
@@ -38,9 +40,21 @@ public class SparkNodesFilter implements EventFilter {
 
   @Override
   public boolean isDisabled(SparkListenerEvent event) {
-    return getLogicalPlan(context)
-        .map(plan -> plan.getClass().getCanonicalName())
-        .filter(node -> filterNodes.contains(node))
-        .isPresent();
+    return getLogicalPlan(context).filter(this::filterNode).isPresent();
+  }
+
+  private boolean filterNode(LogicalPlan plan) {
+    if (plan.isStreaming()) {
+      // When spark is in the streaming mode, kafka input when saving with method forEach batch is
+      // in the different
+      // plan which starts from Project, hence we are losing information about the kafka input
+      // dataset.
+      return filterNodes.stream()
+          .filter(node -> !node.equals(Project.class.getCanonicalName()))
+          .collect(Collectors.toList())
+          .contains(plan.getClass().getCanonicalName());
+    }
+
+    return filterNodes.contains(plan.getClass().getCanonicalName());
   }
 }
