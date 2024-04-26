@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.util;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,6 +17,7 @@ import scala.Function0;
 import scala.Function1;
 import scala.Option;
 import scala.Tuple2;
+import scala.collection.Iterator;
 import scala.collection.JavaConverters;
 import scala.collection.Set;
 import scala.collection.immutable.Seq;
@@ -91,6 +93,16 @@ public class ScalaConversionUtils {
     // the same.
     return (scala.collection.immutable.Map<K, V>)
         scala.collection.immutable.Map$.MODULE$.apply(scalaSeq);
+  }
+
+  public static <K, V> Map<K, V> toJavaMap(scala.collection.immutable.Map<K, V> map) {
+    Iterator<Tuple2<K, V>> iterator = map.iterator();
+    HashMap<K, V> result = new HashMap<>(map.size());
+    while (iterator.hasNext()) {
+      Tuple2<K, V> item = iterator.next();
+      result.put(item._1(), item._2());
+    }
+    return result;
   }
 
   /**
