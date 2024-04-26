@@ -24,7 +24,6 @@ from datamodel_code_generator.types import Types
 
 log = logging.getLogger(__name__)
 
-
 def camel_to_snake(string: str) -> str:
     """Convert camel_case string to SnakeCase"""
     _under_score_1 = re.compile(r"([^_])([A-Z][a-z]+)")
@@ -272,7 +271,6 @@ def format_and_save_output(output: str, location: pathlib.Path, add_set_producer
 
     if lint_process.returncode or format_process.returncode:
         log.warning("%s failed on ruff.", location)
-
 
 @click.command()
 @click.option("--output-location", type=pathlib.Path, default=DEFAULT_OUTPUT_LOCATION)
