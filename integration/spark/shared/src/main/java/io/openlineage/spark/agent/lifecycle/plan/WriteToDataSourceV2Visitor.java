@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
@@ -108,7 +109,7 @@ public final class WriteToDataSourceV2Visitor
 
     public Optional<String> getTopic() {
       return this.<Option<String>>tryReadField(streamingWrite, "topic")
-          .flatMap(opt -> Optional.ofNullable(opt.isDefined() ? opt.get() : null));
+          .flatMap(ScalaConversionUtils::asJavaOptional);
     }
 
     public Optional<String> getBootstrapServers() {
