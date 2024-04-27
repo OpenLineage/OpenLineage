@@ -68,7 +68,7 @@ final class TopicPartitionProxy {
    */
   @Nullable
   private <T> T tryInvokeMethod(String methodName) {
-    T result;
+    T result = null;
     try {
       result = (T) MethodUtils.invokeMethod(topicPartition, methodName);
     } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
@@ -77,7 +77,6 @@ final class TopicPartitionProxy {
           methodName,
           topicPartition.getClass().getCanonicalName(),
           e);
-      result = null;
     }
     return result;
   }
