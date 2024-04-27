@@ -147,14 +147,7 @@ public class ScalaConversionUtils {
    * @return
    */
   public static <T> Optional<T> asJavaOptional(Option<T> opt) {
-    return Optional.ofNullable(
-        opt.getOrElse(
-            new AbstractFunction0<T>() {
-              @Override
-              public T apply() {
-                return null;
-              }
-            }));
+    return opt == null || opt.isEmpty() ? Optional.empty() : Optional.ofNullable(opt.get());
   }
 
   /**
