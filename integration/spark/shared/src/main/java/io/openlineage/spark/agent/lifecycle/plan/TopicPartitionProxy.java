@@ -34,7 +34,7 @@ final class TopicPartitionProxy {
 
     if (!EXPECTED_CLASS_NAME.equals(topicPartition.getClass().getCanonicalName())) {
       throw new IllegalArgumentException(
-          "constructor argument must be of type" + EXPECTED_CLASS_NAME);
+          "constructor argument must be of type: " + EXPECTED_CLASS_NAME);
     }
 
     this.topicPartition = topicPartition;
