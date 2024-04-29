@@ -68,7 +68,7 @@ public final class WriteToDataSourceV2Visitor
       log.warn("Unsupported batch write class: {}", batchWrite.getClass().getCanonicalName());
     }
 
-      return result;
+    return result;
   }
 
   private @NotNull List<OutputDataset> handleKafkaStreamingWrite(
