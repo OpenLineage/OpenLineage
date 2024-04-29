@@ -48,6 +48,7 @@ public final class WriteToDataSourceV2Visitor
 
   @Override
   public List<OutputDataset> apply(LogicalPlan plan) {
+    List<OutputDataset> result = Collections.emptyList();
     WriteToDataSourceV2 write = (WriteToDataSourceV2) plan;
     BatchWrite batchWrite = write.batchWrite();
     if (batchWrite instanceof MicroBatchWrite) {
@@ -56,11 +57,18 @@ public final class WriteToDataSourceV2Visitor
       Class<? extends StreamingWrite> streamingWriteClass = streamingWrite.getClass();
       String streamingWriteClassName = streamingWriteClass.getCanonicalName();
       if (KAFKA_STREAMING_WRITE_CLASS_NAME.equals(streamingWriteClassName)) {
-        return handleKafkaStreamingWrite(streamingWrite, write);
+        result = handleKafkaStreamingWrite(streamingWrite, write);
+      } else {
+        log.warn(
+            "The streaming write class '{}' for '{}' is not supported",
+            streamingWriteClass,
+            MicroBatchWrite.class.getCanonicalName());
       }
+    } else {
+      log.warn("Unsupported batch write class: {}", batchWrite.getClass().getCanonicalName());
     }
 
-    return Collections.emptyList();
+      return result;
   }
 
   private @NotNull List<OutputDataset> handleKafkaStreamingWrite(
