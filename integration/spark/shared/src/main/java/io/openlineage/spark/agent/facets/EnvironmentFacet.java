@@ -15,7 +15,9 @@ import java.util.Map;
  * cluster used, reporting certain environment variables, or resolving mount points.
  */
 public class EnvironmentFacet extends OpenLineage.DefaultRunFacet {
-  @JsonIgnore private Map<String, Object> properties;
+  @JsonIgnore
+  @SuppressWarnings("PMD")
+  private Map<String, Object> properties;
 
   public Map<String, Object> getProperties() {
     return properties;
