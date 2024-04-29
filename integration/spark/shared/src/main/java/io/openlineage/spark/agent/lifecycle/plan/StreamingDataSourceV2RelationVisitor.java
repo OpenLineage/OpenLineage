@@ -17,6 +17,8 @@ import org.apache.spark.sql.execution.datasources.v2.StreamingDataSourceV2Relati
 @Slf4j
 public class StreamingDataSourceV2RelationVisitor
     extends QueryPlanVisitor<StreamingDataSourceV2Relation, InputDataset> {
+  private static final String KAFKA_MICRO_BATCH_STREAM_CLASS_NAME =
+      "org.apache.spark.sql.kafka010.KafkaMicroBatchStream";
 
   public StreamingDataSourceV2RelationVisitor(@NonNull OpenLineageContext context) {
     super(context);
@@ -50,10 +52,13 @@ public class StreamingDataSourceV2RelationVisitor
     StreamStrategy streamStrategy;
     Class<?> streamClass = relation.stream().getClass();
     String streamClassName = streamClass.getCanonicalName();
-    if ("org.apache.spark.sql.kafka010.KafkaMicroBatchStream".equals(streamClassName)) {
+    if (KAFKA_MICRO_BATCH_STREAM_CLASS_NAME.equals(streamClassName)) {
       streamStrategy = new KafkaMicroBatchStreamStrategy(inputDataset(), relation);
     } else {
-      log.warn("The {} has been selected because no rules have matched", NoOpStreamStrategy.class);
+      log.warn(
+          "The {} has been selected because no rules have matched for the stream class of {}",
+          NoOpStreamStrategy.class,
+          streamClassName);
       streamStrategy = new NoOpStreamStrategy(inputDataset(), relation);
     }
 
