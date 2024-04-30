@@ -9,7 +9,7 @@ from unittest import mock
 
 import attr
 import pytest
-from openlineage.client import set_producer_v2 as set_producer
+from openlineage.client import set_producer
 from openlineage.common.provider.dbt.local import (
     DbtLocalArtifactProcessor,
     LazyJinjaLoadDict,

@@ -5,8 +5,8 @@ import datetime
 import os
 
 from openlineage.client import OpenLineageClient, set_producer
-from openlineage.client.uuid import generate_new_uuid
 from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
+from openlineage.client.uuid import generate_new_uuid
 
 from airflow import DAG
 from airflow.operators.bash import BashOperator

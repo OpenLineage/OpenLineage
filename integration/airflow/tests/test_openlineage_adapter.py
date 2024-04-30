@@ -370,7 +370,7 @@ def test_emit_fail_event_with_additional_information():
     adapter.emit = mock.Mock()
 
     run_id = str(generate_new_uuid())
-    parent_run_id = str(generate_new_uuid()) 
+    parent_run_id = str(generate_new_uuid())
     event_time = dt.datetime.now().isoformat()
     adapter.fail_task(
         run_id=run_id,

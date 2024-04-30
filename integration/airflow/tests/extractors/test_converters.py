@@ -39,7 +39,7 @@ def test_table_with_columns_to_dataset_conversion():
     assert d.name == "db.table1"
     assert d.facets.get("schema") == schema_dataset.SchemaDatasetFacet(
         fields=[
-            schema_dataset.Field(
+            schema_dataset.SchemaDatasetFacetFields(
                 name="col1",
                 type="int",
                 description="col1 desc",

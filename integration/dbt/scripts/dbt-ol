@@ -12,8 +12,8 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from openlineage.client.client import OpenLineageClient
-from openlineage.client.facet import JobTypeJobFacet
-from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
+from openlineage.client.facet_v2 import job_type_job
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt import (
     DbtLocalArtifactProcessor,
@@ -27,10 +27,11 @@ __version__ = "1.15.0"
 
 
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
-JOB_TYPE_FACET = JobTypeJobFacet(
+JOB_TYPE_FACET = job_type_job.JobTypeJobFacet(
     jobType="JOB",
     integration="DBT",
     processingType="BATCH",
+    producer=PRODUCER,
 )
 
 

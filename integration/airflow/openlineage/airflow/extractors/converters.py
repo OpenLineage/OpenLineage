@@ -34,7 +34,7 @@ def convert_to_dataset(obj):
             facets={
                 "schema": schema_dataset.SchemaDatasetFacet(
                     fields=[
-                        schema_dataset.Field(
+                        schema_dataset.SchemaDatasetFacetFields(
                             name=column.name,
                             type=column.data_type,
                             description=column.description,

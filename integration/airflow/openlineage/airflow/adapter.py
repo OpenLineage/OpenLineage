@@ -9,8 +9,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from openlineage.airflow.extractors import TaskMetadata
 from openlineage.airflow.utils import DagUtils, redact_with_exclusions
 from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
-from openlineage.client import OpenLineageClient, OpenLineageClientOptions
-from openlineage.client import set_producer_v2 as set_producer
+from openlineage.client import OpenLineageClient, OpenLineageClientOptions, set_producer
 from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
 from openlineage.client.facet_v2 import (
     JobFacet,
@@ -38,7 +37,7 @@ _DAG_DEFAULT_NAMESPACE = "default"
 _DAG_NAMESPACE = os.getenv("OPENLINEAGE_NAMESPACE", os.getenv("MARQUEZ_NAMESPACE", _DAG_DEFAULT_NAMESPACE))
 
 _PRODUCER = (
-    f"https://github.com/OpenLineage/OpenLineage/tree/" f"{OPENLINEAGE_AIRFLOW_VERSION}/integration/airflow"
+    f"https://github.com/OpenLineage/OpenLineage/tree/{OPENLINEAGE_AIRFLOW_VERSION}/integration/airflow"
 )
 
 set_producer(_PRODUCER)
@@ -183,7 +182,6 @@ class OpenLineageAdapter:
             ),
             inputs=task.inputs if task else [],
             outputs=task.outputs if task else [],
-            producer=_PRODUCER,
         )
         self.emit(event)
         return event.run.runId
@@ -220,7 +218,6 @@ class OpenLineageAdapter:
             job=self._build_job(job_name, job_facets=task.job_facets, job_type=_JOB_TYPE_TASK),
             inputs=task.inputs,
             outputs=task.outputs,
-            producer=_PRODUCER,
         )
         self.emit(event)
 
@@ -255,7 +252,6 @@ class OpenLineageAdapter:
             job=self._build_job(job_name, job_facets=task.job_facets, job_type=_JOB_TYPE_TASK),
             inputs=task.inputs,
             outputs=task.outputs,
-            producer=_PRODUCER,
         )
         self.emit(event)
 
@@ -280,7 +276,6 @@ class OpenLineageAdapter:
             ),
             inputs=[],
             outputs=[],
-            producer=_PRODUCER,
         )
         self.emit(event)
 
@@ -297,7 +292,6 @@ class OpenLineageAdapter:
             ),
             inputs=[],
             outputs=[],
-            producer=_PRODUCER,
         )
         self.emit(event)
 
@@ -307,7 +301,7 @@ class OpenLineageAdapter:
             eventTime=DagUtils.to_iso_8601(dag_run.end_date),
             job=Job(name=dag_run.dag_id, namespace=_DAG_NAMESPACE, facets={"jobType": _JOB_TYPE_DAG}),
             run=Run(
-                runId=self.build_dag_run_id(dag_run.dag_id, dag_run.run_id),
+                runId=self.build_dag_run_id(dag_id=dag_run.dag_id, execution_date=dag_run.execution_date),
                 facets={
                     "errorMessage": error_message_run.ErrorMessageRunFacet(
                         message=msg, programmingLanguage="python"
@@ -316,7 +310,6 @@ class OpenLineageAdapter:
             ),
             inputs=[],
             outputs=[],
-            producer=_PRODUCER,
         )
         self.emit(event)
 
@@ -337,10 +330,9 @@ class OpenLineageAdapter:
             )
         parent_name = parent_job_name or job_name
         if parent_run_id is not None and parent_name is not None:
-            parent_run_facet = parent_run.ParentRunFacet.create(
-                runId=parent_run_id,
-                namespace=_DAG_NAMESPACE,
-                name=parent_name,
+            parent_run_facet = parent_run.ParentRunFacet(
+                run=parent_run.Run(runId=parent_run_id),
+                job=parent_run.Job(namespace=_DAG_NAMESPACE, name=parent_name),
             )
             facets.update(
                 {

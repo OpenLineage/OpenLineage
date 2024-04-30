@@ -515,7 +515,6 @@ def is_json_serializable(item):
 
 
 def _is_name_redactable(name, redacted):
-    print("checking if redactabled", name, redacted)
     if not issubclass(redacted.__class__, RedactMixin):
         return not name.startswith("_")
     return name not in redacted.skip_redact

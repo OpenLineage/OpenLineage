@@ -5,7 +5,7 @@ import os
 from urllib.parse import urlparse
 
 from openlineage.airflow.utils import try_import_from_string
-from openlineage.client import set_producer_v2 as set_producer
+from openlineage.client import set_producer
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator

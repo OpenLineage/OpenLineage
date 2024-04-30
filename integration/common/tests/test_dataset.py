@@ -58,11 +58,11 @@ def test_dataset_to_openlineage(table_schema):
             "dataSource": datasource_dataset.DatasourceDatasetFacet(name=source_name, uri=source_name),
             "schema": schema_dataset.SchemaDatasetFacet(
                 fields=[
-                    schema_dataset.Field(name="id", type="int4"),
-                    schema_dataset.Field(name="amount_off", type="int4"),
-                    schema_dataset.Field(name="customer_email", type="varchar"),
-                    schema_dataset.Field(name="starts_on", type="timestamp"),
-                    schema_dataset.Field(name="ends_on", type="timestamp"),
+                    schema_dataset.SchemaDatasetFacetFields(name="id", type="int4"),
+                    schema_dataset.SchemaDatasetFacetFields(name="amount_off", type="int4"),
+                    schema_dataset.SchemaDatasetFacetFields(name="customer_email", type="varchar"),
+                    schema_dataset.SchemaDatasetFacetFields(name="starts_on", type="timestamp"),
+                    schema_dataset.SchemaDatasetFacetFields(name="ends_on", type="timestamp"),
                 ]
             ),
         },

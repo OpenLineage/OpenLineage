@@ -126,8 +126,9 @@ class ParentRunMetadata:
     job_namespace: str = attr.ib()
 
     def to_openlineage(self) -> parent_run.ParentRunFacet:
-        return parent_run.ParentRunFacet.create(
-            runId=self.run_id, name=self.job_name, namespace=self.job_namespace
+        return parent_run.ParentRunFacet(
+            run=parent_run.Run(runId=self.run_id),
+            job=parent_run.Job(namespace=self.job_namespace, name=self.job_name),
         )
 
 
@@ -338,6 +339,8 @@ class DbtArtifactProcessor:
                             namespace=namespace,
                             name=name,
                             inputFacets=dataset_facets,
+                            # TODO: remove this next release
+                            facets=dataset_facets,  # type: ignore
                         )
                     ],
                     None,
@@ -511,7 +514,7 @@ class DbtArtifactProcessor:
         )
 
     @staticmethod
-    def extract_metadata_fields(columns: List[Dict]) -> List[schema_dataset.Field]:
+    def extract_metadata_fields(columns: List[Dict]) -> List[schema_dataset.SchemaDatasetFacetFields]:
         """
         Extract table field info from metadata's node column info
         Should be used only in the lack of catalog's presence, as there's less
@@ -525,12 +528,16 @@ class DbtArtifactProcessor:
             if "description" in field and field["description"] is not None:
                 description = field["description"]
             fields.append(
-                schema_dataset.Field(name=field["name"], type=of_type or "", description=description)
+                schema_dataset.SchemaDatasetFacetFields(
+                    name=field["name"], type=of_type or "", description=description
+                )
             )
         return fields
 
     @staticmethod
-    def extract_catalog_fields(columns: List[Dict], metadata_columns: Dict) -> List[schema_dataset.Field]:
+    def extract_catalog_fields(
+        columns: List[Dict], metadata_columns: Dict
+    ) -> List[schema_dataset.SchemaDatasetFacetFields]:
         """Extract table field info from catalog's node column info"""
         fields = []
         for field in columns:
@@ -540,7 +547,9 @@ class DbtArtifactProcessor:
                 type = field["type"]
             description = get_from_nullable_chain(metadata_columns, [name, "description"])
             assert isinstance(type, str)
-            fields.append(schema_dataset.Field(name=name, type=type, description=description))
+            fields.append(
+                schema_dataset.SchemaDatasetFacetFields(name=name, type=type, description=description)
+            )
         return fields
 
     def extract_adapter_type(self, profile: Dict):

@@ -4,7 +4,7 @@
 import os
 from typing import Any
 
-from openlineage.client import set_producer_v2 as set_producer
+from openlineage.client import set_producer
 
 from airflow import DAG
 from airflow.models import BaseOperator

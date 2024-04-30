@@ -214,7 +214,8 @@ class Dataset(RedactMixin):
         if self.fields is not None and len(self.fields):
             facets["schema"] = schema_dataset.SchemaDatasetFacet(
                 fields=[
-                    schema_dataset.Field(field.name, field.type, field.description) for field in self.fields
+                    schema_dataset.SchemaDatasetFacetFields(field.name, field.type, field.description)
+                    for field in self.fields
                 ]
             )
 
