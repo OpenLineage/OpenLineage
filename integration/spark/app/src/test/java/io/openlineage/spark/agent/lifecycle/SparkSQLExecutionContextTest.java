@@ -219,7 +219,7 @@ class SparkSQLExecutionContextTest {
     for (RunEvent event : lineageEvent.getAllValues()) {
       OpenLineage.JobTypeJobFacet jobType = event.getJob().getFacets().getJobType();
       assertThat(jobType).isNotNull();
-      assertThat(jobType.getJobType()).isEqualTo("JOB");
+      assertThat(jobType.getJobType()).isEqualTo("SQL_JOB");
       assertThat(jobType.getIntegration()).isEqualTo("SPARK");
       assertThat(jobType.getProcessingType()).isEqualTo("BATCH");
     }
@@ -244,7 +244,7 @@ class SparkSQLExecutionContextTest {
     for (RunEvent event : lineageEvent.getAllValues()) {
       OpenLineage.JobTypeJobFacet jobType = event.getJob().getFacets().getJobType();
       assertThat(jobType).isNotNull();
-      assertThat(jobType.getJobType()).isEqualTo("JOB");
+      assertThat(jobType.getJobType()).isEqualTo("SQL_JOB");
       assertThat(jobType.getIntegration()).isEqualTo("SPARK");
       assertThat(jobType.getProcessingType()).isEqualTo("STREAMING");
     }

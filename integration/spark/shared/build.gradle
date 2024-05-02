@@ -49,6 +49,8 @@ dependencies {
     compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
+    compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
+
 
     compileOnly("com.databricks:databricks-dbutils-scala_${scalaBinaryVersion}:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
@@ -98,6 +100,8 @@ dependencies {
     scala212CompileOnly("org.apache.spark:spark-hive_2.12:${sparkVersion}")
     scala212CompileOnly("org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}")
     scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
+    scala212CompileOnly("org.apache.spark:spark-streaming_2.12:${sparkVersion}")
+
 
     scala212CompileOnly("com.databricks:databricks-dbutils-scala_2.12:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
@@ -110,6 +114,7 @@ dependencies {
     testScala212Implementation("org.apache.spark:spark-hive_2.12:${sparkVersion}")
     testScala212Implementation("org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}")
     testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
+    testScala212Implementation("org.apache.spark:spark-streaming_2.12:${sparkVersion}")
 
     testScala212Implementation("com.databricks:databricks-dbutils-scala_2.12:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
@@ -146,6 +151,7 @@ dependencies {
     scala213CompileOnly("org.apache.spark:spark-hive_2.13:${sparkVersion}")
     scala213CompileOnly("org.apache.spark:spark-sql-kafka-0-10_2.13:${sparkVersion}")
     scala213CompileOnly("org.apache.spark:spark-sql_2.13:${sparkVersion}")
+    scala213CompileOnly("org.apache.spark:spark-streaming_2.13:${sparkVersion}")
 
     scala213CompileOnly("com.databricks:databricks-dbutils-scala_2.13:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
@@ -158,6 +164,7 @@ dependencies {
     testScala213Implementation("org.apache.spark:spark-hive_2.13:${sparkVersion}")
     testScala213Implementation("org.apache.spark:spark-sql-kafka-0-10_2.13:${sparkVersion}")
     testScala213Implementation("org.apache.spark:spark-sql_2.13:${sparkVersion}")
+    testScala213Implementation("org.apache.spark:spark-streaming_2.13:${sparkVersion}")
 
     testScala213Implementation("com.databricks:databricks-dbutils-scala_2.13:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")

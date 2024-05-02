@@ -5,7 +5,8 @@
 ### Added
 * **Flink: support Protobuf format for sources and sinks** [`#2482`](https://github.com/OpenLineage/OpenLineage/pull/2482) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Extracts schema from Protobuf classes. Supports nested object types, `array` type, `map` type, `oneOf` and `any`.*
-
+* **Spark: job type facet to distinguish RDD jobs from Spark SQL jobs.** [`#2652`](https://github.com/OpenLineage/OpenLineage/pull/2652) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)    
+  *Fill `jobType` property of `JobTypeJobFacet` to either `SQL_JOB` or `RDD_JOB`.*
 
 ## [1.13.1](https://github.com/OpenLineage/OpenLineage/compare/1.12.0...1.13.1) - 2024-04-25
 ### Added
