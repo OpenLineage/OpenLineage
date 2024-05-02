@@ -20,8 +20,6 @@
     *Creates a `SparkOpenlineageConfig` and `FlinkOpenlineageConfig` for a more uniform configuration experience for the user. Renames `OpenLineageYaml` to `OpenLineageConfig` and modifies the code to use only `OpenLineageConfig` classes. Includes a doc update to mention that both ways can be used interchangeably and final documentation will merge all values provided.*
 * **Spark: add custom token provider support** [`#2613`](https://github.com/OpenLineage/OpenLineage/pull/2613) [@tnazarew](https://github.com/tnazarew)  
     *Adds a `TokenProviderTypeIdResolver` to handle both `FQCN` and (for backward compatibility) `api_key` types in `spark.openlineage.transport.auth.type`.*
-* **Spark/Flink: support YAML config files together with `SparkConf` & `FlinkConf` approaches** [`#2583`](https://github.com/OpenLineage/OpenLineage/pull/2583) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Adds support for config entries being provided by both YAML file and integration-specific configuration (`SparkConf`/`FlinkConf`). Allows each integration to have its own config entries.*
 * **Spark/Flink: job ownership facet** [`#2533`](https://github.com/OpenLineage/OpenLineage/pull/2533) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)    
     *Enables configuration entries specifying ownership of the job that will result in an `OwnershipJobFacet` being attached to job facets.*
 
