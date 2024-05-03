@@ -319,8 +319,6 @@ class OpenLineageAdapter:
             facets.update(
                 {
                     "parent": parent_run_facet,
-                    # Keep sending this for the backward compatibility
-                    "parentRun": parent_run_facet,
                 }
             )
 

@@ -35,12 +35,6 @@
                     "name": "athena_dag",
                     "namespace": "food_delivery"
                 }
-            },
-            "parentRun": {
-                "job": {
-                    "name": "athena_dag",
-                    "namespace": "food_delivery"
-                }
             }
         }
     }

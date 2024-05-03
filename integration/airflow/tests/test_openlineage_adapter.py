@@ -184,10 +184,6 @@ def test_emit_start_event_with_additional_information():
                         run={"runId": "parent_run_id"},
                         job={"namespace": "default", "name": "parent_job_name"},
                     ),
-                    "parentRun": ParentRunFacet(
-                        run={"runId": "parent_run_id"},
-                        job={"namespace": "default", "name": "parent_job_name"},
-                    ),
                     "externalQuery1": ExternalQueryRunFacet(externalQueryId="123", source="source"),
                     "externalQuery2": ExternalQueryRunFacet(externalQueryId="999", source="source"),
                 },
@@ -286,10 +282,6 @@ def test_emit_complete_event_with_additional_information():
                         run={"runId": "parent_run_id"},
                         job={"namespace": "default", "name": "parent_job_name"},
                     ),
-                    "parentRun": ParentRunFacet(
-                        run={"runId": "parent_run_id"},
-                        job={"namespace": "default", "name": "parent_job_name"},
-                    ),
                     "externalQuery": ExternalQueryRunFacet(externalQueryId="123", source="source"),
                 },
             ),
@@ -377,10 +369,6 @@ def test_emit_fail_event_with_additional_information():
                 runId=run_id,
                 facets={
                     "parent": ParentRunFacet(
-                        run={"runId": "parent_run_id"},
-                        job={"namespace": "default", "name": "parent_job_name"},
-                    ),
-                    "parentRun": ParentRunFacet(
                         run={"runId": "parent_run_id"},
                         job={"namespace": "default", "name": "parent_job_name"},
                     ),

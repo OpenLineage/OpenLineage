@@ -258,7 +258,7 @@ Same information, but compacted to one string, can be passed using `linage_paren
 
 ```python
 def my_task_function(templates_dict, **kwargs):
-    parent_job_namespace, parent_job_name, parent_run_id = templates_dict["parentRun"].split("/")
+    parent_job_namespace, parent_job_name, parent_run_id = templates_dict["parentRunInfo"].split("/")
     ...
 
 
@@ -267,7 +267,7 @@ PythonOperator(
     python_callable=my_task_function,
     templates_dict={
         # joined components as one string `<namespace>/<name>/<run_id>`
-        "parentRun": "{{ macros.OpenLineagePlugin.lineage_parent_id(task_instance) }}",
+        "parentRunInfo": "{{ macros.OpenLineagePlugin.lineage_parent_id(task_instance) }}",
     },
     provide_context=False,
     dag=dag,
