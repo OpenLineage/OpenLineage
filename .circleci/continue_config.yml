@@ -562,6 +562,73 @@ jobs:
           paths:
             - ~/.m2
 
+  build-integration-spark-interfaces:
+    working_directory: ~/openlineage/integration/spark-interfaces
+    docker:
+      - image: cimg/openjdk:8.0
+    resource_class: "medium"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
+      - restore_cache:
+          keys:
+            - v1-spark-interfaces-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-spark-interfaces-{{ .Branch }}
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build
+      - run: ./gradlew --no-daemon --console=plain --info check
+      - run: ./gradlew --console=plain javadoc
+      - run: ./gradlew --console=plain publishToMavenLocal --info
+      - persist_to_workspace:
+          root: ~/.m2/repository/io/openlineage/
+          paths:
+            - spark-interfaces
+      - save_cache:
+          key: v1-spark-interfaces-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  release-integration-spark-interfaces:
+    working_directory: ~/openlineage/integration/spark-interfaces
+    docker:
+      - image: cimg/openjdk:8.0
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
+          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+          
+          # TODO remove, depend on client build in interfaces build
+          cd ../../client/java
+          ./gradlew --no-daemon --console=plain publishToMavenLocal
+          cd -
+
+          ./gradlew --console=plain publishToMavenLocal --info
+
+          # Publish *.jar
+          ./gradlew --no-daemon --console=plain publish --info
+      - persist_to_workspace:
+          root: ~/.m2/repository/io/openlineage/
+          paths:
+            - spark-interfaces
+      - store_artifacts:
+          path: ./build/libs
+          destination: spark-interfaces-artifacts
+      - save_cache:
+          key: v1-release-spark-interfaces-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.m2
+
   build-integration-sql-macos:
     working_directory: ~/openlineage/integration/sql
     macos:

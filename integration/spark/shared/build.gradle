@@ -43,6 +43,7 @@ dependencies {
     // Design time dependencies
     api("io.openlineage:openlineage-java:${project.version}")
     api("io.openlineage:openlineage-sql-java:${project.version}")
+    api("io.openlineage:spark-interfaces:${project.version}")
     api("io.openlineage:spark-interfaces-scala_${scalaBinaryVersion}:${project.version}")
     api("io.micrometer:micrometer-core:${micrometerVersion}")
 
@@ -92,6 +93,7 @@ dependencies {
     // Scala 2.12 dependencies
     scala212Api("io.openlineage:openlineage-java:${project.version}")
     scala212Api("io.openlineage:openlineage-sql-java:${project.version}")
+    scala212Api("io.openlineage:spark-interfaces:${project.version}")
     scala212Api("io.openlineage:spark-interfaces-scala_2.12:${project.version}")
     scala212Api("io.micrometer:micrometer-core:${micrometerVersion}")
 
@@ -140,6 +142,7 @@ dependencies {
     // Scala 2.13 dependencies
     scala213Api("io.openlineage:openlineage-java:${project.version}")
     scala213Api("io.openlineage:openlineage-sql-java:${project.version}")
+    scala213Api("io.openlineage:spark-interfaces:${project.version}")
     scala213Api("io.openlineage:spark-interfaces-scala_2.13:${project.version}")
     scala213Api("io.micrometer:micrometer-core:${micrometerVersion}")
 
