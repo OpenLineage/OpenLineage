@@ -153,8 +153,6 @@
             "isStreaming": false
           }
         ]
-      },
-      "spark_version": {
       }
     }
   },
