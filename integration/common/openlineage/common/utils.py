@@ -62,11 +62,12 @@ def parse_multiple_args(args, keys: List[str], default=None) -> List[str]:
     Given a list of arguments that support syntax such as `--key=value1 value2`
     (like `--model`), return a list of values associated with the given keys.
     """
-    cur_key = None
-    cur_value = None
     parsed_values = []
 
     for key in keys:
+        cur_key = None
+        cur_value = None
+
         for arg in args:
             # `--foo bar baz` case
             if arg == key:
