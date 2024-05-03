@@ -155,11 +155,11 @@ class OpenLineageValidationAction(ValidationAction):
         if self.parent_run_id is not None:
             run_facets.update(
                 {
-                    "parentRun": ParentRunFacet.create(
+                    "parent": ParentRunFacet.create(
                         self.parent_run_id,
                         self.parent_job_namespace,
                         self.parent_job_name,
-                    )
+                    ),
                 }
             )
 
