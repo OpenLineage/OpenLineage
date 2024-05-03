@@ -4,7 +4,8 @@
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple, TypeVar
+import re
+from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar
 
 import yaml
 from jinja2 import Environment, Undefined
@@ -84,6 +85,8 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         profile_name: Optional[str] = None,
         target: Optional[str] = None,
         target_path: Optional[str] = None,
+        models: Optional[Sequence[str]] = None,
+        selector: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -101,9 +104,44 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
 
         self.target = target
         self.project_name = dbt_project["name"]
+        self.models = models or []
+        self.selector = selector
         self.profile_name = profile_name or dbt_project.get("profile")
         if not self.profile_name:
             raise KeyError(f"profile not found in {dbt_project}")
+
+    @property
+    def _use_extended_job_name(self):
+        # The name of the job published on the OpenLineage events for the dbt-ol run wrapper
+        # should include extended attributes (profile and model) only if this environment
+        # variable is set, in order to prevent breaking back-compatibility.
+        var = os.getenv("OPENLINEAGE_DBT_USE_EXTENDED_JOB_NAME", "false").lower()
+        if var in ("true", "1"):
+            return True
+        if var in ("false", "0"):
+            return False
+
+        raise ValueError(f"Invalid value for OPENLINEAGE_DBT_USE_EXTENDED_JOB_NAME: {var}")
+
+    @staticmethod
+    def _sanitize_job_name_component(s: str) -> str:
+        return re.sub(r"[^a-zA-Z0-9_]", "_", s)
+
+    def job_name(self) -> str:
+        job_name = f"dbt-run-{self.project_name}"
+        if not self._use_extended_job_name:
+            return job_name
+
+        if self.profile_name:
+            job_name = f"{job_name}-{self.profile_name}"
+        if self.models:
+            job_name = f"{job_name}-" + "-".join(
+                [self._sanitize_job_name_component(model) for model in self.models]
+            )
+        elif self.selector:
+            job_name = f"{job_name}-{self._sanitize_job_name_component(self.selector)}"
+
+        return job_name
 
     def build_target_path(self, dbt_project: dict, target_path: Optional[str] = None) -> str:
         """
