@@ -29,7 +29,6 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
 import io.openlineage.server.OpenLineage.OutputDatasetFacet;
-
 import java.net.URI;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -421,8 +420,16 @@ class OpenLineageTest {
       assertEquals(runStateUpdate.getEventType().name(), readServer.getEventType().name());
       assertEquals(runStateUpdate.getEventTime(), readServer.getEventTime());
 
-      OutputDatasetFacet outputStatistics = readServer.getOutputs().get(0).getOutputFacets().getAdditionalProperties().get("outputStatistics");
-      OutputStatisticsOutputDatasetFacet translated =  mapper.convertValue(mapper.valueToTree(outputStatistics), OutputStatisticsOutputDatasetFacet.class);
+      OutputDatasetFacet outputStatistics =
+          readServer
+              .getOutputs()
+              .get(0)
+              .getOutputFacets()
+              .getAdditionalProperties()
+              .get("outputStatistics");
+      OutputStatisticsOutputDatasetFacet translated =
+          mapper.convertValue(
+              mapper.valueToTree(outputStatistics), OutputStatisticsOutputDatasetFacet.class);
       assertEquals((Long) 10L, translated.getRowCount());
       assertEquals((Long) 20L, translated.getSize());
 
