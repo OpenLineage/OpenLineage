@@ -27,4 +27,20 @@ public class ExtensionPlanUtils {
       }
     };
   }
+
+  public static io.openlineage.spark.extension.v1.OpenLineageExtensionContext javaContext(
+      SparkListenerEvent event, OpenLineageContext context) {
+    return new io.openlineage.spark.extension.v1.OpenLineageExtensionContext() {
+
+      @Override
+      public OpenLineage getOpenLineage() {
+        return context.getOpenLineage();
+      }
+
+      @Override
+      public String getSparkListenerEventName() {
+        return event.getClass().getName();
+      }
+    };
+  }
 }
