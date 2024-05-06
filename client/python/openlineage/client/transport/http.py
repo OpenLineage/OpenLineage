@@ -123,7 +123,12 @@ class HttpTransport(Transport):
         url = config.url.strip()
         self.config = config
 
-        log.debug("Constructing openlineage client to send events to %s - config %s", url, config)
+        log.debug(
+            "Constructing OpenLineage transport that will send events "
+            "to HTTP endpoint `%s` using the following config: %s",
+            urljoin(url, config.endpoint),
+            config,
+        )
         try:
             from urllib3.util import parse_url
 

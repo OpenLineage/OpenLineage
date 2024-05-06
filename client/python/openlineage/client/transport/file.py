@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import io
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
@@ -13,6 +14,8 @@ from openlineage.client.transport.transport import Config, Transport
 if TYPE_CHECKING:
     from openlineage.client.client import Event
 from openlineage.client.serde import Serde
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -35,6 +38,11 @@ class FileTransport(Transport):
 
     def __init__(self, config: FileConfig) -> None:
         self.config = config
+        log.debug(
+            "Constructing OpenLineage transport that will send events "
+            "to file(s) using the following config: %s",
+            self.config,
+        )
 
     def emit(self, event: Event) -> None:
         if self.config.append:
@@ -43,6 +51,7 @@ class FileTransport(Transport):
             time_str = datetime.now().strftime("%Y%m%d-%H%M%S.%f")
             log_file_path = f"{self.config.log_file_path}-{time_str}"
 
+        log.debug("Openlineage event will be emitted to file: `%s`", log_file_path)
         try:
             with open(log_file_path, "a" if self.config.append else "w") as log_file_handle:
                 log_file_handle.write(Serde.to_json(event) + "\n")

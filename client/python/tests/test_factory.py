@@ -34,23 +34,15 @@ def test_client_uses_default_http_factory() -> None:
     assert client.transport.endpoint == "endpoint"
 
 
-def test_factory_registers_new_transports(mocker: MockerFixture) -> None:
-    yaml = mocker.patch("openlineage.client.utils.yaml")
-    yaml.safe_load.return_value = {"transport": {"type": "accumulating"}}
-    mocker.patch("os.listdir", return_value=["openlineage.yml"])
-    mocker.patch("os.path.join")
-
+def test_factory_registers_new_transports(mocker: MockerFixture, root: Path) -> None:
+    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": str(root / "config" / "openlineage.yml")})
     factory = DefaultTransportFactory()
     factory.register_transport("accumulating", clazz=AccumulatingTransport)
     assert isinstance(OpenLineageClient(factory=factory).transport, AccumulatingTransport)
 
 
-def test_factory_registers_transports_from_string(mocker: MockerFixture) -> None:
-    yaml = mocker.patch("openlineage.client.utils.yaml")
-    yaml.safe_load.return_value = {"transport": {"type": "accumulating"}}
-    mocker.patch("os.listdir", return_value=["openlineage.yml"])
-    mocker.patch("os.path.join")
-
+def test_factory_registers_transports_from_string(mocker: MockerFixture, root: Path) -> None:
+    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": str(root / "config" / "openlineage.yml")})
     factory = DefaultTransportFactory()
     factory.register_transport(
         "accumulating",
@@ -116,11 +108,8 @@ def test_automatically_registers_http_kafka() -> None:
     assert KafkaTransport in factory.transports.values()
 
 
-def test_transport_decorator_registers(mocker: MockerFixture) -> None:
-    yaml = mocker.patch("openlineage.client.utils.yaml")
-    yaml.safe_load.return_value = {"transport": {"type": "fake"}}
-    mocker.patch("os.listdir", return_value=["openlineage.yml"])
-    mocker.patch("os.path.join")
+def test_transport_decorator_registers(mocker: MockerFixture, root: Path) -> None:
+    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": str(root / "config" / "config.yml")})
 
     factory = DefaultTransportFactory()
     factory.register_transport("fake", FakeTransport)

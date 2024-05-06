@@ -21,20 +21,26 @@ class DefaultTransportFactory(TransportFactory):
         self.transports[of_type] = clazz
 
     def create(self, config: dict[str, str] | None = None) -> Transport:
-        if os.getenv("OPENLINEAGE_DISABLED", "").lower() == "true":
+        """
+        Initializes and returns a transport mechanism based on the provided configuration.
+
+        If 'OPENLINEAGE_DISABLED' is set to 'true', a NoopTransport instance is returned,
+        effectively disabling transport.
+        If a configuration dictionary is provided, transport specified by the config is initialized.
+        If no configuration is provided, the function defaults to a console-based transport, logging
+        a warning and printing events to the console.
+        """
+        if os.getenv("OPENLINEAGE_DISABLED", "").lower().strip() == "true":
+            log.info("OpenLineage is disabled. No events will be emitted.")
             return NoopTransport(NoopConfig())
 
         if config:
             return self._create_transport(config)
 
-        # Fallback to setting HTTP transport from env variables
-        http = self._try_http_from_env_config()
-        if http:
-            return http
-        # If there is no HTTP transport, log events to console
+        # If no config is passed, log events to console
         from openlineage.client.transport.console import ConsoleConfig, ConsoleTransport
 
-        log.warning("Couldn't initialize transport; will print events to console.")
+        log.warning("Couldn't initialize OpenLineage transport; will print events to console.")
         return ConsoleTransport(ConsoleConfig())
 
     def _create_transport(self, config: dict[str, str]) -> Transport:
@@ -63,31 +69,3 @@ class DefaultTransportFactory(TransportFactory):
             raise TypeError(msg)
 
         return transport_class(config_class.from_dict(config))  # type: ignore[call-arg]
-
-    @staticmethod
-    def _try_http_from_env_config() -> Transport | None:
-        from openlineage.client.transport.http import (
-            HttpConfig,
-            HttpTransport,
-            create_token_provider,
-        )
-
-        # backwards compatibility: create Transport from
-        # OPENLINEAGE_URL, OPENLINEAGE_ENDPOINT, and OPENLINEAGE_API_KEY
-        if "OPENLINEAGE_URL" not in os.environ:
-            log.error("Did not find openlineage.yml and OPENLINEAGE_URL is not set")
-            return None
-        config = HttpConfig(
-            url=os.environ["OPENLINEAGE_URL"],
-            auth=create_token_provider(
-                {
-                    "type": "api_key",
-                    "apiKey": os.environ.get("OPENLINEAGE_API_KEY", ""),
-                },
-            ),
-        )
-        endpoint = os.environ.get("OPENLINEAGE_ENDPOINT", None)
-        if endpoint is not None:
-            config.endpoint = endpoint
-
-        return HttpTransport(config)
