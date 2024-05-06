@@ -74,7 +74,7 @@ def parse_multiple_args(args, keys: List[str], default=None) -> List[str]:
                 cur_key = arg
             # `--foo=bar` with single value case
             elif arg.startswith(f"{key}="):
-                cur_value = arg.split("=", 1)[1]
+                parsed_values.append(arg.split("=", 1)[1])
             elif cur_key:
                 # Done the with current key
                 if arg.startswith("-") and cur_key:
