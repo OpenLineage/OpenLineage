@@ -8,6 +8,7 @@ import uuid
 from abc import abstractmethod
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
+
 import attr
 from openlineage.client.facet import (
     Assertion,
