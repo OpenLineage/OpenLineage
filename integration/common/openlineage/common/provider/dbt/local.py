@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import re
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar
+from typing import Any, Dict, List, Optional, Tuple, TypeVar
 
 import yaml
 from jinja2 import Environment, Undefined
@@ -85,8 +85,6 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         profile_name: Optional[str] = None,
         target: Optional[str] = None,
         target_path: Optional[str] = None,
-        models: Optional[Sequence[str]] = None,
-        selector: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -104,8 +102,6 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
 
         self.target = target
         self.project_name = dbt_project["name"]
-        self.models = models or []
-        self.selector = selector
         self.profile_name = profile_name or dbt_project.get("profile")
         if not self.profile_name:
             raise KeyError(f"profile not found in {dbt_project}")
@@ -143,7 +139,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
 
         return job_name
 
-    def build_target_path(self, dbt_project: dict, target_path: Optional[str] = None) -> str:
+    def build_target_path(self, dbt_project: dict) -> str:
         """
         Build dbt target path. Uses the following:
         1. target_path (user-defined value, normally given in --target-path CLI flag)

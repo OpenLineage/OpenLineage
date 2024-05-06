@@ -7,7 +7,7 @@ import logging
 import uuid
 from abc import abstractmethod
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import attr
 from openlineage.client.facet import (
@@ -144,6 +144,8 @@ class DbtArtifactProcessor:
         job_namespace: str,
         skip_errors: bool = False,
         logger: Optional[logging.Logger] = None,
+        models: Optional[Sequence[str]] = None,
+        selector: Optional[str] = None,
     ):
         self.producer = producer
         self._dbt_run_metadata: Optional[ParentRunMetadata] = None
@@ -154,6 +156,8 @@ class DbtArtifactProcessor:
         self.skip_errors = skip_errors
         self.run_metadata = None
         self.command = None
+        self.models = models or []
+        self.selector = selector
 
     @property
     def dbt_run_metadata(self):
