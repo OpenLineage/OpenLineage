@@ -52,6 +52,8 @@ public class BigQueryNodeOutputVisitor
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof SaveIntoDataSourceCommand
         && !(((SaveIntoDataSourceCommand) plan).dataSource() instanceof LineageRelationProvider)
+        && !(((SaveIntoDataSourceCommand) plan).dataSource()
+            instanceof io.openlineage.spark.extension.v1.LineageRelationProvider)
         && ((SaveIntoDataSourceCommand) plan).dataSource() instanceof BigQueryRelationProvider;
   }
 

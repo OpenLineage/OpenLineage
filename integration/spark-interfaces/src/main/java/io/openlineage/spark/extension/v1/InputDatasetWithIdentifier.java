@@ -15,11 +15,6 @@ public class InputDatasetWithIdentifier implements InputDatasetWithFacets, Datas
   private final DatasetFacetsBuilder facetsBuilder;
   private final InputDatasetInputFacetsBuilder inputFacetsBuilder;
 
-  /**
-   * @param datasetIdentifier
-   * @param facetsBuilder
-   * @param inputFacetsBuilder
-   */
   public InputDatasetWithIdentifier(
       DatasetIdentifier datasetIdentifier,
       DatasetFacetsBuilder facetsBuilder,

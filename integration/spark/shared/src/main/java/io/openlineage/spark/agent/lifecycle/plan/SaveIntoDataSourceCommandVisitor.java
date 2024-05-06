@@ -64,6 +64,8 @@ public class SaveIntoDataSourceCommandVisitor
       }
       return command.dataSource() instanceof SchemaRelationProvider
           || command.dataSource() instanceof LineageRelationProvider
+          || command.dataSource()
+              instanceof io.openlineage.spark.extension.v1.LineageRelationProvider
           || command.dataSource() instanceof RelationProvider;
     }
     return false;
@@ -95,6 +97,19 @@ public class SaveIntoDataSourceCommandVisitor
               .getDataset(
                   provider.getLineageDatasetIdentifier(
                       ExtensionPlanUtils.context(event, context),
+                      context.getSparkSession().get().sqlContext(),
+                      command.options()),
+                  getSchema(command)));
+    }
+
+    if (command.dataSource() instanceof io.openlineage.spark.extension.v1.LineageRelationProvider) {
+      io.openlineage.spark.extension.v1.LineageRelationProvider provider =
+          (io.openlineage.spark.extension.v1.LineageRelationProvider) command.dataSource();
+      return Collections.singletonList(
+          outputDataset()
+              .getDataset(
+                  provider.getLineageDatasetIdentifier(
+                      ExtensionPlanUtils.javaContext(event, context),
                       context.getSparkSession().get().sqlContext(),
                       command.options()),
                   getSchema(command)));

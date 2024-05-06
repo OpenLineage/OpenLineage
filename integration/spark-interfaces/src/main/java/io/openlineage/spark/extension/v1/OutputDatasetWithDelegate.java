@@ -14,11 +14,6 @@ public class OutputDatasetWithDelegate implements OutputDatasetWithFacets, Datas
   private final DatasetFacetsBuilder datasetFacetsBuilder;
   private final OutputDatasetOutputFacetsBuilder outputFacetsBuilder;
 
-  /**
-   * @param node
-   * @param datasetFacetsBuilder
-   * @param outputFacetsBuilder
-   */
   public OutputDatasetWithDelegate(
       Object node,
       DatasetFacetsBuilder datasetFacetsBuilder,

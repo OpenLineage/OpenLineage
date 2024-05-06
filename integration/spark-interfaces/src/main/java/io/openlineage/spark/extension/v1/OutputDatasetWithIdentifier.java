@@ -15,11 +15,6 @@ public class OutputDatasetWithIdentifier implements OutputDatasetWithFacets, Dat
   private final DatasetFacetsBuilder facetsBuilder;
   private final OutputDatasetOutputFacetsBuilder outputFacetsBuilder;
 
-  /**
-   * @param datasetIdentifier
-   * @param facetsBuilder
-   * @param outputFacetsBuilder
-   */
   public OutputDatasetWithIdentifier(
       DatasetIdentifier datasetIdentifier,
       DatasetFacetsBuilder facetsBuilder,

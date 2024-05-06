@@ -14,11 +14,6 @@ public class InputDatasetWithDelegate implements InputDatasetWithFacets, Dataset
   private final DatasetFacetsBuilder datasetFacetsBuilder;
   private final InputDatasetInputFacetsBuilder inputFacetsBuilder;
 
-  /**
-   * @param node
-   * @param datasetFacetsBuilder
-   * @param inputFacetsBuilder
-   */
   public InputDatasetWithDelegate(
       Object node,
       DatasetFacetsBuilder datasetFacetsBuilder,

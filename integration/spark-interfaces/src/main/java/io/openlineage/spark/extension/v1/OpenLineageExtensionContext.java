@@ -15,7 +15,7 @@ public interface OpenLineageExtensionContext {
    * SparkListenerSQLExecutionEnd, SparkListenerJobStart, SparkListenerJobEnd. The value may be
    * helpful to understand context which triggered OpenLineage event being created.
    *
-   * @return
+   * @return class name of SparkListenerEvent
    */
   String getSparkListenerEventName();
 }

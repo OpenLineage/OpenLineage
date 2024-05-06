@@ -13,8 +13,8 @@ public interface OutputLineageNode {
   /**
    * Gets output dataset read by this LogicalPlans node
    *
-   * @param context
-   * @return
+   * @param context OL extension context
+   * @return list of dataset with facets
    */
   List<OutputDatasetWithFacets> getOutputs(OpenLineageExtensionContext context);
 }

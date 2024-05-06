@@ -134,5 +134,15 @@ class SaveIntoDataSourceCommandVisitorTest {
     assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
   }
 
+  @Test
+  void testIsDefinedAtLogicalPlanForJavaLineageRelationProvider() {
+    io.openlineage.spark.extension.v1.LineageRelationProvider provider =
+        mock(
+            io.openlineage.spark.extension.v1.LineageRelationProvider.class,
+            withSettings().extraInterfaces(CreatableRelationProvider.class));
+    when(command.dataSource()).thenReturn((CreatableRelationProvider) provider);
+    assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
+  }
+
   abstract class DeltaDataSource implements CreatableRelationProvider {}
 }

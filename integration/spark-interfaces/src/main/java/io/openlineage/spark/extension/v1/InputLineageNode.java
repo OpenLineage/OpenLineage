@@ -13,8 +13,8 @@ public interface InputLineageNode {
   /**
    * Gets input dataset read by this LogicalPlans node
    *
-   * @param context
-   * @return
+   * @param context OL extension context
+   * @return list of input datasets with facets
    */
   List<InputDatasetWithFacets> getInputs(OpenLineageExtensionContext context);
 }
