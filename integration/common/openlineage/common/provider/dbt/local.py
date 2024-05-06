@@ -121,7 +121,11 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
 
     @staticmethod
     def _sanitize_job_name_component(s: str) -> str:
-        return re.sub(r"[^a-zA-Z0-9_]", "_", s)
+        """
+        A utility function that sanitizes the job name component by replacing
+        any non-alphanumeric characters with underscores.
+        """
+        return re.sub(r"[^a-zA-Z0-9_\-]", "_", s)
 
     @property
     def job_name(self) -> str:
