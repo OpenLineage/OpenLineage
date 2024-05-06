@@ -25,6 +25,7 @@ import org.apache.spark.Partition;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.TableIdentifier$;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat$;
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType;
@@ -146,5 +147,16 @@ class CreateHiveTableAsSelectCommandVisitorTest {
         outputDataset.getFacets().getLifecycleStateChange().getLifecycleStateChange());
     assertEquals("directory", outputDataset.getName());
     assertEquals("s3://bucket", outputDataset.getNamespace());
+  }
+
+  @Test
+  void testJobNameSuffix() {
+    CreateHiveTableAsSelectCommandVisitor visitor =
+        new CreateHiveTableAsSelectCommandVisitor(mock(OpenLineageContext.class));
+    CreateHiveTableAsSelectCommand command = mock(CreateHiveTableAsSelectCommand.class);
+
+    when(command.tableIdentifier()).thenReturn(new TableIdentifier("table", Option.apply("db")));
+
+    assertThat(visitor.jobNameSuffix(command)).isPresent().get().isEqualTo("db_table");
   }
 }

@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
@@ -95,5 +96,24 @@ class TruncateTableCommandVisitorTest {
     assertEquals(
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.TRUNCATE,
         datasets.get(0).getFacets().getLifecycleStateChange().getLifecycleStateChange());
+  }
+
+  @Test
+  void testJobNameSuffix() {
+    StructType schema =
+        new StructType(
+            new StructField[] {
+              new StructField("field1", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
+            });
+    session
+        .catalog()
+        .createTable("truncate_table", "csv", schema, ScalaConversionUtils.asScalaMapEmpty());
+
+    assertThat(visitor.jobNameSuffix(command))
+        .isPresent()
+        .get()
+        .isEqualTo("warehouse_truncate_table");
+
+    assertThat(visitor.jobNameSuffix(mock(TruncateTableCommand.class))).isEmpty();
   }
 }

@@ -123,4 +123,22 @@ public class CreateReplaceDatasetBuilder
         .map(storageDatasetFacet -> builder.storage(storageDatasetFacet));
     return Collections.singletonList(outputDataset().getDataset(di.get(), builder));
   }
+
+  @Override
+  public Optional<String> jobNameSuffix(LogicalPlan plan) {
+    if (!this.isDefinedAtLogicalPlan(plan)) {
+      return Optional.empty();
+    }
+
+    if (plan instanceof CreateTableAsSelect) {
+      return Optional.of(identToSuffix(((CreateTableAsSelect) plan).tableName()));
+    } else if (plan instanceof ReplaceTable) {
+      return Optional.of(identToSuffix(((ReplaceTable) plan).tableName()));
+    } else if (plan instanceof ReplaceTableAsSelect) {
+      return Optional.of(identToSuffix(((ReplaceTableAsSelect) plan).tableName()));
+    } else if (PlanUtils.safeIsInstanceOf(plan, CREATE_V2_TABLE)) {
+      return Optional.of(identToSuffix(((CreateV2Table) plan).tableName()));
+    }
+    return Optional.empty();
+  }
 }

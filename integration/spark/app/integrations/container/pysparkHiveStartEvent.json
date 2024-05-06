@@ -5,39 +5,6 @@
         "name": "open_lineage_integration_hive.execute_insert_into_hive_table.warehouse_test",
         "namespace": "testPysparkSQLHiveTest"
     },
-    "outputs": [
-        {
-            "facets": {
-                "dataSource": {
-                    "name": "file",
-                    "uri": "file"
-                },
-                "schema": {
-                    "fields": [
-                        {
-                            "name": "key",
-                            "type": "integer"
-                        },
-                        {
-                            "name": "value",
-                            "type": "string"
-                        }
-                    ]
-                },
-                "symlinks": {
-                    "identifiers": [
-                        {
-                            "namespace": "file:/tmp/warehouse",
-                            "name": "default.test",
-                            "type": "TABLE"
-                        }
-                    ]
-                }
-            },
-            "name": "/tmp/warehouse/test",
-            "namespace": "file"
-        }
-    ],
     "run": {
         "facets": {
             "spark.logicalPlan": {},

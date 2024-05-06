@@ -25,7 +25,6 @@ import io.openlineage.client.OpenLineage.RunEventBuilder;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
-import io.openlineage.spark.agent.hooks.HookUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.FacetUtils;
@@ -35,6 +34,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -392,7 +392,6 @@ class OpenLineageRunEventBuilder {
         .outputs(
             RemovePathPatternUtils.removeOutputsPathPattern(openLineageContext, outputDatasets));
 
-    HookUtils.preBuild(openLineageContext, runEventBuilder);
     return runEventBuilder.build();
   }
 
@@ -488,7 +487,15 @@ class OpenLineageRunEventBuilder {
         openLineageContext.getQueryExecution(),
         outputDatasetBuilders);
     Function1<LogicalPlan, Collection<OutputDataset>> visitor =
-        visitLogicalPlan(PlanUtils.merge(outputDatasetQueryPlanVisitors));
+        visitLogicalPlan(
+            PlanUtils.merge(
+                outputDatasetQueryPlanVisitors.stream()
+                    .filter(v -> v instanceof QueryPlanVisitor)
+                    .filter(v -> !nodes.isEmpty() && nodes.get(0) instanceof SparkListenerEvent)
+                    .filter(
+                        v ->
+                            (((QueryPlanVisitor) v).isDefinedAt((SparkListenerEvent) nodes.get(0))))
+                    .collect(Collectors.toList())));
     List<OutputDataset> datasets =
         Stream.concat(
                 buildDatasets(nodes, outputDatasetBuilders),

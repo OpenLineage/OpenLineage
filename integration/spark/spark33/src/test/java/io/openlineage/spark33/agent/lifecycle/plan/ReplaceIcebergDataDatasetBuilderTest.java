@@ -6,6 +6,7 @@
 package io.openlineage.spark33.agent.lifecycle.plan;
 
 import static io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -105,5 +106,16 @@ class ReplaceIcebergDataDatasetBuilderTest {
             times(1));
       }
     }
+  }
+
+  @Test
+  void testJobNameSuffix() {
+    assertThat(builder.jobNameSuffix(mock(LogicalPlan.class))).isEmpty();
+
+    ReplaceIcebergData replaceIcebergData = mock(ReplaceIcebergData.class);
+    NamedRelation namedRelation = mock(NamedRelation.class);
+    when(replaceIcebergData.table()).thenReturn(namedRelation);
+    when(namedRelation.name()).thenReturn("table");
+    assertThat(builder.jobNameSuffix(replaceIcebergData).get()).isEqualTo("table");
   }
 }

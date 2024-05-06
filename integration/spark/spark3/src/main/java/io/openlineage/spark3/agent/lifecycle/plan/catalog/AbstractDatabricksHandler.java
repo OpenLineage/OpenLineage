@@ -19,6 +19,7 @@ import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import scala.Option;
@@ -82,22 +83,37 @@ public abstract class AbstractDatabricksHandler implements CatalogHandler {
     } else {
       location = Optional.ofNullable(properties.get("location"));
     }
-    // Delta uses spark2 catalog when location isn't specified.
-    Path path =
-        new Path(
-            location.orElse(
-                session
-                    .sessionState()
-                    .catalog()
-                    .defaultTablePath(
-                        TableIdentifier.apply(
-                            identifier.name(),
-                            Option.apply(
-                                Arrays.stream(identifier.namespace())
-                                    .reduce((x, y) -> y)
-                                    .orElse(null))))
-                    .toString()));
-    log.info(path.toString());
+
+    // try getting location from table properties
+    if (!location.isPresent()) {
+      try {
+        location =
+            Optional.ofNullable(tableCatalog.loadTable(identifier))
+                .map(t -> t.properties())
+                .filter(p -> p.containsKey("location"))
+                .map(p -> p.get("location"));
+      } catch (NoSuchTableException e) {
+        // do nothing
+      }
+    }
+
+    // get default table location
+    if (!location.isPresent()) {
+      location =
+          Optional.ofNullable(
+              session
+                  .sessionState()
+                  .catalog()
+                  .defaultTablePath(
+                      TableIdentifier.apply(
+                          identifier.name(),
+                          Option.apply(
+                              Arrays.stream(identifier.namespace())
+                                  .reduce((x, y) -> y)
+                                  .orElse(null))))
+                  .toString());
+    }
+    Path path = new Path(location.get());
     DatasetIdentifier di = PathUtils.fromPath(path, "file");
     return di.withSymlink(
         identifier.toString(),

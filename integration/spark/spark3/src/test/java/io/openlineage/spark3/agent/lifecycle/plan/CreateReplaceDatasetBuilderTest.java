@@ -5,6 +5,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -40,7 +41,7 @@ import org.mockito.MockedStatic;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
 
-class CreateReplaceVisitorDatasetBuilderTest {
+class CreateReplaceDatasetBuilderTest {
 
   private static final String TABLE = "table";
   OpenLineageContext openLineageContext =
@@ -228,5 +229,24 @@ class CreateReplaceVisitorDatasetBuilderTest {
           visitor.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
       assertEquals(0, outputDatasets.size());
     }
+  }
+
+  @Test
+  @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+  void testJobNameSuffix() {
+    assertThat(visitor.jobNameSuffix(mock(LogicalPlan.class))).isEmpty();
+    Identifier id = Identifier.of(new String[] {"a", "b"}, "c");
+
+    CreateTableAsSelect createTableAsSelect = mock(CreateTableAsSelect.class);
+    when(createTableAsSelect.tableName()).thenReturn(id);
+    assertThat(visitor.jobNameSuffix(createTableAsSelect).get()).isEqualTo("a_b_c");
+
+    ReplaceTable replaceTable = mock(ReplaceTable.class);
+    when(replaceTable.tableName()).thenReturn(id);
+    assertThat(visitor.jobNameSuffix(replaceTable).get()).isEqualTo("a_b_c");
+
+    ReplaceTableAsSelect replaceTableAsSelect = mock(ReplaceTableAsSelect.class);
+    when(replaceTableAsSelect.tableName()).thenReturn(id);
+    assertThat(visitor.jobNameSuffix(replaceTableAsSelect).get()).isEqualTo("a_b_c");
   }
 }

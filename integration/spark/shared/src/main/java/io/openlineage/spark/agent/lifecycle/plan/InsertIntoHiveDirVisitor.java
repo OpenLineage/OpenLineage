@@ -54,4 +54,10 @@ public class InsertIntoHiveDirVisitor
             })
         .orElse(Collections.emptyList());
   }
+
+  @Override
+  public Optional<String> jobNameSuffix(InsertIntoHiveDirCommand command) {
+    return ScalaConversionUtils.asJavaOptional(command.storage().locationUri())
+        .map(uri -> trimPath(PathUtils.fromURI(uri, "file").getName()));
+  }
 }

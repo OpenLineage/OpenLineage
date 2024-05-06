@@ -12,6 +12,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand;
@@ -45,5 +46,11 @@ public class InsertIntoHadoopFsRelationVisitor
     }
 
     return Collections.singletonList(outputDataset);
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(InsertIntoHadoopFsRelationCommand command) {
+    DatasetIdentifier di = PathUtils.fromURI(command.outputPath().toUri(), "file");
+    return Optional.of(trimPath(di.getName()));
   }
 }

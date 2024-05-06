@@ -11,6 +11,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.hive.execution.InsertIntoHiveTable;
@@ -56,5 +57,10 @@ public class InsertIntoHiveTableVisitor
     }
 
     return Collections.singletonList(outputDataset);
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(InsertIntoHiveTable plan) {
+    return Optional.of(trimPath(PathUtils.fromCatalogTable(plan.table()).getName()));
   }
 }
