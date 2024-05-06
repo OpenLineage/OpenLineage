@@ -125,6 +125,25 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
 
     @property
     def job_name(self) -> str:
+        """
+        The job name property.
+
+        The construction of the job name adheres to the following rules:
+
+            - If OPENLINEAGE_DBT_USE_EXTENDED_JOB_NAME is set to false/0
+              (default), then the job name is in the format
+              ``dbt-run-{project_name}``.
+
+            - If OPENLINEAGE_DBT_USE_EXTENDED_JOB_NAME is set to true/1, then
+              the job name is in the format
+              ``dbt-run-{project_name}-{profile_name}-{model(s)/selector}``.
+
+        Note: The latter representation is an educated guess based on the
+        attributes that are most likely to be used to uniquely identify a dbt
+        task. Feel free to open a PR/discussion if you think that this list of
+        identifiers should be extended or modified.
+        """
+
         job_name = f"dbt-run-{self.project_name}"
         if not self._use_extended_job_name:
             return job_name
