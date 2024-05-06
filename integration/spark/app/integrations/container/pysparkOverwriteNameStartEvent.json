@@ -41,9 +41,10 @@
     "run": {
         "facets": {
             "spark.logicalPlan": {},
-            "spark_version": {
-                "spark-version": "${json-unit.any-string}",
-                "openlineage-spark-version": "${json-unit.any-string}"
+            "processing_engine": {
+                "version": "${json-unit.any-string}",
+                "name": "spark",
+                "openlineageAdapterVersion": "${json-unit.any-string}"
             }
         }
     }
