@@ -123,6 +123,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
     def _sanitize_job_name_component(s: str) -> str:
         return re.sub(r"[^a-zA-Z0-9_]", "_", s)
 
+    @property
     def job_name(self) -> str:
         job_name = f"dbt-run-{self.project_name}"
         if not self._use_extended_job_name:
