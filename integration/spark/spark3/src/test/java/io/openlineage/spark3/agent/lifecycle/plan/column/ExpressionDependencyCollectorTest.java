@@ -199,4 +199,59 @@ class ExpressionDependencyCollectorTest {
 
     verify(builder, times(1)).addDependency(ExprId.apply(1L), ExprId.apply(2L));
   }
+
+  @Test
+  void testJavaExtensionColumnLevelLineageWithIdentifier() {
+    LogicalPlan columnLineagePlanNode =
+        mock(
+            LogicalPlan.class,
+            withSettings()
+                .extraInterfaces(io.openlineage.spark.extension.v1.ColumnLevelLineageNode.class));
+
+    io.openlineage.spark.extension.v1.OlExprId outputExprId =
+        new io.openlineage.spark.extension.v1.OlExprId(1L);
+    io.openlineage.spark.extension.v1.OlExprId inputExprId1 =
+        new io.openlineage.spark.extension.v1.OlExprId(2L);
+    io.openlineage.spark.extension.v1.OlExprId inputExprId2 =
+        new io.openlineage.spark.extension.v1.OlExprId(3L);
+
+    when(((io.openlineage.spark.extension.v1.ColumnLevelLineageNode) columnLineagePlanNode)
+            .getColumnLevelLineageDependencies(any()))
+        .thenReturn(
+            Collections.singletonList(
+                new io.openlineage.spark.extension.v1.ExpressionDependencyWithIdentifier(
+                    outputExprId, Arrays.asList(inputExprId1, inputExprId2))));
+
+    ExpressionDependencyCollector.collectFromNode(context, columnLineagePlanNode);
+
+    verify(builder, times(1)).addDependency(ExprId.apply(1L), ExprId.apply(2L));
+    verify(builder, times(1)).addDependency(ExprId.apply(1L), ExprId.apply(3L));
+  }
+
+  @Test
+  void testJavaExtensionColumnLevelLineageWithDelegate() {
+    LogicalPlan columnLineagePlanNode =
+        mock(
+            LogicalPlan.class,
+            withSettings()
+                .extraInterfaces(io.openlineage.spark.extension.v1.ColumnLevelLineageNode.class));
+
+    when(((io.openlineage.spark.extension.v1.ColumnLevelLineageNode) columnLineagePlanNode)
+            .getColumnLevelLineageDependencies(any()))
+        .thenReturn(
+            Collections.singletonList(
+                new io.openlineage.spark.extension.v1.ExpressionDependencyWithDelegate(
+                    new io.openlineage.spark.extension.v1.OlExprId(1L),
+                    new AttributeReference(
+                        "name1",
+                        IntegerType$.MODULE$,
+                        false,
+                        Metadata$.MODULE$.empty(),
+                        ExprId.apply(2L),
+                        null))));
+
+    ExpressionDependencyCollector.collectFromNode(context, columnLineagePlanNode);
+
+    verify(builder, times(1)).addDependency(ExprId.apply(1L), ExprId.apply(2L));
+  }
 }

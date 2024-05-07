@@ -63,6 +63,11 @@ public class InputFieldsCollector {
       extensionColumnLineage(context, (ColumnLevelLineageNode) plan);
     }
 
+    if (plan instanceof io.openlineage.spark.extension.v1.ColumnLevelLineageNode) {
+      javaExtensionColumnLineage(
+          context, (io.openlineage.spark.extension.v1.ColumnLevelLineageNode) plan);
+    }
+
     // hacky way to replace `plan instanceof UnaryNode` which fails for Spark 3.2.1
     // because of java.lang.IncompatibleClassChangeError: UnaryNode, but class was expected
     // probably related to single code base for different Spark versions
@@ -111,6 +116,34 @@ public class InputFieldsCollector {
         .map(i -> (InputDatasetFieldFromDelegate) i)
         .filter(i -> i.delegate() instanceof LogicalPlan)
         .forEach(i -> discoverInputsFromNode(context, (LogicalPlan) i.delegate()));
+  }
+
+  private static void javaExtensionColumnLineage(
+      ColumnLevelLineageContext context,
+      io.openlineage.spark.extension.v1.ColumnLevelLineageNode node) {
+    List<io.openlineage.spark.extension.v1.DatasetFieldLineage> inputs =
+        node.getColumnLevelLineageInputs(
+            ExtensionPlanUtils.javaContext(context.getEvent(), context.getOlContext()));
+
+    inputs.stream()
+        .filter(i -> i instanceof io.openlineage.spark.extension.v1.InputDatasetFieldWithIdentifier)
+        .map(i -> (io.openlineage.spark.extension.v1.InputDatasetFieldWithIdentifier) i)
+        .forEach(
+            i ->
+                context
+                    .getBuilder()
+                    .addInput(
+                        ExprId.apply(i.getExprId().getExprId()),
+                        new DatasetIdentifier(
+                            i.getDatasetIdentifier().getNamespace(),
+                            i.getDatasetIdentifier().getName()),
+                        i.getField()));
+
+    inputs.stream()
+        .filter(i -> i instanceof io.openlineage.spark.extension.v1.InputDatasetFieldFromDelegate)
+        .map(i -> (io.openlineage.spark.extension.v1.InputDatasetFieldFromDelegate) i)
+        .filter(i -> i.getDelegate() instanceof LogicalPlan)
+        .forEach(i -> discoverInputsFromNode(context, (LogicalPlan) i.getDelegate()));
   }
 
   private static boolean isJDBCNode(LogicalPlan node) {

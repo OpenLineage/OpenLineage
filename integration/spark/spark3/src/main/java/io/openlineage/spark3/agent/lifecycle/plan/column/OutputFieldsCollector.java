@@ -26,6 +26,9 @@ public class OutputFieldsCollector {
   public static void collect(ColumnLevelLineageContext context, LogicalPlan plan) {
     if (plan instanceof ColumnLevelLineageNode) {
       extensionColumnLineage(context, (ColumnLevelLineageNode) plan);
+    } else if (plan instanceof io.openlineage.spark.extension.v1.ColumnLevelLineageNode) {
+      javaExtensionColumnLineage(
+          context, (io.openlineage.spark.extension.v1.ColumnLevelLineageNode) plan);
     } else {
       getOutputExpressionsFromRoot(plan).stream()
           .forEach(expr -> context.getBuilder().addOutput(expr.exprId(), expr.name()));
@@ -52,6 +55,24 @@ public class OutputFieldsCollector {
             o -> {
               OutputDatasetField of = (OutputDatasetField) o;
               context.getBuilder().addOutput(ExprId.apply(of.exprId().exprId()), of.field());
+            });
+  }
+
+  private static void javaExtensionColumnLineage(
+      ColumnLevelLineageContext context,
+      io.openlineage.spark.extension.v1.ColumnLevelLineageNode node) {
+    node
+        .getColumnLevelLineageOutputs(
+            ExtensionPlanUtils.javaContext(context.getEvent(), context.getOlContext()))
+        .stream()
+        .filter(df -> df instanceof io.openlineage.spark.extension.v1.OutputDatasetField)
+        .forEach(
+            o -> {
+              io.openlineage.spark.extension.v1.OutputDatasetField of =
+                  (io.openlineage.spark.extension.v1.OutputDatasetField) o;
+              context
+                  .getBuilder()
+                  .addOutput(ExprId.apply(of.getExprId().getExprId()), of.getField());
             });
   }
 
