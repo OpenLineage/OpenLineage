@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.io.IOException;
 import lombok.SneakyThrows;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalog;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
