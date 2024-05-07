@@ -4,6 +4,7 @@
 import json
 import logging
 import os
+import re
 from typing import Any, Dict, List, Optional, Tuple, TypeVar
 
 import yaml
@@ -105,7 +106,64 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         if not self.profile_name:
             raise KeyError(f"profile not found in {dbt_project}")
 
-    def build_target_path(self, dbt_project: dict, target_path: Optional[str] = None) -> str:
+    @property
+    def _use_extended_job_name(self):
+        # The name of the job published on the OpenLineage events for the dbt-ol run wrapper
+        # should include extended attributes (profile and model) only if this environment
+        # variable is set, in order to prevent breaking back-compatibility.
+        var = os.getenv("OPENLINEAGE_DBT_USE_EXTENDED_JOB_NAME", "false").lower()
+        if var in ("true", "1"):
+            return True
+        if var in ("false", "0"):
+            return False
+
+        raise ValueError(f"Invalid value for OPENLINEAGE_DBT_USE_EXTENDED_JOB_NAME: {var}")
+
+    @staticmethod
+    def _sanitize_job_name_component(s: str) -> str:
+        """
+        A utility function that sanitizes the job name component by replacing
+        any non-alphanumeric characters with underscores.
+        """
+        return re.sub(r"[^a-zA-Z0-9_\-]", "_", s)
+
+    @property
+    def job_name(self) -> str:
+        """
+        The job name property.
+
+        The construction of the job name adheres to the following rules:
+
+            - If OPENLINEAGE_DBT_USE_EXTENDED_JOB_NAME is set to false/0
+              (default), then the job name is in the format
+              ``dbt-run-{project_name}``.
+
+            - If OPENLINEAGE_DBT_USE_EXTENDED_JOB_NAME is set to true/1, then
+              the job name is in the format
+              ``dbt-run-{project_name}-{profile_name}-{model(s)/selector}``.
+
+        Note: The latter representation is an educated guess based on the
+        attributes that are most likely to be used to uniquely identify a dbt
+        task. Feel free to open a PR/discussion if you think that this list of
+        identifiers should be extended or modified.
+        """
+
+        job_name = f"dbt-run-{self.project_name}"
+        if not self._use_extended_job_name:
+            return job_name
+
+        if self.profile_name:
+            job_name = f"{job_name}-{self.profile_name}"
+        if self.models:
+            job_name = f"{job_name}-" + "-".join(
+                [self._sanitize_job_name_component(model) for model in self.models]
+            )
+        elif self.selector:
+            job_name = f"{job_name}-{self._sanitize_job_name_component(self.selector)}"
+
+        return job_name
+
+    def build_target_path(self, dbt_project: dict) -> str:
         """
         Build dbt target path. Uses the following:
         1. target_path (user-defined value, normally given in --target-path CLI flag)
