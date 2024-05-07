@@ -546,7 +546,10 @@ class DbtArtifactProcessor:
         elif self.adapter_type == Adapter.SQLSERVER:
             return f"mssql://{profile['server']}:{profile['port']}"
         elif self.adapter_type == Adapter.DREMIO:
-            return f"dremio://{profile['host']}:{profile['port']}"
+            if "software_host" in profile:
+                return f"dremio://{profile['software_host']}:{profile['port']}"
+            elif "host" in profile:
+                return f"dremio://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.SPARK:
             port = ""
 
