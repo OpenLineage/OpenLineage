@@ -14,9 +14,4 @@ kafka-protobuf-console-producer \
   --broker-list kafka:9092 \
   --property schema.registry.url=http://schema-registry:8081 \
   --property value.schema="$(< /tmp/InputEvent.proto)" < /tmp/events_proto.json &&
-echo 'input_protobuf produced' &&
-kafka-avro-console-producer \
-  --topic io.openlineage.flink.kafka.input_no_schema_registry \
-  --broker-list kafka:9092 \
-  --property value.schema="$(< /tmp/InputEvent.avsc)" < /tmp/events.json &&
-echo 'Events emitted'
+echo 'input_protobuf produced'

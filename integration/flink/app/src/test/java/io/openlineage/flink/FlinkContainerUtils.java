@@ -69,17 +69,9 @@ public class FlinkContainerUtils {
         .withEnv("KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS", "0")
         .withEnv("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1")
         .withEnv("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1")
-        .withEnv("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
+        .withEnv("TOPIC_AUTO_CREATE", "true")
+        .withEnv("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1")
         .withEnv("KAFKA_BROKER_ID", "1")
-        .withEnv(
-            "KAFKA_CREATE_TOPICS",
-            "io.openlineage.flink.kafka.input1:1:1,"
-                + "io.openlineage.flink.kafka.input2:1:1,"
-                + "io.openlineage.flink.kafka.output:1:1,"
-                + "io.openlineage.flink.kafka.output1:1:1,"
-                + "io.openlineage.flink.kafka.output2:1:1,"
-                + "io.openlineage.flink.kafka.output_protobuf:1:1,"
-                + "io.openlineage.flink.kafka.input_no_schema_registry:1:1")
         .withEnv(
             "KAFKA_LOG4J_LOGGERS",
             "kafka.controller=WARN,kafka.producer.async.DefaultEventHandler=WARN,state.change.logger=INFO")
