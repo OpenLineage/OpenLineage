@@ -27,15 +27,15 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URISyntaxException;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.UUID;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
+import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
-import org.apache.spark.scheduler.StageInfo;
+import org.apache.spark.scheduler.SparkListenerTaskEnd;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -154,10 +154,15 @@ class OpenLineageSparkListenerTest {
       OpenLineageSparkListener.init(contextFactory);
       OpenLineageSparkListener listener = new OpenLineageSparkListener();
 
-      listener.onJobStart(
-          new SparkListenerJobStart(
-              0, 2L, ScalaConversionUtils.<StageInfo>asScalaSeqEmpty(), new Properties()));
+      listener.onApplicationStart(mock(SparkListenerApplicationStart.class));
+      listener.onApplicationEnd(mock(SparkListenerApplicationEnd.class));
+      listener.onJobStart(mock(SparkListenerJobStart.class));
+      listener.onJobEnd(mock(SparkListenerJobEnd.class));
+      listener.onTaskEnd(mock(SparkListenerTaskEnd.class));
+      listener.onOtherEvent(mock(SparkListenerSQLExecutionStart.class));
+      listener.onOtherEvent(mock(SparkListenerSQLExecutionEnd.class));
 
+      verify(contextFactory, never()).createSparkApplicationExecutionContext(sparkContext);
       verify(contextFactory, never()).createSparkSQLExecutionContext(anyLong());
     }
   }

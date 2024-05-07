@@ -77,7 +77,8 @@ public class RemovePathPatternUtils {
   }
 
   private static Optional<Pattern> getPattern(OpenLineageContext context) {
-    return Optional.ofNullable(context.getSparkContext())
+    return context
+        .getSparkContext()
         .map(sparkContext -> sparkContext.conf())
         .filter(conf -> conf.contains(SPARK_OPENLINEAGE_DATASET_REMOVE_PATH_PATTERN))
         .map(conf -> conf.get(SPARK_OPENLINEAGE_DATASET_REMOVE_PATH_PATTERN))

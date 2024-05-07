@@ -98,16 +98,17 @@ class SparkGenericIntegrationTest {
 
     Dataset<Row> agg = df.groupBy("a").count();
     agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
-
     spark.stop();
+
     verifyEvents(
         mockServer,
         "applicationLevelStartApplication.json",
         "applicationLevelStartJob.json",
         "applicationLevelCompleteJob.json",
         "applicationLevelCompleteApplication.json");
-
     List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
+
+    // same runId for Spark application events, and parentRunId for Spark job events
     assertThat(
             events.stream()
                 .map(
@@ -126,14 +127,88 @@ class SparkGenericIntegrationTest {
   }
 
   @Test
-  @SneakyThrows
-  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
-  void sparkGathersMetrics() {
+  void sparkEmitsProcessingEngineFacet() {
     Dataset<Row> df = createTempDataset();
 
     Dataset<Row> agg = df.groupBy("a").count();
     agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
     spark.stop();
+
+    List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
+
+    // Both Spark application and Spark job events have processing_engine facet
+    assertThat(events)
+        .allMatch(
+            event -> {
+              String eventSparkVersion =
+                  event.getRun().getFacets().getProcessing_engine().getVersion();
+              return eventSparkVersion.equals(spark.sparkContext().version());
+            });
+  }
+
+  @Test
+  void sparkEmitsSparkPropertiesFacet() {
+    Dataset<Row> df = createTempDataset();
+
+    Dataset<Row> agg = df.groupBy("a").count();
+    agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
+    spark.stop();
+
+    List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
+
+    // Both Spark application and Spark job events have spark_properties facet
+    assertThat(events)
+        .allMatch(
+            event -> {
+              OpenLineage.RunFacet sparkPropertyFacet =
+                  event.getRun().getFacets().getAdditionalProperties().get("spark_properties");
+              Map<String, String> sparkProperties =
+                  (Map<String, String>)
+                      sparkPropertyFacet.getAdditionalProperties().get("properties");
+              String appName = sparkProperties.get("spark.app.name");
+              return appName != null && appName.equals(spark.sparkContext().appName());
+            });
+  }
+
+  @Test
+  void sparkEmitsEnvironmentPropertiesFacet() {
+    Dataset<Row> df = createTempDataset();
+
+    Dataset<Row> agg = df.groupBy("a").count();
+    agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
+    spark.stop();
+
+    verifyEvents(
+        mockServer,
+        "applicationLevelStartApplication.json",
+        "applicationLevelStartJob.json",
+        "applicationLevelCompleteJob.json",
+        "applicationLevelCompleteApplication.json");
+    List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
+
+    // Both Spark application and Spark job events have environment-properties facet
+    assertThat(events)
+        .allMatch(
+            event -> {
+              return event
+                      .getRun()
+                      .getFacets()
+                      .getAdditionalProperties()
+                      .get("environment-properties")
+                  != null;
+            });
+  }
+
+  @Test
+  @SneakyThrows
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
+  void sparkEmitsDebugFacet() {
+    Dataset<Row> df = createTempDataset();
+
+    Dataset<Row> agg = df.groupBy("a").count();
+    agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
+    spark.stop();
+
     List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
     events.stream()
         .map(

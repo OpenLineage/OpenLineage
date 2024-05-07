@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
@@ -50,6 +51,8 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.ActiveJob;
+import org.apache.spark.scheduler.SparkListenerApplicationEnd;
+import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
@@ -206,7 +209,12 @@ class OpenLineageRunEventBuilder {
     nodes.addAll(Rdds.flattenRDDs(rdd));
 
     return populateRun(
-        applicationParentRunFacet, runEventBuilder, jobBuilder, jobFacetsBuilder, nodes);
+        applicationParentRunFacet,
+        runEventBuilder,
+        openLineageContext.getRunUuid(),
+        jobBuilder,
+        jobFacetsBuilder,
+        nodes);
   }
 
   RunEvent buildRun(
@@ -224,7 +232,12 @@ class OpenLineageRunEventBuilder {
     nodes.addAll(Rdds.flattenRDDs(rdd));
 
     return populateRun(
-        applicationParentRunFacet, runEventBuilder, jobBuilder, jobFacetsBuilder, nodes);
+        applicationParentRunFacet,
+        runEventBuilder,
+        openLineageContext.getRunUuid(),
+        jobBuilder,
+        jobFacetsBuilder,
+        nodes);
   }
 
   RunEvent buildRun(
@@ -236,6 +249,7 @@ class OpenLineageRunEventBuilder {
     return buildRun(
         applicationParentRunFacet,
         runEventBuilder,
+        openLineageContext.getRunUuid(),
         jobBuilder,
         jobFacetsBuilder,
         event,
@@ -251,6 +265,7 @@ class OpenLineageRunEventBuilder {
     return buildRun(
         applicationParentRunFacet,
         runEventBuilder,
+        openLineageContext.getRunUuid(),
         jobBuilder,
         jobFacetsBuilder,
         event,
@@ -266,6 +281,7 @@ class OpenLineageRunEventBuilder {
     return buildRun(
         parentRunFacet,
         runEventBuilder,
+        openLineageContext.getRunUuid(),
         jobBuilder,
         jobFacetsBuilder,
         event,
@@ -281,15 +297,49 @@ class OpenLineageRunEventBuilder {
     return buildRun(
         applicationParentRunFacet,
         runEventBuilder,
+        openLineageContext.getRunUuid(),
         jobBuilder,
         jobFacetsBuilder,
         event,
         Optional.ofNullable(jobMap.get(event.jobId())));
   }
 
+  RunEvent buildRun(
+      ParentRunFacet parentRunFacet,
+      RunEventBuilder runEventBuilder,
+      JobBuilder jobBuilder,
+      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
+      SparkListenerApplicationStart event) {
+    return buildRun(
+        parentRunFacet,
+        runEventBuilder,
+        openLineageContext.getApplicationUuid(),
+        jobBuilder,
+        jobFacetsBuilder,
+        event,
+        Optional.empty());
+  }
+
+  RunEvent buildRun(
+      ParentRunFacet applicationParentRunFacet,
+      RunEventBuilder runEventBuilder,
+      JobBuilder jobBuilder,
+      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
+      SparkListenerApplicationEnd event) {
+    return buildRun(
+        applicationParentRunFacet,
+        runEventBuilder,
+        openLineageContext.getApplicationUuid(),
+        jobBuilder,
+        jobFacetsBuilder,
+        event,
+        Optional.empty());
+  }
+
   private RunEvent buildRun(
       ParentRunFacet applicationParentRunFacet,
       RunEventBuilder runEventBuilder,
+      UUID runId,
       JobBuilder jobBuilder,
       OpenLineage.JobFacetsBuilder jobFacetsBuilder,
       Object event,
@@ -303,12 +353,13 @@ class OpenLineageRunEventBuilder {
         });
 
     return populateRun(
-        applicationParentRunFacet, runEventBuilder, jobBuilder, jobFacetsBuilder, nodes);
+        applicationParentRunFacet, runEventBuilder, runId, jobBuilder, jobFacetsBuilder, nodes);
   }
 
   private RunEvent populateRun(
       ParentRunFacet applicationParentRunFacet,
       RunEventBuilder runEventBuilder,
+      UUID runId,
       JobBuilder jobBuilder,
       OpenLineage.JobFacetsBuilder jobFacetsBuilder,
       List<Object> nodes) {
@@ -333,8 +384,7 @@ class OpenLineageRunEventBuilder {
     unknownEntryFacetListener.clear();
 
     RunFacets runFacets = buildRunFacets(nodes, runFacetBuilders, runFacetsBuilder);
-    OpenLineage.RunBuilder runBuilder =
-        openLineage.newRunBuilder().runId(openLineageContext.getRunUuid()).facets(runFacets);
+    OpenLineage.RunBuilder runBuilder = openLineage.newRunBuilder().runId(runId).facets(runFacets);
     runEventBuilder
         .run(runBuilder.build())
         .job(jobBuilder.facets(jobFacets).build())

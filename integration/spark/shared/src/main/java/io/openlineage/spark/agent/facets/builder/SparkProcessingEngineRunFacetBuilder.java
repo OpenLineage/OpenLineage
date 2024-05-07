@@ -31,7 +31,7 @@ public class SparkProcessingEngineRunFacetBuilder
   public SparkProcessingEngineRunFacetBuilder(OpenLineageContext openLineageContext) {
     this.delegate =
         new SparkProcessingEngineRunFacetBuilderDelegate(
-            openLineageContext.getOpenLineage(), openLineageContext.getSparkContext());
+            openLineageContext.getOpenLineage(), openLineageContext.getSparkVersion());
   }
 
   @Override

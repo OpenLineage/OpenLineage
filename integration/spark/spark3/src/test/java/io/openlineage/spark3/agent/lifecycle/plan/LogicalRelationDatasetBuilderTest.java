@@ -63,7 +63,7 @@ class LogicalRelationDatasetBuilderTest {
   void setup() {
     when(openLineageContext.getOpenLineage())
         .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
-    when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
     when(openLineageContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
     when(facet.getDatasetVersion()).thenReturn(SOME_VERSION);

@@ -43,7 +43,7 @@ class JobNameHookTest {
     config = new SparkOpenLineageConfig();
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
-    when(context.getSparkContext()).thenReturn(sparkContext);
+    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(context.getOpenLineageConfig()).thenReturn(config);
     when(sparkContext.conf()).thenReturn(sparkConf);
 

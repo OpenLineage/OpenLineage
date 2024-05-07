@@ -84,6 +84,12 @@ class RddExecutionContext implements ExecutionContext {
   public void end(SparkListenerStageCompleted stageCompleted) {}
 
   @Override
+  public void start(SparkListenerApplicationStart applicationStart) {}
+
+  @Override
+  public void end(SparkListenerApplicationEnd applicationEnd) {}
+
+  @Override
   @SuppressWarnings("PMD") //  f.setAccessible(true);
   public void setActiveJob(ActiveJob activeJob) {
     log.debug("setActiveJob within RddExecutionContext {}", activeJob);
