@@ -1,0 +1,137 @@
+{
+  "eventType" : "START",
+  "eventTime": "${json-unit.any-string}",
+  "job" : {
+    "namespace" : "flink_job_namespace",
+    "name": "flink_protobuf",
+    "facets": {
+      "jobType": {
+        "processingType" : "STREAMING",
+        "jobType" : "JOB",
+        "integration": "FLINK"
+      }
+    }
+  },
+  "run": {
+    "runId": "${json-unit.any-string}"
+  },
+  "inputs": [
+    {
+      "namespace": "kafka://kafka:9092",
+      "name": "io.openlineage.flink.kafka.protobuf_input",
+      "facets" : {
+        "schema" : {
+          "fields" : [ {
+            "name" : "id",
+            "type" : "string",
+            "description" : "",
+            "fields" : [ ]
+          }, {
+            "name" : "version",
+            "type" : "int64",
+            "description" : "",
+            "fields" : [ ]
+          }, {
+            "name" : "subEvent",
+            "type" : "io.openlineage.flink.proto.event.SubInputEvent",
+            "description" : "",
+            "fields" : [ {
+              "name" : "id",
+              "type" : "string",
+              "description" : "",
+              "fields" : [ ]
+            }, {
+              "name" : "subSubEvent",
+              "type" : "io.openlineage.flink.proto.event.SubSubInputEvent",
+              "description" : "",
+              "fields" : [ {
+                "name" : "id",
+                "type" : "string",
+                "description" : "",
+                "fields" : [ ]
+              }, {
+                "name" : "version",
+                "type" : "int64",
+                "description" : "",
+                "fields" : [ ]
+              } ]
+            }, {
+              "name" : "arr",
+              "type" : "int64",
+              "description" : "",
+              "fields" : [ ]
+            } ]
+          } ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "kafka://kafka:9092",
+      "name": "io.openlineage.flink.kafka.protobuf_output",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "",
+              "fields": []
+            },
+            {
+              "name": "version",
+              "type": "int64",
+              "description": "",
+              "fields": []
+            },
+            {
+              "name": "counter",
+              "type": "int64",
+              "description": "",
+              "fields": []
+            },
+            {
+              "name": "subEvent",
+              "type": "io.openlineage.flink.proto.event.SubOutputEvent",
+              "description": "",
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "string",
+                  "description": "",
+                  "fields": []
+                },
+                {
+                  "name": "subSubEvent",
+                  "type": "io.openlineage.flink.proto.event.SubSubOutputEvent",
+                  "description": "",
+                  "fields": [
+                    {
+                      "name": "id",
+                      "type": "string",
+                      "description": "",
+                      "fields": []
+                    },
+                    {
+                      "name": "version",
+                      "type": "int64",
+                      "description": "",
+                      "fields": []
+                    }
+                  ]
+                },
+                {
+                  "name": "arr",
+                  "type": "int64",
+                  "description": "",
+                  "fields": []
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

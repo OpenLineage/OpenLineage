@@ -1,0 +1,5 @@
+{ "id":  "some-id-1", "version":  7, "subEvent": {  "id": "sub-id-1", "subSubEvent": { "id": "sub-sub-1", "version":  1 }, "arr": [ 1, 2] } }
+{ "id":  "some-id-1", "version":  7, "subEvent": {  "id": "sub-id-1", "subSubEvent": { "id": "sub-sub-1", "version":  1 }, "arr": [ 1, 2] } }
+{ "id":  "some-id-1", "version":  7, "subEvent": {  "id": "sub-id-1", "subSubEvent": { "id": "sub-sub-1", "version":  1 }, "arr": [ 1, 2] } }
+{ "id":  "some-id-1", "version":  7, "subEvent": {  "id": "sub-id-1", "subSubEvent": { "id": "sub-sub-1", "version":  1 }, "arr": [ 1, 2] } }
+{ "id":  "some-id-1", "version":  7, "subEvent": {  "id": "sub-id-1", "subSubEvent": { "id": "sub-sub-1", "version":  1 }, "arr": [ 1, 2] } }

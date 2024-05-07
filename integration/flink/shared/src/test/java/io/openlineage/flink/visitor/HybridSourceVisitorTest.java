@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.EventEmitter;
 import io.openlineage.flink.visitor.wrapper.IcebergSourceWrapper;
@@ -24,8 +25,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import lombok.SneakyThrows;
-import org.apache.avro.Schema;
-import org.apache.avro.SchemaBuilder;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.connector.base.source.hybrid.HybridSource;
 import org.apache.flink.connector.kafka.source.KafkaSource;
@@ -41,16 +40,10 @@ class HybridSourceVisitorTest {
   OpenLineage openLineage = new OpenLineage(EventEmitter.OPEN_LINEAGE_CLIENT_URI);
   HybridSourceVisitor hybridSourceVisitor = new HybridSourceVisitor(context);
   Properties props = new Properties();
-  Schema schema =
-      SchemaBuilder.record("InputEvent")
-          .namespace("io.openlineage.flink.avro.event")
-          .fields()
-          .name("a")
-          .type()
-          .nullable()
-          .longType()
-          .noDefault()
-          .endRecord();
+  SchemaDatasetFacet schema =
+      openLineage.newSchemaDatasetFacet(
+          Collections.singletonList(
+              openLineage.newSchemaDatasetFacetFields("a", "long", null, null)));
 
   KafkaSourceWrapper kafkaSourceWrapper = mock(KafkaSourceWrapper.class);
   IcebergSourceWrapper icebergSourceWrapper = mock(IcebergSourceWrapper.class);
@@ -86,11 +79,11 @@ class HybridSourceVisitorTest {
     // Mock Kafka Source
     props.put("bootstrap.servers", "server1;server2");
     MockedStatic<KafkaSourceWrapper> mockedKafkaStatic = mockStatic(KafkaSourceWrapper.class);
-    when(KafkaSourceWrapper.of(kafkaSource)).thenReturn(kafkaSourceWrapper);
+    when(KafkaSourceWrapper.of(kafkaSource, context)).thenReturn(kafkaSourceWrapper);
 
     when(kafkaSourceWrapper.getTopics()).thenReturn(Arrays.asList("topic1", "topic2"));
     when(kafkaSourceWrapper.getProps()).thenReturn(props);
-    when(kafkaSourceWrapper.getAvroSchema()).thenReturn(Optional.of(schema));
+    when(kafkaSourceWrapper.getSchemaFacet()).thenReturn(Optional.of(schema));
 
     when(icebergSource.getBoundedness()).thenReturn(Boundedness.BOUNDED);
     when(kafkaSource.getBoundedness()).thenReturn(Boundedness.CONTINUOUS_UNBOUNDED);

@@ -13,6 +13,7 @@ plugins {
     id 'com.github.johnrengelman.shadow'
     id 'io.franzbecker.gradle-lombok'
     id 'io.openlineage.common-config'
+    id "com.google.protobuf" version "0.9.4"
 }
 
 configurations {
@@ -35,7 +36,9 @@ task delombok(type: DelombokTask, dependsOn: compileJava) {
     ext.outputDir = file("$buildDir/delombok")
     outputs.dir(outputDir)
     sourceSets.main.java.srcDirs.each {
-        inputs.dir(it)
+        if (it.name =~ "/proto/") {
+            inputs.dir(it)
+        }
         args(it, "-d", outputDir)
     }
     doFirst {
@@ -100,6 +103,7 @@ dependencies {
     compileOnly "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     compileOnly "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:${versions.iceberg}"
     compileOnly "org.apache.flink:flink-connector-jdbc:${versions.jdbc}"
+    compileOnly "com.google.protobuf:protobuf-java:3.25.3"
 
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
@@ -133,6 +137,13 @@ dependencies {
     testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
+    testImplementation "com.google.protobuf:protobuf-java:3.25.3"
 
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.3"
+    }
 }

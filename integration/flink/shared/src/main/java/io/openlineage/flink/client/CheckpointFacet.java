@@ -12,7 +12,7 @@ import lombok.Getter;
 
 /** Custom facet to contain counters from Flink checkpoints. */
 @Getter
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 public class CheckpointFacet extends OpenLineage.DefaultRunFacet {
 
   @JsonProperty("completed")

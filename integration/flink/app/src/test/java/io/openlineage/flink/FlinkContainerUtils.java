@@ -24,9 +24,9 @@ import org.testcontainers.utility.MountableFile;
 
 public class FlinkContainerUtils {
 
-  private static final String CONFLUENT_VERSION = "6.2.1";
+  private static final String CONFLUENT_VERSION = "7.6.0";
   private static final String SCHEMA_REGISTRY_IMAGE = getRegistryImage();
-  private static final String KAFKA_IMAGE = "wurstmeister/kafka:2.13-2.8.1";
+  private static final String KAFKA_IMAGE = "confluentinc/cp-kafka:7.6.0";
   private static final String ZOOKEEPER_IMAGE = "confluentinc/cp-zookeeper:" + CONFLUENT_VERSION;
   private static final String CASSANDRA_IMAGE = "cassandra:3.11.16";
   private static final String POSTGRES_IMAGE = "postgres";
@@ -37,7 +37,6 @@ public class FlinkContainerUtils {
   static MockServerContainer makeMockServerContainer(Network network) {
     return new MockServerContainer(
             DockerImageName.parse("jamesdbloom/mockserver:mockserver-5.12.0"))
-        .withLogConsumer(of -> consumeOutput("mockserver", of))
         .withNetwork(network)
         .withNetworkAliases("openlineageclient");
   }
@@ -48,6 +47,7 @@ public class FlinkContainerUtils {
         .withEnv("SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS", "PLAINTEXT://kafka:9092")
         .withEnv("SCHEMA_REGISTRY_HOST_NAME", "schema-registry")
         .withEnv("SCHEMA_REGISTRY_LISTENERS", "http://schema-registry:8081,http://0.0.0.0:28081")
+        .withEnv("SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL", "WARN")
         .dependsOn(startable);
   }
 
@@ -69,19 +69,13 @@ public class FlinkContainerUtils {
         .withEnv("KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS", "0")
         .withEnv("KAFKA_TRANSACTION_STATE_LOG_MIN_ISR", "1")
         .withEnv("KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR", "1")
-        .withEnv("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
+        .withEnv("TOPIC_AUTO_CREATE", "true")
+        .withEnv("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1")
         .withEnv("KAFKA_BROKER_ID", "1")
         .withEnv(
-            "KAFKA_CREATE_TOPICS",
-            "io.openlineage.flink.kafka.input1:1:1,"
-                + "io.openlineage.flink.kafka.input2:1:1,"
-                + "io.openlineage.flink.kafka.output:1:1,"
-                + "io.openlineage.flink.kafka.output1:1:1,"
-                + "io.openlineage.flink.kafka.output2:1:1,"
-                + "io.openlineage.flink.kafka.input_no_schema_registry:1:1")
-        .withEnv(
             "KAFKA_LOG4J_LOGGERS",
-            "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO")
+            "kafka.controller=WARN,kafka.producer.async.DefaultEventHandler=WARN,state.change.logger=INFO")
+        .withEnv("LOG4J_LOGGER_KAFKA", "WARN")
         .dependsOn(zookeeper);
   }
 
@@ -92,12 +86,19 @@ public class FlinkContainerUtils {
             MountableFile.forHostPath(Resources.getResource("InputEvent.avsc").getPath()),
             "/tmp/InputEvent.avsc")
         .withCopyFileToContainer(
+            MountableFile.forHostPath(Resources.getResource("InputEvent.proto").getPath()),
+            "/tmp/InputEvent.proto")
+        .withCopyFileToContainer(
             MountableFile.forHostPath(Resources.getResource("events.json").getPath()),
             "/tmp/events.json")
+        .withCopyFileToContainer(
+            MountableFile.forHostPath(Resources.getResource("events_proto.json").getPath()),
+            "/tmp/events_proto.json")
         .withCommand(
             "/bin/bash",
             "-c",
             Resources.toString(Resources.getResource("generate_events.sh"), StandardCharsets.UTF_8))
+        .withEnv("SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL", "WARN")
         .dependsOn(initTopics);
   }
 
@@ -105,7 +106,8 @@ public class FlinkContainerUtils {
     return genericContainer(network, ZOOKEEPER_IMAGE, "zookeeper")
         .withExposedPorts(2181)
         .withEnv("ZOOKEEPER_CLIENT_PORT", "2181")
-        .withEnv("ZOOKEEPER_SERVER_ID", "1");
+        .withEnv("ZOOKEEPER_SERVER_ID", "1")
+        .withEnv("ZOOKEEPER_LOG4J_ROOT_LOGLEVEL", "WARN");
   }
 
   static GenericContainer<?> makeJdbcContainer(Network network) {
@@ -186,6 +188,10 @@ public class FlinkContainerUtils {
             .withCopyFileToContainer(
                 MountableFile.forHostPath(Resources.getResource("openlineage.yml").getPath()),
                 configPath)
+            .withCopyFileToContainer(
+                MountableFile.forHostPath(
+                    Resources.getResource("log4j-console.properties").getPath()),
+                "/opt/flink/conf/log4j-console.properties")
             .withCommand(
                 "standalone-job "
                     + String.format("--job-classname %s ", entrypointClass)
@@ -209,6 +215,9 @@ public class FlinkContainerUtils {
         .withFileSystemBind(getOpenLineageJarPath(), "/opt/flink/lib/openlineage.jar")
         .withFileSystemBind(getExampleAppJarPath(), "/opt/flink/lib/example-app.jar")
         .withCopyFileToContainer(MountableFile.forHostPath("../data/iceberg"), "/tmp/warehouse/")
+        .withCopyFileToContainer(
+            MountableFile.forHostPath(Resources.getResource("log4j-console.properties").getPath()),
+            "/opt/flink/conf/log4j-console.properties")
         .withEnv(
             "FLINK_PROPERTIES",
             "jobmanager.rpc.address: jobmanager"
@@ -235,7 +244,9 @@ public class FlinkContainerUtils {
 
     // list of log entries that should stop the test
     return logs.contains("New checkpoint encountered")
-        || logs.contains("Shutting down remote daemon.");
+        || logs.contains("Shutting down remote daemon.")
+        || logs.contains(
+            "Terminating cluster entrypoint process StandaloneApplicationClusterEntryPoint with exit code 0.");
   }
 
   static GenericContainer<?> genericContainer(Network network, String image, String hostname) {
@@ -287,9 +298,6 @@ public class FlinkContainerUtils {
   }
 
   private static String getRegistryImage() {
-    if ("aarch64".equals(System.getProperty("os.arch"))) {
-      return "eugenetea/schema-registry-arm64:latest";
-    }
     return "confluentinc/cp-schema-registry:" + CONFLUENT_VERSION;
   }
 }
