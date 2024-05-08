@@ -64,6 +64,7 @@ public class CassandraUtils {
     };
   }
 
+  @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
   private static Optional<String> convertToNamespace(Optional<List<Object>> endpointsOpt) {
     if (endpointsOpt.isPresent() && !endpointsOpt.isEmpty()) {
       Object endpoint = endpointsOpt.get().get(0);

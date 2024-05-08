@@ -43,7 +43,7 @@ class JdbcSinkVisitorTest {
 
   @Test
   @SneakyThrows
-  public void testIsDefined() {
+  void testIsDefined() {
     assertFalse(jdbcSinkVisitor.isDefinedAt(mock(Object.class)));
     assertTrue(jdbcSinkVisitor.isDefinedAt(mock(JdbcOutputFormat.class)));
     assertTrue(jdbcSinkVisitor.isDefinedAt(mock(JdbcRowOutputFormat.class)));
@@ -54,7 +54,7 @@ class JdbcSinkVisitorTest {
   @SneakyThrows
   @ParameterizedTest
   @MethodSource("provideArguments")
-  public void testApply(Object source) {
+  void testApply(Object source) {
     List<OpenLineage.OutputDataset> outputDatasets = jdbcSinkVisitor.apply(source);
 
     assertEquals(1, outputDatasets.size());

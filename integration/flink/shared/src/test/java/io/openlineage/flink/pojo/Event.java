@@ -13,6 +13,7 @@ import java.io.Serializable;
  * format.
  */
 @Table(keyspace = "flink", name = "sink_event")
+@SuppressWarnings("PMD.MethodWithSameNameAsEnclosingClass")
 public class Event implements Serializable {
 
   public void Event() {}

@@ -47,6 +47,7 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
     private Map<String, String> additionalProperties = new HashMap<>();
   }
 
+  @Override
   public FlinkOpenLineageConfig mergeWithNonNull(FlinkOpenLineageConfig other) {
     return new FlinkOpenLineageConfig(
         mergePropertyWith(transportConfig, other.transportConfig),

@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-public class ProtobufFieldResolverTest {
+class ProtobufFieldResolverTest {
 
   OpenLineage openLineage = new OpenLineage(mock(URI.class));
   SchemaDatasetFacet facet =

@@ -136,7 +136,7 @@ public class ProtobufUtils {
       SerializationSchema serializationSchema) {
     Optional<Class> parameterType =
         Arrays.stream(serializationSchema.getClass().getMethods())
-            .filter(m -> m.getName().equalsIgnoreCase("serialize"))
+            .filter(m -> "serialize".equalsIgnoreCase(m.getName()))
             .filter(m -> m.getParameterTypes()[0] != Object.class)
             .findAny()
             .map(m -> m.getParameterTypes()[0]);
@@ -159,7 +159,7 @@ public class ProtobufUtils {
     } else {
       Optional<Class> parameterType =
           Arrays.stream(deserializationSchema.getClass().getMethods())
-              .filter(m -> m.getName().equalsIgnoreCase("deserialize"))
+              .filter(m -> "deserialize".equalsIgnoreCase(m.getName()))
               .filter(m -> m.getReturnType() != Object.class)
               .findAny()
               .map(m -> m.getReturnType());

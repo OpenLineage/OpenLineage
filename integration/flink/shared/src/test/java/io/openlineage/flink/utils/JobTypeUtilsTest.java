@@ -18,7 +18,7 @@ import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.streaming.api.transformations.WithBoundedness;
 import org.junit.jupiter.api.Test;
 
-public class JobTypeUtilsTest {
+class JobTypeUtilsTest {
 
   @Test
   void testExtractWhenExecutionModeIsBatch() {

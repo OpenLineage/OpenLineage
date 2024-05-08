@@ -7,11 +7,11 @@ package io.openlineage.flink.utils;
 import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
-import com.google.protobuf.Descriptors.OneofDescriptor;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
@@ -76,12 +76,6 @@ public class ProtobufFieldResolver {
         field.getName(), getFieldType(field), "", resolve(field.getMessageType()));
   }
 
-  private List<SchemaDatasetFacetFields> resolveOneOfField(OneofDescriptor oneofDescriptor) {
-    return oneofDescriptor.getFields().stream()
-        .map(f -> resolveField(f))
-        .collect(Collectors.toList());
-  }
-
   private SchemaDatasetFacetFields resolvePrimitiveTypeField(FieldDescriptor field) {
     return openLineage.newSchemaDatasetFacetFields(
         field.getName(), getFieldType(field), "", Collections.emptyList());
@@ -91,7 +85,7 @@ public class ProtobufFieldResolver {
     if (field.getJavaType().equals(JavaType.MESSAGE)) {
       return field.getMessageType().getFullName();
     } else {
-      return field.getType().name().toLowerCase();
+      return field.getType().name().toLowerCase(Locale.ROOT);
     }
   }
 }

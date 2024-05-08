@@ -42,7 +42,7 @@ class CassandraSourceVisitorTest {
 
   @Test
   @SneakyThrows
-  public void testIsDefined() {
+  void testIsDefined() {
     assertFalse(cassandraSourceVisitor.isDefinedAt(mock(Object.class)));
     assertTrue(cassandraSourceVisitor.isDefinedAt(mock(CassandraInputFormat.class)));
     assertTrue(cassandraSourceVisitor.isDefinedAt(mock(CassandraPojoInputFormat.class)));
@@ -51,7 +51,7 @@ class CassandraSourceVisitorTest {
   @SneakyThrows
   @ParameterizedTest
   @MethodSource("provideArguments")
-  public void testApply(Object source) {
+  void testApply(Object source) {
     List<OpenLineage.InputDataset> inputDatasets = cassandraSourceVisitor.apply(source);
 
     assertEquals(1, inputDatasets.size());
