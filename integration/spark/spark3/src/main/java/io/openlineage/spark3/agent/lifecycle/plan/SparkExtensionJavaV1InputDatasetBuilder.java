@@ -37,9 +37,6 @@ public class SparkExtensionJavaV1InputDatasetBuilder
 
   @Override
   protected List<InputDataset> apply(SparkListenerEvent event, LogicalPlan x) {
-    // Needs to cast to logical plan despite IntelliJ claiming otherwise.
-    InputLineageNode lineageNode = (InputLineageNode) x;
-
     List<InputDatasetWithFacets> datasets =
         ((InputLineageNode) x).getInputs(ExtensionPlanUtils.javaContext(event, context));
 

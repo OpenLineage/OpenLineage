@@ -243,7 +243,7 @@ class ExpressionDependencyCollectorTest {
                 new io.openlineage.spark.extension.v1.ExpressionDependencyWithDelegate(
                     new io.openlineage.spark.extension.v1.OlExprId(1L),
                     new AttributeReference(
-                        "name1",
+                        "name3",
                         IntegerType$.MODULE$,
                         false,
                         Metadata$.MODULE$.empty(),
