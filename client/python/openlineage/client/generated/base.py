@@ -57,19 +57,13 @@ class BaseEvent(RedactMixin):
     def producer_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
         from urllib.parse import urlparse
 
-        result = urlparse(value)
-        if value and not all([result.scheme, result.netloc]):
-            msg = "producer is not a valid URI"
-            raise ValueError(msg)
+        urlparse(value)
 
     @schemaURL.validator
     def schemaurl_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
         from urllib.parse import urlparse
 
-        result = urlparse(value)
-        if value and not all([result.scheme, result.netloc]):
-            msg = "schemaURL is not a valid URI"
-            raise ValueError(msg)
+        urlparse(value)
 
 
 @define
@@ -100,19 +94,13 @@ class BaseFacet(RedactMixin):
     def _producer_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
         from urllib.parse import urlparse
 
-        result = urlparse(value)
-        if value and not all([result.scheme, result.netloc]):
-            msg = "_producer is not a valid URI"
-            raise ValueError(msg)
+        urlparse(value)
 
     @_schemaURL.validator
     def _schemaurl_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
         from urllib.parse import urlparse
 
-        result = urlparse(value)
-        if value and not all([result.scheme, result.netloc]):
-            msg = "_schemaURL is not a valid URI"
-            raise ValueError(msg)
+        urlparse(value)
 
 
 @define

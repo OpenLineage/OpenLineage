@@ -42,7 +42,4 @@ class SourceCodeLocationJobFacet(JobFacet):
     def url_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
         from urllib.parse import urlparse
 
-        result = urlparse(value)
-        if value and not all([result.scheme, result.netloc]):
-            msg = "url is not a valid URI"
-            raise ValueError(msg)
+        urlparse(value)
