@@ -19,7 +19,7 @@ import org.apache.flink.configuration.Configuration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class FlinkConfigParserTest {
+class FlinkConfigParserTest {
 
   Configuration configuration;
   ConfigOption transportTypeOption =

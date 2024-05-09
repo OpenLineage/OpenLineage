@@ -33,7 +33,6 @@ import org.apache.iceberg.flink.source.IcebergSource;
 import org.apache.iceberg.types.Types;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 
 class HybridSourceVisitorTest {
   OpenLineageContext context = mock(OpenLineageContext.class);
@@ -64,10 +63,11 @@ class HybridSourceVisitorTest {
 
   @Test
   @SneakyThrows
+  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void testApply() {
     // Mock Iceberg Source
     Table table = mock(Table.class, RETURNS_DEEP_STUBS);
-    MockedStatic<IcebergSourceWrapper> mockedIcebergStatic = mockStatic(IcebergSourceWrapper.class);
+    mockStatic(IcebergSourceWrapper.class);
     when(IcebergSourceWrapper.of(icebergSource, IcebergSource.class))
         .thenReturn(icebergSourceWrapper);
     when(table.location()).thenReturn("s3://bucket/table/");
@@ -78,7 +78,7 @@ class HybridSourceVisitorTest {
 
     // Mock Kafka Source
     props.put("bootstrap.servers", "server1;server2");
-    MockedStatic<KafkaSourceWrapper> mockedKafkaStatic = mockStatic(KafkaSourceWrapper.class);
+    mockStatic(KafkaSourceWrapper.class);
     when(KafkaSourceWrapper.of(kafkaSource, context)).thenReturn(kafkaSourceWrapper);
 
     when(kafkaSourceWrapper.getTopics()).thenReturn(Arrays.asList("topic1", "topic2"));

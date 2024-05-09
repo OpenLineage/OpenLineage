@@ -64,6 +64,7 @@ class KafkaSourceWrapperTest {
 
   @BeforeEach
   @SneakyThrows
+  @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
   public void setup() {
     when(context.getOpenLineage()).thenReturn(new OpenLineage(mock(URI.class)));
     Class kafkaSourceClass = Class.forName("org.apache.flink.connector.kafka.source.KafkaSource");
@@ -177,6 +178,7 @@ class KafkaSourceWrapperTest {
 
   @Test
   @SneakyThrows
+  @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
   void testGetTopicsForTopicList() {
     List<String> topics = Arrays.asList("topic1", "topic2");
     Class kafkaSourceClass = Class.forName("org.apache.flink.connector.kafka.source.KafkaSource");
@@ -192,6 +194,7 @@ class KafkaSourceWrapperTest {
 
   @Test
   @SneakyThrows
+  @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
   void testGetTopicsForPattern() {
     Pattern pattern = Pattern.compile("topic.*");
     List<String> topics = Arrays.asList("topic1", "topic2");

@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'jacoco'
+    id 'pmd'
     id "com.adarshr.test-logger"
     id 'com.diffplug.spotless'
     id "com.github.johnrengelman.shadow"
