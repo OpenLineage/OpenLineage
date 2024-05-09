@@ -22,7 +22,7 @@ import org.apache.spark.sql.SparkSession;
 public class SparkPropertyFacetBuilder
     extends CustomFacetBuilder<SparkListenerEvent, SparkPropertyFacet> {
   private static final Set<String> DEFAULT_ALLOWED_PROPERTIES =
-      new HashSet<>(Arrays.asList("spark.master", "spark.app.name"));
+      new HashSet<>(Arrays.asList("spark.master", "spark.app.name", "spark.app.id"));
   private static final String ALLOWED_PROPERTIES_KEY = "spark.openlineage.capturedProperties";
   private SparkConf conf;
   private Set<String> allowerProperties;

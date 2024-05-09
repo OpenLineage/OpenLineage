@@ -36,15 +36,17 @@ class SparkPropertyFacetBuilderTest {
             new SparkConf()
                 .setAppName("SparkPropertyFacetBuilderTest")
                 .setMaster("local")
+                .set("spark.app.id", "local-1234")
                 .set("test.key.1", "test"));
     Consumer<OpenLineage.RunFacet> runFacetConsumer =
         facet -> {
           assertThat(facet).isInstanceOf(SparkPropertyFacet.class);
 
           assertThat(((SparkPropertyFacet) facet).getProperties())
-              .containsOnlyKeys("spark.master", "spark.app.name")
+              .containsOnlyKeys("spark.master", "spark.app.name", "spark.app.id")
               .containsEntry("spark.master", "local")
-              .containsEntry("spark.app.name", "SparkPropertyFacetBuilderTest");
+              .containsEntry("spark.app.name", "SparkPropertyFacetBuilderTest")
+              .containsEntry("spark.app.id", "local-1234");
         };
 
     checkBuild(sparkContext, runFacetConsumer);
