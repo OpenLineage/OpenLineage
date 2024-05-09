@@ -42,7 +42,7 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 class SparkSQLExecutionContext implements ExecutionContext {
 
   private static final String NO_EXECUTION_INFO = "No execution info {}";
-  private static final String SPARK_JOB_TYPE = "JOB";
+  private static final String SPARK_JOB_TYPE = "SQL_JOB";
   private static final String SPARK_INTEGRATION = "SPARK";
   private static final String SPARK_PROCESSING_TYPE_BATCH = "BATCH";
   private static final String SPARK_PROCESSING_TYPE_STREAMING = "STREAMING";
