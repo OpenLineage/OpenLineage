@@ -16,7 +16,6 @@ import io.openlineage.spark.api.QueryPlanVisitor;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -26,7 +25,6 @@ import org.apache.spark.sql.execution.command.CreateTableLikeCommand;
  * {@link LogicalPlan} visitor that matches an {@link CreateTableLikeCommand} and extracts the
  * output {@link OpenLineage.Dataset} being written.
  */
-@Slf4j
 public class CreateTableLikeCommandVisitor
     extends QueryPlanVisitor<CreateTableLikeCommand, OpenLineage.OutputDataset> {
 

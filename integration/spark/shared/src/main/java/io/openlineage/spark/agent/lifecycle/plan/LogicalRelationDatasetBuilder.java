@@ -191,10 +191,13 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
       // This is similar to the InsertIntoHadoopRelationVisitor's process for getting
       // Datasets
       //
-      // This can also occur when running on a spark cluster with UnityCatalog enabled.
-      // An exception will get thrown claiming there is "no Credential Scope". Catching
+      // This can also occur when running on a spark cluster with UnityCatalog
+      // enabled.
+      // An exception will get thrown claiming there is "no Credential Scope".
+      // Catching
       // a specific exception such as the above azure databricks exception
-      // didn't seem to yield the correct results, so a catch all on exceptions here works
+      // didn't seem to yield the correct results, so a catch all on exceptions here
+      // works
       // for unity catalog.
       List<D> inputDatasets = new ArrayList<D>();
       List<Path> paths =
