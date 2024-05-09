@@ -169,3 +169,6 @@ __pycache__
 
 # Dev
 changes.txt
+
+# pre-commit pmd hook cache
+.pmd_cache
