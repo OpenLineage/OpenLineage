@@ -21,8 +21,9 @@ message ProtobufTestEvent {
 message SubProtobufTestEvent {
   string id = 1;
   SubSubProtobufTestEvent subSubEvent = 2;
-  repeated SubSubProtobufTestEvent arr = 3;
-  map<string, int32> someMap = 4;
+  repeated SubSubProtobufTestEvent arrMessage = 3;
+  repeated int64 arrPrimitive = 4;
+  map<string, int32> someMap = 5;
 }
 
 message SubSubProtobufTestEvent {

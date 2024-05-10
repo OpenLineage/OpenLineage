@@ -9,6 +9,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
+import io.openlineage.client.OpenLineage.SchemaDatasetFacetFieldsBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -39,46 +40,58 @@ public class ProtobufFieldResolver {
    */
   public SchemaDatasetFacetFields resolveField(FieldDescriptor field) {
     log.debug("protoField: {} of type {}", field.getName(), field.getJavaType());
-    SchemaDatasetFacetFields facetField;
-    if (field.getType().getJavaType().equals(JavaType.MESSAGE)) {
-      // nested field encountered, array and map land here as well
-      if (field.isMapField()) {
-        facetField = resolveMapField(field);
-      } else if (field.isRepeated()) {
-        facetField = resolveArrayField(field);
-      } else {
-        facetField = resolveStructField(field);
-      }
-    } else {
-      facetField = resolvePrimitiveTypeField(field);
+    if (field.isMapField()) {
+      return resolveMapField(field);
     }
-
-    return facetField;
+    if (field.isRepeated()) {
+      return resolveArrayField(field);
+    }
+    if (field.getType().getJavaType().equals(JavaType.MESSAGE)) {
+      return resolveStructField(field);
+    }
+    return resolvePrimitiveTypeField(field);
   }
 
   private SchemaDatasetFacetFields resolveMapField(FieldDescriptor field) {
-    return openLineage.newSchemaDatasetFacetFields(
-        field.getName(), "map", "", resolve(field.getMessageType()));
+    return openLineage
+        .newSchemaDatasetFacetFieldsBuilder()
+        .name(field.getName())
+        .type("map")
+        .fields(resolve(field.getMessageType()))
+        .build();
   }
 
   private SchemaDatasetFacetFields resolveArrayField(FieldDescriptor field) {
-    return openLineage.newSchemaDatasetFacetFields(
-        field.getName(),
-        "array",
-        "",
-        Collections.singletonList(
-            openLineage.newSchemaDatasetFacetFields(
-                "_element", getFieldType(field), "", resolve(field.getMessageType()))));
+    SchemaDatasetFacetFieldsBuilder elementBuilder =
+        openLineage.newSchemaDatasetFacetFieldsBuilder().name("_element").type(getFieldType(field));
+
+    // primitive types cannot have nested fields
+    if (field.getJavaType().equals(JavaType.MESSAGE)) {
+      elementBuilder.fields(resolve(field.getMessageType()));
+    }
+    return openLineage
+        .newSchemaDatasetFacetFieldsBuilder()
+        .name(field.getName())
+        .type("array")
+        .fields(Collections.singletonList(elementBuilder.build()))
+        .build();
   }
 
   private SchemaDatasetFacetFields resolveStructField(FieldDescriptor field) {
-    return openLineage.newSchemaDatasetFacetFields(
-        field.getName(), getFieldType(field), "", resolve(field.getMessageType()));
+    return openLineage
+        .newSchemaDatasetFacetFieldsBuilder()
+        .name(field.getName())
+        .type(getFieldType(field))
+        .fields(resolve(field.getMessageType()))
+        .build();
   }
 
   private SchemaDatasetFacetFields resolvePrimitiveTypeField(FieldDescriptor field) {
-    return openLineage.newSchemaDatasetFacetFields(
-        field.getName(), getFieldType(field), "", Collections.emptyList());
+    return openLineage
+        .newSchemaDatasetFacetFieldsBuilder()
+        .name(field.getName())
+        .type(getFieldType(field))
+        .build();
   }
 
   private String getFieldType(FieldDescriptor field) {
