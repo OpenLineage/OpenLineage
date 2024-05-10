@@ -9,6 +9,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,7 +51,7 @@ public class OpenLineageContext {
   @Setter @Getter UUID applicationUuid;
 
   // filled up for SparkListener non-application events
-  @Default @NonNull @Getter final UUID runUuid = UUID.randomUUID();
+  @Default @NonNull @Getter final UUID runUuid = UUIDUtils.generateNewUUID();
 
   /** {@link SparkSession} instance when an application is using a Spark SQL configuration */
   final SparkSession sparkSession;

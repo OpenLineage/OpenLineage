@@ -12,13 +12,13 @@ import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
 import io.openlineage.client.metrics.MicrometerProvider;
+import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.EventEmitter;
 import io.openlineage.flink.client.FlinkConfigParser;
 import io.openlineage.flink.client.FlinkOpenLineageConfig;
 import io.openlineage.flink.client.Versions;
 import java.util.List;
-import java.util.UUID;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.configuration.Configuration;
@@ -52,7 +52,7 @@ public class FlinkExecutionContextFactory {
         .jobName(jobName)
         .jobNamespace(jobNamespace)
         .transformations(transformations)
-        .runId(UUID.randomUUID())
+        .runId(UUIDUtils.generateNewUUID())
         .circuitBreaker(new CircuitBreakerFactory(config.getCircuitBreaker()).build())
         .openLineageContext(
             OpenLineageContext.builder()

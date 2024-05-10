@@ -10,6 +10,7 @@ import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.TransportFactory;
+import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -52,7 +53,7 @@ public class EventEmitter {
             .disableFacets(disabledFacets)
             .build();
     this.applicationJobName = applicationJobName;
-    this.applicationRunId = UUID.randomUUID();
+    this.applicationRunId = UUIDUtils.generateNewUUID();
   }
 
   public void emit(OpenLineage.RunEvent event) {
