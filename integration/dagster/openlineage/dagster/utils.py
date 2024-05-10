@@ -1,9 +1,10 @@
 # Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import uuid
 from datetime import datetime
 from typing import Iterable, Optional, Set, Union
+
+from openlineage.client.uuid import generate_new_uuid
 
 from dagster import (  # type: ignore
     DagsterEventType,
@@ -20,7 +21,7 @@ def to_utc_iso_8601(timestamp: float) -> str:
 
 
 def make_step_run_id() -> str:
-    return str(uuid.uuid4())
+    return str(generate_new_uuid())
 
 
 def make_step_job_name(pipeline_name: str, step_key: str) -> str:

@@ -8,23 +8,23 @@ import os
 import subprocess
 import sys
 import time
-import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
 from openlineage.client.client import OpenLineageClient
 from openlineage.client.facet import JobTypeJobFacet
 from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt import (
     DbtLocalArtifactProcessor,
     ParentRunMetadata,
     UnsupportedDbtCommand,
 )
+from openlineage.common.utils import parse_multiple_args, parse_single_arg
 from tqdm import tqdm
 
 __version__ = "1.15.0"
 
-from openlineage.common.utils import parse_multiple_args, parse_single_arg
 
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
 JOB_TYPE_FACET = JobTypeJobFacet(
@@ -38,7 +38,7 @@ def dbt_run_event(
     state: RunState,
     job_name: str,
     job_namespace: str,
-    run_id: str = str(uuid.uuid4()),
+    run_id: str = str(generate_new_uuid()),
     parent: Optional[ParentRunMetadata] = None,
 ) -> RunEvent:
     return RunEvent(

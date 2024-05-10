@@ -65,6 +65,14 @@ openlineage.client.utils module
    :undoc-members:
    :show-inheritance:
 
+openlineage.client.uuid module
+-------------------------------
+
+.. automodule:: openlineage.client.uuid
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 openlineage.client.generated.base module
 ----------------------------------------
 

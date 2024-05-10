@@ -3,7 +3,7 @@
 
 import logging
 import os
-import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 from openlineage.airflow.extractors import TaskMetadata
@@ -23,6 +23,7 @@ from openlineage.client.facet import (
     SourceCodeLocationJobFacet,
 )
 from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.uuid import generate_static_uuid
 
 from airflow.stats import Stats
 
@@ -83,15 +84,25 @@ class OpenLineageAdapter:
         return self._client
 
     @staticmethod
-    def build_dag_run_id(dag_id, dag_run_id):
-        return str(uuid.uuid3(uuid.NAMESPACE_URL, f"{_DAG_NAMESPACE}.{dag_id}.{dag_run_id}"))
+    def build_dag_run_id(dag_id: str, execution_date: datetime) -> str:
+        return str(
+            generate_static_uuid(
+                instant=execution_date,
+                data=f"{_DAG_NAMESPACE}.{dag_id}".encode("utf-8"),
+            )
+        )
 
     @staticmethod
-    def build_task_instance_run_id(dag_id, task_id, execution_date, try_number):
+    def build_task_instance_run_id(
+        dag_id: str,
+        task_id: str,
+        try_number: int,
+        execution_date: datetime,
+    ) -> str:
         return str(
-            uuid.uuid3(
-                uuid.NAMESPACE_URL,
-                f"{_DAG_NAMESPACE}.{dag_id}.{task_id}.{execution_date}.{try_number}",
+            generate_static_uuid(
+                instant=execution_date,
+                data=f"{_DAG_NAMESPACE}.{dag_id}.{task_id}.{try_number}".encode("utf-8"),
             )
         )
 
@@ -259,7 +270,10 @@ class OpenLineageAdapter:
             eventTime=DagUtils.to_iso_8601(dag_run.start_date),
             job=Job(name=dag_run.dag_id, namespace=_DAG_NAMESPACE, facets={"jobType": _JOB_TYPE_DAG}),
             run=self._build_run(
-                run_id=self.build_dag_run_id(dag_run.dag_id, dag_run.run_id),
+                run_id=self.build_dag_run_id(
+                    dag_id=dag_run.dag_id,
+                    execution_date=dag_run.execution_date,
+                ),
                 nominal_start_time=nominal_start_time,
                 nominal_end_time=nominal_end_time,
             ),
@@ -274,7 +288,12 @@ class OpenLineageAdapter:
             eventType=RunState.COMPLETE,
             eventTime=DagUtils.to_iso_8601(dag_run.end_date),
             job=Job(name=dag_run.dag_id, namespace=_DAG_NAMESPACE, facets={"jobType": _JOB_TYPE_DAG}),
-            run=Run(runId=self.build_dag_run_id(dag_run.dag_id, dag_run.run_id)),
+            run=Run(
+                runId=self.build_dag_run_id(
+                    dag_id=dag_run.dag_id,
+                    execution_date=dag_run.execution_date,
+                ),
+            ),
             inputs=[],
             outputs=[],
             producer=_PRODUCER,
@@ -287,7 +306,10 @@ class OpenLineageAdapter:
             eventTime=DagUtils.to_iso_8601(dag_run.end_date),
             job=Job(name=dag_run.dag_id, namespace=_DAG_NAMESPACE, facets={"jobType": _JOB_TYPE_DAG}),
             run=Run(
-                runId=self.build_dag_run_id(dag_run.dag_id, dag_run.run_id),
+                runId=self.build_dag_run_id(
+                    dag_id=dag_run.dag_id,
+                    execution_date=dag_run.execution_date,
+                ),
                 facets={"errorMessage": ErrorMessageRunFacet(message=msg, programmingLanguage="python")},
             ),
             inputs=[],

@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import time
-import uuid
 from abc import ABC, abstractmethod
 from typing import Optional
 
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.dagster import __version__ as OPENLINEAGE_DAGSTER_VERSION
 from packaging.version import Version
 
@@ -164,7 +164,7 @@ class DagsterRunLatestProvider(DagsterRunProvider):
 def make_test_event_log_record(
     event_type: Optional[DagsterEventType] = None,
     pipeline_name: str = "a_job",
-    pipeline_run_id: str = str(uuid.uuid4()),
+    pipeline_run_id: str = str(generate_new_uuid()),
     timestamp: float = time.time(),
     step_key: Optional[str] = None,
     storage_id: int = 1,

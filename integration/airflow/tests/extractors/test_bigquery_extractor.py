@@ -5,7 +5,6 @@ import json
 import logging
 import random
 import unittest
-import uuid
 from datetime import datetime
 from unittest import mock
 
@@ -16,6 +15,7 @@ from openlineage.client.facet import (
     ExternalQueryRunFacet,
     OutputStatisticsOutputDatasetFacet,
 )
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.bigquery import (
     BigQueryErrorRunFacet,
     BigQueryJobRunFacet,
@@ -71,7 +71,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
 
         execution_date = datetime.utcnow().replace(tzinfo=pytz.utc)
         dag = DAG(dag_id="TestBigQueryExtractorE2E")
-        dag.create_dagrun(run_id=str(uuid.uuid4()), state=State.QUEUED, execution_date=execution_date)
+        dag.create_dagrun(run_id=str(generate_new_uuid()), state=State.QUEUED, execution_date=execution_date)
 
         task = BigQueryExecuteQueryOperator(
             sql="select first_name, last_name from dataset.customers;",
@@ -171,7 +171,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
 
         execution_date = datetime.utcnow().replace(tzinfo=pytz.utc)
         dag = DAG(dag_id="TestBigQueryExtractorE2E")
-        dag.create_dagrun(run_id=str(uuid.uuid4()), state=State.QUEUED, execution_date=execution_date)
+        dag.create_dagrun(run_id=str(generate_new_uuid()), state=State.QUEUED, execution_date=execution_date)
 
         task = BigQueryExecuteQueryOperator(
             sql="select first_name, last_name from dataset.customers;",
@@ -223,7 +223,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
 
         execution_date = datetime.utcnow().replace(tzinfo=pytz.utc)
         dag = DAG(dag_id="TestBigQueryExtractorE2E")
-        dag.create_dagrun(run_id=str(uuid.uuid4()), state=State.QUEUED, execution_date=execution_date)
+        dag.create_dagrun(run_id=str(generate_new_uuid()), state=State.QUEUED, execution_date=execution_date)
 
         task = BigQueryExecuteQueryOperator(
             sql="select first_name, last_name from dataset.customers;",

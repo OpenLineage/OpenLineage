@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import datetime
 import gzip
-import uuid
 from typing import TYPE_CHECKING
 
 from openlineage.client import OpenLineageClient
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.serde import Serde
 from openlineage.client.transport.http import HttpCompression, HttpConfig, HttpTransport
+from openlineage.client.uuid import generate_new_uuid
 from requests import Session
 
 if TYPE_CHECKING:
@@ -71,7 +71,7 @@ def test_client_with_http_transport_emits(mocker: MockerFixture) -> None:
     event = RunEvent(
         eventType=RunState.START,
         eventTime=datetime.datetime.now().isoformat(),
-        run=Run(runId=str(uuid.uuid4())),
+        run=Run(runId=str(generate_new_uuid())),
         job=Job(namespace="http", name="test"),
         producer="prod",
         schemaURL="schema",
@@ -102,7 +102,7 @@ def test_client_with_http_transport_emits_custom_endpoint(mocker: MockerFixture)
     event = RunEvent(
         eventType=RunState.START,
         eventTime=datetime.datetime.now().isoformat(),
-        run=Run(runId=str(uuid.uuid4())),
+        run=Run(runId=str(generate_new_uuid())),
         job=Job(namespace="http", name="test"),
         producer="prod",
         schemaURL="schema",

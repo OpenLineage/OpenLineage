@@ -8,7 +8,7 @@ import uuid
 from unittest import mock
 from unittest.mock import ANY, MagicMock, patch
 
-from openlineage.airflow.adapter import _DAG_NAMESPACE, _PRODUCER, OpenLineageAdapter
+from openlineage.airflow.adapter import _PRODUCER, OpenLineageAdapter
 from openlineage.airflow.extractors import TaskMetadata
 from openlineage.client.facet import (
     DocumentationJobFacet,
@@ -22,6 +22,7 @@ from openlineage.client.facet import (
     SqlJobFacet,
 )
 from openlineage.client.run import Dataset, Job, Run, RunEvent, RunState
+from openlineage.client.uuid import generate_new_uuid
 
 
 @patch.dict(os.environ, {"MARQUEZ_URL": "http://marquez:5000", "MARQUEZ_API_KEY": "api-key"})
@@ -91,7 +92,7 @@ def test_emit_start_event():
     adapter = OpenLineageAdapter()
     adapter.emit = mock.Mock()
 
-    run_id = str(uuid.uuid4())
+    run_id = str(generate_new_uuid())
     event_time = datetime.datetime.now().isoformat()
     adapter.start_task(
         run_id=run_id,
@@ -143,7 +144,7 @@ def test_emit_start_event_with_additional_information():
     adapter = OpenLineageAdapter()
     adapter.emit = mock.Mock()
 
-    run_id = str(uuid.uuid4())
+    run_id = str(generate_new_uuid())
     event_time = dt.datetime.now().isoformat()
     adapter.start_task(
         run_id=run_id,
@@ -217,7 +218,7 @@ def test_emit_complete_event():
     adapter = OpenLineageAdapter()
     adapter.emit = mock.Mock()
 
-    run_id = str(uuid.uuid4())
+    run_id = str(generate_new_uuid())
     event_time = datetime.datetime.now().isoformat()
     adapter.complete_task(
         run_id=run_id,
@@ -254,7 +255,7 @@ def test_emit_complete_event_with_additional_information():
     adapter = OpenLineageAdapter()
     adapter.emit = mock.Mock()
 
-    run_id = str(uuid.uuid4())
+    run_id = str(generate_new_uuid())
     event_time = dt.datetime.now().isoformat()
     adapter.complete_task(
         run_id=run_id,
@@ -307,7 +308,7 @@ def test_emit_fail_event():
     adapter = OpenLineageAdapter()
     adapter.emit = mock.Mock()
 
-    run_id = str(uuid.uuid4())
+    run_id = str(generate_new_uuid())
     event_time = datetime.datetime.now().isoformat()
     adapter.fail_task(
         run_id=run_id,
@@ -344,7 +345,7 @@ def test_emit_fail_event_with_additional_information():
     adapter = OpenLineageAdapter()
     adapter.emit = mock.Mock()
 
-    run_id = str(uuid.uuid4())
+    run_id = str(generate_new_uuid())
     event_time = dt.datetime.now().isoformat()
     adapter.fail_task(
         run_id=run_id,
@@ -395,43 +396,51 @@ def test_emit_fail_event_with_additional_information():
 
 def test_build_dag_run_id_is_valid_uuid():
     dag_id = "test_dag"
-    dag_run_id = "run_1"
-    result = OpenLineageAdapter.build_dag_run_id(dag_id, dag_run_id)
-    assert uuid.UUID(result)
+    execution_date = datetime.datetime.now()
+    result = OpenLineageAdapter.build_dag_run_id(
+        dag_id=dag_id,
+        execution_date=execution_date,
+    )
+    uuid_result = uuid.UUID(result)
+    assert uuid_result
+    assert uuid_result.version == 7
 
 
 def test_build_dag_run_id_different_inputs_give_different_results():
-    result1 = OpenLineageAdapter.build_dag_run_id("dag1", "run1")
-    result2 = OpenLineageAdapter.build_dag_run_id("dag2", "run2")
+    result1 = OpenLineageAdapter.build_dag_run_id(
+        dag_id="dag1",
+        execution_date=datetime.datetime.now(),
+    )
+    result2 = OpenLineageAdapter.build_dag_run_id(
+        dag_id="dag2",
+        execution_date=datetime.datetime.now(),
+    )
     assert result1 != result2
-
-
-def test_build_dag_run_id_uses_correct_methods_underneath():
-    dag_id = "test_dag"
-    dag_run_id = "run_1"
-    expected = str(uuid.uuid3(uuid.NAMESPACE_URL, f"{_DAG_NAMESPACE}.{dag_id}.{dag_run_id}"))
-    actual = OpenLineageAdapter.build_dag_run_id(dag_id, dag_run_id)
-    assert actual == expected
 
 
 def test_build_task_instance_run_id_is_valid_uuid():
-    result = OpenLineageAdapter.build_task_instance_run_id("dag_id", "task_id", "execution_date", 1)
-    assert uuid.UUID(result)
+    result = OpenLineageAdapter.build_task_instance_run_id(
+        dag_id="dag_id",
+        task_id="task_id",
+        try_number=1,
+        execution_date=datetime.datetime.now(),
+    )
+    uuid_result = uuid.UUID(result)
+    assert uuid_result
+    assert uuid_result.version == 7
 
 
 def test_build_task_instance_run_id_different_inputs_gives_different_results():
-    result1 = OpenLineageAdapter.build_task_instance_run_id("dag_id", "task1", "2023-01-01", 1)
-    result2 = OpenLineageAdapter.build_task_instance_run_id("dag_id", "task2", "2023-01-02", 2)
-    assert result1 != result2
-
-
-def test_build_task_instance_run_id_uses_correct_methods_underneath():
-    dag_id = "dag_id"
-    task_id = "task_1"
-    execution_date = "2023-01-01"
-    try_number = 1
-    expected = str(
-        uuid.uuid3(uuid.NAMESPACE_URL, f"{_DAG_NAMESPACE}.{dag_id}.{task_id}.{execution_date}.{try_number}")
+    result1 = OpenLineageAdapter.build_task_instance_run_id(
+        dag_id="dag1",
+        task_id="task1",
+        try_number=1,
+        execution_date=datetime.datetime.now(),
     )
-    actual = OpenLineageAdapter.build_task_instance_run_id(dag_id, task_id, execution_date, try_number)
-    assert actual == expected
+    result2 = OpenLineageAdapter.build_task_instance_run_id(
+        dag_id="dag2",
+        task_id="task2",
+        try_number=2,
+        execution_date=datetime.datetime.now(),
+    )
+    assert result1 != result2
