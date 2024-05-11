@@ -6,12 +6,13 @@
 package io.openlineage.spark.agent.util;
 
 import static io.openlineage.spark.agent.lifecycle.ExecutionContext.CAMEL_TO_SNAKE_CASE;
+import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +26,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
+import org.apache.spark.sql.types.ArrayType;
+import org.apache.spark.sql.types.MapType;
+import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import scala.PartialFunction;
@@ -113,16 +117,65 @@ public class PlanUtils {
 
   private static List<OpenLineage.SchemaDatasetFacetFields> transformFields(
       OpenLineage openLineage, StructField... fields) {
-    List<OpenLineage.SchemaDatasetFacetFields> list = new ArrayList<>();
-    for (StructField field : fields) {
-      list.add(
-          openLineage
-              .newSchemaDatasetFacetFieldsBuilder()
-              .name(field.name())
-              .type(field.dataType().typeName())
-              .build());
+    return Arrays.stream(fields)
+        .map(field -> transformField(openLineage, field))
+        .collect(Collectors.toList());
+  }
+
+  private static OpenLineage.SchemaDatasetFacetFields transformField(
+      OpenLineage openLineage, StructField field) {
+    OpenLineage.SchemaDatasetFacetFieldsBuilder builder =
+        openLineage
+            .newSchemaDatasetFacetFieldsBuilder()
+            .name(field.name())
+            .type(field.dataType().typeName());
+
+    if (field.metadata() != null) {
+      // field.getComment() actually tries to access field.metadata(),
+      // and fails with NullPointerException if it is null instead of expected Metadata.empty()
+      builder = builder.description(asJavaOptional(field.getComment()).orElse(null));
     }
-    return list;
+
+    if (field.dataType() instanceof StructType) {
+      StructType structField = (StructType) field.dataType();
+      return builder
+          .type("struct")
+          .fields(transformFields(openLineage, structField.fields()))
+          .build();
+    }
+
+    if (field.dataType() instanceof MapType) {
+      MapType mapField = (MapType) field.dataType();
+      return builder
+          .type("map")
+          .fields(
+              transformFields(
+                  openLineage,
+                  new StructField("key", mapField.keyType(), false, Metadata.empty()),
+                  new StructField(
+                      "value",
+                      mapField.valueType(),
+                      mapField.valueContainsNull(),
+                      Metadata.empty())))
+          .build();
+    }
+
+    if (field.dataType() instanceof ArrayType) {
+      ArrayType arrayField = (ArrayType) field.dataType();
+      return builder
+          .type("array")
+          .fields(
+              transformFields(
+                  openLineage,
+                  new StructField(
+                      "_element",
+                      arrayField.elementType(),
+                      arrayField.containsNull(),
+                      Metadata.empty())))
+          .build();
+    }
+
+    return builder.build();
   }
 
   /**
