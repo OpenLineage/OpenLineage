@@ -4,6 +4,8 @@
 
 ## [1.14.0](https://github.com/OpenLineage/OpenLineage/compare/1.13.1...1.14.0) - 2024-05-09
 ### Added
+* **Common/dbt: add DREMIO to supported dbt profile types** [`#2674`](https://github.com/OpenLineage/OpenLineage/pull/2674) [@surisimran](https://github.com/surisimran)  
+    *Adds support for dbt-dremio, resolving [`#2668`](https://github.com/OpenLineage/OpenLineage/issues/2668).
 * **Flink: support Protobuf format for sources and sinks** [`#2482`](https://github.com/OpenLineage/OpenLineage/pull/2482) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Adds schema extraction from Protobuf classes. Includes support for nested object types, `array` type, `map` type, `oneOf` and `any`.*
 * **Java: add facet conversion test** [`#2663`](https://github.com/OpenLineage/OpenLineage/pull/2663) [@julienledem](https://github.com/julienledem)  
@@ -12,13 +14,13 @@
     *Sets the `jobType` property of `JobTypeJobFacet` to either `SQL_JOB` or `RDD_JOB`.*
 * **Spark: add Glue symlink if reading from Glue catalog table** [`#2646`](https://github.com/OpenLineage/OpenLineage/pull/2646) [@mobuchowski](https://github.com/mobuchowski)  
     *The dataset symlink now points to the Glue catalog table name if the Glue catalog table is used.*
-* **Spark: add spark_jobDetails facet** [`#2662`](https://github.com/OpenLineage/OpenLineage/pull/2662) [@dolfinus](https://github.com/dolfinus)  
+* **Spark: add `spark_jobDetails` facet** [`#2662`](https://github.com/OpenLineage/OpenLineage/pull/2662) [@dolfinus](https://github.com/dolfinus)  
     *Adds a `SparkJobDetailsFacet`, capturing information about Spark application jobs -- e.g. `jobId`, `jobDescription`, `jobGroup`, `jobCallSite`. This allows for tracking an OpenLineage `RunEvent` with a specific Spark job in SparkUI.*
 
 ### Removed
-* **Airflow: drop old ParentRunFacet key** [`#2660`](https://github.com/OpenLineage/OpenLineage/pull/2660) [@dolfinus](https://github.com/dolfinus)  
+* **Airflow: drop old `ParentRunFacet` key** [`#2660`](https://github.com/OpenLineage/OpenLineage/pull/2660) [@dolfinus](https://github.com/dolfinus)  
     *Changes the integration to use the `parent` key for `ParentFacet`, dropping the outdated `parentRun`.*
-* **Spark: drop SparkVersionFacet** [`#2659`](https://github.com/OpenLineage/OpenLineage/pull/2659) [@dolfinus](https://github.com/dolfinus)  
+* **Spark: drop `SparkVersionFacet`** [`#2659`](https://github.com/OpenLineage/OpenLineage/pull/2659) [@dolfinus](https://github.com/dolfinus)  
     *Drops the `SparkVersion` facet, deprecated since 1.2.0 and planned for removal since 1.4.0.*
 * **Python: allow relative paths in URI formats for Python facets** [`#2679`](https://github.com/OpenLineage/OpenLineage/pull/2679) [@JDarDagran](https://github.com/JDarDagran)  
     *Removes a URI validator that checked if scheme and netloc were present, allowing relative paths in URI formats for Python facets.*
@@ -30,9 +32,7 @@
 ### Fixed
 * **dbt: support a less ambiguous logic to generate job names** [`#2658`](https://github.com/OpenLineage/OpenLineage/pull/2658) [@blacklight](https://github.com/blacklight)  
     *Includes profile and models in the dbt job name to make it more unique.*
-* **Common/dbt: add DREMIO to supported dbt profile types** [`#2674`](https://github.com/OpenLineage/OpenLineage/pull/2674) [@surisimran](https://github.com/surisimran)  
-    *Adds support for dbt-dremio, resolving [`#2668`](https://github.com/OpenLineage/OpenLineage/issues/2668).
-* **Spark: update to use org.apache.commons.lang3 instead of org.apache.commons.lang** [`#2676`](https://github.com/OpenLineage/OpenLineage/pull/2676) [@harels](https://github.com/harels)  
+* **Spark: update to use `org.apache.commons.lang3` instead of `org.apache.commons.lang`** [`#2676`](https://github.com/OpenLineage/OpenLineage/pull/2676) [@harels](https://github.com/harels)  
     *Updates Apache Commons Lang to the latest version. We were mixing two versions, and the old one was not present in many places.*
 
 ## [1.13.1](https://github.com/OpenLineage/OpenLineage/compare/1.12.0...1.13.1) - 2024-04-25
