@@ -26,10 +26,12 @@ class ProtobufFieldResolverTest {
   @Test
   void testConvertNestedDataType() {
     // verify subEvent
+    assertThat(subEvent.getName()).isEqualTo("subEvent");
     assertThat(subEvent.getType())
         .isEqualTo("io.openlineage.flink.proto.event.SubProtobufTestEvent");
+    assertThat(subEvent.getDescription()).isNull();
 
-    assertThat(subEvent.getFields()).hasSize(4);
+    assertThat(subEvent.getFields()).hasSize(5);
     assertThat(getSubField(subEvent.getFields(), "id"))
         .isPresent()
         .map(f -> f.getType())
@@ -54,11 +56,12 @@ class ProtobufFieldResolverTest {
   }
 
   @Test
-  void testConvertVerifyArrayDataType() {
-    SchemaDatasetFacetFields field = getSubField(subEvent.getFields(), "arr").get();
+  void testConvertVerifyMessageArrayDataType() {
+    SchemaDatasetFacetFields field = getSubField(subEvent.getFields(), "arrMessage").get();
     assertThat(field.getFields()).hasSize(1);
-    assertThat("array").isEqualTo(field.getType());
-    assertThat("arr").isEqualTo(field.getName());
+    assertThat(field.getType()).isEqualTo("array");
+    assertThat(field.getName()).isEqualTo("arrMessage");
+    assertThat(field.getDescription()).isNull();
 
     assertThat(field.getFields().get(0))
         .hasFieldOrPropertyWithValue("name", "_element")
@@ -70,11 +73,27 @@ class ProtobufFieldResolverTest {
   }
 
   @Test
+  void testConvertVerifyPrimitiveArrayDataType() {
+    SchemaDatasetFacetFields field = getSubField(subEvent.getFields(), "arrPrimitive").get();
+    assertThat(field.getFields()).hasSize(1);
+    assertThat(field.getType()).isEqualTo("array");
+    assertThat(field.getName()).isEqualTo("arrPrimitive");
+    assertThat(field.getDescription()).isNull();
+
+    assertThat(field.getFields().get(0))
+        .hasFieldOrPropertyWithValue("name", "_element")
+        .hasFieldOrPropertyWithValue("type", "int64");
+
+    assertThat(field.getFields().get(0).getFields()).isNull(); // no nested fields
+  }
+
+  @Test
   void testConvertVerifyMapDataType() {
     SchemaDatasetFacetFields field = getSubField(subEvent.getFields(), "someMap").get();
     assertThat(field.getFields()).hasSize(2);
-    assertThat("map").isEqualTo(field.getType());
-    assertThat("someMap").isEqualTo(field.getName());
+    assertThat(field.getType()).isEqualTo("map");
+    assertThat(field.getName()).isEqualTo("someMap");
+    assertThat(field.getDescription()).isNull();
 
     assertThat(field.getFields().get(0))
         .hasFieldOrPropertyWithValue("name", "key")
@@ -89,8 +108,10 @@ class ProtobufFieldResolverTest {
   void testAny() {
     SchemaDatasetFacetFields anyField = getSubField(facet.getFields(), "testAnyOf").get();
     assertThat(anyField.getFields()).hasSize(2);
-    assertThat("google.protobuf.Any").isEqualTo(anyField.getType());
-    assertThat("testAnyOf").isEqualTo(anyField.getName());
+    assertThat(anyField.getType()).isEqualTo("google.protobuf.Any");
+    assertThat(anyField.getName()).isEqualTo("testAnyOf");
+    assertThat(anyField.getDescription()).isNull();
+
     assertThat(anyField.getFields().get(0))
         .hasFieldOrPropertyWithValue("name", "type_url")
         .hasFieldOrPropertyWithValue("type", "string");

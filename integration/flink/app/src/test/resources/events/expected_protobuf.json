@@ -1,13 +1,13 @@
 {
-  "eventType" : "START",
+  "eventType": "START",
   "eventTime": "${json-unit.any-string}",
-  "job" : {
-    "namespace" : "flink_job_namespace",
+  "job": {
+    "namespace": "flink_job_namespace",
     "name": "flink_protobuf",
     "facets": {
       "jobType": {
-        "processingType" : "STREAMING",
-        "jobType" : "JOB",
+        "processingType": "STREAMING",
+        "jobType": "JOB",
         "integration": "FLINK"
       }
     }
@@ -19,49 +19,52 @@
     {
       "namespace": "kafka://kafka:9092",
       "name": "io.openlineage.flink.kafka.protobuf_input",
-      "facets" : {
-        "schema" : {
-          "fields" : [ {
-            "name" : "id",
-            "type" : "string",
-            "description" : "",
-            "fields" : [ ]
-          }, {
-            "name" : "version",
-            "type" : "int64",
-            "description" : "",
-            "fields" : [ ]
-          }, {
-            "name" : "subEvent",
-            "type" : "io.openlineage.flink.proto.event.SubInputEvent",
-            "description" : "",
-            "fields" : [ {
-              "name" : "id",
-              "type" : "string",
-              "description" : "",
-              "fields" : [ ]
-            }, {
-              "name" : "subSubEvent",
-              "type" : "io.openlineage.flink.proto.event.SubSubInputEvent",
-              "description" : "",
-              "fields" : [ {
-                "name" : "id",
-                "type" : "string",
-                "description" : "",
-                "fields" : [ ]
-              }, {
-                "name" : "version",
-                "type" : "int64",
-                "description" : "",
-                "fields" : [ ]
-              } ]
-            }, {
-              "name" : "arr",
-              "type" : "int64",
-              "description" : "",
-              "fields" : [ ]
-            } ]
-          } ]
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "int64"
+            },
+            {
+              "name": "subEvent",
+              "type": "io.openlineage.flink.proto.event.SubInputEvent",
+              "fields": [
+                {
+                  "name": "id",
+                  "type": "string"
+                },
+                {
+                  "name": "subSubEvent",
+                  "type": "io.openlineage.flink.proto.event.SubSubInputEvent",
+                  "fields": [
+                    {
+                      "name": "id",
+                      "type": "string"
+                    },
+                    {
+                      "name": "version",
+                      "type": "int64"
+                    }
+                  ]
+                },
+                {
+                  "name": "arr",
+                  "type": "array",
+                  "fields": [
+                    {
+                      "name": "_element",
+                      "type": "int64"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       }
     }
@@ -75,57 +78,47 @@
           "fields": [
             {
               "name": "id",
-              "type": "string",
-              "description": "",
-              "fields": []
+              "type": "string"
             },
             {
               "name": "version",
-              "type": "int64",
-              "description": "",
-              "fields": []
+              "type": "int64"
             },
             {
               "name": "counter",
-              "type": "int64",
-              "description": "",
-              "fields": []
+              "type": "int64"
             },
             {
               "name": "subEvent",
               "type": "io.openlineage.flink.proto.event.SubOutputEvent",
-              "description": "",
               "fields": [
                 {
                   "name": "id",
-                  "type": "string",
-                  "description": "",
-                  "fields": []
+                  "type": "string"
                 },
                 {
                   "name": "subSubEvent",
                   "type": "io.openlineage.flink.proto.event.SubSubOutputEvent",
-                  "description": "",
                   "fields": [
                     {
                       "name": "id",
-                      "type": "string",
-                      "description": "",
-                      "fields": []
+                      "type": "string"
                     },
                     {
                       "name": "version",
-                      "type": "int64",
-                      "description": "",
-                      "fields": []
+                      "type": "int64"
                     }
                   ]
                 },
                 {
                   "name": "arr",
-                  "type": "int64",
-                  "description": "",
-                  "fields": []
+                  "type": "array",
+                  "fields": [
+                    {
+                      "name": "_element",
+                      "type": "int64"
+                    }
+                  ]
                 }
               ]
             }
