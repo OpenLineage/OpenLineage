@@ -22,7 +22,7 @@ class NoopTransport(Transport):
     config_class = NoopConfig
 
     def __init__(self, config: NoopConfig) -> None:  # noqa: ARG002
-        log.info("OpenLineage client is disabled. NoopTransport.")
+        log.debug("Constructing OpenLineage transport that will NOT send any events.")
 
     def emit(self, event: Event) -> None:  # noqa: ARG002
         return None

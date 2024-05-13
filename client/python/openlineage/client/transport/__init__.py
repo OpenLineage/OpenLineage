@@ -7,7 +7,7 @@ from openlineage.client.transport.factory import DefaultTransportFactory
 from openlineage.client.transport.file import FileTransport
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.kafka import KafkaConfig, KafkaTransport
-from openlineage.client.transport.msk_iam import MSKIAMTransport
+from openlineage.client.transport.msk_iam import MSKIAMConfig, MSKIAMTransport
 from openlineage.client.transport.noop import NoopTransport
 from openlineage.client.transport.transport import Config, Transport, TransportFactory
 
