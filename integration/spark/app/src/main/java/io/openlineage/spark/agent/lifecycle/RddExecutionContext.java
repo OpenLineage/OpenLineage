@@ -9,6 +9,7 @@ import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Versions;
@@ -63,7 +64,7 @@ class RddExecutionContext implements ExecutionContext {
 
   private final EventEmitter eventEmitter;
   private final Optional<SparkContext> sparkContextOption;
-  private final UUID runId = UUID.randomUUID();
+  private final UUID runId = UUIDUtils.generateNewUUID();
   private List<URI> inputs = Collections.emptyList();
   private List<URI> outputs = Collections.emptyList();
   private String jobSuffix;
