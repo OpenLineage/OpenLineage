@@ -2,47 +2,53 @@
 # Enable "labeler" for your PR that would add labels to PRs based on the paths that are modified in the PR.
 labelPRBasedOnFilePath:
   # Add '' to any changes within '' folder or any subfolders
-  ci:
+  area:ci:
     - .circleci/**/*
-  client/java:
+    - .pre_commit/**/*
+  area:client/java:
     - client/java/**/*
-  client/python:
+  area:client/python:
     - client/python/**/*
-  common:
-    - integration/common/**/*
-  dev/ops:
+  area:dev:
     - dev/**/*
-  documentation:
+    - .github/**/*
+  area:documentation:
     - doc/*
     - "*.md"
-  extractor:
-    - integration/airflow/openlineage/airflow/extractors/*
-  integration/airflow:
+  area:integration/airflow:
     - integration/airflow/**/*
-  integration/bigquery:
-    - integration/airflow/openlineage/airflow/extractors/bigquery_extractor.py
-  integration/dagster:
+  area:integration/common:
+    - integration/common/**/*
+  area:integration/dagster:
     - integration/dagster/**/*
-  integration/dbt:
+  area:integration/dbt:
     - integration/dbt/**/*
-  integration/flink:
+  area:integration/flink:
     - integration/flink/**/*
-  integration/great-expectations:
-    - integration/common/openlineage/common/provider/great_expectations/*
-  integration/spark:
+  area:integration/spark:
     - integration/spark/**/*
-  integration/sql:
+  area:integration/sql:
     - integration/sql/**/*
-  proposal:
-    - proposals/**/*
-  proxy:
+  area:proxy:
     - proxy/**/*
-  spec:
+  area:spec:
     - spec/**/*
-  streaming:
-    - integration/flink/**/*
-  tests:
-    - .circleci/workflows/*
+  area:tests:
+    - "**/*test*"
+  kind:proposal:
+    - proposals/**/*
+  language:java:
+    - "*.java"
+    - "*.jar"
+  language:python:
+    - "*.py"
+  language:rust:
+    - "*.rs"
+  language:scala:
+    - "*.scala"
+    - "*.sc"
+  state:needs-triage:
+    - *
 
 ##### Greetings ########################################################################################################
 # Comment to be posted to welcome users when they open their first PR
