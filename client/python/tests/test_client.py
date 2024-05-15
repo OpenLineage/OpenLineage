@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import os
 import re
-import uuid
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
@@ -23,6 +22,7 @@ from openlineage.client.run import (
 )
 from openlineage.client.transport.http import HttpTransport
 from openlineage.client.transport.noop import NoopTransport
+from openlineage.client.uuid import generate_new_uuid
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -207,7 +207,7 @@ def test_client_filters_exact_job_name_events(
         factory.create.return_value = transport
         client = OpenLineageClient(factory=factory)
 
-        run = Run(runId=str(uuid.uuid4()))
+        run = Run(runId=str(generate_new_uuid()))
         event = RunEvent(
             eventType=RunState.START,
             eventTime="2021-11-03T10:53:52.427343",

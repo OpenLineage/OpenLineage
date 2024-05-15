@@ -3,9 +3,9 @@
 
 import os
 import time
-import uuid
 from typing import Optional
 
+from openlineage.client.uuid import generate_new_uuid
 from packaging.version import Version
 
 from airflow.lineage.backend import LineageBackend
@@ -43,9 +43,12 @@ class Backend:
         dag = context["dag"]
         dagrun = context["dag_run"]
         task_instance = context["task_instance"]
-        dag_run_id = self.adapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
+        dag_run_id = self.adapter.build_dag_run_id(
+            dag_id=dag.dag_id,
+            execution_date=dagrun.execution_date,
+        )
 
-        run_id = str(uuid.uuid4())
+        run_id = str(generate_new_uuid())
         job_name = get_job_name(operator)
 
         task_metadata = self.extractor_manager.extract_metadata(
@@ -53,7 +56,10 @@ class Backend:
         )
 
         task_uuid = OpenLineageAdapter.build_task_instance_run_id(
-            dag.dag_id, operator.task_id, task_instance.execution_date, task_instance.try_number
+            dag_id=dag.dag_id,
+            task_id=operator.task_id,
+            try_number=task_instance.try_number,
+            execution_date=task_instance.execution_date,
         )
         start, end = get_dagrun_start_end(dagrun, dag)
 

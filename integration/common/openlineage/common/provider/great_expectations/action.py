@@ -8,7 +8,6 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Optional, Union
 from urllib.parse import urlparse
-from uuid import uuid4
 
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions
 from openlineage.client.facet import (
@@ -21,6 +20,7 @@ from openlineage.client.facet import (
 )
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.serde import Serde
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.dataset import Dataset as OLDataset
 from openlineage.common.provider.great_expectations.facets import (
@@ -41,10 +41,7 @@ from great_expectations.data_context.types.resource_identifiers import (
     ValidationResultIdentifier,
 )
 from great_expectations.dataset import Dataset as GEDataset
-from great_expectations.dataset import (
-    PandasDataset,
-    SqlAlchemyDataset,
-)
+from great_expectations.dataset import PandasDataset, SqlAlchemyDataset
 from great_expectations.execution_engine import (
     PandasExecutionEngine,
     SqlAlchemyExecutionEngine,
@@ -121,7 +118,7 @@ class OpenLineageValidationAction(ValidationAction):
         if openlineage_run_id is not None:
             self.run_id = openlineage_run_id
         else:
-            self.run_id = uuid4()
+            self.run_id = generate_new_uuid()
         self.parent_run_id = openlineage_parent_run_id
         self.parent_job_namespace = openlineage_parent_job_namespace
         self.parent_job_name = openlineage_parent_job_name

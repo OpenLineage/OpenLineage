@@ -5,7 +5,6 @@ import json
 import logging
 import random
 import unittest
-import uuid
 from datetime import datetime
 from unittest import mock
 from unittest.mock import PropertyMock
@@ -17,6 +16,7 @@ from openlineage.client.facet import (
     ErrorMessageRunFacet,
     OutputStatisticsOutputDatasetFacet,
 )
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
 from packaging.version import Version
@@ -67,7 +67,7 @@ log = logging.getLogger(__name__)
 class TestRedshiftDataExtractor(unittest.TestCase):
     def setUp(self):
         log.debug("TestRedshiftDataExtractor.setup(): ")
-        run_id = str(uuid.uuid4())
+        run_id = str(generate_new_uuid())
         self.task = TestRedshiftDataExtractor._get_redshift_task(run_id)
         self.ti = TestRedshiftDataExtractor._get_ti(task=self.task, run_id=run_id)
         self.extractor = RedshiftDataExtractor(operator=self.task)

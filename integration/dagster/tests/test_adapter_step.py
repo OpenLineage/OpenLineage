@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import time
-import uuid
 from unittest.mock import patch
 
 from openlineage.client.constants import DEFAULT_NAMESPACE_NAME
 from openlineage.client.facet import ParentRunFacet
 from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.dagster.adapter import OpenLineageAdapter
 
 from .conftest import PRODUCER
@@ -20,8 +20,8 @@ def test_start_pipeline(mock_client, mock_to_utc_iso_8601):
     mock_to_utc_iso_8601.return_value = event_time
 
     pipeline_name = "a_pipeline"
-    pipeline_run_id = str(uuid.uuid4())
-    step_run_id = str(uuid.uuid4())
+    pipeline_run_id = str(generate_new_uuid())
+    step_run_id = str(generate_new_uuid())
     step_key = "an_op"
     timestamp = time.time()
 
@@ -64,8 +64,8 @@ def test_complete_step(mock_client, mock_to_utc_iso_8601):
     mock_to_utc_iso_8601.return_value = event_time
 
     pipeline_name = "a_pipeline"
-    pipeline_run_id = str(uuid.uuid4())
-    step_run_id = str(uuid.uuid4())
+    pipeline_run_id = str(generate_new_uuid())
+    step_run_id = str(generate_new_uuid())
     step_key = "an_op"
     timestamp = time.time()
 
@@ -108,8 +108,8 @@ def test_fail_step(mock_client, mock_to_utc_iso_8601):
     mock_to_utc_iso_8601.return_value = event_time
 
     pipeline_name = "a_pipeline"
-    pipeline_run_id = str(uuid.uuid4())
-    step_run_id = str(uuid.uuid4())
+    pipeline_run_id = str(generate_new_uuid())
+    step_run_id = str(generate_new_uuid())
     step_key = "an_op"
     timestamp = time.time()
 

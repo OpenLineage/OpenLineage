@@ -4,7 +4,6 @@
 import collections
 import datetime
 import logging
-import uuid
 from abc import abstractmethod
 from enum import Enum
 from typing import Dict, List, Optional, Sequence, Tuple
@@ -22,6 +21,7 @@ from openlineage.client.facet import (
     SqlJobFacet,
 )
 from openlineage.client.run import Dataset, Job, OutputDataset, Run, RunEvent, RunState
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.snowflake import fix_account_name
 from openlineage.common.schema import GITHUB_LOCATION
 from openlineage.common.utils import get_from_multiple_chains, get_from_nullable_chain
@@ -73,7 +73,7 @@ class DbtRun:
     output: Optional[Dataset] = attr.ib()
     job_name: str = attr.ib()
     namespace: str = attr.ib()
-    run_id: str = attr.ib(factory=lambda: str(uuid.uuid4()))
+    run_id: str = attr.ib(factory=lambda: str(generate_new_uuid()))
 
 
 @attr.s
@@ -250,7 +250,7 @@ class DbtArtifactProcessor:
                         )
                     )
 
-            run_id = str(uuid.uuid4())
+            run_id = str(generate_new_uuid())
             if name.startswith("snapshot."):
                 job_name = (
                     f"{output_node['database']}.{output_node['schema']}"
@@ -316,7 +316,7 @@ class DbtArtifactProcessor:
                 + (".build.test" if self.command == "build" else ".test")
             )
 
-            run_id = str(uuid.uuid4())
+            run_id = str(generate_new_uuid())
             events.add(
                 self.to_openlineage_events(
                     "success",

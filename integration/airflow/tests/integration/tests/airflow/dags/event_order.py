@@ -3,10 +3,10 @@
 
 import datetime
 import os
-import uuid
 
 from openlineage.client import OpenLineageClient, set_producer
 from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.uuid import generate_new_uuid
 
 from airflow import DAG
 from airflow.operators.bash import BashOperator
@@ -42,7 +42,7 @@ def emit_event():
         RunEvent(
             RunState.COMPLETE,
             datetime.datetime.now().isoformat(),
-            Run(runId=str(uuid.uuid4())),
+            Run(runId=str(generate_new_uuid())),
             Job(
                 namespace=os.getenv("OPENLINEAGE_NAMESPACE"),
                 name="emit_event.wait-for-me",
