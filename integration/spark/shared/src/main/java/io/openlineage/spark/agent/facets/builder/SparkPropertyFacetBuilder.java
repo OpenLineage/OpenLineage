@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.facets.builder;
 
 import io.openlineage.spark.agent.facets.SparkPropertyFacet;
+import io.openlineage.spark.agent.util.SparkSessionUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.*;
@@ -25,26 +26,27 @@ public class SparkPropertyFacetBuilder
       new HashSet<>(Arrays.asList("spark.master", "spark.app.name"));
   private static final String ALLOWED_PROPERTIES_KEY = "spark.openlineage.capturedProperties";
   private SparkConf conf;
-  private Set<String> allowerProperties;
+  private Set<String> allowedProperties;
 
   public SparkPropertyFacetBuilder(OpenLineageContext context) {
-    fillConfAndAllowerProperties(context.getSparkContext());
+    fillConfAndAllowedProperties(context.getSparkContext().map(SparkContext::getConf).orElse(null));
   }
 
   public SparkPropertyFacetBuilder() {
-    try {
-      SparkSession session = SparkSession.active();
-      fillConfAndAllowerProperties(session.sparkContext());
-    } catch (IllegalStateException ie) {
-      log.info("No active or default Spark session found");
-      conf = new SparkConf();
-      allowerProperties = new HashSet<>();
-    }
+    fillConfAndAllowedProperties(
+        SparkSessionUtils.activeSession()
+            .map(SparkSession::sparkContext)
+            .map(SparkContext::getConf)
+            .orElse(null));
   }
 
-  private void fillConfAndAllowerProperties(SparkContext context) {
-    conf = context.getConf();
-    allowerProperties =
+  private void fillConfAndAllowedProperties(SparkConf sparkConf) {
+    if (sparkConf == null) {
+      conf = new SparkConf();
+    } else {
+      conf = sparkConf;
+    }
+    allowedProperties =
         conf.contains(ALLOWED_PROPERTIES_KEY)
             ? Arrays.stream(conf.get(ALLOWED_PROPERTIES_KEY).split(",")).collect(Collectors.toSet())
             : DEFAULT_ALLOWED_PROPERTIES;
@@ -59,18 +61,18 @@ public class SparkPropertyFacetBuilder
   public SparkPropertyFacet buildFacet(SparkListenerEvent event) {
     Map<String, Object> m = new HashMap<>();
     Arrays.stream(conf.getAll())
-        .filter(t -> allowerProperties.contains(t._1))
+        .filter(t -> allowedProperties.contains(t._1))
         .forEach(t -> m.putIfAbsent(t._1, t._2));
     if (event instanceof SparkListenerJobStart) {
       SparkListenerJobStart startEvent = (SparkListenerJobStart) event;
       startEvent.properties().entrySet().stream()
-          .filter(e -> allowerProperties.contains(e.getKey()))
+          .filter(e -> allowedProperties.contains(e.getKey()))
           .forEach(e -> m.putIfAbsent(e.getKey().toString(), e.getValue()));
     }
 
     try {
       SparkSession session = SparkSession.active();
-      allowerProperties.forEach(item -> m.putIfAbsent(item, session.conf().get(item)));
+      allowedProperties.forEach(item -> m.putIfAbsent(item, session.conf().get(item)));
     } catch (RuntimeException e) {
       log.info(
           "Cannot add SparkPropertyFacet: Spark session is in a wrong status or a key in capturedProperties does not exist in run-time config");

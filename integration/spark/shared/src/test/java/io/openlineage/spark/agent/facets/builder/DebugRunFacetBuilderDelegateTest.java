@@ -65,7 +65,7 @@ class DebugRunFacetBuilderDelegateTest {
 
   @Test
   void testSystemDebugFacetExecutionContext() {
-    when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(sparkContext.deployMode()).thenReturn("local");
     assertThat(delegate.buildFacet().getSystem())
         .hasFieldOrPropertyWithValue("sparkDeployMode", "local");
@@ -89,7 +89,7 @@ class DebugRunFacetBuilderDelegateTest {
     SparkOpenLineageConfig config = new SparkOpenLineageConfig();
     config.setTransportConfig(httpConfig);
 
-    when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(openLineageContext.getOpenLineageConfig()).thenReturn(config);
     when(sparkContext.conf()).thenReturn(conf);
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
@@ -112,7 +112,7 @@ class DebugRunFacetBuilderDelegateTest {
 
   @Test
   void testBuildClasspathDebugFacet() {
-    when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(sparkContext.listJars())
         .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList("oneJar")));
     when(openLineageContext.getSparkVersion()).thenReturn("3.3.0");

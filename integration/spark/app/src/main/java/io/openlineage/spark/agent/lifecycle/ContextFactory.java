@@ -19,6 +19,7 @@ import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.SQLExecution;
@@ -40,6 +41,26 @@ public class ContextFactory {
     this.meterRegistry = meterRegistry;
     this.config = config;
     handlerFactory = new InternalEventHandlerFactory();
+  }
+
+  public ExecutionContext createSparkApplicationExecutionContext(SparkContext sparkContext) {
+    OpenLineageContext olContext =
+        OpenLineageContext.builder()
+            .sparkContext(sparkContext)
+            .applicationUuid(this.openLineageEventEmitter.getApplicationRunId())
+            .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .customEnvironmentVariables(
+                this.openLineageEventEmitter
+                    .getCustomEnvironmentVariables()
+                    .orElse(Collections.emptyList()))
+            .vendors(Vendors.getVendors())
+            .meterRegistry(meterRegistry)
+            .openLineageConfig(config)
+            .build();
+    OpenLineageRunEventBuilder runEventBuilder =
+        new OpenLineageRunEventBuilder(olContext, handlerFactory);
+    return new SparkApplicationExecutionContext(
+        openLineageEventEmitter, olContext, runEventBuilder);
   }
 
   public ExecutionContext createRddExecutionContext(int jobId) {

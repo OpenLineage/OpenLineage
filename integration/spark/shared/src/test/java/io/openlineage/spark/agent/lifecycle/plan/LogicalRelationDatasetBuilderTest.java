@@ -151,7 +151,7 @@ class LogicalRelationDatasetBuilderTest {
     Path p2 = new Path("/tmp/path2");
 
     when(logicalRelation.relation()).thenReturn(hadoopFsRelation);
-    when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
     when(session.sessionState()).thenReturn(sessionState);
     when(sessionState.newHadoopConfWithOptions(any())).thenReturn(hadoopConfig);
@@ -190,7 +190,7 @@ class LogicalRelationDatasetBuilderTest {
     when(fileSystem.isFile(p)).thenReturn(true);
 
     when(logicalRelation.relation()).thenReturn(hadoopFsRelation);
-    when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
     when(session.sessionState()).thenReturn(sessionState);
     when(sessionState.newHadoopConfWithOptions(any())).thenReturn(hadoopConfig);

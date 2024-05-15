@@ -6,6 +6,8 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import org.apache.spark.scheduler.ActiveJob;
+import org.apache.spark.scheduler.SparkListenerApplicationEnd;
+import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
@@ -25,11 +27,15 @@ public interface ExecutionContext {
 
   void setActiveJob(ActiveJob activeJob);
 
+  void start(SparkListenerApplicationStart applicationStart);
+
   void start(SparkListenerJobStart jobStart);
 
   void start(SparkListenerSQLExecutionStart sqlStart);
 
   void start(SparkListenerStageSubmitted stageSubmitted);
+
+  void end(SparkListenerApplicationEnd applicationEnd);
 
   void end(SparkListenerJobEnd jobEnd);
 
