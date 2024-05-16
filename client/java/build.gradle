@@ -47,7 +47,7 @@ ext {
     junit5Version = '5.10.2'
     lombokVersion = '1.18.32'
     mockitoVersion = '5.2.0'
-    micrometerVersion = '1.12.5'
+    micrometerVersion = '1.13.0'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
