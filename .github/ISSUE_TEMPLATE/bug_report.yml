@@ -1,0 +1,117 @@
+--- # Heavily inspired by Airflow's Bug report template at https://github.com/apache/airflow/blob/main/.github/ISSUE_TEMPLATE/airflow_providers_bug_report.yml
+name: Bug report
+description: Problems and issues with code
+title: "[BUG]"
+labels: ["kind:bug", "state:needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      # yamllint disable rule:line-length
+      value: "
+        ## Thank you for your interest in OpenLineage!
+        
+        We appreciate the community's efforts to improve OpenLineage.
+        This form will help us collect a bit of information about the problem you encountered.
+        
+        
+        Note, you do not need to create an issue if you have a change ready to submit!
+        You can open a [pull request](https://github.com/OpenLineage/OpenLineage/pulls) immediately instead."
+      # yamllint enable rule:line-length
+  - type: dropdown
+    attributes:
+      label: OpenLineage integration/client
+      description: Part of code-base that the issue report is about (you can choose more than one)
+      multiple: true
+      options:
+        - Airflow integration
+        - Dagster integration
+        - DBT integration
+        - Flink integration
+        - Spark integration
+        - Python client
+        - Java client
+        - SQL parser
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: OpenLineage version
+      description: >
+        Please provide the names and versions of all OpenLineage packages you are using. 
+        If you have multiple OpenLineage packages installed, list the versions of each.
+      placeholder: >
+        e.g. `openlineage-python==1.14.0`, `openlineage-sql==1.12.0`, 
+        `io.openlineage:openlineage-spark_2.13:1.14.0`, `main branch`
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Technology and package versions
+      description: > 
+        Please provide the versions of all relevant technologies and packages you are using. 
+        Include versions of the programming languages (e.g., Python, Scala) and key packages 
+        (e.g., Apache Airflow, Spark). If you are unsure of what might be causing the error 
+        or think it is necessary, include the output of your package manager 
+        (e.g., `pip freeze` for Python) for a complete list.
+      placeholder: >
+        Be thorough. This information is crucial for debugging and reproducing the issue, 
+        and can significantly speed up the resolution process.
+  - type: textarea
+    attributes:
+      label: Environment configuration
+      description: How is your OpenLineage configured? What is the configuration content?
+      placeholder: >
+        Please do not include any sensitive information. 
+        Enter any relevant details of your configuration, environment variables, configuration file content.
+  - type: textarea
+    attributes:
+      label: Deployment details
+      description: Are you using any managed services (Astro, MWAA, Dataproc, Glue, etc.)?
+      placeholder: >
+        Enter any relevant details of your deployment. Especially version of any managed services and
+        any customisation you added.
+  - type: textarea
+    attributes:
+      label: Problem details
+      description: Describe what happened.
+      placeholder: >
+        Please provide the context in which the problem occurred and explain what happened.
+        It is extremely helpful if you copy&paste the fragment of debug logs showing the exact error messages
+        or wrong behaviour and OpenLineage events that contain wrong/missing information. 
+        You can include files by dragging and dropping them here.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: What you think should happen instead
+      description: What do you think went wrong?
+      placeholder: >
+        Please explain why you think the behaviour is erroneous and what should be the expected outcome.
+  - type: textarea
+    attributes:
+      label: How to reproduce
+      description: >
+        What should we do to reproduce the problem?
+      placeholder: >
+        Please make sure you provide a reproducible step-by-step case of how to reproduce the problem
+        as minimally and precisely as possible. Keep in mind we do not have access to your environment.
+        If reproduction is unclear or nondeterministic, it's still a valid bug; just state that.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Additional details
+      description: Anything else we need to know?
+      placeholder: How often does this problem occur? Any relevant logs to include?
+  - type: checkboxes
+    attributes:
+      label: Do you plan to make this contribution yourself?
+      description: >
+        This is absolutely not required. However, if you are interested in working on this project 
+        the community would be happy to help you. If not, that's ok too!
+      options:
+        - label: I am interested in doing this work
+  - type: markdown
+    attributes:
+      value: "Thanks for submitting a form! We appreciate the time you have spent."
