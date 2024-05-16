@@ -27,7 +27,7 @@ ext {
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.1'
     testcontainersVersion = '1.19.3'
-    micrometerVersion = '1.12.4'
+    micrometerVersion = '1.13.0'
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
@@ -83,7 +83,6 @@ dependencies {
     implementation(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
     implementation("org.apache.httpcomponents.client5:httpclient5:5.3")
-    implementation("io.micrometer:micrometer-core:${micrometerVersion}")
 
     compileOnly("org.apache.spark:spark-core_${scala}:${spark}")
     compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")
