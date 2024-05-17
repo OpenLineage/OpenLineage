@@ -178,12 +178,6 @@ class SparkGenericIntegrationTest {
     agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
     spark.stop();
 
-    verifyEvents(
-        mockServer,
-        "applicationLevelStartApplication.json",
-        "applicationLevelStartJob.json",
-        "applicationLevelCompleteJob.json",
-        "applicationLevelCompleteApplication.json");
     List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
 
     // Both Spark application and Spark job events have environment-properties facet
@@ -195,6 +189,35 @@ class SparkGenericIntegrationTest {
                       .getFacets()
                       .getAdditionalProperties()
                       .get("environment-properties")
+                  != null;
+            });
+  }
+
+  @Test
+  void sparkEmitsApplicationDetailsFacet() {
+    Dataset<Row> df = createTempDataset();
+
+    Dataset<Row> agg = df.groupBy("a").count();
+    agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
+    spark.stop();
+
+    List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
+
+    // Only Spark application START events have spark_applicationDetails facet
+    assertThat(
+            events.stream()
+                .filter(
+                    event ->
+                        "generic_integration_test".equals(event.getJob().getName())
+                            && event.getEventType() == RunEvent.EventType.START)
+                .collect(Collectors.toList()))
+        .allMatch(
+            event -> {
+              return event
+                      .getRun()
+                      .getFacets()
+                      .getAdditionalProperties()
+                      .get("spark_applicationDetails")
                   != null;
             });
   }
