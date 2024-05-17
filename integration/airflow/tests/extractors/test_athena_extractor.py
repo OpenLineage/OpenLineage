@@ -152,7 +152,7 @@ def test_extract_create():
             aws_conn_id="aws_conn_id",
             query=sql,
             database=DB_SCHEMA_NAME,
-            output_location=OUTPUT_LOCATION,
+            output_location="s3://bucket",
             dag=dag,
         )
         task_metadata = AthenaExtractor(create_task).extract()
@@ -186,7 +186,7 @@ def test_extract_create():
         assert len(task_metadata.outputs) == 2
         assert task_metadata.outputs[0] == first_expected_output
         assert task_metadata.outputs[1].namespace == "s3://bucket"
-        assert task_metadata.outputs[1].name == "/output"
+        assert task_metadata.outputs[1].name == "/"
         assert task_metadata.job_facets["sql"].query == sql
 
 
