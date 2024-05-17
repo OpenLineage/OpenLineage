@@ -77,7 +77,7 @@ class AthenaExtractor(BaseExtractor):
         parsed = urlparse(output_location)
         outputs.append(
             Dataset(
-                name=parsed.path,
+                name=parsed.path or "/",
                 source=Source(
                     scheme=parsed.scheme,
                     authority=parsed.netloc,
