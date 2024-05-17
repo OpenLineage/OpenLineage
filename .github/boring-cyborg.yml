@@ -48,7 +48,7 @@ labelPRBasedOnFilePath:
     - "*.scala"
     - "*.sc"
   state:needs-triage:
-    - *
+    - "*"
 
 ##### Greetings ########################################################################################################
 # Comment to be posted to welcome users when they open their first PR
