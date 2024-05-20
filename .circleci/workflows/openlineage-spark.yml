@@ -1,6 +1,9 @@
 workflows:
   openlineage-spark:
     jobs:
+      - build-integration-spark-interfaces:
+          requires:
+            - build-client-java
       - build-integration-spark-interfaces-scala:
           matrix:
             parameters:
@@ -15,6 +18,7 @@ workflows:
            - build-integration-sql-java
            - build-client-java
            - build-integration-spark-interfaces-scala
+           - build-integration-spark-interfaces
       - build-integration-spark-scala-2_13:
           matrix:
             parameters:
@@ -23,6 +27,7 @@ workflows:
            - build-integration-sql-java
            - build-client-java           
            - build-integration-spark-interfaces-scala
+           - build-integration-spark-interfaces
       - approval-integration-spark:
           type: approval
           requires:

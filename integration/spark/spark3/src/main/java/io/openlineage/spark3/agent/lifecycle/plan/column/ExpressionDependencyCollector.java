@@ -60,6 +60,9 @@ public class ExpressionDependencyCollector {
     List<NamedExpression> expressions = new LinkedList<>();
     if (node instanceof ColumnLevelLineageNode) {
       extensionColumnLineage(context, (ColumnLevelLineageNode) node);
+    } else if (node instanceof io.openlineage.spark.extension.v1.ColumnLevelLineageNode) {
+      javaExtensionColumnLineage(
+          context, (io.openlineage.spark.extension.v1.ColumnLevelLineageNode) node);
     } else if (node instanceof Project) {
       expressions.addAll(
           ScalaConversionUtils.<NamedExpression>fromSeq(((Project) node).projectList()));
@@ -109,6 +112,41 @@ public class ExpressionDependencyCollector {
                                 .addDependency(
                                     ExprId.apply(d.outputExprId().exprId()),
                                     ExprId.apply(i.exprId()))));
+  }
+
+  private static void javaExtensionColumnLineage(
+      ColumnLevelLineageContext context,
+      io.openlineage.spark.extension.v1.ColumnLevelLineageNode node) {
+    List<io.openlineage.spark.extension.v1.ExpressionDependency> deps =
+        node.getColumnLevelLineageDependencies(
+            ExtensionPlanUtils.javaContext(context.getEvent(), context.getOlContext()));
+
+    deps.stream()
+        .filter(
+            e -> e instanceof io.openlineage.spark.extension.v1.ExpressionDependencyWithDelegate)
+        .map(e -> (io.openlineage.spark.extension.v1.ExpressionDependencyWithDelegate) e)
+        .filter(e -> e.getExpression() instanceof Expression)
+        .forEach(
+            e ->
+                traverseExpression(
+                    (Expression) e.getExpression(),
+                    ExprId.apply(e.getOutputExprId().getExprId()),
+                    context.getBuilder()));
+
+    deps.stream()
+        .filter(
+            e -> e instanceof io.openlineage.spark.extension.v1.ExpressionDependencyWithIdentifier)
+        .map(e -> (io.openlineage.spark.extension.v1.ExpressionDependencyWithIdentifier) e)
+        .forEach(
+            d ->
+                d.getInputExprId()
+                    .forEach(
+                        i ->
+                            context
+                                .getBuilder()
+                                .addDependency(
+                                    ExprId.apply(d.getOutputExprId().getExprId()),
+                                    ExprId.apply(i.getExprId()))));
   }
 
   public static void traverseExpression(

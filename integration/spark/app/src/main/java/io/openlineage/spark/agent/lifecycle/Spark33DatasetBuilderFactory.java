@@ -15,6 +15,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandOutputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.SparkExtensionJavaV1OutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SparkExtensionV1InputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SparkExtensionV1OutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
@@ -43,6 +44,7 @@ public class Spark33DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context))
             .add(new SubqueryAliasOutputDatasetBuilder(context))
+            .add(new SparkExtensionJavaV1OutputDatasetBuilder(context))
             .add(new SparkExtensionV1OutputDatasetBuilder(context))
             .add(new CreateReplaceDatasetBuilder(context))
             .add(new SparkExtensionV1InputDatasetBuilder(context))

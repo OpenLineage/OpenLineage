@@ -31,11 +31,6 @@ sealed trait FieldWithExprId extends DatasetFieldLineage {
   def exprId: OlExprId;
 }
 
-trait DatasetFieldWithIdentifier extends DatasetFieldLineage {
-  def datasetIdentifier: DatasetIdentifier;
-  def fieldWithExprId: FieldWithExprId
-}
-
 case class InputDatasetFieldWithIdentifier(
     datasetIdentifier: DatasetIdentifier,
     field: String,

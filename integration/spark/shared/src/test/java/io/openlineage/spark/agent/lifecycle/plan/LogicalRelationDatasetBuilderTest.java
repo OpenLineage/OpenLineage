@@ -232,4 +232,30 @@ class LogicalRelationDatasetBuilderTest {
     assertThat(list.get(0).getFacets().getSchema().getFields().get(0))
         .hasFieldOrPropertyWithValue("name", "field");
   }
+
+  @Test
+  void testApplyForJavaExtensionV1LineageRelation() {
+    DatasetIdentifier datasetIdentifier = new DatasetIdentifier("name", "namespace");
+    StructType structType =
+        new StructType(
+            new StructField[] {new StructField("field", StringType$.MODULE$, false, null)});
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    io.openlineage.spark.extension.v1.LineageRelation lineageRelation =
+        (io.openlineage.spark.extension.v1.LineageRelation)
+            mock(
+                BaseRelation.class,
+                withSettings()
+                    .extraInterfaces(io.openlineage.spark.extension.v1.LineageRelation.class));
+    when(logicalRelation.relation()).thenReturn((BaseRelation) lineageRelation);
+    when(lineageRelation.getLineageDatasetIdentifier(any())).thenReturn(datasetIdentifier);
+    when(logicalRelation.schema()).thenReturn(structType);
+
+    List<Dataset> list = builder.apply(mock(SparkListenerEvent.class), logicalRelation);
+
+    assertThat(list).hasSize(1);
+    assertThat(list.get(0).getName()).isEqualTo(datasetIdentifier.getName());
+    assertThat(list.get(0).getNamespace()).isEqualTo(datasetIdentifier.getNamespace());
+    assertThat(list.get(0).getFacets().getSchema().getFields().get(0))
+        .hasFieldOrPropertyWithValue("name", "field");
+  }
 }
