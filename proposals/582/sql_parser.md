@@ -115,4 +115,4 @@ In the future, Java aims to make interfacing with native libraries significantly
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2023 contributors to the OpenLineage project
+Copyright 2018-2024 contributors to the OpenLineage project
