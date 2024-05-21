@@ -18,6 +18,7 @@ from openlineage.client.facet_v2 import (
     OutputDatasetFacet,
     data_quality_assertions_dataset,
     datasource_dataset,
+    documentation_dataset,
     output_statistics_output_dataset,
     parent_run,
     schema_dataset,
@@ -491,6 +492,9 @@ class DbtArtifactProcessor:
                 ),
                 "schema": schema_dataset.SchemaDatasetFacet(
                     fields=self.extract_metadata_fields(node.metadata_node["columns"].values())
+                ),
+                "documentation": documentation_dataset.DocumentationDatasetFacet(
+                    description=node.metadata_node["description"]
                 ),
             }
             if assertions:
