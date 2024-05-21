@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.io.Resources;
+import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.circuitBreaker.StaticCircuitBreakerConfig;
 import io.openlineage.client.transports.ApiKeyTokenProvider;
 import io.openlineage.client.transports.ConsoleConfig;
@@ -17,6 +18,8 @@ import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.KafkaConfig;
 import io.openlineage.client.transports.KinesisConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.junit.jupiter.api.Test;
 
@@ -242,6 +245,8 @@ class ArgumentParserTest {
             .set("spark.openlineage.transport.type", "http")
             .set("spark.openlineage.transport.auth.type", "non.existing.TokenProvider")
             .set("spark.openlineage.transport.auth.token", TEST_TOKEN);
+
+    Logger.getLogger(OpenLineageClientUtils.class).setLevel(Level.ERROR);
     assertThrows(RuntimeException.class, () -> ArgumentParser.parse(sparkConf));
   }
 }

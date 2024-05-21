@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.14.0...HEAD)
+### Fixed
+* **Spark: improve job suffix assigning mechanism.** [`#2665`](https://github.com/OpenLineage/OpenLineage/pull/2665) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Improve mechanism to assign deterministic job suffix based on output dataset at the moment of start events. This PR may change job names in some scenarios.*
 
 ## [1.14.0](https://github.com/OpenLineage/OpenLineage/compare/1.13.1...1.14.0) - 2024-05-09
 ### Added

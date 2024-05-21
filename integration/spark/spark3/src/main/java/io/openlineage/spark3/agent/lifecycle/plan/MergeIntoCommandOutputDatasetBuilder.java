@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -36,5 +37,23 @@ public class MergeIntoCommandOutputDatasetBuilder
     }
 
     return delegate(target, event);
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(MergeIntoCommand x) {
+    final LogicalPlan target;
+    if (x.target() instanceof SubqueryAlias) {
+      target = ((SubqueryAlias) x.target()).child();
+    } else {
+      target = x.target();
+    }
+
+    return context.getOutputDatasetBuilders().stream()
+        .filter(b -> b instanceof AbstractQueryPlanOutputDatasetBuilder)
+        .map(b -> (AbstractQueryPlanOutputDatasetBuilder) b)
+        .map(b -> b.jobNameSuffixFromLogicalPlan(target))
+        .filter(Optional::isPresent)
+        .map(o -> (String) o.get())
+        .findFirst();
   }
 }

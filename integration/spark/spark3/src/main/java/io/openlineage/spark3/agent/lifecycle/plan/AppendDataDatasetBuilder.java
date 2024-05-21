@@ -11,6 +11,7 @@ import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.AppendData;
@@ -47,6 +48,16 @@ public class AppendDataDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
           .apply(event, (DataSourceV2Relation) logicalPlan);
     } else {
       return Collections.emptyList();
+    }
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(AppendData plan) {
+    if (plan.table() instanceof DataSourceV2Relation) {
+      return new DataSourceV2RelationOutputDatasetBuilder(context, factory)
+          .jobNameSuffix((DataSourceV2Relation) (plan.table()));
+    } else {
+      return Optional.ofNullable(plan.table()).map(t -> t.name());
     }
   }
 }

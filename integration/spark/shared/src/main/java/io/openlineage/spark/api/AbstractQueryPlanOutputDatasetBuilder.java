@@ -10,9 +10,13 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 
 /**
@@ -22,8 +26,10 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
  *
  * @param <P>
  */
+@Slf4j
 public abstract class AbstractQueryPlanOutputDatasetBuilder<P extends LogicalPlan>
-    extends AbstractQueryPlanDatasetBuilder<SparkListenerEvent, P, OpenLineage.OutputDataset> {
+    extends AbstractQueryPlanDatasetBuilder<SparkListenerEvent, P, OpenLineage.OutputDataset>
+    implements JobNameSuffixProvider<P> {
 
   public AbstractQueryPlanOutputDatasetBuilder(
       OpenLineageContext context, boolean searchDependencies) {
@@ -51,5 +57,36 @@ public abstract class AbstractQueryPlanOutputDatasetBuilder<P extends LogicalPla
             node, ScalaConversionUtils.toScalaFn((lp) -> Collections.<OutputDataset>emptyList()))
         .stream()
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(OpenLineageContext context) {
+    return context
+        .getQueryExecution()
+        .map(qe -> qe.optimizedPlan())
+        .map(p -> jobNameSuffixFromLogicalPlan(p))
+        .filter(Optional::isPresent)
+        .map(Optional::get);
+  }
+
+  public Optional<String> jobNameSuffixFromLogicalPlan(LogicalPlan p) {
+    return Optional.of(p)
+        .filter(plan -> this.isDefinedAtLogicalPlan(plan))
+        .map(plan -> jobNameSuffix((P) plan))
+        .filter(Optional::isPresent)
+        .map(Optional::get);
+  }
+
+  protected String identToSuffix(Identifier identifier) {
+    if (identifier.namespace() == null) {
+      return StringUtils.EMPTY;
+    }
+    String suffix = String.join(SUFFIX_DELIMITER, identifier.namespace());
+    if (StringUtils.isNotEmpty(suffix)) {
+      suffix += SUFFIX_DELIMITER;
+    }
+    suffix += identifier.name();
+
+    return suffix;
   }
 }

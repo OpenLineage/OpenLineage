@@ -16,11 +16,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.AlterTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.connector.catalog.Table;
 
+@Slf4j
 public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuilder<AlterTable> {
 
   public AlterTableDatasetBuilder(@NonNull OpenLineageContext context) {
@@ -65,5 +67,10 @@ public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
     } else {
       return Collections.emptyList();
     }
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(AlterTable alterTable) {
+    return Optional.of(identToSuffix(alterTable.ident()));
   }
 }

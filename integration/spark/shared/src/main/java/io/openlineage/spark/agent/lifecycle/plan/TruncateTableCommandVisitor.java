@@ -64,4 +64,16 @@ public class TruncateTableCommandVisitor
       return Collections.emptyList();
     }
   }
+
+  @Override
+  public Optional<String> jobNameSuffix(TruncateTableCommand command) {
+    Optional<CatalogTable> tableOpt = catalogTableFor(command.tableName());
+    if (tableOpt.isPresent()) {
+      CatalogTable table = tableOpt.get();
+      DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(table);
+      return Optional.of(trimPath(datasetIdentifier.getName()));
+    }
+
+    return Optional.empty();
+  }
 }

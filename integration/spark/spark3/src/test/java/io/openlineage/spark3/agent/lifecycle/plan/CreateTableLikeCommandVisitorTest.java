@@ -100,4 +100,19 @@ class CreateTableLikeCommandVisitorTest {
     assertEquals("/tmp/warehouse/newtable", outputDataset.getName());
     assertEquals("file", outputDataset.getNamespace());
   }
+
+  @Test
+  void testJobNameSuffix() {
+    CreateTableLikeCommand command = mock(CreateTableLikeCommand.class);
+    CreateTableLikeCommandVisitor visitor =
+        new CreateTableLikeCommandVisitor(mock(OpenLineageContext.class));
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(command.targetTable()).thenReturn(tableIdentifier);
+    when(tableIdentifier.identifier()).thenReturn("db_t");
+
+    assertThat(visitor.jobNameSuffix(command).get()).isEqualTo("db_t");
+    assertThat(visitor.jobNameSuffix(command)).isPresent();
+
+    assertThat(visitor.jobNameSuffix(mock(CreateTableLikeCommand.class))).isEmpty();
+  }
 }
