@@ -60,7 +60,7 @@ class DbtCloudArtifactProcessor(DbtArtifactProcessor):
                 )
 
     def get_dbt_metadata(self):
-        self.check_metadata_version(self.manifest, [2, 3, 4, 5, 6, 7], self.logger)
+        self.check_metadata_version(self.manifest, list(range(2, 13)), self.logger)
         self.check_metadata_version(self.run_result, [2, 3, 4, 5], self.logger)
 
         return self.manifest, self.run_result, self.profile, self.catalog
