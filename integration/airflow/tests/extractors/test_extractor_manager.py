@@ -28,7 +28,7 @@ class FakeExtractor(BaseExtractor):
         return TaskMetadata(name="fake-name", job_facets={"fake": {"executed": self.operator.executed}})
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-        from openlineage.client.run import Dataset
+        from openlineage.client.event_v2 import Dataset
 
         return TaskMetadata(
             name="fake-name",
@@ -70,7 +70,7 @@ def test_adding_extractors_to_manager():
 
 
 def test_extracting_inlets_and_outlets():
-    from openlineage.client.run import Dataset
+    from openlineage.client.event_v2 import Dataset
 
     from airflow.lineage.entities import Table
 
@@ -91,7 +91,7 @@ def test_extracting_inlets_and_outlets():
 
 
 def test_extraction_from_inlets_and_outlets_without_extractor():
-    from openlineage.client.run import Dataset
+    from openlineage.client.event_v2 import Dataset
 
     from airflow.lineage.entities import Table
 
@@ -116,7 +116,7 @@ def test_extraction_from_inlets_and_outlets_without_extractor():
 
 
 def test_extraction_from_inlets_and_outlets_ignores_unhandled_types():
-    from openlineage.client.run import Dataset
+    from openlineage.client.event_v2 import Dataset
 
     from airflow.lineage.entities import File, Table, User
 
@@ -145,7 +145,7 @@ def test_extraction_from_inlets_and_outlets_ignores_unhandled_types():
 
 
 def test_fake_extractor_extracts_from_inlets_and_outlets():
-    from openlineage.client.run import Dataset
+    from openlineage.client.event_v2 import Dataset
 
     from airflow.lineage.entities import Table
 
@@ -179,7 +179,7 @@ def test_fake_extractor_extracts_from_inlets_and_outlets():
 
 
 def test_fake_extractor_extracts_and_discards_inlets_and_outlets():
-    from openlineage.client.run import Dataset
+    from openlineage.client.event_v2 import Dataset
 
     from airflow.lineage.entities import Table
 

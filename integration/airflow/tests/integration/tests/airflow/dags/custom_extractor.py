@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 
 from openlineage.airflow.extractors import TaskMetadata
 from openlineage.airflow.extractors.base import BaseExtractor
-from openlineage.client.run import Dataset
+from openlineage.client.event_v2 import Dataset
 
 
 class CustomExtractor(BaseExtractor):

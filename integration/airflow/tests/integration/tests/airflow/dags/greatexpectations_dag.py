@@ -4,7 +4,7 @@
 from great_expectations_provider.operators.great_expectations import (
     GreatExpectationsOperator,
 )
-from openlineage.client import set_producer
+from openlineage.client import set_producer_v2 as set_producer
 
 from airflow import DAG
 from airflow.utils.dates import days_ago

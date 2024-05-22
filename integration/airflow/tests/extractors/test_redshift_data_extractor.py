@@ -12,9 +12,9 @@ from unittest.mock import PropertyMock
 import pytest
 import pytz
 from openlineage.airflow.extractors.redshift_data_extractor import RedshiftDataExtractor
-from openlineage.client.facet import (
-    ErrorMessageRunFacet,
-    OutputStatisticsOutputDatasetFacet,
+from openlineage.client.facet_v2 import (
+    error_message_run,
+    output_statistics_output_dataset,
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.models import DbColumn, DbTableSchema
@@ -167,7 +167,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
         assert len(task_meta.outputs[0].facets["schema"].fields) == 3
 
         assert (
-            OutputStatisticsOutputDatasetFacet(
+            output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
                 rowCount=1,
                 size=11,
             )
@@ -204,7 +204,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
 
         mock_client.describe_statement.assert_called_with(Id=job_id)
 
-        assert isinstance(task_meta.run_facets["errorMessage"], ErrorMessageRunFacet)
+        assert isinstance(task_meta.run_facets["errorMessage"], error_message_run.ErrorMessageRunFacet)
         assert (
             task_meta.run_facets["errorMessage"].message
             == "Cannot retrieve job details from Redshift Data client. redshift error"

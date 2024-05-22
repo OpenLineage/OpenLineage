@@ -5,7 +5,7 @@
       "facets": {
         "sourceCode": {
           "language": "python",
-          "source": "        python_callable=lambda: list(map(lambda x: \"echo \" + str(x), [1, 2, 3])),\n"
+          "sourceCode": "        python_callable=lambda: list(map(lambda x: \"echo \" + str(x), [1, 2, 3])),\n"
         }
       },
       "name": "mapped_dag.get_input",
@@ -96,7 +96,7 @@
       "facets": {
         "sourceCode": {
           "language": "python",
-          "source": "        python_callable=lambda: list(map(lambda x: \"echo \" + str(x), [1, 2, 3])),\n"
+          "sourceCode": "        python_callable=lambda: list(map(lambda x: \"echo \" + str(x), [1, 2, 3])),\n"
         }
       },
       "name": "mapped_dag.get_input",
@@ -131,7 +131,7 @@
       "facets": {
         "sourceCode": {
           "language": "python",
-          "source": "        python_callable=lambda: list(map(lambda x: \"echo \" + str(x), [1, 2, 3])),\n"
+          "sourceCode": "        python_callable=lambda: list(map(lambda x: \"echo \" + str(x), [1, 2, 3])),\n"
         }
       },
       "name": "mapped_dag.get_input",

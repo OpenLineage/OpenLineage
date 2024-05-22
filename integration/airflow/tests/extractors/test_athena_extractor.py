@@ -7,10 +7,7 @@ from unittest import mock
 import pytest
 from openlineage.airflow.extractors.athena_extractor import AthenaExtractor
 from openlineage.airflow.utils import is_airflow_version_enough
-from openlineage.client.facet import (
-    SymlinksDatasetFacet,
-    SymlinksDatasetFacetIdentifiers,
-)
+from openlineage.client.facet_v2 import symlinks_dataset
 from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
@@ -98,9 +95,9 @@ def test_extract_select():
         )
 
         custom_facets = {
-            "symlinks": SymlinksDatasetFacet(
+            "symlinks": symlinks_dataset.SymlinksDatasetFacet(
                 identifiers=[
-                    SymlinksDatasetFacetIdentifiers(
+                    symlinks_dataset.Identifier(
                         namespace="s3://bucket",
                         name="/discount/data/path/",
                         type="TABLE",
@@ -164,9 +161,9 @@ def test_extract_create():
         )
 
         symlink_facets = {
-            "symlinks": SymlinksDatasetFacet(
+            "symlinks": symlinks_dataset.SymlinksDatasetFacet(
                 identifiers=[
-                    SymlinksDatasetFacetIdentifiers(
+                    symlinks_dataset.Identifier(
                         namespace="s3://bucket",
                         name="/data/test_table/data/path",
                         type="TABLE",
@@ -217,9 +214,9 @@ def test_extract_insert_select():
         )
 
         input_facets = {
-            "symlinks": SymlinksDatasetFacet(
+            "symlinks": symlinks_dataset.SymlinksDatasetFacet(
                 identifiers=[
-                    SymlinksDatasetFacetIdentifiers(
+                    symlinks_dataset.Identifier(
                         namespace="s3://bucket",
                         name="/discount/data/path/",
                         type="TABLE",
@@ -238,9 +235,9 @@ def test_extract_insert_select():
         ]
 
         output_facets = {
-            "symlinks": SymlinksDatasetFacet(
+            "symlinks": symlinks_dataset.SymlinksDatasetFacet(
                 identifiers=[
-                    SymlinksDatasetFacetIdentifiers(
+                    symlinks_dataset.Identifier(
                         namespace="s3://bucket",
                         name="/data/test_table/data/path",
                         type="TABLE",
@@ -291,9 +288,9 @@ def test_extract_drop():
         )
 
         symlink_facets = {
-            "symlinks": SymlinksDatasetFacet(
+            "symlinks": symlinks_dataset.SymlinksDatasetFacet(
                 identifiers=[
-                    SymlinksDatasetFacetIdentifiers(
+                    symlinks_dataset.Identifier(
                         namespace="s3://bucket",
                         name="/data/test_table/data/path",
                         type="TABLE",

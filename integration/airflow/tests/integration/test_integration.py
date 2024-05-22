@@ -13,7 +13,7 @@ from typing import Dict, List
 import psycopg2
 import pytest
 import requests
-from openlineage.client.run import RunState
+from openlineage.client.event_v2 import RunState
 from openlineage.common.test import match, setup_jinja
 from openlineage.common.utils import get_from_nullable_chain
 from packaging.version import Version
@@ -518,7 +518,7 @@ def test_airflow_mapped_task_facet(airflow_db_conn):
     started_events = [event for event in mapped_events if event["eventType"] == "START"]
     assert len(started_events) == 3
     assert started_events[0]["job"]["name"] == f"{dag_id}.{task_id}"
-    assert set([event["job"]["facets"]["sourceCode"]["source"] for event in started_events]) == set(
+    assert set([event["job"]["facets"]["sourceCode"]["sourceCode"] for event in started_events]) == set(
         ["echo 1", "echo 2", "echo 3"]
     )
     assert sorted([event["run"]["facets"]["airflow_mappedTask"]["mapIndex"] for event in started_events]) == [

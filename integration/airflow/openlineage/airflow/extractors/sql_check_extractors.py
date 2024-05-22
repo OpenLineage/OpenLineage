@@ -5,12 +5,10 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from openlineage.airflow.extractors.base import TaskMetadata
-from openlineage.client.facet import (
-    Assertion,
+from openlineage.client.facet_v2 import (
     BaseFacet,
-    ColumnMetric,
-    DataQualityAssertionsDatasetFacet,
-    DataQualityMetricsInputDatasetFacet,
+    data_quality_assertions_dataset,
+    data_quality_metrics_input_dataset,
 )
 
 
@@ -121,7 +119,7 @@ def get_check_extractors(super_):
                 return ""
 
             facet_data: Dict[str, Any] = {"columnMetrics": defaultdict(dict)}
-            assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
+            assertion_data: Dict[str, List[data_quality_assertions_dataset.Assertion]] = {"assertions": []}
             for col_name, checks in self.operator.column_mapping.items():
                 col_name = col_name.upper() if self._is_uppercase_names else col_name
                 for check, check_values in checks.items():
@@ -129,16 +127,22 @@ def get_check_extractors(super_):
                     facet_data["columnMetrics"][col_name][facet_key] = check_values.get("result")
 
                     assertion_data["assertions"].append(
-                        Assertion(
+                        data_quality_assertions_dataset.Assertion(
                             assertion=check,
                             success=check_values.get("success"),
                             column=col_name,
                         )
                     )
-                facet_data["columnMetrics"][col_name] = ColumnMetric(**facet_data["columnMetrics"][col_name])
+                facet_data["columnMetrics"][col_name] = data_quality_metrics_input_dataset.ColumnMetrics(
+                    **facet_data["columnMetrics"][col_name]
+                )
 
-            data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
-            data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
+            data_quality_facet = data_quality_metrics_input_dataset.DataQualityMetricsInputDatasetFacet(
+                **facet_data
+            )
+            data_quality_assertions_facet = data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet(
+                assertions=assertion_data["assertions"]
+            )
 
             return {
                 "dataQuality": data_quality_facet,
@@ -166,11 +170,11 @@ def get_check_extractors(super_):
                 }
             }
             """
-            facet_data = {}
-            assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
+            facet_data: Dict[str, Any] = {"columnMetrics": defaultdict(dict)}
+            assertion_data: Dict[str, List[data_quality_assertions_dataset.Assertion]] = {"assertions": []}
             for check, check_values in self.operator.checks.items():
                 assertion_data["assertions"].append(
-                    Assertion(
+                    data_quality_assertions_dataset.Assertion(
                         assertion=check,
                         success=check_values.get("success"),
                     )
@@ -178,8 +182,12 @@ def get_check_extractors(super_):
             facet_data["rowCount"] = self.operator.checks.get("row_count_check", {}).get("result", None)
             facet_data["bytes"] = self.operator.checks.get("bytes", {}).get("result", None)
 
-            data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
-            data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
+            data_quality_facet = data_quality_metrics_input_dataset.DataQualityMetricsInputDatasetFacet(
+                **facet_data
+            )
+            data_quality_assertions_facet = data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet(
+                assertions=assertion_data["assertions"]
+            )
 
             return {
                 "dataQuality": data_quality_facet,

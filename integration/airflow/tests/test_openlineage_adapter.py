@@ -10,19 +10,20 @@ from unittest.mock import ANY, MagicMock, patch
 
 from openlineage.airflow.adapter import _PRODUCER, OpenLineageAdapter
 from openlineage.airflow.extractors import TaskMetadata
-from openlineage.client.facet import (
-    DocumentationJobFacet,
-    ExternalQueryRunFacet,
-    JobTypeJobFacet,
-    NominalTimeRunFacet,
-    OwnershipJobFacet,
-    OwnershipJobFacetOwners,
-    ParentRunFacet,
-    ProcessingEngineRunFacet,
-    SqlJobFacet,
+from openlineage.client.event_v2 import Dataset, Job, Run, RunEvent, RunState, set_producer
+from openlineage.client.facet_v2 import (
+    documentation_job,
+    external_query_run,
+    job_type_job,
+    nominal_time_run,
+    ownership_job,
+    parent_run,
+    processing_engine_run,
+    sql_job,
 )
-from openlineage.client.run import Dataset, Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_new_uuid
+
+set_producer(_PRODUCER)
 
 
 @patch.dict(os.environ, {"MARQUEZ_URL": "http://marquez:5000", "MARQUEZ_API_KEY": "api-key"})
@@ -116,11 +117,11 @@ def test_emit_start_event():
             run=Run(
                 runId=run_id,
                 facets={
-                    "nominalTime": NominalTimeRunFacet(
+                    "nominalTime": nominal_time_run.NominalTimeRunFacet(
                         nominalStartTime="2022-01-01T00:00:00",
                         nominalEndTime="2022-01-01T00:00:00",
                     ),
-                    "processing_engine": ProcessingEngineRunFacet(
+                    "processing_engine": processing_engine_run.ProcessingEngineRunFacet(
                         version=ANY, name="Airflow", openlineageAdapterVersion=ANY
                     ),
                 },
@@ -129,11 +130,12 @@ def test_emit_start_event():
                 namespace="default",
                 name="job",
                 facets={
-                    "documentation": DocumentationJobFacet(description="description"),
-                    "jobType": JobTypeJobFacet(processingType="BATCH", integration="AIRFLOW", jobType="TASK"),
+                    "documentation": documentation_job.DocumentationJobFacet(description="description"),
+                    "jobType": job_type_job.JobTypeJobFacet(
+                        processingType="BATCH", integration="AIRFLOW", jobType="TASK"
+                    ),
                 },
             ),
-            producer=_PRODUCER,
             inputs=[],
             outputs=[],
         )
@@ -145,6 +147,7 @@ def test_emit_start_event_with_additional_information():
     adapter.emit = mock.Mock()
 
     run_id = str(generate_new_uuid())
+    parent_run_id = str(generate_new_uuid())
     event_time = dt.datetime.now().isoformat()
     adapter.start_task(
         run_id=run_id,
@@ -152,7 +155,7 @@ def test_emit_start_event_with_additional_information():
         job_description="description",
         event_time=event_time,
         parent_job_name="parent_job_name",
-        parent_run_id="parent_run_id",
+        parent_run_id=parent_run_id,
         code_location=None,
         nominal_start_time=dt.datetime(2022, 1, 1).isoformat(),
         nominal_end_time=dt.datetime(2022, 1, 1).isoformat(),
@@ -161,10 +164,16 @@ def test_emit_start_event_with_additional_information():
             name="task_metadata",
             inputs=[Dataset(namespace="bigquery", name="a.b.c"), Dataset(namespace="bigquery", name="x.y.z")],
             outputs=[Dataset(namespace="gs://bucket", name="exported_folder")],
-            job_facets={"sql": SqlJobFacet(query="SELECT 1;")},
-            run_facets={"externalQuery1": ExternalQueryRunFacet(externalQueryId="123", source="source")},
+            job_facets={"sql": sql_job.SQLJobFacet(query="SELECT 1;")},
+            run_facets={
+                "externalQuery1": external_query_run.ExternalQueryRunFacet(
+                    externalQueryId="123", source="source"
+                )
+            },
         ),
-        run_facets={"externalQuery2": ExternalQueryRunFacet(externalQueryId="999", source="source")},
+        run_facets={
+            "externalQuery2": external_query_run.ExternalQueryRunFacet(externalQueryId="999", source="source")
+        },
     )
 
     adapter.emit.assert_called_once_with(
@@ -174,37 +183,42 @@ def test_emit_start_event_with_additional_information():
             run=Run(
                 runId=run_id,
                 facets={
-                    "nominalTime": NominalTimeRunFacet(
+                    "nominalTime": nominal_time_run.NominalTimeRunFacet(
                         nominalStartTime="2022-01-01T00:00:00",
                         nominalEndTime="2022-01-01T00:00:00",
                     ),
-                    "processing_engine": ProcessingEngineRunFacet(
+                    "processing_engine": processing_engine_run.ProcessingEngineRunFacet(
                         version=ANY, name="Airflow", openlineageAdapterVersion=ANY
                     ),
-                    "parent": ParentRunFacet(
-                        run={"runId": "parent_run_id"},
-                        job={"namespace": "default", "name": "parent_job_name"},
+                    "parent": parent_run.ParentRunFacet(
+                        run=parent_run.Run(runId=parent_run_id),
+                        job=parent_run.Job(namespace="default", name="parent_job_name"),
                     ),
-                    "externalQuery1": ExternalQueryRunFacet(externalQueryId="123", source="source"),
-                    "externalQuery2": ExternalQueryRunFacet(externalQueryId="999", source="source"),
+                    "externalQuery1": external_query_run.ExternalQueryRunFacet(
+                        externalQueryId="123", source="source"
+                    ),
+                    "externalQuery2": external_query_run.ExternalQueryRunFacet(
+                        externalQueryId="999", source="source"
+                    ),
                 },
             ),
             job=Job(
                 namespace="default",
                 name="job",
                 facets={
-                    "documentation": DocumentationJobFacet(description="description"),
-                    "ownership": OwnershipJobFacet(
+                    "documentation": documentation_job.DocumentationJobFacet(description="description"),
+                    "ownership": ownership_job.OwnershipJobFacet(
                         owners=[
-                            OwnershipJobFacetOwners(name="owner1", type=None),
-                            OwnershipJobFacetOwners(name="owner2", type=None),
+                            ownership_job.Owner(name="owner1", type=None),
+                            ownership_job.Owner(name="owner2", type=None),
                         ]
                     ),
-                    "sql": SqlJobFacet(query="SELECT 1;"),
-                    "jobType": JobTypeJobFacet(processingType="BATCH", integration="AIRFLOW", jobType="TASK"),
+                    "sql": sql_job.SQLJobFacet(query="SELECT 1;"),
+                    "jobType": job_type_job.JobTypeJobFacet(
+                        processingType="BATCH", integration="AIRFLOW", jobType="TASK"
+                    ),
                 },
             ),
-            producer=_PRODUCER,
             inputs=[
                 Dataset(namespace="bigquery", name="a.b.c"),
                 Dataset(namespace="bigquery", name="x.y.z"),
@@ -241,10 +255,11 @@ def test_emit_complete_event():
                 namespace="default",
                 name="job",
                 facets={
-                    "jobType": JobTypeJobFacet(processingType="BATCH", integration="AIRFLOW", jobType="TASK")
+                    "jobType": job_type_job.JobTypeJobFacet(
+                        processingType="BATCH", integration="AIRFLOW", jobType="TASK"
+                    )
                 },
             ),
-            producer=_PRODUCER,
             inputs=[],
             outputs=[],
         )
@@ -256,19 +271,24 @@ def test_emit_complete_event_with_additional_information():
     adapter.emit = mock.Mock()
 
     run_id = str(generate_new_uuid())
+    parent_run_id = str(generate_new_uuid())
     event_time = dt.datetime.now().isoformat()
     adapter.complete_task(
         run_id=run_id,
         end_time=event_time,
         parent_job_name="parent_job_name",
-        parent_run_id="parent_run_id",
+        parent_run_id=parent_run_id,
         job_name="job",
         task=TaskMetadata(
             name="task_metadata",
             inputs=[Dataset(namespace="bigquery", name="a.b.c"), Dataset(namespace="bigquery", name="x.y.z")],
             outputs=[Dataset(namespace="gs://bucket", name="exported_folder")],
-            job_facets={"sql": SqlJobFacet(query="SELECT 1;")},
-            run_facets={"externalQuery": ExternalQueryRunFacet(externalQueryId="123", source="source")},
+            job_facets={"sql": sql_job.SQLJobFacet(query="SELECT 1;")},
+            run_facets={
+                "externalQuery": external_query_run.ExternalQueryRunFacet(
+                    externalQueryId="123", source="source"
+                )
+            },
         ),
     )
 
@@ -279,22 +299,25 @@ def test_emit_complete_event_with_additional_information():
             run=Run(
                 runId=run_id,
                 facets={
-                    "parent": ParentRunFacet(
-                        run={"runId": "parent_run_id"},
-                        job={"namespace": "default", "name": "parent_job_name"},
+                    "parent": parent_run.ParentRunFacet(
+                        run=parent_run.Run(runId=parent_run_id),
+                        job=parent_run.Job(namespace="default", name="parent_job_name"),
                     ),
-                    "externalQuery": ExternalQueryRunFacet(externalQueryId="123", source="source"),
+                    "externalQuery": external_query_run.ExternalQueryRunFacet(
+                        externalQueryId="123", source="source"
+                    ),
                 },
             ),
             job=Job(
                 namespace="default",
                 name="job",
                 facets={
-                    "sql": SqlJobFacet(query="SELECT 1;"),
-                    "jobType": JobTypeJobFacet(processingType="BATCH", integration="AIRFLOW", jobType="TASK"),
+                    "sql": sql_job.SQLJobFacet(query="SELECT 1;"),
+                    "jobType": job_type_job.JobTypeJobFacet(
+                        processingType="BATCH", integration="AIRFLOW", jobType="TASK"
+                    ),
                 },
             ),
-            producer=_PRODUCER,
             inputs=[
                 Dataset(namespace="bigquery", name="a.b.c"),
                 Dataset(namespace="bigquery", name="x.y.z"),
@@ -331,10 +354,11 @@ def test_emit_fail_event():
                 namespace="default",
                 name="job",
                 facets={
-                    "jobType": JobTypeJobFacet(processingType="BATCH", integration="AIRFLOW", jobType="TASK")
+                    "jobType": job_type_job.JobTypeJobFacet(
+                        processingType="BATCH", integration="AIRFLOW", jobType="TASK"
+                    )
                 },
             ),
-            producer=_PRODUCER,
             inputs=[],
             outputs=[],
         )
@@ -346,19 +370,24 @@ def test_emit_fail_event_with_additional_information():
     adapter.emit = mock.Mock()
 
     run_id = str(generate_new_uuid())
+    parent_run_id = str(generate_new_uuid())
     event_time = dt.datetime.now().isoformat()
     adapter.fail_task(
         run_id=run_id,
         end_time=event_time,
         parent_job_name="parent_job_name",
-        parent_run_id="parent_run_id",
+        parent_run_id=parent_run_id,
         job_name="job",
         task=TaskMetadata(
             name="task_metadata",
             inputs=[Dataset(namespace="bigquery", name="a.b.c"), Dataset(namespace="bigquery", name="x.y.z")],
             outputs=[Dataset(namespace="gs://bucket", name="exported_folder")],
-            job_facets={"sql": SqlJobFacet(query="SELECT 1;")},
-            run_facets={"externalQuery": ExternalQueryRunFacet(externalQueryId="123", source="source")},
+            job_facets={"sql": sql_job.SQLJobFacet(query="SELECT 1;")},
+            run_facets={
+                "externalQuery": external_query_run.ExternalQueryRunFacet(
+                    externalQueryId="123", source="source"
+                )
+            },
         ),
     )
 
@@ -369,22 +398,25 @@ def test_emit_fail_event_with_additional_information():
             run=Run(
                 runId=run_id,
                 facets={
-                    "parent": ParentRunFacet(
-                        run={"runId": "parent_run_id"},
-                        job={"namespace": "default", "name": "parent_job_name"},
+                    "parent": parent_run.ParentRunFacet(
+                        run=parent_run.Run(runId=parent_run_id),
+                        job=parent_run.Job(namespace="default", name="parent_job_name"),
                     ),
-                    "externalQuery": ExternalQueryRunFacet(externalQueryId="123", source="source"),
+                    "externalQuery": external_query_run.ExternalQueryRunFacet(
+                        externalQueryId="123", source="source"
+                    ),
                 },
             ),
             job=Job(
                 namespace="default",
                 name="job",
                 facets={
-                    "sql": SqlJobFacet(query="SELECT 1;"),
-                    "jobType": JobTypeJobFacet(processingType="BATCH", integration="AIRFLOW", jobType="TASK"),
+                    "sql": sql_job.SQLJobFacet(query="SELECT 1;"),
+                    "jobType": job_type_job.JobTypeJobFacet(
+                        processingType="BATCH", integration="AIRFLOW", jobType="TASK"
+                    ),
                 },
             ),
-            producer=_PRODUCER,
             inputs=[
                 Dataset(namespace="bigquery", name="a.b.c"),
                 Dataset(namespace="bigquery", name="x.y.z"),

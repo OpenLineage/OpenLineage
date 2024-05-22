@@ -3,8 +3,8 @@
 
 import pytest
 from openlineage.airflow.extractors.converters import convert_to_dataset
-from openlineage.client.facet import SchemaDatasetFacet, SchemaField
-from openlineage.client.run import Dataset
+from openlineage.client.event_v2 import Dataset
+from openlineage.client.facet_v2 import schema_dataset
 
 
 def test_table_to_dataset_conversion():
@@ -37,9 +37,9 @@ def test_table_with_columns_to_dataset_conversion():
 
     assert d.namespace == "c"
     assert d.name == "db.table1"
-    assert d.facets.get("schema") == SchemaDatasetFacet(
+    assert d.facets.get("schema") == schema_dataset.SchemaDatasetFacet(
         fields=[
-            SchemaField(
+            schema_dataset.SchemaDatasetFacetFields(
                 name="col1",
                 type="int",
                 description="col1 desc",

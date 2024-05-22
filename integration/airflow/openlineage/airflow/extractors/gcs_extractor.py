@@ -4,7 +4,7 @@
 from typing import List, Optional
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
-from openlineage.client.run import Dataset
+from openlineage.client.event_v2 import Dataset
 
 
 class GCSToGCSExtractor(BaseExtractor):

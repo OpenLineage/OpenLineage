@@ -7,10 +7,10 @@ from typing import Any, Dict, List, Optional
 
 import attr
 import botocore
-from openlineage.client.facet import (
+from openlineage.client.facet_v2 import (
     BaseFacet,
-    ErrorMessageRunFacet,
-    OutputStatisticsOutputDatasetFacet,
+    error_message_run,
+    output_statistics_output_dataset,
 )
 from openlineage.common.dataset import Dataset, Source
 from openlineage.common.models import DbColumn, DbTableSchema
@@ -60,7 +60,7 @@ class RedshiftDataDatasetsProvider:
             )
             run_facets.update(
                 {
-                    "errorMessage": ErrorMessageRunFacet(
+                    "errorMessage": error_message_run.ErrorMessageRunFacet(
                         message=f"Cannot retrieve job details from Redshift Data client. {e}",
                         programmingLanguage="PYTHON",
                         stackTrace=f"{e}: {traceback.format_exc()}",
@@ -76,8 +76,10 @@ class RedshiftDataDatasetsProvider:
 
         return RedshiftFacets(run_facets, ds_inputs, ds_outputs)
 
-    def _get_output_statistics(self, properties) -> OutputStatisticsOutputDatasetFacet:
-        return OutputStatisticsOutputDatasetFacet(
+    def _get_output_statistics(
+        self, properties
+    ) -> output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet:
+        return output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
             rowCount=properties.get("ResultRows"),
             size=properties.get("ResultSize"),
         )

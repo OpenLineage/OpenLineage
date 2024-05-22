@@ -460,7 +460,7 @@
             },
             "sourceCode": {
                 "language": "python",
-                "source": "def delete_objects():\n    hook = S3Hook(aws_conn_id=CONNECTION)\n    keys = hook.list_keys(bucket_name=S3_BUCKET, prefix=S3_PREFIX)\n    hook.delete_objects(bucket=S3_BUCKET, keys=keys)\n"
+                "sourceCode": "def delete_objects():\n    hook = S3Hook(aws_conn_id=CONNECTION)\n    keys = hook.list_keys(bucket_name=S3_BUCKET, prefix=S3_PREFIX)\n    hook.delete_objects(bucket=S3_BUCKET, keys=keys)\n"
             }
         },
         "name": "athena_dag.delete_s3_objects",
@@ -501,7 +501,7 @@
         "facets": {
             "sourceCode": {
                 "language": "python",
-                "source": "def delete_objects():\n    hook = S3Hook(aws_conn_id=CONNECTION)\n    keys = hook.list_keys(bucket_name=S3_BUCKET, prefix=S3_PREFIX)\n    hook.delete_objects(bucket=S3_BUCKET, keys=keys)\n"
+                "sourceCode": "def delete_objects():\n    hook = S3Hook(aws_conn_id=CONNECTION)\n    keys = hook.list_keys(bucket_name=S3_BUCKET, prefix=S3_PREFIX)\n    hook.delete_objects(bucket=S3_BUCKET, keys=keys)\n"
             }
         },
         "name": "athena_dag.delete_s3_objects",
