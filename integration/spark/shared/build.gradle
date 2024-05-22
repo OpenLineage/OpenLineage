@@ -24,7 +24,8 @@ ext {
     assertjVersion = "3.25.1"
     awaitilityVersion = "4.2.0"
     bigqueryVersion = "0.35.1"
-    databricksVersion = "0.1.4"
+    databricksScalaDbutilsVersion = "0.1.4"
+    databricksSdkVersion = "0.26.0"
     junit5Version = "5.10.1"
     kafkaClientsVersion = "3.6.1"
     mockitoVersion = "4.11.0"
@@ -52,7 +53,10 @@ dependencies {
     compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
 
 
-    compileOnly("com.databricks:databricks-dbutils-scala_${scalaBinaryVersion}:${databricksVersion}") {
+    compileOnly("com.databricks:databricks-dbutils-scala_${scalaBinaryVersion}:${databricksScalaDbutilsVersion}") {
+        exclude(group: "com.fasterxml.jackson.core")
+    }
+    compileOnly("com.databricks:databricks-sdk-java:${databricksSdkVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
     }
     compileOnly("com.google.cloud.spark:spark-bigquery-with-dependencies_${scalaBinaryVersion}:${bigqueryVersion}") {
@@ -84,7 +88,10 @@ dependencies {
     testFixturesApi("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
     testFixturesApi("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
 
-    testFixturesApi("com.databricks:databricks-dbutils-scala_${scalaBinaryVersion}:${databricksVersion}") {
+    testFixturesApi("com.databricks:databricks-dbutils-scala_${scalaBinaryVersion}:${databricksScalaDbutilsVersion}") {
+        exclude(group: "com.fasterxml.jackson.core")
+    }
+    testFixturesApi("com.databricks:databricks-sdk-java:${databricksSdkVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
     }
     testFixturesApi("com.google.cloud.spark:spark-bigquery-with-dependencies_${scalaBinaryVersion}:${bigqueryVersion}") {
@@ -104,7 +111,10 @@ dependencies {
     scala212CompileOnly("org.apache.spark:spark-streaming_2.12:${sparkVersion}")
 
 
-    scala212CompileOnly("com.databricks:databricks-dbutils-scala_2.12:${databricksVersion}") {
+    scala212CompileOnly("com.databricks:databricks-dbutils-scala_2.12:${databricksScalaDbutilsVersion}") {
+        exclude(group: "com.fasterxml.jackson.core")
+    }
+    scala212CompileOnly("com.databricks:databricks-sdk-java:${databricksSdkVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
     }
     scala212CompileOnly("com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:${bigqueryVersion}") {
@@ -117,7 +127,10 @@ dependencies {
     testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
     testScala212Implementation("org.apache.spark:spark-streaming_2.12:${sparkVersion}")
 
-    testScala212Implementation("com.databricks:databricks-dbutils-scala_2.12:${databricksVersion}") {
+    testScala212Implementation("com.databricks:databricks-dbutils-scala_2.12:${databricksScalaDbutilsVersion}") {
+        exclude(group: "com.fasterxml.jackson.core")
+    }
+    testScala212CompileOnly("com.databricks:databricks-sdk-java:${databricksSdkVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
     }
     testScala212Implementation("com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:${bigqueryVersion}") {
@@ -155,7 +168,10 @@ dependencies {
     scala213CompileOnly("org.apache.spark:spark-sql_2.13:${sparkVersion}")
     scala213CompileOnly("org.apache.spark:spark-streaming_2.13:${sparkVersion}")
 
-    scala213CompileOnly("com.databricks:databricks-dbutils-scala_2.13:${databricksVersion}") {
+    scala213CompileOnly("com.databricks:databricks-dbutils-scala_2.13:${databricksScalaDbutilsVersion}") {
+        exclude(group: "com.fasterxml.jackson.core")
+    }
+    scala213CompileOnly("com.databricks:databricks-sdk-java:${databricksSdkVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
     }
     scala213CompileOnly("com.google.cloud.spark:spark-bigquery-with-dependencies_2.13:${bigqueryVersion}") {
@@ -168,7 +184,10 @@ dependencies {
     testScala213Implementation("org.apache.spark:spark-sql_2.13:${sparkVersion}")
     testScala213Implementation("org.apache.spark:spark-streaming_2.13:${sparkVersion}")
 
-    testScala213Implementation("com.databricks:databricks-dbutils-scala_2.13:${databricksVersion}") {
+    testScala213Implementation("com.databricks:databricks-dbutils-scala_2.13:${databricksScalaDbutilsVersion}") {
+        exclude(group: "com.fasterxml.jackson.core")
+    }
+    testScala213CompileOnly("com.databricks:databricks-sdk-java:${databricksSdkVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
     }
     testScala213Implementation("com.google.cloud.spark:spark-bigquery-with-dependencies_2.13:${bigqueryVersion}") {

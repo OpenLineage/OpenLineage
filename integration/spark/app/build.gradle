@@ -111,7 +111,7 @@ dependencies {
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
     testImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
-    testImplementation("com.databricks:databricks-sdk-java:0.4.0") {
+    testImplementation("com.databricks:databricks-sdk-java:0.26.0") {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }

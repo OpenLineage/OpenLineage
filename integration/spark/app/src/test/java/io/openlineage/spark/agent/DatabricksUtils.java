@@ -196,7 +196,11 @@ public class DatabricksUtils {
     CreateClusterResponse response =
         workspace
             .apiClient()
-            .POST("/api/2.0/clusters/create", createCluster, CreateClusterResponse.class);
+            .POST(
+                "/api/2.0/clusters/create",
+                createCluster,
+                CreateClusterResponse.class,
+                Collections.emptyMap());
 
     return response.getClusterId();
   }

@@ -5,6 +5,12 @@
 
 package io.openlineage.spark.agent.facets.builder;
 
+import com.databricks.sdk.WorkspaceClient;
+import com.databricks.sdk.core.DatabricksConfig;
+import com.databricks.sdk.core.DatabricksError;
+import com.databricks.sdk.service.jobs.BaseJob;
+import com.databricks.sdk.service.jobs.Job;
+import com.databricks.sdk.service.jobs.ListJobsRequest;
 import io.openlineage.spark.agent.facets.EnvironmentFacet;
 import io.openlineage.spark.agent.models.DatabricksMountpoint;
 import io.openlineage.spark.agent.util.ReflectionUtils;
@@ -15,7 +21,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -66,24 +71,70 @@ public class DatabricksEnvironmentFacetBuilder
     }
 
     // These are useful properties to extract if they are available
-    List<String> dbPropertiesKeys =
-        Arrays.asList(
-            "orgId",
-            "spark.databricks.clusterUsageTags.clusterOwnerOrgId",
-            "spark.databricks.notebook.path",
-            "spark.databricks.job.type",
-            "spark.databricks.job.id",
-            "spark.databricks.job.runId",
-            "user",
-            "userId",
-            "spark.databricks.clusterUsageTags.clusterName",
-            "spark.databricks.clusterUsageTags.clusterAllTags",
-            "spark.databricks.clusterUsageTags.azureSubscriptionId");
-    dbPropertiesKeys.stream()
-        .forEach(
-            (p) -> {
-              dbProperties.put(p, jobStart.properties().getProperty(p));
-            });
+    //    List<String> dbPropertiesKeys =
+    //        Arrays.asList(
+    //            "orgId",
+    //            "spark.databricks.clusterUsageTags.clusterOwnerOrgId",
+    //            "spark.databricks.notebook.path",
+    //            "spark.databricks.job.type",
+    //            "spark.databricks.job.id",
+    //            "spark.databricks.job.name",
+    //            "spark.databricks.job.runId",
+    //            "spark.databricks.task.runId",
+    //            "spark.databricks.task.name",
+    //            "user",
+    //            "userId",
+    //            "spark.databricks.clusterUsageTags.clusterName",
+    //            "spark.databricks.clusterUsageTags.clusterAllTags",
+    //            "spark.databricks.clusterUsageTags.azureSubscriptionId");
+
+    for (Map.Entry<Object, Object> entry : jobStart.properties().entrySet()) {
+      log.error("Property {} - {}", entry.getKey(), entry.getValue());
+      dbProperties.put(entry.getKey().toString(), entry.getValue().toString());
+    }
+
+    Object jobId = dbProperties.get("spark.databricks.job.id");
+    String url = (String) jobStart.properties().get("spark.databricks.workspaceUrl");
+    String token = (String) jobStart.properties().get("spark.databricks.token");
+
+    if (jobId == null) {
+      log.error("JOB ID IS NULL?");
+    } else {
+      if (token == null || token.equals("[REDACTED]")) {
+        log.error("Job ID {}", jobId);
+        log.error("NO TOKEN spark.databricks.token - {}", token);
+        token =
+            (String)
+                jobStart
+                    .properties()
+                    .get("spark.databricks.inherited.credentials.keys.spark.databricks.api.token");
+        if (token == null || token.equals("*********(redacted)")) {
+          log.error(
+              "NO TOKEN spark.databricks.inherited.credentials.keys.spark.databricks.api.token {}",
+              token);
+        }
+      }
+      DatabricksConfig config = new DatabricksConfig().setToken(token).setHost("https://" + url);
+      WorkspaceClient workspaceClient = new WorkspaceClient(config);
+      long jobIdLong;
+      try {
+        jobIdLong = Long.parseLong((String) jobId);
+      } catch (NumberFormatException e) {
+        log.error("Failed to parse job ID: {}", jobId);
+        return dbProperties;
+      }
+      try {
+        Job job = workspaceClient.jobs().get(jobIdLong);
+        dbProperties.put("job", job);
+
+      } catch (DatabricksError error) {
+        log.error("DBX error: {}", error.toString());
+        log.error("Printing all the jobs");
+        for (BaseJob job : workspaceClient.jobs().list(new ListJobsRequest().setLimit(10L))) {
+          log.error("Has job {} - {}", job.getJobId(), job);
+        }
+      }
+    }
 
     /**
      * Azure Databricks makes available a dbutils mount point to list aliased paths to cloud

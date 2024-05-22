@@ -37,7 +37,7 @@ commands:
 parameters:
   databricks-test:
     type: string
-    default: "disabled"
+    default: "enabled"
 
 jobs:
   unit-test-client-python:
