@@ -5,21 +5,17 @@ import os
 from typing import Any
 
 from openlineage.client import set_producer
-from packaging.version import Version
 
 from airflow import DAG
 from airflow.models import BaseOperator
 from airflow.utils.dates import days_ago
-from airflow.version import version as AIRFLOW_VERSION
 
 set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow")
 
 
-# Exercise the extractor only for Airflow 2.3.0+
 # This is to test the thread handling in the Airflow listener.
 # The thread should be shutdown after 2 seconds, even if the extractor is hanging
-if Version(AIRFLOW_VERSION) > Version("2.3.0"):
-    os.environ["OPENLINEAGE_EXTRACTOR_CustomOperator"] = "hanging_extractor.HangingExtractor"
+os.environ["OPENLINEAGE_EXTRACTOR_CustomOperator"] = "hanging_extractor.HangingExtractor"
 
 default_args = {
     "owner": "datascience",

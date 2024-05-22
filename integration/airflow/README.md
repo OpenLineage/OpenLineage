@@ -71,6 +71,8 @@ This means you don't have to do anything besides configuring it, which is descri
 
 ### Airflow 2.1 - 2.2
 
+> **Note:** As of version 1.15.0, Airflow versions below 2.3.0 are no longer supported. The description below pertains to earlier versions.
+
 This method has limited support: it does not support tracking failed jobs, and job starts are registered only when a job ends.
 
 Set your LineageBackend in your [airflow.cfg](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-config.html) or via environmental variable `AIRFLOW__LINEAGE__BACKEND` to 

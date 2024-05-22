@@ -19,12 +19,10 @@ from openlineage.common.provider.bigquery import (
     BigQueryStatisticsDatasetFacet,
 )
 from openlineage.common.utils import get_from_nullable_chain
-from packaging.version import Version
 
 from airflow.models import DAG, TaskInstance
 from airflow.utils import timezone
 from airflow.utils.state import State
-from airflow.version import version as AIRFLOW_VERSION
 
 log = logging.getLogger(__name__)
 
@@ -281,14 +279,11 @@ class TestBigQueryExtractor(unittest.TestCase):
 
     @staticmethod
     def _get_ti(task):
-        kwargs = {}
-        if Version(AIRFLOW_VERSION) > Version("2.2.0"):
-            kwargs["run_id"] = "test_run_id"  # change in 2.2.0
         task_instance = TaskInstance(
             task=task,
             execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
             state=State.RUNNING,
-            **kwargs,
+            run_id="test_run_id",
         )
         task_instance.job_id = random.randrange(10000)
 
