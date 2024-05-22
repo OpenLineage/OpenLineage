@@ -47,6 +47,9 @@
 			"dataSource": {
 				"name": "bigquery",
 				"uri": "bigquery"
+			},
+			"documentation": {
+				"description": "A source table"
 			}
 		}
 	}],
@@ -63,6 +66,9 @@
 					"name": "id",
 					"type": ""
 				}]
+			},
+			"documentation": {
+				"description": "A starter dbt model"
 			}
 		}
 	}]
