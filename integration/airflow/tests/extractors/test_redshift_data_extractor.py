@@ -85,17 +85,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
 
     @staticmethod
     def _get_ti(task, run_id):
-        kwargs = {}
-        if Version(AIRFLOW_VERSION) > Version("2.2.0"):
-            kwargs["run_id"] = run_id
-        else:
-            kwargs["execution_date"] = datetime.utcnow().replace(tzinfo=pytz.utc)
-        task_instance = TaskInstance(
-            task=task,
-            # execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
-            state=State.RUNNING,
-            **kwargs,
-        )
+        task_instance = TaskInstance(task=task, state=State.RUNNING, run_id=run_id)
         task_instance.job_id = random.randrange(10000)
 
         return task_instance
