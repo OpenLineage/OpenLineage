@@ -21,8 +21,10 @@
     },
     "run": {
         "facets": {
-            "airflow_runArgs": {
-              "externalTrigger": false
+            "airflow": {
+                "dagRun": {
+                  "external_trigger": false
+                }
             },
 			"nominalTime": {
                 "nominalEndTime": "{{ is_datetime(result) }}",
@@ -47,8 +49,10 @@
     },
     "run": {
         "facets": {
-            "airflow_runArgs": {
-                "externalTrigger": false
+            "airflow": {
+                "dagRun": {
+                  "external_trigger": false
+                }
             }
         }
     }

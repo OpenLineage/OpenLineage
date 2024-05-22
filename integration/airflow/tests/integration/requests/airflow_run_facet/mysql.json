@@ -5,13 +5,12 @@
     },
     "run": {
         "facets": {
-            "airflow_version": {
-                "airflowVersion": "{{ env_var('AIRFLOW_VERSION') }}",
-                "operator": "airflow.providers.mysql.operators.mysql.MySqlOperator"
-            },
             "airflow": {
                 "dag": {
                     "dag_id": "mysql_orders_popular_day_of_week"
+                },
+                "task": {
+                    "operator_class": "***.providers.mysql.operators.mysql.MySqlOperator"
                 },
                 "taskUuid": "{{ is_uuid(result) }}"
             },

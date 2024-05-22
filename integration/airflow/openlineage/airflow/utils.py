@@ -8,22 +8,12 @@ import logging
 import os
 import subprocess
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
-from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import attr
-from openlineage.airflow.facets import (
-    AirflowMappedTaskRunFacet,
-    AirflowRunArgsRunFacet,
-    AirflowRunFacet,
-    AirflowVersionRunFacet,
-    UnknownOperatorAttributeRunFacet,
-    UnknownOperatorInstance,
-)
+from openlineage.airflow.facets import AirflowRunFacet
 from openlineage.client.utils import RedactMixin
 from packaging.version import Version
 from pendulum import from_timestamp
-
-from airflow.models import DAG as AIRFLOW_DAG
 
 if TYPE_CHECKING:
     from airflow.models import DAG, BaseOperator, Connection, DagRun, TaskInstance
@@ -33,42 +23,10 @@ log = logging.getLogger(__name__)
 _NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
-def openlineage_job_name(dag_id: str, task_id: str) -> str:
-    return f"{dag_id}.{task_id}"
-
-
 def get_operator_class(task: "BaseOperator") -> Type:
     if task.__class__.__name__ in ("DecoratedMappedOperator", "MappedOperator"):
         return task.operator_class
     return task.__class__
-
-
-def to_json_encodable(task: "BaseOperator") -> Dict[str, object]:
-    def _task_encoder(obj):
-        if isinstance(obj, datetime.datetime):
-            return obj.isoformat()
-        elif isinstance(obj, AIRFLOW_DAG):
-            return {
-                "dag_id": obj.dag_id,
-                "tags": obj.tags,
-                "schedule_interval": obj.schedule_interval,
-            }
-        else:
-            return str(obj)
-
-    return json.loads(json.dumps(task.__dict__, default=_task_encoder))
-
-
-class SafeStrDict(dict):
-    def __str__(self):
-        castable = list()
-        for key, val in self.items():
-            try:
-                str(key), str(val)
-                castable.append((key, val))
-            except (TypeError, NotImplementedError):
-                continue
-        return str(dict(castable))
 
 
 def url_to_https(url) -> Optional[str]:
@@ -136,54 +94,6 @@ def execute_git(cwd, params):
     return out.decode("utf8").strip()
 
 
-def get_connection_uri(conn):
-    """
-    Return the connection URI for the given ID. We first attempt to lookup
-    the connection URI via AIRFLOW_CONN_<conn_id>, else fallback on querying
-    the Airflow's connection table.
-    """
-
-    conn_uri = conn.get_uri()
-    parsed = urlparse(conn_uri)
-
-    # Remove username and password
-    netloc = f"{parsed.hostname}" + (f":{parsed.port}" if parsed.port else "")
-    parsed = parsed._replace(netloc=netloc)
-    if parsed.query:
-        query_dict = dict(parse_qsl(parsed.query))
-        if conn.EXTRA_KEY in query_dict:
-            query_dict = json.loads(query_dict[conn.EXTRA_KEY])
-        filtered_qs = {k: v for k, v in query_dict.items() if not _filtered_query_params(k)}
-        parsed = parsed._replace(query=urlencode(filtered_qs))
-    return urlunparse(parsed)
-
-
-def _filtered_query_params(k: str):
-    unfiltered_snowflake_keys = [
-        "extra__snowflake__warehouse",
-        "extra__snowflake__account",
-        "extra__snowflake__database",
-    ]
-    filtered_key_substrings = [
-        "aws_access_key_id",
-        "aws_secret_access_key",
-        "extra__snowflake__",
-    ]
-    return k not in unfiltered_snowflake_keys and any(substr in k for substr in filtered_key_substrings)
-
-
-def get_normalized_postgres_connection_uri(conn):
-    """
-    URIs starting with postgresql:// and postgres:// are both valid
-    PostgreSQL connection strings. This function normalizes it to
-    postgres:// as canonical name according to OpenLineage spec.
-    """
-    uri = get_connection_uri(conn)
-    if uri.startswith("postgresql"):
-        uri = uri.replace("postgresql", "postgres", 1)
-    return uri
-
-
 def get_connection(conn_id) -> "Optional[Connection]":
     from airflow.hooks.base import BaseHook
 
@@ -195,20 +105,6 @@ def get_connection(conn_id) -> "Optional[Connection]":
 
 def get_job_name(task):
     return f"{task.dag_id}.{task.task_id}"
-
-
-def get_custom_facets(
-    dagrun, task, is_external_trigger: bool, task_instance: "TaskInstance" = None
-) -> Dict[str, Any]:
-    custom_facets = {
-        "airflow_runArgs": AirflowRunArgsRunFacet(is_external_trigger),
-        "airflow_version": AirflowVersionRunFacet.from_dagrun_and_task(dagrun, task),
-    }
-    # check for -1 comes from SmartSensor compatibility with dynamic task mapping
-    # this comes from Airflow code
-    if task_instance is not None and hasattr(task_instance, "map_index") and task_instance.map_index != -1:
-        custom_facets["airflow_mappedTask"] = AirflowMappedTaskRunFacet.from_task_instance(task_instance)
-    return custom_facets
 
 
 class InfoJsonEncodable(dict):
@@ -360,23 +256,6 @@ def get_airflow_run_facet(
                 taskInstance=TaskInstanceInfo(task_instance),
                 task=TaskInfo(task),
                 taskUuid=task_uuid,
-            )
-        )
-    }
-
-
-def get_unknown_source_attribute_run_facet(task: "BaseOperator", name: Optional[str] = None):
-    if not name:
-        name = get_operator_class(task).__name__
-    return {
-        "unknownSourceAttribute": attr.asdict(
-            UnknownOperatorAttributeRunFacet(
-                unknownItems=[
-                    UnknownOperatorInstance(
-                        name=name,
-                        properties=TaskInfo(task),
-                    )
-                ]
             )
         )
     }
