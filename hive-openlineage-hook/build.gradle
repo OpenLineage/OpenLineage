@@ -1,0 +1,125 @@
+ext {
+    openLineageVersion = '1.9.1'
+    cloudStorageVersion = '2.36.1'
+    gcsConnectorVersion = 'hadoop2-2.2.21'
+    lombokVersion = '1.18.32'
+    guaveVersion = '33.1.0-jre'
+    bigqueryVersion = '2.40.2'
+    hiveBigqueryConnectorVersion = '2.0.3'
+    assertjVersion = '3.25.3'
+    hiverunnerVersion = '6.1.0'
+    jupiterVersion = '5.10.1'
+}
+
+// TODO: Check if this is needed for the tests
+test {
+    useJUnitPlatform()
+    forkEvery = 1
+    maxParallelForks = 1
+}
+
+dependencies {
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    implementation "org.projectlombok:lombok:${lombokVersion}"
+    implementation "com.google.guava:guava:${guaveVersion}"
+
+//    // FIXME
+//    // Projects built locally and published to local Maven repository:
+//    compileOnly ('com.google.cloud.datacatalog:lineage-producer:0.0.7:all') {
+//        exclude group: 'io.grpc'
+//    }
+//    // The OL Dataproc fork:
+//    compileOnly 'io.openlineage:openlineage-java:1.10.0'
+
+    compileOnly "io.openlineage:openlineage-java:${openLineageVersion}"
+    compileOnly project(path: ':shaded-test-dependencies', configuration: 'shadow')
+
+    // Test dependencies ------------------------------------------------
+
+    // FIXME: Workaround for Datanucleus to work with the shaded-test-dependencies library
+    //  Fix it properly in the shaded-test-dependencies's lib shading instead.
+    testImplementation 'org.datanucleus:datanucleus-rdbms:4.1.19'
+    testImplementation 'org.datanucleus:datanucleus-api-jdo:4.2.4'
+    testImplementation 'org.datanucleus:datanucleus-core:4.1.17'
+
+    testImplementation ("com.google.cloud:google-cloud-bigquery:${bigqueryVersion}")
+    testImplementation "org.junit.jupiter:junit-jupiter:${jupiterVersion}"
+    testImplementation("io.github.hiverunner:hiverunner:${hiverunnerVersion}") {
+        exclude group: 'org.apache.tez', module: '*'
+        exclude group: 'org.apache.hive', module: 'hive-serde'
+        exclude group: 'org.apache.hive', module: 'hive-upgrade-acid'
+        exclude group: 'org.apache.hive.hcatalog', module: 'hive-webhcat-java-client'
+        exclude group: 'org.apache.hive', module: 'hive-jdbc'
+        exclude group: 'org.apache.hive', module: 'hive-service'
+        exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-common'
+        exclude group: 'org.apache.hadoop', module: 'hadoop-annotations'
+        exclude group: 'org.apache.hadoop', module: 'hadoop-yarn-client'
+        exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-core'
+        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-annotations'
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation ("com.google.cloud.hive:hive-bigquery-connector:${hiveBigqueryConnectorVersion}") {
+        exclude module: 'hive-bigquery-parent'
+    }
+    testImplementation("com.google.cloud:google-cloud-storage:${cloudStorageVersion}") {
+        exclude group: 'io.grpc', module: '*'
+    }
+    testImplementation("com.google.cloud.bigdataoss:gcs-connector:${gcsConnectorVersion}:shaded") {
+        exclude group: 'io.grpc', module: '*'
+        exclude group: 'com.google.guava', module: '*'
+        exclude group: 'com.google.code.gson', module: '*'
+    }
+    testImplementation "io.openlineage:openlineage-java:${openLineageVersion}"
+    testImplementation project(path: ':shaded-test-dependencies', configuration: 'shadow')
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+
+shadowJar {
+    archiveClassifier.set('')
+
+    zip64 true
+
+    exclude 'module-info.class'
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+    exclude 'META-INF/MANIFEST.MF'
+    exclude 'META-INF/DEPENDENCIES'
+    exclude 'META-INF/LICENSE'
+    exclude 'META-INF/NOTICE'
+
+    def packagesToRelocate = [
+            'com.google.common',
+    ]
+    packagesToRelocate.each { pkg ->
+        relocate pkg, "hive.openlineage.repackaged.${pkg}"
+    }
+
+    mergeServiceFiles()
+}
+
+// Create the Version properties file ----------------------------------------------------
+
+tasks.register('createVersionProperties') {
+    doLast {
+        File dir = new File("$projectDir/src/main/resources/io/openlineage/hive/client/")
+        dir.mkdirs()
+        new File("$projectDir/src/main/resources/io/openlineage/hive/client/version.properties").withWriter { w ->
+            Properties p = new Properties()
+            p['version'] = parent.project.version.toString()
+            p.each { key, value ->
+                w.write("$key=$value\n")
+            }
+        }
+    }
+}
+
+processResources {
+    dependsOn tasks.named('createVersionProperties')
+}
+
+classes {
+    dependsOn processResources
+}
