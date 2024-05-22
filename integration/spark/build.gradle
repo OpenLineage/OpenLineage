@@ -162,7 +162,8 @@ shadowJar {
     dependencies {
         exclude(dependency("org.slf4j::"))
         exclude("org/apache/commons/logging/**")
-        exclude("io/openlineage/server/**")
+        //exclude("io/openlineage/server/**") // Error 1: don't exclude server
+        exclude("io/openlineage/spark33/agent/lifecycle/plan/CreateReplaceDatasetBuilder**") // Error 2: exclude some class from jar
     }
 
     relocate "com.github.ok2c.hc5", "io.openlineage.spark.shaded.com.github.ok2c.hc5"
@@ -175,7 +176,7 @@ shadowJar {
     relocate "org.apache.http", "io.openlineage.spark.shaded.org.apache.http"
     relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
     relocate "com.fasterxml.jackson", "io.openlineage.spark.shaded.com.fasterxml.jackson"
-    relocate "org.LatencyUtils", "io.openlineage.spark.shaded.org.latencyutils"
+    relocate "org.latencyutils", "io.openlineage.spark.shaded.org.latencyutils" // Error 3: lowercase exclude
     relocate "org.HdrHistogram", "io.openlineage.spark.shaded.org.hdrhistogram"
     manifest {
         attributes(
