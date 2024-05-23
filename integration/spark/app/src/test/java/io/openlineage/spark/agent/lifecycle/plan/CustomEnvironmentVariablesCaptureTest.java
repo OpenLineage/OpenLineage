@@ -40,6 +40,8 @@ import org.mockito.Mockito;
 @ExtendWith(SparkAgentTestExtension.class)
 @Tag("custom_environment_variables_capture")
 class CustomEnvironmentVariablesCaptureTest {
+
+  @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
   protected static void setEnv(String key, String value) {
     try {
       Map<String, String> env = System.getenv();
@@ -83,6 +85,9 @@ class CustomEnvironmentVariablesCaptureTest {
             .filter(
                 e ->
                     e.getEventType().equals(EventType.START)
+                        && e.getJob().getFacets() != null
+                        // Exclude SparkApplication start event because env variable was set after
+                        && e.getJob().getFacets().getJobType() != null
                         && e.getRun().getFacets() != null
                         && e.getRun()
                                 .getFacets()

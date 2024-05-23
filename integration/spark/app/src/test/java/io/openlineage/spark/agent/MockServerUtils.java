@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.awaitility.Awaitility;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.configuration.Configuration;
@@ -33,6 +34,7 @@ import org.mockserver.model.JsonBody;
 import org.mockserver.model.RequestDefinition;
 import org.slf4j.event.Level;
 
+@Slf4j
 public class MockServerUtils {
   public static final HttpRequest API_V1_LINEAGE_REQUEST = request("/api/v1/lineage");
 
@@ -98,7 +100,7 @@ public class MockServerUtils {
     Path eventFolder = Paths.get("integrations/container/");
 
     await()
-        .atMost(Duration.ofSeconds(20))
+        .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () ->
                 mockServerClient.verify(

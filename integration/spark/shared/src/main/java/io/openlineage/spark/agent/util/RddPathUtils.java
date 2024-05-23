@@ -86,12 +86,13 @@ public class RddPathUtils {
     }
 
     @Override
+    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
     public Stream<Path> extract(FileScanRDD rdd) {
       return ScalaConversionUtils.fromSeq(rdd.filePartitions()).stream()
           .flatMap(fp -> Arrays.stream(fp.files()))
           .map(
               f -> {
-                if (package$.MODULE$.SPARK_VERSION().compareTo("3.4") > 0) {
+                if ("3.4".compareTo(package$.MODULE$.SPARK_VERSION()) <= 0) {
                   // filePath returns SparkPath for Spark 3.4
                   return ReflectionUtils.tryExecuteMethod(f, "filePath")
                       .map(o -> ReflectionUtils.tryExecuteMethod(o, "toPath"))

@@ -63,7 +63,6 @@ class CommonConfigPlugin : Plugin<Project> {
 
         target.repositories.mavenCentral()
         target.repositories.mavenLocal()
-        target.repositories.maven("https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot")
 
         target.tasks.withType<Test> {
             useJUnitPlatform()
@@ -81,11 +80,15 @@ class CommonConfigPlugin : Plugin<Project> {
             rulesMinimumPriority.set(5)
             ruleSetFiles = target.rootProject.files("pmd-openlineage.xml")
             ruleSets = listOf()
-            isIgnoreFailures = true
+            isIgnoreFailures = false
         }
 
         target.tasks.named<Pmd>("pmdMain") {
             this.reports.html.required.set(true)
+        }
+        target.tasks.named<Pmd>("pmdTest") {
+            this.reports.html.required.set(true)
+            this.ruleSetFiles = target.rootProject.files("pmd-openlineage-test.xml")
         }
     }
 

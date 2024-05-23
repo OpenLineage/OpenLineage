@@ -31,7 +31,8 @@ The current OpenLineage committers are:
 | Kengo Seki         | |
 | Harel Shein        | |
 | Damien Hawes       | |
-
+| Kacper Muda        | |
+| Zhenqiu Huang      | |
 To understand how to become an OpenLineage committer,
 read the [OpenLineage Governance Guide](GOVERNANCE.md).
 
@@ -48,5 +49,4 @@ contributions, we have a strong foundation to build on.
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2023 contributors to the OpenLineage project
-
+Copyright 2018-2024 contributors to the OpenLineage project

@@ -5,29 +5,24 @@ import json
 import logging
 import random
 import unittest
-import uuid
 from datetime import datetime
 from unittest import mock
 
 import pytz
 from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
 from openlineage.airflow.utils import try_import_from_string
-from openlineage.client.facet import (
-    ExternalQueryRunFacet,
-    OutputStatisticsOutputDatasetFacet,
-)
+from openlineage.client.facet_v2 import external_query_run, output_statistics_output_dataset
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.bigquery import (
     BigQueryErrorRunFacet,
     BigQueryJobRunFacet,
     BigQueryStatisticsDatasetFacet,
 )
 from openlineage.common.utils import get_from_nullable_chain
-from pkg_resources import parse_version
 
 from airflow.models import DAG, TaskInstance
 from airflow.utils import timezone
 from airflow.utils.state import State
-from airflow.version import version as AIRFLOW_VERSION
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +66,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
 
         execution_date = datetime.utcnow().replace(tzinfo=pytz.utc)
         dag = DAG(dag_id="TestBigQueryExtractorE2E")
-        dag.create_dagrun(run_id=str(uuid.uuid4()), state=State.QUEUED, execution_date=execution_date)
+        dag.create_dagrun(run_id=str(generate_new_uuid()), state=State.QUEUED, execution_date=execution_date)
 
         task = BigQueryExecuteQueryOperator(
             sql="select first_name, last_name from dataset.customers;",
@@ -115,18 +110,19 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         assert BigQueryStatisticsDatasetFacet(rowCount=20, size=321) == task_meta.outputs[0].facets["stats"]
 
         assert (
-            OutputStatisticsOutputDatasetFacet(rowCount=20, size=321)
+            output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(rowCount=20, size=321)
             == task_meta.outputs[0].outputFacets["outputStatistics"]
         )
 
         assert len(task_meta.run_facets) == 2
+        job_details["configuration"]["query"].pop("query")
         assert (
             BigQueryJobRunFacet(cached=False, billedBytes=111149056, properties=json.dumps(job_details))
             == task_meta.run_facets["bigQuery_job"]
         )
 
         assert (
-            ExternalQueryRunFacet(externalQueryId=bq_job_id, source="bigquery")
+            external_query_run.ExternalQueryRunFacet(externalQueryId=bq_job_id, source="bigquery")
             == task_meta.run_facets["externalQuery"]
         )
 
@@ -170,7 +166,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
 
         execution_date = datetime.utcnow().replace(tzinfo=pytz.utc)
         dag = DAG(dag_id="TestBigQueryExtractorE2E")
-        dag.create_dagrun(run_id=str(uuid.uuid4()), state=State.QUEUED, execution_date=execution_date)
+        dag.create_dagrun(run_id=str(generate_new_uuid()), state=State.QUEUED, execution_date=execution_date)
 
         task = BigQueryExecuteQueryOperator(
             sql="select first_name, last_name from dataset.customers;",
@@ -194,10 +190,12 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
 
         assert len(task_meta.run_facets) == 2
         print(task_meta.run_facets.keys())
-        assert task_meta.run_facets["bigQuery_job"] == BigQueryJobRunFacet(cached=True)
+        job_run_facet = task_meta.run_facets["bigQuery_job"]
+        assert job_run_facet.cached is True
+        assert job_run_facet.billedBytes == 0
 
         assert (
-            ExternalQueryRunFacet(externalQueryId=bq_job_id, source="bigquery")
+            external_query_run.ExternalQueryRunFacet(externalQueryId=bq_job_id, source="bigquery")
             == task_meta.run_facets["externalQuery"]
         )
 
@@ -220,7 +218,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
 
         execution_date = datetime.utcnow().replace(tzinfo=pytz.utc)
         dag = DAG(dag_id="TestBigQueryExtractorE2E")
-        dag.create_dagrun(run_id=str(uuid.uuid4()), state=State.QUEUED, execution_date=execution_date)
+        dag.create_dagrun(run_id=str(generate_new_uuid()), state=State.QUEUED, execution_date=execution_date)
 
         task = BigQueryExecuteQueryOperator(
             sql="select first_name, last_name from dataset.customers;",
@@ -281,14 +279,11 @@ class TestBigQueryExtractor(unittest.TestCase):
 
     @staticmethod
     def _get_ti(task):
-        kwargs = {}
-        if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
-            kwargs["run_id"] = "test_run_id"  # change in 2.2.0
         task_instance = TaskInstance(
             task=task,
             execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
             state=State.RUNNING,
-            **kwargs,
+            run_id="test_run_id",
         )
         task_instance.job_id = random.randrange(10000)
 

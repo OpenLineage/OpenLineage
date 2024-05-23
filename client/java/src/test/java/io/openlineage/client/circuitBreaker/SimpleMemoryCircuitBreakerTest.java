@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.utils.RuntimeUtils;
 import java.lang.management.GarbageCollectorMXBean;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;

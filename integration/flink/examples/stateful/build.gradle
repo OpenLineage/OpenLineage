@@ -1,47 +1,16 @@
 plugins {
     id 'java-library'
-    id 'maven-publish'
-    id 'signing'
     id 'jacoco'
-    id "com.adarshr.test-logger" version "3.2.0"
-    id 'com.diffplug.spotless' version '6.25.0'
-    id "com.github.johnrengelman.shadow" version "8.1.1"
-    id "pmd"
+    id 'pmd'
+    id "com.adarshr.test-logger"
+    id 'com.diffplug.spotless'
+    id "com.github.johnrengelman.shadow"
+    id 'io.openlineage.common-config'
     id "com.github.davidmc24.gradle.plugin.avro" version "1.9.1"
-}
-
-pmd {
-    consoleOutput = true
-    toolVersion = "6.46.0"
-    rulesMinimumPriority = 5
-    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
-    ruleSets = []
-    ignoreFailures = true
-}
-
-pmdMain {
-    dependsOn shadowJar
-    excludes = [
-        '**/InputEvent.java',
-        '**/OutputEvent.java',
-        '**/Counter.java',
-    ]
-    reports {
-        html.required = true
-    }
+    id "com.google.protobuf" version "0.9.4"
 }
 
 group 'io.openlineage.flink'
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven {
-        url "https://packages.confluent.io/maven/"
-    }
-}
-
-jar.enabled = false
 
 shadowJar {
     zip64 true
@@ -54,13 +23,13 @@ ext {
     flinkVersion = project.getProperty('flink.version')
     flinkVersionShort = flinkVersion.substring(0,4)
     hadoopVersion = '3.3.1'
-    icebergVersion = "1.3.0"
 
     versionsMap = [
-            "1.15": ["cassandra": "1.15.4", "kafka": flinkVersion, "jdbc": "1.15.4", "alternativeShort": "1.15"],
-            "1.16": ["cassandra": "3.0.0-1.16", "kafka": flinkVersion, "jdbc": "1.16.3", "alternativeShort": "1.16"],
-            "1.17": ["cassandra": "3.1.0-1.17", "kafka": flinkVersion, "jdbc": "3.1.1-1.17", "alternativeShort": "1.17"],
-            "1.18": ["cassandra": "3.1.0-1.17", "kafka": "3.0.2-1.18", "jdbc": "3.1.1-1.17", "alternativeShort": "1.17"]
+            "1.15": ["cassandra": "1.15.4", "kafka": flinkVersion, "jdbc": "1.15.4", "iceberg": "1.3.0", "alternativeShort": "1.15", "protobuf": "NA"],
+            "1.16": ["cassandra": "3.0.0-1.16", "kafka": flinkVersion, "jdbc": "1.16.3", "iceberg": "1.3.0", "alternativeShort": "1.16", "protobuf": flinkVersion],
+            "1.17": ["cassandra": "3.1.0-1.17", "kafka": flinkVersion, "jdbc": "3.1.1-1.17", "iceberg": "1.3.0", "alternativeShort": "1.17", "protobuf": flinkVersion],
+            "1.18": ["cassandra": "3.1.0-1.17", "kafka": "3.0.2-1.18", "jdbc": "3.1.2-1.18", "iceberg": "1.5.0", "alternativeShort": "1.18", "protobuf": flinkVersion],
+            "1.19": ["cassandra": "3.1.0-1.17", "kafka": "3.0.2-1.18", "jdbc": "3.1.2-1.18", "iceberg": "1.5.0", "alternativeShort": "1.18", "protobuf": flinkVersion]
     ]
 
     versions = versionsMap[flinkVersionShort]
@@ -78,6 +47,7 @@ dependencies {
     testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.20'
     testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
     implementation 'org.awaitility:awaitility:4.2.0'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.3.1'
 
     implementation("io.openlineage:openlineage-java:$project.version")
     compileOnly "org.apache.flink:flink-java:$flinkVersion"
@@ -92,6 +62,9 @@ dependencies {
     implementation "org.apache.flink:flink-connector-cassandra_2.12:${versions.cassandra}"
     implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     implementation "org.apache.flink:flink-avro:$flinkVersion"
+    if (versions.protobuf != "NA") {
+        implementation "org.apache.flink:flink-protobuf:${versions.protobuf}"
+    }
     compileOnly "org.apache.flink:flink-table:$flinkVersion"
     compileOnly "org.apache.flink:flink-table-api-java:$flinkVersion"
     compileOnly "org.apache.flink:flink-table-api-java-bridge:$flinkVersion"
@@ -102,6 +75,7 @@ dependencies {
     implementation "com.typesafe:config:1.4.3"
     implementation "org.apache.avro:avro:1.11.3"
     implementation 'io.confluent:kafka-avro-serializer:7.6.0'
+    implementation 'io.confluent:kafka-protobuf-serializer:7.6.0'
     implementation 'io.confluent:kafka-schema-registry-client:7.6.0'
     implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.9.1'
     implementation 'org.postgresql:postgresql:42.7.2'
@@ -112,7 +86,8 @@ dependencies {
     }
     implementation "org.apache.avro:avro"
 
-    implementation "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:$icebergVersion"
+    implementation "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:${versions.iceberg}"
+    implementation "com.google.protobuf:protobuf-java:3.25.3"
 }
 
 assemble {
@@ -120,22 +95,11 @@ assemble {
 }
 
 spotless {
-    def disallowWildcardImports = {
-        String text = it
-        def regex = ~/import .*\.\*;/
-        def m = regex.matcher(text)
-        if (m.find()) {
-            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
-        }
-    }
     java {
         target project.fileTree(project.rootDir) {
             include 'build/classes/java/main/io/openlineage/flink/**/*.java'
             exclude '**/io/openlineage/flink/avro/**/*.*'
         }
-        googleJavaFormat()
-        removeUnusedImports()
-        custom 'disallowWildcardImports', disallowWildcardImports
     }
 }
 
@@ -147,6 +111,15 @@ avro {
     fieldVisibility = 'PUBLIC'
 }
 
+
+extractIncludeTestProto.enabled = false
+
 test {
     useJUnitPlatform()
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.3"
+    }
 }

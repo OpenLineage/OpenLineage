@@ -18,7 +18,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.iceberg.spark.SparkCatalog;
 import org.apache.iceberg.spark.source.SparkTable;
 import org.apache.spark.sql.RuntimeConfig;
@@ -30,6 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import scala.collection.immutable.Map;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class IcebergHandlerTest {
 
   private OpenLineageContext context = mock(OpenLineageContext.class);

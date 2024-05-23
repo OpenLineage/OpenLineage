@@ -7,14 +7,21 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.JdbcUtils;
 import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.BigQueryUtils;
-import io.openlineage.spark.agent.util.JdbcUtils;
+import io.openlineage.spark.agent.util.ExtensionPlanUtils;
+import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.extension.scala.v1.ColumnLevelLineageNode;
+import io.openlineage.spark.extension.scala.v1.DatasetFieldLineage;
+import io.openlineage.spark.extension.scala.v1.InputDatasetFieldFromDelegate;
+import io.openlineage.spark.extension.scala.v1.InputDatasetFieldWithIdentifier;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import io.openlineage.sql.SqlMeta;
 import java.net.URI;
@@ -29,6 +36,7 @@ import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
+import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -47,30 +55,62 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 @Slf4j
 public class InputFieldsCollector {
 
-  public static void collect(
-      OpenLineageContext context, LogicalPlan plan, ColumnLevelLineageBuilder builder) {
-    discoverInputsFromNode(context, plan, builder);
-    CustomCollectorsUtils.collectInputs(context, plan, builder);
+  public static void collect(ColumnLevelLineageContext context, LogicalPlan plan) {
+    discoverInputsFromNode(context, plan);
+    CustomCollectorsUtils.collectInputs(context, plan);
+
+    if (plan instanceof ColumnLevelLineageNode) {
+      extensionColumnLineage(context, (ColumnLevelLineageNode) plan);
+    }
 
     // hacky way to replace `plan instanceof UnaryNode` which fails for Spark 3.2.1
     // because of java.lang.IncompatibleClassChangeError: UnaryNode, but class was expected
     // probably related to single code base for different Spark versions
     if ((plan.getClass()).isAssignableFrom(UnaryNode.class)) {
-      collect(context, ((UnaryNode) plan).child(), builder);
+      collect(context, ((UnaryNode) plan).child());
     } else if (plan.children() != null) {
       ScalaConversionUtils.<LogicalPlan>fromSeq(plan.children()).stream()
-          .forEach(child -> collect(context, child, builder));
+          .forEach(child -> collect(context, child));
     }
   }
 
-  private static void discoverInputsFromNode(
-      OpenLineageContext context, LogicalPlan node, ColumnLevelLineageBuilder builder) {
-    List<DatasetIdentifier> datasetIdentifiers = extractDatasetIdentifier(context, node);
+  private static void discoverInputsFromNode(ColumnLevelLineageContext context, LogicalPlan node) {
+    List<DatasetIdentifier> datasetIdentifiers =
+        extractDatasetIdentifier(context.getOlContext(), node);
     if (isJDBCNode(node)) {
-      JdbcColumnLineageCollector.extractExternalInputs(node, builder, datasetIdentifiers);
+      JdbcColumnLineageCollector.extractExternalInputs(
+          node, context.getBuilder(), datasetIdentifiers);
     } else {
-      extractInternalInputs(node, builder, datasetIdentifiers);
+      extractInternalInputs(node, context.getBuilder(), datasetIdentifiers);
     }
+  }
+
+  private static void extensionColumnLineage(
+      ColumnLevelLineageContext context, ColumnLevelLineageNode node) {
+    List<DatasetFieldLineage> inputs =
+        ScalaConversionUtils.<DatasetFieldLineage>fromSeq(
+            node.columnLevelLineageInputs(
+                    ExtensionPlanUtils.context(context.getEvent(), context.getOlContext()))
+                .toSeq());
+
+    inputs.stream()
+        .filter(i -> i instanceof InputDatasetFieldWithIdentifier)
+        .map(i -> (InputDatasetFieldWithIdentifier) i)
+        .forEach(
+            i ->
+                context
+                    .getBuilder()
+                    .addInput(
+                        ExprId.apply(i.exprId().exprId()),
+                        new DatasetIdentifier(
+                            i.datasetIdentifier().getNamespace(), i.datasetIdentifier().getName()),
+                        i.field()));
+
+    inputs.stream()
+        .filter(i -> i instanceof InputDatasetFieldFromDelegate)
+        .map(i -> (InputDatasetFieldFromDelegate) i)
+        .filter(i -> i.delegate() instanceof LogicalPlan)
+        .forEach(i -> discoverInputsFromNode(context, (LogicalPlan) i.delegate()));
   }
 
   private static boolean isJDBCNode(LogicalPlan node) {
@@ -135,7 +175,7 @@ public class InputFieldsCollector {
   }
 
   private static List<DatasetIdentifier> extractDatasetIdentifier(JDBCRelation relation) {
-    Optional<SqlMeta> sqlMeta = JdbcUtils.extractQueryFromSpark(relation);
+    Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
     return sqlMeta
         .map(
             meta ->

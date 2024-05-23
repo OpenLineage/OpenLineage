@@ -11,35 +11,32 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.spark.api.OpenLineageContext;
-import org.apache.spark.SparkConf;
-import org.apache.spark.SparkContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class DebugRunFacetBuilderTest {
+class DebugRunFacetBuilderTest {
 
   private static OpenLineageContext openLineageContext =
       mock(OpenLineageContext.class, RETURNS_DEEP_STUBS);
-  private static SparkContext sparkContext = mock(SparkContext.class);
   private static DebugRunFacetBuilder builder = new DebugRunFacetBuilder(openLineageContext);
-  private static SparkConf conf = mock(SparkConf.class);
+  private static SparkOpenLineageConfig config = new SparkOpenLineageConfig();
 
   @BeforeAll
   static void setup() {
     builder = new DebugRunFacetBuilder(openLineageContext);
-    when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
-    when(sparkContext.conf()).thenReturn(conf);
+    when(openLineageContext.getOpenLineageConfig()).thenReturn(config);
   }
 
   @Test
   void testIsDefinedAtWhenDebugEnabled() {
-    when(conf.get("spark.openlineage.debugFacet", "disabled")).thenReturn("enabled");
+    config.setDebugFacet("enabled");
     assertThat(builder.isDefinedAt(mock(Object.class))).isTrue();
   }
 
   @Test
   void testIsDefinedAtWhenDebugDisabled() {
-    when(conf.get("spark.openlineage.debugFacet", "disabled")).thenReturn(null);
+    config.setDebugFacet("disabled");
     assertThat(builder.isDefinedAt(mock(Object.class))).isFalse();
   }
 }

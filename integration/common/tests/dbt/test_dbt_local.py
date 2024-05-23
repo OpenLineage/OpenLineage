@@ -70,7 +70,7 @@ def test_dbt_parse_and_compare_event(path, parent_run_metadata):
         assert match(json.load(f), events)
 
 
-@mock.patch("uuid.uuid4")
+@mock.patch("openlineage.common.provider.dbt.processor.generate_new_uuid")
 @mock.patch("datetime.datetime")
 def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata):
     mock_datetime.now.return_value.isoformat.return_value = "2021-08-25T11:00:25.277467+00:00"
@@ -97,7 +97,7 @@ def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata)
         assert match(json.load(f), events)
 
 
-@mock.patch("uuid.uuid4")
+@mock.patch("openlineage.common.provider.dbt.processor.generate_new_uuid")
 @mock.patch.dict(
     os.environ,
     {

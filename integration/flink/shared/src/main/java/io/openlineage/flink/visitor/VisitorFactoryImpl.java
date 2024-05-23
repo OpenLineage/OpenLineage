@@ -10,14 +10,11 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.flink.api.DatasetFactory;
 import io.openlineage.flink.api.OpenLineageContext;
-import io.openlineage.flink.utils.CassandraUtils;
-import io.openlineage.flink.utils.IcebergUtils;
+import io.openlineage.flink.utils.ClassUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import io.openlineage.flink.utils.JdbcUtils;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -33,17 +30,19 @@ public class VisitorFactoryImpl implements VisitorFactory {
                 new LineageProviderVisitor<>(
                     context, DatasetFactory.input(context.getOpenLineage()))));
 
-    if (IcebergUtils.hasClasses()) {
+    if (ClassUtils.hasIcebergClasses()) {
       visitors.add(new IcebergSourceVisitor(context));
     }
 
-    if (CassandraUtils.hasClasses()) {
+    if (ClassUtils.hasCassandraClasses()) {
       visitors.add(new CassandraSourceVisitor(context));
     }
 
-    if (JdbcUtils.hasClasses()) {
+    if (ClassUtils.hasJdbcClasses()) {
       visitors.add(new JdbcSourceVisitor(context));
     }
+
+    visitors.add(new HybridSourceVisitor(context));
 
     return Collections.unmodifiableList(visitors);
   }
@@ -58,15 +57,15 @@ public class VisitorFactoryImpl implements VisitorFactory {
                 new LineageProviderVisitor<>(
                     context, DatasetFactory.output(context.getOpenLineage()))));
 
-    if (IcebergUtils.hasClasses()) {
+    if (ClassUtils.hasIcebergClasses()) {
       visitors.add(new IcebergSinkVisitor(context));
     }
 
-    if (CassandraUtils.hasClasses()) {
+    if (ClassUtils.hasCassandraClasses()) {
       visitors.add(new CassandraSinkVisitor(context));
     }
 
-    if (JdbcUtils.hasClasses()) {
+    if (ClassUtils.hasJdbcClasses()) {
       visitors.add(new JdbcSinkVisitor(context));
     }
 

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.column.InputFieldsCollector;
@@ -33,11 +34,13 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
 
-public class MergeIntoDelta24ColumnLineageVisitorTest {
+class MergeIntoDelta24ColumnLineageVisitorTest {
 
-  OpenLineageContext context = mock(OpenLineageContext.class);
+  OpenLineageContext olContext = mock(OpenLineageContext.class);
+  ColumnLevelLineageContext clContext = mock(ColumnLevelLineageContext.class);
   MergeIntoCommand command = mock(MergeIntoCommand.class);
-  MergeIntoDelta24ColumnLineageVisitor visitor = new MergeIntoDelta24ColumnLineageVisitor(context);
+  MergeIntoDelta24ColumnLineageVisitor visitor =
+      new MergeIntoDelta24ColumnLineageVisitor(olContext);
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
   DeltaMergeIntoMatchedClause deltaMergeIntoMatchedClause = mock(DeltaMergeIntoMatchedClause.class);
   DeltaMergeIntoNotMatchedClause deltaMergeIntoNotMatchedClause =
@@ -53,6 +56,9 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
 
   @BeforeEach
   void setup() {
+    when(clContext.getBuilder()).thenReturn(builder);
+    when(clContext.getOlContext()).thenReturn(olContext);
+
     when(deltaMergeIntoMatchedClause.actions())
         .thenReturn(ScalaConversionUtils.<Expression>fromList(Collections.singletonList(action1)));
     when(deltaMergeIntoNotMatchedClause.actions())
@@ -60,6 +66,7 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testCollectInputsIsCalled() {
     LogicalPlan source = mock(LogicalPlan.class);
     LogicalPlan target = mock(LogicalPlan.class);
@@ -70,15 +77,16 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
     when(command.notMatchedClauses()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
 
     try (MockedStatic mocked = mockStatic(InputFieldsCollector.class)) {
-      visitor.collectInputs(command, builder);
-      mocked.verify(() -> InputFieldsCollector.collect(context, source, builder), times(1));
-      mocked.verify(() -> InputFieldsCollector.collect(context, target, builder), times(1));
+      visitor.collectInputs(clContext, command);
+      mocked.verify(() -> InputFieldsCollector.collect(clContext, source), times(1));
+      mocked.verify(() -> InputFieldsCollector.collect(clContext, target), times(1));
     }
 
-    visitor.collectInputs(mock(LogicalPlan.class), builder);
+    visitor.collectInputs(clContext, mock(LogicalPlan.class));
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testCollectOutputsIsCalled() {
     LogicalPlan source = mock(LogicalPlan.class);
     LogicalPlan target = mock(LogicalPlan.class);
@@ -87,12 +95,12 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
     when(command.target()).thenReturn(target);
 
     try (MockedStatic mocked = mockStatic(OutputFieldsCollector.class)) {
-      visitor.collectOutputs(command, builder);
-      mocked.verify(() -> OutputFieldsCollector.collect(context, source, builder), times(0));
-      mocked.verify(() -> OutputFieldsCollector.collect(context, target, builder), times(1));
+      visitor.collectOutputs(clContext, command);
+      mocked.verify(() -> OutputFieldsCollector.collect(clContext, source), times(0));
+      mocked.verify(() -> OutputFieldsCollector.collect(clContext, target), times(1));
     }
 
-    visitor.collectOutputs(mock(LogicalPlan.class), builder);
+    visitor.collectOutputs(clContext, mock(LogicalPlan.class));
   }
 
   @Test
@@ -125,7 +133,7 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
                 Collections.emptyList()),
             Option.empty());
 
-    visitor.collectExpressionDependencies(command, builder);
+    visitor.collectExpressionDependencies(clContext, command);
 
     verify(builder, times(1)).addDependency(parentExprId1, action1ExprId);
     verify(builder, times(1)).addDependency(parentExprId2, action2ExprId);

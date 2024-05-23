@@ -5,7 +5,6 @@ import json
 import logging
 import random
 import unittest
-import uuid
 from datetime import datetime
 from unittest import mock
 from unittest.mock import PropertyMock
@@ -13,13 +12,14 @@ from unittest.mock import PropertyMock
 import pytest
 import pytz
 from openlineage.airflow.extractors.redshift_data_extractor import RedshiftDataExtractor
-from openlineage.client.facet import (
-    ErrorMessageRunFacet,
-    OutputStatisticsOutputDatasetFacet,
+from openlineage.client.facet_v2 import (
+    error_message_run,
+    output_statistics_output_dataset,
 )
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
-from pkg_resources import parse_version
+from packaging.version import Version
 
 from airflow.models import DAG, TaskInstance
 from airflow.providers.amazon.aws.operators.redshift_data import RedshiftDataOperator
@@ -67,7 +67,7 @@ log = logging.getLogger(__name__)
 class TestRedshiftDataExtractor(unittest.TestCase):
     def setUp(self):
         log.debug("TestRedshiftDataExtractor.setup(): ")
-        run_id = str(uuid.uuid4())
+        run_id = str(generate_new_uuid())
         self.task = TestRedshiftDataExtractor._get_redshift_task(run_id)
         self.ti = TestRedshiftDataExtractor._get_ti(task=self.task, run_id=run_id)
         self.extractor = RedshiftDataExtractor(operator=self.task)
@@ -85,17 +85,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
 
     @staticmethod
     def _get_ti(task, run_id):
-        kwargs = {}
-        if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
-            kwargs["run_id"] = run_id
-        else:
-            kwargs["execution_date"] = datetime.utcnow().replace(tzinfo=pytz.utc)
-        task_instance = TaskInstance(
-            task=task,
-            # execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
-            state=State.RUNNING,
-            **kwargs,
-        )
+        task_instance = TaskInstance(task=task, state=State.RUNNING, run_id=run_id)
         task_instance.job_id = random.randrange(10000)
 
         return task_instance
@@ -167,7 +157,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
         assert len(task_meta.outputs[0].facets["schema"].fields) == 3
 
         assert (
-            OutputStatisticsOutputDatasetFacet(
+            output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
                 rowCount=1,
                 size=11,
             )
@@ -175,7 +165,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
         )
 
     @pytest.mark.skipif(
-        parse_version(AIRFLOW_VERSION) >= parse_version("2.5.0"),
+        Version(AIRFLOW_VERSION) >= Version("2.5.0"),
         reason="Airflow >= 2.5.0",
     )
     @mock.patch(
@@ -204,7 +194,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
 
         mock_client.describe_statement.assert_called_with(Id=job_id)
 
-        assert isinstance(task_meta.run_facets["errorMessage"], ErrorMessageRunFacet)
+        assert isinstance(task_meta.run_facets["errorMessage"], error_message_run.ErrorMessageRunFacet)
         assert (
             task_meta.run_facets["errorMessage"].message
             == "Cannot retrieve job details from Redshift Data client. redshift error"

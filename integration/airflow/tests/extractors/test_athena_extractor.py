@@ -4,21 +4,14 @@
 import json
 from unittest import mock
 
-import pytest
 from openlineage.airflow.extractors.athena_extractor import AthenaExtractor
-from openlineage.airflow.utils import is_airflow_version_enough
-from openlineage.client.facet import (
-    SymlinksDatasetFacet,
-    SymlinksDatasetFacetIdentifiers,
-)
+from openlineage.client.facet_v2 import symlinks_dataset
 from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
 
 from airflow import DAG
-
-if is_airflow_version_enough("2.2.4"):
-    from airflow.providers.amazon.aws.operators.athena import AthenaOperator
+from airflow.providers.amazon.aws.operators.athena import AthenaOperator
 from airflow.utils.dates import days_ago
 
 # Database info
@@ -71,10 +64,6 @@ def mock_hook_connection():
     return MockHook()
 
 
-@pytest.mark.skipif(
-    not is_airflow_version_enough("2.2.4"),
-    reason="Airflow < 2.2.4",
-)
 def test_extract_select():
     with mock.patch(
         "airflow.providers.amazon.aws.hooks.athena.AthenaHook.get_conn",
@@ -98,9 +87,9 @@ def test_extract_select():
         )
 
         custom_facets = {
-            "symlinks": SymlinksDatasetFacet(
+            "symlinks": symlinks_dataset.SymlinksDatasetFacet(
                 identifiers=[
-                    SymlinksDatasetFacetIdentifiers(
+                    symlinks_dataset.Identifier(
                         namespace="s3://bucket",
                         name="/discount/data/path/",
                         type="TABLE",
@@ -137,10 +126,6 @@ def test_extract_select():
         assert task_metadata.outputs == expected_outputs
 
 
-@pytest.mark.skipif(
-    not is_airflow_version_enough("2.2.4"),
-    reason="Airflow < 2.2.4",
-)
 def test_extract_create():
     with mock.patch(
         "airflow.providers.amazon.aws.hooks.athena.AthenaHook.get_conn",
@@ -152,7 +137,7 @@ def test_extract_create():
             aws_conn_id="aws_conn_id",
             query=sql,
             database=DB_SCHEMA_NAME,
-            output_location=OUTPUT_LOCATION,
+            output_location="s3://bucket",
             dag=dag,
         )
         task_metadata = AthenaExtractor(create_task).extract()
@@ -164,9 +149,9 @@ def test_extract_create():
         )
 
         symlink_facets = {
-            "symlinks": SymlinksDatasetFacet(
+            "symlinks": symlinks_dataset.SymlinksDatasetFacet(
                 identifiers=[
-                    SymlinksDatasetFacetIdentifiers(
+                    symlinks_dataset.Identifier(
                         namespace="s3://bucket",
                         name="/data/test_table/data/path",
                         type="TABLE",
@@ -186,14 +171,10 @@ def test_extract_create():
         assert len(task_metadata.outputs) == 2
         assert task_metadata.outputs[0] == first_expected_output
         assert task_metadata.outputs[1].namespace == "s3://bucket"
-        assert task_metadata.outputs[1].name == "/output"
+        assert task_metadata.outputs[1].name == "/"
         assert task_metadata.job_facets["sql"].query == sql
 
 
-@pytest.mark.skipif(
-    not is_airflow_version_enough("2.2.4"),
-    reason="Airflow < 2.2.4",
-)
 def test_extract_insert_select():
     with mock.patch(
         "airflow.providers.amazon.aws.hooks.athena.AthenaHook.get_conn",
@@ -217,9 +198,9 @@ def test_extract_insert_select():
         )
 
         input_facets = {
-            "symlinks": SymlinksDatasetFacet(
+            "symlinks": symlinks_dataset.SymlinksDatasetFacet(
                 identifiers=[
-                    SymlinksDatasetFacetIdentifiers(
+                    symlinks_dataset.Identifier(
                         namespace="s3://bucket",
                         name="/discount/data/path/",
                         type="TABLE",
@@ -238,9 +219,9 @@ def test_extract_insert_select():
         ]
 
         output_facets = {
-            "symlinks": SymlinksDatasetFacet(
+            "symlinks": symlinks_dataset.SymlinksDatasetFacet(
                 identifiers=[
-                    SymlinksDatasetFacetIdentifiers(
+                    symlinks_dataset.Identifier(
                         namespace="s3://bucket",
                         name="/data/test_table/data/path",
                         type="TABLE",
@@ -264,10 +245,6 @@ def test_extract_insert_select():
         assert task_metadata.job_facets["sql"].query == sql
 
 
-@pytest.mark.skipif(
-    not is_airflow_version_enough("2.2.4"),
-    reason="Airflow < 2.2.4",
-)
 def test_extract_drop():
     with mock.patch(
         "airflow.providers.amazon.aws.hooks.athena.AthenaHook.get_conn",
@@ -291,9 +268,9 @@ def test_extract_drop():
         )
 
         symlink_facets = {
-            "symlinks": SymlinksDatasetFacet(
+            "symlinks": symlinks_dataset.SymlinksDatasetFacet(
                 identifiers=[
-                    SymlinksDatasetFacetIdentifiers(
+                    symlinks_dataset.Identifier(
                         namespace="s3://bucket",
                         name="/data/test_table/data/path",
                         type="TABLE",

@@ -11,6 +11,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.package$;
+import org.apache.spark.scheduler.SparkListenerEvent;
 
 @Slf4j
 public class ColumnLevelLineageUtils {
@@ -21,7 +22,9 @@ public class ColumnLevelLineageUtils {
    * @return
    */
   public static Optional<OpenLineage.ColumnLineageDatasetFacet> buildColumnLineageDatasetFacet(
-      OpenLineageContext context, OpenLineage.SchemaDatasetFacet schemaFacet) {
+      SparkListenerEvent event,
+      OpenLineageContext context,
+      OpenLineage.SchemaDatasetFacet schemaFacet) {
     // if Spark3 include column lineage
     if (!package$.MODULE$.SPARK_VERSION().startsWith("2")) {
       try {
@@ -30,9 +33,10 @@ public class ColumnLevelLineageUtils {
                     "io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils")
                 .getMethod(
                     "buildColumnLineageDatasetFacet",
+                    SparkListenerEvent.class,
                     OpenLineageContext.class,
                     OpenLineage.SchemaDatasetFacet.class)
-                .invoke(null, context, schemaFacet);
+                .invoke(null, event, context, schemaFacet);
       } catch (ClassNotFoundException
           | NoSuchMethodException
           | IllegalAccessException

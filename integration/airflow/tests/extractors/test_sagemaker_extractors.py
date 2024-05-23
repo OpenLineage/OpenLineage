@@ -13,7 +13,6 @@ from openlineage.airflow.extractors.sagemaker_extractors import (
     SageMakerTrainingExtractor,
     SageMakerTransformExtractor,
 )
-from pkg_resources import parse_version
 
 from airflow.models import DAG, TaskInstance
 from airflow.providers.amazon.aws.operators.sagemaker import (
@@ -23,7 +22,6 @@ from airflow.providers.amazon.aws.operators.sagemaker import (
 )
 from airflow.utils import timezone
 from airflow.utils.state import State
-from airflow.version import version as AIRFLOW_VERSION
 
 log = logging.getLogger(__name__)
 
@@ -68,14 +66,11 @@ class TestSageMakerProcessingExtractor(TestCase):
 
     @staticmethod
     def _get_ti(task):
-        kwargs = {}
-        if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
-            kwargs["run_id"] = "test_run_id"  # change in 2.2.0
         task_instance = TaskInstance(
             task=task,
             execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
             state=State.SUCCESS,
-            **kwargs,
+            run_id="test_run_id",
         )
         task_instance.job_id = random.randrange(10000)
 
@@ -122,14 +117,11 @@ class TestSageMakerTransformExtractor(TestCase):
 
     @staticmethod
     def _get_ti(task):
-        kwargs = {}
-        if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
-            kwargs["run_id"] = "test_run_id"  # change in 2.2.0
         task_instance = TaskInstance(
             task=task,
             execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
             state=State.SUCCESS,
-            **kwargs,
+            run_id="test_run_id",
         )
         task_instance.job_id = random.randrange(10000)
 
@@ -172,14 +164,11 @@ class TestSageMakerTrainingExtractor(TestCase):
 
     @staticmethod
     def _get_ti(task):
-        kwargs = {}
-        if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
-            kwargs["run_id"] = "test_run_id"  # change in 2.2.0
         task_instance = TaskInstance(
             task=task,
             execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
             state=State.SUCCESS,
-            **kwargs,
+            run_id="test_run_id",
         )
         task_instance.job_id = random.randrange(10000)
 

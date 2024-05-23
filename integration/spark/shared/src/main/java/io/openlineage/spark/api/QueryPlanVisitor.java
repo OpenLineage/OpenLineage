@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.NonNull;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -56,7 +57,7 @@ import scala.runtime.AbstractPartialFunction;
  * @param <T>
  */
 public abstract class QueryPlanVisitor<T extends LogicalPlan, D extends OpenLineage.Dataset>
-    extends AbstractPartialFunction<LogicalPlan, List<D>> {
+    extends AbstractPartialFunction<LogicalPlan, List<D>> implements JobNameSuffixProvider<T> {
   @NonNull protected final OpenLineageContext context;
 
   protected QueryPlanVisitor(@NonNull OpenLineageContext context) {
@@ -87,6 +88,10 @@ public abstract class QueryPlanVisitor<T extends LogicalPlan, D extends OpenLine
             });
   }
 
+  public String internalClassName() {
+    return this.getClass().getName();
+  }
+
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
     Type genericSuperclass = getClass().getGenericSuperclass();
@@ -103,6 +108,20 @@ public abstract class QueryPlanVisitor<T extends LogicalPlan, D extends OpenLine
       return isAssignable;
     }
     return false;
+  }
+
+  public boolean isDefinedAt(SparkListenerEvent event) {
+    return true;
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(OpenLineageContext context) {
+    return context
+        .getQueryExecution()
+        .map(qe -> qe.optimizedPlan())
+        .filter(plan -> this.isDefinedAt(plan))
+        .map(plan -> jobNameSuffix((T) plan))
+        .orElse(Optional.empty());
   }
 
   @Override

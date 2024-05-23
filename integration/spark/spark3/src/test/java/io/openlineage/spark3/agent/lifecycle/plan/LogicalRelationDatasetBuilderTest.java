@@ -11,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
@@ -25,6 +26,7 @@ import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkContext;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.execution.datasources.FileIndex;
@@ -42,6 +44,7 @@ import org.mockito.MockedStatic;
 import scala.Option;
 import scala.collection.immutable.HashMap;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class LogicalRelationDatasetBuilderTest {
 
   private static final String SOME_VERSION = "version_1";
@@ -60,8 +63,9 @@ class LogicalRelationDatasetBuilderTest {
   void setup() {
     when(openLineageContext.getOpenLineage())
         .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
-    when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
+    when(openLineageContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
     when(facet.getDatasetVersion()).thenReturn(SOME_VERSION);
     when(session.sessionState()).thenReturn(sessionState);
   }
@@ -90,7 +94,8 @@ class LogicalRelationDatasetBuilderTest {
         when(DatasetVersionDatasetFacetUtils.extractVersionFromLogicalRelation(logicalRelation))
             .thenReturn(Optional.of(SOME_VERSION));
 
-        List<OpenLineage.Dataset> datasets = visitor.apply(logicalRelation);
+        List<OpenLineage.Dataset> datasets =
+            visitor.apply(mock(SparkListenerEvent.class), logicalRelation);
         assertEquals(1, datasets.size());
         OpenLineage.Dataset ds = datasets.get(0);
         assertEquals("/tmp", ds.getName());
@@ -118,7 +123,8 @@ class LogicalRelationDatasetBuilderTest {
             .thenReturn(Optional.of(SOME_VERSION));
         when(logicalRelation.schema()).thenReturn(schema);
 
-        List<OpenLineage.Dataset> datasets = visitor.apply(logicalRelation);
+        List<OpenLineage.Dataset> datasets =
+            visitor.apply(mock(SparkListenerEvent.class), logicalRelation);
         assertEquals(1, datasets.size());
         OpenLineage.Dataset ds = datasets.get(0);
         assertEquals("/tmp", ds.getName());

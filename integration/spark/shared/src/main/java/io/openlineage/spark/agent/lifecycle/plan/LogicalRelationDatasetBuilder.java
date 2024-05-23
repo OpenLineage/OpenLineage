@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.lifecycle.plan.handlers.ExtensionLineageRelationHandler;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -15,6 +16,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.extension.scala.v1.LineageRelation;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -80,6 +82,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     return x instanceof LogicalRelation
         && (((LogicalRelation) x).relation() instanceof HadoopFsRelation
             || ((LogicalRelation) x).relation() instanceof JDBCRelation
+            || ((LogicalRelation) x).relation() instanceof LineageRelation
             || ((LogicalRelation) x).catalogTable().isDefined());
   }
 
@@ -94,7 +97,16 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
   @Override
   public List<D> apply(LogicalRelation logRel) {
-    if (logRel.catalogTable() != null && logRel.catalogTable().isDefined()) {
+    // intentionally unimplemented
+    throw new UnsupportedOperationException("apply(LogicalPlay) is not implemented");
+  }
+
+  @Override
+  public List<D> apply(SparkListenerEvent event, LogicalRelation logRel) {
+    if (logRel.relation() instanceof LineageRelation) {
+      return new ExtensionLineageRelationHandler<>(context, datasetFactory)
+          .handleRelation(event, logRel);
+    } else if (logRel.catalogTable() != null && logRel.catalogTable().isDefined()) {
       return handleCatalogTable(logRel);
     } else if (logRel.relation() instanceof HadoopFsRelation) {
       return handleHadoopFsRelation(logRel);
@@ -179,10 +191,13 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
       // This is similar to the InsertIntoHadoopRelationVisitor's process for getting
       // Datasets
       //
-      // This can also occur when running on a spark cluster with UnityCatalog enabled.
-      // An exception will get thrown claiming there is "no Credential Scope". Catching
+      // This can also occur when running on a spark cluster with UnityCatalog
+      // enabled.
+      // An exception will get thrown claiming there is "no Credential Scope".
+      // Catching
       // a specific exception such as the above azure databricks exception
-      // didn't seem to yield the correct results, so a catch all on exceptions here works
+      // didn't seem to yield the correct results, so a catch all on exceptions here
+      // works
       // for unity catalog.
       List<D> inputDatasets = new ArrayList<D>();
       List<Path> paths =
@@ -198,6 +213,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     }
   }
 
+  @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
   private boolean isSingleFileRelation(Collection<Path> paths, Configuration hadoopConfig) {
     if (paths.size() != 1) {
       return false;

@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 
 if TYPE_CHECKING:
-    from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
+    from openlineage.client.client import Event
 
 
 class ConsoleConfig(Config):
@@ -22,8 +22,9 @@ class ConsoleTransport(Transport):
 
     def __init__(self, config: ConsoleConfig) -> None:  # noqa: ARG002
         self.log = logging.getLogger(__name__)
-        self.log.debug("Constructing openlineage client to send events to console or logs")
+        self.log.debug("Constructing OpenLineage transport that will send events to console or logs")
 
-    def emit(self, event: Union[RunEvent, DatasetEvent, JobEvent]) -> None:  # noqa: UP007
-        # If logging is set to DEBUG, this will also log event in client.py
+    def emit(self, event: Event) -> None:
+        # Note: When the logging level is set to DEBUG, the content of events is logged twice:
+        # here on the INFO level and in client.py on the DEBUG level for when different transport is used.
         self.log.info(Serde.to_json(event))

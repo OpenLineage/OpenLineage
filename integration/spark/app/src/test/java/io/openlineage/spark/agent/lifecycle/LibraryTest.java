@@ -76,6 +76,7 @@ class LibraryTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void testRdd(@TempDir Path tmpDir, SparkSession spark) throws IOException {
     URL url = Resources.getResource("test_data/data.txt");
     JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
@@ -127,6 +128,11 @@ class LibraryTest {
 
     assertThat(first.getInputs().get(0).getName()).endsWith("test_data");
     assertThat(first.getEventType()).isEqualTo(EventType.START);
+
+    assertThat(first.getJob().getFacets().getJobType())
+        .hasFieldOrPropertyWithValue("jobType", "RDD_JOB")
+        .hasFieldOrPropertyWithValue("processingType", "BATCH")
+        .hasFieldOrPropertyWithValue("integration", "SPARK");
 
     // verify second job event
     RunEvent second = events.get(2);

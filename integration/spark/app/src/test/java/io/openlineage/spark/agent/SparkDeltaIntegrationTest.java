@@ -49,7 +49,8 @@ import org.mockserver.model.RegexBody;
 @Tag("integration-test")
 @Tag("delta")
 @Slf4j
-public class SparkDeltaIntegrationTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class SparkDeltaIntegrationTest {
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
@@ -213,6 +214,16 @@ public class SparkDeltaIntegrationTest {
         .saveAsTable("movies");
 
     verifyEvents(mockServer, "pysparkDeltaSaveAsTableComplete.json");
+
+    assertThat(
+            MockServerUtils.getEventsEmitted(mockServer).stream()
+                .map(e -> e.getJob().getName())
+                .filter(
+                    j ->
+                        j.startsWith(
+                            "delta_integration_test.execute_create_data_source_table_as_select_command"))
+                .filter(j -> j.endsWith("movies"))) // job name ends with dataset name
+        .hasSize(2);
   }
 
   @Test
@@ -329,6 +340,7 @@ public class SparkDeltaIntegrationTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testCustomEnvVar() {
     spark.sql("DROP TABLE IF EXISTS test");
     spark.sql("CREATE TABLE test (key INT, value STRING) using delta");
@@ -350,6 +362,7 @@ public class SparkDeltaIntegrationTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testNoDuplicateEventsForDelta() {
     clearTables("t1", "t2", "t3", "t4");
 

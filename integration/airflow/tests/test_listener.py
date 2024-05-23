@@ -113,22 +113,25 @@ def test_listener_chooses_thread_execution(execute_in_thread, is_airflow_version
 
 @pytest.fixture
 def task_instance():
-    task_instance = TaskInstance(task=Mock())
+    dag = Mock()
+    dag.dag_id = "dag_id"
+    dag.description = "Test DAG Description"
+    dag.owner = "Test Owner"
+    task = Mock(dag=dag)
+    task.dag_id = dag.dag_id
+    task.task_id = "task_id"
+    task_instance = TaskInstance(task=task)
     task_instance.dag_run = DagRun()
+    task_instance.dag_run.dag = dag
+    task_instance.dag_run.dag_id = dag.dag_id
     task_instance.dag_run.run_id = "dag_run_run_id"
     task_instance.dag_run.data_interval_start = None
     task_instance.dag_run.data_interval_end = None
-    task_instance.task = Mock()
-    task_instance.task.task_id = "task_id"
-    task_instance.task.dag = Mock()
-    task_instance.task.dag.dag_id = "dag_id"
-    task_instance.task.dag.description = "Test DAG Description"
-    task_instance.task.dag.owner = "Test Owner"
-    task_instance.dag_id = "dag_id"
-    task_instance.run_id = "dag_run_run_id"
+    task_instance.dag_run.execution_date = "execution_date"
+    task_instance.dag_id = dag.dag_id
     task_instance.start_date = dt.datetime(2023, 1, 1, 13, 1, 1)
     task_instance.end_date = dt.datetime(2023, 1, 3, 13, 1, 1)
-    task_instance.execution_date = "execution_date"
+    task_instance.execution_date = task_instance.dag_run.execution_date
     task_instance.next_method = None  # Ensure this is None to reach start_task
     task_instance.render_templates = Mock()
     return task_instance
@@ -160,27 +163,42 @@ def test_running_task_correctly_calls_adapter_build_dag_run_id_method(
     mock_copy.return_value = task_instance
 
     on_task_instance_running(None, task_instance, None)
-    mock_adapter.build_dag_run_id.assert_called_with("dag_id", "dag_run_run_id")
+    mock_adapter.build_dag_run_id.assert_called_once_with(
+        dag_id="dag_id",
+        execution_date="execution_date",
+    )
 
 
+@patch("openlineage.airflow.listener.extractor_manager")
 @patch("openlineage.airflow.listener.task_holder")
 @patch("openlineage.airflow.listener.OpenLineageAdapter")
 def test_failed_task_correctly_calls_adapter_build_dag_run_id_method(
-    mock_adapter, mock_task_holder, task_instance
+    mock_adapter, mock_task_holder, mock_extractor, task_instance
 ):
     mock_task_holder.get_task.return_value = None
+    mock_extractor.extract_metadata.return_value = OperatorLineage()
+
     on_task_instance_failed(None, task_instance, None)
-    mock_adapter.build_dag_run_id.assert_called_with("dag_id", "dag_run_run_id")
+    mock_adapter.build_dag_run_id.assert_called_once_with(
+        dag_id="dag_id",
+        execution_date="execution_date",
+    )
 
 
+@patch("openlineage.airflow.listener.extractor_manager")
 @patch("openlineage.airflow.listener.task_holder")
 @patch("openlineage.airflow.listener.OpenLineageAdapter")
 def test_successful_task_correctly_calls_adapter_build_dag_run_id_method(
-    mock_adapter, mock_task_holder, task_instance
+    mock_adapter, mock_task_holder, mock_extractor, task_instance
 ):
     mock_task_holder.get_task.return_value = None
+    mock_extractor.extract_metadata.return_value = OperatorLineage()
+
     on_task_instance_success(None, task_instance, None)
-    mock_adapter.build_dag_run_id.assert_called_with("dag_id", "dag_run_run_id")
+    mock_adapter.build_dag_run_id.assert_called_once_with(
+        dag_id="dag_id",
+        execution_date="execution_date",
+    )
 
 
 @pytest.mark.parametrize("state", TaskInstanceState)
@@ -205,34 +223,53 @@ def test_running_task_correctly_calls_adapter_build_ti_run_id_method(
     task_instance.state = state
 
     on_task_instance_running(None, task_instance, None)
-    mock_adapter.build_task_instance_run_id.assert_called_once_with("dag_id", "task_id", "execution_date", 1)
+    mock_adapter.build_task_instance_run_id.assert_called_once_with(
+        dag_id="dag_id",
+        task_id="task_id",
+        try_number=1,
+        execution_date="execution_date",
+    )
 
 
 @pytest.mark.parametrize("state", TaskInstanceState)
+@patch("openlineage.airflow.listener.extractor_manager")
 @patch("openlineage.airflow.listener.task_holder")
 @patch("openlineage.airflow.listener.OpenLineageAdapter")
 def test_failed_task_correctly_calls_adapter_build_ti_run_id_method(
-    mock_adapter, mock_task_holder, task_instance, state
+    mock_adapter, mock_task_holder, mock_extractor, task_instance, state
 ):
     mock_task_holder.get_task.return_value = None
+    mock_extractor.extract_metadata.return_value = OperatorLineage()
 
     task_instance._try_number = 1
     task_instance.state = state
 
     on_task_instance_failed(None, task_instance, None)
-    mock_adapter.build_task_instance_run_id.assert_called_with("dag_id", "task_id", "execution_date", 1)
+    mock_adapter.build_task_instance_run_id.assert_called_once_with(
+        dag_id="dag_id",
+        task_id="task_id",
+        try_number=1,
+        execution_date="execution_date",
+    )
 
 
 @pytest.mark.parametrize("state", TaskInstanceState)
+@patch("openlineage.airflow.listener.extractor_manager")
 @patch("openlineage.airflow.listener.task_holder")
 @patch("openlineage.airflow.listener.OpenLineageAdapter")
 def test_successful_task_correctly_calls_adapter_build_ti_run_id_method(
-    mock_adapter, mock_task_holder, task_instance, state
+    mock_adapter, mock_task_holder, mock_extractor, task_instance, state
 ):
     mock_task_holder.get_task.return_value = None
+    mock_extractor.extract_metadata.return_value = OperatorLineage()
 
     task_instance._try_number = 1
     task_instance.state = state
 
     on_task_instance_success(None, task_instance, None)
-    mock_adapter.build_task_instance_run_id.assert_called_with("dag_id", "task_id", "execution_date", 1)
+    mock_adapter.build_task_instance_run_id.assert_called_once_with(
+        dag_id="dag_id",
+        task_id="task_id",
+        try_number=1,
+        execution_date="execution_date",
+    )

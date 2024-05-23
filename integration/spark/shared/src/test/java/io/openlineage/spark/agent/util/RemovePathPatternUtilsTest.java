@@ -20,12 +20,14 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class RemovePathPatternUtilsTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class RemovePathPatternUtilsTest {
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   SparkConf conf;
@@ -35,7 +37,7 @@ public class RemovePathPatternUtilsTest {
   public void setup() {
     conf = mock(SparkConf.class);
     SparkContext sparkContext = mock(SparkContext.class);
-    when(context.getSparkContext()).thenReturn(sparkContext);
+    when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(context.getOpenLineage()).thenReturn(openLineage);
     when(sparkContext.conf()).thenReturn(conf);
   }

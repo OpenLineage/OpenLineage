@@ -101,7 +101,7 @@ def test_symlink_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args[0][1])
+    event_sent = json.loads(session.post.call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -145,7 +145,7 @@ def test_storage_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args[0][1])
+    event_sent = json.loads(session.post.call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -197,7 +197,7 @@ def test_ownership_job_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args[0][1])
+    event_sent = json.loads(session.post.call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
     expected_event["job"]["facets"] = {}
@@ -242,7 +242,7 @@ def test_dataset_version_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args[0][1])
+    event_sent = json.loads(session.post.call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -295,7 +295,7 @@ def test_lifecycle_state_change_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args[0][1])
+    event_sent = json.loads(session.post.call_args.kwargs["data"])
 
     dataset_facets = {}
     dataset_facets["lifecycleStateChange"] = lifecycle_state_change_dataset_facet
@@ -351,7 +351,7 @@ def test_ownership_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args[0][1])
+    event_sent = json.loads(session.post.call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -420,7 +420,7 @@ def test_column_lineage_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args[0][1])
+    event_sent = json.loads(session.post.call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -457,7 +457,7 @@ def test_job_type_job_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args[0][1])
+    event_sent = json.loads(session.post.call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"] = []

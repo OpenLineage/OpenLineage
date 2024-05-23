@@ -48,12 +48,7 @@ public final class ProxyStreamFactory {
         lineageStreams.add(new ConsoleLineageStream());
       } else if (config instanceof KafkaConfig) {
         final KafkaConfig kafkaConfig = (KafkaConfig) config;
-        if (!kafkaConfig.hasLocalServerId()) {
-          // Set the local server ID to the lineage source when not specified
-          kafkaConfig.setLocalServerId(source);
-        }
         kafkaConfig.getProperties().put("bootstrap.servers", kafkaConfig.getBootstrapServerUrl());
-        kafkaConfig.getProperties().put("server.id", kafkaConfig.getLocalServerId());
         lineageStreams.add(new KafkaLineageStream((KafkaConfig) config));
       } else if (config instanceof HttpConfig) {
         final HttpConfig httpConfig = (HttpConfig) config;

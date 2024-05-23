@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class CreateViewFilterTest {
+class CreateViewFilterTest {
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   CreateViewFilter filter = new CreateViewFilter(context);

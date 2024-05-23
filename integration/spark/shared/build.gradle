@@ -23,7 +23,7 @@ idea {
 ext {
     assertjVersion = "3.25.1"
     awaitilityVersion = "4.2.0"
-    bigqueryVersion = "0.29.0"
+    bigqueryVersion = "0.35.1"
     databricksVersion = "0.1.4"
     junit5Version = "5.10.1"
     kafkaClientsVersion = "3.6.1"
@@ -32,6 +32,7 @@ ext {
     postgresqlVersion = "42.7.1"
     sqlLiteVersion = "3.45.0.0"
     testcontainersVersion = "1.19.3"
+    micrometerVersion = "1.12.4"
 
     sparkVersion = project.findProperty("shared.spark.version")
     sparkSeries = sparkVersion.substring(0, 3)
@@ -42,10 +43,14 @@ dependencies {
     // Design time dependencies
     api("io.openlineage:openlineage-java:${project.version}")
     api("io.openlineage:openlineage-sql-java:${project.version}")
+    api("io.openlineage:spark-interfaces-scala_${scalaBinaryVersion}:${project.version}")
+    api("io.micrometer:micrometer-core:${micrometerVersion}")
 
     compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
+    compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
+
 
     compileOnly("com.databricks:databricks-dbutils-scala_${scalaBinaryVersion}:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
@@ -59,6 +64,7 @@ dependencies {
     testFixturesApi(platform("org.junit:junit-bom:${junit5Version}"))
     testFixturesApi("org.junit.jupiter:junit-jupiter")
     testFixturesApi("org.junit.jupiter:junit-jupiter-params")
+    testFixturesApi("org.junit-pioneer:junit-pioneer:1.9.1")
     testFixturesApi("org.postgresql:postgresql:${postgresqlVersion}")
     testFixturesApi("org.xerial:sqlite-jdbc:${sqlLiteVersion}")
     testFixturesApi("org.apache.kafka:kafka-clients:${kafkaClientsVersion}")
@@ -89,10 +95,14 @@ dependencies {
     // Scala 2.12 dependencies
     scala212Api("io.openlineage:openlineage-java:${project.version}")
     scala212Api("io.openlineage:openlineage-sql-java:${project.version}")
+    scala212Api("io.openlineage:spark-interfaces-scala_2.12:${project.version}")
+    scala212Api("io.micrometer:micrometer-core:${micrometerVersion}")
 
     scala212CompileOnly("org.apache.spark:spark-hive_2.12:${sparkVersion}")
     scala212CompileOnly("org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}")
     scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
+    scala212CompileOnly("org.apache.spark:spark-streaming_2.12:${sparkVersion}")
+
 
     scala212CompileOnly("com.databricks:databricks-dbutils-scala_2.12:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
@@ -105,6 +115,7 @@ dependencies {
     testScala212Implementation("org.apache.spark:spark-hive_2.12:${sparkVersion}")
     testScala212Implementation("org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}")
     testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
+    testScala212Implementation("org.apache.spark:spark-streaming_2.12:${sparkVersion}")
 
     testScala212Implementation("com.databricks:databricks-dbutils-scala_2.12:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
@@ -120,6 +131,7 @@ dependencies {
     testScala212Implementation(platform("org.junit:junit-bom:${junit5Version}"))
     testScala212Implementation("org.junit.jupiter:junit-jupiter")
     testScala212Implementation("org.junit.jupiter:junit-jupiter-params")
+    testScala212Implementation("org.junit-pioneer:junit-pioneer:1.9.1")
     testScala212Implementation("org.mockito:mockito-core:${mockitoVersion}")
     testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
     testScala212Implementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
@@ -135,10 +147,13 @@ dependencies {
     // Scala 2.13 dependencies
     scala213Api("io.openlineage:openlineage-java:${project.version}")
     scala213Api("io.openlineage:openlineage-sql-java:${project.version}")
+    scala213Api("io.openlineage:spark-interfaces-scala_2.13:${project.version}")
+    scala213Api("io.micrometer:micrometer-core:${micrometerVersion}")
 
     scala213CompileOnly("org.apache.spark:spark-hive_2.13:${sparkVersion}")
     scala213CompileOnly("org.apache.spark:spark-sql-kafka-0-10_2.13:${sparkVersion}")
     scala213CompileOnly("org.apache.spark:spark-sql_2.13:${sparkVersion}")
+    scala213CompileOnly("org.apache.spark:spark-streaming_2.13:${sparkVersion}")
 
     scala213CompileOnly("com.databricks:databricks-dbutils-scala_2.13:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
@@ -151,6 +166,7 @@ dependencies {
     testScala213Implementation("org.apache.spark:spark-hive_2.13:${sparkVersion}")
     testScala213Implementation("org.apache.spark:spark-sql-kafka-0-10_2.13:${sparkVersion}")
     testScala213Implementation("org.apache.spark:spark-sql_2.13:${sparkVersion}")
+    testScala213Implementation("org.apache.spark:spark-streaming_2.13:${sparkVersion}")
 
     testScala213Implementation("com.databricks:databricks-dbutils-scala_2.13:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
@@ -166,6 +182,7 @@ dependencies {
     testScala213Implementation(platform("org.junit:junit-bom:${junit5Version}"))
     testScala213Implementation("org.junit.jupiter:junit-jupiter")
     testScala213Implementation("org.junit.jupiter:junit-jupiter-params")
+    testScala213Implementation("org.junit-pioneer:junit-pioneer:1.9.1")
     testScala213Implementation("org.mockito:mockito-core:${mockitoVersion}")
     testScala213Implementation("org.mockito:mockito-inline:${mockitoVersion}")
     testScala213Implementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")

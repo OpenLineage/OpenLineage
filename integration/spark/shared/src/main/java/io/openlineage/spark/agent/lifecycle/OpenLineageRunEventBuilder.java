@@ -25,7 +25,6 @@ import io.openlineage.client.OpenLineage.RunEventBuilder;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
-import io.openlineage.spark.agent.hooks.HookUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.FacetUtils;
@@ -35,6 +34,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
@@ -50,6 +51,9 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.ActiveJob;
+import org.apache.spark.scheduler.SparkListenerApplicationEnd;
+import org.apache.spark.scheduler.SparkListenerApplicationStart;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
@@ -205,7 +209,12 @@ class OpenLineageRunEventBuilder {
     nodes.addAll(Rdds.flattenRDDs(rdd));
 
     return populateRun(
-        applicationParentRunFacet, runEventBuilder, jobBuilder, jobFacetsBuilder, nodes);
+        applicationParentRunFacet,
+        runEventBuilder,
+        openLineageContext.getRunUuid(),
+        jobBuilder,
+        jobFacetsBuilder,
+        nodes);
   }
 
   RunEvent buildRun(
@@ -223,7 +232,12 @@ class OpenLineageRunEventBuilder {
     nodes.addAll(Rdds.flattenRDDs(rdd));
 
     return populateRun(
-        applicationParentRunFacet, runEventBuilder, jobBuilder, jobFacetsBuilder, nodes);
+        applicationParentRunFacet,
+        runEventBuilder,
+        openLineageContext.getRunUuid(),
+        jobBuilder,
+        jobFacetsBuilder,
+        nodes);
   }
 
   RunEvent buildRun(
@@ -235,6 +249,7 @@ class OpenLineageRunEventBuilder {
     return buildRun(
         applicationParentRunFacet,
         runEventBuilder,
+        openLineageContext.getRunUuid(),
         jobBuilder,
         jobFacetsBuilder,
         event,
@@ -250,6 +265,7 @@ class OpenLineageRunEventBuilder {
     return buildRun(
         applicationParentRunFacet,
         runEventBuilder,
+        openLineageContext.getRunUuid(),
         jobBuilder,
         jobFacetsBuilder,
         event,
@@ -265,6 +281,7 @@ class OpenLineageRunEventBuilder {
     return buildRun(
         parentRunFacet,
         runEventBuilder,
+        openLineageContext.getRunUuid(),
         jobBuilder,
         jobFacetsBuilder,
         event,
@@ -280,15 +297,49 @@ class OpenLineageRunEventBuilder {
     return buildRun(
         applicationParentRunFacet,
         runEventBuilder,
+        openLineageContext.getRunUuid(),
         jobBuilder,
         jobFacetsBuilder,
         event,
         Optional.ofNullable(jobMap.get(event.jobId())));
   }
 
+  RunEvent buildRun(
+      ParentRunFacet parentRunFacet,
+      RunEventBuilder runEventBuilder,
+      JobBuilder jobBuilder,
+      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
+      SparkListenerApplicationStart event) {
+    return buildRun(
+        parentRunFacet,
+        runEventBuilder,
+        openLineageContext.getApplicationUuid(),
+        jobBuilder,
+        jobFacetsBuilder,
+        event,
+        Optional.empty());
+  }
+
+  RunEvent buildRun(
+      ParentRunFacet applicationParentRunFacet,
+      RunEventBuilder runEventBuilder,
+      JobBuilder jobBuilder,
+      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
+      SparkListenerApplicationEnd event) {
+    return buildRun(
+        applicationParentRunFacet,
+        runEventBuilder,
+        openLineageContext.getApplicationUuid(),
+        jobBuilder,
+        jobFacetsBuilder,
+        event,
+        Optional.empty());
+  }
+
   private RunEvent buildRun(
       ParentRunFacet applicationParentRunFacet,
       RunEventBuilder runEventBuilder,
+      UUID runId,
       JobBuilder jobBuilder,
       OpenLineage.JobFacetsBuilder jobFacetsBuilder,
       Object event,
@@ -302,12 +353,13 @@ class OpenLineageRunEventBuilder {
         });
 
     return populateRun(
-        applicationParentRunFacet, runEventBuilder, jobBuilder, jobFacetsBuilder, nodes);
+        applicationParentRunFacet, runEventBuilder, runId, jobBuilder, jobFacetsBuilder, nodes);
   }
 
   private RunEvent populateRun(
       ParentRunFacet applicationParentRunFacet,
       RunEventBuilder runEventBuilder,
+      UUID runId,
       JobBuilder jobBuilder,
       OpenLineage.JobFacetsBuilder jobFacetsBuilder,
       List<Object> nodes) {
@@ -322,12 +374,17 @@ class OpenLineageRunEventBuilder {
     openLineageContext
         .getQueryExecution()
         .filter(qe -> !FacetUtils.isFacetDisabled(openLineageContext, "spark_unknown"))
-        .flatMap(qe -> unknownEntryFacetListener.build(qe.optimizedPlan()))
+        .flatMap(
+            qe ->
+                openLineageContext
+                    .getMeterRegistry()
+                    .timer("openlineage.spark.unknownFacet.time")
+                    .record(() -> unknownEntryFacetListener.build(qe.optimizedPlan())))
         .ifPresent(facet -> runFacetsBuilder.put("spark_unknown", facet));
+    unknownEntryFacetListener.clear();
 
     RunFacets runFacets = buildRunFacets(nodes, runFacetBuilders, runFacetsBuilder);
-    OpenLineage.RunBuilder runBuilder =
-        openLineage.newRunBuilder().runId(openLineageContext.getRunUuid()).facets(runFacets);
+    OpenLineage.RunBuilder runBuilder = openLineage.newRunBuilder().runId(runId).facets(runFacets);
     runEventBuilder
         .run(runBuilder.build())
         .job(jobBuilder.facets(jobFacets).build())
@@ -335,7 +392,6 @@ class OpenLineageRunEventBuilder {
         .outputs(
             RemovePathPatternUtils.removeOutputsPathPattern(openLineageContext, outputDatasets));
 
-    HookUtils.preBuild(openLineageContext, runEventBuilder);
     return runEventBuilder.build();
   }
 
@@ -405,16 +461,24 @@ class OpenLineageRunEventBuilder {
    */
   private <D> Function1<LogicalPlan, Collection<D>> visitLogicalPlan(
       PartialFunction<LogicalPlan, Collection<D>> inputVisitor) {
-    return ScalaConversionUtils.toScalaFn(
-        node ->
-            inputVisitor
-                .andThen(
-                    toScalaFn(
-                        ds -> {
-                          unknownEntryFacetListener.accept(node);
-                          return ds;
-                        }))
-                .applyOrElse(node, toScalaFn(n -> Collections.emptyList())));
+    return openLineageContext
+        .getMeterRegistry()
+        .timer("openlineage.spark.dataset.input.execution.time")
+        .record(
+            () ->
+                ScalaConversionUtils.toScalaFn(
+                    node ->
+                        inputVisitor
+                            .andThen(
+                                toScalaFn(
+                                    ds -> {
+                                      if (!FacetUtils.isFacetDisabled(
+                                          openLineageContext, "spark_unknown")) {
+                                        unknownEntryFacetListener.accept(node);
+                                      }
+                                      return ds;
+                                    }))
+                            .applyOrElse(node, toScalaFn(n -> Collections.emptyList()))));
   }
 
   private List<OutputDataset> buildOutputDatasets(List<Object> nodes) {
@@ -423,7 +487,15 @@ class OpenLineageRunEventBuilder {
         openLineageContext.getQueryExecution(),
         outputDatasetBuilders);
     Function1<LogicalPlan, Collection<OutputDataset>> visitor =
-        visitLogicalPlan(PlanUtils.merge(outputDatasetQueryPlanVisitors));
+        visitLogicalPlan(
+            PlanUtils.merge(
+                outputDatasetQueryPlanVisitors.stream()
+                    .filter(v -> v instanceof QueryPlanVisitor)
+                    .filter(v -> !nodes.isEmpty() && nodes.get(0) instanceof SparkListenerEvent)
+                    .filter(
+                        v ->
+                            (((QueryPlanVisitor) v).isDefinedAt((SparkListenerEvent) nodes.get(0))))
+                    .collect(Collectors.toList())));
     List<OutputDataset> datasets =
         Stream.concat(
                 buildDatasets(nodes, outputDatasetBuilders),
@@ -449,7 +521,12 @@ class OpenLineageRunEventBuilder {
               ds -> {
                 Map<String, DatasetFacet> dsFacetsMap = new HashMap(datasetFacetsMap);
                 ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(
-                        openLineageContext, ds.getFacets().getSchema())
+                        Optional.of(nodes.get(0))
+                            .filter(e -> e instanceof SparkListenerEvent)
+                            .map(e -> (SparkListenerEvent) e)
+                            .orElse(null),
+                        openLineageContext,
+                        ds.getFacets().getSchema())
                     .ifPresent(facet -> dsFacetsMap.put("columnLineage", facet));
                 return openLineage
                     .newOutputDatasetBuilder()
@@ -497,7 +574,17 @@ class OpenLineageRunEventBuilder {
       List<Object> events,
       Collection<CustomFacetBuilder<?, ? extends JobFacet>> builders,
       OpenLineage.JobFacetsBuilder jobFacetsBuilder) {
-    events.forEach(event -> builders.forEach(fn -> fn.accept(event, jobFacetsBuilder::put)));
+    events.forEach(
+        event ->
+            builders.forEach(
+                fn ->
+                    openLineageContext
+                        .getMeterRegistry()
+                        .timer(
+                            "openlineage.spark.facets.job.execution.time",
+                            "facet.builder",
+                            fn.getClass().getCanonicalName())
+                        .record(() -> fn.accept(event, jobFacetsBuilder::put))));
     return jobFacetsBuilder.build();
   }
 
@@ -505,7 +592,17 @@ class OpenLineageRunEventBuilder {
       List<Object> events,
       Collection<CustomFacetBuilder<?, ? extends RunFacet>> builders,
       RunFacetsBuilder runFacetsBuilder) {
-    events.forEach(event -> builders.forEach(fn -> fn.accept(event, runFacetsBuilder::put)));
+    events.forEach(
+        event ->
+            builders.forEach(
+                fn ->
+                    openLineageContext
+                        .getMeterRegistry()
+                        .timer(
+                            "openlineage.spark.facets.run.execution.time",
+                            "facet.builder",
+                            fn.getClass().getCanonicalName())
+                        .record(() -> fn.accept(event, runFacetsBuilder::put))));
     return runFacetsBuilder.build();
   }
 }

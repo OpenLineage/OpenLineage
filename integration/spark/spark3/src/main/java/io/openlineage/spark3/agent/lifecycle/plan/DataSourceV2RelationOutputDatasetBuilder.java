@@ -12,6 +12,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -53,5 +54,16 @@ public class DataSourceV2RelationOutputDatasetBuilder
           context, datasetFacetsBuilder, relation);
     }
     return PlanUtils3.fromDataSourceV2Relation(factory, context, relation, datasetFacetsBuilder);
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(DataSourceV2Relation relation) {
+    String suffix = relation.table().name();
+    if (relation.catalog().isDefined()
+        && !suffix.startsWith(relation.catalog().get().name() + ".")) {
+      // for some Spark versions relation.table().name() already contains catalog part
+      suffix = relation.catalog().get().name() + "." + suffix;
+    }
+    return Optional.of(suffix);
   }
 }

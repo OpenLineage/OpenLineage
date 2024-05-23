@@ -26,8 +26,10 @@ import lombok.NonNull;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.entity.GzipCompressingEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
@@ -45,17 +47,22 @@ public final class HttpTransport extends Transport implements Closeable {
   private @Nullable final TokenProvider tokenProvider;
 
   private final Map<String, String> headers;
+  private @Nullable final HttpConfig.Compression compression;
 
   public HttpTransport(@NonNull final HttpConfig httpConfig) {
-    this(withTimeout(httpConfig.getTimeout()), httpConfig);
+    this(withTimeout(httpConfig), httpConfig);
   }
 
-  private static CloseableHttpClient withTimeout(Double timeout) {
+  private static CloseableHttpClient withTimeout(HttpConfig httpConfig) {
     int timeoutMs;
-    if (timeout == null) {
-      timeoutMs = 5000;
+    if (httpConfig.getTimeout() != null) {
+      // deprecated approach, value in seconds as double provided
+      timeoutMs = (int) (httpConfig.getTimeout() * 1000);
+    } else if (httpConfig.getTimeoutInMillis() != null) {
+      timeoutMs = httpConfig.getTimeoutInMillis();
     } else {
-      timeoutMs = (int) (timeout * 1000);
+      // default one
+      timeoutMs = 5000;
     }
 
     RequestConfig config =
@@ -78,13 +85,14 @@ public final class HttpTransport extends Transport implements Closeable {
     }
     this.tokenProvider = httpConfig.getAuth();
     this.headers = httpConfig.getHeaders() != null ? httpConfig.getHeaders() : new HashMap<>();
+    this.compression = httpConfig.getCompression();
   }
 
   private URI getUri(HttpConfig httpConfig) throws URISyntaxException {
     URI url = httpConfig.getUrl();
     if (url == null) {
       throw new OpenLineageClientException(
-          "url can't be null, try setting openlineage.transport.url in config");
+          "url can't be null, try setting transport.url in config");
     }
     URIBuilder builder = new URIBuilder(url);
     if (StringUtils.isNotBlank(url.getPath())) {
@@ -107,10 +115,27 @@ public final class HttpTransport extends Transport implements Closeable {
 
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
-    final String eventAsJson = OpenLineageClientUtils.toJson(runEvent);
-    emit(eventAsJson);
+    emit(OpenLineageClientUtils.toJson(runEvent));
   }
 
+  @Override
+  public void emit(@NonNull OpenLineage.DatasetEvent datasetEvent) {
+    emit(OpenLineageClientUtils.toJson(datasetEvent));
+  }
+
+  @Override
+  public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
+    emit(OpenLineageClientUtils.toJson(jobEvent));
+  }
+
+  /**
+   * @deprecated
+   *     <p>Since version 1.13.0.
+   *     <p>Will be removed in version 1.16.0.
+   *     <p>Please use {@link #emit(OpenLineage.DatasetEvent)} or {@link
+   *     #emit(OpenLineage.JobEvent)} instead
+   */
+  @Deprecated
   @Override
   public void emit(String eventAsJson) {
     log.debug("POST event on URL {}", uri);
@@ -118,7 +143,7 @@ public final class HttpTransport extends Transport implements Closeable {
       final HttpPost request = new HttpPost();
       request.setURI(uri);
       setHeaders(request);
-      request.setEntity(new StringEntity(eventAsJson, APPLICATION_JSON));
+      setBody(request, eventAsJson);
 
       try (CloseableHttpResponse response = http.execute(request)) {
         throwOnHttpError(response);
@@ -127,6 +152,14 @@ public final class HttpTransport extends Transport implements Closeable {
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
     }
+  }
+
+  private void setBody(HttpPost request, String body) {
+    HttpEntity entity = new StringEntity(body, APPLICATION_JSON);
+    if (compression == HttpConfig.Compression.GZIP) {
+      entity = new GzipCompressingEntity(entity);
+    }
+    request.setEntity(entity);
   }
 
   private void setHeaders(HttpPost request) {
@@ -143,11 +176,8 @@ public final class HttpTransport extends Transport implements Closeable {
   private void throwOnHttpError(@NonNull HttpResponse response) throws IOException {
     final int code = response.getStatusLine().getStatusCode();
     if (code >= 400 && code < 600) { // non-2xx
-      String message =
-          String.format(
-              "code: %d, response: %s", code, EntityUtils.toString(response.getEntity(), UTF_8));
-
-      throw new OpenLineageClientException(message);
+      throw new HttpTransportResponseException(
+          code, EntityUtils.toString(response.getEntity(), UTF_8));
     }
   }
 
@@ -156,7 +186,9 @@ public final class HttpTransport extends Transport implements Closeable {
     http.close();
   }
 
-  /** Returns an new {@link HttpTransport.Builder} object for building {@link HttpTransport}s. */
+  /**
+   * @return an new {@link HttpTransport.Builder} object for building {@link HttpTransport}s.
+   */
   public static Builder builder() {
     return new Builder();
   }
@@ -232,8 +264,8 @@ public final class HttpTransport extends Transport implements Closeable {
     }
 
     /**
-     * Returns an {@link HttpTransport} object with the properties of this {@link
-     * HttpTransport.Builder}.
+     * @return an {@link HttpTransport} object with the properties of this {@link
+     *     HttpTransport.Builder}.
      */
     public HttpTransport build() {
       if (httpClient != null) {

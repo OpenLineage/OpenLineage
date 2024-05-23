@@ -35,8 +35,9 @@ public class KafkaSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
 
   @Override
   public List<OpenLineage.OutputDataset> apply(Object kafkaSink) {
-    KafkaSinkWrapper wrapper = KafkaSinkWrapper.of((KafkaSink) kafkaSink);
+    KafkaSinkWrapper wrapper = KafkaSinkWrapper.of((KafkaSink) kafkaSink, context);
     List<String> topics = wrapper.getTopicsOfMultiTopicSink();
+    log.debug("Extracting output dataset for KafkaSinkVisitor with topics {}", topics);
     if (topics != null && !topics.isEmpty()) {
       DatasetFacetsBuilder facetsBuilder = outputDataset().getDatasetFacetsBuilder();
       wrapper
@@ -64,14 +65,9 @@ public class KafkaSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
       OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
           outputDataset().getDatasetFacetsBuilder();
 
-      wrapper
-          .getAvroSchema()
-          .map(
-              schema ->
-                  datasetFacetsBuilder.schema(
-                      AvroSchemaUtils.convert(context.getOpenLineage(), schema)));
+      wrapper.getSchemaFacet().map(facet -> datasetFacetsBuilder.schema(facet));
 
-      log.debug("Kafka output topic: {}", di.getName());
+      log.debug("KafkaSinkVisitor extracted output topic: {}", di.getName());
       return Collections.singletonList(outputDataset().getDataset(di, datasetFacetsBuilder));
     } catch (IllegalAccessException | java.util.NoSuchElementException e) {
       log.error("Can't access the field. ", e);

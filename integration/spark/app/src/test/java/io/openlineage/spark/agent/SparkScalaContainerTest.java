@@ -60,7 +60,7 @@ import org.testcontainers.utility.DockerImageName;
 @Tag("integration-test")
 @Testcontainers
 @Slf4j
-public class SparkScalaContainerTest {
+class SparkScalaContainerTest {
   private static final Network network = Network.newNetwork();
 
   @Container
@@ -158,6 +158,7 @@ public class SparkScalaContainerTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testScalaUnionRddToParquet() {
     spark = createSparkContainer("io.openlineage.spark.test.RddUnion");
     spark.start();

@@ -22,6 +22,7 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTable;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -29,6 +30,7 @@ import org.apache.spark.sql.catalyst.plans.logical.ReplaceTable;
 import org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.types.StructType;
 
 /**
@@ -50,6 +52,11 @@ public class CreateReplaceOutputDatasetBuilder
         || (x instanceof ReplaceTable)
         || (x instanceof ReplaceTableAsSelect)
         || (x instanceof CreateTable);
+  }
+
+  @Override
+  public boolean isDefinedAt(SparkListenerEvent event) {
+    return (event instanceof SparkListenerSQLExecutionEnd || event instanceof SparkListenerJobEnd);
   }
 
   @Override
@@ -166,5 +173,25 @@ public class CreateReplaceOutputDatasetBuilder
     CatalogUtils3.getStorageDatasetFacet(context, catalog, tableProperties)
         .map(storageDatasetFacet -> builder.storage(storageDatasetFacet));
     return Collections.singletonList(outputDataset().getDataset(di.get(), builder));
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(LogicalPlan plan) {
+    if (!this.isDefinedAtLogicalPlan(plan)) {
+      return Optional.empty();
+    }
+
+    Identifier identifier = null;
+    if (plan instanceof CreateTableAsSelect) {
+      identifier = ((CreateTableAsSelect) plan).tableName();
+    } else if (plan instanceof ReplaceTable) {
+      identifier = ((ReplaceTable) plan).tableName();
+    } else if (plan instanceof ReplaceTableAsSelect) {
+      identifier = ((ReplaceTableAsSelect) plan).tableName();
+    } else if (plan instanceof CreateTable) {
+      identifier = ((CreateTable) plan).tableName();
+    }
+
+    return Optional.of(identToSuffix(identifier));
   }
 }

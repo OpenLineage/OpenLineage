@@ -13,13 +13,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.With;
 
 @NoArgsConstructor
 @ToString
 @EqualsAndHashCode
 @AllArgsConstructor
-@With
 public final class StaticCircuitBreakerConfig implements CircuitBreakerConfig {
   @Getter @Setter private String valuesReturned;
   @Getter @Setter private Integer circuitCheckIntervalInMillis = CIRCUIT_CHECK_INTERVAL_IN_MILLIS;

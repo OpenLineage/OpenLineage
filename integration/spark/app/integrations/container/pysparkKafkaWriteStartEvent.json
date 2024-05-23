@@ -3,12 +3,12 @@
   "run": {
     "facets": {
       "spark.logicalPlan": {},
-      "spark_version": {}
+      "processing_engine": {}
     }
   },
   "job": {
     "namespace": "testPysparkKafkaReadWriteTest",
-    "name": "kafka_examples.execute_save_into_data_source_command.topic1"
+    "name": "kafka_examples.execute_save_into_data_source_command"
   },
   "inputs": [],
   "outputs": [

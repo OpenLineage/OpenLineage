@@ -6,11 +6,16 @@
 package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableMap;
+import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineageClientUtils;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
@@ -217,6 +222,7 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   void testCreateAsSelectAndLoad() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testCreateAsSelectAndLoad", "spark_ctas_load.py");
@@ -257,6 +263,27 @@ class SparkContainerIntegrationTest {
         mockServerClient,
         "pysparkCreateTableStartEvent.json",
         "pysparkCreateTableCompleteEvent.json");
+
+    // assert that START and COMPLETE events have the same job name with table name appended to it
+    // we need to check it here as dataset names differ per Spark version (different default catalog
+    // name)
+    List<RunEvent> events =
+        Arrays.stream(
+                mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+            .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+            .filter(
+                e ->
+                    e.getJob()
+                        .getName()
+                        .startsWith(
+                            "open_lineage_integration_create_table.execute_create_table_command"))
+            .collect(Collectors.toList());
+
+    assertThat(events.stream().map(e -> e.getJob().getName()).collect(Collectors.toList()))
+        .containsOnly(events.get(0).getJob().getName()); // job name is same
+
+    assertThat(events.get(0).getJob().getName())
+        .endsWith("create_table_test"); // table name is appended to job name
   }
 
   @Test
@@ -295,6 +322,7 @@ class SparkContainerIntegrationTest {
 
   @Test
   @SneakyThrows
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testFacetsDisable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testFacetsDisable", "spark_facets_disable.py");
@@ -312,5 +340,17 @@ class SparkContainerIntegrationTest {
         network, openLineageClientMockContainer, "testRddWithParquet", "spark_rdd_with_parquet.py");
 
     verifyEvents(mockServerClient, "pysparkRDDWithParquetComplete.json");
+  }
+
+  @Test
+  void testDebugFacet() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network,
+        openLineageClientMockContainer,
+        "testEmitMetrics",
+        Collections.emptyList(),
+        Collections.singletonList("spark.openlineage.debugFacet=true"),
+        "spark_emit_metrics.py");
+    verifyEvents(mockServerClient, "pysparkMetricsEnd.json");
   }
 }

@@ -11,6 +11,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.CreateDataSourceTableCommand;
@@ -37,5 +38,12 @@ public class CreateDataSourceTableCommandVisitor
                 PathUtils.fromCatalogTable(catalogTable),
                 catalogTable.schema(),
                 OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE));
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(CreateDataSourceTableCommand command) {
+    return Optional.of(command.table())
+        .map(t -> t.identifier())
+        .map(i -> tableIdentifierToSuffix(i));
   }
 }

@@ -9,7 +9,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.DatasetIdentifierUtils;
 import io.openlineage.flink.api.OpenLineageContext;
-import io.openlineage.flink.utils.IcebergUtils;
+import io.openlineage.flink.utils.IcebergSchemaUtils;
 import io.openlineage.flink.visitor.wrapper.IcebergSinkWrapper;
 import java.net.URI;
 import java.util.Collections;
@@ -60,7 +60,7 @@ public class IcebergSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
         .facets(
             openLineage
                 .newDatasetFacetsBuilder()
-                .schema(IcebergUtils.getSchema(context, table))
+                .schema(IcebergSchemaUtils.convert(openLineage, table.schema()))
                 .build())
         .build();
   }

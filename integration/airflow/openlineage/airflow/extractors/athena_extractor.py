@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
-from openlineage.client.facet import SqlJobFacet
+from openlineage.client.facet_v2 import sql_job
 from openlineage.common.dataset import Dataset, Source
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta, SqlMeta, parse
@@ -19,7 +19,7 @@ class AthenaExtractor(BaseExtractor):
 
     def extract(self) -> TaskMetadata:
         task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
-        job_facets = {"sql": SqlJobFacet(query=SqlExtractor._normalize_sql(self.operator.query))}
+        job_facets = {"sql": sql_job.SQLJobFacet(query=SqlExtractor._normalize_sql(self.operator.query))}
 
         sql_meta: Optional[SqlMeta] = parse(self.operator.query, "generic", None)
         inputs: List[Dataset] = (
@@ -77,7 +77,7 @@ class AthenaExtractor(BaseExtractor):
         parsed = urlparse(output_location)
         outputs.append(
             Dataset(
-                name=parsed.path,
+                name=parsed.path or "/",
                 source=Source(
                     scheme=parsed.scheme,
                     authority=parsed.netloc,

@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pandas
 import pytest
-from openlineage.client.facet import SchemaField
+from openlineage.client.facet_v2 import schema_dataset
 from openlineage.common.provider.great_expectations import OpenLineageValidationAction
 from openlineage.common.provider.great_expectations.results import (
     GreatExpectationsAssertion,
@@ -167,10 +167,10 @@ def test_dataset_from_sql_source(test_db_file, tmpdir):
     assert all(
         f in input_ds["facets"]["schema"]["fields"]
         for f in [
-            {"name": "name", "type": "TEXT"},
-            {"name": "birthdate", "type": "TEXT"},
-            {"name": "address", "type": "TEXT"},
-            {"name": "size", "type": "INTEGER"},
+            {"name": "name", "type": "TEXT", "fields": []},
+            {"name": "birthdate", "type": "TEXT", "fields": []},
+            {"name": "address", "type": "TEXT", "fields": []},
+            {"name": "size", "type": "INTEGER", "fields": []},
         ]
     )
 
@@ -236,10 +236,10 @@ def test_dataset_from_custom_sql(test_db_file, tmpdir):
     assert all(
         f in input_ds.facets["schema"].fields
         for f in [
-            SchemaField("name", "TEXT"),
-            SchemaField("birthdate", "TEXT"),
-            SchemaField("address", "TEXT"),
-            SchemaField("size", "INTEGER"),
+            schema_dataset.SchemaDatasetFacetFields("name", "TEXT"),
+            schema_dataset.SchemaDatasetFacetFields("birthdate", "TEXT"),
+            schema_dataset.SchemaDatasetFacetFields("address", "TEXT"),
+            schema_dataset.SchemaDatasetFacetFields("size", "INTEGER"),
         ]
     )
     assert len(input_ds.inputFacets) == 3
@@ -266,9 +266,9 @@ def test_dataset_from_custom_sql(test_db_file, tmpdir):
     assert all(
         f in input_ds.facets["schema"].fields
         for f in [
-            SchemaField("name", "TEXT"),
-            SchemaField("workplace", "TEXT"),
-            SchemaField("position", "TEXT"),
+            schema_dataset.SchemaDatasetFacetFields("name", "TEXT"),
+            schema_dataset.SchemaDatasetFacetFields("workplace", "TEXT"),
+            schema_dataset.SchemaDatasetFacetFields("position", "TEXT"),
         ]
     )
     assert len(input_ds.inputFacets) == 3
@@ -332,10 +332,10 @@ def test_dataset_from_pandas_source(tmpdir):
     assert all(
         f in input_ds.facets["schema"].fields
         for f in [
-            SchemaField("name", "object"),
-            SchemaField("birthdate", "object"),
-            SchemaField("address", "object"),
-            SchemaField("size", "int64"),
+            schema_dataset.SchemaDatasetFacetFields("name", "object"),
+            schema_dataset.SchemaDatasetFacetFields("birthdate", "object"),
+            schema_dataset.SchemaDatasetFacetFields("address", "object"),
+            schema_dataset.SchemaDatasetFacetFields("size", "int64"),
         ]
     )
 
@@ -434,10 +434,10 @@ def test_dataset_from_sql_source_v3_api(test_db_file, tmpdir):
     assert all(
         f in input_ds["facets"]["schema"]["fields"]
         for f in [
-            {"name": "name", "type": "TEXT"},
-            {"name": "birthdate", "type": "TEXT"},
-            {"name": "address", "type": "TEXT"},
-            {"name": "size", "type": "INTEGER"},
+            {"name": "name", "type": "TEXT", "fields": []},
+            {"name": "birthdate", "type": "TEXT", "fields": []},
+            {"name": "address", "type": "TEXT", "fields": []},
+            {"name": "size", "type": "INTEGER", "fields": []},
         ]
     )
 
@@ -542,10 +542,10 @@ def test_dataset_from_sql_custom_query_v3_api(test_db_file, tmpdir):
     assert all(
         f in input_ds["facets"]["schema"]["fields"]
         for f in [
-            {"name": "name", "type": "TEXT"},
-            {"name": "birthdate", "type": "TEXT"},
-            {"name": "address", "type": "TEXT"},
-            {"name": "size", "type": "INTEGER"},
+            {"name": "name", "type": "TEXT", "fields": []},
+            {"name": "birthdate", "type": "TEXT", "fields": []},
+            {"name": "address", "type": "TEXT", "fields": []},
+            {"name": "size", "type": "INTEGER", "fields": []},
         ]
     )
 
@@ -561,9 +561,9 @@ def test_dataset_from_sql_custom_query_v3_api(test_db_file, tmpdir):
     assert all(
         f in input_ds["facets"]["schema"]["fields"]
         for f in [
-            {"name": "name", "type": "TEXT"},
-            {"name": "workplace", "type": "TEXT"},
-            {"name": "position", "type": "TEXT"},
+            {"name": "name", "type": "TEXT", "fields": []},
+            {"name": "workplace", "type": "TEXT", "fields": []},
+            {"name": "position", "type": "TEXT", "fields": []},
         ]
     )
     assert len(input_ds["inputFacets"]) == 3

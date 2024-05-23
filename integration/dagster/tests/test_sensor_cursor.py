@@ -3,9 +3,9 @@
 
 import json
 import os
-import uuid
 from unittest.mock import patch
 
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.dagster.cursor import OpenLineageCursor, RunningPipeline, RunningStep
 
 from dagster import DagsterEventType, SensorDefinition, build_sensor_context
@@ -45,7 +45,7 @@ def test_cursor_update_with_successful_run(mock_event_log_records, mock_step_run
         ol_sensor_def = openlineage_sensor(record_filter_limit=1)
 
         # 1. pipeline start
-        pipeline_run_id = str(uuid.uuid4())
+        pipeline_run_id = str(generate_new_uuid())
         mock_event_log_records.return_value = [
             make_test_event_log_record(DagsterEventType.RUN_START, pipeline_run_id=pipeline_run_id)
         ]
@@ -57,7 +57,7 @@ def test_cursor_update_with_successful_run(mock_event_log_records, mock_step_run
         )
 
         # 2. step start
-        step_run_id = str(uuid.uuid4())
+        step_run_id = str(generate_new_uuid())
         step_key = "an_op"
         mock_step_run_id.return_value = step_run_id
         mock_event_log_records.return_value = [
@@ -124,7 +124,7 @@ def test_cursor_update_with_failing_run(mock_event_log_records, mock_step_run_id
         ol_sensor_def = openlineage_sensor(record_filter_limit=1)
 
         # 1. pipeline start
-        pipeline_run_id = str(uuid.uuid4())
+        pipeline_run_id = str(generate_new_uuid())
         mock_event_log_records.return_value = [
             make_test_event_log_record(DagsterEventType.RUN_START, pipeline_run_id=pipeline_run_id)
         ]
@@ -136,7 +136,7 @@ def test_cursor_update_with_failing_run(mock_event_log_records, mock_step_run_id
         )
 
         # 2. step start
-        step_run_id = str(uuid.uuid4())
+        step_run_id = str(generate_new_uuid())
         step_key = "an_op"
         mock_step_run_id.return_value = step_run_id
         mock_event_log_records.return_value = [
@@ -199,9 +199,9 @@ def test_cursor_update_with_exception_raised(mock_event_log_records, mock_step_r
     from openlineage.dagster.sensor import openlineage_sensor
 
     with instance_for_test() as instance:
-        pipeline_run_id = str(uuid.uuid4())
+        pipeline_run_id = str(generate_new_uuid())
         step_key = "an_op"
-        step_run_id = str(uuid.uuid4())
+        step_run_id = str(generate_new_uuid())
         mock_step_run_id.return_value = step_run_id
         mock_event_log_records.return_value = [
             make_test_event_log_record(

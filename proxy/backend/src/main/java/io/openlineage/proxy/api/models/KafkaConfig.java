@@ -16,11 +16,29 @@ import lombok.ToString;
 @ToString
 public final class KafkaConfig implements ProxyStreamConfig {
   @Getter @Setter private String topicName;
-  @Getter @Setter private String localServerId;
+  @Getter @Setter private String messageKey;
   @Getter @Setter private String bootstrapServerUrl;
   @Getter @Setter private Properties properties;
 
-  public boolean hasLocalServerId() {
-    return (localServerId != null);
+  /**
+   * @deprecated
+   *     <p>Since version 1.13.0.
+   *     <p>Will be removed in version 1.16.0.
+   *     <p>Please use {@link #getMessageKey()} instead
+   */
+  @Deprecated
+  String getLocalServerId() {
+    return messageKey;
+  }
+
+  /**
+   * @deprecated
+   *     <p>Since version 1.13.0.
+   *     <p>Will be removed in version 1.16.0.
+   *     <p>Please use {@link #setMessageKey()} instead
+   */
+  @Deprecated
+  void setLocalServerId(String localServerId) {
+    this.messageKey = localServerId;
   }
 }

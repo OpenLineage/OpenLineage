@@ -4,17 +4,16 @@
 from typing import ClassVar, Dict, List, Optional
 from urllib.parse import urlparse
 
-from openlineage.client.facet import (
+from openlineage.client.event_v2 import Dataset as OpenLineageDataset
+from openlineage.client.event_v2 import InputDataset, OutputDataset
+from openlineage.client.facet_v2 import (
     BaseFacet,
-    DataSourceDatasetFacet,
-    DocumentationDatasetFacet,
-    SchemaDatasetFacet,
-    SchemaField,
-    SymlinksDatasetFacet,
-    SymlinksDatasetFacetIdentifiers,
+    DatasetFacet,
+    datasource_dataset,
+    documentation_dataset,
+    schema_dataset,
+    symlinks_dataset,
 )
-from openlineage.client.run import Dataset as OpenLineageDataset
-from openlineage.client.run import InputDataset, OutputDataset
 from openlineage.client.utils import RedactMixin
 from openlineage.common.models import DbColumn, DbTableSchema
 
@@ -143,9 +142,9 @@ class Dataset(RedactMixin):
         parsed_path = urlparse(data_location)
         custom_facets = (
             {
-                "symlinks": SymlinksDatasetFacet(
+                "symlinks": symlinks_dataset.SymlinksDatasetFacet(
                     identifiers=[
-                        SymlinksDatasetFacetIdentifiers(
+                        symlinks_dataset.Identifier(
                             namespace=f"{parsed_path.scheme}://{parsed_path.netloc}",  # type: ignore
                             name=str(parsed_path.path),
                             type="TABLE",
@@ -201,36 +200,41 @@ class Dataset(RedactMixin):
                          {self.fields!r},{self.description!r})"
 
     def to_openlineage_dataset(self) -> OpenLineageDataset:
-        facets: Dict[str, BaseFacet] = {
-            "dataSource": DataSourceDatasetFacet(
+        facets: Dict[str, DatasetFacet] = {
+            "dataSource": datasource_dataset.DatasourceDatasetFacet(
                 name=self.source.name,
                 uri=self.source.connection_url or "",
             )
         }
         if self.description:
-            facets["documentation"] = DocumentationDatasetFacet(description=self.description)
+            facets["documentation"] = documentation_dataset.DocumentationDatasetFacet(
+                description=self.description
+            )
 
         if self.fields is not None and len(self.fields):
-            facets["schema"] = SchemaDatasetFacet(
-                fields=[SchemaField(field.name, field.type, field.description) for field in self.fields]
+            facets["schema"] = schema_dataset.SchemaDatasetFacet(
+                fields=[
+                    schema_dataset.SchemaDatasetFacetFields(field.name, field.type, field.description)
+                    for field in self.fields
+                ]
             )
 
         if self.custom_facets:
-            facets.update(self.custom_facets)
+            facets.update(self.custom_facets)  # type: ignore
 
         if len(self.input_facets):
             return InputDataset(
                 namespace=self.source.name,
                 name=self.name,
                 facets=facets,
-                inputFacets=self.input_facets,
+                inputFacets=self.input_facets,  # type: ignore
             )
         if len(self.output_facets):
             return OutputDataset(
                 namespace=self.source.name,
                 name=self.name,
                 facets=facets,
-                outputFacets=self.output_facets,
+                outputFacets=self.output_facets,  # type: ignore
             )
 
         return OpenLineageDataset(namespace=self.source.name, name=self.name, facets=facets)

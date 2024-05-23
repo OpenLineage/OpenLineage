@@ -13,7 +13,6 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.sql.ColumnMeta;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,7 +40,7 @@ import org.apache.spark.sql.catalyst.expressions.ExprId;
 public class ColumnLevelLineageBuilder {
 
   private Map<ExprId, Set<ExprId>> exprDependencies = new HashMap<>();
-  @Getter private Map<ExprId, List<Pair<DatasetIdentifier, String>>> inputs = new HashMap<>();
+  @Getter private Map<ExprId, Set<Pair<DatasetIdentifier, String>>> inputs = new HashMap<>();
   private Map<OpenLineage.SchemaDatasetFacetFields, ExprId> outputs = new HashMap<>();
   private Map<ColumnMeta, ExprId> externalExpressionMappings = new HashMap<>();
   private final OpenLineage.SchemaDatasetFacet schema;
@@ -62,13 +61,8 @@ public class ColumnLevelLineageBuilder {
    * @param attributeName
    */
   public void addInput(ExprId exprId, DatasetIdentifier datasetIdentifier, String attributeName) {
-    inputs.computeIfAbsent(exprId, k -> new LinkedList<>());
-
-    Pair<DatasetIdentifier, String> input = Pair.of(datasetIdentifier, attributeName);
-
-    if (!inputs.get(exprId).contains(input)) {
-      inputs.get(exprId).add(input);
-    }
+    inputs.computeIfAbsent(exprId, k -> new HashSet<>());
+    inputs.get(exprId).add(Pair.of(datasetIdentifier, attributeName));
   }
 
   /**
@@ -85,14 +79,14 @@ public class ColumnLevelLineageBuilder {
   }
 
   /**
-   * Add dependency between parent expression and child expression. Evaluation of parent requires
-   * child.
+   * Add dependency between outputExprId expression and inputExprId expression. Evaluation of
+   * outputExprId requires inputExprId.
    *
-   * @param parent
-   * @param child
+   * @param outputExprId
+   * @param inputExprId
    */
-  public void addDependency(ExprId parent, ExprId child) {
-    exprDependencies.computeIfAbsent(parent, k -> new HashSet<>()).add(child);
+  public void addDependency(ExprId outputExprId, ExprId inputExprId) {
+    exprDependencies.computeIfAbsent(outputExprId, k -> new HashSet<>()).add(inputExprId);
   }
 
   public boolean hasOutputs() {
@@ -203,7 +197,7 @@ public class ColumnLevelLineageBuilder {
     dependentInputs.add(outputExprId);
     boolean continueSearch = true;
 
-    Set<ExprId> newDependentInputs = new HashSet<>(Arrays.asList(outputExprId));
+    Set<ExprId> newDependentInputs = Collections.singleton(outputExprId);
     while (continueSearch) {
       newDependentInputs =
           newDependentInputs.stream()

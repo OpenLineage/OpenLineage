@@ -10,10 +10,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URI;
 import java.util.List;
 import lombok.SneakyThrows;
@@ -73,6 +75,8 @@ class CreateTableLikeCommandVisitorTest {
                 .sparkSession(sparkSession)
                 .sparkContext(sparkSession.sparkContext())
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .meterRegistry(new SimpleMeterRegistry())
+                .openLineageConfig(new SparkOpenLineageConfig())
                 .build());
 
     CreateTableLikeCommand command =
@@ -95,5 +99,20 @@ class CreateTableLikeCommandVisitorTest {
         outputDataset.getFacets().getLifecycleStateChange().getLifecycleStateChange());
     assertEquals("/tmp/warehouse/newtable", outputDataset.getName());
     assertEquals("file", outputDataset.getNamespace());
+  }
+
+  @Test
+  void testJobNameSuffix() {
+    CreateTableLikeCommand command = mock(CreateTableLikeCommand.class);
+    CreateTableLikeCommandVisitor visitor =
+        new CreateTableLikeCommandVisitor(mock(OpenLineageContext.class));
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(command.targetTable()).thenReturn(tableIdentifier);
+    when(tableIdentifier.identifier()).thenReturn("db_t");
+
+    assertThat(visitor.jobNameSuffix(command).get()).isEqualTo("db_t");
+    assertThat(visitor.jobNameSuffix(command)).isPresent();
+
+    assertThat(visitor.jobNameSuffix(mock(CreateTableLikeCommand.class))).isEmpty();
   }
 }

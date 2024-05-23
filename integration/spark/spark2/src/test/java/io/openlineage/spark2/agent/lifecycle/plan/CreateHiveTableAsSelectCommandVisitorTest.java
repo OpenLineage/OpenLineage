@@ -10,11 +10,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,6 +25,7 @@ import org.apache.spark.Partition;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.TableIdentifier$;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat$;
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType;
@@ -65,6 +68,8 @@ class CreateHiveTableAsSelectCommandVisitorTest {
                 .sparkSession(session)
                 .sparkContext(session.sparkContext())
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .meterRegistry(new SimpleMeterRegistry())
+                .openLineageConfig(new SparkOpenLineageConfig())
                 .build());
 
     CreateHiveTableAsSelectCommand command =
@@ -142,5 +147,16 @@ class CreateHiveTableAsSelectCommandVisitorTest {
         outputDataset.getFacets().getLifecycleStateChange().getLifecycleStateChange());
     assertEquals("directory", outputDataset.getName());
     assertEquals("s3://bucket", outputDataset.getNamespace());
+  }
+
+  @Test
+  void testJobNameSuffix() {
+    CreateHiveTableAsSelectCommandVisitor visitor =
+        new CreateHiveTableAsSelectCommandVisitor(mock(OpenLineageContext.class));
+    CreateHiveTableAsSelectCommand command = mock(CreateHiveTableAsSelectCommand.class);
+
+    when(command.tableIdentifier()).thenReturn(new TableIdentifier("table", Option.apply("db")));
+
+    assertThat(visitor.jobNameSuffix(command)).isPresent().get().isEqualTo("db_table");
   }
 }

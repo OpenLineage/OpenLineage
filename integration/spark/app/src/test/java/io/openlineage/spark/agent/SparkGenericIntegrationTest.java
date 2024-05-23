@@ -11,7 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
+import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.spark.agent.lifecycle.UnknownEntryFacetListener;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +41,7 @@ import org.mockserver.integration.ClientAndServer;
  */
 @Tag("integration-test")
 @Slf4j
-public class SparkGenericIntegrationTest {
+class SparkGenericIntegrationTest {
 
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
@@ -76,10 +80,13 @@ public class SparkGenericIntegrationTest {
                 "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/lineage")
             .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
-            .config("spark.openlineage.debugFacet", "disabled")
+            .config("spark.openlineage.debugFacet", "enabled")
             .config("spark.openlineage.namespace", "generic-namespace")
             .config("spark.openlineage.parentJobName", "parent-job")
             .config("spark.openlineage.parentRunId", "bd9c2467-3ed7-4fdc-85c2-41ebf5c73b40")
+            .config("spark.openlineage.parentJobNamespace", "parent-namespace")
+            .config("spark.openlineage.job.owners.team", "MyTeam")
+            .config("spark.openlineage.job.owners.person", "John Smith")
             .config("spark.openlineage.parentJobNamespace", "parent-namespace")
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .getOrCreate();
@@ -91,21 +98,22 @@ public class SparkGenericIntegrationTest {
 
     Dataset<Row> agg = df.groupBy("a").count();
     agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
-
     spark.stop();
+
     verifyEvents(
         mockServer,
         "applicationLevelStartApplication.json",
         "applicationLevelStartJob.json",
         "applicationLevelCompleteJob.json",
         "applicationLevelCompleteApplication.json");
-
     List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
+
+    // same runId for Spark application events, and parentRunId for Spark job events
     assertThat(
             events.stream()
                 .map(
                     event -> {
-                      if (event.getJob().getName().equals("generic_integration_test")) {
+                      if ("generic_integration_test".equals(event.getJob().getName())) {
                         return event.getRun().getRunId();
                       } else {
                         return event.getRun().getFacets().getParent().getRun().getRunId();
@@ -113,6 +121,171 @@ public class SparkGenericIntegrationTest {
                     })
                 .collect(Collectors.toSet()))
         .hasSize(1);
+
+    // test UnknownEntryFacetListener clears its static list of visited nodes
+    assertThat(UnknownEntryFacetListener.getInstance().getVisitedNodesSize()).isEqualTo(0);
+  }
+
+  @Test
+  void sparkEmitsProcessingEngineFacet() {
+    Dataset<Row> df = createTempDataset();
+
+    Dataset<Row> agg = df.groupBy("a").count();
+    agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
+    spark.stop();
+
+    List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
+
+    // Both Spark application and Spark job events have processing_engine facet
+    assertThat(events)
+        .allMatch(
+            event -> {
+              String eventSparkVersion =
+                  event.getRun().getFacets().getProcessing_engine().getVersion();
+              return eventSparkVersion.equals(spark.sparkContext().version());
+            });
+  }
+
+  @Test
+  void sparkEmitsSparkPropertiesFacet() {
+    Dataset<Row> df = createTempDataset();
+
+    Dataset<Row> agg = df.groupBy("a").count();
+    agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
+    spark.stop();
+
+    List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
+
+    // Both Spark application and Spark job events have spark_properties facet
+    assertThat(events)
+        .allMatch(
+            event -> {
+              OpenLineage.RunFacet sparkPropertyFacet =
+                  event.getRun().getFacets().getAdditionalProperties().get("spark_properties");
+              Map<String, String> sparkProperties =
+                  (Map<String, String>)
+                      sparkPropertyFacet.getAdditionalProperties().get("properties");
+              String appName = sparkProperties.get("spark.app.name");
+              return appName != null && appName.equals(spark.sparkContext().appName());
+            });
+  }
+
+  @Test
+  void sparkEmitsEnvironmentPropertiesFacet() {
+    Dataset<Row> df = createTempDataset();
+
+    Dataset<Row> agg = df.groupBy("a").count();
+    agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
+    spark.stop();
+
+    List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
+
+    // Both Spark application and Spark job events have environment-properties facet
+    assertThat(events)
+        .allMatch(
+            event -> {
+              return event
+                      .getRun()
+                      .getFacets()
+                      .getAdditionalProperties()
+                      .get("environment-properties")
+                  != null;
+            });
+  }
+
+  @Test
+  void sparkEmitsApplicationDetailsFacet() {
+    Dataset<Row> df = createTempDataset();
+
+    Dataset<Row> agg = df.groupBy("a").count();
+    agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
+    spark.stop();
+
+    List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
+
+    // Only Spark application START events have spark_applicationDetails facet
+    assertThat(
+            events.stream()
+                .filter(
+                    event ->
+                        "generic_integration_test".equals(event.getJob().getName())
+                            && event.getEventType() == RunEvent.EventType.START)
+                .collect(Collectors.toList()))
+        .allMatch(
+            event -> {
+              return event
+                      .getRun()
+                      .getFacets()
+                      .getAdditionalProperties()
+                      .get("spark_applicationDetails")
+                  != null;
+            });
+  }
+
+  @Test
+  @SneakyThrows
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
+  void sparkEmitsDebugFacet() {
+    Dataset<Row> df = createTempDataset();
+
+    Dataset<Row> agg = df.groupBy("a").count();
+    agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
+    spark.stop();
+
+    List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
+    events.stream()
+        .map(
+            event -> {
+              Object debugFacet = event.getRun().getFacets().getAdditionalProperties().get("debug");
+              if (debugFacet != null) {
+                Object metricsFacet =
+                    ((OpenLineage.DefaultRunFacet) debugFacet)
+                        .getAdditionalProperties()
+                        .get("metrics");
+                List<Map<String, Object>> metrics =
+                    (List<Map<String, Object>>) ((Map<String, Object>) metricsFacet).get("metrics");
+                assertThat(
+                        metrics.stream()
+                            .filter(metric -> "openlineage.emit.start".equals(metric.get("name")))
+                            .findFirst())
+                    .isPresent();
+                assertThat(
+                        metrics.stream()
+                            .filter(
+                                metric -> "openlineage.emit.complete".equals(metric.get("name")))
+                            .findFirst())
+                    .isPresent();
+              }
+              return null;
+            });
+  }
+
+  @Test
+  void sparkEmitsJobOwnershipFacet() {
+    Dataset<Row> df = createTempDataset();
+    Dataset<Row> agg = df.groupBy("a").count();
+    agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
+
+    spark.stop();
+    verifyEvents(mockServer, "applicationLevelStartJob.json");
+
+    RunEvent event =
+        getEventsEmitted(mockServer).stream()
+            .filter(e -> !"generic_integration_test".equals(e.getJob().getName()))
+            .findFirst()
+            .get();
+    List<OwnershipJobFacetOwners> owners = event.getJob().getFacets().getOwnership().getOwners();
+    assertThat(owners).hasSize(2);
+    assertThat(
+        owners.stream()
+            .filter(o -> "team".equals(o.getType()) && "MyTeam".equals(o.getName()))
+            .findAny()
+            .isPresent());
+    assertThat(
+        owners.stream()
+            .filter(o -> "person".equals(o.getType()) && "John Smith".equals(o.getName()))
+            .findAny()
+            .isPresent());
   }
 
   private Dataset<Row> createTempDataset() {

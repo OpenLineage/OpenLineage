@@ -7,11 +7,15 @@ package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKey;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.openlineage.client.DefaultConfigPathProvider;
+import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
-import io.openlineage.client.OpenLineageYaml;
+import io.openlineage.client.transports.ConsoleConfig;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,20 +25,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+import java.util.stream.Stream;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.SparkConf;
 import scala.Tuple2;
 
-@AllArgsConstructor
 @Slf4j
-@Getter
 @ToString
-@Builder
 public class ArgumentParser {
 
   public static final String SPARK_CONF_NAMESPACE = "spark.openlineage.namespace";
@@ -43,49 +42,102 @@ public class ArgumentParser {
   public static final String SPARK_CONF_PARENT_JOB_NAME = "spark.openlineage.parentJobName";
   public static final String SPARK_CONF_PARENT_RUN_ID = "spark.openlineage.parentRunId";
   public static final String SPARK_CONF_APP_NAME = "spark.openlineage.appName";
-  public static final String SPARK_CONF_DISABLED_FACETS = "spark.openlineage.facets.disabled";
-  public static final String DEFAULT_DISABLED_FACETS = "[spark_unknown;spark.logicalPlan]";
   public static final String ARRAY_PREFIX_CHAR = "[";
   public static final String ARRAY_SUFFIX_CHAR = "]";
   public static final String DISABLED_FACETS_SEPARATOR = ";";
   public static final String SPARK_CONF_TRANSPORT_TYPE = "spark.openlineage.transport.type";
   public static final String SPARK_CONF_HTTP_URL = "spark.openlineage.transport.url";
+  public static final String SPARK_CONF_JOB_NAME_APPEND_DATASET_NAME =
+      "spark.openlineage.jobName.appendDatasetName";
+  public static final String SPARK_CONF_JOB_NAME_REPLACE_DOT_WITH_UNDERSCORE =
+      "spark.openlineage.jobName.replaceDotWithUnderscore";
+  private static final String SPARK_CONF_FACETS_DISABLED = "spark.openlineage.facets.disabled";
+
+  private static final String SPARK_CONF_DEBUG_FACET = "spark.openlineage.debugFacet";
+
   public static final Set<String> PROPERTIES_PREFIXES =
       new HashSet<>(
           Arrays.asList("transport.properties.", "transport.urlParams.", "transport.headers."));
-  public static final String SPARK_CONF_CUSTOM_ENVIRONMENT_VARIABLES =
-      "spark.openlineage.facets.custom_environment_variables";
 
-  @Builder.Default private String namespace = "default";
-  @Builder.Default private String parentJobName = null;
-  @Builder.Default private String parentJobNamespace = null;
-  @Builder.Default private String parentRunId = null;
-  @Builder.Default private String overriddenAppName = null;
-  @Builder.Default @Getter private OpenLineageYaml openLineageYaml = new OpenLineageYaml();
+  private static final String disabledFacetsSeparator = ";";
 
-  public static ArgumentParser parse(SparkConf conf) {
-    ArgumentParserBuilder builder = ArgumentParser.builder();
-    conf.setIfMissing(SPARK_CONF_DISABLED_FACETS, DEFAULT_DISABLED_FACETS);
-    conf.setIfMissing(SPARK_CONF_TRANSPORT_TYPE, "console");
+  public static SparkOpenLineageConfig parse(SparkConf conf) {
+    // TRY READING CONFIG FROM FILE
+    Optional<SparkOpenLineageConfig> configFromFile = extractOpenLineageConfFromFile();
 
-    if (conf.get(SPARK_CONF_TRANSPORT_TYPE).equals("http")) {
+    if ("http".equals(conf.get(SPARK_CONF_TRANSPORT_TYPE, ""))) {
       findSparkConfigKey(conf, SPARK_CONF_HTTP_URL)
           .ifPresent(url -> UrlParser.parseUrl(url).forEach(conf::set));
     }
-    findSparkConfigKey(conf, SPARK_CONF_APP_NAME)
-        .filter(str -> !str.isEmpty())
-        .ifPresent(builder::overriddenAppName);
+    SparkOpenLineageConfig configFromSparkConf = extractOpenLineageConfFromSparkConf(conf);
 
-    findSparkConfigKey(conf, SPARK_CONF_NAMESPACE).ifPresent(builder::namespace);
-    findSparkConfigKey(conf, SPARK_CONF_PARENT_JOB_NAME).ifPresent(builder::parentJobName);
-    findSparkConfigKey(conf, SPARK_CONF_PARENT_JOB_NAMESPACE)
-        .ifPresent(builder::parentJobNamespace);
-    findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID).ifPresent(builder::parentRunId);
-    builder.openLineageYaml(extractOpenlineageConfFromSparkConf(conf));
-    return builder.build();
+    SparkOpenLineageConfig targetConfig;
+    if (configFromFile.isPresent()) {
+      targetConfig = configFromFile.get().mergeWith(configFromSparkConf);
+    } else {
+      targetConfig = configFromSparkConf;
+    }
+
+    // SET DEFAULTS
+    if (targetConfig.getTransportConfig() == null) {
+      targetConfig.setTransportConfig(new ConsoleConfig());
+    }
+
+    extractSparkSpecificConfigEntriesFromSparkConf(conf, targetConfig);
+    return targetConfig;
   }
 
-  public static OpenLineageYaml extractOpenlineageConfFromSparkConf(SparkConf conf) {
+  private static Optional<SparkOpenLineageConfig> extractOpenLineageConfFromFile() {
+    Optional<SparkOpenLineageConfig> configFromFile;
+    try {
+      configFromFile =
+          Optional.of(
+              OpenLineageClientUtils.loadOpenLineageConfigYaml(
+                  new DefaultConfigPathProvider(), new TypeReference<SparkOpenLineageConfig>() {}));
+    } catch (OpenLineageClientException e) {
+      log.info("Couldn't log config from file, will read it from SparkConf");
+      configFromFile = Optional.empty();
+    }
+    return configFromFile;
+  }
+
+  private static void extractSparkSpecificConfigEntriesFromSparkConf(
+      SparkConf conf, SparkOpenLineageConfig config) {
+    findSparkConfigKey(conf, SPARK_CONF_APP_NAME)
+        .filter(str -> !str.isEmpty())
+        .ifPresent(config::setOverriddenAppName);
+
+    findSparkConfigKey(conf, SPARK_CONF_NAMESPACE).ifPresent(config::setNamespace);
+    findSparkConfigKey(conf, SPARK_CONF_PARENT_JOB_NAME).ifPresent(config::setParentJobName);
+    findSparkConfigKey(conf, SPARK_CONF_PARENT_JOB_NAMESPACE)
+        .ifPresent(config::setParentJobNamespace);
+    findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID).ifPresent(config::setParentRunId);
+    findSparkConfigKey(conf, SPARK_CONF_DEBUG_FACET).ifPresent(config::setDebugFacet);
+    findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_APPEND_DATASET_NAME)
+        .map(Boolean::valueOf)
+        .ifPresent(v -> config.getJobName().setAppendDatasetName(v));
+    findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_REPLACE_DOT_WITH_UNDERSCORE)
+        .map(Boolean::valueOf)
+        .ifPresent(v -> config.getJobName().setReplaceDotWithUnderscore(v));
+    findSparkConfigKey(conf, SPARK_CONF_FACETS_DISABLED)
+        .map(s -> s.replace("[", "").replace("]", ""))
+        .map(
+            s ->
+                Stream.of(s.split(disabledFacetsSeparator))
+                    .filter(StringUtils::isNotBlank)
+                    .toArray(String[]::new))
+        .ifPresent(a -> config.getFacetsConfig().setDisabledFacets(a));
+  }
+
+  /**
+   * Method iterates through SparkConf entries prefixed with `spark.openlineage` and rearranges them
+   * into Jackson ObjectNode object, which is then loaded within {@link OpenLineageClientUtils} to
+   * {@link SparkOpenLineageConfig} instance.
+   *
+   * @param conf
+   * @return
+   */
+  private static SparkOpenLineageConfig extractOpenLineageConfFromSparkConf(SparkConf conf) {
     List<Tuple2<String, String>> properties = filterProperties(conf);
     ObjectMapper objectMapper = new ObjectMapper();
     ObjectNode objectNode = objectMapper.createObjectNode();
@@ -104,7 +156,7 @@ public class ArgumentParser {
           nodePointer = (ObjectNode) nodePointer.get(node);
         }
         if (isArrayType(value)
-            || SPARK_CONF_DISABLED_FACETS.equals("spark.openlineage." + keyPath)) {
+            || SPARK_CONF_FACETS_DISABLED.equals("spark.openlineage." + keyPath)) {
           ArrayNode arrayNode = nodePointer.putArray(leaf);
           String valueWithoutBrackets =
               isArrayType(value) ? value.substring(1, value.length() - 1) : value;
@@ -117,21 +169,16 @@ public class ArgumentParser {
       }
     }
     try {
-      return OpenLineageClientUtils.loadOpenLineageYaml(
-          new ByteArrayInputStream(objectMapper.writeValueAsBytes(objectNode)));
+      return OpenLineageClientUtils.loadOpenLineageConfigYaml(
+          new ByteArrayInputStream(objectMapper.writeValueAsBytes(objectNode)),
+          new TypeReference<SparkOpenLineageConfig>() {});
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   private static List<Tuple2<String, String>> filterProperties(SparkConf conf) {
-    return Arrays.stream(conf.getAllWithPrefix("spark.openlineage."))
-        .filter(
-            e ->
-                e._1.startsWith("transport")
-                    || e._1.startsWith("facets")
-                    || e._1.startsWith("circuitBreaker"))
-        .collect(Collectors.toList());
+    return Arrays.stream(conf.getAllWithPrefix("spark.openlineage.")).collect(Collectors.toList());
   }
 
   private static List<String> getJsonPath(String keyPath) {

@@ -49,7 +49,7 @@ public class Generator {
    * @throws JsonParseException if the spec is not valid
    * @throws JsonMappingException if the spec is not valid
    * @throws IOException if the spec can't be read or class can not be generated
-   * @throws URISyntaxException
+   * @throws URISyntaxException when invalid URI provided
    */
   public static void main(String[] args) throws JsonParseException, JsonMappingException, IOException, URISyntaxException {
     List<String> baseURLs = Arrays.asList(args);

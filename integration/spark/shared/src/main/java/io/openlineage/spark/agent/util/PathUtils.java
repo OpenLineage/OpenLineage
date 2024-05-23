@@ -12,7 +12,7 @@ import java.net.URI;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.SparkSession;
@@ -21,6 +21,7 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.internal.StaticSQLConf;
 
 @Slf4j
+@SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
 public class PathUtils {
 
   private static final String DEFAULT_SCHEME = "file";
@@ -54,10 +55,8 @@ public class PathUtils {
   @SneakyThrows
   public static DatasetIdentifier fromCatalogTable(
       CatalogTable catalogTable, Optional<SparkConf> sparkConf) {
-
     DatasetIdentifier di;
     URI uri;
-
     if (catalogTable.storage() != null && catalogTable.storage().locationUri().isDefined()) {
       uri = prepareUriFromLocation(catalogTable);
       di = PathUtils.fromURI(uri, DEFAULT_SCHEME);
@@ -75,14 +74,27 @@ public class PathUtils {
 
     Optional<URI> metastoreUri = extractMetastoreUri(sparkConf);
     // TODO: Is the call to "metastoreUri.get()" really needed?
-    //   Java's Optional should prevent the null in the first place.
+    // Java's Optional should prevent the null in the first place.
     if (metastoreUri.isPresent() && metastoreUri.get() != null) {
       // dealing with Hive tables
       DatasetIdentifier symlink = prepareHiveDatasetIdentifier(catalogTable, metastoreUri.get());
       return di.withSymlink(
           symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.TABLE);
+    } else if (catalogTable.provider().isDefined()
+        && sparkConf.isPresent()
+        && "hive".equals(catalogTable.provider().get())
+        && "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
+            .equals(sparkConf.get().get("spark.hadoop.hive.metastore.client.factory.class", ""))) {
+      String region = System.getenv().get("AWS_DEFAULT_REGION");
+      if (region == null || region.isEmpty()) {
+        region = System.getenv("AWS_REGION");
+      }
+      String accountId = sparkConf.get().get("spark.glue.accountId", "");
+      return di.withSymlink(
+          nameFromTableIdentifier(catalogTable.identifier()),
+          String.format("aws:glue:%s:%s", region, accountId),
+          DatasetIdentifier.SymlinkType.TABLE);
     } else {
-
       return di.withSymlink(
           nameFromTableIdentifier(catalogTable.identifier()),
           StringUtils.substringBeforeLast(uri.toString(), File.separator),
@@ -90,7 +102,6 @@ public class PathUtils {
     }
   }
 
-  @SneakyThrows
   private static URI prepareUriFromDefaultTablePath(CatalogTable catalogTable) {
     URI uri =
         SparkSession.active().sessionState().catalog().defaultTablePath(catalogTable.identifier());
@@ -163,7 +174,8 @@ public class PathUtils {
   }
 
   private static String nameFromTableIdentifier(TableIdentifier identifier) {
-    // we create name instead of calling `unquotedString` method which includes spark_catalog
+    // we create name instead of calling `unquotedString` method which includes
+    // spark_catalog
     // for Spark 3.4
     String name;
     if (identifier.database().isDefined()) {

@@ -11,6 +11,7 @@ import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -40,5 +41,10 @@ public class SubqueryAliasOutputDatasetBuilder
                 (lp) -> Collections.<OpenLineage.OutputDataset>emptyList()))
         .stream()
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(SubqueryAlias x) {
+    return Optional.of(trimPath(x.alias()));
   }
 }

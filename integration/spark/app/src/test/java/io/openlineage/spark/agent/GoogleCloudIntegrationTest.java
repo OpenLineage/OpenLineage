@@ -46,7 +46,7 @@ import org.mockserver.integration.ClientAndServer;
 @Tag("google-cloud")
 @Slf4j
 @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
-public class GoogleCloudIntegrationTest {
+class GoogleCloudIntegrationTest {
   private static final String PROJECT_ID =
       Optional.ofNullable(System.getenv("GCLOUD_PROJECT_ID")).orElse("openlineage-ci");
   private static final String BUCKET_NAME =
@@ -58,8 +58,16 @@ public class GoogleCloudIntegrationTest {
   private static final String LOCAL_IP = "127.0.0.1";
   private static final String SPARK_3 = "(3.*)";
   private static final String SPARK_3_3 = "(3\\.[3-9].*)";
-  private static final String SPARK_VERSION = "spark.version";
+  private static final String SPARK_VERSION_PROPERTY = "spark.version";
   private static final String CREDENTIALS_FILE = "build/gcloud/gcloud-service-key.json";
+
+  private static final String DATASET_ID = "airflow_integration";
+  private static final String SPARK_VERSION =
+      String.format("spark_%s", SparkContainerProperties.SPARK_VERSION).replace(".", "_");
+  private static final String SCALA_VERSION =
+      String.format("scala_%s", SparkContainerProperties.SCALA_BINARY_VERSION).replace(".", "_");
+  private static final String VERSION_NAME = String.format("%s_%s", SPARK_VERSION, SCALA_VERSION);
+
   private static SparkSession spark;
   private static ClientAndServer mockServer;
 
@@ -114,30 +122,16 @@ public class GoogleCloudIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_3) // Spark version >= 3.*
+  @EnabledIfSystemProperty(
+      named = SPARK_VERSION_PROPERTY,
+      matches = SPARK_3_3) // Spark version >= 3.*
   void testReadAndWriteFromBigquery() {
-    String DATASET_ID = "airflow_integration";
-    String sparkVersion =
-        String.format("spark_%s", SparkContainerProperties.SPARK_VERSION).replace(".", "_");
-    String scalaVersion =
-        String.format("scala_%s", SparkContainerProperties.SCALA_BINARY_VERSION).replace(".", "_");
-    String versionName = String.format("%s_%s", sparkVersion, scalaVersion);
-    String source_table = String.format("%s.%s.%s_source", PROJECT_ID, DATASET_ID, versionName);
-    String target_table = String.format("%s.%s.%s_target", PROJECT_ID, DATASET_ID, versionName);
+    String source_table = String.format("%s.%s.%s_source", PROJECT_ID, DATASET_ID, VERSION_NAME);
+    String target_table = String.format("%s.%s.%s_target", PROJECT_ID, DATASET_ID, VERSION_NAME);
     log.info("Source Table: {}", source_table);
     log.info("Target Table: {}", target_table);
 
-    Dataset<Row> dataset =
-        spark
-            .createDataFrame(
-                ImmutableList.of(RowFactory.create(1L, 2L), RowFactory.create(3L, 4L)),
-                new StructType(
-                    new StructField[] {
-                      new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
-                      new StructField("b", LongType$.MODULE$, false, Metadata.empty())
-                    }))
-            .repartition(1);
-
+    Dataset<Row> dataset = getTestDataset();
     dataset.write().format("bigquery").option("table", source_table).mode("overwrite").save();
 
     Dataset<Row> first = spark.read().format("bigquery").option("table", source_table).load();
@@ -149,8 +143,8 @@ public class GoogleCloudIntegrationTest {
     replacements.put("{PROJECT_ID}", PROJECT_ID);
     replacements.put("{DATASET_ID}", DATASET_ID);
     replacements.put("{BUCKET_NAME}", BUCKET_NAME);
-    replacements.put("{SPARK_VERSION}", sparkVersion);
-    replacements.put("{SCALA_VERSION}", scalaVersion);
+    replacements.put("{SPARK_VERSION}", SPARK_VERSION);
+    replacements.put("{SCALA_VERSION}", SCALA_VERSION);
 
     if (log.isDebugEnabled()) {
       logRunEvents();
@@ -163,6 +157,49 @@ public class GoogleCloudIntegrationTest {
         "pysparkBigqueryInsertStart.json",
         "pysparkBigqueryInsertEnd.json",
         "pysparkBigquerySaveEnd.json");
+  }
+
+  @Test
+  @EnabledIfSystemProperty(
+      named = SPARK_VERSION_PROPERTY,
+      matches = SPARK_3_3) // Spark version == 3.*
+  void testReadAndWriteFromBigqueryUsingQuery() {
+    String source_table =
+        String.format("%s.%s.%s_source_query_test", PROJECT_ID, DATASET_ID, VERSION_NAME);
+    String target_table =
+        String.format("%s.%s.%s_target_query_test", PROJECT_ID, DATASET_ID, VERSION_NAME);
+    String source_query = String.format("SELECT * FROM %s", source_table);
+    log.info("Source Query: {}", source_query);
+    log.info("Target Table: {}", target_table);
+
+    Dataset<Row> dataset = getTestDataset();
+    dataset.write().format("bigquery").option("table", source_table).mode("overwrite").save();
+
+    Dataset<Row> first =
+        spark
+            .read()
+            .format("bigquery")
+            .option("viewMaterializationProject", PROJECT_ID)
+            .option("viewMaterializationDataset", DATASET_ID)
+            .option("viewsEnabled", "true")
+            .option("query", source_query)
+            .load();
+
+    first.write().format("bigquery").option("table", target_table).mode("overwrite").save();
+
+    HashMap<String, String> replacements = new HashMap<>();
+    replacements.put("{NAMESPACE}", NAMESPACE);
+    replacements.put("{PROJECT_ID}", PROJECT_ID);
+    replacements.put("{DATASET_ID}", DATASET_ID);
+    replacements.put("{BUCKET_NAME}", BUCKET_NAME);
+    replacements.put("{SPARK_VERSION}", SPARK_VERSION);
+    replacements.put("{SCALA_VERSION}", SCALA_VERSION);
+
+    if (log.isDebugEnabled()) {
+      logRunEvents();
+    }
+
+    verifyEvents(mockServer, replacements, "pysparkBigqueryQueryEnd.json");
   }
 
   private static void logRunEvents() {
@@ -181,7 +218,9 @@ public class GoogleCloudIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
+  @EnabledIfSystemProperty(
+      named = SPARK_VERSION_PROPERTY,
+      matches = SPARK_3) // Spark version >= 3.*
   void testRddWriteToBucket() throws IOException {
     String sparkVersion = String.format("spark-%s", SparkContainerProperties.SPARK_VERSION);
     String scalaVersion = String.format("scala-%s", SparkContainerProperties.SCALA_BINARY_VERSION);
@@ -222,7 +261,6 @@ public class GoogleCloudIntegrationTest {
 
     List<RunEvent> eventsEmitted = MockServerUtils.getEventsEmitted(mockServer);
 
-    String path = baseUri.getPath();
     assertThat(eventsEmitted.get(eventsEmitted.size() - 1).getOutputs().get(0))
         .hasFieldOrPropertyWithValue("name", outputUri.getPath())
         .hasFieldOrPropertyWithValue(
@@ -232,5 +270,17 @@ public class GoogleCloudIntegrationTest {
         .hasFieldOrPropertyWithValue("name", inputUri.getPath())
         .hasFieldOrPropertyWithValue(
             "namespace", BUCKET_URI.getScheme() + "://" + BUCKET_URI.getHost());
+  }
+
+  private static Dataset<Row> getTestDataset() {
+    return spark
+        .createDataFrame(
+            ImmutableList.of(RowFactory.create(1L, 2L), RowFactory.create(3L, 4L)),
+            new StructType(
+                new StructField[] {
+                  new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                  new StructField("b", LongType$.MODULE$, false, Metadata.empty())
+                }))
+        .repartition(1);
   }
 }

@@ -4,7 +4,7 @@
     "job": {
       "facets": {
         "sql": {
-          "query": "CREATE TYPE myrowtype AS (f1 int, f2 text, f3 numeric)"
+          "query": "DROP POLICY IF EXISTS name ON table_name"
         }
       },
       "name": "failed_sql_extraction.fail"
@@ -15,8 +15,8 @@
           "totalTasks": 1,
           "failedTasks": 1,
           "errors": [{
-            "errorMessage": "Expected an object type after CREATE, found: TYPE",
-            "task": "CREATE TYPE myrowtype AS (f1 int, f2 text, f3 numeric)",
+            "errorMessage": "Expected TABLE, VIEW, INDEX, ROLE, SCHEMA, FUNCTION, STAGE or SEQUENCE after DROP, found: POLICY at Line: 1, Column 6",
+            "task": "DROP POLICY IF EXISTS name ON table_name",
             "taskNumber": 0
           }]
         }
@@ -27,7 +27,7 @@
     "job": {
       "facets": {
         "sql": {
-          "query": "CREATE TYPE myrowtype AS (f1 int, f2 text, f3 numeric)"
+          "query": "DROP POLICY IF EXISTS name ON table_name"
         }
       },
       "name": "failed_sql_extraction.fail"
@@ -38,8 +38,8 @@
           "totalTasks": 1,
           "failedTasks": 1,
           "errors": [{
-            "errorMessage": "Expected an object type after CREATE, found: TYPE",
-            "task": "CREATE TYPE myrowtype AS (f1 int, f2 text, f3 numeric)",
+            "errorMessage": "Expected TABLE, VIEW, INDEX, ROLE, SCHEMA, FUNCTION, STAGE or SEQUENCE after DROP, found: POLICY at Line: 1, Column 6",
+            "task": "DROP POLICY IF EXISTS name ON table_name",
             "taskNumber": 0
           }]
         }

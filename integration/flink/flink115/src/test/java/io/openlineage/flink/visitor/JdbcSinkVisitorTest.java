@@ -5,9 +5,17 @@
 
 package io.openlineage.flink.visitor;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.EventEmitter;
+import java.util.List;
+import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import org.apache.flink.connector.jdbc.JdbcRowOutputFormat;
 import org.apache.flink.connector.jdbc.internal.GenericJdbcSinkFunction;
@@ -20,15 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.List;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class JdbcSinkVisitorTest {
   OpenLineageContext context = mock(OpenLineageContext.class);
@@ -44,7 +43,7 @@ class JdbcSinkVisitorTest {
 
   @Test
   @SneakyThrows
-  public void testIsDefined() {
+  void testIsDefined() {
     assertFalse(jdbcSinkVisitor.isDefinedAt(mock(Object.class)));
     assertTrue(jdbcSinkVisitor.isDefinedAt(mock(JdbcOutputFormat.class)));
     assertTrue(jdbcSinkVisitor.isDefinedAt(mock(JdbcRowOutputFormat.class)));
@@ -55,12 +54,12 @@ class JdbcSinkVisitorTest {
   @SneakyThrows
   @ParameterizedTest
   @MethodSource("provideArguments")
-  public void testApply(Object source) {
+  void testApply(Object source) {
     List<OpenLineage.OutputDataset> outputDatasets = jdbcSinkVisitor.apply(source);
 
     assertEquals(1, outputDatasets.size());
-    assertEquals("jdbc:postgresql://host:port/database", outputDatasets.get(0).getNamespace());
-    assertEquals("jdbc_table", outputDatasets.get(0).getName());
+    assertEquals("postgres://host:port", outputDatasets.get(0).getNamespace());
+    assertEquals("database.jdbc_table", outputDatasets.get(0).getName());
   }
 
   private static Stream<Arguments> provideArguments() throws Exception {

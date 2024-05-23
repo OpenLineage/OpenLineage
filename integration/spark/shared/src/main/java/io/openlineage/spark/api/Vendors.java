@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public interface Vendors {
+
+  @SuppressWarnings("PMD.AvoidFieldNameMatchingTypeName")
   List<String> VENDORS =
       Arrays.asList(
           // Add vendor classes here

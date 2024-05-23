@@ -1,4 +1,4 @@
-// Copyright 2018-2023 contributors to the OpenLineage project
+// Copyright 2018-2024 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_utils::*;
@@ -15,6 +15,20 @@ fn delete_from() {
             out_tables: tables(vec!["a.b"])
         }
     );
+}
+
+#[test]
+fn delete_without_from_bigquery() {
+    assert_eq!(
+        test_sql_dialect("DELETE \"project.dataset.table\" WHERE 1", "bigquery")
+            .unwrap()
+            .table_lineage
+            .out_tables
+            .first()
+            .unwrap()
+            .qualified_name(),
+        "project.dataset.table"
+    )
 }
 
 #[test]

@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -28,23 +30,28 @@ import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
 public class ColumnLevelLineageUtils {
 
   public static Optional<OpenLineage.ColumnLineageDatasetFacet> buildColumnLineageDatasetFacet(
-      OpenLineageContext context, OpenLineage.SchemaDatasetFacet schemaFacet) {
-    if (!context.getQueryExecution().isPresent()
-        || context.getQueryExecution().get().optimizedPlan() == null
+      SparkListenerEvent event,
+      OpenLineageContext olContext,
+      OpenLineage.SchemaDatasetFacet schemaFacet) {
+    if (!olContext.getQueryExecution().isPresent()
+        || olContext.getQueryExecution().get().optimizedPlan() == null
         || schemaFacet == null) {
       return Optional.empty();
     }
 
-    ColumnLevelLineageBuilder builder = new ColumnLevelLineageBuilder(schemaFacet, context);
-    LogicalPlan plan = getAdjustedPlan(context);
+    ColumnLevelLineageContext context =
+        new ColumnLevelLineageContext(
+            event, olContext, new ColumnLevelLineageBuilder(schemaFacet, olContext));
 
-    OutputFieldsCollector.collect(context, plan, builder);
-    collectInputsAndExpressionDependencies(context, plan, builder);
+    LogicalPlan plan = getAdjustedPlan(olContext);
+
+    OutputFieldsCollector.collect(context, plan);
+    collectInputsAndExpressionDependencies(context, plan);
 
     OpenLineage.ColumnLineageDatasetFacetBuilder facetBuilder =
-        context.getOpenLineage().newColumnLineageDatasetFacetBuilder();
+        olContext.getOpenLineage().newColumnLineageDatasetFacetBuilder();
 
-    facetBuilder.fields(builder.build());
+    facetBuilder.fields(context.getBuilder().build());
     OpenLineage.ColumnLineageDatasetFacet facet = facetBuilder.build();
 
     if (facet.getFields().getAdditionalProperties().isEmpty()) {
@@ -67,20 +74,20 @@ public class ColumnLevelLineageUtils {
   }
 
   private static void collectInputsAndExpressionDependencies(
-      OpenLineageContext context, LogicalPlan plan, ColumnLevelLineageBuilder builder) {
-    ExpressionDependencyCollector.collect(context, plan, builder);
-    InputFieldsCollector.collect(context, plan, builder);
+      ColumnLevelLineageContext context, LogicalPlan plan) {
+    ExpressionDependencyCollector.collect(context, plan);
+    InputFieldsCollector.collect(context, plan);
 
     // iterate children plans and see if they contain dataset caching
     if (plan.children() != null) {
       plan.foreach(
           node -> {
             if (node instanceof InMemoryRelation) {
-              PlanUtils3.getLogicalPlanOf(context, (InMemoryRelation) node)
+              PlanUtils3.getLogicalPlanOf(context.getOlContext(), (InMemoryRelation) node)
                   .ifPresent(
                       cachedPlan -> {
                         // run self for the cached plan
-                        collectInputsAndExpressionDependencies(context, cachedPlan, builder);
+                        collectInputsAndExpressionDependencies(context, cachedPlan);
 
                         // map outputs of cachedPlan onto inputs of InMemoryRelation
                         Map<String, ExprId> idMap =
@@ -91,9 +98,11 @@ public class ColumnLevelLineageUtils {
                             .filter(namedExpression -> idMap.containsKey(namedExpression.name()))
                             .forEach(
                                 namedExpression ->
-                                    builder.addDependency(
-                                        namedExpression.exprId(),
-                                        idMap.get(namedExpression.name())));
+                                    context
+                                        .getBuilder()
+                                        .addDependency(
+                                            namedExpression.exprId(),
+                                            idMap.get(namedExpression.name())));
                       });
             }
             return scala.runtime.BoxedUnit.UNIT;

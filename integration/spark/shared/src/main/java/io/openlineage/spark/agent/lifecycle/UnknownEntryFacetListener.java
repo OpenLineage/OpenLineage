@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.lifecycle;
 
 import static java.util.Optional.ofNullable;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.openlineage.spark.agent.facets.LogicalPlanFacet;
 import io.openlineage.spark.agent.facets.UnknownEntryFacet;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -50,6 +51,15 @@ public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
   @Override
   public void accept(LogicalPlan logicalPlan) {
     visitedNodes.put(logicalPlan, null);
+  }
+
+  public void clear() {
+    visitedNodes.clear();
+  }
+
+  @VisibleForTesting
+  public Integer getVisitedNodesSize() {
+    return visitedNodes.size();
   }
 
   public Optional<UnknownEntryFacet> build(LogicalPlan root) {

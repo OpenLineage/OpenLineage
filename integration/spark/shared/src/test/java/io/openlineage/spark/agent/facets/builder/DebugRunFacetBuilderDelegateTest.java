@@ -11,11 +11,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static scala.util.Properties.versionNumberString;
 
+import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.spark.agent.facets.DebugRunFacet.ClasspathDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanDebugFacet;
-import io.openlineage.spark.agent.facets.DebugRunFacet.SparkConfigDebugFacet;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
@@ -29,7 +33,8 @@ import org.apache.spark.sql.execution.QueryExecution;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class DebugRunFacetBuilderDelegateTest {
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+class DebugRunFacetBuilderDelegateTest {
 
   private static OpenLineageContext openLineageContext =
       mock(OpenLineageContext.class, RETURNS_DEEP_STUBS);
@@ -46,7 +51,7 @@ public class DebugRunFacetBuilderDelegateTest {
   }
 
   @Test
-  public void testSystemDebugFacet() {
+  void testSystemDebugFacet() {
     assertThat(delegate.buildFacet().getSystem())
         .hasFieldOrPropertyWithValue("javaVersion", SystemUtils.JAVA_VERSION)
         .hasFieldOrPropertyWithValue("javaVendor", SystemUtils.JAVA_VENDOR)
@@ -60,7 +65,7 @@ public class DebugRunFacetBuilderDelegateTest {
 
   @Test
   void testSystemDebugFacetExecutionContext() {
-    when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(sparkContext.deployMode()).thenReturn("local");
     assertThat(delegate.buildFacet().getSystem())
         .hasFieldOrPropertyWithValue("sparkDeployMode", "local");
@@ -74,11 +79,18 @@ public class DebugRunFacetBuilderDelegateTest {
   }
 
   @Test
-  void testSparkConfigDebugFacet() {
+  void testSparkConfigDebugFacet() throws URISyntaxException, IOException {
     SparkConf conf = new SparkConf();
     Catalog catalog = mock(Catalog.class);
 
-    when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
+    HttpConfig httpConfig = new HttpConfig();
+    httpConfig.setEndpoint("http://localhost:5000");
+    httpConfig.setAuth(() -> "api_key");
+    SparkOpenLineageConfig config = new SparkOpenLineageConfig();
+    config.setTransportConfig(httpConfig);
+
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(openLineageContext.getOpenLineageConfig()).thenReturn(config);
     when(sparkContext.conf()).thenReturn(conf);
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
     when(session.catalog()).thenReturn(catalog);
@@ -86,27 +98,21 @@ public class DebugRunFacetBuilderDelegateTest {
     conf.set("spark.extraListeners", "listener1,listener2");
     conf.set("spark.sql.extensions", "ext1;ext2");
 
-    conf.set("spark.openlineage.transport.type", "http");
-    conf.set("spark.openlineage.transport.url", "http://localhost:5000");
-    conf.set("spark.openlineage.transport.auth.apiKey", "key"); // should be skipped
-    conf.set("spark.nonopenlineage", "value"); // should be skipped
+    assertThat(
+            OpenLineageClientUtils.newObjectMapper()
+                .writeValueAsString(delegate.buildFacet().getConfig()))
+        .doesNotContain("api_key");
 
-    SparkConfigDebugFacet configDebugFacet = delegate.buildFacet().getConfig();
-    assertThat(configDebugFacet)
+    assertThat(delegate.buildFacet().getConfig().getOpenLineageConfig()).isEqualTo(config);
+    assertThat(delegate.buildFacet().getConfig())
         .hasFieldOrPropertyWithValue("extraListeners", "listener1,listener2")
         .hasFieldOrPropertyWithValue("extensions", "ext1;ext2")
         .hasFieldOrPropertyWithValue("catalogClass", catalog.getClass().getCanonicalName());
-
-    assertThat(configDebugFacet.getOpenLineageConfig())
-        .doesNotContainKey("spark.nonopenlineage")
-        .doesNotContainKey("spark.openlineage.transport.auth.apiKey")
-        .containsEntry("transport.type", "http")
-        .containsEntry("transport.url", "http://localhost:5000");
   }
 
   @Test
   void testBuildClasspathDebugFacet() {
-    when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(sparkContext.listJars())
         .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList("oneJar")));
     when(openLineageContext.getSparkVersion()).thenReturn("3.3.0");

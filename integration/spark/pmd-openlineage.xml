@@ -24,4 +24,10 @@
             <property name="maximumAsserts" value="10" />
         </properties>
     </rule>
+    <rule ref="category/java/errorprone.xml/AvoidLiteralsInIfCondition">
+        <properties>
+            <property name="ignoreMagicNumbers" value="-1,0,1" />
+            <property name="ignoreExpressions" value="true" />
+        </properties>
+    </rule>
 </ruleset>

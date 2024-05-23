@@ -1,0 +1,25 @@
+from openlineage.client.generated import (
+    {{ facets_modules | join(',') }}
+)
+from openlineage.client.generated.base import (
+    PRODUCER,
+    BaseFacet,
+    DatasetFacet,
+    InputDatasetFacet,
+    JobFacet,
+    OutputDatasetFacet,
+    RunFacet,
+    set_producer,
+)
+
+__all__ = [
+    "PRODUCER",
+    "BaseFacet",
+    "DatasetFacet",
+    "InputDatasetFacet",
+    "JobFacet",
+    "OutputDatasetFacet",
+    "RunFacet",
+    "set_producer",
+    {{ facets_modules | map('tojson') | join(',') }}
+]

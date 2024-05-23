@@ -5,10 +5,13 @@
 
 package io.openlineage.spark.agent;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -60,11 +63,11 @@ public class JobMetricsHolder {
   public void cleanUp(int jobId) {
     Set<Integer> stages = jobStages.remove(jobId);
     stages = stages == null ? Collections.emptySet() : stages;
-    stages.forEach(s -> jobStages.remove(s));
+    stages.forEach(stageMetrics::remove);
   }
 
   private Map<Metric, Number> mapOutputMetrics(List<TaskMetrics> jobMetrics) {
-    Map<Metric, Number> result = new HashMap<>();
+    Map<Metric, Number> result = new EnumMap<>(Metric.class);
 
     for (TaskMetrics taskMetric : jobMetrics) {
       OutputMetrics outputMetrics = taskMetric.outputMetrics();
@@ -80,6 +83,28 @@ public class JobMetricsHolder {
       }
     }
     return result;
+  }
+
+  /**
+   * Visible for testing. Creates a deep copy of the job stages map.
+   *
+   * @return A deep copy of the job stages map
+   */
+  @VisibleForTesting
+  Map<Integer, Set<Integer>> getJobStages() {
+    return jobStages.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> new HashSet<>(e.getValue())));
+  }
+
+  /**
+   * Visible for testing. Creates a deep copy of the stage metrics.
+   *
+   * @return A deep copy of the stage metrics map
+   */
+  @VisibleForTesting
+  Map<Integer, TaskMetrics> getStageMetrics() {
+    return stageMetrics.entrySet().stream()
+        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
   }
 
   public enum Metric {

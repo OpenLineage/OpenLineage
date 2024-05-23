@@ -58,4 +58,4 @@ If you need to send events without running the job you can use the command `dbt-
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2023 contributors to the OpenLineage project
+Copyright 2018-2024 contributors to the OpenLineage project

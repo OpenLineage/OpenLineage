@@ -66,10 +66,10 @@ python -c "import openlineage_sql"
 
 ### Java
 
-To build the Java interface run the following script from the project root:
+To build the Java interface run the following script from `./iface-java` directory:
 
 ```bash
-./iface-java/script/build.sh
+./script/build.sh
 ```
 
 This produces an `openlineage-sql.jar` in the `iface-java/target` directory.
@@ -87,4 +87,4 @@ The interface can be manually tested by running the integration test from the `i
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2023 contributors to the OpenLineage project
+Copyright 2018-2024 contributors to the OpenLineage project

@@ -35,7 +35,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
     "This test is feature incomplete, and needs to be fixed. It doesn't actually test any OpenLineage code.")
 // FIXME: This test does not configure the OpenLineageSparkListener, and thus does not make any
 //  assertions about the events that the listener would emit.
-public class MetastoreHive3Test {
+class MetastoreHive3Test {
   private static final String database = "hive3";
   private static final String table = "test";
   private static final Network network = Network.newNetwork();

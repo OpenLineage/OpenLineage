@@ -16,7 +16,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 public class MultiTopicSerializationSchema extends KafkaTopicsDescriptor implements
     KafkaRecordSerializationSchema<OutputEvent> {
 
-  public MultiTopicSerializationSchema(String[] topics) {
+  public MultiTopicSerializationSchema(String... topics) {
     super(Arrays.asList(topics), null);
   }
 

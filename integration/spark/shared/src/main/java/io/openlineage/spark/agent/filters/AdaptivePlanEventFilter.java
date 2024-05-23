@@ -27,6 +27,7 @@ public class AdaptivePlanEventFilter implements EventFilter {
    *
    * @return
    */
+  @Override
   public boolean isDisabled(SparkListenerEvent event) {
     if (!isDeltaPlan()) {
       return false;

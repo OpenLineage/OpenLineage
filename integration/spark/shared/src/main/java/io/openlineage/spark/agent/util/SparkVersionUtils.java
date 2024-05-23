@@ -9,6 +9,9 @@ import org.apache.spark.sql.SparkSession;
 
 public class SparkVersionUtils {
   public static boolean isSpark3() {
-    return SparkSession.active().version().startsWith("3");
+    return SparkSessionUtils.activeSession()
+        .map(SparkSession::version)
+        .filter(v -> v.startsWith("3"))
+        .isPresent();
   }
 }

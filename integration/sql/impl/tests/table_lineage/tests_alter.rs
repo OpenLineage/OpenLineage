@@ -1,4 +1,4 @@
-// Copyright 2018-2023 contributors to the OpenLineage project
+// Copyright 2018-2024 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_utils::*;
@@ -40,6 +40,19 @@ fn alter_snowflake_swap_with() {
         TableLineage {
             in_tables: tables(vec!["tab1", "tab2"]),
             out_tables: tables(vec!["tab1", "tab2"]),
+        }
+    )
+}
+
+#[test]
+fn alter_multiple_operations() {
+    assert_eq!(
+        test_sql("ALTER TABLE IF EXISTS ONLY tab ADD COLUMN a TEXT, ADD COLUMN b INT")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![],
+            out_tables: vec![table("tab")],
         }
     )
 }

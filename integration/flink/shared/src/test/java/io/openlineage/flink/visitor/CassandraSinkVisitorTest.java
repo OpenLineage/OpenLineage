@@ -15,6 +15,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.EventEmitter;
 import io.openlineage.flink.pojo.Event;
+import io.openlineage.flink.utils.CassandraUtils;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
@@ -33,8 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class CassandraSinkVisitorTest {
-  private static ClusterBuilder clusterBuilder = mock(ClusterBuilder.class);
+class CassandraSinkVisitorTest {
   private static String insertQuery = "INSERT INTO flink.sink_event (id) VALUES (uuid());";
   OpenLineageContext context = mock(OpenLineageContext.class);
   OpenLineage openLineage = new OpenLineage(EventEmitter.OPEN_LINEAGE_CLIENT_URI);
@@ -48,7 +48,7 @@ public class CassandraSinkVisitorTest {
 
   @Test
   @SneakyThrows
-  public void testIsDefined() {
+  void testIsDefined() {
     assertFalse(cassandraSinkVisitor.isDefinedAt(mock(Object.class)));
     // Use Pojo class
     assertTrue(cassandraSinkVisitor.isDefinedAt(mock(CassandraPojoOutputFormat.class)));
@@ -65,15 +65,16 @@ public class CassandraSinkVisitorTest {
   @SneakyThrows
   @ParameterizedTest
   @MethodSource("provideArguments")
-  public void testApply(Object sink) {
+  void testApply(Object sink) {
     List<OpenLineage.OutputDataset> outputDatasets = cassandraSinkVisitor.apply(sink);
 
     assertEquals(1, outputDatasets.size());
-    assertEquals("flink", outputDatasets.get(0).getNamespace());
-    assertEquals("sink_event", outputDatasets.get(0).getName());
+    assertEquals("cassandra://127.0.0.1:9042", outputDatasets.get(0).getNamespace());
+    assertEquals("flink.sink_event", outputDatasets.get(0).getName());
   }
 
   private static Stream<Arguments> provideArguments() {
+    ClusterBuilder clusterBuilder = CassandraUtils.createClusterBuilder("127.0.0.1");
     CassandraPojoOutputFormat pojoOutputFormat =
         new CassandraPojoOutputFormat(clusterBuilder, Event.class);
     CassandraPojoSink pojoSink = new CassandraPojoSink(Event.class, clusterBuilder);

@@ -35,7 +35,14 @@ workflows:
           build_tag: ".dev<< pipeline.number >>"
           requires:
             - unit-tests-client-python
-      - workflow_complete:
+      - publish-client-python-reference:
+          filters:
+            branches:
+              only: main
+          context: release
           requires:
             - build-client-python
             - unit-tests-client-python
+      - workflow_complete:
+          requires:
+            - publish-client-python-reference

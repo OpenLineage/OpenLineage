@@ -1,47 +1,16 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 plugins {
     id 'java-library'
-    id 'maven-publish'
-    id 'signing'
     id 'jacoco'
-    id "com.adarshr.test-logger" version "3.2.0"
-    id 'com.diffplug.spotless' version '6.25.0'
-    id "com.github.johnrengelman.shadow" version "8.1.1"
-    id "pmd"
-    id 'io.franzbecker.gradle-lombok' version '5.0.0'
-}
-
-repositories {
-    mavenLocal()
-    mavenCentral()
-    maven {
-        url = "https://packages.confluent.io/maven/"
-    }
-}
-
-pmd {
-    consoleOutput = true
-    toolVersion = "6.46.0"
-    rulesMinimumPriority = 5
-    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
-    ruleSets = []
-    ignoreFailures = true
-}
-
-pmdMain {
-    dependsOn shadowJar
-    reports {
-        html.required = true
-    }
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    id 'pmd'
+    id 'com.adarshr.test-logger'
+    id 'com.diffplug.spotless'
+    id 'io.franzbecker.gradle-lombok'
+    id 'io.openlineage.common-config'
 }
 
 group 'io.openlineage.flink'
@@ -57,17 +26,6 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 }
 
 def commonTestConfiguration = {
-    forkEvery 1
-    maxParallelForks 3
-    testLogging {
-        events "passed", "skipped", "failed"
-        showStandardStreams = true
-    }
-    systemProperties = [
-            'junit.platform.output.capture.stdout': 'true',
-            'junit.platform.output.capture.stderr': 'true',
-            '.flink.jar': "${archivesBaseName}-${project.version}.jar",
-    ]
     classpath =  project.sourceSets.test.runtimeClasspath
 }
 
@@ -89,7 +47,7 @@ ext {
 dependencies {
     implementation(project(path: ":shared"))
     api "io.openlineage:openlineage-java:${project.version}"
-    api "io.openlineage:openlineage-sql-java:1.8.0"
+    api "io.openlineage:openlineage-sql-java:${project.version}"
 
     testImplementation "org.apache.flink:flink-java:$flinkVersion"
     testImplementation "org.apache.flink:flink-streaming-java:$flinkVersion"

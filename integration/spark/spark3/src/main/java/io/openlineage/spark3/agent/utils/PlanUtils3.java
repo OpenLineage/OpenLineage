@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.reflect.FieldUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.connector.catalog.Identifier;
@@ -118,9 +118,9 @@ public class PlanUtils3 {
 
     Optional<DatasetIdentifier> di;
     // Get identifier for dataset, or return empty list
-    if (BuiltInDataSourceV2Utils.hasBuiltInLineage(relation)) {
-      di = Optional.of(BuiltInDataSourceV2Utils.getDatasetIdentifier(relation));
-      BuiltInDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
+    if (ExtesionDataSourceV2Utils.hasExtensionLineage(relation)) {
+      di = Optional.of(ExtesionDataSourceV2Utils.getDatasetIdentifier(relation));
+      ExtesionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
     } else if (relation.identifier().isEmpty()) {
       log.warn("Couldn't find identifier for dataset in plan {}", relation);
       di = PlanUtils3.getDatasetIdentifier(context, relation);

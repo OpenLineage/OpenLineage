@@ -5,7 +5,10 @@
 
 package io.openlineage.client;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
+import io.openlineage.client.metrics.MicrometerProvider;
 import io.openlineage.client.transports.NoopTransport;
 import io.openlineage.client.transports.Transport;
 import io.openlineage.client.transports.TransportFactory;
@@ -15,31 +18,48 @@ import java.util.Optional;
 public final class Clients {
   private Clients() {}
 
-  /** Returns a new {@code OpenLineageClient} object. */
+  /**
+   * @return a new {@code OpenLineageClient} object.
+   */
   public static OpenLineageClient newClient() {
     return newClient(new DefaultConfigPathProvider());
   }
 
   public static OpenLineageClient newClient(ConfigPathProvider configPathProvider) {
-    String isDisabled = Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED");
-    if (Boolean.parseBoolean(isDisabled)) {
+    if (isDisabled()) {
       return OpenLineageClient.builder().transport(new NoopTransport()).build();
     }
-    final OpenLineageYaml openLineageYaml =
-        OpenLineageClientUtils.loadOpenLineageYaml(configPathProvider);
-    final TransportFactory factory = new TransportFactory(openLineageYaml.getTransportConfig());
+    final OpenLineageConfig openLineageConfig =
+        OpenLineageClientUtils.loadOpenLineageConfigYaml(
+            configPathProvider, new TypeReference<OpenLineageConfig>() {});
+    return newClient(openLineageConfig);
+  }
+
+  public static OpenLineageClient newClient(OpenLineageConfig openLineageConfig) {
+    if (isDisabled()) {
+      return OpenLineageClient.builder().transport(new NoopTransport()).build();
+    }
+    final TransportFactory factory = new TransportFactory(openLineageConfig.getTransportConfig());
     final Transport transport = factory.build();
     // ...
     OpenLineageClient.Builder builder = OpenLineageClient.builder();
 
-    if (openLineageYaml.getFacetsConfig() != null) {
-      builder.disableFacets(openLineageYaml.getFacetsConfig().getDisabledFacets());
+    if (openLineageConfig.getFacetsConfig() != null) {
+      builder.disableFacets(openLineageConfig.getFacetsConfig().getDisabledFacets());
     }
 
-    Optional.ofNullable(openLineageYaml.getCircuitBreaker())
-        .map(config -> new CircuitBreakerFactory(config))
+    Optional.ofNullable(openLineageConfig.getCircuitBreaker())
+        .map(CircuitBreakerFactory::new)
         .ifPresent(f -> builder.circuitBreaker(f.build()));
 
+    Optional.ofNullable(openLineageConfig.getMetricsConfig())
+        .map(MicrometerProvider::addMeterRegistryFromConfig)
+        .ifPresent(f -> builder.meterRegistry((MeterRegistry) f)); // Java 8 requires cast here :(
     return builder.transport(transport).build();
+  }
+
+  private static boolean isDisabled() {
+    String disabled = Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED");
+    return (Boolean.parseBoolean(disabled));
   }
 }

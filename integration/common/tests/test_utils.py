@@ -1,7 +1,11 @@
 # Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from openlineage.common.utils import get_from_nullable_chain, parse_single_arg
+from openlineage.common.utils import (
+    get_from_nullable_chain,
+    parse_multiple_args,
+    parse_single_arg,
+)
 
 
 def test_nullable_chain_fails():
@@ -39,3 +43,26 @@ def test_parse_single_arg_gets_first_key():
 def test_parse_single_arg_default():
     assert parse_single_arg(["dbt", "run"], ["-t", "--target"]) is None
     assert parse_single_arg(["dbt", "run"], ["-t", "--target"], default="prod") == "prod"
+
+
+def test_parse_multiple_args():
+    assert parse_multiple_args(["dbt", "run", "--foo", "bar"], ["-m", "--model", "--models"]) == []
+    assert sorted(
+        parse_multiple_args(
+            [
+                "dbt",
+                "run",
+                "--foo",
+                "bar",
+                "--models",
+                "model1",
+                "model2",
+                "-m",
+                "model3",
+                "--something",
+                "else",
+                "--model=model4",
+            ],
+            ["-m", "--model", "--models"],
+        )
+    ) == ["model1", "model2", "model3", "model4"]

@@ -10,7 +10,7 @@ from setuptools import find_namespace_packages, setup
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "1.10.0"
+__version__ = "1.15.0"
 
 DAGSTER_VERSION = "1.0.0"
 
@@ -18,7 +18,7 @@ requirements = [
     "attrs>=19.3",
     "cattrs",
     "protobuf<=3.20.0",
-    f"dagster>={DAGSTER_VERSION}",
+    f"dagster>={DAGSTER_VERSION},<=1.6.9",
     f"openlineage-python=={__version__}",
 ]
 

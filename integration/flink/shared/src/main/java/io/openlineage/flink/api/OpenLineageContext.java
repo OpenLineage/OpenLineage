@@ -6,6 +6,7 @@
 package io.openlineage.flink.api;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.UUIDUtils;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.NonNull;
@@ -23,7 +24,7 @@ import lombok.Value;
 @Value
 @Builder
 public class OpenLineageContext {
-  UUID runUuid = UUID.randomUUID();
+  UUID runUuid = UUIDUtils.generateNewUUID();
 
   /**
    * A non-null, preconfigured {@link OpenLineage} client instance for constructing OpenLineage

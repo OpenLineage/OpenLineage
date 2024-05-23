@@ -10,12 +10,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.With;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-@With
 public final class FileConfig implements TransportConfig {
   @Getter @Setter private String location;
 }

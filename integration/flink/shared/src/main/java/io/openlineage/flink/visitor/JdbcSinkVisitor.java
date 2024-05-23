@@ -6,18 +6,18 @@
 package io.openlineage.flink.visitor;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.JdbcUtils;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.wrapper.JdbcSinkWrapper;
+import java.util.Collections;
+import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.jdbc.JdbcRowOutputFormat;
 import org.apache.flink.connector.jdbc.internal.GenericJdbcSinkFunction;
 import org.apache.flink.connector.jdbc.internal.JdbcOutputFormat;
-import org.apache.flink.connector.jdbc.table.JdbcRowDataLookupFunction;
 import org.apache.flink.connector.jdbc.xa.JdbcXaSinkFunction;
-
-import java.util.Collections;
-import java.util.List;
 
 @Slf4j
 public class JdbcSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
@@ -42,19 +42,21 @@ public class JdbcSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
     log.debug("Apply sink {} in JdbcSinkVisitor", object);
     JdbcSinkWrapper sinkWrapper;
     if (object instanceof JdbcRowOutputFormat) {
-      sinkWrapper = JdbcSinkWrapper.of(object, JdbcRowOutputFormat.class);
+      sinkWrapper = JdbcSinkWrapper.of(object);
     } else if (object instanceof JdbcOutputFormat) {
-      sinkWrapper = JdbcSinkWrapper.of(object, JdbcOutputFormat.class);
+      sinkWrapper = JdbcSinkWrapper.of(object);
     } else if (object instanceof GenericJdbcSinkFunction) {
-      sinkWrapper = JdbcSinkWrapper.of(object, GenericJdbcSinkFunction.class);
+      sinkWrapper = JdbcSinkWrapper.of(object);
     } else if (object instanceof JdbcXaSinkFunction) {
-      sinkWrapper = JdbcSinkWrapper.of(object, JdbcRowDataLookupFunction.class);
+      sinkWrapper = JdbcSinkWrapper.of(object);
     } else {
       throw new UnsupportedOperationException(
           String.format("Unsupported JDBC sink type %s", object.getClass().getCanonicalName()));
     }
 
-    return Collections.singletonList(
-        createOutputDataset(context, sinkWrapper.getConnectionUrl(), sinkWrapper.getTableName().get()));
+    DatasetIdentifier di =
+        JdbcUtils.getDatasetIdentifierFromJdbcUrl(
+            sinkWrapper.getConnectionUrl(), sinkWrapper.getTableName().get());
+    return Collections.singletonList(createOutputDataset(context, di.getNamespace(), di.getName()));
   }
 }

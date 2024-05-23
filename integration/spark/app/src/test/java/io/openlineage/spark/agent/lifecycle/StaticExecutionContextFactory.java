@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
@@ -12,8 +13,7 @@ import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -43,8 +43,9 @@ public class StaticExecutionContextFactory extends ContextFactory {
   public static final int NUM_PERMITS = 5;
   public static final Semaphore semaphore = new Semaphore(NUM_PERMITS);
 
-  public StaticExecutionContextFactory(EventEmitter eventEmitter) {
-    super(eventEmitter);
+  public StaticExecutionContextFactory(
+      EventEmitter eventEmitter, MeterRegistry meterRegistry, SparkOpenLineageConfig config) {
+    super(eventEmitter, meterRegistry, config);
     try {
       semaphore.acquire(NUM_PERMITS);
     } catch (Exception e) {
@@ -113,6 +114,8 @@ public class StaticExecutionContextFactory extends ContextFactory {
                       .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                       .customEnvironmentVariables(Arrays.asList("TEST_VAR"))
                       .queryExecution(qe)
+                      .meterRegistry(getMeterRegistry())
+                      .openLineageConfig(new SparkOpenLineageConfig())
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory());
@@ -161,9 +164,5 @@ public class StaticExecutionContextFactory extends ContextFactory {
         emitter,
         olContext,
         new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory()));
-  }
-
-  private static ZonedDateTime getZonedTime() {
-    return ZonedDateTime.of(2021, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
   }
 }

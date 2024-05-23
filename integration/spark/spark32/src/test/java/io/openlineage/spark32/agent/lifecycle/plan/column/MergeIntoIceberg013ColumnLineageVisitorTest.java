@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.column.InputFieldsCollector;
@@ -30,12 +31,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class MergeIntoIceberg013ColumnLineageVisitorTest {
+class MergeIntoIceberg013ColumnLineageVisitorTest {
 
-  OpenLineageContext context = mock(OpenLineageContext.class);
+  OpenLineageContext olContext = mock(OpenLineageContext.class);
+  ColumnLevelLineageContext clContext = mock(ColumnLevelLineageContext.class);
   ReplaceData replaceIcebergData = mock(ReplaceData.class);
   MergeIntoIceberg013ColumnLineageVisitor visitor =
-      new MergeIntoIceberg013ColumnLineageVisitor(context);
+      new MergeIntoIceberg013ColumnLineageVisitor(olContext);
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
   private LogicalPlan target =
       mock(LogicalPlan.class, withSettings().extraInterfaces(NamedRelation.class));
@@ -43,11 +45,15 @@ public class MergeIntoIceberg013ColumnLineageVisitorTest {
 
   @BeforeEach
   public void setup() {
+    when(clContext.getBuilder()).thenReturn(builder);
+    when(clContext.getOlContext()).thenReturn(olContext);
+
     when(replaceIcebergData.query()).thenReturn(project);
     when(replaceIcebergData.table()).thenReturn((NamedRelation) target);
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testCollectInputsIsCalled() {
     LogicalPlan source = mock(LogicalPlan.class);
     LogicalPlan target =
@@ -57,15 +63,16 @@ public class MergeIntoIceberg013ColumnLineageVisitorTest {
     when(replaceIcebergData.table()).thenReturn((NamedRelation) target);
 
     try (MockedStatic mocked = mockStatic(InputFieldsCollector.class)) {
-      visitor.collectInputs(replaceIcebergData, builder);
-      mocked.verify(() -> InputFieldsCollector.collect(context, source, builder), times(1));
-      mocked.verify(() -> InputFieldsCollector.collect(context, target, builder), times(1));
+      visitor.collectInputs(clContext, replaceIcebergData);
+      mocked.verify(() -> InputFieldsCollector.collect(clContext, source), times(1));
+      mocked.verify(() -> InputFieldsCollector.collect(clContext, target), times(1));
     }
 
-    visitor.collectInputs(mock(LogicalPlan.class), builder);
+    visitor.collectInputs(clContext, mock(LogicalPlan.class));
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testCollectOutputsIsCalled() {
     LogicalPlan source = mock(LogicalPlan.class);
     LogicalPlan target =
@@ -75,12 +82,12 @@ public class MergeIntoIceberg013ColumnLineageVisitorTest {
     when(replaceIcebergData.table()).thenReturn((NamedRelation) target);
 
     try (MockedStatic mocked = mockStatic(OutputFieldsCollector.class)) {
-      visitor.collectOutputs(replaceIcebergData, builder);
-      mocked.verify(() -> OutputFieldsCollector.collect(context, source, builder), times(0));
-      mocked.verify(() -> OutputFieldsCollector.collect(context, target, builder), times(1));
+      visitor.collectOutputs(clContext, replaceIcebergData);
+      mocked.verify(() -> OutputFieldsCollector.collect(clContext, source), times(0));
+      mocked.verify(() -> OutputFieldsCollector.collect(clContext, target), times(1));
     }
 
-    visitor.collectOutputs(mock(LogicalPlan.class), builder);
+    visitor.collectInputs(clContext, mock(LogicalPlan.class));
   }
 
   @Test
@@ -102,7 +109,7 @@ public class MergeIntoIceberg013ColumnLineageVisitorTest {
         .thenReturn(
             ScalaConversionUtils.<Attribute>fromList(Collections.singletonList(tableAttribute)));
 
-    visitor.collectExpressionDependencies(replaceIcebergData, builder);
+    visitor.collectExpressionDependencies(clContext, replaceIcebergData);
     verify(builder, times(1)).addDependency(tableExprId, projectExprId);
   }
 
@@ -126,7 +133,7 @@ public class MergeIntoIceberg013ColumnLineageVisitorTest {
         .thenReturn(
             ScalaConversionUtils.<Attribute>fromList(Collections.singletonList(tableAttribute)));
 
-    visitor.collectExpressionDependencies(replaceIcebergData, builder);
+    visitor.collectExpressionDependencies(clContext, replaceIcebergData);
     verify(builder, times(0)).addDependency(any(), any());
   }
 }

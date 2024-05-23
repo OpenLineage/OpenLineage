@@ -6,6 +6,7 @@
 package io.openlineage.spark33.agent.lifecycle.plan;
 
 import static io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,9 +18,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Arrays;
@@ -36,7 +39,7 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class ReplaceIcebergDataDatasetBuilderTest {
+class ReplaceIcebergDataDatasetBuilderTest {
 
   OpenLineage openLineage = mock(OpenLineage.class);
   OpenLineageContext openLineageContext =
@@ -44,6 +47,8 @@ public class ReplaceIcebergDataDatasetBuilderTest {
           .sparkSession(mock(SparkSession.class))
           .sparkContext(mock(SparkContext.class))
           .openLineage(openLineage)
+          .meterRegistry(new SimpleMeterRegistry())
+          .openLineageConfig(new SparkOpenLineageConfig())
           .build();
 
   ReplaceIcebergDataDatasetBuilder builder =
@@ -101,5 +106,16 @@ public class ReplaceIcebergDataDatasetBuilderTest {
             times(1));
       }
     }
+  }
+
+  @Test
+  void testJobNameSuffix() {
+    assertThat(builder.jobNameSuffix(mock(LogicalPlan.class))).isEmpty();
+
+    ReplaceIcebergData replaceIcebergData = mock(ReplaceIcebergData.class);
+    NamedRelation namedRelation = mock(NamedRelation.class);
+    when(replaceIcebergData.table()).thenReturn(namedRelation);
+    when(namedRelation.name()).thenReturn("table");
+    assertThat(builder.jobNameSuffix(replaceIcebergData).get()).isEqualTo("table");
   }
 }

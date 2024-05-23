@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 import static scala.collection.JavaConverters.collectionAsScalaIterableConverter;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.lang.reflect.Field;
@@ -20,7 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import lombok.SneakyThrows;
-import org.apache.commons.lang.reflect.FieldUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -60,6 +61,7 @@ class InMemoryRelationInputDatasetBuilderTest {
     when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
     when(context.getInputDatasetBuilders()).thenReturn(Collections.emptyList());
     when(context.getInputDatasetQueryPlanVisitors()).thenReturn(Collections.emptyList());
+    when(context.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
 
     when(sparkSession.sharedState()).thenReturn(sharedState);
     when(sharedState.cacheManager()).thenReturn(cacheManager);

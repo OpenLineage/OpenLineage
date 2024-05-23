@@ -30,7 +30,7 @@ class OpenLineageRunEventTest {
       new TypeReference<Map<String, Object>>() {};
 
   @Test
-  public void testSerializeRunEvent() throws IOException, URISyntaxException {
+  void testSerializeRunEvent() throws IOException, URISyntaxException {
     ObjectMapper mapper = OpenLineageClientUtils.newObjectMapper();
 
     ZonedDateTime dateTime = ZonedDateTime.parse("2021-01-01T00:00:01.000000000+00:00[UTC]");
@@ -81,6 +81,7 @@ class OpenLineageRunEventTest {
                         ol.newDataQualityMetricsInputDatasetFacetBuilder()
                             .rowCount(10L)
                             .bytes(20L)
+                            .fileCount(5L)
                             .columnMetrics(
                                 ol.newDataQualityMetricsInputDatasetFacetColumnMetricsBuilder()
                                     .put(
@@ -107,7 +108,12 @@ class OpenLineageRunEventTest {
                 "output",
                 null,
                 ol.newOutputDatasetOutputFacetsBuilder()
-                    .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10L, 20L))
+                    .outputStatistics(
+                        ol.newOutputStatisticsOutputDatasetFacetBuilder()
+                            .rowCount(10L)
+                            .size(20L)
+                            .fileCount(5L)
+                            .build())
                     .build()));
     OpenLineage.RunEvent runStateUpdate =
         ol.newRunEventBuilder()

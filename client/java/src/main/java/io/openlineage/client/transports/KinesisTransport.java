@@ -62,12 +62,31 @@ public class KinesisTransport extends Transport {
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
     final String eventAsJson = OpenLineageClientUtils.toJson(runEvent);
+    final OpenLineage.Job job = runEvent.getJob();
+    final String partitionKey = "run:" + job.getNamespace() + "/" + job.getName();
+    emit(eventAsJson, partitionKey);
+  }
+
+  @Override
+  public void emit(@NonNull OpenLineage.DatasetEvent datasetEvent) {
+    final String eventAsJson = OpenLineageClientUtils.toJson(datasetEvent);
+    final OpenLineage.Dataset dataset = datasetEvent.getDataset();
+    final String partitionKey = "dataset:" + dataset.getNamespace() + "/" + dataset.getName();
+    emit(eventAsJson, partitionKey);
+  }
+
+  @Override
+  public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
+    final String eventAsJson = OpenLineageClientUtils.toJson(jobEvent);
+    final OpenLineage.Job job = jobEvent.getJob();
+    final String partitionKey = "job:" + job.getNamespace() + "/" + job.getName();
+    emit(eventAsJson, partitionKey);
+  }
+
+  private void emit(String eventAsJson, String partitionKey) {
     ListenableFuture<UserRecordResult> future =
         this.producer.addUserRecord(
-            new UserRecord(
-                streamName,
-                runEvent.getJob().getNamespace() + ":" + runEvent.getJob().getName(),
-                ByteBuffer.wrap(eventAsJson.getBytes())));
+            new UserRecord(streamName, partitionKey, ByteBuffer.wrap(eventAsJson.getBytes())));
 
     FutureCallback<UserRecordResult> callback =
         new FutureCallback<UserRecordResult>() {

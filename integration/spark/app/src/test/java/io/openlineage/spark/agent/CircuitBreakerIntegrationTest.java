@@ -32,7 +32,7 @@ import org.mockserver.integration.ClientAndServer;
 import org.slf4j.event.Level;
 
 @Tag("integration-test")
-public class CircuitBreakerIntegrationTest {
+class CircuitBreakerIntegrationTest {
   private static final int MOCKSERVER_PORT = 1086;
   private static final String LOCAL_IP = "127.0.0.1";
   static SparkSession spark;

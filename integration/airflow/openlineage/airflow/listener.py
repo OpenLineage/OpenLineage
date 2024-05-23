@@ -109,8 +109,15 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 
     def on_running():
         nonlocal task_instance
-        ti = copy.deepcopy(task_instance)
-        ti.render_templates()
+        try:
+            ti = copy.deepcopy(task_instance)
+        except Exception as err:
+            log.debug(
+                f"Creating a task instance copy failed; proceeding without rendering templates. Error: {err}"
+            )
+            ti = task_instance
+        else:
+            ti.render_templates()
 
         task = ti.task
         dag = task.dag
@@ -119,10 +126,16 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
         # we return here because Airflow 2.3 needs task from deferred state
         if ti.next_method is not None:
             return
-        parent_run_id = OpenLineageAdapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
 
+        parent_run_id = OpenLineageAdapter.build_dag_run_id(
+            dag_id=dag.dag_id,
+            execution_date=dagrun.execution_date,
+        )
         task_uuid = OpenLineageAdapter.build_task_instance_run_id(
-            dag.dag_id, task.task_id, ti.execution_date, ti._try_number
+            dag_id=dag.dag_id,
+            task_id=task.task_id,
+            try_number=ti._try_number,
+            execution_date=ti.execution_date,
         )
 
         task_metadata = extractor_manager.extract_metadata(dagrun, task, task_uuid=task_uuid)
@@ -158,10 +171,15 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
     dag = task.dag
     dagrun = task_instance.dag_run
 
-    parent_run_id = OpenLineageAdapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
-
+    parent_run_id = OpenLineageAdapter.build_dag_run_id(
+        dag_id=dag.dag_id,
+        execution_date=dagrun.execution_date,
+    )
     task_uuid = OpenLineageAdapter.build_task_instance_run_id(
-        dag.dag_id, task.task_id, task_instance.execution_date, task_instance._try_number
+        dag_id=dag.dag_id,
+        task_id=task.task_id,
+        try_number=task_instance._try_number,
+        execution_date=task_instance.execution_date,
     )
 
     def on_success():
@@ -187,10 +205,15 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
     dag = task.dag
     dagrun = task_instance.dag_run
 
-    parent_run_id = OpenLineageAdapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
-
+    parent_run_id = OpenLineageAdapter.build_dag_run_id(
+        dag_id=dag.dag_id,
+        execution_date=dagrun.execution_date,
+    )
     task_uuid = OpenLineageAdapter.build_task_instance_run_id(
-        dag.dag_id, task.task_id, task_instance.execution_date, task_instance._try_number
+        dag_id=dag.dag_id,
+        task_id=task.task_id,
+        try_number=task_instance._try_number,
+        execution_date=task_instance.execution_date,
     )
 
     def on_failure():

@@ -6,21 +6,15 @@
 package io.openlineage.spark.agent.lifecycle.plan.handlers;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.spark.agent.util.JdbcUtils;
+import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.api.DatasetFactory;
-import io.openlineage.sql.ColumnMeta;
-import io.openlineage.sql.DbTableMeta;
 import io.openlineage.sql.SqlMeta;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
-import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
 
 @Slf4j
 public class JdbcRelationHandler<D extends OpenLineage.Dataset> {
@@ -45,47 +39,10 @@ public class JdbcRelationHandler<D extends OpenLineage.Dataset> {
   }
 
   public List<D> getDatasets(JDBCRelation relation, String url) {
-    Optional<SqlMeta> sqlMeta = JdbcUtils.extractQueryFromSpark(relation);
+    Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
     if (!sqlMeta.isPresent()) {
       return Collections.emptyList();
     }
-    if (sqlMeta.get().columnLineage().isEmpty()) {
-      DatasetIdentifier di =
-          JdbcUtils.getDatasetIdentifierFromJdbcUrl(
-              url, sqlMeta.get().inTables().get(0).qualifiedName());
-      return Collections.singletonList(
-          datasetFactory.getDataset(di.getName(), di.getNamespace(), relation.schema()));
-    }
-    return sqlMeta.get().inTables().stream()
-        .map(
-            dbtm -> {
-              DatasetIdentifier di =
-                  JdbcUtils.getDatasetIdentifierFromJdbcUrl(url, dbtm.qualifiedName());
-              return datasetFactory.getDataset(
-                  di.getName(),
-                  di.getNamespace(),
-                  generateJDBCSchema(dbtm, relation.schema(), sqlMeta.get()));
-            })
-        .collect(Collectors.toList());
-  }
-
-  private static StructType generateJDBCSchema(
-      DbTableMeta origin, StructType schema, SqlMeta sqlMeta) {
-    StructType originSchema = new StructType();
-    for (StructField f : schema.fields()) {
-      List<ColumnMeta> fields =
-          sqlMeta.columnLineage().stream()
-              .filter(cl -> cl.descendant().name().equals(f.name()))
-              .flatMap(
-                  cl ->
-                      cl.lineage().stream()
-                          .filter(
-                              cm -> cm.origin().isPresent() && cm.origin().get().equals(origin)))
-              .collect(Collectors.toList());
-      for (ColumnMeta cm : fields) {
-        originSchema = originSchema.add(cm.name(), f.dataType());
-      }
-    }
-    return originSchema;
+    return JdbcSparkUtils.getDatasets(datasetFactory, sqlMeta.get(), relation.schema(), url);
   }
 }

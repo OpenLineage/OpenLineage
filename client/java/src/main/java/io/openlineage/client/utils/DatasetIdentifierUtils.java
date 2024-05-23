@@ -13,8 +13,10 @@ import java.util.regex.Pattern;
 public class DatasetIdentifierUtils {
 
   private static final String DEFAULT_SCHEME = "file";
+
   /** The directory separator, a slash, as a character. */
   public static final char SEPARATOR_CHAR = '/';
+
   /** The directory separator, a slash. */
   public static final String SEPARATOR = "/";
 
@@ -55,7 +57,7 @@ public class DatasetIdentifierUtils {
   }
 
   private static String removeLastSlash(String name) {
-    if (name.charAt(name.length() - 1) == File.separatorChar) {
+    if (!name.isEmpty() && name.charAt(name.length() - 1) == File.separatorChar) {
       return name.substring(0, name.length() - 1);
     }
     return name;

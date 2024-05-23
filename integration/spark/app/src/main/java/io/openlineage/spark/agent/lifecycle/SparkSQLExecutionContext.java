@@ -19,22 +19,21 @@ import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.api.JobNameBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.JobFailed;
+import org.apache.spark.scheduler.SparkListenerApplicationEnd;
+import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
 import org.apache.spark.scheduler.SparkListenerStageSubmitted;
 import org.apache.spark.sql.execution.QueryExecution;
-import org.apache.spark.sql.execution.SparkPlan;
-import org.apache.spark.sql.execution.WholeStageCodegenExec;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 
@@ -42,7 +41,7 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 class SparkSQLExecutionContext implements ExecutionContext {
 
   private static final String NO_EXECUTION_INFO = "No execution info {}";
-  private static final String SPARK_JOB_TYPE = "JOB";
+  private static final String SPARK_JOB_TYPE = "SQL_JOB";
   private static final String SPARK_INTEGRATION = "SPARK";
   private static final String SPARK_PROCESSING_TYPE_BATCH = "BATCH";
   private static final String SPARK_PROCESSING_TYPE_STREAMING = "STREAMING";
@@ -93,7 +92,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .newRunEventBuilder()
                 .eventTime(toZonedTime(startEvent.time()))
                 .eventType(eventType),
-            buildJob(olContext.getQueryExecution().get()),
+            buildJob(),
             getJobFacetsBuilder(olContext.getQueryExecution().get()),
             startEvent);
 
@@ -133,7 +132,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .newRunEventBuilder()
                 .eventTime(toZonedTime(endEvent.time()))
                 .eventType(eventType),
-            buildJob(olContext.getQueryExecution().get()),
+            buildJob(),
             getJobFacetsBuilder(olContext.getQueryExecution().get()),
             endEvent);
 
@@ -160,7 +159,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .newRunEventBuilder()
                 .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
                 .eventType(RUNNING),
-            buildJob(olContext.getQueryExecution().get()),
+            buildJob(),
             getJobFacetsBuilder(olContext.getQueryExecution().get()),
             stageSubmitted);
 
@@ -186,12 +185,11 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .newRunEventBuilder()
                 .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
                 .eventType(RUNNING),
-            buildJob(olContext.getQueryExecution().get()),
+            buildJob(),
             getJobFacetsBuilder(olContext.getQueryExecution().get()),
             stageCompleted);
 
     log.debug("Posting event for stage completed {}: {}", executionId, event);
-
     eventEmitter.emit(event);
   }
 
@@ -224,7 +222,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .newRunEventBuilder()
                 .eventTime(toZonedTime(jobStart.time()))
                 .eventType(eventType),
-            buildJob(olContext.getQueryExecution().get()),
+            buildJob(),
             getJobFacetsBuilder(olContext.getQueryExecution().get()),
             jobStart);
 
@@ -268,13 +266,19 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .newRunEventBuilder()
                 .eventTime(toZonedTime(jobEnd.time()))
                 .eventType(eventType),
-            buildJob(olContext.getQueryExecution().get()),
+            buildJob(),
             getJobFacetsBuilder(olContext.getQueryExecution().get()),
             jobEnd);
 
     log.debug("Posting event for end {}: {}", executionId, event);
     eventEmitter.emit(event);
   }
+
+  @Override
+  public void start(SparkListenerApplicationStart applicationStart) {}
+
+  @Override
+  public void end(SparkListenerApplicationEnd applicationEnd) {}
 
   private OpenLineage.ParentRunFacet buildApplicationParentFacet() {
     return PlanUtils.parentRunFacet(
@@ -283,20 +287,11 @@ class SparkSQLExecutionContext implements ExecutionContext {
         eventEmitter.getJobNamespace());
   }
 
-  protected OpenLineage.JobBuilder buildJob(QueryExecution queryExecution) {
-    SparkContext sparkContext = queryExecution.executedPlan().sparkContext();
-    SparkPlan node = queryExecution.executedPlan();
-
-    // Unwrap SparkPlan from WholeStageCodegen, as that's not a descriptive or helpful job name
-    if (node instanceof WholeStageCodegenExec) {
-      node = ((WholeStageCodegenExec) node).child();
-    }
-
-    String name = eventEmitter.getOverriddenAppName().orElse(sparkContext.appName());
+  protected OpenLineage.JobBuilder buildJob() {
     return openLineage
         .newJobBuilder()
-        .namespace(this.eventEmitter.getJobNamespace())
-        .name(normalizeName(name) + "." + normalizeName(node.nodeName()));
+        .name(JobNameBuilder.build(olContext))
+        .namespace(this.eventEmitter.getJobNamespace());
   }
 
   /**
@@ -326,10 +321,5 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   private OpenLineage.JobFacetsBuilder getJobFacetsBuilder(QueryExecution queryExecution) {
     return openLineage.newJobFacetsBuilder().jobType(getJobTypeJobFacet(queryExecution));
-  }
-
-  // normalizes string, changes CamelCase to snake_case and replaces all non-alphanumerics with '_'
-  private static String normalizeName(String name) {
-    return name.replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT);
   }
 }

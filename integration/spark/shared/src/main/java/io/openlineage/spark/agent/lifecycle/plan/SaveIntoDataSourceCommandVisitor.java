@@ -13,22 +13,29 @@ import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.DatasetFacetsUtils;
+import io.openlineage.spark.agent.util.ExtensionPlanUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
+import io.openlineage.spark.api.JobNameSuffixProvider;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.extension.scala.v1.LineageRelationProvider;
 import java.net.URI;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
 import org.apache.spark.sql.sources.BaseRelation;
@@ -46,7 +53,8 @@ import scala.Option;
 @Slf4j
 public class SaveIntoDataSourceCommandVisitor
     extends AbstractQueryPlanDatasetBuilder<
-        SparkListenerEvent, SaveIntoDataSourceCommand, OutputDataset> {
+        SparkListenerEvent, SaveIntoDataSourceCommand, OutputDataset>
+    implements JobNameSuffixProvider<SaveIntoDataSourceCommand> {
 
   public SaveIntoDataSourceCommandVisitor(OpenLineageContext context) {
     super(context, false);
@@ -61,6 +69,7 @@ public class SaveIntoDataSourceCommandVisitor
         return false;
       }
       return command.dataSource() instanceof SchemaRelationProvider
+          || command.dataSource() instanceof LineageRelationProvider
           || command.dataSource() instanceof RelationProvider;
     }
     return false;
@@ -82,8 +91,21 @@ public class SaveIntoDataSourceCommandVisitor
   }
 
   @Override
+  @SuppressWarnings("PMD.AvoidDuplicateLiterals")
   public List<OutputDataset> apply(SparkListenerEvent event, SaveIntoDataSourceCommand command) {
     BaseRelation relation;
+
+    if (command.dataSource() instanceof LineageRelationProvider) {
+      LineageRelationProvider provider = (LineageRelationProvider) command.dataSource();
+      return Collections.singletonList(
+          outputDataset()
+              .getDataset(
+                  provider.getLineageDatasetIdentifier(
+                      ExtensionPlanUtils.context(event, context),
+                      context.getSparkSession().get().sqlContext(),
+                      command.options()),
+                  getSchema(command)));
+    }
 
     // Kafka has some special handling because the Source and Sink relations require different
     // options. A KafkaRelation for writes uses the "topic" option, while the same relation for
@@ -197,5 +219,46 @@ public class SaveIntoDataSourceCommandVisitor
       schema = PlanUtils.toStructType(ScalaConversionUtils.fromSeq(command.query().output()));
     }
     return schema;
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(OpenLineageContext context) {
+    return context
+        .getQueryExecution()
+        .map(QueryExecution::optimizedPlan)
+        .filter(p -> p instanceof SaveIntoDataSourceCommand)
+        .map(p -> (SaveIntoDataSourceCommand) p)
+        .map(p -> jobNameSuffix(p))
+        .filter(Optional::isPresent)
+        .map(Optional::get);
+  }
+
+  @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+  public Optional<String> jobNameSuffix(SaveIntoDataSourceCommand command) {
+    if (command.dataSource() instanceof LineageRelationProvider) {
+      LineageRelationProvider provider = (LineageRelationProvider) command.dataSource();
+      return Optional.ofNullable(
+              provider.getLineageDatasetIdentifier(
+                  ExtensionPlanUtils.contextWithoutListenerEvent(context),
+                  context.getSparkSession().get().sqlContext(),
+                  command.options()))
+          .map(DatasetIdentifier::getName)
+          .map(n -> trimPath(n));
+    } else if (command.dataSource().getClass().getName().contains("DeltaDataSource")
+        && command.options().contains("path")) {
+      return Optional.of(trimPath(command.options().get("path").get()));
+    } else if (KustoRelationVisitor.isKustoSource(command.dataSource())) {
+      return Optional.ofNullable(command.options().get("kustotable"))
+          .filter(Option::isDefined)
+          .map(Option::get);
+    } else if (command.dataSource() instanceof RelationProvider
+        || command.dataSource() instanceof SchemaRelationProvider) {
+      return ScalaConversionUtils.fromMap(command.options()).keySet().stream()
+          .filter(key -> key.toLowerCase(Locale.ROOT).contains("table"))
+          .findAny()
+          .map(key -> command.options().get(key).get());
+    }
+
+    return Optional.empty();
   }
 }

@@ -9,7 +9,6 @@ import os
 import subprocess
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
-from uuid import uuid4
 
 import attr
 from openlineage.airflow.facets import (
@@ -17,10 +16,12 @@ from openlineage.airflow.facets import (
     AirflowRunArgsRunFacet,
     AirflowRunFacet,
     AirflowVersionRunFacet,
+    UnknownOperatorAttributeRunFacet,
+    UnknownOperatorInstance,
 )
 from openlineage.client.utils import RedactMixin
+from packaging.version import Version
 from pendulum import from_timestamp
-from pkg_resources import parse_version
 
 from airflow.models import DAG as AIRFLOW_DAG
 
@@ -292,23 +293,35 @@ class TaskInstanceInfo(InfoJsonEncodable):
 
 class TaskInfo(InfoJsonEncodable):
     renames = {
-        "_BaseOperator__init_kwargs": "args",
         "_BaseOperator__from_mapped": "mapped",
         "_downstream_task_ids": "downstream_task_ids",
         "_upstream_task_ids": "upstream_task_ids",
+        "_is_setup": "is_setup",
+        "_is_teardown": "is_teardown",
     }
-    excludes = [
-        "_BaseOperator__instantiated",
-        "_dag",
-        "_hook",
-        "_log",
-        "_outlets",
-        "_inlets",
-        "_lock_for_execution",
-        "handler",
-        "params",
-        "python_callable",
-        "retry_delay",
+    includes = [
+        "task_id",
+        "depends_on_past",
+        "downstream_task_ids",
+        "execution_timeout",
+        "executor_config",
+        "ignore_first_depends_on_past",
+        "max_active_tis_per_dag",
+        "max_active_tis_per_dagrun",
+        "max_retry_delay",
+        "multiple_outputs",
+        "owner",
+        "priority_weight",
+        "queue",
+        "retries",
+        "retry_exponential_backoff",
+        "run_as_user",
+        "task_id",
+        "trigger_rule",
+        "upstream_task_ids",
+        "wait_for_downstream",
+        "wait_for_past_depends_before_skipping",
+        "weight_rule",
     ]
     casts = {
         "operator_class": lambda task: f"{get_operator_class(task).__module__}.{get_operator_class(task).__name__}",  # noqa: E501
@@ -340,25 +353,33 @@ def get_airflow_run_facet(
     task_uuid: str,
 ):
     return {
-        "airflow": json.loads(
-            json.dumps(
-                attr.asdict(
-                    AirflowRunFacet(
-                        dag=DagInfo(dag),
-                        dagRun=DagRunInfo(dag_run),
-                        taskInstance=TaskInstanceInfo(task_instance),
-                        task=TaskInfo(task),
-                        taskUuid=task_uuid,
-                    )
-                ),
-                default=str,
+        "airflow": attr.asdict(
+            AirflowRunFacet(
+                dag=DagInfo(dag),
+                dagRun=DagRunInfo(dag_run),
+                taskInstance=TaskInstanceInfo(task_instance),
+                task=TaskInfo(task),
+                taskUuid=task_uuid,
             )
         )
     }
 
 
-def new_lineage_run_id(dag_run_id: str, task_id: str) -> str:
-    return str(uuid4())
+def get_unknown_source_attribute_run_facet(task: "BaseOperator", name: Optional[str] = None):
+    if not name:
+        name = get_operator_class(task).__name__
+    return {
+        "unknownSourceAttribute": attr.asdict(
+            UnknownOperatorAttributeRunFacet(
+                unknownItems=[
+                    UnknownOperatorInstance(
+                        name=name,
+                        properties=TaskInfo(task),
+                    )
+                ]
+            )
+        )
+    }
 
 
 def get_dagrun_start_end(dagrun: "DagRun", dag: "DAG"):
@@ -445,7 +466,16 @@ def redact_with_exclusions(source: Any):
                     dict_key: _redact(subval, name=dict_key, depth=(depth + 1))
                     for dict_key, subval in item.items()
                 }
-            elif is_dataclass(item) or (is_json_serializable(item) and hasattr(item, "__dict__")):
+            if attr.has(type(item)):
+                for dict_key, subval in attr.asdict(item, recurse=False).items():
+                    if _is_name_redactable(dict_key, item):
+                        setattr(
+                            item,
+                            dict_key,
+                            _redact(subval, name=dict_key, depth=(depth + 1)),
+                        )
+                return item
+            if is_json_serializable(item) and hasattr(item, "__dict__"):
                 for dict_key, subval in item.__dict__.items():
                     if _is_name_redactable(dict_key, item):
                         setattr(
@@ -474,10 +504,6 @@ def redact_with_exclusions(source: Any):
             return item
 
     return _redact(source, name=None, depth=0)
-
-
-def is_dataclass(item):
-    return getattr(item.__class__, "__attrs_attrs__", None) is not None
 
 
 def is_json_serializable(item):
@@ -516,7 +542,7 @@ def is_airflow_version_enough(x):
         from airflow.version import version as AIRFLOW_VERSION
     except ImportError:
         AIRFLOW_VERSION = "0.0.0"
-    return parse_version(AIRFLOW_VERSION) >= parse_version(x)
+    return Version(AIRFLOW_VERSION) >= Version(x)
 
 
 def getboolean(env, default: bool = False) -> bool:

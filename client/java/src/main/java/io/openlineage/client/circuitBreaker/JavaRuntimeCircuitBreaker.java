@@ -5,13 +5,15 @@
 
 package io.openlineage.client.circuitBreaker;
 
-import static io.openlineage.client.circuitBreaker.RuntimeUtils.freeMemory;
-import static io.openlineage.client.circuitBreaker.RuntimeUtils.getGarbageCollectorMXBeans;
-import static io.openlineage.client.circuitBreaker.RuntimeUtils.maxMemory;
-import static io.openlineage.client.circuitBreaker.RuntimeUtils.totalMemory;
+import static io.openlineage.client.utils.RuntimeUtils.freeMemory;
+import static io.openlineage.client.utils.RuntimeUtils.getGarbageCollectorMXBeans;
+import static io.openlineage.client.utils.RuntimeUtils.maxMemory;
+import static io.openlineage.client.utils.RuntimeUtils.totalMemory;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
+import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,8 @@ public class JavaRuntimeCircuitBreaker extends ExecutorCircuitBreaker {
 
   public JavaRuntimeCircuitBreaker(@NonNull final JavaRuntimeCircuitBreakerConfig config) {
     super(config.getCircuitCheckIntervalInMillis());
+    this.timeout =
+        Optional.ofNullable(config.getTimeoutInSeconds()).map(s -> Duration.ofSeconds(s));
     this.config = config;
   }
 

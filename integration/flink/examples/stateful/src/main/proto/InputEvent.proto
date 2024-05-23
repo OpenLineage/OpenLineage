@@ -1,0 +1,21 @@
+syntax = "proto3";
+package io.openlineage.flink.proto.event;
+option java_package = "io.openlineage.flink.proto.event";
+option java_multiple_files = true;
+
+message InputEvent {
+  string id = 1;
+  int64 version = 2;
+  SubInputEvent subEvent = 3;
+}
+
+message SubInputEvent {
+  string id = 1;
+  SubSubInputEvent subSubEvent = 2;
+  repeated int64 arr = 3;
+}
+
+message SubSubInputEvent {
+  string id = 1;
+  int64 version = 2;
+}

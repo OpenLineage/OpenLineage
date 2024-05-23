@@ -5,40 +5,5 @@
     "name": "open_lineage_integration_create_table.execute_create_table_command.create_test_create_table_test"
   },
   "inputs": [],
-  "outputs": [
-    {
-      "namespace": "file",
-      "name": "/tmp/create_test/create_table_test",
-      "facets": {
-        "dataSource": {
-          "name": "file",
-          "uri": "file"
-        },
-        "schema": {
-          "fields": [
-            {
-              "name": "a",
-              "type": "string"
-            },
-            {
-              "name": "b",
-              "type": "string"
-            }
-          ]
-        },
-        "lifecycleStateChange" : {
-          "lifecycleStateChange" : "CREATE"
-        },
-        "symlinks": {
-          "identifiers": [
-            {
-              "namespace": "file:/tmp/create_test",
-              "name": "default.create_table_test",
-              "type": "TABLE"
-            }
-          ]
-        }
-      }
-    }
-  ]
+  "outputs": []
 }

@@ -8,19 +8,19 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Optional, Union
 from urllib.parse import urlparse
-from uuid import uuid4
 
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions
-from openlineage.client.facet import (
-    BaseFacet,
-    ColumnMetric,
-    DataQualityMetricsInputDatasetFacet,
-    DocumentationJobFacet,
-    ParentRunFacet,
-    SourceCodeLocationJobFacet,
+from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
+from openlineage.client.facet_v2 import (
+    JobFacet,
+    RunFacet,
+    data_quality_metrics_input_dataset,
+    documentation_job,
+    parent_run,
+    source_code_location_job,
 )
-from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.serde import Serde
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.dataset import Dataset as OLDataset
 from openlineage.common.provider.great_expectations.facets import (
@@ -41,10 +41,7 @@ from great_expectations.data_context.types.resource_identifiers import (
     ValidationResultIdentifier,
 )
 from great_expectations.dataset import Dataset as GEDataset
-from great_expectations.dataset import (
-    PandasDataset,
-    SqlAlchemyDataset,
-)
+from great_expectations.dataset import PandasDataset, SqlAlchemyDataset
 from great_expectations.execution_engine import (
     PandasExecutionEngine,
     SqlAlchemyExecutionEngine,
@@ -121,7 +118,7 @@ class OpenLineageValidationAction(ValidationAction):
         if openlineage_run_id is not None:
             self.run_id = openlineage_run_id
         else:
-            self.run_id = uuid4()
+            self.run_id = generate_new_uuid()
         self.parent_run_id = openlineage_parent_run_id
         self.parent_job_namespace = openlineage_parent_job_namespace
         self.parent_job_name = openlineage_parent_job_name
@@ -151,15 +148,14 @@ class OpenLineageValidationAction(ValidationAction):
             datasets = self._fetch_datasets_from_sql_source(data_asset, validation_result_suite)
         elif isinstance(data_asset.execution_engine, PandasExecutionEngine):
             datasets = self._fetch_datasets_from_pandas_source(data_asset, validation_result_suite)
-        run_facets = {}
+        run_facets: Dict[str, RunFacet] = {}
         if self.parent_run_id is not None:
             run_facets.update(
                 {
-                    "parentRun": ParentRunFacet.create(
-                        self.parent_run_id,
-                        self.parent_job_namespace,
-                        self.parent_job_name,
-                    )
+                    "parent": parent_run.ParentRunFacet(
+                        run=parent_run.Run(runId=self.parent_run_id),
+                        job=parent_run.Job(namespace=self.parent_job_namespace, name=self.parent_job_name),
+                    ),
                 }
             )
 
@@ -178,11 +174,13 @@ class OpenLineageValidationAction(ValidationAction):
                 )
             }
         )
-        job_facets: Dict[str, BaseFacet] = {}
+        job_facets: Dict[str, JobFacet] = {}
         if self.job_description:
-            job_facets["documentation"] = DocumentationJobFacet(self.job_description)
+            job_facets["documentation"] = documentation_job.DocumentationJobFacet(self.job_description)
         if self.code_location:
-            job_facets["sourceCodeLocation"] = SourceCodeLocationJobFacet(type="", url=self.code_location)
+            job_facets["sourceCodeLocation"] = source_code_location_job.SourceCodeLocationJobFacet(
+                type="", url=self.code_location
+            )
 
         job_name = self.job_name
         if self.job_name is None:
@@ -430,7 +428,7 @@ class OpenLineageValidationAction(ValidationAction):
 
     def parse_data_quality_facet(
         self, validation_result: ExpectationSuiteValidationResult
-    ) -> Optional[DataQualityMetricsInputDatasetFacet]:
+    ) -> Optional[data_quality_metrics_input_dataset.DataQualityMetricsInputDatasetFacet]:
         """
         Parse the validation result and extract a DataQualityDatasetFacet
         :param validation_result:
@@ -453,8 +451,10 @@ class OpenLineageValidationAction(ValidationAction):
                         facet_data["columnMetrics"][result.column_id][result.facet_key] = result.value
 
             for key in facet_data["columnMetrics"].keys():
-                facet_data["columnMetrics"][key] = ColumnMetric(**facet_data["columnMetrics"][key])
-            return DataQualityMetricsInputDatasetFacet(**facet_data)  # type: ignore[arg-type]
+                facet_data["columnMetrics"][key] = data_quality_metrics_input_dataset.ColumnMetrics(
+                    **facet_data["columnMetrics"][key]
+                )
+            return data_quality_metrics_input_dataset.DataQualityMetricsInputDatasetFacet(**facet_data)  # type: ignore[arg-type]
         except ValueError:
             self.log.exception("Great Expectations's CheckpointResult object does not have expected key")
         return None

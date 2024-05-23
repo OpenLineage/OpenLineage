@@ -12,6 +12,8 @@ import io.openlineage.spark.agent.facets.DebugRunFacet.ClasspathDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanNode;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanNode.LogicalPlanNodeBuilder;
+import io.openlineage.spark.agent.facets.DebugRunFacet.MetricsDebugFacet;
+import io.openlineage.spark.agent.facets.DebugRunFacet.MetricsNode;
 import io.openlineage.spark.agent.facets.DebugRunFacet.SparkConfigDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.SystemDebugFacet;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -20,8 +22,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -47,13 +51,14 @@ public class DebugRunFacetBuilderDelegate {
         buildSparkConfigDebugFacet(),
         buildClasspathDebugFacet(),
         buildSystemDebugFacet(),
-        buildLogicalPlanDebugFacet());
+        buildLogicalPlanDebugFacet(),
+        buildMetricsDebugFacet());
   }
 
   private SparkConfigDebugFacet buildSparkConfigDebugFacet() {
     return SparkConfigDebugFacet.builder()
         .extraListeners(getSparkConfOrNull("spark.extraListeners"))
-        .openLineageConfig(getOpenLineageConfig())
+        .openLineageConfig(olContext.getOpenLineageConfig())
         .catalogClass(getCatalogClass())
         .extensions(getSparkConfOrNull("spark.sql.extensions"))
         .build();
@@ -74,7 +79,8 @@ public class DebugRunFacetBuilderDelegate {
   }
 
   private List<String> getSparkJars() {
-    return Optional.ofNullable(olContext.getSparkContext())
+    return olContext
+        .getSparkContext()
         .map(sc -> sc.listJars())
         .map(jars -> ScalaConversionUtils.fromSeq(jars))
         .orElse(null);
@@ -102,6 +108,42 @@ public class DebugRunFacetBuilderDelegate {
         .orElse(null);
   }
 
+  private MetricsDebugFacet buildMetricsDebugFacet() {
+    // We don't use other meters than gauge, counter and timer - add method here if you want to use
+    // them.
+    return new MetricsDebugFacet(
+        olContext.getMeterRegistry().getMeters().stream()
+            .map(
+                meter ->
+                    meter.match(
+                        gauge ->
+                            MetricsNode.builder()
+                                .name(gauge.getId().getName())
+                                .value(gauge.value())
+                                .tags(gauge.getId().getTags())
+                                .build(),
+                        counter ->
+                            MetricsNode.builder()
+                                .name(counter.getId().getName())
+                                .value(counter.count())
+                                .tags(counter.getId().getTags())
+                                .build(),
+                        timer ->
+                            MetricsNode.builder()
+                                .name(timer.getId().getName())
+                                .value(timer.totalTime(TimeUnit.MICROSECONDS))
+                                .tags(timer.getId().getTags())
+                                .build(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null))
+            .map(MetricsNode.class::cast)
+            .collect(Collectors.toList()));
+  }
+
   private List<LogicalPlanNode> scanLogicalPlan(LogicalPlan node) {
     List<LogicalPlanNode> result = new ArrayList<>();
     LogicalPlanNodeBuilder builder =
@@ -126,25 +168,27 @@ public class DebugRunFacetBuilderDelegate {
   }
 
   private String getDeployMode() {
-    return Optional.ofNullable(olContext.getSparkContext()).map(sc -> sc.deployMode()).orElse(null);
+    return olContext.getSparkContext().map(sc -> sc.deployMode()).orElse(null);
   }
 
   private String getSparkConfOrNull(String confKey) {
-    return Optional.ofNullable(olContext.getSparkContext())
+    return olContext
+        .getSparkContext()
         .map(sc -> sc.conf())
         .map(c -> c.get(confKey, null))
         .orElse(null);
   }
 
   private Map<String, String> getOpenLineageConfig() {
-    return Optional.ofNullable(olContext.getSparkContext())
+    return olContext
+        .getSparkContext()
         .map(sc -> sc.conf())
         .map(conf -> conf.getAllWithPrefix("spark.openlineage."))
         .map(arr -> Arrays.stream(arr))
         .map(
             stream ->
                 stream
-                    .filter(tuple -> !tuple._1().toLowerCase().contains("key"))
+                    .filter(tuple -> !tuple._1().toLowerCase(Locale.getDefault()).contains("key"))
                     .collect(
                         Collectors.<Tuple2<String, String>, String, String>toMap(
                             t -> t._1(), t -> t._2())))
@@ -157,15 +201,6 @@ public class DebugRunFacetBuilderDelegate {
         .map(sparkSession -> sparkSession.catalog())
         .map(catalog -> catalog.getClass().getCanonicalName())
         .orElse(null);
-  }
-
-  private boolean isOnClassPath(String aClass) {
-    try {
-      this.getClass().getClassLoader().loadClass(aClass);
-      return true;
-    } catch (Exception e) {
-      return false;
-    }
   }
 
   private ClasspathDebugClassDetails toClasspathDebugClassDetails(String aClass) {

@@ -1,0 +1,53 @@
+--- # Heavily inspired by Airflow's feature request template at https://github.com/apache/airflow/blob/main/.github/ISSUE_TEMPLATE/feature_request.yml
+name: Feature request
+description: Suggest an idea for this project
+title: "[FEATURE]"
+labels: ["kind:feature", "state:needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      # yamllint disable rule:line-length
+      value: "
+        ## Thank you for your interest in OpenLineage!
+        
+        We appreciate the community's efforts to improve OpenLineage.
+
+
+        Note, you do not need to create an issue if you have a change ready to submit!
+        You can open a [pull request](https://github.com/OpenLineage/OpenLineage/pulls) immediately instead.
+        
+        
+        If the proposed change is an addition to the spec or larger feature that may cause compatibility 
+        issues - consider opening a Proposal issue instead."
+      # yamllint enable rule:line-length
+  - type: textarea
+    attributes:
+      label: Motivation
+      description: What would you like to happen?
+      placeholder: >
+        This section gives the context of the proposal. It explains *why* this is needed. 
+        Rather than telling us how you might implement this feature, try to take a step back and describe
+        what you are trying to achieve. Please describe the corresponding use cases and motivations.
+  - type: textarea
+    attributes:
+      label: Description
+      description: How you might implement this feature?
+      placeholder: >
+        This section describes *how* you propose to model it. Include a short description of your feature.
+  - type: textarea
+    attributes:
+      label: Related issues
+      description: > 
+        Are there currently another open issues associated with this? 
+        Please double-check that to avoid duplicates.
+  - type: checkboxes
+    attributes:
+      label: Do you plan to make this contribution yourself?
+      description: >
+        This is absolutely not required. However, if you are interested in working on this project 
+        the community would be happy to help you. If not, that's ok too!
+      options:
+        - label: I am interested in doing this work
+  - type: markdown
+    attributes:
+      value: "Thanks for submitting a form! We appreciate the time you have spent."

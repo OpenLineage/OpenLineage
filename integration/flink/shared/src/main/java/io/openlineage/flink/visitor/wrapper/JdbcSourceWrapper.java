@@ -6,6 +6,8 @@
 package io.openlineage.flink.visitor.wrapper;
 
 import io.openlineage.sql.OpenLineageSql;
+import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.jdbc.JdbcConnectionOptions;
 import org.apache.flink.connector.jdbc.JdbcInputFormat;
@@ -14,21 +16,16 @@ import org.apache.flink.connector.jdbc.internal.connection.SimpleJdbcConnectionP
 import org.apache.flink.connector.jdbc.table.JdbcRowDataInputFormat;
 import org.apache.flink.connector.jdbc.table.JdbcRowDataLookupFunction;
 
-import java.util.List;
-import java.util.Optional;
-
 @Slf4j
 public class JdbcSourceWrapper {
   private Object source;
-  private Class sourceClass;
 
-  public <T> JdbcSourceWrapper(T source, Class sourceClass) {
+  public <T> JdbcSourceWrapper(T source) {
     this.source = source;
-    this.sourceClass = sourceClass;
   }
 
-  public static <T> JdbcSourceWrapper of(T source, Class sourceClass) {
-    return new JdbcSourceWrapper(source, sourceClass);
+  public static <T> JdbcSourceWrapper of(T source) {
+    return new JdbcSourceWrapper(source);
   }
 
   public String getConnectionUrl() {
@@ -43,8 +40,11 @@ public class JdbcSourceWrapper {
     if (source instanceof JdbcRowDataLookupFunction) {
       Optional<JdbcConnectionOptions> connectionOptionsOpt = getConnectionOptions();
       return connectionOptionsOpt
-              .map(connectionOptions -> WrapperUtils.<String>getFieldValue(connectionOptions.getClass(), connectionOptions, "tableName"))
-              .orElse(Optional.of(""));
+          .map(
+              connectionOptions ->
+                  WrapperUtils.<String>getFieldValue(
+                      connectionOptions.getClass(), connectionOptions, "tableName"))
+          .orElse(Optional.of(""));
     } else if (source instanceof JdbcInputFormat) {
       queryOpt = WrapperUtils.<String>getFieldValue(JdbcInputFormat.class, source, "queryTemplate");
     } else if (source instanceof JdbcRowDataInputFormat) {
@@ -53,8 +53,10 @@ public class JdbcSourceWrapper {
     }
 
     return queryOpt
-            .flatMap(query -> OpenLineageSql.parse(List.of(query)))
-            .map(sqlMeta -> sqlMeta.inTables().isEmpty() ? "" : sqlMeta.inTables().get(0).name());
+        .flatMap(query -> OpenLineageSql.parse(List.of(query)))
+        .map(
+            sqlMeta ->
+                sqlMeta.inTables().isEmpty() ? "" : sqlMeta.inTables().get(0).qualifiedName());
   }
 
   private Optional<JdbcConnectionOptions> getConnectionOptions() {

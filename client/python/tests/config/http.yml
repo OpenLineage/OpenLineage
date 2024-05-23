@@ -5,3 +5,4 @@ transport:
   auth:
     type: api_key
     apiKey: random_token
+  compression: gzip

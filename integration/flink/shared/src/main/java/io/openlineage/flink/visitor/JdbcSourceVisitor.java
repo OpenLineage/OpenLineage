@@ -6,16 +6,17 @@
 package io.openlineage.flink.visitor;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.JdbcUtils;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.wrapper.JdbcSourceWrapper;
+import java.util.Collections;
+import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.jdbc.JdbcInputFormat;
 import org.apache.flink.connector.jdbc.table.JdbcRowDataInputFormat;
 import org.apache.flink.connector.jdbc.table.JdbcRowDataLookupFunction;
-
-import java.util.Collections;
-import java.util.List;
 
 @Slf4j
 public class JdbcSourceVisitor extends Visitor<OpenLineage.InputDataset> {
@@ -39,18 +40,19 @@ public class JdbcSourceVisitor extends Visitor<OpenLineage.InputDataset> {
     log.debug("Apply source {} in JdbcSourceVisitor", object);
     JdbcSourceWrapper sourceWrapper;
     if (object instanceof JdbcInputFormat) {
-      sourceWrapper = JdbcSourceWrapper.of(object, JdbcInputFormat.class);
+      sourceWrapper = JdbcSourceWrapper.of(object);
     } else if (object instanceof JdbcRowDataInputFormat) {
-      sourceWrapper = JdbcSourceWrapper.of(object, JdbcRowDataInputFormat.class);
+      sourceWrapper = JdbcSourceWrapper.of(object);
     } else if (object instanceof JdbcRowDataLookupFunction) {
-      sourceWrapper = JdbcSourceWrapper.of(object, JdbcRowDataLookupFunction.class);
+      sourceWrapper = JdbcSourceWrapper.of(object);
     } else {
       throw new UnsupportedOperationException(
           String.format("Unsupported JDBC Source type %s", object.getClass().getCanonicalName()));
     }
 
-    return Collections.singletonList(
-        createInputDataset(
-            context, sourceWrapper.getConnectionUrl(), sourceWrapper.getTableName().get()));
+    DatasetIdentifier di =
+        JdbcUtils.getDatasetIdentifierFromJdbcUrl(
+            sourceWrapper.getConnectionUrl(), sourceWrapper.getTableName().get());
+    return Collections.singletonList(createInputDataset(context, di.getNamespace(), di.getName()));
   }
 }

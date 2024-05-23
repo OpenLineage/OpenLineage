@@ -1,8 +1,189 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.9.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.14.0...HEAD)
+### Fixed
+* **Spark: improve job suffix assigning mechanism.** [`#2665`](https://github.com/OpenLineage/OpenLineage/pull/2665) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Improve mechanism to assign deterministic job suffix based on output dataset at the moment of start events. This PR may change job names in some scenarios.*
 
-## [1.9.0](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...1.9.0) - 2024-02-23
+## [1.14.0](https://github.com/OpenLineage/OpenLineage/compare/1.13.1...1.14.0) - 2024-05-09
+### Added
+* **Common/dbt: add DREMIO to supported dbt profile types** [`#2674`](https://github.com/OpenLineage/OpenLineage/pull/2674) [@surisimran](https://github.com/surisimran)  
+    *Adds support for dbt-dremio, resolving [`#2668`](https://github.com/OpenLineage/OpenLineage/issues/2668).
+* **Flink: support Protobuf format for sources and sinks** [`#2482`](https://github.com/OpenLineage/OpenLineage/pull/2482) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds schema extraction from Protobuf classes. Includes support for nested object types, `array` type, `map` type, `oneOf` and `any`.*
+* **Java: add facet conversion test** [`#2663`](https://github.com/OpenLineage/OpenLineage/pull/2663) [@julienledem](https://github.com/julienledem)  
+    *Adds a simple test that shows how to deserialize a facet in the server model.*
+* **Spark: job type facet to distinguish RDD jobs from Spark SQL jobs** [`#2652`](https://github.com/OpenLineage/OpenLineage/pull/2652) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)    
+    *Sets the `jobType` property of `JobTypeJobFacet` to either `SQL_JOB` or `RDD_JOB`.*
+* **Spark: add Glue symlink if reading from Glue catalog table** [`#2646`](https://github.com/OpenLineage/OpenLineage/pull/2646) [@mobuchowski](https://github.com/mobuchowski)  
+    *The dataset symlink now points to the Glue catalog table name if the Glue catalog table is used.*
+* **Spark: add `spark_jobDetails` facet** [`#2662`](https://github.com/OpenLineage/OpenLineage/pull/2662) [@dolfinus](https://github.com/dolfinus)  
+    *Adds a `SparkJobDetailsFacet`, capturing information about Spark application jobs -- e.g. `jobId`, `jobDescription`, `jobGroup`, `jobCallSite`. This allows for tracking an OpenLineage `RunEvent` with a specific Spark job in SparkUI.*
+
+### Removed
+* **Airflow: drop old `ParentRunFacet` key** [`#2660`](https://github.com/OpenLineage/OpenLineage/pull/2660) [@dolfinus](https://github.com/dolfinus)  
+    *Changes the integration to use the `parent` key for `ParentFacet`, dropping the outdated `parentRun`.*
+* **Spark: drop `SparkVersionFacet`** [`#2659`](https://github.com/OpenLineage/OpenLineage/pull/2659) [@dolfinus](https://github.com/dolfinus)  
+    *Drops the `SparkVersion` facet, deprecated since 1.2.0 and planned for removal since 1.4.0.*
+* **Python: allow relative paths in URI formats for Python facets** [`#2679`](https://github.com/OpenLineage/OpenLineage/pull/2679) [@JDarDagran](https://github.com/JDarDagran)  
+    *Removes a URI validator that checked if scheme and netloc were present, allowing relative paths in URI formats for Python facets.*
+
+### Changed
+* **GreatExpectations: rename `ParentRunFacet` key** [`#2661`](https://github.com/OpenLineage/OpenLineage/pull/2661) [@dolfinus](https://github.com/dolfinus)  
+    *The OpenLineage spec defined the `ParentRunFacet` with the property name parent but the Great Expectations integration created a lineage event with `parentRun`. This renames `ParentRunFacet` key from `parentRun` to `parent`. For backwards compatibility, keep the old name.*
+
+### Fixed
+* **dbt: support a less ambiguous logic to generate job names** [`#2658`](https://github.com/OpenLineage/OpenLineage/pull/2658) [@blacklight](https://github.com/blacklight)  
+    *Includes profile and models in the dbt job name to make it more unique.*
+* **Spark: update to use `org.apache.commons.lang3` instead of `org.apache.commons.lang`** [`#2676`](https://github.com/OpenLineage/OpenLineage/pull/2676) [@harels](https://github.com/harels)  
+    *Updates Apache Commons Lang to the latest version. We were mixing two versions, and the old one was not present in many places.*
+
+## [1.13.1](https://github.com/OpenLineage/OpenLineage/compare/1.12.0...1.13.1) - 2024-04-25
+### Added
+* **Java: allow timeout for circuit breakers** [`#2609`](https://github.com/OpenLineage/OpenLineage/pull/2609) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Extends the circuit breaker mechanism to contain a global timeout that stops running OpenLineage integration code when a specified amount of time has elapsed.*
+* **Java: handle `DataSetEvent` and `JobEvent` in `Transport.emit`** [`#2611`](https://github.com/OpenLineage/OpenLineage/pull/2611) [@dolfinus](https://github.com/dolfinus)  
+    *Adds overloads `Transport.emit(OpenLineage.DatasetEvent)` and `Transport.emit(OpenLineage.JobEvent)`, reusing the implementation of `Transport.emit(OpenLineage.RunEvent)`. **Please note**: `Transport.emit(String)` is now deprecated and will be removed in 1.16.0.*
+* **Java/Python: add `GZIP` compression to `HttpTransport`** [`#2603`](https://github.com/OpenLineage/OpenLineage/pull/2603) [`#2604`](https://github.com/OpenLineage/OpenLineage/pull/2604) [@dolfinus](https://github.com/dolfinus)  
+    *Adds a `compression` option to `HttpTransport` config in the Java and Python clients, with `gzip` implementation.*
+* **Java/Python/Proxy: properly set Kafka message key** [`#2571`](https://github.com/OpenLineage/OpenLineage/pull/2571) [`#2597`](https://github.com/OpenLineage/OpenLineage/pull/2597) [`#2598`](https://github.com/OpenLineage/OpenLineage/pull/2598) [@dolfinus](https://github.com/dolfinus)  
+    *Adds a new `messageKey` option to `KafkaTransport` config in the Python and Java clients, as well as the Proxy. This option replaces the `localServerId` option, which is now deprecated. Default value is generated using the run id (for `RunEvent`), job name (for `JobEvent`) or dataset name (for `DatasetEvent`). This value is used by the Kafka producer to distribute messages along topic partitions, instead of sending all the events to the same partition. This allows for full utilization of Kafka performance advantages.*
+* **Flink: add support for Micrometer metrics** [`#2633`](https://github.com/OpenLineage/OpenLineage/pull/2633) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds a mechanism for forwarding metrics to any [Micrometer-compatible implementation](https://docs.micrometer.io/micrometer/reference/implementations.html) for Flink as has been implemented for Spark. Included: `MeterRegistry`, `CompositeMeterRegistry`, `SimpleMeterRegistry`, and `MicrometerProvider`.*
+* **Python: generate Python facets from JSON schemas** [`#2520`](https://github.com/OpenLineage/OpenLineage/pull/2520) [@JDarDagran](https://github.com/JDarDagran)  
+    *Objects specified with JSON Schema needed to be manually developed and checked in Python, leading to many discrepancies, including wrong schema URLs. This adds a `datamodel-code-generator` for parsing JSON Schema and generating Pydantic or dataclasses classes, etc. In order to use `attrs` (a more modern version of dataclasses) and overcome some limitations of the tool, a number of steps have been added in order to customize code to meet OpenLineage requirements. Included: updated references to the latest base JSON Schema spec for all child facets. **Please note**: newly generated code creates a v2 interface that will be implemented in existing integrations in a future release. The v2 interface introduces some breaking changes: facets are put into separate modules per JSON Schema spec file, some names are changed, and several classes are now `kw_only`.*
+* **Spark/Flink/Java: support YAML config files together with SparkConf/FlinkConf** [`#2583`](https://github.com/OpenLineage/OpenLineage/pull/2583) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Creates a `SparkOpenlineageConfig` and `FlinkOpenlineageConfig` for a more uniform configuration experience for the user. Renames `OpenLineageYaml` to `OpenLineageConfig` and modifies the code to use only `OpenLineageConfig` classes. Includes a doc update to mention that both ways can be used interchangeably and final documentation will merge all values provided.*
+* **Spark: add custom token provider support** [`#2613`](https://github.com/OpenLineage/OpenLineage/pull/2613) [@tnazarew](https://github.com/tnazarew)  
+    *Adds a `TokenProviderTypeIdResolver` to handle both `FQCN` and (for backward compatibility) `api_key` types in `spark.openlineage.transport.auth.type`.*
+* **Spark/Flink: job ownership facet** [`#2533`](https://github.com/OpenLineage/OpenLineage/pull/2533) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)    
+    *Enables configuration entries specifying ownership of the job that will result in an `OwnershipJobFacet` being attached to job facets.*
+
+### Changed
+* **Java: sync Kinesis `partitionKey` format with Kafka implementation** [`#2620`](https://github.com/OpenLineage/OpenLineage/pull/2620) [@dolfinus](https://github.com/dolfinus)  
+    *Changes the format of Kinesis `partitionKey` from `{jobNamespace}:{jobName}` to `run:{jobNamespace}/{jobName}` to match the Kafka transport implementation.*
+    
+### Fixed
+* **Python: make `load_config` return an empty dict instead of `None` when file empty** [`#2596`](https://github.com/OpenLineage/OpenLineage/pull/2596) [@kacpermuda](https://github.com/kacpermuda)  
+    *`utils.load_config()` now returns an empty dict instead of `None` in the case of an empty file to prevent an `OpenLineageClient` crash.*
+* **Java: render lombok-generated methods in javadoc** [`#2614`](https://github.com/OpenLineage/OpenLineage/pull/2614) [@dolfinus](https://github.com/dolfinus)  
+    *Fixes rendering of javadoc for methods generated by `lombok` annotations by adding a `delombok` step.*
+* **Spark/Snowflake: parse NPE when query option is used and table is empty** [`#2599`](https://github.com/OpenLineage/OpenLineage/pull/2599) [@mobuchowski](https://github.com/mobuchowski)  
+    *Fixes NPE when using query option when reading from Snowflake.*
+
+## [1.12.0](https://github.com/OpenLineage/OpenLineage/compare/1.11.3...1.12.0) - 2024-04-09
+
+### Added
+* **Airflow: add `lineage_job_namespace` and `lineage_job_name` macros** [`#2582`](https://github.com/OpenLineage/OpenLineage/pull/2582) [@dolfinus](https://github.com/dolfinus)
+    *Adds new Airflow macros `lineage_job_namespace()`, `lineage_job_name(task)` that return an Airflow namespace and Airflow job name, respectively.*
+* **Spec: allow nested struct fields in `SchemaDatasetFacet`** [`#2548`](https://github.com/OpenLineage/OpenLineage/pull/2548) [@dolfinus](https://github.com/dolfinus)
+    *Allows nested fields support to `SchemaDatasetFacet`.*
+
+### Fixed
+* **Airflow: fix format returned by `airflow.macros.lineage_parent_id`** [`#2578`](https://github.com/OpenLineage/OpenLineage/pull/2578) [@blacklight](https://github.com/blacklight)  
+    *Fixes the run format returned by the `lineage_parent_id` Airflow macro and simplifies the format of the `lineage_parent_id` and `lineage_run_id` macros.*
+* **Dbt: propagate the dbt return code also when no OpenLineage events are emitted** [`#2591`](https://github.com/OpenLineage/OpenLineage/pull/2591) [@blacklight](https://github.com/blacklight)  
+    *`dbt-ol` now propagates the exit code of the underlying dbt process even if no lineage events are emitted.*
+* **Dagster: limit Dagster version to 1.6.9** [`#2579`](https://github.com/OpenLineage/OpenLineage/pull/2579) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds an upper limit on supported versions of Dagster as the integration is no longer actively maintained and recent releases introduce breaking changes.*
+* **Java: make sure string isn't empty to prevent going out of bounds** [`#2585`](https://github.com/OpenLineage/OpenLineage/pull/2585) [@harels](https://github.com/harels)  
+    *String lookup was not accounting for empty strings and causing a `java.lang.StringIndexOutOfBoundsException`.*
+* **Java: fix javadoc** [`#2624`](https://github.com/OpenLineage/OpenLineage/pull/2624) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Improves developer experience by fixing issues resulting in warnings on build.*
+* **Python: fix missing `pkg_resources` module on Python 3.12** [`#2572`](https://github.com/OpenLineage/OpenLineage/pull/2572) [@dolfinus](https://github.com/dolfinus)  
+    *Removes `pkg_resources` dependency and replaces it with the [packaging](https://packaging.pypa.io/en/latest/version.html) lib.*
+* **Spark: use `HashSet` in column-level lineage instead of iterating through `LinkedList`** [`#2584`](https://github.com/OpenLineage/OpenLineage/pull/2584) [@mobuchowski](https://github.com/mobuchowski)  
+    *Takes advantage of performance gains available from using `HashSet` for collection.*
+
+## [1.11.3](https://github.com/OpenLineage/OpenLineage/compare/1.10.2...1.11.3) - 2024-04-04
+
+### Added
+* **Common: add support for `SCRIPT`-type jobs in BigQuery** [`#2564`](https://github.com/OpenLineage/OpenLineage/pull/2564) [@kacpermuda](https://github.com/kacpermuda)  
+    In the case of `SCRIPT`-type jobs in BigQuery, no lineage was being extracted because the `SCRIPT` job had no lineage information - it only spawned child jobs that had that information. With this change, the integration extracts lineage information from child jobs when dealing with `SCRIPT`-type jobs.
+* **Spark: support for built-in lineage extraction** [`#2272`](https://github.com/OpenLineage/OpenLineage/pull/2272) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *This PR adds a `spark-interfaces-scala` package that allows lineage extraction to be implemented within Spark extensions (Iceberg, Delta, GCS, etc.). The Openlineage integration, when traversing the query plan, verifies if nodes implement defined interfaces. If so, interface methods are used to extract lineage. Refer to the [README](https://github.com/OpenLineage/OpenLineage/tree/spark/built-in-lineage/integration/spark-interfaces-scala#readme) for more details.*
+* **Spark/Java: add support for Micrometer metrics** [`#2496`](https://github.com/OpenLineage/OpenLineage/pull/2496) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds a mechanism for forwarding metrics to any [Micrometer-compatible implementation](https://docs.micrometer.io/micrometer/reference/implementations.html). Included: `MeterRegistryFactory`, `MicrometerProvider`, `StatsDMetricsBuilder`, metrics config in OpenLineage config, and a Java client implementation.*
+* **Spark: add support for telemetry mechanism** [`#2528`](https://github.com/OpenLineage/OpenLineage/pull/2528) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds timers, counters and additional instrumentation in order to implement Micrometer metrics collection.*
+* **Spark: support query option on table read** [`#2556`](https://github.com/OpenLineage/OpenLineage/pull/2556) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds support for the Spark-BigQuery connector's query input option, which executes a query directly on BigQuery, storing the result in an intermediate dataset, bypassing Spark's computation layer. Due to this, the lineage is retrieved using the SQL parser, similarly to `JDBCRelation`.*
+* **Spark: change `SparkPropertyFacetBuilder` to support recording Spark runtime** [`#2523`](https://github.com/OpenLineage/OpenLineage/pull/2523) [@Ruihua98](https://github.com/Ruihua98)  
+    *Modifies `SparkPropertyFacetBuilder` to capture the `RuntimeConfig` of the Spark session because the existing `SparkPropertyFacet` can only capture the static config of the Spark context. This facet will be added in both RDD-related and SQL-related runs.*
+* **Spec: add `fileCount` to dataset stat facets** [`#2562`](https://github.com/OpenLineage/OpenLineage/pull/2562) [@dolfinus](https://github.com/dolfinus)  
+    *Adds a `fileCount` field to `DataQualityMetricsInputDatasetFacet` and `OutputStatisticsOutputDatasetFacet` specification.*
+
+### Fixed
+* **dbt: `dbt-ol` should transparently exit with the same exit code as the child `dbt` process** [`#2560`](https://github.com/OpenLineage/OpenLineage/pull/2560) [@blacklight](https://github.com/blacklight)  
+    *Makes `dbt-ol` transparently exit with the same exit code as the child `dbt` process.*
+* **Flink: disable module metadata generation** [`#2531`](https://github.com/OpenLineage/OpenLineage/pull/2531) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Disables the module metadata generation for Flink to fix the problem of having gradle dependencies to submodules within `openlineage-flink.jar`.*
+* **Flink: fixes to version 1.19** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2507) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Fixes the class not found issue when checking for Cassandra classes. Also fixes the Maven pom dependency on subprojects.*
+* **Python: small improvements to `.emit()` method logging & annotations** [`#2539`](https://github.com/OpenLineage/OpenLineage/pull/2539) [@dolfinus](https://github.com/dolfinus)  
+    *Updates OpenLineage.emit debug messages and annotations.*
+* **SQL: show error message when OpenLineageSql cannot find native library** [`#2547`](https://github.com/OpenLineage/OpenLineage/pull/2547) [@dolfinus](https://github.com/dolfinus)  
+    *When the `OpenLineageSql` class could not load a native library, if returned `None` for all operations. But because the error message was suppressed, the user could not determine the reason.*
+* **SQL: update code to conform to upstream sqlparser-rs changes** [`#2510`](https://github.com/OpenLineage/OpenLineage/pull/2510) [@mobuchowski](https://github.com/mobuchowski)  
+    *Includes tests and cosmetic improvements.*
+* **Spark: fix access to active Spark session** [`#2535`](https://github.com/OpenLineage/OpenLineage/pull/2535) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Changes behavior so `IllegalStateException` is always caught when accessing `SparkSession`.*
+* **Spark: fix Databricks environment** [`#2537`](https://github.com/OpenLineage/OpenLineage/pull/2537) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Fixes the `ClassNotFoundError` occurring on Databricks runtime and extends the integration test to verify `DatabricksEnvironmentFacet`.*
+* **Spark: fixed memory leak in JobMetricsHolder** [`#2565`](https://github.com/OpenLineage/OpenLineage/pull/2565) [@d-m-h](https://github.com/d-m-h)
+    *The `JobMetricsHolder#cleanUp(int)` method now correctly purges unneeded state from both maps.*
+* **Spark: fixed memory leak in `UnknownEntryFacetListener`** [`#2557`](https://github.com/OpenLineage/OpenLineage/pull/2557) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+    *Prevents storing the state when a facet is disabled, purging the state after populating run facets.*
+* **Spark: fix parsing `JDBCOptions(table=...)` containing subquery** [`#2546`](https://github.com/OpenLineage/OpenLineage/pull/2546) [@dolfinus](https://github.com/dolfinus)  
+    *Prevents `openlineage-spark` from producing datasets with names like `database.(select * from table)` for JDBC sources.*
+* **Spark/Snowflake: support query option via SQL parser** [`#2563`](https://github.com/OpenLineage/OpenLineage/pull/2563) [@mobuchowski](https://github.com/mobuchowski)  
+    *When a Snowflake job is bypassing Spark's computation layer, now the SQL parser will be used to get the lineage.*
+* **Spark: always catch `IllegalStateException` when accessing `SparkSession`** [`#2535`](https://github.com/OpenLineage/OpenLineage/pull/2535) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *`IllegalStateException` was not being caught.*
+
+## [1.10.2](https://github.com/OpenLineage/OpenLineage/compare/1.9.1...1.10.2) - 2024-03-15
+
+### Added
+* **Dagster: add new provider for version 1.6.10** [`#2518`](https://github.com/OpenLineage/OpenLineage/pull/2518) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds the new provider required by the latest version of Dagster.*
+* **Flink: support lineage for a hybrid source** [`#2491`](https://github.com/OpenLineage/OpenLineage/pull/2491) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Adds support for hybrid source lineage for users of Kafka and Iceberg sources in backfill usecases.*
+* **Flink: improve Cassandra lineage metadata** [`#2479`](https://github.com/OpenLineage/OpenLineage/pull/2479) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Cassandra cluster info to be used as the dataset namespace, and the keyspace to be combined with the table name as the dataset name.*
+* **Flink: bump Flink JDBC connector version** [`#2472`](https://github.com/OpenLineage/OpenLineage/pull/2472) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Bumps the Flink JDBC connector version to 3.1.2-1.18 for Flink 1.18.*
+* **Java: add a `OpenLineageClientUtils#loadOpenLineageJson(InputStream)` and change `OpenLineageClientUtils#loadOpenLineageYaml(InputStream)` methods** [`#2490`](https://github.com/OpenLineage/OpenLineage/pull/2490) [@d-m-h](https://github.com/d-m-h)  
+    *This improves the explicitness of the methods. Previously, `loadOpenLineageYaml(InputStream)` wanted the `InputStream` to contain bytes that represented JSON.*
+* **Java: add info from the HTTP response to the client exception** [`#2486`](https://github.com/OpenLineage/OpenLineage/pull/2486) [@davidjgoss](https://github.com/davidjgoss)  
+    *Adds the status code and body as properties on the thrown exception when a non-success response is encountered in the HTTP transport.*
+* **Python: add support for MSK IAM authentication with a new transport** [`#2478`](https://github.com/OpenLineage/OpenLineage/pull/2478) [@mattiabertorello](https://github.com/mattiabertorello)  
+    *Eases publication of events to MSK with IAM authentication.*
+
+### Removed
+* **Airflow: remove redundant information from facets** [`#2524`](https://github.com/OpenLineage/OpenLineage/pull/2524) [@kacpermuda](https://github.com/kacpermuda)  
+    *Refines the operator's attribute inclusion logic in facets to include only those known to be important or compact, ensuring that custom operator attributes with substantial data do not inflate the event size.*
+
+### Fixed
+* **Airflow: proceed without rendering templates if `task_instance` copy fails** [`#2492`](https://github.com/OpenLineage/OpenLineage/pull/2492) [@kacpermuda](https://github.com/kacpermuda)  
+    *Airflow will now proceed without rendering templates if `task_instance` copy fails in `listener.on_task_instance_running`.*
+* **Spark: fix the `HttpTransport` timeout** [`#2475`](https://github.com/OpenLineage/OpenLineage/pull/2475) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *The existing `timeout` config parameter is ambiguous: implementation treats the value as double in seconds, although the documentation claims it's milliseconds. A new config param `timeoutInMillis` has been added. the Existing `timeout` has been removed from docs and will be deprecated in 1.13.*
+* **Spark: prevent NPE if the context is null** [`#2515`](https://github.com/OpenLineage/OpenLineage/pull/2515) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds a check for a null context before executing `end(jobEnd)`.*
+* **Flink: fix class not found issue for Cassandra** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2507) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+   *Fixes the class not found issue when checking for Cassandra classes. Also fixes the Maven POM dependency on subprojects.*
+* **Flink: refine the JDBC table name** [`#2512`](https://github.com/OpenLineage/OpenLineage/pull/2512) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Enables the JDBC table name with a schema prefix.*
+* **Flink: fix JDBC dataset naming** [`#2508`](https://github.com/OpenLineage/OpenLineage/pull/2508) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *For JDBC, the Flink integration is not adjusted to the Openlineage naming convention. There is code that extracts the dataset namespace/name from the JDBC connection url, but it's in the Spark integration. As a solution, this code has to be extracted into the Java client and reused by the Spark and Flink integrations.*
+* **Flink: fix failure due to missing Cassandra classes** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2507) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Flink is failing when no Cassandra classes are present on the class path. This is happening because of `CassandraUtils` class which has a static `hasClasses` method, but it imports Cassandra-related classes in the header. Also, the Flink subproject contains an unnecessary `maven-publish` plugin.*
+* **Flink: fix release runtime dependencies** [`#2504`](https://github.com/OpenLineage/OpenLineage/pull/2504) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *The shadow jar of Flink is not minimized, so some internal jars are listed as runtime dependences. This removes them from the final pom.xml file in the Flink module.*
+* **Spec: improve Cassandra lineage metadata** [`#2479`](https://github.com/OpenLineage/OpenLineage/pull/2479) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Following the namespace definition, we should use `cassandra://host:port`.*
+
+## [1.9.1](https://github.com/OpenLineage/OpenLineage/compare/1.8.0...1.9.1) - 2024-02-26
 ### Added
 * **Airflow: add support for `JobTypeJobFacet` properties** [`#2412`](https://github.com/OpenLineage/OpenLineage/pull/2412) [@mattiabertorello](https://github.com/mattiabertorello)  
     *Adds support for Job type properties within the Airflow Job facet.*
@@ -14,6 +195,8 @@
     *Adds support for multi-topic Kafka sinks. Limitations: `recordSerializer` needs to implement `KafkaTopicsDescriptor`. Please refer to the [limitations](https://openlineage.io/docs/integrations/flink/#limitations) sections in documentation.*
 * **Flink: support lineage for JDBC connector** [`#2436`](https://github.com/OpenLineage/OpenLineage/pull/2436) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
     *Adds support for use cases that employ this connector.*
+* **Flink: add common config gradle plugin** (https://github.com/OpenLineage/OpenLineage/pull/2461) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Add common config gradle plugin to simplify gradle files of Flink submodules.*
 * **Java: extend circuit breaker loaded with `ServiceLoader`** [`#2435`](https://github.com/OpenLineage/OpenLineage/pull/2435) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Loads the circuit breaker builder with `ServiceLoader` as an addition to a list of implemented builders available within the existing package.*
 * **Spark: integration now emits intermediate, application level events wrapping entire job execution** [`#2371`](https://github.com/OpenLineage/OpenLineage/pull/2471) [@mobuchowski](https://github.com/mobuchowski)  
@@ -42,6 +225,8 @@
 ### Fixed
 * **Flink: resolve PMD rule violation warnings** [`#2403`](https://github.com/OpenLineage/OpenLineage/pull/2403) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
     *Resolves the PMD rule violation warnings in the Flink integration module.*
+* **Flink: Added the 'isReleaseVersion' property back to the build, enabling the Flink integration to be release** [`#2468`](https://github.com/OpenLineage/OpenLineage/pull/2468) [@d-m-h](https://github.com/d-m-h)  
+    *The 'isReleaseVersion' property was removed from the build, preventing the Flink integration from being released.*
 * **Python: fix issue with file config creating additional file** [`#2447`](https://github.com/OpenLineage/OpenLineage/pull/2447) [@kacpermuda](https://github.com/kacpermuda)  
     *`FileConfig` was creating an additional file when not in append mode. Closes [`#2439`](https://github.com/OpenLineage/OpenLineage/issues/2439).*
 * **Python: fix issue with append option in file config** [`#2441`](https://github.com/OpenLineage/OpenLineage/pull/2441) [@kacpermuda](https://github.com/kacpermuda)  

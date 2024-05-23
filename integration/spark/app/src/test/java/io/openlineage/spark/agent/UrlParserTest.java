@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class UrlParserTest {
 
   private static final String NS_NAME = "ns_name";
@@ -172,6 +173,7 @@ class UrlParserTest {
 
   @ParameterizedTest
   @MethodSource("data")
+  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void testArgument(
       String input,
       String url,

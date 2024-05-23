@@ -6,16 +6,21 @@
 package io.openlineage.spark.agent.facets.builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.JobSucceeded$;
+import org.apache.spark.scheduler.SparkListenerApplicationEnd;
+import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
@@ -32,7 +37,6 @@ class SparkProcessingEngineFacetBuilderTest {
   @BeforeAll
   public static void setupSparkContext() {
     sparkContext = Mockito.mock(SparkContext.class);
-    Mockito.when(sparkContext.appName()).thenReturn("SparkProcessingEngineFacetBuilderTest");
     Mockito.when(sparkContext.version()).thenReturn("3.3.0");
   }
 
@@ -43,7 +47,16 @@ class SparkProcessingEngineFacetBuilderTest {
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .meterRegistry(new SimpleMeterRegistry())
+                .openLineageConfig(new SparkOpenLineageConfig())
                 .build());
+
+    // Spark 2.x and 3.x have different number of arguments in SparkListenerApplicationStart
+    // constructor.
+    // using mock to avoid complex conditions and calling constructor using Java reflection.
+    assertThat(builder.isDefinedAt(mock(SparkListenerApplicationStart.class))).isTrue();
+    assertThat(builder.isDefinedAt(new SparkListenerApplicationEnd(1L))).isTrue();
+
     assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionEnd(1, 1L))).isTrue();
     assertThat(
             builder.isDefinedAt(
@@ -67,6 +80,8 @@ class SparkProcessingEngineFacetBuilderTest {
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .meterRegistry(new SimpleMeterRegistry())
+                .openLineageConfig(new SparkOpenLineageConfig())
                 .build());
 
     Map<String, OpenLineage.RunFacet> runFacetMap = new HashMap<>();

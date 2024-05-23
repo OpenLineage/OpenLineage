@@ -9,8 +9,9 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
-import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportFactory;
+import io.openlineage.client.utils.UUIDUtils;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
@@ -31,37 +32,28 @@ public class EventEmitter {
   @Getter private String applicationJobName;
   @Getter private Optional<List<String>> customEnvironmentVariables;
 
-  public EventEmitter(ArgumentParser argument, String applicationJobName)
+  public EventEmitter(SparkOpenLineageConfig config, String applicationJobName)
       throws URISyntaxException {
-    this.jobNamespace = argument.getNamespace();
-    this.parentJobName = Optional.ofNullable(argument.getParentJobName());
-    this.parentJobNamespace = Optional.ofNullable(argument.getParentJobNamespace());
-    this.parentRunId = convertToUUID(argument.getParentRunId());
-    this.overriddenAppName = Optional.ofNullable(argument.getOverriddenAppName());
+    this.jobNamespace = config.getNamespace();
+    this.parentJobName = Optional.ofNullable(config.getParentJobName());
+    this.parentJobNamespace = Optional.ofNullable(config.getParentJobNamespace());
+    this.parentRunId = convertToUUID(config.getParentRunId());
+    this.overriddenAppName = Optional.ofNullable(config.getOverriddenAppName());
     this.customEnvironmentVariables =
-        argument.getOpenLineageYaml().getFacetsConfig() != null
-            ? argument.getOpenLineageYaml().getFacetsConfig().getCustomEnvironmentVariables()
-                    != null
+        config.getFacetsConfig() != null
+            ? config.getFacetsConfig().getCustomEnvironmentVariables() != null
                 ? Optional.of(
-                    Arrays.asList(
-                        argument
-                            .getOpenLineageYaml()
-                            .getFacetsConfig()
-                            .getCustomEnvironmentVariables()))
+                    Arrays.asList(config.getFacetsConfig().getCustomEnvironmentVariables()))
                 : Optional.empty()
             : Optional.empty();
-    String[] disabledFacets =
-        Optional.ofNullable(argument.getOpenLineageYaml().getFacetsConfig())
-            .orElse(new FacetsConfig().withDisabledFacets(new String[0]))
-            .getDisabledFacets();
+    String[] disabledFacets = config.getFacetsConfig().getDisabledFacets();
     this.client =
         OpenLineageClient.builder()
-            .transport(
-                new TransportFactory(argument.getOpenLineageYaml().getTransportConfig()).build())
+            .transport(new TransportFactory(config.getTransportConfig()).build())
             .disableFacets(disabledFacets)
             .build();
     this.applicationJobName = applicationJobName;
-    this.applicationRunId = UUID.randomUUID();
+    this.applicationRunId = UUIDUtils.generateNewUUID();
   }
 
   public void emit(OpenLineage.RunEvent event) {

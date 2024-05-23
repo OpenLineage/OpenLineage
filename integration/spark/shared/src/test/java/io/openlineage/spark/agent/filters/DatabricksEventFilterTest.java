@@ -22,7 +22,7 @@ import org.apache.spark.sql.execution.WholeStageCodegenExec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class DatabricksEventFilterTest {
+class DatabricksEventFilterTest {
 
   SparkListenerEvent event = mock(SparkListenerEvent.class);
   OpenLineageContext context = mock(OpenLineageContext.class);
@@ -32,7 +32,7 @@ public class DatabricksEventFilterTest {
   SparkListenerEvent sparkListenerEvent = mock(SparkListenerEvent.class);
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(queryExecution
             .sparkSession()
@@ -47,13 +47,13 @@ public class DatabricksEventFilterTest {
   }
 
   @Test
-  public void testDatabricksEventIsFiltered() {
+  void testDatabricksEventIsFiltered() {
     when(node.nodeName()).thenReturn("collect_Limit");
     assertThat(filter.isDisabled(event)).isTrue();
   }
 
   @Test
-  public void testSerializeFromObjectIsDisabled() {
+  void testSerializeFromObjectIsDisabled() {
     SerializeFromObject serializeFromObject = mock(SerializeFromObject.class);
     when(serializeFromObject.collectLeaves()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
     when(queryExecution.optimizedPlan()).thenReturn(serializeFromObject);
@@ -62,19 +62,19 @@ public class DatabricksEventFilterTest {
   }
 
   @Test
-  public void testDatabricksEventIsFilteredWithoutUnderscore() {
+  void testDatabricksEventIsFilteredWithoutUnderscore() {
     when(node.nodeName()).thenReturn("collectlimit");
     assertThat(filter.isDisabled(event)).isTrue();
   }
 
   @Test
-  public void testDatabricksEventIsNotFiltered() {
+  void testDatabricksEventIsNotFiltered() {
     when(node.nodeName()).thenReturn("action_not_to_be_filtered");
     assertThat(filter.isDisabled(event)).isFalse();
   }
 
   @Test
-  public void testOtherEventIsNotFiltered() {
+  void testOtherEventIsNotFiltered() {
     when(queryExecution
             .sparkSession()
             .sparkContext()

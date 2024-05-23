@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.facets.builder;
 import io.openlineage.spark.agent.facets.DebugRunFacet;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -28,10 +29,10 @@ public class DebugRunFacetBuilder extends CustomFacetBuilder<Object, DebugRunFac
 
   @Override
   public boolean isDefinedAt(Object x) {
-    return Optional.of(openLineageContext.getSparkContext())
-        .map(sc -> sc.conf())
-        .map(conf -> conf.get("spark.openlineage.debugFacet", "disabled"))
-        .map(value -> value.equalsIgnoreCase("enabled"))
+    return Optional.of(openLineageContext.getOpenLineageConfig())
+        .map(config -> config.getDebugFacet())
+        .filter(Objects::nonNull)
+        .map(s -> "enabled".equalsIgnoreCase(s))
         .orElse(false);
   }
 

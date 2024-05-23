@@ -2,11 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import mock
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
-from openlineage.client.facet import (
-    ColumnLineageDatasetFacet,
-    ColumnLineageDatasetFacetFieldsAdditional,
-    ColumnLineageDatasetFacetFieldsAdditionalInputFields,
-)
+from openlineage.client.facet_v2 import column_lineage_dataset
 from openlineage.common.dataset import Dataset, Source
 from openlineage.common.sql import ColumnLineage, ColumnMeta, DbTableMeta, parse
 
@@ -155,26 +151,26 @@ def test_attach_column_facet():
     """
     sql_meta = parse(query)
     dataset = Dataset(source=Source(name="dataset_source_name"), name="name")
-    expected_facet = ColumnLineageDatasetFacet(
+    expected_facet = column_lineage_dataset.ColumnLineageDatasetFacet(
         fields={
-            "column_sum": ColumnLineageDatasetFacetFieldsAdditional(
+            "column_sum": column_lineage_dataset.Fields(
                 inputFields=[
-                    ColumnLineageDatasetFacetFieldsAdditionalInputFields(
+                    column_lineage_dataset.InputField(
                         namespace="dataset_source_name",
                         name="default_db.default_schema.table3",
                         field="column98",
                     ),
-                    ColumnLineageDatasetFacetFieldsAdditionalInputFields(
+                    column_lineage_dataset.InputField(
                         namespace="dataset_source_name",
                         name="default_db.default_schema.table3",
                         field="column99",
                     ),
-                    ColumnLineageDatasetFacetFieldsAdditionalInputFields(
+                    column_lineage_dataset.InputField(
                         namespace="dataset_source_name",
                         name="database1.schema1.table1",
                         field="column1",
                     ),
-                    ColumnLineageDatasetFacetFieldsAdditionalInputFields(
+                    column_lineage_dataset.InputField(
                         namespace="dataset_source_name",
                         name="database1.schema1.table1",
                         field="column2",
@@ -183,9 +179,9 @@ def test_attach_column_facet():
                 transformationType="",
                 transformationDescription="",
             ),
-            "day": ColumnLineageDatasetFacetFieldsAdditional(
+            "day": column_lineage_dataset.Fields(
                 inputFields=[
-                    ColumnLineageDatasetFacetFieldsAdditionalInputFields(
+                    column_lineage_dataset.InputField(
                         namespace="dataset_source_name",
                         name="default_db.schema2.table2",
                         field="date",

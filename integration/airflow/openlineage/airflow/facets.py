@@ -5,7 +5,7 @@ from typing import ClassVar, Dict, List
 
 import attr
 from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
-from openlineage.client.facet import BaseFacet
+from openlineage.client.facet_v2 import BaseFacet
 from openlineage.client.utils import RedactMixin
 
 from airflow.version import version as AIRFLOW_VERSION
@@ -26,15 +26,11 @@ class AirflowVersionRunFacet(BaseFacet):
 
     @classmethod
     def from_dagrun_and_task(cls, dagrun, task):
-        # task.__dict__ may contain values uncastable to str
-        from openlineage.airflow.utils import get_operator_class, to_json_encodable
-
-        task_info = to_json_encodable(task)
-        task_info["dag_run"] = to_json_encodable(dagrun)
+        from openlineage.airflow.utils import get_operator_class
 
         return cls(
             operator=f"{get_operator_class(task).__module__}.{get_operator_class(task).__name__}",
-            taskInfo=task_info,
+            taskInfo={},
             airflowVersion=AIRFLOW_VERSION,
             openlineageAirflowVersion=OPENLINEAGE_AIRFLOW_VERSION,
         )

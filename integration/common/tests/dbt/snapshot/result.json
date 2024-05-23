@@ -27,7 +27,7 @@
       "facets": {
         "sql": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
           "query": "\n\n\n\nselect * from \"postgres\".\"postgres\".\"my_second_dbt_model\"\n"
         }
       },
@@ -64,7 +64,7 @@
         },
         "parent": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/ParentRunFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
           "job": { "name": "dbt-job-name", "namespace": "dbt" },
           "run": { "runId": "{{ any(result) }}" }
         }
@@ -100,7 +100,7 @@
       "facets": {
         "sql": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
           "query": "\n\n\n\nselect * from \"postgres\".\"postgres\".\"my_second_dbt_model\"\n"
         }
       },
@@ -137,7 +137,7 @@
         },
         "parent": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/ParentRunFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
           "job": { "name": "dbt-job-name", "namespace": "dbt" },
           "run": { "runId": "{{ any(result) }}" }
         }

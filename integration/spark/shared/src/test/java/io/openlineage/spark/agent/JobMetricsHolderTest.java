@@ -8,6 +8,7 @@ package io.openlineage.spark.agent;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import org.apache.spark.executor.TaskMetrics;
@@ -32,6 +33,10 @@ class JobMetricsHolderTest {
     assertThat(result)
         .containsEntry(JobMetricsHolder.Metric.WRITE_RECORDS, 2L)
         .containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 110L);
+
+    // second poll event should clear the maps
+    Map<JobMetricsHolder.Metric, Number> secondPollResult = underTest.pollMetrics(0);
+    assertThat(secondPollResult).isEmpty();
   }
 
   @Test
@@ -58,24 +63,23 @@ class JobMetricsHolderTest {
   }
 
   @Test
-  void testCleanupOnNotExist() {
+  void testCleanUpClearsBothMaps() {
     JobMetricsHolder underTest = new JobMetricsHolder();
 
-    // on job start event
-    underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
-    // on task end event
-    underTest.addMetrics(1, outputTaskMetrics(100, 10));
-
-    // on job end event
-    Map<JobMetricsHolder.Metric, Number> jobMetrics = underTest.pollMetrics(0);
+    underTest.addJobStages(0, Collections.singleton(1));
+    underTest.addMetrics(1, outputTaskMetrics(10, 1));
 
     underTest.cleanUp(0);
 
-    assertThat(jobMetrics)
-        .containsEntry(JobMetricsHolder.Metric.WRITE_RECORDS, 10L)
-        .containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 100L);
+    assertThat(underTest.getJobStages()).isEmpty();
+    assertThat(underTest.getStageMetrics()).isEmpty();
   }
 
+  /**
+   * This test verifies that the call to {@link JobMetricsHolder#cleanUp(int)} clears the stage of
+   * the maps, and that the call to {@link JobMetricsHolder#pollMetrics(int)} returns an empty map,
+   * because the state is gone.
+   */
   @Test
   void testCleanupOnExist() {
     JobMetricsHolder underTest = new JobMetricsHolder();

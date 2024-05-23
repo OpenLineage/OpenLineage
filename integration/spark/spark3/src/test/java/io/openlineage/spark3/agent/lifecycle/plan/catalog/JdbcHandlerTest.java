@@ -12,7 +12,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.utils.DatasetIdentifier;
 import java.util.HashMap;
 import lombok.SneakyThrows;
-import org.apache.commons.lang.reflect.FieldUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;

@@ -7,12 +7,14 @@ from openlineage.client.transport.factory import DefaultTransportFactory
 from openlineage.client.transport.file import FileTransport
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.kafka import KafkaConfig, KafkaTransport
+from openlineage.client.transport.msk_iam import MSKIAMConfig, MSKIAMTransport
 from openlineage.client.transport.noop import NoopTransport
 from openlineage.client.transport.transport import Config, Transport, TransportFactory
 
 _factory = DefaultTransportFactory()
 _factory.register_transport(HttpTransport.kind, HttpTransport)
 _factory.register_transport(KafkaTransport.kind, KafkaTransport)
+_factory.register_transport(MSKIAMTransport.kind, MSKIAMTransport)
 _factory.register_transport(ConsoleTransport.kind, ConsoleTransport)
 _factory.register_transport(NoopTransport.kind, NoopTransport)
 _factory.register_transport(FileTransport.kind, FileTransport)
@@ -36,6 +38,8 @@ __all__ = [
     "HttpTransport",
     "KafkaConfig",
     "KafkaTransport",
+    "MSKIAMTransport",
+    "MSKIAMConfig",
     "ConsoleTransport",
     "NoopTransport",
     "Transport",

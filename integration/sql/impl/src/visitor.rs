@@ -1,4 +1,4 @@
-// Copyright 2018-2023 contributors to the OpenLineage project
+// Copyright 2018-2024 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::context::Context;
@@ -6,8 +6,9 @@ use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
-    AlterTableOperation, Expr, Function, FunctionArg, FunctionArgExpr, Ident, ListAggOnOverflow,
-    Query, Select, SelectItem, SetExpr, Statement, Table, TableFactor, WindowSpec, With,
+    AlterTableOperation, Expr, FromTable, Function, FunctionArg, FunctionArgExpr, Ident,
+    ListAggOnOverflow, Query, Select, SelectItem, SetExpr, Statement, Table, TableFactor,
+    WindowSpec, WindowType, With,
 };
 
 pub trait Visit {
@@ -52,18 +53,19 @@ impl Visit for TableFactor {
                 context.add_input(name.clone().0);
                 Ok(())
             }
-            TableFactor::Pivot {
-                name, pivot_alias, ..
-            } => {
-                let table = DbTableMeta::new(
-                    name.clone().0,
-                    context.dialect(),
-                    context.default_schema().clone(),
-                );
-                if let Some(pivot_alias) = pivot_alias {
-                    context.add_table_alias(table, vec![pivot_alias.clone().name]);
+            TableFactor::Pivot { table, alias, .. } => {
+                let ident = get_table_name_from_table_factor(table)?;
+                if let Some(pivot_alias) = alias {
+                    context.add_table_alias(
+                        DbTableMeta::new(
+                            ident.clone(),
+                            context.dialect(),
+                            context.default_schema().clone(),
+                        ),
+                        vec![pivot_alias.clone().name],
+                    );
                 }
-                context.add_input(name.clone().0);
+                context.add_input(ident);
                 Ok(())
             }
             TableFactor::Derived {
@@ -181,10 +183,21 @@ impl Visit for Expr {
             | Expr::IsNull(expr)
             | Expr::IsNotNull(expr)
             | Expr::IsUnknown(expr)
-            | Expr::IsNotUnknown(expr)
-            | Expr::AnyOp(expr)
-            | Expr::AllOp(expr) => {
+            | Expr::IsNotUnknown(expr) => {
                 expr.visit(context)?;
+            }
+            Expr::AnyOp {
+                left,
+                compare_op: _,
+                right,
+            }
+            | Expr::AllOp {
+                left,
+                compare_op: _,
+                right,
+            } => {
+                left.visit(context)?;
+                right.visit(context)?;
             }
             Expr::InList { expr, list, .. } => {
                 expr.visit(context)?;
@@ -240,6 +253,7 @@ impl Visit for Expr {
                 expr,
                 substring_from,
                 substring_for,
+                ..
             } => {
                 expr.visit(context)?;
                 if let Some(e) = substring_from {
@@ -253,6 +267,7 @@ impl Visit for Expr {
                 expr,
                 trim_where: _,
                 trim_what,
+                ..
             } => {
                 expr.visit(context)?;
                 if let Some(e) = trim_what {
@@ -369,7 +384,11 @@ impl Visit for Function {
 impl Visit for FunctionArg {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match self {
-            FunctionArg::Named { name: _, arg } => arg.visit(context),
+            FunctionArg::Named {
+                name: _,
+                arg,
+                operator: _,
+            } => arg.visit(context),
             FunctionArg::Unnamed(arg) => arg.visit(context),
         }
     }
@@ -384,6 +403,14 @@ impl Visit for FunctionArgExpr {
     }
 }
 
+impl Visit for WindowType {
+    fn visit(&self, context: &mut Context) -> Result<()> {
+        match self {
+            WindowType::WindowSpec(spec) => spec.visit(context),
+            WindowType::NamedWindow(..) => Ok(()),
+        }
+    }
+}
 impl Visit for WindowSpec {
     fn visit(&self, context: &mut Context) -> Result<()> {
         for expr in &self.partition_by {
@@ -489,6 +516,7 @@ impl Visit for SetExpr {
                 right.visit(context)
             }
             SetExpr::Table(table) => table.visit(context),
+            SetExpr::Update(stmt) => stmt.visit(context),
         }
     }
 }
@@ -524,7 +552,9 @@ impl Visit for Statement {
             Statement::Insert {
                 table_name, source, ..
             } => {
-                source.visit(context)?;
+                if let Some(src) = source {
+                    src.visit(context)?;
+                }
                 context.add_output(table_name.clone().0);
             }
             Statement::Merge { table, source, .. } => {
@@ -587,34 +617,58 @@ impl Visit for Statement {
                     expr.visit(context)?;
                 }
             }
-            Statement::AlterTable { name, operation } => {
-                match operation {
-                    AlterTableOperation::SwapWith { table_name } => {
-                        // both table names are inputs and outputs of the swap operation
-                        context.add_input(table_name.clone().0);
-                        context.add_input(name.clone().0);
+            Statement::AlterTable {
+                name,
+                if_exists: _,
+                only: _,
+                operations,
+                location: _,
+            } => {
+                for operation in operations {
+                    match operation {
+                        AlterTableOperation::SwapWith { table_name } => {
+                            // both table names are inputs and outputs of the swap operation
+                            context.add_input(table_name.clone().0);
+                            context.add_input(name.clone().0);
 
-                        context.add_output(table_name.clone().0);
-                        context.add_output(name.clone().0);
+                            context.add_output(table_name.clone().0);
+                            context.add_output(name.clone().0);
+                        }
+                        AlterTableOperation::RenameTable { table_name } => {
+                            context.add_input(name.clone().0);
+                            context.add_output(table_name.clone().0);
+                        }
+                        _ => context.add_output(name.clone().0),
                     }
-                    AlterTableOperation::RenameTable { table_name } => {
-                        context.add_input(name.clone().0);
-                        context.add_output(table_name.clone().0);
-                    }
-                    _ => context.add_output(name.clone().0),
                 }
             }
             Statement::Delete {
-                table_name,
+                tables: _,
+                from,
                 using,
                 selection,
                 ..
             } => {
-                let table_name = get_table_name_from_table_factor(table_name)?;
-                context.add_output(table_name);
+                match from {
+                    FromTable::WithFromKeyword(tables) | FromTable::WithoutKeyword(tables) => {
+                        for table in tables {
+                            let output = get_table_name_from_table_factor(&table.relation)?;
+                            context.add_output(output);
+                            for join in &table.joins {
+                                let join_output = get_table_name_from_table_factor(&join.relation)?;
+                                context.add_output(join_output);
+                            }
+                        }
+                    }
+                }
 
                 if let Some(using) = using {
-                    using.visit(context)?;
+                    for table in using {
+                        table.relation.visit(context)?;
+                        for join in &table.joins {
+                            join.relation.visit(context)?;
+                        }
+                    }
                 }
 
                 if let Some(expr) = selection {

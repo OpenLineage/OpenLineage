@@ -5,15 +5,18 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.HashMap;
@@ -42,6 +45,8 @@ class AlterTableCommandDatasetBuilderTest {
           .sparkSession(mock(SparkSession.class))
           .sparkContext(mock(SparkContext.class))
           .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+          .meterRegistry(new SimpleMeterRegistry())
+          .openLineageConfig(new SparkOpenLineageConfig())
           .build();
 
   TableCatalog tableCatalog = mock(TableCatalog.class);
@@ -129,5 +134,11 @@ class AlterTableCommandDatasetBuilderTest {
         assertEquals("v2", outputDatasets.get(0).getFacets().getVersion().getDatasetVersion());
       }
     }
+  }
+
+  @Test
+  void testJobNameSuffix() {
+    when(resolvedTable.identifier()).thenReturn(Identifier.of(new String[] {"a", "b"}, "c"));
+    assertThat(builder.jobNameSuffix(alterTable).get()).isEqualTo("a_b_c");
   }
 }

@@ -15,6 +15,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.EventEmitter;
 import io.openlineage.flink.pojo.Event;
+import io.openlineage.flink.utils.CassandraUtils;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
@@ -28,7 +29,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class CassandraSourceVisitorTest {
-  private static ClusterBuilder clusterBuilder = mock(ClusterBuilder.class);
   private static String query = "SELECT * FROM flink.source_event;";
   OpenLineageContext context = mock(OpenLineageContext.class);
   OpenLineage openLineage = new OpenLineage(EventEmitter.OPEN_LINEAGE_CLIENT_URI);
@@ -42,7 +42,7 @@ class CassandraSourceVisitorTest {
 
   @Test
   @SneakyThrows
-  public void testIsDefined() {
+  void testIsDefined() {
     assertFalse(cassandraSourceVisitor.isDefinedAt(mock(Object.class)));
     assertTrue(cassandraSourceVisitor.isDefinedAt(mock(CassandraInputFormat.class)));
     assertTrue(cassandraSourceVisitor.isDefinedAt(mock(CassandraPojoInputFormat.class)));
@@ -51,15 +51,16 @@ class CassandraSourceVisitorTest {
   @SneakyThrows
   @ParameterizedTest
   @MethodSource("provideArguments")
-  public void testApply(Object source) {
+  void testApply(Object source) {
     List<OpenLineage.InputDataset> inputDatasets = cassandraSourceVisitor.apply(source);
 
     assertEquals(1, inputDatasets.size());
-    assertEquals("flink", inputDatasets.get(0).getNamespace());
-    assertEquals("source_event", inputDatasets.get(0).getName());
+    assertEquals("cassandra://127.0.0.1:9042", inputDatasets.get(0).getNamespace());
+    assertEquals("flink.source_event", inputDatasets.get(0).getName());
   }
 
   private static Stream<Arguments> provideArguments() {
+    ClusterBuilder clusterBuilder = CassandraUtils.createClusterBuilder("127.0.0.1");
     CassandraPojoInputFormat pojoOutputFormat =
         new CassandraPojoInputFormat(query, clusterBuilder, Event.class);
     CassandraInputFormat inputFormat = new CassandraInputFormat(query, clusterBuilder);

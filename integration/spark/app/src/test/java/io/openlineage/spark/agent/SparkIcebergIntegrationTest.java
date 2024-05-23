@@ -43,7 +43,7 @@ import org.mockserver.model.HttpRequest;
 @Tag("integration-test")
 @Tag("iceberg")
 @Slf4j
-public class SparkIcebergIntegrationTest {
+class SparkIcebergIntegrationTest {
   private static final int MOCK_SERVER_PORT = 1084;
 
   @SuppressWarnings("PMD")
@@ -305,6 +305,7 @@ public class SparkIcebergIntegrationTest {
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void testDebugFacet() {
     clearTables("iceberg_temp", "temp");
     createTempDataset().createOrReplaceTempView("temp");
@@ -364,7 +365,11 @@ public class SparkIcebergIntegrationTest {
             "extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
 
     assertThat((Map<String, String>) configFacet.get("openLineageConfig"))
-        .containsKeys("namespace", "transport.type", "transport.url", "transport.endpoint");
+        .containsKeys("namespace");
+    assertThat(
+            (Map<String, String>)
+                ((Map<?, ?>) configFacet.get("openLineageConfig")).get("transport"))
+        .containsKeys("type", "url", "endpoint");
   }
 
   private Dataset<Row> createTempDataset() {

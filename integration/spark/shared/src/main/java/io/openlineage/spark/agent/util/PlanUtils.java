@@ -6,12 +6,13 @@
 package io.openlineage.spark.agent.util;
 
 import static io.openlineage.spark.agent.lifecycle.ExecutionContext.CAMEL_TO_SNAKE_CASE;
+import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -25,11 +26,13 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
+import org.apache.spark.sql.types.ArrayType;
+import org.apache.spark.sql.types.MapType;
+import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import scala.PartialFunction;
 import scala.PartialFunction$;
-import scala.runtime.AbstractPartialFunction;
 
 /**
  * Utility functions for traversing a {@link
@@ -37,31 +40,6 @@ import scala.runtime.AbstractPartialFunction;
  */
 @Slf4j
 public class PlanUtils {
-
-  public static final String SLASH_DELIMITER_USER_PASSWORD_REGEX =
-      "[A-Za-z0-9_%]+//?[A-Za-z0-9_%]*@";
-  public static final String COLON_DELIMITER_USER_PASSWORD_REGEX =
-      "([/|,])[A-Za-z0-9_%]+:?[A-Za-z0-9_%]*@";
-
-  /**
-   * Merge a list of {@link PartialFunction}s and return the first value where the function is
-   * defined or empty list if no function matches the input.
-   *
-   * @param fns
-   * @param arg
-   * @param <T>
-   * @param <R>
-   * @return
-   */
-  public static <T, R> Collection<R> applyAll(
-      List<? extends PartialFunction<T, ? extends Collection<R>>> fns, T arg) {
-    PartialFunction<T, Collection<R>> fn = merge(fns);
-    if (fn.isDefinedAt(arg)) {
-      return fn.apply(arg);
-    }
-    return Collections.emptyList();
-  }
-
   /**
    * Given a list of {@link PartialFunction}s merge to produce a single function that will test the
    * input against each function one by one until a match is found or {@link
@@ -72,9 +50,11 @@ public class PlanUtils {
    * @param <D>
    * @return
    */
-  public static <T, D> PartialFunction<T, Collection<D>> merge(
+  public static <T, D> OpenLineageAbstractPartialFunction<T, Collection<D>> merge(
       Collection<? extends PartialFunction<T, ? extends Collection<D>>> fns) {
-    return new AbstractPartialFunction<T, Collection<D>>() {
+    return new OpenLineageAbstractPartialFunction<T, Collection<D>>() {
+      String appliedClassName;
+
       @Override
       public boolean isDefinedAt(T x) {
         return fns.stream()
@@ -102,6 +82,7 @@ public class PlanUtils {
                           x.getClass().getCanonicalName(),
                           collection);
                     }
+                    appliedClassName = x.getClass().getName();
                     return collection;
                   } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
                     log.error("Apply failed:", e);
@@ -111,6 +92,11 @@ public class PlanUtils {
             .filter(Objects::nonNull)
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
+      }
+
+      @Override
+      String appliedName() {
+        return appliedClassName;
       }
     };
   }
@@ -131,16 +117,65 @@ public class PlanUtils {
 
   private static List<OpenLineage.SchemaDatasetFacetFields> transformFields(
       OpenLineage openLineage, StructField... fields) {
-    List<OpenLineage.SchemaDatasetFacetFields> list = new ArrayList<>();
-    for (StructField field : fields) {
-      list.add(
-          openLineage
-              .newSchemaDatasetFacetFieldsBuilder()
-              .name(field.name())
-              .type(field.dataType().typeName())
-              .build());
+    return Arrays.stream(fields)
+        .map(field -> transformField(openLineage, field))
+        .collect(Collectors.toList());
+  }
+
+  private static OpenLineage.SchemaDatasetFacetFields transformField(
+      OpenLineage openLineage, StructField field) {
+    OpenLineage.SchemaDatasetFacetFieldsBuilder builder =
+        openLineage
+            .newSchemaDatasetFacetFieldsBuilder()
+            .name(field.name())
+            .type(field.dataType().typeName());
+
+    if (field.metadata() != null) {
+      // field.getComment() actually tries to access field.metadata(),
+      // and fails with NullPointerException if it is null instead of expected Metadata.empty()
+      builder = builder.description(asJavaOptional(field.getComment()).orElse(null));
     }
-    return list;
+
+    if (field.dataType() instanceof StructType) {
+      StructType structField = (StructType) field.dataType();
+      return builder
+          .type("struct")
+          .fields(transformFields(openLineage, structField.fields()))
+          .build();
+    }
+
+    if (field.dataType() instanceof MapType) {
+      MapType mapField = (MapType) field.dataType();
+      return builder
+          .type("map")
+          .fields(
+              transformFields(
+                  openLineage,
+                  new StructField("key", mapField.keyType(), false, Metadata.empty()),
+                  new StructField(
+                      "value",
+                      mapField.valueType(),
+                      mapField.valueContainsNull(),
+                      Metadata.empty())))
+          .build();
+    }
+
+    if (field.dataType() instanceof ArrayType) {
+      ArrayType arrayField = (ArrayType) field.dataType();
+      return builder
+          .type("array")
+          .fields(
+              transformFields(
+                  openLineage,
+                  new StructField(
+                      "_element",
+                      arrayField.elementType(),
+                      arrayField.containsNull(),
+                      Metadata.empty())))
+          .build();
+    }
+
+    return builder.build();
   }
 
   /**

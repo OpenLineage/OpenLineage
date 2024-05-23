@@ -5,20 +5,24 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
@@ -36,11 +40,14 @@ import org.mockito.MockedStatic;
 
 class AppendDataDatasetBuilderTest {
 
+  public static final String TABLE_NAME = "table";
   OpenLineageContext context =
       OpenLineageContext.builder()
           .sparkSession(mock(SparkSession.class))
           .sparkContext(mock(SparkContext.class))
           .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+          .meterRegistry(new SimpleMeterRegistry())
+          .openLineageConfig(new SparkOpenLineageConfig())
           .build();
   DatasetFactory<OpenLineage.OutputDataset> factory = mock(DatasetFactory.class);
   AppendDataDatasetBuilder builder = new AppendDataDatasetBuilder(context, factory);
@@ -84,5 +91,29 @@ class AppendDataDatasetBuilderTest {
                 mock(LogicalPlan.class, withSettings().extraInterfaces(NamedRelation.class)));
 
     assertEquals(0, builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), appendData).size());
+  }
+
+  @Test
+  void testJobNameSuffix() {
+    AppendData appendData = mock(AppendData.class);
+    NamedRelation table = mock(NamedRelation.class);
+
+    when(appendData.table()).thenReturn(table);
+    when(table.name()).thenReturn(TABLE_NAME);
+
+    assertThat(builder.jobNameSuffix(appendData)).isPresent().get().isEqualTo(TABLE_NAME);
+    assertThat(builder.jobNameSuffix(mock(AppendData.class))).isEmpty();
+  }
+
+  @Test
+  void testJobNameSuffixForDataSourceV2Relation() {
+    AppendData appendData = mock(AppendData.class);
+    DataSourceV2Relation table = mock(DataSourceV2Relation.class, RETURNS_DEEP_STUBS);
+
+    when(appendData.table()).thenReturn(table);
+    when(table.table().name()).thenReturn(TABLE_NAME);
+
+    assertThat(builder.jobNameSuffix(appendData)).isPresent().get().isEqualTo(TABLE_NAME);
+    assertThat(builder.jobNameSuffix(mock(AppendData.class))).isEmpty();
   }
 }

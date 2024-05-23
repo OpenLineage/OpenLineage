@@ -24,7 +24,7 @@ import scala.Tuple2;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
-public class RddPathUtilsTest {
+class RddPathUtilsTest {
 
   @Test
   void testFindRDDPathsForMapPartitionsRDD() {

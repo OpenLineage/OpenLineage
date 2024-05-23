@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.spark.SparkCatalog;
@@ -69,7 +69,7 @@ public class IcebergHandler implements CatalogHandler {
     String prefix = String.format("spark.sql.catalog.%s", catalogName);
     Map<String, String> conf =
         ScalaConversionUtils.<String, String>fromMap(session.conf().getAll());
-    log.info(conf.toString());
+    log.debug(conf.toString());
     Map<String, String> catalogConf =
         conf.entrySet().stream()
             .filter(x -> x.getKey().startsWith(prefix))
@@ -79,35 +79,33 @@ public class IcebergHandler implements CatalogHandler {
                     x -> x.getKey().substring(prefix.length() + 1), // handle dot after prefix
                     Map.Entry::getValue));
 
-    log.info(catalogConf.toString());
+    log.debug(catalogConf.toString());
     String catalogType = getCatalogType(catalogConf);
     if (catalogType == null) {
       throw new UnsupportedCatalogException(catalogName);
     }
-    log.info(catalogConf.get(TYPE));
+    log.debug(catalogConf.get(TYPE));
 
     String warehouse = catalogConf.get(CatalogProperties.WAREHOUSE_LOCATION);
     DatasetIdentifier di = PathUtils.fromPath(new Path(warehouse, identifier.toString()));
 
-    if (catalogType.equals("hive")) {
+    if ("hive".equals(catalogType)) {
       di.withSymlink(
           getHiveIdentifier(
               session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
-    } else if (catalogType.equals("hadoop")) {
+    } else if ("hadoop".equals(catalogType)) {
       di.withSymlink(
           identifier.toString(),
           StringUtils.substringBeforeLast(
               di.getName(), File.separator), // parent location from a name becomes a namespace
           DatasetIdentifier.SymlinkType.TABLE);
-    } else if (catalogType.equals("rest")) {
+    } else if ("rest".equals(catalogType)) {
       di.withSymlink(
-          getRestIdentifier(
-              session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
-    } else if (catalogType.equals("nessie")) {
+          getRestIdentifier(catalogConf.get(CatalogProperties.URI), identifier.toString()));
+    } else if ("nessie".equals(catalogType)) {
       di.withSymlink(
-          getNessieIdentifier(
-              session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
-    } else if (catalogType.equals("glue")) {
+          getNessieIdentifier(catalogConf.get(CatalogProperties.URI), identifier.toString()));
+    } else if ("glue".equals(catalogType)) {
       di.withSymlink(
           identifier.toString(),
           StringUtils.substringBeforeLast(di.getName(), File.separator),
@@ -118,8 +116,7 @@ public class IcebergHandler implements CatalogHandler {
   }
 
   @SneakyThrows
-  private DatasetIdentifier.Symlink getNessieIdentifier(
-      SparkSession session, @Nullable String confUri, String table) {
+  private DatasetIdentifier.Symlink getNessieIdentifier(@Nullable String confUri, String table) {
 
     String uri = new URI(confUri).toString();
     return new DatasetIdentifier.Symlink(table, uri, DatasetIdentifier.SymlinkType.TABLE);
@@ -148,9 +145,7 @@ public class IcebergHandler implements CatalogHandler {
   }
 
   @SneakyThrows
-  private DatasetIdentifier.Symlink getRestIdentifier(
-      SparkSession session, @Nullable String confUri, String table) {
-
+  private DatasetIdentifier.Symlink getRestIdentifier(@Nullable String confUri, String table) {
     String uri = new URI(confUri).toString();
     return new DatasetIdentifier.Symlink(table, uri, DatasetIdentifier.SymlinkType.TABLE);
   }

@@ -12,6 +12,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;
@@ -47,30 +48,15 @@ public class TableContentChangeDatasetBuilder
 
   @Override
   protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, LogicalPlan x) {
-    NamedRelation table;
+    NamedRelation table = getNamedRelation(x);
     boolean includeOverwriteFacet = false;
 
     // INSERT OVERWRITE TABLE SQL statement is translated into InsertIntoTable logical operator.
     if (x instanceof OverwriteByExpression) {
-      table = ((OverwriteByExpression) x).table();
       includeOverwriteFacet = true;
-    } else if (x instanceof InsertIntoStatement) {
-      table = (NamedRelation) ((InsertIntoStatement) x).table();
-      if (((InsertIntoStatement) x).overwrite()) {
-        includeOverwriteFacet = true;
-      }
-    } else if (new IcebergHandler(context).hasClasses() && x instanceof ReplaceData) {
-      // DELETE FROM on ICEBERG HAS START ELEMENT WITH ReplaceData AND COMPLETE ONE WITH
-      // DeleteFromTable
-      table = ((ReplaceData) x).table();
-    } else if (x instanceof DeleteFromTable) {
-      table = (NamedRelation) ((DeleteFromTable) x).table();
-    } else if (x instanceof UpdateTable) {
-      table = (NamedRelation) ((UpdateTable) x).table();
-    } else if (x instanceof MergeIntoTable) {
-      table = (NamedRelation) ((MergeIntoTable) x).targetTable();
-    } else {
-      table = ((OverwritePartitionsDynamic) x).table();
+    } else if (x instanceof InsertIntoStatement && ((InsertIntoStatement) x).overwrite()) {
+      includeOverwriteFacet = true;
+    } else if (x instanceof OverwritePartitionsDynamic) {
       includeOverwriteFacet = true;
     }
 
@@ -102,6 +88,27 @@ public class TableContentChangeDatasetBuilder
         outputDataset(), context, returnTable, datasetFacetsBuilder);
   }
 
+  private NamedRelation getNamedRelation(LogicalPlan x) {
+    // INSERT OVERWRITE TABLE SQL statement is translated into InsertIntoTable logical operator.
+    if (x instanceof OverwriteByExpression) {
+      return ((OverwriteByExpression) x).table();
+    } else if (x instanceof InsertIntoStatement) {
+      return (NamedRelation) ((InsertIntoStatement) x).table();
+    } else if (new IcebergHandler(context).hasClasses() && x instanceof ReplaceData) {
+      // DELETE FROM on ICEBERG HAS START ELEMENT WITH ReplaceData AND COMPLETE ONE WITH
+      // DeleteFromTable
+      return ((ReplaceData) x).table();
+    } else if (x instanceof DeleteFromTable) {
+      return (NamedRelation) ((DeleteFromTable) x).table();
+    } else if (x instanceof UpdateTable) {
+      return (NamedRelation) ((UpdateTable) x).table();
+    } else if (x instanceof MergeIntoTable) {
+      return (NamedRelation) ((MergeIntoTable) x).targetTable();
+    } else {
+      return ((OverwritePartitionsDynamic) x).table();
+    }
+  }
+
   private DataSourceV2Relation castToDataSourceV2Relation(LogicalPlan x, NamedRelation table) {
     // Log warning, then return the underlying relation from the scan relation to avoid
     // 'ClassCastException'.
@@ -112,5 +119,10 @@ public class TableContentChangeDatasetBuilder
         table.name(),
         x);
     return ((DataSourceV2ScanRelation) table).relation();
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(LogicalPlan plan) {
+    return Optional.ofNullable(getNamedRelation(plan)).map(NamedRelation::name);
   }
 }
