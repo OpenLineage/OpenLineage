@@ -12,9 +12,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.sql.ColumnMeta;
 import io.openlineage.sql.DbTableMeta;
 import java.util.Arrays;
@@ -29,6 +33,8 @@ import org.junit.jupiter.api.Test;
 
 class JdbcColumnLineageInputCollectorTest {
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
+  ColumnLevelLineageContext context = mock(ColumnLevelLineageContext.class);
+  OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   JDBCRelation relation = mock(JDBCRelation.class);
   JDBCOptions jdbcOptions = mock(JDBCOptions.class);
   String jdbcQuery =
@@ -62,6 +68,11 @@ class JdbcColumnLineageInputCollectorTest {
         ScalaConversionUtils.<String, String>asScalaMapEmpty();
     when(jdbcOptions.parameters())
         .thenReturn(CaseInsensitiveMap$.MODULE$.<String>apply(properties));
+    when(context.getBuilder()).thenReturn(builder);
+    when(context.getOlContext()).thenReturn(openLineageContext);
+    when(context.getNamespaceResolver())
+        .thenReturn(new DatasetNamespaceCombinedResolver(new SparkOpenLineageConfig()));
+    when(openLineageContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
   }
 
   @Test
@@ -72,7 +83,7 @@ class JdbcColumnLineageInputCollectorTest {
         .thenAnswer(invocation -> mockMap.get(invocation.getArgument(0)));
 
     JdbcColumnLineageCollector.extractExternalInputs(
-        relation, builder, Arrays.asList(datasetIdentifier1, datasetIdentifier2));
+        context, relation, Arrays.asList(datasetIdentifier1, datasetIdentifier2));
 
     verify(builder, times(1)).addInput(exprId1, datasetIdentifier1, "k");
     verify(builder, times(1)).addInput(exprId2, datasetIdentifier1, "j1");
@@ -85,7 +96,7 @@ class JdbcColumnLineageInputCollectorTest {
     when(jdbcOptions.url()).thenReturn(url);
 
     JdbcColumnLineageCollector.extractExternalInputs(
-        relation, builder, Arrays.asList(datasetIdentifier1, datasetIdentifier2));
+        context, relation, Arrays.asList(datasetIdentifier1, datasetIdentifier2));
 
     verify(builder, never())
         .addInput(any(ExprId.class), any(DatasetIdentifier.class), any(String.class));

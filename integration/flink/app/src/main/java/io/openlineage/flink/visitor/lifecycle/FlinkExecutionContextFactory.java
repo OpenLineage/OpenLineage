@@ -11,6 +11,7 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
+import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.client.metrics.MicrometerProvider;
 import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.flink.api.OpenLineageContext;
@@ -57,10 +58,12 @@ public class FlinkExecutionContextFactory {
         .openLineageContext(
             OpenLineageContext.builder()
                 .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_CLIENT_URI))
+                .config(config)
                 .build())
         .eventEmitter(eventEmitter)
         .config(config)
         .meterRegistry(initializeMetrics(config))
+        .namespaceResolver(new DatasetNamespaceCombinedResolver(config))
         .build();
   }
 

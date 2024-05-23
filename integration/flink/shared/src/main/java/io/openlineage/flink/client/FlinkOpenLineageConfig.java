@@ -8,6 +8,7 @@ package io.openlineage.flink.client;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
+import io.openlineage.client.dataset.DatasetConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
 import java.util.HashMap;
@@ -27,10 +28,11 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
   public FlinkOpenLineageConfig(
       TransportConfig transportConfig,
       FacetsConfig facetsConfig,
+      DatasetConfig datasetConfig,
       CircuitBreakerConfig circuitBreaker,
       Map metricsConfig,
       JobConfig job) {
-    super(transportConfig, facetsConfig, circuitBreaker, metricsConfig);
+    super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig);
     this.job = job;
   }
 
@@ -52,6 +54,7 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
     return new FlinkOpenLineageConfig(
         mergePropertyWith(transportConfig, other.transportConfig),
         mergePropertyWith(facetsConfig, other.facetsConfig),
+        mergePropertyWith(datasetConfig, other.datasetConfig),
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
         mergePropertyWith(metricsConfig, other.metricsConfig),
         mergePropertyWith(job, other.job));

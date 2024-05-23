@@ -17,7 +17,6 @@ import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.extension.scala.v1.ColumnLevelLineageNode;
 import io.openlineage.spark.extension.scala.v1.DatasetFieldLineage;
 import io.openlineage.spark.extension.scala.v1.InputDatasetFieldFromDelegate;
@@ -75,11 +74,9 @@ public class InputFieldsCollector {
   }
 
   private static void discoverInputsFromNode(ColumnLevelLineageContext context, LogicalPlan node) {
-    List<DatasetIdentifier> datasetIdentifiers =
-        extractDatasetIdentifier(context.getOlContext(), node);
+    List<DatasetIdentifier> datasetIdentifiers = extractDatasetIdentifier(context, node);
     if (isJDBCNode(node)) {
-      JdbcColumnLineageCollector.extractExternalInputs(
-          node, context.getBuilder(), datasetIdentifiers);
+      JdbcColumnLineageCollector.extractExternalInputs(context, node, datasetIdentifiers);
     } else {
       extractInternalInputs(node, context.getBuilder(), datasetIdentifiers);
     }
@@ -135,7 +132,7 @@ public class InputFieldsCollector {
   }
 
   private static List<DatasetIdentifier> extractDatasetIdentifier(
-      OpenLineageContext context, LogicalPlan node) {
+      ColumnLevelLineageContext context, LogicalPlan node) {
     if (node instanceof DataSourceV2Relation) {
       return extractDatasetIdentifier(context, (DataSourceV2Relation) node);
     } else if (node instanceof DataSourceV2ScanRelation) {
@@ -157,7 +154,7 @@ public class InputFieldsCollector {
     } else if (node instanceof LogicalRelation
         && ((LogicalRelation) node).relation() instanceof JDBCRelation) {
       JDBCRelation relation = (JDBCRelation) ((LogicalRelation) node).relation();
-      return extractDatasetIdentifier(relation);
+      return extractDatasetIdentifier(context, relation);
     } else if (node instanceof LogicalRDD) {
       return extractDatasetIdentifier((LogicalRDD) node);
     } else if (node instanceof InMemoryRelation) {
@@ -174,7 +171,8 @@ public class InputFieldsCollector {
     return Collections.emptyList();
   }
 
-  private static List<DatasetIdentifier> extractDatasetIdentifier(JDBCRelation relation) {
+  private static List<DatasetIdentifier> extractDatasetIdentifier(
+      ColumnLevelLineageContext context, JDBCRelation relation) {
     Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
     return sqlMeta
         .map(
@@ -182,8 +180,11 @@ public class InputFieldsCollector {
                 meta.inTables().stream()
                     .map(
                         e ->
-                            JdbcUtils.getDatasetIdentifierFromJdbcUrl(
-                                relation.jdbcOptions().url(), e.qualifiedName()))
+                            context
+                                .getNamespaceResolver()
+                                .resolve(
+                                    JdbcUtils.getDatasetIdentifierFromJdbcUrl(
+                                        relation.jdbcOptions().url(), e.qualifiedName())))
                     .collect(Collectors.toList()))
         .orElse(Collections.emptyList());
   }
@@ -196,8 +197,8 @@ public class InputFieldsCollector {
   }
 
   private static List<DatasetIdentifier> extractDatasetIdentifier(
-      OpenLineageContext context, DataSourceV2Relation relation) {
-    return PlanUtils3.getDatasetIdentifier(context, relation)
+      ColumnLevelLineageContext context, DataSourceV2Relation relation) {
+    return PlanUtils3.getDatasetIdentifier(context.getOlContext(), relation)
         .map(Collections::singletonList)
         .orElse(Collections.emptyList());
   }

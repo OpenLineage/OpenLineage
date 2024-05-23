@@ -44,7 +44,7 @@ public class FlinkMultiTopicSinkApplication {
             KafkaSink.<OutputEvent>builder()
                 .setRecordSerializer(new MultiTopicSerializationSchema(topics))
                 .setKafkaProducerConfig(fromResource("kafka-producer.conf").toProperties())
-                .setBootstrapServers("kafka:9092")
+                .setBootstrapServers("kafka-host:9092")
                 .build()
         )
         .name("kafka-sink")
