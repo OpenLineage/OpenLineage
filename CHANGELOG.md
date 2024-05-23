@@ -1,9 +1,41 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.14.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.15.0...HEAD)
+
+## [1.15.0](https://github.com/OpenLineage/OpenLineage/compare/1.14.0...1.15.0) - 2024-05-23
+### Added
+* **Flink: handle Iceberg tables with nested and complex field types** [`#2706`](https://github.com/OpenLineage/OpenLineage/pull/2706) [@dolfinus](https://github.com/dolfinus)  
+    *Creates `SchemaDatasetFacet` with nested fields for Iceberg tables with list, map and struct columns.*
+* **Flink: handle Avro schema with nested and complex field types** [`#2711`](https://github.com/OpenLineage/OpenLineage/pull/2711) [@dolfinus](https://github.com/dolfinus)  
+    *Creates `SchemaDatasetFacet` with nested fields for Avro schemas with complex types (union, record, map, array, fixed).*
+* **Spark: add facets to Spark application events** [`#2677`](https://github.com/OpenLineage/OpenLineage/pull/2677) [@dolfinus](https://github.com/dolfinus)  
+    *Adds support for Spark application start and stop events in the `ExecutionContext` interface.*
+* **Spark: add nested fields to `SchemaDatasetFieldsFacet`** [`#2689`](https://github.com/OpenLineage/OpenLineage/pull/2689) [@dolfinus](https://github.com/dolfinus)  
+    *Adds nested Spark Dataframe fields support to `SchemaDatasetFieldsFacet`. Also include field comment as `description`.*
+* **Spark: add `SparkApplicationDetailsFacet`** [`#2688`](https://github.com/OpenLineage/OpenLineage/pull/2688) [@dolfinus](https://github.com/dolfinus)  
+    *Adds `SparkApplicationDetailsFacet` to `runEvent`s emitted on Spark application start.*
+
+### Removed
+* **Airflow: remove Airflow < 2.3.0 support** [`#2710`](https://github.com/OpenLineage/OpenLineage/pull/2710) [@kacpermuda](https://github.com/kacpermuda)  
+    *Removes Airflow < 2.3.0 support.*
+* **Integration: use v2 Python facets** [`#2693`](https://github.com/OpenLineage/OpenLineage/pull/2693) [@JDarDagran](https://github.com/JDarDagran)  
+    *Migrates integrations from removed v1 facets to v2 Python facets.*
+
 ### Fixed
-* **Spark: improve job suffix assigning mechanism.** [`#2665`](https://github.com/OpenLineage/OpenLineage/pull/2665) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Improve mechanism to assign deterministic job suffix based on output dataset at the moment of start events. This PR may change job names in some scenarios.*
+* **Spark: improve job suffix assigning mechanism** [`#2665`](https://github.com/OpenLineage/OpenLineage/pull/2665) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *For some catalog handlers, the mechanism was creating different dataset identifiers on START and COMPLETE depending on whether a dataset was created or not. This improves the mechanism to assign a deterministic job suffix based on the output dataset at the moment of a start event. **Note**: this may change job names in some scenarios.*
+* **Airflow: fix empty dataset name for `AthenaExtractor`** [`#2700`](https://github.com/OpenLineage/OpenLineage/pull/2700) [@kacpermuda](https://github.com/kacpermuda)  
+    *The dataset name should not be empty when passing only a bucket as S3 output in Athena.*
+* **Flink: fix `SchemaDatasetFacet` for Protobuf repeated primitive types** [`#2685`](https://github.com/OpenLineage/OpenLineage/pull/2685) [@dolfinus](https://github.com/dolfinus)  
+    *Fixes issues with the Protobuf schema converter.*
+* **Python: clean up Python client code, add logging.** [`#2653`](https://github.com/OpenLineage/OpenLineage/pull/2653) [@kacpermuda](https://github.com/kacpermuda)  
+    *Cleans up client code, refactors logging in all Python modules.*
+* **SQL: catch `TokenizerError`s, `PanicException`** [`#2703`](https://github.com/OpenLineage/OpenLineage/pull/2703) [@mobuchowski](https://github.com/mobuchowski)  
+    *The SQL parser now catches and handles these errors.*
+* **Python: suppress warning on importing v1 module in __init__.py.** [`#2713`](https://github.com/OpenLineage/OpenLineage/pull/2713) [@JDarDagran](https://github.com/JDarDagran)  
+    *Suppresses the deprecation warning when v1 facets are used.*
+* **Integration/Java/Python: use UUIDv7 instead of UUIDv4** [`#2686`](https://github.com/OpenLineage/OpenLineage/pull/2686) [`#2687`](https://github.com/OpenLineage/OpenLineage/pull/2687) [@dolfinus](https://github.com/dolfinus)  
+    *Uses UUIDv7 instead of UUIDv4 for `runEvent`s. The new UUID version produces monotonically increasing values, which leads to more performant queries on the OL consumer side. **Note**: UUID version is an implementation detail and can be changed in the future.*
 
 ## [1.14.0](https://github.com/OpenLineage/OpenLineage/compare/1.13.1...1.14.0) - 2024-05-09
 ### Added
