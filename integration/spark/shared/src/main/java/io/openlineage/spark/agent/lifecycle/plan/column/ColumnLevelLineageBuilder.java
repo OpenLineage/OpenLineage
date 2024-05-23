@@ -45,6 +45,7 @@ public class ColumnLevelLineageBuilder {
   private Map<ColumnMeta, ExprId> externalExpressionMappings = new HashMap<>();
   private final OpenLineage.SchemaDatasetFacet schema;
   private final OpenLineageContext context;
+  private Map<ExprId, Boolean> transformations = new HashMap<>();
 
   public ColumnLevelLineageBuilder(
       @NonNull final OpenLineage.SchemaDatasetFacet schema,
@@ -87,6 +88,15 @@ public class ColumnLevelLineageBuilder {
    */
   public void addDependency(ExprId outputExprId, ExprId inputExprId) {
     exprDependencies.computeIfAbsent(outputExprId, k -> new HashSet<>()).add(inputExprId);
+  }
+
+  public void addExpressionTransformation(ExprId exprId, boolean transforming) {
+    if (!transformations.containsKey(exprId)) {
+      transformations.put(exprId, transforming);
+    } else {
+      boolean oldTransforming = transformations.get(exprId);
+      transformations.replace(exprId, oldTransforming || transforming);
+    }
   }
 
   public boolean hasOutputs() {
@@ -147,8 +157,7 @@ public class ColumnLevelLineageBuilder {
 
     schema.getFields().stream()
         .map(field -> Pair.of(field, getInputsUsedFor(field.getName())))
-        .filter(pair -> !pair.getRight().isEmpty())
-        .map(pair -> Pair.of(pair.getLeft(), facetInputFields(pair.getRight())))
+        .filter(pair -> !pair.getRight().getLeft().isEmpty())
         .forEach(
             pair ->
                 fieldsBuilder.put(
@@ -156,7 +165,9 @@ public class ColumnLevelLineageBuilder {
                     context
                         .getOpenLineage()
                         .newColumnLineageDatasetFacetFieldsAdditionalBuilder()
-                        .inputFields(pair.getRight())
+                        .inputFields(facetInputFields(pair.getRight().getLeft()))
+                            .transformationDescription(pair.getRight().getRight() ? "TRANSFORMED" : "COPY")
+                            .transformationType(pair.getRight().getRight() ? "TRANSFORMED" : "COPY")
                         .build()));
 
     return fieldsBuilder.build();
@@ -175,21 +186,33 @@ public class ColumnLevelLineageBuilder {
         .collect(Collectors.toList());
   }
 
-  List<Pair<DatasetIdentifier, String>> getInputsUsedFor(String outputName) {
+  Pair<List<Pair<DatasetIdentifier, String>>, Boolean> getInputsUsedFor(String outputName) {
     Optional<OpenLineage.SchemaDatasetFacetFields> outputField =
         schema.getFields().stream()
             .filter(field -> field.getName().equalsIgnoreCase(outputName))
             .findAny();
     if (!outputField.isPresent() || !outputs.containsKey(outputField.get())) {
-      return Collections.emptyList();
+      return Pair.of(Collections.emptyList(), false);
     }
 
-    return findDependentInputs(outputs.get(outputField.get())).stream()
+    ExprId outputExprId = outputs.get(outputField.get());
+
+    List<ExprId> dependentInputs = findDependentInputs(outputExprId);
+
+    boolean transforming = dependentInputs.stream()
+      //.filter(inputExprId -> inputExprId != outputExprId)
+      .filter(inputExprId -> transformations.containsKey(inputExprId))
+      .anyMatch(inputExprId -> transformations.get(inputExprId));
+
+    List<Pair<DatasetIdentifier, String>> inputsUsedFor =
+      dependentInputs.stream()
         .filter(inputExprId -> inputs.containsKey(inputExprId))
         .flatMap(inputExprId -> inputs.get(inputExprId).stream())
         .filter(Objects::nonNull)
         .distinct()
         .collect(Collectors.toList());
+
+    return Pair.of(inputsUsedFor, transforming);
   }
 
   private List<ExprId> findDependentInputs(ExprId outputExprId) {

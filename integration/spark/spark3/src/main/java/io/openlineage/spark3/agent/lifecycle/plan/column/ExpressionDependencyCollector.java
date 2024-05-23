@@ -118,6 +118,8 @@ public class ExpressionDependencyCollector {
       builder.addDependency(outputExprId, ((NamedExpression) expr).exprId());
     }
 
+    builder.addExpressionTransformation(outputExprId, !(expr instanceof NamedExpression));
+
     // discover children expression -> handles UnaryExpressions like Alias
     if (expr.children() != null) {
       ScalaConversionUtils.<Expression>fromSeq(expr.children()).stream()
