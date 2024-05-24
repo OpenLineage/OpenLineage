@@ -34,6 +34,7 @@ import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
+import org.apache.spark.sql.catalyst.plans.logical.Window;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata$;
 import org.junit.jupiter.api.BeforeEach;
@@ -107,6 +108,21 @@ class ExpressionDependencyCollectorTest {
             ScalaConversionUtils.fromList(Collections.singletonList((NamedExpression) alias1)),
             mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, aggregate, null, null, false);
+
+    ExpressionDependencyCollector.collect(context, plan);
+
+    verify(builder, times(1)).addDependency(aliasExprId1, exprId1);
+  }
+
+  @Test
+  void testCollectFromWindowPlan() {
+    Window window =
+        new Window(
+            ScalaConversionUtils.fromList(Collections.singletonList((NamedExpression) alias1)),
+            ScalaConversionUtils.asScalaSeqEmpty(),
+            ScalaConversionUtils.asScalaSeqEmpty(),
+            mock(LogicalPlan.class));
+    LogicalPlan plan = new CreateTableAsSelect(null, null, null, window, null, null, false);
 
     ExpressionDependencyCollector.collect(context, plan);
 

@@ -29,6 +29,7 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
+import org.apache.spark.sql.catalyst.plans.logical.Window;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import scala.collection.Seq;
@@ -66,6 +67,9 @@ public class ExpressionDependencyCollector {
     } else if (node instanceof Aggregate) {
       expressions.addAll(
           ScalaConversionUtils.<NamedExpression>fromSeq(((Aggregate) node).aggregateExpressions()));
+    } else if (node instanceof Window) {
+      expressions.addAll(
+          ScalaConversionUtils.<NamedExpression>fromSeq(((Window) node).windowExpressions()));
     } else if (node instanceof LogicalRelation) {
       if (((LogicalRelation) node).relation() instanceof JDBCRelation) {
         JdbcColumnLineageCollector.extractExpressionsFromJDBC(node, context.getBuilder());
