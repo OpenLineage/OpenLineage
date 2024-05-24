@@ -39,7 +39,7 @@ To claim a name, an entity must have either documentation or a test/sample. "Res
 Corresponding values to be used:
 
 - Custom facet Prefix = `“${name}”`
-- Producer URI prefix = `“ol:${name}”`  can use sub URIs if more than one component needed `“ol:${name}:${sub component}”` or `“ol:${name}:${version}”`
+- Producer URI prefix = `“ol:${name}”`
 - Schema URI prefix: `“ol:${name}:${path}”` => `“${schema url prefix}/${path}”`
 
 ### CI and Documentation
@@ -82,21 +82,22 @@ Each participant in the ecosystem owns their own folder.
 Structure:
 
 ```
-OpenLineage/spec/registry/
-	/{Name}/           <- custom facet schemas are stored in this folder
-	                   <- and respect the same rules as spec/facets
-		CODEOWNERS     <- Delegate approval to the owners of the name
-		registry.json: <- one file per participant
-			Producer: 
-				Producer root doc URL: https://…
-				Produced facets:
-					{ facets: [ {“URI}”, “{URI}”, … ]}
-			Consumer: 
-				Consumer root doc URL: https://…
-				Consumed facets:
-					{ facets: [ “{URI}”, “{URI}”, … ]}
-		/facets/       <- where custom facet schemas are stored
-                /facets/examples/{FacetName}/{number}.json       <- where facet examples are stored
+OpenLineage
+	CODEOWNERS     <- Delegate approval to the owners of each spec/registry/{Name}/ folder
+  spec/registry/
+	  {Name}/           <- custom facet schemas are stored in this folder
+	                    <- and respect the same rules as spec/facets
+		  registry.json: <- one file per participant
+			  Producer: 
+				  Producer root doc URL: https://…
+				  Produced facets:
+					  { facets: [ {“URI}”, “{URI}”, … ]}
+			  Consumer: 
+				  Consumer root doc URL: https://…
+				  Consumed facets:
+					  { facets: [ “{URI}”, “{URI}”, … ]}
+		  /facets/       <- where custom facet schemas are stored
+      /facets/examples/{FacetName}/{number}.json       <- where facet examples are stored
 ```
 Facet examples are  currently in [spec/tests](https://github.com/OpenLineage/OpenLineage/blob/main/spec/tests/ColumnLineageDatasetFacet/1.json)
 
@@ -106,7 +107,6 @@ In `OpenLineage/spec/registry/`
 
 ```
 airflow/
-	CODEOWNERS
 	registry.json
 	{
 		producer: {
@@ -122,7 +122,6 @@ airflow/
 ```
 ```
 core/
-	CODEOWNERS
 	registry.json
 	{
 		producer: {
@@ -130,14 +129,10 @@ core/
 			sample_URL: "https://github.com/OpenLineage/OpenLineage/tree/main/spec/tests/",
 			facets: [
 				"ColumnLineageDatasetFacet.json": {
-					"owner": "core",
-					"spec_versions": [ "1-0-1", "1-0-0" ],
-					"use_cases": [ "lineage", "catalog" ]
+					"owner": "core"
 				},
 				"DataQualityAssertionsDatasetFacet.json": {
-					"owner": "core",
-					"spec_versions": [ "1-0-0" ],
-					"use_cases": [ "data quality" ]
+					"owner": "core"
 				}
 			]
 		}
@@ -145,7 +140,6 @@ core/
 ```
 ```
 egeria/
-	CODEOWNERS
 	registry.json
 	{
 		producer: {    
@@ -153,14 +147,10 @@ egeria/
 			sample_URL: … , 
 			facets: [
 				"ColumnLineageDatasetFacet.json": {
-					"owner": "core",
-					"spec_versions": [ "1-0-1" ],
-					"use_cases": [ "lineage", "catalog" ]
+					"owner": "core"
 				},
 				"NewCustomFacet.json": {
-					"owner": "egeria",
-					"spec_versions": [ "1-0-0" ],
-					"use_cases": [ "lineage" ]
+					"owner": "egeria"
 				}
 			]
 		},
@@ -168,9 +158,7 @@ egeria/
 			root_doc_URL: …
 			facets: [ 
 				"NewCustomFacet.json": {
-					"owner": "egeria",
-					"spec_versions": [ "1-0-0" ],
-					"use_cases": [ "lineage" ]
+					"owner": "egeria"
 				}
 			]
 		}
@@ -178,7 +166,6 @@ egeria/
 ```
 ```
 manta/
-	CODEOWNERS
 	registry.json
 	{
 		consumer: {
