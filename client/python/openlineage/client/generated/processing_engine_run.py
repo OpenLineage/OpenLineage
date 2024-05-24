@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
-
+from typing import Optional
 from attr import define, field
+from openlineage.client import utils
 from openlineage.client.generated.base import RunFacet
 
 
@@ -12,12 +13,15 @@ class ProcessingEngineRunFacet(RunFacet):
     version: str
     """Processing engine version. Might be Airflow or Spark version."""
 
-    name: str | None = field(default=None)
+    name: Optional[str] = field(default=None)
     """Processing engine name, e.g. Airflow or Spark"""
 
-    openlineageAdapterVersion: str | None = field(default=None)  # noqa: N815
+    openlineageAdapterVersion: Optional[str] = field(default=None)  # noqa: N815
     """OpenLineage adapter package version. Might be e.g. OpenLineage Airflow integration package version"""
 
     @staticmethod
     def _get_schema() -> str:
         return "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet"
+
+
+utils.register_facet_key("processing_engine", ProcessingEngineRunFacet)

@@ -79,9 +79,9 @@ class {{ class_name }}:
     {%- if 'True' == validators.validator_needed(field.type_hint) %} = field() {%- endif -%}
     {%- if not (field.required or (field.represented_default == 'None' and field.strip_default_none)) -%}
         {#- use factories for list and dict types -#}
-        {%- if 'list' in type_hint -%}
+        {%- if 'list' in type_hint | lower -%}
             {%- set default_value = 'factory=list' -%}
-        {%- elif 'dict' in type_hint -%}
+        {%- elif 'dict' in type_hint | lower -%}
             {%- set default_value = 'factory=dict' -%}
         {%- else -%}
             {%- set default_value = 'default='+field.represented_default -%}
@@ -91,7 +91,7 @@ class {{ class_name }}:
         {%- if field.parent.reference.children | map(attribute='name') | join -%}, kw_only=True{%- endif -%}
         )
         {#- mypy complains when field is optional and may be dict or list -#}
-        {%- if 'factory' in default_value and "None" in type_hint %}  # type: ignore[assignment] {%- endif -%}
+        {%- if 'factory' in default_value and "Optional" in type_hint %}  # type: ignore[assignment] {%- endif -%}
     {%- endif -%}
     {%- endif %}
 
@@ -133,13 +133,13 @@ class {{ class_name }}:
     _skip_redact
     {%- else %}
     _additional_skip_redact
-    {%- endif -%}: ClassVar[list[str]] = {{ redact_fields["fields"] }}
+    {%- endif -%}: ClassVar[List[str]] = {{ redact_fields["fields"] }}
 {#- {%- else -%} # {{ module.name }} {{ redactions }} -#}
 {%- endif -%}
 {#- base classes have additional logic for deprecations and producer & schemaURL fields -#}
 {%- if class_name in ['BaseFacet', 'BaseEvent'] %}
-    _base_skip_redact: ClassVar[list[str]] = ["{{ private_prefix }}producer", "{{ private_prefix }}schemaURL"]
-    _additional_skip_redact: ClassVar[list[str]] = []
+    _base_skip_redact: ClassVar[List[str]] = ["{{ private_prefix }}producer", "{{ private_prefix }}schemaURL"]
+    _additional_skip_redact: ClassVar[List[str]] = []
 
     def __attrs_post_init__(self) -> None: 
         if not self.{{ private_prefix }}producer:
@@ -175,4 +175,8 @@ class {{ class_name }}:
 {%- for field in fields -%}
     {{ validators.validator(field.name, field.type_hint) }}
 {%- endfor -%}
+{%- elif fields -%}
+{%- set field_name = fields[0].name -%}
+{%- if field_name == "schema_" -%}{%- set field_name = "schema" -%}{%- endif -%}
+utils.register_facet_key("{{ field_name }}", {{ fields[0].data_type.type_hint }})
 {%- endif -%}

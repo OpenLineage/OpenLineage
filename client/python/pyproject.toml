@@ -31,6 +31,9 @@ dependencies = [
   "requests>=2.20.0",
   "packaging>=21.0",
 ]
+optional-dependencies.deserialize = [
+  "cattrs>=23.2.3"
+]
 optional-dependencies.kafka = [
   "confluent-kafka>=2.1.1",
 ]
@@ -72,3 +75,7 @@ overrides = [
   "confluent_kafka.*",
 ] } ]
 strict = true
+
+[tool.ruff]
+line-length = 110
+ignore = ["UP007"]

@@ -2,37 +2,36 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
-
-from typing import ClassVar
-
+from typing import ClassVar, List, Optional
 from attr import define, field
+from openlineage.client import utils
 from openlineage.client.generated.base import JobFacet
 
 
 @define
 class SourceCodeLocationJobFacet(JobFacet):
-    type: str
+    type: str  # noqa: A003
     """the source control system"""
 
     url: str = field()
     """the full http URL to locate the file"""
 
-    repoUrl: str | None = field(default=None)  # noqa: N815
+    repoUrl: Optional[str] = field(default=None)  # noqa: N815
     """the URL to the repository"""
 
-    path: str | None = field(default=None)
+    path: Optional[str] = field(default=None)
     """the path in the repo containing the source files"""
 
-    version: str | None = field(default=None)
+    version: Optional[str] = field(default=None)
     """the current version deployed (not a branch name, the actual unique version)"""
 
-    tag: str | None = field(default=None)
+    tag: Optional[str] = field(default=None)
     """optional tag name"""
 
-    branch: str | None = field(default=None)
+    branch: Optional[str] = field(default=None)
     """optional branch name"""
 
-    _additional_skip_redact: ClassVar[list[str]] = ["type", "url"]
+    _additional_skip_redact: ClassVar[List[str]] = ["type", "url"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -43,3 +42,6 @@ class SourceCodeLocationJobFacet(JobFacet):
         from urllib.parse import urlparse
 
         urlparse(value)
+
+
+utils.register_facet_key("sourceCodeLocation", SourceCodeLocationJobFacet)

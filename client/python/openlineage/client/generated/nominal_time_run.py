@@ -2,10 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
-
-from typing import ClassVar
-
+from typing import ClassVar, List, Optional
 from attr import define, field
+from openlineage.client import utils
 from openlineage.client.generated.base import RunFacet
 
 
@@ -16,12 +15,12 @@ class NominalTimeRunFacet(RunFacet):
     An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal start time
     (included) of the run. AKA the schedule time
     """
-    nominalEndTime: str | None = field(default=None)  # noqa: N815
+    nominalEndTime: Optional[str] = field(default=None)  # noqa: N815
     """
     An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal end time
     (excluded) of the run. (Should be the nominal start time of the next run)
     """
-    _additional_skip_redact: ClassVar[list[str]] = ["nominalStartTime", "nominalEndTime"]
+    _additional_skip_redact: ClassVar[List[str]] = ["nominalStartTime", "nominalEndTime"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -46,3 +45,6 @@ class NominalTimeRunFacet(RunFacet):
             # make sure date-time contains time
             msg = f"Parsed date-time has to contain time: {value}"
             raise ValueError(msg)
+
+
+utils.register_facet_key("nominalTime", NominalTimeRunFacet)

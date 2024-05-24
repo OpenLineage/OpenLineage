@@ -2,35 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
-
-from typing import ClassVar
-
-from attr import define, field
-from openlineage.client.generated.base import DatasetFacet
 from openlineage.client.utils import RedactMixin
-
-
-@define
-class ColumnLineageDatasetFacet(DatasetFacet):
-    fields: dict[str, Fields]
-    """Column level lineage that maps output fields into input fields used to evaluate them."""
-
-    @staticmethod
-    def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-2/ColumnLineageDatasetFacet.json#/$defs/ColumnLineageDatasetFacet"
-
-
-@define
-class Fields(RedactMixin):
-    inputFields: list[InputField]  # noqa: N815
-    transformationDescription: str | None = field(default=None)  # noqa: N815
-    """a string representation of the transformation applied"""
-
-    transformationType: str | None = field(default=None)  # noqa: N815
-    """
-    IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no
-    original data available (like a hash of PII for example)
-    """
+from attr import define, field
+from openlineage.client import utils
+from typing import ClassVar, Dict, List, Optional
+from openlineage.client.generated.base import DatasetFacet
 
 
 @define
@@ -44,4 +20,30 @@ class InputField(RedactMixin):
     field: str
     """The input field"""
 
-    _skip_redact: ClassVar[list[str]] = ["namespace", "name", "field"]
+    _skip_redact: ClassVar[List[str]] = ["namespace", "name", "field"]
+
+
+@define
+class Fields(RedactMixin):
+    inputFields: List[InputField]  # noqa: N815
+    transformationDescription: Optional[str] = field(default=None)  # noqa: N815
+    """a string representation of the transformation applied"""
+
+    transformationType: Optional[str] = field(default=None)  # noqa: N815
+    """
+    IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no
+    original data available (like a hash of PII for example)
+    """
+
+
+@define
+class ColumnLineageDatasetFacet(DatasetFacet):
+    fields: Dict[str, Fields]
+    """Column level lineage that maps output fields into input fields used to evaluate them."""
+
+    @staticmethod
+    def _get_schema() -> str:
+        return "https://openlineage.io/spec/facets/1-0-2/ColumnLineageDatasetFacet.json#/$defs/ColumnLineageDatasetFacet"
+
+
+utils.register_facet_key("columnLineage", ColumnLineageDatasetFacet)

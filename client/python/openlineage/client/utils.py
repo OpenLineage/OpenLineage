@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import importlib
 import logging
-from typing import Any, ClassVar, Type, cast
+from typing import Any, ClassVar, Type, List, cast
 
 import attr
 
 log = logging.getLogger(__name__)
+keys_to_facets: dict[str, type] = {}
 
 
 def import_from_string(path: str) -> type[Any]:
@@ -37,8 +38,12 @@ def get_only_specified_fields(clazz: type[Any], params: dict[str, Any]) -> dict[
 
 
 class RedactMixin:
-    _skip_redact: ClassVar[list[str]] = []
+    _skip_redact: ClassVar[List[str]] = []
 
     @property
     def skip_redact(self) -> list[str]:
         return self._skip_redact
+
+
+def register_facet_key(name: str, facet_class: type) -> None:
+    keys_to_facets[name] = facet_class

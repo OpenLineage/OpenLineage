@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
-
+from typing import Optional
 from attr import define, field
+from openlineage.client import utils
 from openlineage.client.generated.base import JobFacet
 
 
@@ -15,9 +16,12 @@ class JobTypeJobFacet(JobFacet):
     integration: str
     """OpenLineage integration type of this job: SPARK|DBT|AIRFLOW|FLINK"""
 
-    jobType: str | None = field(default=None)  # noqa: N815
+    jobType: Optional[str] = field(default=None)  # noqa: N815
     """Run type like: QUERY|COMMAND|DAG|TASK|JOB|MODEL"""
 
     @staticmethod
     def _get_schema() -> str:
         return "https://openlineage.io/spec/facets/2-0-2/JobTypeJobFacet.json#/$defs/JobTypeJobFacet"
+
+
+utils.register_facet_key("jobType", JobTypeJobFacet)

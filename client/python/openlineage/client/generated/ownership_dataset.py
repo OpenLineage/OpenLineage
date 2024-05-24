@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
-
-from attr import define, field
-from openlineage.client.generated.base import DatasetFacet
+from typing import List, Optional
 from openlineage.client.utils import RedactMixin
+from attr import define, field
+from openlineage.client import utils
+from openlineage.client.generated.base import DatasetFacet
 
 
 @define
@@ -15,13 +16,13 @@ class Owner(RedactMixin):
     the identifier of the owner of the Dataset. It is recommended to define this as a URN. For example
     application:foo, user:jdoe, team:data
     """
-    type: str | None = field(default=None)
+    type: Optional[str] = field(default=None)  # noqa: A003
     """The type of ownership (optional)"""
 
 
 @define
 class OwnershipDatasetFacet(DatasetFacet):
-    owners: list[Owner] | None = field(factory=list)  # type: ignore[assignment]
+    owners: Optional[List[Owner]] = field(factory=list)  # type: ignore[assignment]
     """The owners of the dataset."""
 
     @staticmethod
@@ -29,3 +30,6 @@ class OwnershipDatasetFacet(DatasetFacet):
         return (
             "https://openlineage.io/spec/facets/1-0-1/OwnershipDatasetFacet.json#/$defs/OwnershipDatasetFacet"
         )
+
+
+utils.register_facet_key("ownership", OwnershipDatasetFacet)

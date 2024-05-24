@@ -2,10 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
-
-from typing import ClassVar
-
 from attr import define
+from openlineage.client import utils
+from typing import ClassVar, List
 from openlineage.client.generated.base import JobFacet
 
 
@@ -17,8 +16,11 @@ class SourceCodeJobFacet(JobFacet):
     sourceCode: str  # noqa: N815
     """Source code of this job."""
 
-    _additional_skip_redact: ClassVar[list[str]] = ["language"]
+    _additional_skip_redact: ClassVar[List[str]] = ["language"]
 
     @staticmethod
     def _get_schema() -> str:
         return "https://openlineage.io/spec/facets/1-0-1/SourceCodeJobFacet.json#/$defs/SourceCodeJobFacet"
+
+
+utils.register_facet_key("sourceCode", SourceCodeJobFacet)

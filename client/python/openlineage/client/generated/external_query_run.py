@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
-
 from attr import define
+from openlineage.client import utils
 from openlineage.client.generated.base import RunFacet
 
 
@@ -20,3 +20,6 @@ class ExternalQueryRunFacet(RunFacet):
         return (
             "https://openlineage.io/spec/facets/1-0-2/ExternalQueryRunFacet.json#/$defs/ExternalQueryRunFacet"
         )
+
+
+utils.register_facet_key("externalQuery", ExternalQueryRunFacet)
