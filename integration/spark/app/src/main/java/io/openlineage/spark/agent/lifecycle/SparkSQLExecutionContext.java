@@ -295,8 +295,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   /**
-   * Getting the job type facet for Spark jobs. Values: job type: `JOB`, job integration: `SPARK`,
-   * processing type: can be `batch` or `streaming` based on
+   * Getting the job type facet for Spark jobs. Values: job type: `SQL_JOB`, job integration:
+   * `SPARK`, processing type: can be `batch` or `streaming` based on
    * queryExecution.optimizedPlan().isStreaming()
    *
    * @param queryExecution

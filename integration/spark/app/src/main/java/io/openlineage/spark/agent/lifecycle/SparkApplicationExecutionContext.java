@@ -30,6 +30,10 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 
 @Slf4j
 class SparkApplicationExecutionContext implements ExecutionContext {
+  private static final String SPARK_JOB_TYPE = "APPLICATION";
+  private static final String SPARK_INTEGRATION = "SPARK";
+  private static final String SPARK_PROCESSING_TYPE = "NONE";
+
   private final OpenLineageContext olContext;
   private final EventEmitter eventEmitter;
   private final OpenLineageRunEventBuilder runEventBuilder;
@@ -83,8 +87,8 @@ class SparkApplicationExecutionContext implements ExecutionContext {
                 .newRunEventBuilder()
                 .eventTime(toZonedTime(applicationStart.time()))
                 .eventType(START),
-            buildJob(),
-            openLineage.newJobFacetsBuilder(),
+            getJobBuilder(),
+            getJobFacetsBuilder(),
             applicationStart);
 
     log.debug("Posting event for applicationId {} start: {}", applicationId, event);
@@ -109,8 +113,8 @@ class SparkApplicationExecutionContext implements ExecutionContext {
                 .newRunEventBuilder()
                 .eventTime(toZonedTime(applicationEnd.time()))
                 .eventType(COMPLETE),
-            buildJob(),
-            openLineage.newJobFacetsBuilder(),
+            getJobBuilder(),
+            getJobFacetsBuilder(),
             applicationEnd);
 
     log.debug("Posting event for applicationId {} end: {}", applicationId, event);
@@ -130,7 +134,7 @@ class SparkApplicationExecutionContext implements ExecutionContext {
     return null;
   }
 
-  protected OpenLineage.JobBuilder buildJob() {
+  private OpenLineage.JobBuilder getJobBuilder() {
     String name =
         eventEmitter
             .getOverriddenAppName()
@@ -139,6 +143,18 @@ class SparkApplicationExecutionContext implements ExecutionContext {
         .newJobBuilder()
         .namespace(eventEmitter.getJobNamespace())
         .name(normalizeName(name));
+  }
+
+  private OpenLineage.JobFacetsBuilder getJobFacetsBuilder() {
+    return openLineage
+        .newJobFacetsBuilder()
+        .jobType(
+            openLineage
+                .newJobTypeJobFacetBuilder()
+                .jobType(SPARK_JOB_TYPE)
+                .processingType(SPARK_PROCESSING_TYPE)
+                .integration(SPARK_INTEGRATION)
+                .build());
   }
 
   // normalizes string, changes CamelCase to snake_case and replaces all non-alphanumerics with '_'
