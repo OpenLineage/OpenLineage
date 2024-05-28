@@ -1,6 +1,17 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.15.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.16.0...HEAD)
+
+## [1.16.0](https://github.com/OpenLineage/OpenLineage/compare/1.15.0...1.16.0) - 2024-05-28
+### Added
+* **Spark: add `jobType` facet to Spark application events** [`#2719`](https://github.com/OpenLineage/OpenLineage/pull/2719) [@dolfinus](https://github.com/dolfinus)  
+    *Add `jobType` facet to `runEvent`s emitted by `SparkListenerApplicationStart`.*
+
+### Fixed
+* **dbt: fix swapped namespace and name in dbt integration** [`#2735`](https://github.com/OpenLineage/OpenLineage/pull/2735) [@JDarDagran](https://github.com/JDarDagran)  
+    *Fixes variable names.*
+* **Python: override debug level** [`#2727`](https://github.com/OpenLineage/OpenLineage/pull/2735) [@mobuchowski](https://github.com/mobuchowski)  
+    *Removes debug-level logging of HTTP requests.*
 
 ## [1.15.0](https://github.com/OpenLineage/OpenLineage/compare/1.14.0...1.15.0) - 2024-05-23
 ### Added
