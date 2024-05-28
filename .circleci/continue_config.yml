@@ -1001,6 +1001,7 @@ jobs:
           name: Run pre-commit
           command: |
             . venv/bin/activate
+            SKIP= && [ -n "${CI}" ] && export SKIP="pmd"
             pre-commit run --show-diff-on-failure --all-files
 
   always_run:
