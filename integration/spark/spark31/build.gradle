@@ -15,7 +15,6 @@ scalaVariants {
 }
 
 ext {
-    micrometerVersion = "1.12.4"
     assertjVersion = "3.25.1"
     junit5Version = "5.10.1"
     mockitoVersion = "4.11.0"
@@ -43,7 +42,6 @@ dependencies {
     scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
 
     testScala212Implementation(project(path: ":shared"))
-    testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
     testScala212Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testScala212Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
