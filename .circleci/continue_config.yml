@@ -51,7 +51,7 @@ jobs:
       - image: cimg/python:<< parameters.py_env >>
     steps:
       - *checkout_project_root
-      - run: python -m pip install tox
+      - run: python -m pip install tox uv
       - run: python -m tox r -e "<< parameters.tox_env >>" --notest
       - run: python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
 
