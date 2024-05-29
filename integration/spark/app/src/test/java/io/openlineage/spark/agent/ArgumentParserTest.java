@@ -125,7 +125,6 @@ class ArgumentParserTest {
     SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
     KafkaConfig transportConfig = (KafkaConfig) config.getTransportConfig();
     assertEquals("test", transportConfig.getTopicName());
-    // Legacy LocalServerId should be mapped to messageKey
     assertEquals("explicit-key", transportConfig.getMessageKey());
     assertEquals("test1", transportConfig.getProperties().get("test1"));
     assertEquals("test2", transportConfig.getProperties().get("test2"));
