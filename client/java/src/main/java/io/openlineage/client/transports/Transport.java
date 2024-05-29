@@ -6,7 +6,6 @@
 package io.openlineage.client.transports;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineageClientUtils;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
@@ -26,25 +25,7 @@ public abstract class Transport {
 
   public abstract void emit(@NonNull OpenLineage.RunEvent runEvent);
 
-  public void emit(@NonNull OpenLineage.DatasetEvent datasetEvent) {
-    emit(OpenLineageClientUtils.toJson(datasetEvent));
-  }
+  public abstract void emit(@NonNull OpenLineage.DatasetEvent datasetEvent);
 
-  public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
-    emit(OpenLineageClientUtils.toJson(jobEvent));
-  }
-
-  /**
-   * @deprecated
-   *     <p>Since version 1.13.0.
-   *     <p>Will be removed in version 1.16.0.
-   *     <p>Please use {@link #emit(OpenLineage.DatasetEvent)} or {@link
-   *     #emit(OpenLineage.JobEvent)} instead
-   * @param eventAsJson string json event
-   */
-  @Deprecated
-  public void emit(String eventAsJson) {
-    throw new UnsupportedOperationException(
-        "Please implement emit(OpenLineage.DatasetEvent) and emit(OpenLineage.JobEvent)");
-  }
+  public abstract void emit(@NonNull OpenLineage.JobEvent jobEvent);
 }
