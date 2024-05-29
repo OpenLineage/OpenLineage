@@ -83,7 +83,6 @@ dependencies {
     implementation(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
     implementation("org.apache.httpcomponents.client5:httpclient5:5.3")
-    implementation("io.micrometer:micrometer-core:${micrometerVersion}")
 
     compileOnly("org.apache.spark:spark-core_${scala}:${spark}")
     compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")

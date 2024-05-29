@@ -47,3 +47,20 @@ To execute the `printSourceSetConfiguration` task, use the following command:
 ```bash
 ./gradlew printSourceSetConfiguration
 ```
+
+## JarVerificationPlugin
+
+This plugin verifies jar prepared with `shadowJar` task. Currently, it checks: 
+
+ * If all `.java` files and classes within them are contained within the jar. This is useful as Spark integration contains several subprojects, and it's easy to forget packing subproject's classes to published jar.
+ * If all external classes are relocated (shaded) properly, allowing only specified packages remain unshaded. 
+
+Plugin shall be applied only once in `integration/spark/build.gradle`:
+
+```kotlin
+plugins {
+  id("io.openlineage.jar-verification")
+}
+```
+
+Please refer to `JarVerificationPluginExtension` for detailed configuration description.

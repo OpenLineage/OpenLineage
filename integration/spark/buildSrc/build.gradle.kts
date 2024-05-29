@@ -34,5 +34,10 @@ gradlePlugin {
             id = "io.openlineage.scala-variants"
             implementationClass = "io.openlineage.gradle.plugin.ScalaVariantsPlugin"
         }
+
+        create("jarVerification") {
+            id = "io.openlineage.jar-verification"
+            implementationClass = "io.openlineage.gradle.plugin.JarVerificationPlugin"
+        }
     }
 }

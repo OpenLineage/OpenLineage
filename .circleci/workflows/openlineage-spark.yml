@@ -35,6 +35,10 @@ workflows:
               spark-version: [ '3.4.2', '3.5.0' ]
           requires:
             - approval-integration-spark
+      - jar-verification-spark:
+          requires:
+            - build-integration-spark-scala-2_12
+            - build-integration-spark-scala-2_13
       - integration-test-integration-spark-scala-2_12:
           context: integration-tests
           matrix:
@@ -53,3 +57,4 @@ workflows:
           requires:
             - integration-test-integration-spark-scala-2_12
             - integration-test-integration-spark-scala-2_13
+            - jar-verification-spark
