@@ -120,7 +120,7 @@ public class SparkApplicationDetailsFacet extends OpenLineage.DefaultRunFacet {
                         hadoopConf.get("yarn.http.policy", "HTTP_ONLY").replace("_ONLY", ""));
                 historyServer = scheme + "://" + historyServer;
               }
-              historyUrl = StringUtils.stripEnd(historyServer, "/") + "/application/" + encodedId;
+              historyUrl = StringUtils.stripEnd(historyServer, "/") + "/history/" + encodedId;
             });
   }
 }
