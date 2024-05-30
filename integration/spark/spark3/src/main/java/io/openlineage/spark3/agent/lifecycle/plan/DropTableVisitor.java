@@ -30,14 +30,14 @@ public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.Ou
   }
 
   @Override
+  public boolean isDefinedAt(LogicalPlan x) {
+    // differs for Spark versions 3.4 and higher
+    return (x instanceof DropTable) && (((DropTable) x).child() instanceof ResolvedTable);
+  }
+
+  @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     DropTable dropTable = (DropTable) x;
-
-    if (!(dropTable.child() instanceof ResolvedTable)) {
-      log.warn(
-          "Unexpected child type. Expected ResolvedTable, got {}", dropTable.child().getClass());
-      return Collections.emptyList();
-    }
 
     ResolvedTable resolvedTable = ((ResolvedTable) (dropTable).child());
     TableCatalog tableCatalog = resolvedTable.catalog();
