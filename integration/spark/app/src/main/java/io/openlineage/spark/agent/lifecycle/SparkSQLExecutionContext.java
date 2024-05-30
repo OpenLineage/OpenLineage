@@ -71,7 +71,9 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   @Override
   public void start(SparkListenerSQLExecutionStart startEvent) {
-    log.debug("SparkListenerSQLExecutionStart - executionId: {}", startEvent.executionId());
+    if (log.isDebugEnabled()) {
+      log.debug("SparkListenerSQLExecutionStart - executionId: {}", startEvent.executionId());
+    }
     if (!olContext.getQueryExecution().isPresent()) {
       log.info(NO_EXECUTION_INFO, olContext);
       return;
@@ -102,7 +104,9 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerSQLExecutionEnd endEvent) {
-    log.debug("SparkListenerSQLExecutionEnd - executionId: {}", endEvent.executionId());
+    if (log.isDebugEnabled()) {
+      log.debug("SparkListenerSQLExecutionEnd - executionId: {}", endEvent.executionId());
+    }
     // TODO: can we get failed event here?
     // If not, then we probably need to use this only for LogicalPlans that emit no Job events.
     // Maybe use QueryExecutionListener?
@@ -135,8 +139,9 @@ class SparkSQLExecutionContext implements ExecutionContext {
             buildJob(),
             getJobFacetsBuilder(olContext.getQueryExecution().get()),
             endEvent);
-
-    log.debug("Posting event for end {}: {}", executionId, OpenLineageClientUtils.toJson(event));
+    if (log.isDebugEnabled()) {
+      log.debug("Posting event for end {}: {}", executionId, OpenLineageClientUtils.toJson(event));
+    }
     eventEmitter.emit(event);
   }
 
@@ -200,7 +205,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   @Override
   public void start(SparkListenerJobStart jobStart) {
-    log.debug("SparkListenerJobStart - executionId: " + executionId);
+    log.debug("SparkListenerJobStart - executionId: {}", executionId);
     if (!olContext.getQueryExecution().isPresent()) {
       log.info(NO_EXECUTION_INFO, olContext);
       return;
@@ -232,7 +237,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
-    log.debug("SparkListenerJobEnd - executionId: " + executionId);
+    log.debug("SparkListenerJobEnd - executionId: {}", executionId);
     if (!finished.compareAndSet(false, true)) {
       log.debug("Event already finished, returning");
       return;

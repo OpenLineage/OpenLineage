@@ -405,10 +405,12 @@ class OpenLineageRunEventBuilder {
                 log.debug("Physical plan executed {}", qe.executedPlan().toJSON());
               }
             });
-    log.debug(
-        "Visiting query plan {} with input dataset builders {}",
-        openLineageContext.getQueryExecution(),
-        inputDatasetBuilders);
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "Visiting query plan {} with input dataset builders {}",
+          openLineageContext.getQueryExecution(),
+          inputDatasetBuilders);
+    }
 
     Function1<LogicalPlan, Collection<InputDataset>> inputVisitor =
         visitLogicalPlan(PlanUtils.merge(inputDatasetQueryPlanVisitors));
@@ -482,10 +484,12 @@ class OpenLineageRunEventBuilder {
   }
 
   private List<OutputDataset> buildOutputDatasets(List<Object> nodes) {
-    log.debug(
-        "Visiting query plan {} with output dataset builders {}",
-        openLineageContext.getQueryExecution(),
-        outputDatasetBuilders);
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "Visiting query plan {} with output dataset builders {}",
+          openLineageContext.getQueryExecution(),
+          outputDatasetBuilders);
+    }
     Function1<LogicalPlan, Collection<OutputDataset>> visitor =
         visitLogicalPlan(
             PlanUtils.merge(
