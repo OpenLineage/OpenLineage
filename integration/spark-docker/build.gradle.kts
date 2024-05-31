@@ -9,7 +9,7 @@ val destDir = layout.buildDirectory.dir("docker")
 val dockerfile = layout.projectDirectory.file("Dockerfile")
 val downloadDir = layout.projectDirectory.dir("bin")
 val manifestJsonFile = layout.projectDirectory.file("manifest.json")
-val platforms =
+val dockerBuildPlatforms =
     objects.setProperty(String::class.java).convention(setOf("linux/amd64", "linux/arm64"))
 val repository = objects.property(String::class.java).convention("openlineage/spark")
 
@@ -229,7 +229,7 @@ class DockerImageBuilderDelegate(private val m: DockerManifest) {
             dockerBuildContext.set(destDir.map { dir ->
                 dir.dir("spark-${sparkVersion}/scala-${scalaBinaryVersion}")
             })
-            platforms.set(platforms)
+            platforms.set(dockerBuildPlatforms)
         }
     }
 }
