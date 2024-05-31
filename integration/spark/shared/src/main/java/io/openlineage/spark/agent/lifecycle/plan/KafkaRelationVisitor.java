@@ -79,7 +79,7 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
                   || checkWithCurrentThreadContextClassLoader(KAFKA_SOURCE_PROVIDER_CLASS_NAME);
           KAFKA_PROVIDER_CLASS_PRESENT.set(available);
           KAFKA_PROVIDER_CHECKED.set(true);
-          log.debug("Kafka classes availability: " + available);
+          log.debug("Kafka classes availability: {}", available);
         }
       }
     }
@@ -97,7 +97,7 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
                   || checkWithCurrentThreadContextClassLoader(KAFKA_RELATION_CLASS_NAME);
           KAFKA_RELATION_CLASS_PRESENT.set(available);
           KAFKA_RELATION_CHECKED.set(true);
-          log.debug("KafkaRelation class availability: " + available);
+          log.debug("KafkaRelation class availability: {}", available);
         }
       }
     }

@@ -81,8 +81,13 @@ public class SparkContainerUtils {
   }
 
   static void mountPath(GenericContainer<?> container, Path sourcePath, Path targetPath) {
-    log.debug(
-        "[image={}]: Mount volume '{}:{}'", container.getDockerImageName(), sourcePath, targetPath);
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "[image={}]: Mount volume '{}:{}'",
+          container.getDockerImageName(),
+          sourcePath,
+          targetPath);
+    }
     container.withFileSystemBind(sourcePath.toString(), targetPath.toString(), BindMode.READ_ONLY);
   }
 
