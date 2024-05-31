@@ -11,7 +11,7 @@ val downloadDir = layout.projectDirectory.dir("bin")
 val manifestJsonFile = layout.projectDirectory.file("manifest.json")
 val dockerBuildPlatforms =
     objects.setProperty(String::class.java).convention(setOf("linux/amd64", "linux/arm64"))
-val repository = objects.property(String::class.java).convention("openlineage/spark")
+val repository = objects.property(String::class.java).convention("quay.io/openlineage/spark")
 
 val manifests = loadManifests()
 
