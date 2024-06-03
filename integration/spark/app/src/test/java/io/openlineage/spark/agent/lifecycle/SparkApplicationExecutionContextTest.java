@@ -60,6 +60,8 @@ class SparkApplicationExecutionContextTest {
     when(olContext.getSparkContext()).thenReturn(Optional.of(spark.sparkContext()));
     when(olContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
     when(olContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    when(olContext.getApplicationUuid())
+        .thenReturn(UUID.fromString("993426b3-1ca7-44af-8473-8e58c757ebd1"));
 
     when(eventEmitter.getOverriddenAppName()).thenReturn(Optional.of("app-name"));
     when(eventEmitter.getApplicationRunId())
