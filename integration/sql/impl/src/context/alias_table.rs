@@ -32,9 +32,14 @@ impl AliasTable {
     }
 
     pub fn resolve_table<'a>(&'a self, name: &'a DbTableMeta) -> &'a DbTableMeta {
+        let mut max_iter = 20; // does anyone need more than 20 aliases?
         let mut current = name;
         while let Some(next) = self.get_table_from_alias(current.qualified_name()) {
             current = next;
+            max_iter -= 1;
+            if max_iter <= 0 {
+                return current;
+            }
         }
         current
     }
