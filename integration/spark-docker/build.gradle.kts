@@ -11,7 +11,8 @@ val downloadDir = layout.projectDirectory.dir("bin")
 val manifestJsonFile = layout.projectDirectory.file("manifest.json")
 val platforms =
     objects.setProperty(String::class.java).convention(setOf("linux/amd64", "linux/arm64"))
-val repository = objects.property(String::class.java).convention("openlineage/spark")
+
+val repository = objects.property(String::class.java).convention("quay.io/openlineage/spark")
 
 val manifests = loadManifests()
 
@@ -77,6 +78,7 @@ abstract class BuildDockerImageTask : DefaultTask() {
         val dockerBuildContextDir = dockerBuildContext.get().asFile
         val dockerImage = "${dockerImageName.get()}:${dockerImageTag.get()}"
         logger.lifecycle("Building Docker image $dockerImage from $dockerBuildContextDir")
+        logger.lifecycle("Platforms: ${platforms.get().joinToString(",")}")
         project.exec {
             workingDir = dockerBuildContextDir
             val commandParts = listOf(
@@ -229,7 +231,7 @@ class DockerImageBuilderDelegate(private val m: DockerManifest) {
             dockerBuildContext.set(destDir.map { dir ->
                 dir.dir("spark-${sparkVersion}/scala-${scalaBinaryVersion}")
             })
-            platforms.set(platforms)
+            platforms.set(setOf("linux/amd64", "linux/arm64"))
         }
     }
 }

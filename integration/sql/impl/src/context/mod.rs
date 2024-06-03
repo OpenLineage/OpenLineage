@@ -185,6 +185,9 @@ impl<'a> Context<'a> {
     pub fn add_table_alias(&mut self, table: DbTableMeta, alias: Vec<Ident>) {
         if let Some(frame) = self.frames.last_mut() {
             let alias = DbTableMeta::new(alias, self.dialect, self.default_schema.clone());
+            if (table.name == alias.name) {
+                return;
+            }
             frame.aliases.add_table_alias(table, alias);
         }
     }

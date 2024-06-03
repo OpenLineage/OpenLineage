@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct AliasTable {
-    table_aliases: HashMap<DbTableMeta, DbTableMeta>,
+    table_aliases: HashMap<DbTableMeta, Vec<DbTableMeta>>,
 }
 
 impl AliasTable {
@@ -18,10 +18,10 @@ impl AliasTable {
     }
 
     pub fn add_table_alias(&mut self, table: DbTableMeta, alias: DbTableMeta) {
-        self.table_aliases.insert(alias, table);
+        self.table_aliases.insert(alias, vec![table]);
     }
 
-    pub fn get_table_from_alias(&self, alias: String) -> Option<&DbTableMeta> {
+    pub fn get_table_from_alias(&self, alias: String) -> Option<&Vec<DbTableMeta>> {
         self.table_aliases.iter().find_map(|entry| {
             if entry.0.qualified_name() == alias {
                 Some(entry.1)
@@ -31,10 +31,15 @@ impl AliasTable {
         })
     }
 
-    pub fn resolve_table<'a>(&'a self, name: &'a DbTableMeta) -> &'a DbTableMeta {
+    pub fn resolve_table<'a>(&'a self, name: &'a DbTableMeta) -> &'a Vec<DbTableMeta> {
+        let mut max_iter = 20; // does anyone need more than 20 aliases?
         let mut current = name;
         while let Some(next) = self.get_table_from_alias(current.qualified_name()) {
             current = next;
+            max_iter -= 1;
+            if max_iter <= 0 {
+                return current;
+            }
         }
         current
     }

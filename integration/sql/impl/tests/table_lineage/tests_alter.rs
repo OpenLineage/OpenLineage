@@ -56,3 +56,55 @@ fn alter_multiple_operations() {
         }
     )
 }
+
+#[test]
+fn test_circular_alias() {
+    assert_eq!(
+        test_sql("select * from test_orders as test_orders")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![table("test_orders")],
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn test_long_alias_used() {
+    assert_eq!(
+        test_sql("with test_orders as (select * from a as a) select * from test_orders")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![table("a")],
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn test_long_alias_not_used() {
+    assert_eq!(
+        test_sql("with test_orders as (select * from a as a) select * from other")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![table("other")],
+            out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn test_long_circular_alias() {
+    assert_eq!(
+        test_sql("with test_orders as (select * from test_orders as test_orders) select * from test_orders")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![table("test_orders")],
+            out_tables: vec![]
+        }
+    )
+}
