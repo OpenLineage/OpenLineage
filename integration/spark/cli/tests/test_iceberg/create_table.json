@@ -1,0 +1,31 @@
+{
+  "eventType" : "COMPLETE",
+  "outputs" : [ {
+    "namespace" : "file",
+    "name" : "/tmp/iceberg/default.create_table_test",
+    "facets" : {
+      "dataSource" : {
+        "name" : "file",
+        "uri" : "file"
+      },
+      "schema" : {
+        "fields" : [ {
+          "name" : "a",
+          "type" : "string"
+        }, {
+          "name" : "b",
+          "type" : "string"
+        } ]
+      },
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/iceberg",
+            "name": "default.create_table_test",
+            "type": "TABLE"
+          }
+        ]
+      }
+    }
+  } ]
+}

@@ -38,6 +38,9 @@ parameters:
   databricks-test:
     type: string
     default: "disabled"
+  nightly-run:
+    type: string
+    default: "inactive"
 
 jobs:
   unit-test-client-python:
@@ -642,7 +645,9 @@ jobs:
       - *checkout_project_root
       - when:
           condition:
-            equal: [ enabled, << pipeline.parameters.databricks-test >> ]
+            or:
+              - equal: [ enabled, << pipeline.parameters.databricks-test >> ]
+              - equal: [ active, << pipeline.parameters.nightly-run >> ]
           steps:
             - run:
                 name: Generate cache key
@@ -668,6 +673,29 @@ jobs:
                 destination: cluster-log4j.log
             - save_cache:
                 key: v1-databricks-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+                paths:
+                  - ~/.gradle
+
+  configurable-integration-test-spark:
+    working_directory: ~/openlineage/
+    machine:
+      image: ubuntu-2004:current
+    resource_class: large
+    steps:
+      - *checkout_project_root
+      - when:
+          condition:
+            equal: [ active, << pipeline.parameters.nightly-run >> ]
+          steps:
+            - restore_cache:
+                keys:
+                  - v1-configurable-integration-test
+            - run: ./integration/spark/cli/configurable-test.sh --spark ./integration/spark/cli/spark-conf.yml --test ./integration/spark/cli/tests
+            - store_artifacts:
+                path: integration/spark/cli/runs
+                destination: test-report
+            - save_cache:
+                key: configurable-integration-test
                 paths:
                   - ~/.gradle
 

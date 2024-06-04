@@ -45,6 +45,8 @@ workflows:
               spark-version: [ '3.2.4', '3.3.4', '3.4.2', '3.5.0' ]
           requires:
             - approval-integration-spark
+      - configurable-integration-test-spark:
+          context: integration-tests
       - workflow_complete:
           requires:
             - integration-test-integration-spark-scala-2_12

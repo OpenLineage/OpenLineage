@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.17.1...HEAD)
 
+### Added
+* **Spark: Configurable integration test.** [`#2755`](https://github.com/OpenLineage/OpenLineage/pull/2755) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Provide command line tool capable of running Spark integration tests that can be created without Java any experience.*
+
 ## [1.17.1](https://github.com/OpenLineage/OpenLineage/compare/1.16.0...1.17.1) - 2024-06-21
 ### Added
 * **Java: dataset namespace resolver feature** [`#2720`](https://github.com/OpenLineage/OpenLineage/pull/2720) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
