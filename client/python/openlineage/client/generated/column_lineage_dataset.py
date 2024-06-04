@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 from attr import define, field
 from openlineage.client.generated.base import DatasetFacet
@@ -23,10 +23,10 @@ class ColumnLineageDatasetFacet(DatasetFacet):
 @define
 class Fields(RedactMixin):
     inputFields: list[InputField]  # noqa: N815
-    transformationDescription: str | None = field(default=None)  # noqa: N815
+    transformationDescription: Optional[str] = field(default=None)  # noqa: N815
     """a string representation of the transformation applied"""
 
-    transformationType: str | None = field(default=None)  # noqa: N815
+    transformationType: Optional[str] = field(default=None)  # noqa: N815
     """
     IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no
     original data available (like a hash of PII for example)

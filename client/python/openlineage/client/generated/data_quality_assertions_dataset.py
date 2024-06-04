@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 from attr import define, field
 from openlineage.client.generated.base import InputDatasetFacet
@@ -16,7 +16,7 @@ class Assertion(RedactMixin):
     """Type of expectation test that dataset is subjected to"""
 
     success: bool
-    column: str | None = field(default=None)
+    column: Optional[str] = field(default=None)
     """
     Column that expectation is testing. It should match the name provided in SchemaDatasetFacet. If
     column field is empty, then expectation refers to whole dataset.

@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 from attr import define, field
 from openlineage.client.generated.base import DatasetFacet
 from openlineage.client.utils import RedactMixin
@@ -22,7 +24,7 @@ class Identifier(RedactMixin):
 
 @define
 class SymlinksDatasetFacet(DatasetFacet):
-    identifiers: list[Identifier] | None = field(factory=list)  # type: ignore[assignment]
+    identifiers: Optional[list[Identifier]] = field(factory=list)  # type: ignore[assignment]
 
     @staticmethod
     def _get_schema() -> str:

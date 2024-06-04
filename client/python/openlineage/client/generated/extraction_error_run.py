@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 from attr import define, field
 from openlineage.client.generated.base import RunFacet
 from openlineage.client.utils import RedactMixin
@@ -13,15 +15,15 @@ class Error(RedactMixin):
     errorMessage: str  # noqa: N815
     """Text representation of extraction error message."""
 
-    stackTrace: str | None = field(default=None)  # noqa: N815
+    stackTrace: Optional[str] = field(default=None)  # noqa: N815
     """Stack trace of extraction error message"""
 
-    task: str | None = field(default=None)
+    task: Optional[str] = field(default=None)
     """
     Text representation of task that failed. This can be, for example, SQL statement that parser could
     not interpret.
     """
-    taskNumber: int | None = field(default=None)  # noqa: N815
+    taskNumber: Optional[int] = field(default=None)  # noqa: N815
     """Order of task (counted from 0)."""
 
 

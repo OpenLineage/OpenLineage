@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 from attr import define, field
 from openlineage.client.generated.base import DatasetFacet
 from openlineage.client.utils import RedactMixin
@@ -10,7 +12,7 @@ from openlineage.client.utils import RedactMixin
 
 @define
 class SchemaDatasetFacet(DatasetFacet):
-    fields: list[SchemaDatasetFacetFields] | None = field(factory=list)  # type: ignore[assignment]
+    fields: Optional[list[SchemaDatasetFacetFields]] = field(factory=list)  # type: ignore[assignment]
     """The fields of the data source."""
 
     @staticmethod
@@ -23,13 +25,13 @@ class SchemaDatasetFacetFields(RedactMixin):
     name: str
     """The name of the field."""
 
-    type: str | None = field(default=None)
+    type: Optional[str] = field(default=None)
     """The type of the field."""
 
-    description: str | None = field(default=None)
+    description: Optional[str] = field(default=None)
     """The description of the field."""
 
-    fields: list[SchemaDatasetFacetFields] | None = field(factory=list)  # type: ignore[assignment]
+    fields: Optional[list[SchemaDatasetFacetFields]] = field(factory=list)  # type: ignore[assignment]
     """Nested struct fields."""
 
     @staticmethod
