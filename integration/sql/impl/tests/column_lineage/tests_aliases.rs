@@ -144,3 +144,48 @@ fn test_deeply_nested_alias_chain() {
         },]
     );
 }
+
+#[test]
+fn test_circular_alias() {
+    assert_eq!(
+        test_sql("select * from test_orders as test_orders")
+            .unwrap()
+            .table_lineage
+            .in_tables,
+        vec![table("test_orders")],
+    )
+}
+
+#[test]
+fn test_long_alias_used() {
+    assert_eq!(
+        test_sql("with test_orders as (select * from a as a) select * from test_orders")
+            .unwrap()
+            .table_lineage
+            .in_tables,
+        vec![table("a")],
+    )
+}
+
+#[ignore] // https://github.com/OpenLineage/OpenLineage/issues/2752
+#[test]
+fn test_long_alias_not_used() {
+    assert_eq!(
+        test_sql("with test_orders as (select * from a as a) select * from other")
+            .unwrap()
+            .table_lineage
+            .in_tables,
+        vec![table("other")],
+    )
+}
+
+#[ignore] // https://github.com/OpenLineage/OpenLineage/issues/2752
+#[test]
+fn test_long_circular_alias() {
+    assert_eq!(
+        test_sql("with test_orders as (select * from test_orders as test_orders) select * from test_orders")
+            .unwrap()
+            .table_lineage.in_tables,
+        vec![table("test_orders")],
+    )
+}
