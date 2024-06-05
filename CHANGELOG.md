@@ -3,7 +3,7 @@
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.16.0...HEAD)
 
 ### Fixed
-* **Spark: fix events emitted for `drop table` for Spark 3.4 and above** [`#2745`](https://github.com/OpenLineage/OpenLineage/pull/2745) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+* **Spark: fix events emitted for `drop table` for Spark 3.4 and above** [`#2745`](https://github.com/OpenLineage/OpenLineage/pull/2745) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)[@savannavalgi](https://github.com/savannavalgi)
   *Include dataset being dropped within the event, as it used to be prior to Spark 3.4.*
 
 ## [1.16.0](https://github.com/OpenLineage/OpenLineage/compare/1.15.0...1.16.0) - 2024-05-28
