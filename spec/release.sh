@@ -55,6 +55,12 @@ cp spec/OpenLineage.yml ${WEBSITE_DIR}/static/spec/OpenLineage.yml
 
 # Copy changed spec JSON files to target location
 git diff --name-only $PREV_SPEC_COMMIT HEAD 'spec/*.json' | while read LINE; do
+
+  #ignore registry files
+  if [[ $LINE =~ "registry.json" ]]; then
+      continue
+  fi
+
   # extract target file name from $id field in spec files
   URL=$(cat $LINE | jq -r '.["$id"]')
 
