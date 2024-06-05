@@ -12,6 +12,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Arrays;
 import java.util.Collections;
@@ -69,6 +70,6 @@ class UnionFieldDependencyCollectorTest {
     visitor.apply(union, builder);
 
     // first element of a union is treated as an ancestor node
-    verify(builder, times(1)).addDependency(exprId1, exprId2);
+    verify(builder, times(1)).addDependency(exprId1, exprId2, TransformationInfo.identity());
   }
 }

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
+import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
@@ -88,8 +89,8 @@ class ExpressionDependencyCollectorTest {
 
     ExpressionDependencyCollector.collect(context, plan);
 
-    verify(builder, times(1)).addDependency(aliasExprId1, exprId1);
-    verify(builder, times(1)).addDependency(aliasExprId2, exprId2);
+    verify(builder, times(1)).addDependency(aliasExprId1, exprId1, TransformationInfo.identity());
+    verify(builder, times(1)).addDependency(aliasExprId2, exprId2, TransformationInfo.identity());
   }
 
   @Test
@@ -103,7 +104,7 @@ class ExpressionDependencyCollectorTest {
 
     ExpressionDependencyCollector.collect(context, plan);
 
-    verify(builder, times(1)).addDependency(aliasExprId1, exprId1);
+    verify(builder, times(1)).addDependency(aliasExprId1, exprId1, TransformationInfo.identity());
   }
 
   @Test
@@ -139,7 +140,9 @@ class ExpressionDependencyCollectorTest {
 
     ExpressionDependencyCollector.collect(context, plan);
 
-    verify(builder, times(1)).addDependency(rootAliasExprId, exprId1);
-    verify(builder, times(1)).addDependency(rootAliasExprId, exprId2);
+    verify(builder, times(1))
+        .addDependency(rootAliasExprId, exprId1, TransformationInfo.aggregation());
+    verify(builder, times(1))
+        .addDependency(rootAliasExprId, exprId2, TransformationInfo.aggregation());
   }
 }

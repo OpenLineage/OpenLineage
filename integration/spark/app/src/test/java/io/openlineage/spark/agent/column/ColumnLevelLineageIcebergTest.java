@@ -364,7 +364,7 @@ class ColumnLevelLineageIcebergTest {
     assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "d", FILE, T1_EXPECTED_NAME, "b");
     assertColumnDependsOnInputs(facet, "c", 1);
-    assertColumnDependsOnInputs(facet, "d", 1);
+    assertColumnDependsOnInputs(facet, "d", 2);
   }
 
   @Test
