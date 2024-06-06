@@ -5,7 +5,6 @@
 
 package io.openlineage.spark.agent.lifecycle.plan.column;
 
-import io.openlineage.client.OpenLineage;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,7 +14,7 @@ import lombok.Setter;
 public class TransformationInfo {
 
   @Getter @Setter
-  private OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFieldsTransformations.Type type;
+  private String type;
 
   @Getter @Setter private String subType;
   @Getter @Setter private String description;
@@ -23,8 +22,7 @@ public class TransformationInfo {
 
   public static TransformationInfo identity() {
     return new TransformationInfo(
-        OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFieldsTransformations.Type
-            .IDENTITY,
+        "IDENTITY",
         "IDENTITY",
         "",
         false);
@@ -32,8 +30,7 @@ public class TransformationInfo {
 
   public static TransformationInfo transformation() {
     return new TransformationInfo(
-        OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFieldsTransformations.Type
-            .TRANSFORMED,
+        "TRANSFORMED",
         "TRANSFORMATION",
         "",
         false);
@@ -41,8 +38,7 @@ public class TransformationInfo {
 
   public static TransformationInfo aggregation() {
     return new TransformationInfo(
-        OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFieldsTransformations.Type
-            .TRANSFORMED,
+        "TRANSFORMED",
         "AGGREGATION",
         "",
         false);
@@ -50,20 +46,17 @@ public class TransformationInfo {
 
   public static TransformationInfo indirect(String subType) {
     return new TransformationInfo(
-        OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFieldsTransformations.Type
-            .INDIRECT,
+        "INDIRECT",
         subType,
         "",
         false);
   }
   // easiest way to compare two transformations
   public Integer numValue() { // FIXME - THAT'S SOOO UGLY, NEED TO FIX LATER
-    if (OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFieldsTransformations.Type
-        .INDIRECT
+    if ("INDIRECT"
         .equals(type)) {
       return 1;
-    } else if (OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFieldsTransformations.Type
-        .TRANSFORMED
+    } else if ("TRANSFORMED"
         .equals(type)) {
       if ("AGGREGATION".equals(subType)) {
         return 2;
