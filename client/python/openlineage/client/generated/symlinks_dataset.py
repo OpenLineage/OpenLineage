@@ -3,12 +3,12 @@
 
 from __future__ import annotations
 
-from attr import define, field
+import attr
 from openlineage.client.generated.base import DatasetFacet
 from openlineage.client.utils import RedactMixin
 
 
-@define
+@attr.define
 class Identifier(RedactMixin):
     namespace: str
     """The dataset namespace"""
@@ -20,9 +20,9 @@ class Identifier(RedactMixin):
     """Identifier type"""
 
 
-@define
+@attr.define
 class SymlinksDatasetFacet(DatasetFacet):
-    identifiers: list[Identifier] | None = field(factory=list)  # type: ignore[assignment]
+    identifiers: list[Identifier] | None = attr.field(factory=list)
 
     @staticmethod
     def _get_schema() -> str:
