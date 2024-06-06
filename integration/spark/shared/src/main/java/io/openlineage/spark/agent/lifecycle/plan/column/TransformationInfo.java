@@ -13,51 +13,32 @@ import lombok.Setter;
 @AllArgsConstructor
 public class TransformationInfo {
 
-  @Getter @Setter
-  private String type;
+  @Getter @Setter private String type;
 
   @Getter @Setter private String subType;
   @Getter @Setter private String description;
   @Getter @Setter private Boolean masking;
 
   public static TransformationInfo identity() {
-    return new TransformationInfo(
-        "IDENTITY",
-        "IDENTITY",
-        "",
-        false);
+    return new TransformationInfo("IDENTITY", "IDENTITY", "", false);
   }
 
   public static TransformationInfo transformation() {
-    return new TransformationInfo(
-        "TRANSFORMED",
-        "TRANSFORMATION",
-        "",
-        false);
+    return new TransformationInfo("TRANSFORMED", "TRANSFORMATION", "", false);
   }
 
   public static TransformationInfo aggregation() {
-    return new TransformationInfo(
-        "TRANSFORMED",
-        "AGGREGATION",
-        "",
-        false);
+    return new TransformationInfo("TRANSFORMED", "AGGREGATION", "", false);
   }
 
   public static TransformationInfo indirect(String subType) {
-    return new TransformationInfo(
-        "INDIRECT",
-        subType,
-        "",
-        false);
+    return new TransformationInfo("INDIRECT", subType, "", false);
   }
   // easiest way to compare two transformations
   public Integer numValue() { // FIXME - THAT'S SOOO UGLY, NEED TO FIX LATER
-    if ("INDIRECT"
-        .equals(type)) {
+    if ("INDIRECT".equals(type)) {
       return 1;
-    } else if ("TRANSFORMED"
-        .equals(type)) {
+    } else if ("TRANSFORMED".equals(type)) {
       if ("AGGREGATION".equals(subType)) {
         return 2;
       }
