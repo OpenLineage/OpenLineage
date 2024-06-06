@@ -89,14 +89,17 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     RunEvent event =
         runEventBuilder.buildRun(
-            buildApplicationParentFacet(),
-            openLineage
-                .newRunEventBuilder()
-                .eventTime(toZonedTime(startEvent.time()))
-                .eventType(eventType),
-            buildJob(),
-            getJobFacetsBuilder(olContext.getQueryExecution().get()),
-            startEvent);
+            OpenLineageRunEventContext.builder()
+                .applicationParentRunFacet(buildApplicationParentFacet())
+                .event(startEvent)
+                .runEventBuilder(
+                    openLineage
+                        .newRunEventBuilder()
+                        .eventTime(toZonedTime(startEvent.time()))
+                        .eventType(eventType))
+                .jobBuilder(buildJob())
+                .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
+                .build());
 
     log.debug("Posting event for start {}: {}", executionId, event);
     eventEmitter.emit(event);
@@ -131,14 +134,18 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     RunEvent event =
         runEventBuilder.buildRun(
-            buildApplicationParentFacet(),
-            openLineage
-                .newRunEventBuilder()
-                .eventTime(toZonedTime(endEvent.time()))
-                .eventType(eventType),
-            buildJob(),
-            getJobFacetsBuilder(olContext.getQueryExecution().get()),
-            endEvent);
+            OpenLineageRunEventContext.builder()
+                .applicationParentRunFacet(buildApplicationParentFacet())
+                .event(endEvent)
+                .runEventBuilder(
+                    openLineage
+                        .newRunEventBuilder()
+                        .eventTime(toZonedTime(endEvent.time()))
+                        .eventType(eventType))
+                .jobBuilder(buildJob())
+                .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
+                .build());
+
     if (log.isDebugEnabled()) {
       log.debug("Posting event for end {}: {}", executionId, OpenLineageClientUtils.toJson(event));
     }
@@ -159,14 +166,17 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     RunEvent event =
         runEventBuilder.buildRun(
-            buildApplicationParentFacet(),
-            openLineage
-                .newRunEventBuilder()
-                .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
-                .eventType(RUNNING),
-            buildJob(),
-            getJobFacetsBuilder(olContext.getQueryExecution().get()),
-            stageSubmitted);
+            OpenLineageRunEventContext.builder()
+                .applicationParentRunFacet(buildApplicationParentFacet())
+                .event(stageSubmitted)
+                .runEventBuilder(
+                    openLineage
+                        .newRunEventBuilder()
+                        .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
+                        .eventType(RUNNING))
+                .jobBuilder(buildJob())
+                .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
+                .build());
 
     log.debug("Posting event for stage submitted {}: {}", executionId, event);
     eventEmitter.emit(event);
@@ -185,14 +195,17 @@ class SparkSQLExecutionContext implements ExecutionContext {
     }
     RunEvent event =
         runEventBuilder.buildRun(
-            buildApplicationParentFacet(),
-            openLineage
-                .newRunEventBuilder()
-                .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
-                .eventType(RUNNING),
-            buildJob(),
-            getJobFacetsBuilder(olContext.getQueryExecution().get()),
-            stageCompleted);
+            OpenLineageRunEventContext.builder()
+                .applicationParentRunFacet(buildApplicationParentFacet())
+                .event(stageCompleted)
+                .runEventBuilder(
+                    openLineage
+                        .newRunEventBuilder()
+                        .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
+                        .eventType(RUNNING))
+                .jobBuilder(buildJob())
+                .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
+                .build());
 
     log.debug("Posting event for stage completed {}: {}", executionId, event);
     eventEmitter.emit(event);
@@ -222,14 +235,17 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     RunEvent event =
         runEventBuilder.buildRun(
-            buildApplicationParentFacet(),
-            openLineage
-                .newRunEventBuilder()
-                .eventTime(toZonedTime(jobStart.time()))
-                .eventType(eventType),
-            buildJob(),
-            getJobFacetsBuilder(olContext.getQueryExecution().get()),
-            jobStart);
+            OpenLineageRunEventContext.builder()
+                .applicationParentRunFacet(buildApplicationParentFacet())
+                .event(jobStart)
+                .runEventBuilder(
+                    openLineage
+                        .newRunEventBuilder()
+                        .eventTime(toZonedTime(jobStart.time()))
+                        .eventType(eventType))
+                .jobBuilder(buildJob())
+                .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
+                .build());
 
     log.debug("Posting event for start {}: {}", executionId, event);
     eventEmitter.emit(event);
@@ -266,14 +282,17 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     RunEvent event =
         runEventBuilder.buildRun(
-            buildApplicationParentFacet(),
-            openLineage
-                .newRunEventBuilder()
-                .eventTime(toZonedTime(jobEnd.time()))
-                .eventType(eventType),
-            buildJob(),
-            getJobFacetsBuilder(olContext.getQueryExecution().get()),
-            jobEnd);
+            OpenLineageRunEventContext.builder()
+                .applicationParentRunFacet(buildApplicationParentFacet())
+                .event(jobEnd)
+                .runEventBuilder(
+                    openLineage
+                        .newRunEventBuilder()
+                        .eventTime(toZonedTime(jobEnd.time()))
+                        .eventType(eventType))
+                .jobBuilder(buildJob())
+                .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
+                .build());
 
     log.debug("Posting event for end {}: {}", executionId, event);
     eventEmitter.emit(event);

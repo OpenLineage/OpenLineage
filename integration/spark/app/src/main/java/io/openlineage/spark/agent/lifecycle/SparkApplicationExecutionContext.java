@@ -16,6 +16,7 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Locale;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.ActiveJob;
@@ -82,14 +83,18 @@ class SparkApplicationExecutionContext implements ExecutionContext {
 
     RunEvent event =
         runEventBuilder.buildRun(
-            buildApplicationParentFacet(),
-            openLineage
-                .newRunEventBuilder()
-                .eventTime(toZonedTime(applicationStart.time()))
-                .eventType(START),
-            getJobBuilder(),
-            getJobFacetsBuilder(),
-            applicationStart);
+            OpenLineageRunEventContext.builder()
+                .applicationParentRunFacet(buildApplicationParentFacet())
+                .runEventBuilder(
+                    openLineage
+                        .newRunEventBuilder()
+                        .eventTime(toZonedTime(applicationStart.time()))
+                        .eventType(START))
+                .jobBuilder(getJobBuilder())
+                .jobFacetsBuilder(getJobFacetsBuilder())
+                .overwriteRunId(Optional.of(olContext.getApplicationUuid()))
+                .event(applicationStart)
+                .build());
 
     log.debug("Posting event for applicationId {} start: {}", applicationId, event);
     eventEmitter.emit(event);
@@ -108,14 +113,18 @@ class SparkApplicationExecutionContext implements ExecutionContext {
 
     RunEvent event =
         runEventBuilder.buildRun(
-            buildApplicationParentFacet(),
-            openLineage
-                .newRunEventBuilder()
-                .eventTime(toZonedTime(applicationEnd.time()))
-                .eventType(COMPLETE),
-            getJobBuilder(),
-            getJobFacetsBuilder(),
-            applicationEnd);
+            OpenLineageRunEventContext.builder()
+                .applicationParentRunFacet(buildApplicationParentFacet())
+                .runEventBuilder(
+                    openLineage
+                        .newRunEventBuilder()
+                        .eventTime(toZonedTime(applicationEnd.time()))
+                        .eventType(COMPLETE))
+                .jobBuilder(getJobBuilder())
+                .jobFacetsBuilder(getJobFacetsBuilder())
+                .overwriteRunId(Optional.of(olContext.getApplicationUuid()))
+                .event(applicationEnd)
+                .build());
 
     log.debug("Posting event for applicationId {} end: {}", applicationId, event);
     eventEmitter.emit(event);
