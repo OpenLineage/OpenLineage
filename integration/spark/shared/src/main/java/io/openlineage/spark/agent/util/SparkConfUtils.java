@@ -9,12 +9,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Optional;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import scala.Option;
 
 public class SparkConfUtils {
   private static final String metastoreUriKey = "spark.sql.hive.metastore.uris";
-  private static final String metastoreHadoopUriKey = "spark.hadoop.hive.metastore.uris";
+  private static final String metastoreHadoopUriKey = "hive.metastore.uris";
 
   public static Optional<String> findSparkConfigKey(SparkConf conf, String name) {
     Option<String> opt = conf.getOption(name);
@@ -24,11 +26,17 @@ public class SparkConfUtils {
     return Optional.empty();
   }
 
-  public static Optional<URI> getMetastoreUri(SparkConf conf) {
-    return Optional.ofNullable(
-            SparkConfUtils.findSparkConfigKey(conf, metastoreUriKey)
-                .orElse(
-                    SparkConfUtils.findSparkConfigKey(conf, metastoreHadoopUriKey).orElse(null)))
+  public static Optional<String> findHadoopConfigKey(Configuration conf, String name) {
+    String opt = conf.get(name);
+    return Optional.ofNullable(opt);
+  }
+
+  public static Optional<URI> getMetastoreUri(SparkContext context) {
+    Optional<String> metastoreUris = findSparkConfigKey(context.getConf(), metastoreUriKey);
+    if (!metastoreUris.isPresent()) {
+      metastoreUris = findHadoopConfigKey(context.hadoopConfiguration(), metastoreHadoopUriKey);
+    }
+    return metastoreUris
         .map(
             key -> {
               if (key.contains(",")) {

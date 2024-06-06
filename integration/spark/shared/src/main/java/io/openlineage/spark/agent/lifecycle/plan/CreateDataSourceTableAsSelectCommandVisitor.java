@@ -30,6 +30,10 @@ public class CreateDataSourceTableAsSelectCommandVisitor
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+    if (!context.getSparkSession().isPresent()) {
+      return Collections.emptyList();
+    }
+
     CreateDataSourceTableAsSelectCommand command = (CreateDataSourceTableAsSelectCommand) x;
     CatalogTable catalogTable = command.table();
 
@@ -41,7 +45,7 @@ public class CreateDataSourceTableAsSelectCommandVisitor
     return Collections.singletonList(
         outputDataset()
             .getDataset(
-                PathUtils.fromCatalogTable(catalogTable),
+                PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get()),
                 schema,
                 OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE));
   }

@@ -118,7 +118,7 @@ class LogicalRelationDatasetBuilderTest {
 
     try (MockedStatic pathUtils = mockStatic(PathUtils.class)) {
       try (MockedStatic mockedFacetUtils = mockStatic(DatasetVersionDatasetFacetUtils.class)) {
-        when(PathUtils.fromCatalogTable(catalogTable)).thenReturn(di);
+        when(PathUtils.fromCatalogTable(catalogTable, session)).thenReturn(di);
         when(DatasetVersionDatasetFacetUtils.extractVersionFromLogicalRelation(logicalRelation))
             .thenReturn(Optional.of(SOME_VERSION));
         when(logicalRelation.schema()).thenReturn(schema);

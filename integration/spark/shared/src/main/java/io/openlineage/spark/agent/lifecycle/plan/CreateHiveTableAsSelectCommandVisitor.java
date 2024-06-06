@@ -36,9 +36,13 @@ public class CreateHiveTableAsSelectCommandVisitor
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+    if (!context.getSparkSession().isPresent()) {
+      return Collections.emptyList();
+    }
+
     CreateHiveTableAsSelectCommand command = (CreateHiveTableAsSelectCommand) x;
     CatalogTable table = command.tableDesc();
-    DatasetIdentifier di = PathUtils.fromCatalogTable(table);
+    DatasetIdentifier di = PathUtils.fromCatalogTable(table, context.getSparkSession().get());
 
     // zip query outputs with attribute names
     LogicalPlan query = command.query();

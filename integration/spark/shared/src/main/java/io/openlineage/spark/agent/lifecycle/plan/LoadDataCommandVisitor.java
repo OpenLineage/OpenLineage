@@ -30,12 +30,19 @@ public class LoadDataCommandVisitor
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+    if (!context.getSparkSession().isPresent()) {
+      return Collections.emptyList();
+    }
+
     LoadDataCommand command = (LoadDataCommand) x;
     return catalogTableFor(command.table())
         .map(
             table ->
                 Collections.singletonList(
-                    outputDataset().getDataset(PathUtils.fromCatalogTable(table), table.schema())))
+                    outputDataset()
+                        .getDataset(
+                            PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
+                            table.schema())))
         .orElseGet(Collections::emptyList);
   }
 

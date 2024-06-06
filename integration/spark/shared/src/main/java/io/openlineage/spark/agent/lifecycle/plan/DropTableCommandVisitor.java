@@ -36,29 +36,27 @@ public class DropTableCommandVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     DropTableCommand command = (DropTableCommand) x;
     Optional<CatalogTable> table = catalogTableFor(command.tableName());
-    if (table.isPresent()) {
-      DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(table.get());
-
-      DatasetFactory<OpenLineage.OutputDataset> factory = outputDataset();
-      return Collections.singletonList(
-          factory.getDataset(
-              datasetIdentifier,
-              new OpenLineage.DatasetFacetsBuilder()
-                  .schema(null)
-                  .dataSource(
-                      PlanUtils.datasourceFacet(
-                          context.getOpenLineage(), datasetIdentifier.getNamespace()))
-                  .lifecycleStateChange(
-                      context
-                          .getOpenLineage()
-                          .newLifecycleStateChangeDatasetFacet(
-                              OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
-                                  .DROP,
-                              null))));
-
-    } else {
-      // already deleted, do nothing
+    if (!table.isPresent() || !context.getSparkSession().isPresent()) {
       return Collections.emptyList();
     }
+
+    DatasetIdentifier datasetIdentifier =
+        PathUtils.fromCatalogTable(table.get(), context.getSparkSession().get());
+
+    DatasetFactory<OpenLineage.OutputDataset> factory = outputDataset();
+    return Collections.singletonList(
+        factory.getDataset(
+            datasetIdentifier,
+            new OpenLineage.DatasetFacetsBuilder()
+                .schema(null)
+                .dataSource(
+                    PlanUtils.datasourceFacet(
+                        context.getOpenLineage(), datasetIdentifier.getNamespace()))
+                .lifecycleStateChange(
+                    context
+                        .getOpenLineage()
+                        .newLifecycleStateChangeDatasetFacet(
+                            OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP,
+                            null))));
   }
 }
