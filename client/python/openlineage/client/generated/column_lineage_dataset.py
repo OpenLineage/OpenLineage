@@ -50,7 +50,7 @@ class InputField(RedactMixin):
 
 @attr.define
 class Transformation(RedactMixin):
-    type: str | None = attr.field(default=None)
+    type: str
     """The type of the transformation. Allowed values are: IDENTITY, TRANSFORMED, INDIRECT"""
 
     subtype: str | None = attr.field(default=None)
