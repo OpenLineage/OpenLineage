@@ -54,10 +54,10 @@
                                 "type": "boolean",
                                 "description": "is transformation masking the data or not"
                               }
-                            }
-                          },
-                          "additionalProperties": true,
-                          "required": ["type"]
+                            },
+                            "required": ["type"],
+                            "additionalProperties": true
+                          }
                         }
                       },
                       "additionalProperties": true,
