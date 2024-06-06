@@ -164,7 +164,7 @@ class KafkaTransport(Transport):
 
 def _check_if_airflow_sqlalchemy_context() -> bool:
     try:
-        from airflow.version import version  # type: ignore[import]
+        from airflow.version import version  # type: ignore[import-not-found]
 
         parsed_version = Version(version)
         if Version("2.3.0") <= parsed_version < Version("2.6.0"):

@@ -38,8 +38,7 @@ DATA_MODELS_TYPES = get_data_model_types(
 )
 NEW_MODEL = DATA_MODELS_TYPES.data_model
 NEW_MODEL.DEFAULT_IMPORTS = (
-    Import.from_full_path("attr.define"),
-    Import.from_full_path("attr.field"),
+    Import.from_full_path("attr"),
 )
 
 # locations definitions

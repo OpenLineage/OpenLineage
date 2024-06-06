@@ -76,8 +76,8 @@ class JobEvent(RedactMixin):
     producer: str = attr.ib()
     schemaURL: str = attr.ib()  # noqa: N815
     job: Job = attr.ib()
-    inputs: Optional[List[Dataset]] = attr.ib(factory=list)  # type: ignore[assignment]
-    outputs: Optional[List[Dataset]] = attr.ib(factory=list)  # type: ignore[assignment]
+    inputs: Optional[List[Dataset]] = attr.ib(factory=list)
+    outputs: Optional[List[Dataset]] = attr.ib(factory=list)
 
     _skip_redact: ClassVar[List[str]] = ["producer"]
 
@@ -101,8 +101,8 @@ class RunEvent(RedactMixin):
     run: Run = attr.ib()
     job: Job = attr.ib()
     producer: str = attr.ib()
-    inputs: Optional[List[Dataset]] = attr.ib(factory=list)  # type: ignore[assignment]
-    outputs: Optional[List[Dataset]] = attr.ib(factory=list)  # type: ignore[assignment]
+    inputs: Optional[List[Dataset]] = attr.ib(factory=list)
+    outputs: Optional[List[Dataset]] = attr.ib(factory=list)
     schemaURL: str = attr.ib(default=SCHEMA_URL)  # noqa: N815
 
     _skip_redact: ClassVar[List[str]] = ["eventType", "eventTime", "producer", "schemaURL"]
