@@ -30,7 +30,7 @@
     {% for decorator in decorators -%}
         {{ decorator }}
 {% endfor -%}
-@define
+@attr.define
 {#- always force kw_only for event classes -#}
 {%- if class_name.endswith("Event") -%}(kw_only=True){%- endif -%}
 {#- add parent class if exists -#}
@@ -71,12 +71,12 @@ class {{ class_name }}:
     {%- if field.field %}
     {{ field.name }}: {{ type_hint }} = 
         {#- attrs requires field() for validators -#}
-        {%- if 'True' == validators.validator_needed(field.type_hint) -%} field(default={{ field.field }}
+        {%- if 'True' == validators.validator_needed(field.type_hint) -%} attr.field(default={{ field.field }}
         {%- else -%} {{ field.field }} {%- endif -%}
     {%- else %}
     {{ field.name }}: {{ type_hint }}
     {#- attrs requires field() for validators -#}
-    {%- if 'True' == validators.validator_needed(field.type_hint) %} = field() {%- endif -%}
+    {%- if 'True' == validators.validator_needed(field.type_hint) %} = attr.field() {%- endif -%}
     {%- if not (field.required or (field.represented_default == 'None' and field.strip_default_none)) -%}
         {#- use factories for list and dict types -#}
         {%- if 'list' in type_hint -%}
@@ -86,12 +86,12 @@ class {{ class_name }}:
         {%- else -%}
             {%- set default_value = 'default='+field.represented_default -%}
         {%- endif -%}
-        = field({{ default_value }}
+        = attr.field({{ default_value }}
         {#- if other classes inherit from this class make field kw_only -#}
         {%- if field.parent.reference.children | map(attribute='name') | join -%}, kw_only=True{%- endif -%}
         )
         {#- mypy complains when field is optional and may be dict or list -#}
-        {%- if 'factory' in default_value and "None" in type_hint %}  # type: ignore[assignment] {%- endif -%}
+        {%- if 'factory' in default_value and "None" in type_hint %} {%- endif -%}
     {%- endif -%}
     {%- endif %}
 
@@ -122,8 +122,8 @@ class {{ class_name }}:
 {%- endfor -%}
 {#- special case for producer and schemaURL fields -#}
 {%- if class_name in ['BaseFacet', 'BaseEvent'] %}
-    {{ private_prefix }}producer: str = field(default='', kw_only=True)  # noqa: N815
-    {{ private_prefix }}schemaURL: str = field(  # noqa: N815
+    {{ private_prefix }}producer: str = attr.field(default='', kw_only=True)  # noqa: N815
+    {{ private_prefix }}schemaURL: str = attr.field(  # noqa: N815
         default="{{ _schemaURL }}", init=False)
 {%- endif -%}
 {#- try to match redfact fields per module_name -#}
