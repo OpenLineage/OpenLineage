@@ -68,7 +68,7 @@ public class AvroSchemaUtils {
     Schema.Type fieldType = fieldSchema.getType();
     if (fieldType.equals(Schema.Type.RECORD)) {
       return builder
-          .type("record")
+          .type(fieldSchema.getNamespace() + "." + fieldSchema.getName())
           .fields(transformFields(openLineage, fieldSchema.getFields()))
           .build();
     }
@@ -91,9 +91,8 @@ public class AvroSchemaUtils {
                   openLineage, List.of(new Schema.Field("_element", fieldSchema.getElementType()))))
           .build();
     }
-    if (fieldType.equals(Schema.Type.FIXED)) {
-      int size = fieldSchema.getFixedSize();
-      return builder.type("fixed(" + size + ")").build();
+    if (fieldType.equals(Schema.Type.FIXED) || fieldType.equals(Schema.Type.ENUM)) {
+      return builder.type(fieldSchema.getNamespace() + "." + fieldSchema.getName()).build();
     }
     return builder.type(fieldType.getName()).build();
   }
