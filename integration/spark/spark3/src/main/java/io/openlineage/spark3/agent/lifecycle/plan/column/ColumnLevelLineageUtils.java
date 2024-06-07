@@ -6,6 +6,7 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -41,7 +42,10 @@ public class ColumnLevelLineageUtils {
 
     ColumnLevelLineageContext context =
         new ColumnLevelLineageContext(
-            event, olContext, new ColumnLevelLineageBuilder(schemaFacet, olContext));
+            event,
+            olContext,
+            new ColumnLevelLineageBuilder(schemaFacet, olContext),
+            new DatasetNamespaceCombinedResolver(olContext.getOpenLineageConfig()));
 
     LogicalPlan plan = getAdjustedPlan(olContext);
 

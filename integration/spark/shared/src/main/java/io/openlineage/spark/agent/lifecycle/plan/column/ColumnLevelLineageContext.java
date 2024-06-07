@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.lifecycle.plan.column;
 
+import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.spark.api.OpenLineageContext;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,4 +18,5 @@ public class ColumnLevelLineageContext {
   @NonNull @Getter final SparkListenerEvent event;
   @NonNull @Getter final OpenLineageContext olContext;
   @NonNull @Getter final ColumnLevelLineageBuilder builder;
+  @NonNull @Getter final DatasetNamespaceCombinedResolver namespaceResolver;
 }

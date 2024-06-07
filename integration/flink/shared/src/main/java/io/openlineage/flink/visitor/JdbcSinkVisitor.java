@@ -57,6 +57,6 @@ public class JdbcSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
     DatasetIdentifier di =
         JdbcUtils.getDatasetIdentifierFromJdbcUrl(
             sinkWrapper.getConnectionUrl(), sinkWrapper.getTableName().get());
-    return Collections.singletonList(createOutputDataset(context, di.getNamespace(), di.getName()));
+    return Collections.singletonList(outputDataset().getDataset(di.getName(), di.getNamespace()));
   }
 }

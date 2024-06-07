@@ -16,6 +16,8 @@ import static org.mockito.Mockito.when;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Collections;
 import java.util.List;
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap;
@@ -48,6 +50,7 @@ class JdbcRelationHandlerTest {
   String unknownUrl = "unknown://localhost:1234/test";
   StructType schema =
       new StructType().add("k", DataTypes.IntegerType).add("j", DataTypes.StringType);
+  OpenLineageContext context = mock(OpenLineageContext.class);
 
   @BeforeEach
   void setup() {
@@ -57,6 +60,7 @@ class JdbcRelationHandlerTest {
     when(jdbcOptions.url()).thenReturn("jdbc:" + url);
     when(relation.schema()).thenReturn(schema);
     jdbcRelationHandler = new JdbcRelationHandler(datasetFactory);
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
   }
 
   @Test

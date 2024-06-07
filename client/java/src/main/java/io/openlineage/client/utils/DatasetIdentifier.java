@@ -25,6 +25,12 @@ public class DatasetIdentifier {
     this.symlinks = new LinkedList<>();
   }
 
+  public DatasetIdentifier(String name, String namespace, List<Symlink> symlinks) {
+    this.name = name;
+    this.namespace = namespace;
+    this.symlinks = symlinks;
+  }
+
   public DatasetIdentifier withSymlink(String name, String namespace, SymlinkType type) {
     symlinks.add(new Symlink(name, namespace, type));
     return this;

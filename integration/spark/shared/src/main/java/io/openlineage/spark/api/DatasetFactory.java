@@ -7,6 +7,7 @@ package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
+import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeOutputVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
@@ -33,9 +34,11 @@ import org.apache.spark.sql.types.StructType;
  */
 public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   private final OpenLineageContext context;
+  protected final DatasetNamespaceCombinedResolver namespaceResolver;
 
   private DatasetFactory(OpenLineageContext context) {
     this.context = context;
+    this.namespaceResolver = new DatasetNamespaceCombinedResolver(context.getOpenLineageConfig());
   }
 
   abstract OpenLineage.Builder<D> datasetBuilder(
@@ -55,7 +58,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
         return context
             .getOpenLineage()
             .newInputDatasetBuilder()
-            .namespace(namespace)
+            .namespace(namespaceResolver.resolve(namespace))
             .name(name)
             .facets(datasetFacet);
       }
@@ -76,7 +79,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
         return context
             .getOpenLineage()
             .newOutputDatasetBuilder()
-            .namespace(namespace)
+            .namespace(namespaceResolver.resolve(namespace))
             .name(name)
             .facets(datasetFacet);
       }
@@ -206,6 +209,8 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
         .getOpenLineage()
         .newDatasetFacetsBuilder()
         .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
-        .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespaceUri));
+        .dataSource(
+            PlanUtils.datasourceFacet(
+                context.getOpenLineage(), namespaceResolver.resolve(namespaceUri)));
   }
 }

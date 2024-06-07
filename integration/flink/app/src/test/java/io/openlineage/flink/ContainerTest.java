@@ -348,7 +348,9 @@ class ContainerTest {
                 "jobmanager.rpc.address: jobmanager\n"
                     + "execution.attached: true\n"
                     + "openlineage.transport.url: http://openlineageclient:1080\n"
-                    + "openlineage.transport.type: http\n")
+                    + "openlineage.transport.type: http\n"
+                    + "openlineage.dataset.namespaceResolvers.kafka-cluster-prod.type: hostList\n"
+                    + "openlineage.dataset.namespaceResolvers.kafka-cluster-prod.hosts: [kafka-host]\n")
             .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
             .dependsOn(Arrays.asList(generateEvents, openLineageClientMockContainer));
 

@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.circuitBreaker.ExecutorCircuitBreaker;
@@ -16,6 +17,9 @@ import io.openlineage.client.circuitBreaker.JavaRuntimeCircuitBreaker;
 import io.openlineage.client.circuitBreaker.JavaRuntimeCircuitBreakerConfig;
 import io.openlineage.client.circuitBreaker.SimpleMemoryCircuitBreaker;
 import io.openlineage.client.circuitBreaker.SimpleMemoryCircuitBreakerConfig;
+import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceResolverConfig;
+import io.openlineage.client.dataset.namespace.resolver.PatternMatchingGroupNamespaceResolverConfig;
+import io.openlineage.client.dataset.namespace.resolver.PatternNamespaceResolverConfig;
 import io.openlineage.client.metrics.MicrometerProvider;
 import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.client.transports.HttpConfig;
@@ -25,6 +29,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import lombok.SneakyThrows;
@@ -200,5 +205,33 @@ class ConfigTest {
     base.mergeWith(overwrite);
     assertThat(((JavaRuntimeCircuitBreakerConfig) base.getCircuitBreaker()).getMemoryThreshold())
         .isEqualTo(10);
+  }
+
+  @Test
+  void testDatasetNamespaceResolverConfig() {
+    final OpenLineageConfig config =
+        OpenLineageClientUtils.loadOpenLineageConfigYaml(
+            new TestConfigPathProvider("config/datasetNamespaceResolver.yaml"),
+            new TypeReference<OpenLineageConfig>() {});
+
+    assertThat(config.datasetConfig.getNamespaceResolvers()).hasSize(3);
+
+    assertThat(config.datasetConfig.getNamespaceResolvers().get("kafka-prod"))
+        .isInstanceOf(DatasetNamespaceResolverConfig.class)
+        .hasFieldOrPropertyWithValue("schema", "kafka")
+        .hasFieldOrPropertyWithValue(
+            "hosts", Arrays.asList("kafka-prod13.company.com", "kafka-prod15.company.com"));
+
+    assertThat(config.datasetConfig.getNamespaceResolvers().get("cassandra-prod"))
+        .isInstanceOf(PatternNamespaceResolverConfig.class)
+        .hasFieldOrPropertyWithValue("schema", "cassandra")
+        .hasFieldOrPropertyWithValue("regex", "cassandra-prod(\\d)+\\.company\\.com");
+
+    assertThat(config.datasetConfig.getNamespaceResolvers().get("test-pattern"))
+        .isInstanceOf(PatternMatchingGroupNamespaceResolverConfig.class)
+        .hasFieldOrPropertyWithValue("matchingGroup", "cluster")
+        .hasFieldOrPropertyWithValue("schema", "cassandra")
+        .hasFieldOrPropertyWithValue(
+            "regex", "(?<cluster>[a-zA-Z-]+)-(\\d)+\\.company\\.com:[\\d]*");
   }
 }

@@ -19,7 +19,7 @@ services:
       - "19092:19092"
     environment:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka:9092,LISTENER_DOCKER_EXTERNAL://127.0.0.1:19092
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka-host:9092,LISTENER_DOCKER_EXTERNAL://127.0.0.1:19092
       KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -38,7 +38,7 @@ services:
     ports:
       - "28081:28081"
     environment:
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka-host:9092
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081,http://0.0.0.0:28081
     depends_on:
@@ -58,14 +58,14 @@ services:
     command: |
       "
       # blocks until kafka is reachable
-      kafka-topics --bootstrap-server kafka:9092 --list
+      kafka-topics --bootstrap-server kafka-host:9092 --list
       
       echo -e 'Creating kafka topics'
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic io.openlineage.flink.kafka.input --replication-factor 1 --partitions 1
-      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic io.openlineage.flink.kafka.output --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka-host:9092 --create --if-not-exists --topic io.openlineage.flink.kafka.input --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka-host:9092 --create --if-not-exists --topic io.openlineage.flink.kafka.output --replication-factor 1 --partitions 1
       
       echo -e 'Topics list:'
-      kafka-topics --bootstrap-server kafka:9092 --list
+      kafka-topics --bootstrap-server kafka-host:9092 --list
       "
 
   jobmanager:

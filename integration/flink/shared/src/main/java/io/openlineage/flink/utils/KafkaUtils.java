@@ -10,6 +10,8 @@ import java.util.Properties;
 public class KafkaUtils {
 
   private static final String KAFKA_DATASET_PREFIX = "kafka://";
+  private static final String COMMA = ",";
+  private static final String SEMICOLON = ";";
 
   /**
    * Generate dataset identifier based on bootstrap servers in properties and topic name
@@ -20,6 +22,12 @@ public class KafkaUtils {
    */
   public static DatasetIdentifier datasetIdentifierOf(Properties properties, String topic) {
     String bootstrapServers = properties.getProperty("bootstrap.servers");
+
+    if (bootstrapServers.contains(COMMA)) {
+      bootstrapServers = bootstrapServers.split(COMMA)[0];
+    } else if (bootstrapServers.contains(SEMICOLON)) {
+      bootstrapServers = bootstrapServers.split(SEMICOLON)[0];
+    }
 
     return new DatasetIdentifier(topic, String.format(KAFKA_DATASET_PREFIX + bootstrapServers));
   }

@@ -7,6 +7,7 @@ package io.openlineage.flink.api;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.UUIDUtils;
+import io.openlineage.flink.client.FlinkOpenLineageConfig;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.NonNull;
@@ -31,4 +32,7 @@ public class OpenLineageContext {
    * model objects
    */
   @NonNull OpenLineage openLineage;
+
+  /** Flink OpenLineage config */
+  @NonNull FlinkOpenLineageConfig config;
 }
