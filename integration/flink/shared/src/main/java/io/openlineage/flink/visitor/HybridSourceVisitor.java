@@ -23,10 +23,11 @@ public class HybridSourceVisitor extends Visitor<OpenLineage.InputDataset> {
       "org.apache.flink.connector.base.source.hybrid.HybridSource$SourceListEntry";
   public static final String PASS_THROUGH_SOURCE_FACTORY_CLASS =
       "org.apache.flink.connector.base.source.hybrid.HybridSource$PassthroughSourceFactory";
-  private VisitorFactoryImpl visitorFactory = new VisitorFactoryImpl();
+  private final VisitorFactoryImpl visitorFactory;
 
   public HybridSourceVisitor(@NonNull OpenLineageContext context) {
     super(context);
+    visitorFactory = new VisitorFactoryImpl();
   }
 
   @Override

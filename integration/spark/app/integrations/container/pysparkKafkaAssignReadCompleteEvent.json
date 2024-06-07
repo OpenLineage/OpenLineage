@@ -13,12 +13,12 @@
   },
   "inputs": [
     {
-      "namespace": "kafka://kafka:9092",
+      "namespace": "kafka://kafka-cluster-prod:9092",
       "name": "topicA",
       "facets": {
         "dataSource": {
-          "name": "kafka://kafka:9092",
-          "uri": "kafka://kafka:9092"
+          "name": "kafka://kafka-cluster-prod:9092",
+          "uri": "kafka://kafka-cluster-prod:9092"
         },
         "schema": {
           "fields": [
@@ -55,12 +55,12 @@
       }
     },
     {
-      "namespace": "kafka://kafka:9092",
+      "namespace": "kafka://kafka-cluster-prod:9092",
       "name": "topicB",
       "facets": {
         "dataSource": {
-          "name": "kafka://kafka:9092",
-          "uri": "kafka://kafka:9092"
+          "name": "kafka://kafka-cluster-prod:9092",
+          "uri": "kafka://kafka-cluster-prod:9092"
         },
         "schema": {
           "fields": [

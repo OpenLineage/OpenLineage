@@ -8,6 +8,7 @@ package io.openlineage.spark.api;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
+import io.openlineage.client.dataset.DatasetConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
 import java.util.HashMap;
@@ -49,9 +50,10 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       JobConfig job,
       TransportConfig transportConfig,
       FacetsConfig facetsConfig,
+      DatasetConfig datasetConfig,
       CircuitBreakerConfig circuitBreaker,
       Map<String, Object> metricsConfig) {
-    super(transportConfig, facetsConfig, circuitBreaker, metricsConfig);
+    super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig);
     this.namespace = namespace;
     this.parentJobName = parentJobName;
     this.parentJobNamespace = parentJobNamespace;
@@ -127,6 +129,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(job, other.job),
         mergePropertyWith(transportConfig, other.transportConfig),
         mergePropertyWith(facetsConfig, other.facetsConfig),
+        mergePropertyWith(datasetConfig, other.datasetConfig),
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
         mergePropertyWith(metricsConfig, other.metricsConfig));
   }

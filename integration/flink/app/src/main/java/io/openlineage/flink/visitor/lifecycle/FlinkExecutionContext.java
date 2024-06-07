@@ -14,6 +14,7 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunEventBuilder;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
+import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.flink.SinkLineage;
 import io.openlineage.flink.TransformationUtils;
 import io.openlineage.flink.api.OpenLineageContext;
@@ -59,6 +60,7 @@ public class FlinkExecutionContext implements ExecutionContext {
   private final CircuitBreaker circuitBreaker;
   private final FlinkOpenLineageConfig config;
   @Getter private final MeterRegistry meterRegistry;
+  @Getter private final DatasetNamespaceCombinedResolver namespaceResolver;
 
   @Getter private final List<Transformation<?>> transformations;
 

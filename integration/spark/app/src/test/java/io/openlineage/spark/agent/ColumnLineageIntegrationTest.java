@@ -5,6 +5,9 @@
 
 package io.openlineage.spark.agent;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.openlineage.client.OpenLineage.RunEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -150,6 +153,12 @@ class ColumnLineageIntegrationTest {
         .save();
 
     MockServerUtils.verifyEvents(mockServer, "columnLineageSingleInputComplete.json");
+
+    List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
+    RunEvent lastEvent = events.get(events.size() - 1);
+    assertThat(lastEvent.getInputs().get(0).getNamespace()).startsWith("postgres://postgres-prod:");
+    assertThat(lastEvent.getOutputs().get(0).getNamespace())
+        .startsWith("postgres://postgres-prod:");
   }
 
   private static SparkSession getSparkSession() {
@@ -174,6 +183,10 @@ class ColumnLineageIntegrationTest {
             "spark.sql.extensions",
             "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
         .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
+        .config("spark.openlineage.dataset.namespaceResolvers.postgres-prod.type", "hostList")
+        .config(
+            "spark.openlineage.dataset.namespaceResolvers.postgres-prod.hosts",
+            "[localhost;postgres-other-host]")
         .getOrCreate();
   }
 

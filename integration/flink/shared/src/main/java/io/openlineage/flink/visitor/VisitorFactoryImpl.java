@@ -19,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class VisitorFactoryImpl implements VisitorFactory {
-
   @Override
   public List<Visitor<OpenLineage.InputDataset>> getInputVisitors(OpenLineageContext context) {
     ArrayList<Visitor<InputDataset>> visitors =
@@ -27,8 +26,7 @@ public class VisitorFactoryImpl implements VisitorFactory {
             Arrays.asList(
                 new KafkaSourceVisitor(context),
                 new FlinkKafkaConsumerVisitor(context),
-                new LineageProviderVisitor<>(
-                    context, DatasetFactory.input(context.getOpenLineage()))));
+                new LineageProviderVisitor<>(context, DatasetFactory.input(context))));
 
     if (ClassUtils.hasIcebergClasses()) {
       visitors.add(new IcebergSourceVisitor(context));
@@ -54,8 +52,7 @@ public class VisitorFactoryImpl implements VisitorFactory {
             Arrays.asList(
                 new KafkaSinkVisitor(context),
                 new FlinkKafkaProducerVisitor(context),
-                new LineageProviderVisitor<>(
-                    context, DatasetFactory.output(context.getOpenLineage()))));
+                new LineageProviderVisitor<>(context, DatasetFactory.output(context))));
 
     if (ClassUtils.hasIcebergClasses()) {
       visitors.add(new IcebergSinkVisitor(context));

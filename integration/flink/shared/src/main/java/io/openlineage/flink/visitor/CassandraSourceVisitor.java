@@ -42,7 +42,7 @@ public class CassandraSourceVisitor extends Visitor<OpenLineage.InputDataset> {
     }
 
     return Collections.singletonList(
-        createInputDataset(
-            context, (String) sourceWrapper.getNamespace().get(), sourceWrapper.getName()));
+        inputDataset()
+            .getDataset(sourceWrapper.getName(), (String) sourceWrapper.getNamespace().get()));
   }
 }

@@ -7,7 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.JdbcUtils;
-import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.sql.ColumnLineage;
@@ -29,16 +29,16 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 public class JdbcColumnLineageCollector {
 
   public static void extractExternalInputs(
+      ColumnLevelLineageContext context,
       LogicalPlan node,
-      ColumnLevelLineageBuilder builder,
       List<DatasetIdentifier> datasetIdentifiers) {
     extractExternalInputs(
-        (JDBCRelation) ((LogicalRelation) node).relation(), builder, datasetIdentifiers);
+        context, (JDBCRelation) ((LogicalRelation) node).relation(), datasetIdentifiers);
   }
 
   public static void extractExternalInputs(
+      ColumnLevelLineageContext context,
       JDBCRelation relation,
-      ColumnLevelLineageBuilder builder,
       List<DatasetIdentifier> datasetIdentifiers) {
     Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
     String jdbcUrl = relation.jdbcOptions().url();
@@ -56,24 +56,31 @@ public class JdbcColumnLineageCollector {
                       .filter(
                           cm ->
                               cm.origin().isPresent()
-                                  && JdbcUtils.getDatasetIdentifierFromJdbcUrl(
-                                          jdbcUrl, cm.origin().get().name())
+                                  && context
+                                      .getNamespaceResolver()
+                                      .resolve(
+                                          JdbcUtils.getDatasetIdentifierFromJdbcUrl(
+                                              jdbcUrl, cm.origin().get().name()))
                                       .getName()
                                       .equals(di.getName()))
-                      .forEach(cm -> builder.addInput(builder.getMapping(cm), di, cm.name())));
+                      .forEach(
+                          cm ->
+                              context
+                                  .getBuilder()
+                                  .addInput(context.getBuilder().getMapping(cm), di, cm.name())));
         });
   }
 
   public static void extractExpressionsFromJDBC(
-      LogicalPlan node, ColumnLevelLineageBuilder builder) {
+      ColumnLevelLineageContext context, LogicalPlan node) {
     extractExpressionsFromJDBC(
+        context,
         (JDBCRelation) ((LogicalRelation) node).relation(),
-        builder,
         ScalaConversionUtils.fromSeq(node.output()));
   }
 
   public static void extractExpressionsFromJDBC(
-      JDBCRelation relation, ColumnLevelLineageBuilder builder, List<Attribute> output) {
+      ColumnLevelLineageContext context, JDBCRelation relation, List<Attribute> output) {
     Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
     sqlMeta.ifPresent(
         meta ->
@@ -81,14 +88,18 @@ public class JdbcColumnLineageCollector {
                 .forEach(
                     p -> {
                       ExprId descendantId = getDescendantId(output, p.descendant());
-                      builder.addExternalMapping(p.descendant(), descendantId);
+                      context.getBuilder().addExternalMapping(p.descendant(), descendantId);
 
                       p.lineage()
-                          .forEach(e -> builder.addExternalMapping(e, NamedExpression.newExprId()));
+                          .forEach(
+                              e ->
+                                  context
+                                      .getBuilder()
+                                      .addExternalMapping(e, NamedExpression.newExprId()));
                       if (!p.lineage().isEmpty()) {
                         p.lineage().stream()
-                            .map(builder::getMapping)
-                            .forEach(eid -> builder.addDependency(descendantId, eid));
+                            .map(context.getBuilder()::getMapping)
+                            .forEach(eid -> context.getBuilder().addDependency(descendantId, eid));
                       }
                     }));
   }
