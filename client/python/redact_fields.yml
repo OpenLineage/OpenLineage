@@ -56,6 +56,11 @@
         - namespace
         - name
         - field
+    - class_name: Transformation
+      redact_fields:
+        - type
+        - subtype
+        - masking
 - module: data_quality_assertions_dataset
   classes:
     - class_name: Assertion
