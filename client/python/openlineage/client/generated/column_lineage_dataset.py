@@ -61,3 +61,5 @@ class Transformation(RedactMixin):
 
     masking: bool | None = attr.field(default=None)
     """is transformation masking the data or not"""
+
+    _skip_redact: ClassVar[list[str]] = ["type", "subtype", "masking"]
