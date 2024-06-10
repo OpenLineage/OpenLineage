@@ -24,12 +24,12 @@ class ColumnLineageDatasetFacet(DatasetFacet):
 class Fields(RedactMixin):
     inputFields: list[InputField]  # noqa: N815
     transformationDescription: str | None = attr.field(default=None)  # noqa: N815
-    """DEPRECATED; a string representation of the transformation applied"""
+    """a string representation of the transformation applied"""
 
     transformationType: str | None = attr.field(default=None)  # noqa: N815
     """
-    DEPRECATED; IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input;
-    MASKED: no original data available (like a hash of PII for example)
+    IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no
+    original data available (like a hash of PII for example)
     """
 
 

@@ -66,11 +66,13 @@
                   },
                   "transformationDescription": {
                     "type": "string",
-                    "description": "DEPRECATED; a string representation of the transformation applied"
+                    "description": "a string representation of the transformation applied",
+                    "deprecated": true
                   },
                   "transformationType": {
                     "type": "string",
-                    "description": "DEPRECATED; IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no original data available (like a hash of PII for example)"
+                    "description": "IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no original data available (like a hash of PII for example)",
+                    "deprecated": true
                   }
                 },
                 "additionalProperties": true,

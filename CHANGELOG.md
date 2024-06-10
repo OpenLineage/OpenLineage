@@ -2,7 +2,7 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.16.0...HEAD)
 ### Added
-* **Spec: add transformation type info** [`#2756`](https://github.com/OpenLineage/OpenLineage/pull/2719) [@tnazarew](https://github.com/tnazarew)  
+* **Spec: add transformation type info** [`#2756`](https://github.com/OpenLineage/OpenLineage/pull/2756) [@tnazarew](https://github.com/tnazarew)  
   *Add information about transformation type in `ColumnLineageDatasetFacet`.*
 
 ### Fixed
