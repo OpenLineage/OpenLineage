@@ -24,12 +24,12 @@ class ColumnLineageDatasetFacet(DatasetFacet):
 class Fields(RedactMixin):
     inputFields: list[InputField]  # noqa: N815
     transformationDescription: str | None = attr.field(default=None)  # noqa: N815
-    """a string representation of the transformation applied"""
+    """DEPRECATED; a string representation of the transformation applied"""
 
     transformationType: str | None = attr.field(default=None)  # noqa: N815
     """
-    IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no
-    original data available (like a hash of PII for example)
+    DEPRECATED; IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input;
+    MASKED: no original data available (like a hash of PII for example)
     """
 
 
@@ -51,7 +51,7 @@ class InputField(RedactMixin):
 @attr.define
 class Transformation(RedactMixin):
     type: str
-    """The type of the transformation. Allowed values are: IDENTITY, TRANSFORMED, INDIRECT"""
+    """The type of the transformation. Allowed values are: DIRECT, INDIRECT"""
 
     subtype: str | None = attr.field(default=None)
     """The subtype of the transformation"""
