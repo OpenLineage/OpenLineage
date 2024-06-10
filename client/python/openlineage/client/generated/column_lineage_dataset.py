@@ -17,7 +17,7 @@ class ColumnLineageDatasetFacet(DatasetFacet):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-2/ColumnLineageDatasetFacet.json#/$defs/ColumnLineageDatasetFacet"
+        return "https://openlineage.io/spec/facets/1-1-0/ColumnLineageDatasetFacet.json#/$defs/ColumnLineageDatasetFacet"
 
 
 @attr.define
@@ -44,4 +44,22 @@ class InputField(RedactMixin):
     field: str
     """The input field"""
 
+    transformations: list[Transformation] | None = attr.field(factory=list)
     _skip_redact: ClassVar[list[str]] = ["namespace", "name", "field"]
+
+
+@attr.define
+class Transformation(RedactMixin):
+    type: str
+    """The type of the transformation. Allowed values are: DIRECT, INDIRECT"""
+
+    subtype: str | None = attr.field(default=None)
+    """The subtype of the transformation"""
+
+    description: str | None = attr.field(default=None)
+    """a string representation of the transformation applied"""
+
+    masking: bool | None = attr.field(default=None)
+    """is transformation masking the data or not"""
+
+    _skip_redact: ClassVar[list[str]] = ["type", "subtype", "masking"]
