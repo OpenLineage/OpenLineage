@@ -8,6 +8,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -20,9 +21,11 @@ import io.openlineage.sql.ColumnMeta;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.LongAccumulator;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
+import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
@@ -31,6 +34,8 @@ import org.apache.spark.sql.types.Metadata$;
 import org.apache.spark.sql.types.StringType$;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.stubbing.Answer;
 
 class JdbcColumnLineageExpressionCollectorTest {
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
@@ -70,19 +75,33 @@ class JdbcColumnLineageExpressionCollectorTest {
   void testInputCollection() {
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcQuery);
     when(jdbcOptions.url()).thenReturn(url);
-    doAnswer(
-            invocation -> mockMap.putIfAbsent(invocation.getArgument(0), invocation.getArgument(1)))
-        .when(builder)
-        .addExternalMapping(any(ColumnMeta.class), any(ExprId.class));
+    final LongAccumulator id = new LongAccumulator(Long::sum, 0L);
+    try (MockedStatic<NamedExpression> utilities = mockStatic(NamedExpression.class)) {
+      utilities
+          .when(NamedExpression::newExprId)
+          .thenAnswer(
+              (Answer<ExprId>)
+                  invocation -> {
+                    ExprId exprId = ExprId.apply(id.get());
+                    id.accumulate(1);
+                    return exprId;
+                  });
+      doAnswer(
+              invocation ->
+                  mockMap.putIfAbsent(invocation.getArgument(0), invocation.getArgument(1)))
+          .when(builder)
+          .addExternalMapping(any(ColumnMeta.class), any(ExprId.class));
 
-    when(builder.getMapping(any(ColumnMeta.class)))
-        .thenAnswer(invocation -> mockMap.get(invocation.getArgument(0)));
+      when(builder.getMapping(any(ColumnMeta.class)))
+          .thenAnswer(invocation -> mockMap.get(invocation.getArgument(0)));
 
-    JdbcColumnLineageCollector.extractExpressionsFromJDBC(
-        context, relation, Arrays.asList(expression1, expression2));
+      JdbcColumnLineageCollector.extractExpressionsFromJDBC(
+          context, relation, Arrays.asList(expression1, expression2));
 
-    verify(builder, times(1)).addDependency(exprId2, dependencyId1);
-    verify(builder, times(1)).addDependency(exprId2, dependencyId2);
+      verify(builder, times(1)).addDependency(exprId2, dependencyId1);
+      verify(builder, times(1)).addDependency(exprId2, dependencyId2);
+      utilities.verify(NamedExpression::newExprId, times(3));
+    }
   }
 
   @Test
