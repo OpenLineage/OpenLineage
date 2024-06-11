@@ -81,8 +81,8 @@ public class GCPUtils {
     return (sparkDistClasspath != null && sparkDistClasspath.contains(DATAPROC_CLASSPATH));
   }
 
-  public static void setDataprocSpecificFacets(
-      Map<String, Object> dataprocProperties, SparkContext sparkContext) {
+  public static Map<String, Object> getDataprocSpecificFacets(SparkContext sparkContext) {
+    Map<String, Object> dataprocProperties = new HashMap<>();
     ResourceType resource = identifyResource(sparkContext);
 
     switch (resource) {
@@ -110,6 +110,7 @@ public class GCPUtils {
     getApplicationId(sparkContext).ifPresent(p -> dataprocProperties.put("spark.app.id", p));
     getApplicationName(sparkContext).ifPresent(p -> dataprocProperties.put("spark.app.name", p));
     dataprocProperties.put("origin", createOriginFacet(dataprocProperties, resource));
+    return dataprocProperties;
   }
 
   public static Optional<String> getSparkQueryExecutionNodeName(OpenLineageContext context) {

@@ -5,7 +5,7 @@
 
 package io.openlineage.spark.agent.facets;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import java.util.Map;
@@ -15,7 +15,7 @@ import java.util.Map;
  * cluster used, reporting certain environment variables, or resolving mount points.
  */
 public class EnvironmentFacet extends OpenLineage.DefaultRunFacet {
-  @JsonIgnore
+  @JsonProperty("environment-properties")
   @SuppressWarnings("PMD")
   private Map<String, Object> properties;
 
@@ -26,6 +26,5 @@ public class EnvironmentFacet extends OpenLineage.DefaultRunFacet {
   public EnvironmentFacet(Map<String, Object> environmentDetails) {
     super(Versions.OPEN_LINEAGE_PRODUCER_URI);
     this.properties = environmentDetails;
-    this.getAdditionalProperties().putAll(environmentDetails);
   }
 }

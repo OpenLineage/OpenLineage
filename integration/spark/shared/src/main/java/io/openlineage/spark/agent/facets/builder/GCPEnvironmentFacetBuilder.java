@@ -9,7 +9,6 @@ import io.openlineage.spark.agent.facets.EnvironmentFacet;
 import io.openlineage.spark.agent.util.GCPUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -44,8 +43,7 @@ public class GCPEnvironmentFacetBuilder
   }
 
   private Map<String, Object> getGCPEnvironmentalAttributes() {
-    Map<String, Object> dbProperties = new HashMap<>();
-    GCPUtils.setDataprocSpecificFacets(dbProperties, sparkContext);
+    Map<String, Object> dbProperties = GCPUtils.getDataprocSpecificFacets(sparkContext);
     openLineageContext
         .flatMap(GCPUtils::getSparkQueryExecutionNodeName)
         .ifPresent(p -> dbProperties.put("spark.query.node.name", p));
