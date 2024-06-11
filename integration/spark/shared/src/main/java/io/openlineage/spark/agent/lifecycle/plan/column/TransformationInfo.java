@@ -20,15 +20,15 @@ public class TransformationInfo {
   @Getter @Setter private Boolean masking;
 
   public static TransformationInfo identity() {
-    return new TransformationInfo("IDENTITY", "IDENTITY", "", false);
+    return new TransformationInfo("DIRECT", "IDENTITY", "", false);
   }
 
   public static TransformationInfo transformation() {
-    return new TransformationInfo("TRANSFORMED", "TRANSFORMATION", "", false);
+    return new TransformationInfo("DIRECT", "TRANSFORMATION", "", false);
   }
 
   public static TransformationInfo aggregation() {
-    return new TransformationInfo("TRANSFORMED", "AGGREGATION", "", false);
+    return new TransformationInfo("DIRECT", "AGGREGATION", "", false);
   }
 
   public static TransformationInfo indirect(String subType) {
@@ -38,10 +38,9 @@ public class TransformationInfo {
   public Integer numValue() { // FIXME - THAT'S SOOO UGLY, NEED TO FIX LATER
     if ("INDIRECT".equals(type)) {
       return 1;
-    } else if ("TRANSFORMED".equals(type)) {
-      if ("AGGREGATION".equals(subType)) {
-        return 2;
-      }
+    } else if ("AGGREGATION".equals(subType)) {
+     return 2;
+    } else if("TRANSFORMATION".equals(subType)){
       return 3;
     }
     return 4;
