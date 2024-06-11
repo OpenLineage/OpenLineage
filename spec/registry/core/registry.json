@@ -25,8 +25,7 @@
       "ol:core:SourceCodeJobFacet.json",
       "ol:core:SourceCodeLocationJobFacet.json",
       "ol:core:StorageDatasetFacet.json",
-      "ol:core:SymlinksDatasetFacet.json",
-
+      "ol:core:SymlinksDatasetFacet.json"
     ]
   }
 }
