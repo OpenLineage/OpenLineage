@@ -39,8 +39,8 @@ public class TransformationInfo {
     if ("INDIRECT".equals(type)) {
       return 1;
     } else if ("AGGREGATION".equals(subType)) {
-     return 2;
-    } else if("TRANSFORMATION".equals(subType)){
+      return 2;
+    } else if ("TRANSFORMATION".equals(subType)) {
       return 3;
     }
     return 4;
