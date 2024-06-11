@@ -197,8 +197,6 @@ public class ArgumentParser {
   }
 
   private static boolean isArrayType(String value) {
-    return value.startsWith(ARRAY_PREFIX_CHAR)
-        && value.endsWith(ARRAY_SUFFIX_CHAR)
-        && value.contains(DISABLED_FACETS_SEPARATOR);
+    return value.startsWith(ARRAY_PREFIX_CHAR) && value.endsWith(ARRAY_SUFFIX_CHAR);
   }
 }

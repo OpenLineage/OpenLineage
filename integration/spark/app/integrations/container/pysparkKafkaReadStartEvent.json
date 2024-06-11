@@ -15,12 +15,12 @@
   },
   "inputs": [
     {
-      "namespace": "kafka://kafka:9092",
+      "namespace": "kafka://kafka-cluster-prod:9092",
       "name": "topic1",
       "facets": {
         "dataSource": {
-          "name": "kafka://kafka:9092",
-          "uri": "kafka://kafka:9092"
+          "name": "kafka://kafka-cluster-prod:9092",
+          "uri": "kafka://kafka-cluster-prod:9092"
         },
         "schema": {
           "fields": [

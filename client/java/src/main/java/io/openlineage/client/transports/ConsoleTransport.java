@@ -31,16 +31,7 @@ public final class ConsoleTransport extends Transport {
     emit(OpenLineageClientUtils.toJson(jobEvent));
   }
 
-  /**
-   * @deprecated
-   *     <p>Since version 1.13.0.
-   *     <p>Will be removed in version 1.16.0.
-   *     <p>Please use {@link #emit(OpenLineage.DatasetEvent)} or {@link
-   *     #emit(OpenLineage.JobEvent)} instead
-   */
-  @Deprecated
-  @Override
-  public void emit(String eventJson) {
+  private void emit(String eventJson) {
     // if DEBUG loglevel is enabled, this will double-log even due to OpenLineageClient also logging
     log.info(eventJson);
   }

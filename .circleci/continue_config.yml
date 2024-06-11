@@ -51,7 +51,7 @@ jobs:
       - image: cimg/python:<< parameters.py_env >>
     steps:
       - *checkout_project_root
-      - run: python -m pip install tox
+      - run: python -m pip install tox uv
       - run: python -m tox r -e "<< parameters.tox_env >>" --notest
       - run: python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
 
@@ -277,6 +277,30 @@ jobs:
           paths:
             - ~/.gradle
 
+  jar-verification-spark:
+    working_directory: ~/openlineage/integration/spark
+    machine:
+      image: ubuntu-2004:current
+    resource_class: medium
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - restore_cache:
+          keys:
+            - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-integration-spark-{{ .Branch }}
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
+      - run: |
+          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+          sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
+      - run: ./gradlew --no-daemon --console=plain clean clean jarVerification -Pscala.binary.version=2.12
+      - run: ./gradlew --no-daemon --console=plain clean clean jarVerification -Pscala.binary.version=2.13
 
   release-integration-flink:
     working_directory: ~/openlineage/integration/flink
@@ -1001,6 +1025,7 @@ jobs:
           name: Run pre-commit
           command: |
             . venv/bin/activate
+            SKIP= && [ -n "${CI}" ] && export SKIP="pmd"
             pre-commit run --show-diff-on-failure --all-files
 
   always_run:

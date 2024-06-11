@@ -1,0 +1,19 @@
+transport:
+  type: console
+dataset:
+  namespaceResolvers:
+      kafka-prod:
+        type: hostList
+        hosts: ['kafka-prod13.company.com', 'kafka-prod15.company.com']
+        schema: kafka
+      cassandra-prod:
+        type: pattern
+        # 'cassandra-prod7.company.com', 'cassandra-prod8.company.com'
+        regex: 'cassandra-prod(\d)+\.company\.com'
+        schema: cassandra
+      test-pattern:
+        type: patternGroup
+        # 'cassandra-test-7.company.com', 'cassandra-test-8.company.com', 'kafka-test-7.company.com', 'kafka-test-8.company.com'
+        regex: '(?<cluster>[a-zA-Z-]+)-(\d)+\.company\.com:[\d]*'
+        matchingGroup: "cluster"
+        schema: cassandra

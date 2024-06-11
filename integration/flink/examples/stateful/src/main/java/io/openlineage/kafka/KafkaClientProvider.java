@@ -30,7 +30,7 @@ public class KafkaClientProvider {
     KafkaSourceBuilder<InputEvent> builder =
         KafkaSource.<InputEvent>builder()
             .setProperties(fromResource("kafka-consumer.conf").toProperties())
-            .setBootstrapServers("kafka:9092")
+            .setBootstrapServers("kafka-host:9092")
             .setValueOnlyDeserializer(
                 ConfluentRegistryAvroDeserializationSchema.forSpecific(
                     InputEvent.class, SCHEMA_REGISTRY_URL));
@@ -67,7 +67,7 @@ public class KafkaClientProvider {
   public static KafkaSink<OutputEvent> aKafkaSink(String topic) {
     return KafkaSink.<OutputEvent>builder()
         .setKafkaProducerConfig(fromResource("kafka-producer.conf").toProperties())
-        .setBootstrapServers("kafka:9092")
+        .setBootstrapServers("kafka-host:9092")
         .setRecordSerializer(
             KafkaRecordSerializationSchema.builder()
                 .setValueSerializationSchema(

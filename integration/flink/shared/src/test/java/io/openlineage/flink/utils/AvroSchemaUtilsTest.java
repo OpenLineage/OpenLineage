@@ -55,12 +55,12 @@ class AvroSchemaUtilsTest {
             .booleanType()
             .noDefault()
             .name("fixed_field")
-            .type(Schema.createFixed("md5", null, "io.openlineage.flink.avro.event", 16))
+            .type(Schema.createFixed("MD5", null, "io.openlineage.flink.avro.event", 16))
             .noDefault()
             .name("enum_field")
             .type(
                 Schema.createEnum(
-                    "status",
+                    "Status",
                     null,
                     "io.openlineage.flink.avro.event",
                     List.of("started", "finished")))
@@ -118,13 +118,13 @@ class AvroSchemaUtilsTest {
 
     assertThat(fields.get(7))
         .hasFieldOrPropertyWithValue("name", "fixed_field")
-        .hasFieldOrPropertyWithValue("type", "fixed(16)")
+        .hasFieldOrPropertyWithValue("type", "io.openlineage.flink.avro.event.MD5")
         .hasFieldOrPropertyWithValue("description", null)
         .hasFieldOrPropertyWithValue("fields", null);
 
     assertThat(fields.get(8))
         .hasFieldOrPropertyWithValue("name", "enum_field")
-        .hasFieldOrPropertyWithValue("type", "enum")
+        .hasFieldOrPropertyWithValue("type", "io.openlineage.flink.avro.event.Status")
         .hasFieldOrPropertyWithValue("description", null)
         .hasFieldOrPropertyWithValue("fields", null);
   }
@@ -241,7 +241,7 @@ class AvroSchemaUtilsTest {
     OpenLineage.SchemaDatasetFacetFields nestedField = fields.get(1);
     assertThat(nestedField)
         .hasFieldOrPropertyWithValue("name", "sub_input")
-        .hasFieldOrPropertyWithValue("type", "record")
+        .hasFieldOrPropertyWithValue("type", "io.openlineage.flink.avro.event.SubInputEvent")
         .hasFieldOrPropertyWithValue("description", null);
 
     List<OpenLineage.SchemaDatasetFacetFields> subFields = nestedField.getFields();
@@ -257,7 +257,7 @@ class AvroSchemaUtilsTest {
     OpenLineage.SchemaDatasetFacetFields superNestedField = subFields.get(1);
     assertThat(superNestedField)
         .hasFieldOrPropertyWithValue("name", "sub_sub_input")
-        .hasFieldOrPropertyWithValue("type", "record")
+        .hasFieldOrPropertyWithValue("type", "io.openlineage.flink.avro.event.SubSubInputEvent")
         .hasFieldOrPropertyWithValue("description", null);
 
     List<OpenLineage.SchemaDatasetFacetFields> subSubFields = superNestedField.getFields();

@@ -45,7 +45,7 @@ public class FlinkSourceWithGenericRecordApplication {
     KafkaSourceBuilder<GenericRecord> builder =
         KafkaSource.<GenericRecord>builder()
             .setProperties(fromResource("kafka-consumer.conf").toProperties())
-            .setBootstrapServers("kafka:9092")
+            .setBootstrapServers("kafka-host:9092")
             .setValueOnlyDeserializer(
                 ConfluentRegistryAvroDeserializationSchema.forGeneric(InputEvent.getClassSchema()));
 

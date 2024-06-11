@@ -437,11 +437,11 @@ class DbtArtifactProcessor:
         node: ModelNode,
         has_facets: bool = False,
     ) -> Dataset:
-        name, namespace, facets, _ = self.extract_dataset_data(node, None, has_facets)
+        namespace, name, facets, _ = self.extract_dataset_data(node, None, has_facets)
         return Dataset(name=name, namespace=namespace, facets=facets)
 
     def node_to_output_dataset(self, node: ModelNode, has_facets: bool = False) -> OutputDataset:
-        name, namespace, facets, _ = self.extract_dataset_data(node, None, has_facets)
+        namespace, name, facets, _ = self.extract_dataset_data(node, None, has_facets)
         output_facets: Dict[str, OutputDatasetFacet] = {}
         if has_facets and node.catalog_node:
             bytes = get_from_multiple_chains(

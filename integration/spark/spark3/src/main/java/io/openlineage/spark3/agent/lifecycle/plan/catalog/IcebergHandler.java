@@ -69,7 +69,6 @@ public class IcebergHandler implements CatalogHandler {
     String prefix = String.format("spark.sql.catalog.%s", catalogName);
     Map<String, String> conf =
         ScalaConversionUtils.<String, String>fromMap(session.conf().getAll());
-    log.debug(conf.toString());
     Map<String, String> catalogConf =
         conf.entrySet().stream()
             .filter(x -> x.getKey().startsWith(prefix))
@@ -79,12 +78,10 @@ public class IcebergHandler implements CatalogHandler {
                     x -> x.getKey().substring(prefix.length() + 1), // handle dot after prefix
                     Map.Entry::getValue));
 
-    log.debug(catalogConf.toString());
     String catalogType = getCatalogType(catalogConf);
     if (catalogType == null) {
       throw new UnsupportedCatalogException(catalogName);
     }
-    log.debug(catalogConf.get(TYPE));
 
     String warehouse = catalogConf.get(CatalogProperties.WAREHOUSE_LOCATION);
     DatasetIdentifier di = PathUtils.fromPath(new Path(warehouse, identifier.toString()));

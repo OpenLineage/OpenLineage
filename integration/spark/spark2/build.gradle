@@ -22,7 +22,6 @@ idea {
 
 ext {
     assertjVersion = "3.25.1"
-    micrometerVersion = '1.12.4'
     deltaVersion = "1.1.0"
     icebergVersion = "0.14.1"
     jacksonVersion = "2.15.3"
@@ -38,12 +37,10 @@ dependencies {
     compileOnly(project(path: ":shared", configuration: "scala212RuntimeElements"))
 
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     // TODO: Replace 'testFixturesApi' with 'testImplementation'
     // TODO: Remove the test dependency on 'shared'
     testFixturesApi(project(path: ":shared", configuration: "scala212RuntimeElements"))
-    testFixturesApi("io.micrometer:micrometer-core:${micrometerVersion}")
     testFixturesApi("com.fasterxml.jackson.module:jackson-module-scala_${scalaBinaryVersion}:${jacksonVersion}")
     testFixturesApi("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
     testFixturesApi("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
@@ -61,10 +58,8 @@ dependencies {
     scala211CompileOnly(project(path: ":shared", configuration: "scala212RuntimeElements"))
 
     scala211CompileOnly("org.apache.spark:spark-sql_2.11:${sparkVersion}")
-    scala211CompileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     testScala211Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
-    testScala211Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testScala211Implementation("com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}")
     testScala211Implementation("org.apache.spark:spark-hive_2.11:${sparkVersion}")
     testScala211Implementation("org.apache.spark:spark-sql_2.11:${sparkVersion}")
@@ -79,10 +74,8 @@ dependencies {
     scala212CompileOnly(project(path: ":shared", configuration: "scala212RuntimeElements"))
 
     scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
-    scala212CompileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     testScala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
-    testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testScala212Implementation("com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}")
     testScala212Implementation("org.apache.spark:spark-hive_2.12:${sparkVersion}")
     testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")

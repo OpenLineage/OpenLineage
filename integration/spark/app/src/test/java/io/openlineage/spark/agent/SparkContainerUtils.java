@@ -81,8 +81,13 @@ public class SparkContainerUtils {
   }
 
   static void mountPath(GenericContainer<?> container, Path sourcePath, Path targetPath) {
-    log.debug(
-        "[image={}]: Mount volume '{}:{}'", container.getDockerImageName(), sourcePath, targetPath);
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "[image={}]: Mount volume '{}:{}'",
+          container.getDockerImageName(),
+          sourcePath,
+          targetPath);
+    }
     container.withFileSystemBind(sourcePath.toString(), targetPath.toString(), BindMode.READ_ONLY);
   }
 
@@ -136,7 +141,7 @@ public class SparkContainerUtils {
 
   static GenericContainer<?> makeKafkaContainer(Network network) {
     return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.0.0"))
-        .withNetworkAliases("kafka")
+        .withNetworkAliases("kafka-host")
         .withNetwork(network);
   }
 
@@ -204,6 +209,11 @@ public class SparkContainerUtils {
     addSparkConfig(sparkConf, "spark.sql.warehouse.dir=/tmp/warehouse");
     addSparkConfig(sparkConf, "spark.jars.ivy=/tmp/.ivy2/");
     addSparkConfig(sparkConf, "spark.openlineage.facets.disabled=");
+    addSparkConfig(
+        sparkConf, "spark.openlineage.dataset.namespaceResolvers.kafka-cluster-prod.type=hostList");
+    addSparkConfig(
+        sparkConf,
+        "spark.openlineage.dataset.namespaceResolvers.kafka-cluster-prod.hosts=[kafka-host;kafka-host-other]");
 
     List<String> sparkSubmit =
         new ArrayList(Arrays.asList("./bin/spark-submit", "--master", "local"));

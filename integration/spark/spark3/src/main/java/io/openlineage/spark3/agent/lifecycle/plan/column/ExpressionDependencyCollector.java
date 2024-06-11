@@ -68,7 +68,7 @@ public class ExpressionDependencyCollector {
           ScalaConversionUtils.<NamedExpression>fromSeq(((Aggregate) node).aggregateExpressions()));
     } else if (node instanceof LogicalRelation) {
       if (((LogicalRelation) node).relation() instanceof JDBCRelation) {
-        JdbcColumnLineageCollector.extractExpressionsFromJDBC(node, context.getBuilder());
+        JdbcColumnLineageCollector.extractExpressionsFromJDBC(context, node);
       }
     }
 

@@ -214,7 +214,7 @@ class SparkApplicationDetailsFacetBuilderTest {
                     .hasFieldOrPropertyWithValue("uiWebUrl", "http://driver.host:4040")
                     .hasFieldOrPropertyWithValue("proxyUrl", null)
                     .hasFieldOrPropertyWithValue(
-                        "historyUrl", "http://history.server:18080/application/app-123-456"));
+                        "historyUrl", "http://history.server:18080/history/app-123-456"));
   }
 
   @Test
@@ -240,7 +240,7 @@ class SparkApplicationDetailsFacetBuilderTest {
                     .hasFieldOrPropertyWithValue("uiWebUrl", "http://driver.host:4040")
                     .hasFieldOrPropertyWithValue("proxyUrl", null)
                     .hasFieldOrPropertyWithValue(
-                        "historyUrl", "https://history.server:18080/application/app-123-456"));
+                        "historyUrl", "https://history.server:18080/history/app-123-456"));
   }
 
   @Test
@@ -267,7 +267,6 @@ class SparkApplicationDetailsFacetBuilderTest {
                     .hasFieldOrPropertyWithValue("uiWebUrl", "http://driver.host:4040")
                     .hasFieldOrPropertyWithValue("proxyUrl", null)
                     .hasFieldOrPropertyWithValue(
-                        "historyUrl",
-                        "https://history.server.domain/path/application/app-123-456"));
+                        "historyUrl", "https://history.server.domain/path/history/app-123-456"));
   }
 }

@@ -124,7 +124,7 @@ public class CreateReplaceDatasetBuilder
 
   private Optional<TableCatalog> callCatalogMethod(LogicalPlan plan) {
     try {
-      return Optional.of((TableCatalog) MethodUtils.invokeMethod(plan, "catalog", null));
+      return Optional.of((TableCatalog) MethodUtils.invokeMethod(plan, "catalog", (Object[]) null));
     } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
       log.error("Could not obtain catalog plugin", e);
       return Optional.empty();

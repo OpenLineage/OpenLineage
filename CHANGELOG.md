@@ -1,6 +1,26 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.15.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.16.0...HEAD)
+### Added
+* **Spec: add transformation type info** [`#2756`](https://github.com/OpenLineage/OpenLineage/pull/2756) [@tnazarew](https://github.com/tnazarew)  
+  *Add information about transformation type in `ColumnLineageDatasetFacet`. `transformationType` and `transformationDescription` marked deprecated*
+
+### Fixed
+* **Spark: fix events emitted for `drop table` for Spark 3.4 and above** [`#2745`](https://github.com/OpenLineage/OpenLineage/pull/2745) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)[@savannavalgi](https://github.com/savannavalgi)
+  *Include dataset being dropped within the event, as it used to be prior to Spark 3.4.*
+
+## [1.16.0](https://github.com/OpenLineage/OpenLineage/compare/1.15.0...1.16.0) - 2024-05-28
+### Added
+* **Spark: add `jobType` facet to Spark application events** [`#2719`](https://github.com/OpenLineage/OpenLineage/pull/2719) [@dolfinus](https://github.com/dolfinus)  
+    *Add `jobType` facet to `runEvent`s emitted by `SparkListenerApplicationStart`.*
+* **Spark & Flink: Introduce dataset namespace resolver.** [`#2720`](https://github.com/OpenLineage/OpenLineage/pull/2720) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Enable resolving dataset namespace with predefined resolvers like: `HostListNamespaceResolver`, `PatternNamespaceResolver`, `PatternMatchingGroupNamespaceResolver` or custom implementation loaded with ServiceLoader. Feature is useful to resolve hostnames into cluster identifiers.*
+
+### Fixed
+* **dbt: fix swapped namespace and name in dbt integration** [`#2735`](https://github.com/OpenLineage/OpenLineage/pull/2735) [@JDarDagran](https://github.com/JDarDagran)  
+    *Fixes variable names.*
+* **Python: override debug level** [`#2727`](https://github.com/OpenLineage/OpenLineage/pull/2735) [@mobuchowski](https://github.com/mobuchowski)  
+    *Removes debug-level logging of HTTP requests.*
 
 ## [1.15.0](https://github.com/OpenLineage/OpenLineage/compare/1.14.0...1.15.0) - 2024-05-23
 ### Added

@@ -46,7 +46,7 @@ public class FlinkProtobufApplication {
     KafkaSource<InputEvent> source =
         KafkaSource.<InputEvent>builder()
             .setProperties(fromResource("kafka-consumer.conf").toProperties())
-            .setBootstrapServers("kafka:9092")
+            .setBootstrapServers("kafka-host:9092")
             .setValueOnlyDeserializer(
                 new DeserializationSchema<InputEvent>() {
                   @Override
@@ -85,7 +85,7 @@ public class FlinkProtobufApplication {
 
     KafkaSink<OutputEvent> sink = KafkaSink.<OutputEvent>builder()
         .setKafkaProducerConfig(fromResource("kafka-producer.conf").toProperties())
-        .setBootstrapServers("kafka:9092")
+        .setBootstrapServers("kafka-host:9092")
         .setRecordSerializer(
             KafkaRecordSerializationSchema.builder()
                 .setValueSerializationSchema(
