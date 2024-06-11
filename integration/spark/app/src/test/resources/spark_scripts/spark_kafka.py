@@ -8,7 +8,7 @@ master = "local"
 
 spark = SparkSession.builder.master(master).appName(appName).getOrCreate()
 
-kafka_servers = "kafka:9092"
+kafka_servers = "kafka-host:9092"
 checkpointLocation = "/test_data/checkpoint"
 
 

@@ -60,6 +60,8 @@ class SparkApplicationExecutionContextTest {
     when(olContext.getSparkContext()).thenReturn(Optional.of(spark.sparkContext()));
     when(olContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
     when(olContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    when(olContext.getApplicationUuid())
+        .thenReturn(UUID.fromString("993426b3-1ca7-44af-8473-8e58c757ebd1"));
 
     when(eventEmitter.getOverriddenAppName()).thenReturn(Optional.of("app-name"));
     when(eventEmitter.getApplicationRunId())
@@ -137,6 +139,25 @@ class SparkApplicationExecutionContextTest {
       assertThat(parentJob.getNamespace()).isEqualTo("parent_namespace");
       assertThat(parentRun.getRunId())
           .isEqualTo(UUID.fromString("4e948e60-1639-4796-950e-cdc6d45915f4"));
+    }
+  }
+
+  @Test
+  void testJobTypeJobFacetIsSet(SparkSession spark) {
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.start(mock(SparkListenerApplicationStart.class));
+      context.end(mock(SparkListenerApplicationEnd.class));
+    }
+
+    for (RunEvent runEvent : lineageEvent.getAllValues()) {
+      OpenLineage.Job job = runEvent.getJob();
+      OpenLineage.JobTypeJobFacet jobTypeFacet = job.getFacets().getJobType();
+      assertThat(jobTypeFacet.getJobType()).isEqualTo("APPLICATION");
+      assertThat(jobTypeFacet.getProcessingType()).isEqualTo("NONE");
+      assertThat(jobTypeFacet.getIntegration()).isEqualTo("SPARK");
     }
   }
 }

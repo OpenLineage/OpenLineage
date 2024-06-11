@@ -44,7 +44,7 @@ public class FlinkContainerUtils {
   static GenericContainer<?> makeSchemaRegistryContainer(Network network, Startable startable) {
     return genericContainer(network, SCHEMA_REGISTRY_IMAGE, "schema-registry")
         .withExposedPorts(28081)
-        .withEnv("SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS", "PLAINTEXT://kafka:9092")
+        .withEnv("SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS", "PLAINTEXT://kafka-host:9092")
         .withEnv("SCHEMA_REGISTRY_HOST_NAME", "schema-registry")
         .withEnv("SCHEMA_REGISTRY_LISTENERS", "http://schema-registry:8081,http://0.0.0.0:28081")
         .withEnv("SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL", "WARN")
@@ -52,17 +52,17 @@ public class FlinkContainerUtils {
   }
 
   static GenericContainer<?> makeKafkaContainer(Network network, Startable zookeeper) {
-    return genericContainer(network, KAFKA_IMAGE, "kafka")
+    return genericContainer(network, KAFKA_IMAGE, "kafka-host")
         .withExposedPorts(9092, 19092)
         .withEnv(
             "KAFKA_LISTENER_SECURITY_PROTOCOL_MAP",
             "LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT")
         .withEnv(
             "KAFKA_LISTENERS",
-            "LISTENER_DOCKER_INTERNAL://kafka:9092,LISTENER_DOCKER_EXTERNAL://127.0.0.1:19092")
+            "LISTENER_DOCKER_INTERNAL://kafka-host:9092,LISTENER_DOCKER_EXTERNAL://127.0.0.1:19092")
         .withEnv(
             "KAFKA_ADVERTISED_LISTENERS",
-            "LISTENER_DOCKER_INTERNAL://kafka:9092,LISTENER_DOCKER_EXTERNAL://127.0.0.1:19092")
+            "LISTENER_DOCKER_INTERNAL://kafka-host:9092,LISTENER_DOCKER_EXTERNAL://127.0.0.1:19092")
         .withEnv("KAFKA_INTER_BROKER_LISTENER_NAME", "LISTENER_DOCKER_INTERNAL")
         .withEnv("KAFKA_ZOOKEEPER_CONNECT", "zookeeper:2181")
         .withEnv("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1")

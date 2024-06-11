@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
-from attr import define
+import attr
 from openlineage.client.generated.base import JobFacet
 
 
-@define
+@attr.define
 class SQLJobFacet(JobFacet):
     query: str
 

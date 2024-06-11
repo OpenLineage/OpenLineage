@@ -91,7 +91,7 @@ class RddExecutionContext implements ExecutionContext {
   public void end(SparkListenerApplicationEnd applicationEnd) {}
 
   @Override
-  @SuppressWarnings("PMD") //  f.setAccessible(true);
+  @SuppressWarnings("PMD") // f.setAccessible(true);
   public void setActiveJob(ActiveJob activeJob) {
     log.debug("setActiveJob within RddExecutionContext {}", activeJob);
     RDD<?> finalRDD = activeJob.finalStage().rdd();
@@ -226,7 +226,6 @@ class RddExecutionContext implements ExecutionContext {
                     .build())
             .job(buildJob(jobStart.jobId()))
             .build();
-
     log.debug("Posting event for start {}: {}", jobStart, event);
     eventEmitter.emit(event);
   }
@@ -235,8 +234,10 @@ class RddExecutionContext implements ExecutionContext {
   public void end(SparkListenerJobEnd jobEnd) {
     log.debug("end SparkListenerJobEnd {}", jobEnd);
     if (outputs.isEmpty() && !(jobEnd.jobResult() instanceof JobFailed)) {
-      // Oftentimes SparkListener is triggered for actions which do not contain any meaningful
-      // lineage data and are useless in the context of lineage graph. We assume this occurs
+      // Oftentimes SparkListener is triggered for actions which do not contain any
+      // meaningful
+      // lineage data and are useless in the context of lineage graph. We assume this
+      // occurs
       // for RDD operations which have no output dataset
       log.info("Output RDDs are empty: skipping sending OpenLineage event");
       return;
@@ -256,7 +257,6 @@ class RddExecutionContext implements ExecutionContext {
                     .build())
             .job(buildJob(jobEnd.jobId()))
             .build();
-
     log.debug("Posting event for end {}: {}", jobEnd, event);
     eventEmitter.emit(event);
   }

@@ -1,6 +1,6 @@
 plugins {
     `kotlin-dsl`
-    kotlin("plugin.serialization") version "1.9.24"
+    kotlin("plugin.serialization") version "2.0.0"
 }
 
 repositories {
@@ -33,6 +33,11 @@ gradlePlugin {
         create("scalaVariants") {
             id = "io.openlineage.scala-variants"
             implementationClass = "io.openlineage.gradle.plugin.ScalaVariantsPlugin"
+        }
+
+        create("jarVerification") {
+            id = "io.openlineage.jar-verification"
+            implementationClass = "io.openlineage.gradle.plugin.JarVerificationPlugin"
         }
     }
 }

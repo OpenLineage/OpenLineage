@@ -1,0 +1,29 @@
+{
+  "job": {
+    "namespace": "testDropTable"
+  },
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/drop_test/drop_table_test",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/drop_test",
+              "name": "default.drop_table_test",
+              "type": "TABLE"
+            }
+          ]
+        },
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "DROP"
+        }
+      }
+    }
+  ]
+}

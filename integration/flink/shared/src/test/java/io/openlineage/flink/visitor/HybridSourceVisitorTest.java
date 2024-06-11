@@ -109,7 +109,7 @@ class HybridSourceVisitorTest {
 
     // Validate Kafka
     assertEquals("topic1", inputDatasets.get(1).getName());
-    assertEquals("kafka://server1;server2", inputDatasets.get(1).getNamespace());
+    assertEquals("kafka://server1", inputDatasets.get(1).getNamespace());
 
     List<OpenLineage.SchemaDatasetFacetFields> kafkaFields =
         inputDatasets.get(1).getFacets().getSchema().getFields();

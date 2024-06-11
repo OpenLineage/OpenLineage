@@ -40,7 +40,10 @@ public class CreateReplaceInputDatasetBuilder
 
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
-    log.debug("Calling isDefinedAtLogicalPlan on {} with children {}", x.getClass(), x.children());
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "Calling isDefinedAtLogicalPlan on {} with children {}", x.getClass(), x.children());
+    }
     return ((x instanceof CreateTableAsSelect)
             || (x instanceof ReplaceTable)
             || (x instanceof ReplaceTableAsSelect)
@@ -50,7 +53,9 @@ public class CreateReplaceInputDatasetBuilder
 
   @Override
   public List<OpenLineage.InputDataset> apply(SparkListenerEvent event, LogicalPlan x) {
-    log.debug("Calling apply on {}", x.getClass());
+    if (log.isDebugEnabled()) {
+      log.debug("Calling apply on {}", x.getClass());
+    }
     return extractChildren(x).stream()
         .flatMap(
             plan ->

@@ -125,7 +125,7 @@ public class ContextFactory {
   public static Optional<QueryExecution> executionFromCompleteEvent(
       SparkListenerSQLExecutionEnd event) {
     try {
-      return Optional.of((QueryExecution) MethodUtils.invokeMethod(event, "qe", null));
+      return Optional.of((QueryExecution) MethodUtils.invokeMethod(event, "qe", (Object[]) null));
     } catch (NoSuchMethodException e) {
       return Optional.empty();
     } catch (IllegalAccessException | InvocationTargetException | ClassCastException e) {

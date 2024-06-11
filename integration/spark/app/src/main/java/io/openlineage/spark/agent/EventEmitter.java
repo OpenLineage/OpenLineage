@@ -59,8 +59,10 @@ public class EventEmitter {
   public void emit(OpenLineage.RunEvent event) {
     try {
       this.client.emit(event);
-      log.debug(
-          "Emitting lineage completed successfully: {}", OpenLineageClientUtils.toJson(event));
+      if (log.isDebugEnabled()) {
+        log.debug(
+            "Emitting lineage completed successfully: {}", OpenLineageClientUtils.toJson(event));
+      }
     } catch (OpenLineageClientException exception) {
       log.error("Could not emit lineage w/ exception", exception);
     }

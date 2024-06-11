@@ -16,6 +16,7 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Locale;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.ActiveJob;
@@ -30,6 +31,10 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 
 @Slf4j
 class SparkApplicationExecutionContext implements ExecutionContext {
+  private static final String SPARK_JOB_TYPE = "APPLICATION";
+  private static final String SPARK_INTEGRATION = "SPARK";
+  private static final String SPARK_PROCESSING_TYPE = "NONE";
+
   private final OpenLineageContext olContext;
   private final EventEmitter eventEmitter;
   private final OpenLineageRunEventBuilder runEventBuilder;
@@ -78,14 +83,18 @@ class SparkApplicationExecutionContext implements ExecutionContext {
 
     RunEvent event =
         runEventBuilder.buildRun(
-            buildApplicationParentFacet(),
-            openLineage
-                .newRunEventBuilder()
-                .eventTime(toZonedTime(applicationStart.time()))
-                .eventType(START),
-            buildJob(),
-            openLineage.newJobFacetsBuilder(),
-            applicationStart);
+            OpenLineageRunEventContext.builder()
+                .applicationParentRunFacet(buildApplicationParentFacet())
+                .runEventBuilder(
+                    openLineage
+                        .newRunEventBuilder()
+                        .eventTime(toZonedTime(applicationStart.time()))
+                        .eventType(START))
+                .jobBuilder(getJobBuilder())
+                .jobFacetsBuilder(getJobFacetsBuilder())
+                .overwriteRunId(Optional.of(olContext.getApplicationUuid()))
+                .event(applicationStart)
+                .build());
 
     log.debug("Posting event for applicationId {} start: {}", applicationId, event);
     eventEmitter.emit(event);
@@ -104,14 +113,18 @@ class SparkApplicationExecutionContext implements ExecutionContext {
 
     RunEvent event =
         runEventBuilder.buildRun(
-            buildApplicationParentFacet(),
-            openLineage
-                .newRunEventBuilder()
-                .eventTime(toZonedTime(applicationEnd.time()))
-                .eventType(COMPLETE),
-            buildJob(),
-            openLineage.newJobFacetsBuilder(),
-            applicationEnd);
+            OpenLineageRunEventContext.builder()
+                .applicationParentRunFacet(buildApplicationParentFacet())
+                .runEventBuilder(
+                    openLineage
+                        .newRunEventBuilder()
+                        .eventTime(toZonedTime(applicationEnd.time()))
+                        .eventType(COMPLETE))
+                .jobBuilder(getJobBuilder())
+                .jobFacetsBuilder(getJobFacetsBuilder())
+                .overwriteRunId(Optional.of(olContext.getApplicationUuid()))
+                .event(applicationEnd)
+                .build());
 
     log.debug("Posting event for applicationId {} end: {}", applicationId, event);
     eventEmitter.emit(event);
@@ -130,7 +143,7 @@ class SparkApplicationExecutionContext implements ExecutionContext {
     return null;
   }
 
-  protected OpenLineage.JobBuilder buildJob() {
+  private OpenLineage.JobBuilder getJobBuilder() {
     String name =
         eventEmitter
             .getOverriddenAppName()
@@ -139,6 +152,18 @@ class SparkApplicationExecutionContext implements ExecutionContext {
         .newJobBuilder()
         .namespace(eventEmitter.getJobNamespace())
         .name(normalizeName(name));
+  }
+
+  private OpenLineage.JobFacetsBuilder getJobFacetsBuilder() {
+    return openLineage
+        .newJobFacetsBuilder()
+        .jobType(
+            openLineage
+                .newJobTypeJobFacetBuilder()
+                .jobType(SPARK_JOB_TYPE)
+                .processingType(SPARK_PROCESSING_TYPE)
+                .integration(SPARK_INTEGRATION)
+                .build());
   }
 
   // normalizes string, changes CamelCase to snake_case and replaces all non-alphanumerics with '_'

@@ -63,10 +63,12 @@ public class Rdds {
     deps.add(rdd);
     while (!deps.isEmpty()) {
       RDD<?> cur = deps.pop();
-      deps.addAll(
-          ScalaConversionUtils.fromSeq(cur.getDependencies()).stream()
-              .map(Dependency::rdd)
-              .collect(Collectors.toList()));
+      if (cur.getDependencies() != null) {
+        deps.addAll(
+            ScalaConversionUtils.fromSeq(cur.getDependencies()).stream()
+                .map(Dependency::rdd)
+                .collect(Collectors.toList()));
+      }
       if (cur instanceof HadoopRDD) {
         ret.add(cur);
       } else if (cur instanceof FileScanRDD) {

@@ -43,6 +43,9 @@ public class Generator {
   private static final String JSON_EXT = ".json";
   private static final String JAVA_EXT = ".java";
 
+  //Registry json files should be ignored by generator
+  public static final String REGISTRY_FILE_NAME = "registry.json";
+
   /**
    * will generate java classes from the spec URL
    * @param args either empty or a single argument: the url to the spec to generate
@@ -79,7 +82,8 @@ public class Generator {
       // Skip processing this directory if its name is "tests"
       return;
     }
-    File[] jsonFiles = dir.listFiles((File f, String name) -> name.endsWith(JSON_EXT));
+    File[] jsonFiles = dir.listFiles(
+        (File f, String name) -> name.endsWith(JSON_EXT) && !name.equals(REGISTRY_FILE_NAME));
     for (File jsonFile : jsonFiles) {
       urls.add(jsonFile.toURI().toURL());
     }

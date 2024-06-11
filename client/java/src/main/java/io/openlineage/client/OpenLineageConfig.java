@@ -8,6 +8,7 @@ package io.openlineage.client;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
+import io.openlineage.client.dataset.DatasetConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
 import java.util.Map;
@@ -33,6 +34,9 @@ public class OpenLineageConfig<T extends OpenLineageConfig> implements MergeConf
   @JsonProperty("facets")
   protected FacetsConfig facetsConfig;
 
+  @JsonProperty("dataset")
+  protected DatasetConfig datasetConfig;
+
   @JsonProperty("circuitBreaker")
   protected CircuitBreakerConfig circuitBreaker;
 
@@ -50,6 +54,7 @@ public class OpenLineageConfig<T extends OpenLineageConfig> implements MergeConf
     return new OpenLineageConfig(
         mergePropertyWith(transportConfig, other.transportConfig),
         mergePropertyWith(facetsConfig, other.facetsConfig),
+        mergePropertyWith(datasetConfig, other.datasetConfig),
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
         mergePropertyWith(metricsConfig, other.metricsConfig));
   }

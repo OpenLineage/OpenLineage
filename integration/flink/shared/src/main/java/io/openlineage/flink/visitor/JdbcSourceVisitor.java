@@ -50,9 +50,10 @@ public class JdbcSourceVisitor extends Visitor<OpenLineage.InputDataset> {
           String.format("Unsupported JDBC Source type %s", object.getClass().getCanonicalName()));
     }
 
+    // TODO: implement namespace resolver
     DatasetIdentifier di =
         JdbcUtils.getDatasetIdentifierFromJdbcUrl(
             sourceWrapper.getConnectionUrl(), sourceWrapper.getTableName().get());
-    return Collections.singletonList(createInputDataset(context, di.getNamespace(), di.getName()));
+    return Collections.singletonList(inputDataset().getDataset(di.getName(), di.getNamespace()));
   }
 }

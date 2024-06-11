@@ -17,7 +17,7 @@
   },
   "outputs": [
     {
-      "namespace": "kafka://kafka:9092",
+      "namespace": "kafka://kafka-cluster-prod:9092",
       "name": "io.openlineage.flink.kafka.output1",
       "facets": {
         "schema": {
@@ -39,7 +39,7 @@
       }
     },
     {
-      "namespace": "kafka://kafka:9092",
+      "namespace": "kafka://kafka-cluster-prod:9092",
       "name": "io.openlineage.flink.kafka.output2",
       "facets": {
         "schema": {

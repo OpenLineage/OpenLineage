@@ -12,12 +12,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.circuitBreaker.StaticCircuitBreakerConfig;
+import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceResolverConfig;
 import io.openlineage.client.transports.ApiKeyTokenProvider;
 import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.KafkaConfig;
 import io.openlineage.client.transports.KinesisConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import java.util.Arrays;
+import java.util.Map;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
@@ -125,7 +128,6 @@ class ArgumentParserTest {
     SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
     KafkaConfig transportConfig = (KafkaConfig) config.getTransportConfig();
     assertEquals("test", transportConfig.getTopicName());
-    // Legacy LocalServerId should be mapped to messageKey
     assertEquals("explicit-key", transportConfig.getMessageKey());
     assertEquals("test1", transportConfig.getProperties().get("test1"));
     assertEquals("test2", transportConfig.getProperties().get("test2"));
@@ -248,5 +250,32 @@ class ArgumentParserTest {
 
     Logger.getLogger(OpenLineageClientUtils.class).setLevel(Level.ERROR);
     assertThrows(RuntimeException.class, () -> ArgumentParser.parse(sparkConf));
+  }
+
+  @Test
+  void testMultipleDatasetNamespaceResolverConfigEntries() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.dataset.namespaceResolvers.postgres-prod.type", "hostList")
+            .set(
+                "spark.openlineage.dataset.namespaceResolvers.postgres-prod.hosts",
+                "[postgres-host1-prod;postgres-host1-prod]")
+            .set("spark.openlineage.dataset.namespaceResolvers.postgres-test.type", "hostList")
+            .set(
+                "spark.openlineage.dataset.namespaceResolvers.postgres-test.hosts",
+                "[postgres-host1-test;postgres-host1-test]");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+
+    Map<String, DatasetNamespaceResolverConfig> namespaceResolvers =
+        config.getDatasetConfig().getNamespaceResolvers();
+    assertThat(namespaceResolvers.keySet()).hasSize(2);
+    assertThat(namespaceResolvers.get("postgres-prod"))
+        .hasFieldOrPropertyWithValue(
+            "hosts", Arrays.asList("postgres-host1-prod", "postgres-host1-prod"));
+
+    assertThat(namespaceResolvers.get("postgres-test"))
+        .hasFieldOrPropertyWithValue(
+            "hosts", Arrays.asList("postgres-host1-test", "postgres-host1-test"));
   }
 }

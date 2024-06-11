@@ -5,12 +5,12 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from attr import define, field
+import attr
 from openlineage.client.generated.base import RunFacet
 from openlineage.client.utils import RedactMixin
 
 
-@define
+@attr.define
 class Job(RedactMixin):
     namespace: str
     """The namespace containing that job"""
@@ -19,7 +19,7 @@ class Job(RedactMixin):
     """The unique name for that job within that namespace"""
 
 
-@define
+@attr.define
 class ParentRunFacet(RunFacet):
     """
     the id of the parent run and job, iff this run was spawn from an other run (for example, the Dag run
@@ -46,9 +46,9 @@ class ParentRunFacet(RunFacet):
         return cls(run=Run(runId=runId), job=Job(namespace=namespace, name=name))
 
 
-@define
+@attr.define
 class Run(RedactMixin):
-    runId: str = field()  # noqa: N815
+    runId: str = attr.field()  # noqa: N815
     """The globally unique ID of the run associated with the job."""
 
     @runId.validator

@@ -19,23 +19,11 @@ public abstract class Visitor<D extends OpenLineage.Dataset> {
   }
 
   protected DatasetFactory<OpenLineage.OutputDataset> outputDataset() {
-    return DatasetFactory.output(context.getOpenLineage());
+    return DatasetFactory.output(context);
   }
 
   protected DatasetFactory<OpenLineage.InputDataset> inputDataset() {
-    return DatasetFactory.input(context.getOpenLineage());
-  }
-
-  protected OpenLineage.InputDataset createInputDataset(
-      OpenLineageContext context, String namespace, String name) {
-    OpenLineage openLineage = context.getOpenLineage();
-    return openLineage.newInputDatasetBuilder().name(name).namespace(namespace).build();
-  }
-
-  protected OpenLineage.OutputDataset createOutputDataset(
-      OpenLineageContext context, String namespace, String name) {
-    OpenLineage openLineage = context.getOpenLineage();
-    return openLineage.newOutputDatasetBuilder().name(name).namespace(namespace).build();
+    return DatasetFactory.input(context);
   }
 
   public abstract boolean isDefinedAt(Object object);

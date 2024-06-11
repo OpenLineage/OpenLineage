@@ -10,7 +10,7 @@ from setuptools import find_namespace_packages, setup
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "1.15.0"
+__version__ = "1.17.0"
 
 DAGSTER_VERSION = "1.0.0"
 
