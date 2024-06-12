@@ -126,7 +126,7 @@ public class IcebergHandler implements CatalogHandler {
     URI uri;
     if (confUri == null) {
       uri =
-          SparkConfUtils.getMetastoreUri(session.sparkContext().conf())
+          SparkConfUtils.getMetastoreUri(session.sparkContext())
               .orElseThrow(() -> new UnsupportedCatalogException("hive"));
     } else {
       uri = new URI(confUri);

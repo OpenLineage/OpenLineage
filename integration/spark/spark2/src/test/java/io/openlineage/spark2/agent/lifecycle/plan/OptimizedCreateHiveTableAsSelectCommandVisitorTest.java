@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.spark.Partition;
+import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
@@ -57,7 +58,9 @@ class OptimizedCreateHiveTableAsSelectCommandVisitorTest {
 
   @BeforeEach
   public void setUp() {
-    when(session.sparkContext()).thenReturn(mock(SparkContext.class));
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(sparkContext.getConf()).thenReturn(new SparkConf());
+    when(session.sparkContext()).thenReturn(sparkContext);
   }
 
   @Test

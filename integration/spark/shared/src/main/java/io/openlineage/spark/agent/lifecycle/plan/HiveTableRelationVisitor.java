@@ -35,8 +35,13 @@ public class HiveTableRelationVisitor<D extends Dataset>
 
   @Override
   public List<D> apply(LogicalPlan x) {
+    if (!context.getSparkSession().isPresent()) {
+      return Collections.emptyList();
+    }
+
     HiveTableRelation hiveTable = (HiveTableRelation) x;
-    DatasetIdentifier datasetId = PathUtils.fromCatalogTable(hiveTable.tableMeta());
+    DatasetIdentifier datasetId =
+        PathUtils.fromCatalogTable(hiveTable.tableMeta(), context.getSparkSession().get());
     return Collections.singletonList(factory.getDataset(datasetId, x.schema()));
   }
 }

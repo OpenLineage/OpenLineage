@@ -33,12 +33,12 @@ public class AlterTableRenameCommandVisitor
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     Optional<CatalogTable> tableOpt = catalogTableFor(((AlterTableRenameCommand) x).newName());
-    if (!tableOpt.isPresent()) {
+    if (!tableOpt.isPresent() || !context.getSparkSession().isPresent()) {
       return Collections.emptyList();
     }
     CatalogTable table = tableOpt.get();
 
-    DatasetIdentifier di = PathUtils.fromCatalogTable(table);
+    DatasetIdentifier di = PathUtils.fromCatalogTable(table, context.getSparkSession().get());
 
     AlterTableRenameCommand alterTableRenameCommand = (AlterTableRenameCommand) x;
     String previousName =

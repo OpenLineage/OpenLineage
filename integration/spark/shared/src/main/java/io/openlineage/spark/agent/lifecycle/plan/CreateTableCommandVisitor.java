@@ -39,19 +39,26 @@ public class CreateTableCommandVisitor
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+    if (!context.getSparkSession().isPresent()) {
+      return Collections.emptyList();
+    }
+
     CreateTableCommand command = (CreateTableCommand) x;
     CatalogTable catalogTable = command.table();
 
     return Collections.singletonList(
         outputDataset()
             .getDataset(
-                PathUtils.fromCatalogTable(catalogTable),
+                PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get()),
                 catalogTable.schema(),
                 OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE));
   }
 
   @Override
   public Optional<String> jobNameSuffix(CreateTableCommand command) {
-    return Optional.of(trimPath(PathUtils.fromCatalogTable(command.table()).getName()));
+    return context
+        .getSparkSession()
+        .map(session -> PathUtils.fromCatalogTable(command.table(), session))
+        .map(table -> trimPath(table.getName()));
   }
 }

@@ -29,13 +29,17 @@ public class CreateDataSourceTableCommandVisitor
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+    if (!context.getSparkSession().isPresent()) {
+      return Collections.emptyList();
+    }
+
     CreateDataSourceTableCommand command = (CreateDataSourceTableCommand) x;
     CatalogTable catalogTable = command.table();
 
     return Collections.singletonList(
         outputDataset()
             .getDataset(
-                PathUtils.fromCatalogTable(catalogTable),
+                PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get()),
                 catalogTable.schema(),
                 OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE));
   }

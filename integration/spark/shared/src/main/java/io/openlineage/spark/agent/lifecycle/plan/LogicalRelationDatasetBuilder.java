@@ -120,9 +120,14 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
   }
 
   private List<D> handleCatalogTable(LogicalRelation logRel) {
+    if (!context.getSparkSession().isPresent()) {
+      return Collections.emptyList();
+    }
+
     CatalogTable catalogTable = logRel.catalogTable().get();
 
-    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable);
+    DatasetIdentifier di =
+        PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get());
 
     OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
         context.getOpenLineage().newDatasetFacetsBuilder();

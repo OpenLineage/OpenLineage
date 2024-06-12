@@ -15,6 +15,7 @@ import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.lifecycle.CatalogTableTestUtils;
 import java.net.URI;
 import java.util.List;
+import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -35,7 +36,9 @@ class CreateTableCommandVisitorTest {
 
   @BeforeEach
   public void setup() {
-    when(session.sparkContext()).thenReturn(mock(SparkContext.class));
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(sparkContext.getConf()).thenReturn(new SparkConf());
+    when(session.sparkContext()).thenReturn(sparkContext);
     command = new CreateTableCommand(CatalogTableTestUtils.getCatalogTable(table), true);
     visitor = new CreateTableCommandVisitor(SparkAgentTestExtension.newContext(session));
   }
