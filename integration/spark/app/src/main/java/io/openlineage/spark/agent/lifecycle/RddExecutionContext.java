@@ -14,7 +14,7 @@ import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.SparkVersionFacet;
-import io.openlineage.spark.agent.facets.builder.GCPEnvironmentFacetBuilder;
+import io.openlineage.spark.agent.facets.builder.GCPRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilderDelegate;
 import io.openlineage.spark.agent.facets.builder.SparkPropertyFacetBuilder;
 import io.openlineage.spark.agent.util.GCPUtils;
@@ -255,7 +255,7 @@ class RddExecutionContext implements ExecutionContext {
     addSparkVersionFacet(runFacetsBuilder);
     addProcessingEventFacet(runFacetsBuilder, ol);
     addSparkPropertyFacet(runFacetsBuilder, event);
-    addGCPEnvironmentFacet(runFacetsBuilder, event);
+    addGCPRunFacet(runFacetsBuilder, event);
 
     return runFacetsBuilder.build();
   }
@@ -278,11 +278,11 @@ class RddExecutionContext implements ExecutionContext {
     b0.put("spark_properties", new SparkPropertyFacetBuilder().buildFacet(event));
   }
 
-  private void addGCPEnvironmentFacet(OpenLineage.RunFacetsBuilder b0, SparkListenerEvent event) {
-    if (!GCPUtils.isGCPRuntime()) return;
+  private void addGCPRunFacet(OpenLineage.RunFacetsBuilder b0, SparkListenerEvent event) {
+    if (!GCPUtils.isDataprocRuntime()) return;
     sparkContextOption.ifPresent(
         context -> {
-          GCPEnvironmentFacetBuilder b1 = new GCPEnvironmentFacetBuilder(context);
+          GCPRunFacetBuilder b1 = new GCPRunFacetBuilder(context);
           b1.accept(event, b0::put);
         });
   }

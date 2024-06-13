@@ -76,12 +76,12 @@ public class GCPUtils {
     HTTP_CLIENT = HttpClients.custom().setDefaultRequestConfig(config).build();
   }
 
-  public static boolean isGCPRuntime() {
+  public static boolean isDataprocRuntime() {
     String sparkDistClasspath = Environment.getEnvironmentVariable(SPARK_DIST_CLASSPATH);
     return (sparkDistClasspath != null && sparkDistClasspath.contains(DATAPROC_CLASSPATH));
   }
 
-  public static Map<String, Object> getDataprocSpecificFacets(SparkContext sparkContext) {
+  public static Map<String, Object> getDataprocRunFacetMap(SparkContext sparkContext) {
     Map<String, Object> dataprocProperties = new HashMap<>();
     ResourceType resource = identifyResource(sparkContext);
 
@@ -90,27 +90,29 @@ public class GCPUtils {
         getDriverHost(sparkContext).ifPresent(p -> dataprocProperties.put("spark.driver.host", p));
         getClusterName(sparkContext)
             .ifPresent(p -> dataprocProperties.put("spark.cluster.name", p));
-        getRegionName().ifPresent(p -> dataprocProperties.put("spark.cluster.region", p));
         getClusterUUID().ifPresent(p -> dataprocProperties.put("spark.cluster.uuid", p));
-        getGCPJobID(sparkContext).ifPresent(p -> dataprocProperties.put("spark.job.id", p));
-        getGCPJobUUID(sparkContext).ifPresent(p -> dataprocProperties.put("spark.job.uuid", p));
+        getDataprocJobID(sparkContext).ifPresent(p -> dataprocProperties.put("spark.job.id", p));
+        getDataprocJobUUID(sparkContext)
+            .ifPresent(p -> dataprocProperties.put("spark.job.uuid", p));
         break;
       case BATCH:
-        getRegionName().ifPresent(p -> dataprocProperties.put("spark.batch.region", p));
-        getGCPBatchID().ifPresent(p -> dataprocProperties.put("spark.batch.id", p));
-        getGCPBatchUUID().ifPresent(p -> dataprocProperties.put("spark.batch.uuid", p));
+        getDataprocBatchID().ifPresent(p -> dataprocProperties.put("spark.batch.id", p));
+        getDataprocBatchUUID().ifPresent(p -> dataprocProperties.put("spark.batch.uuid", p));
         break;
       case INTERACTIVE:
-        getRegionName().ifPresent(p -> dataprocProperties.put("spark.session.region", p));
-        getGCPSessionID().ifPresent(p -> dataprocProperties.put("spark.session.id", p));
-        getGCPSessionUUID().ifPresent(p -> dataprocProperties.put("spark.session.uuid", p));
+        getDataprocSessionID().ifPresent(p -> dataprocProperties.put("spark.session.id", p));
+        getDataprocSessionUUID().ifPresent(p -> dataprocProperties.put("spark.session.uuid", p));
         break;
     }
     getGCPProjectId().ifPresent(p -> dataprocProperties.put("spark.project.id", p));
-    getApplicationId(sparkContext).ifPresent(p -> dataprocProperties.put("spark.app.id", p));
-    getApplicationName(sparkContext).ifPresent(p -> dataprocProperties.put("spark.app.name", p));
-    dataprocProperties.put("origin", createOriginFacet(dataprocProperties, resource));
+    getSparkAppId(sparkContext).ifPresent(p -> dataprocProperties.put("spark.app.id", p));
+    getSparkAppName(sparkContext).ifPresent(p -> dataprocProperties.put("spark.app.name", p));
     return dataprocProperties;
+  }
+
+  public static Map<String, Object> getOriginFacetMap(SparkContext sparkContext) {
+    return createDataprocOriginMap(
+        getDataprocRunFacetMap(sparkContext), identifyResource(sparkContext));
   }
 
   public static Optional<String> getSparkQueryExecutionNodeName(OpenLineageContext context) {
@@ -123,8 +125,8 @@ public class GCPUtils {
 
   private static ResourceType identifyResource(SparkContext context) {
     if (context.getConf().get(SPARK_MASTER, null).equals("yarn")) return ResourceType.CLUSTER;
-    if (getGCPBatchID().isPresent()) return ResourceType.BATCH;
-    if (getGCPSessionID().isPresent()) return ResourceType.INTERACTIVE;
+    if (getDataprocBatchID().isPresent()) return ResourceType.BATCH;
+    if (getDataprocSessionID().isPresent()) return ResourceType.INTERACTIVE;
     return ResourceType.UNKNOWN;
   }
 
@@ -139,31 +141,31 @@ public class GCPUtils {
         .map(s -> s.substring(0, s.lastIndexOf("-")));
   }
 
-  private static Optional<String> getRegionName() {
+  private static Optional<String> getDataprocRegion() {
     return fetchGCPMetadata(DATAPROC_REGION_URI);
   }
 
-  private static Optional<String> getGCPJobID(SparkContext context) {
+  private static Optional<String> getDataprocJobID(SparkContext context) {
     return getPropertyFromYarnTag(context, JOB_ID_PREFIX);
   }
 
-  private static Optional<String> getGCPJobUUID(SparkContext context) {
+  private static Optional<String> getDataprocJobUUID(SparkContext context) {
     return getPropertyFromYarnTag(context, JOB_UUID_PREFIX);
   }
 
-  private static Optional<String> getGCPBatchID() {
+  private static Optional<String> getDataprocBatchID() {
     return fetchGCPMetadata(BATCH_ID_URI);
   }
 
-  private static Optional<String> getGCPBatchUUID() {
+  private static Optional<String> getDataprocBatchUUID() {
     return fetchGCPMetadata(BATCH_UUID_URI);
   }
 
-  private static Optional<String> getGCPSessionID() {
+  private static Optional<String> getDataprocSessionID() {
     return fetchGCPMetadata(SESSION_ID_URI);
   }
 
-  private static Optional<String> getGCPSessionUUID() {
+  private static Optional<String> getDataprocSessionUUID() {
     return fetchGCPMetadata(SESSION_UUID_URI);
   }
 
@@ -171,11 +173,11 @@ public class GCPUtils {
     return fetchGCPMetadata(PROJECT_ID_URI).map(b -> b.substring(b.lastIndexOf('/') + 1));
   }
 
-  private static Optional<String> getApplicationId(SparkContext context) {
+  private static Optional<String> getSparkAppId(SparkContext context) {
     return Optional.ofNullable(context.getConf().get(SPARK_APP_ID));
   }
 
-  private static Optional<String> getApplicationName(SparkContext context) {
+  private static Optional<String> getSparkAppName(SparkContext context) {
     return Optional.ofNullable(context.getConf().get(SPARK_APP_NAME));
   }
 
@@ -183,12 +185,12 @@ public class GCPUtils {
     return fetchGCPMetadata(CLUSTER_UUID_URI);
   }
 
-  private static Map<String, Object> createOriginFacet(
+  private static Map<String, Object> createDataprocOriginMap(
       Map<String, Object> dataprocProperties, ResourceType resourceType) {
     Map<String, Object> originProperties = new HashMap<>();
     String nameFormat = "";
     String resourceID = "";
-    String regionName = getRegionName().orElse("");
+    String regionName = getDataprocRegion().orElse("");
     String projectID = dataprocProperties.get("spark.project.id").toString();
 
     switch (resourceType) {
