@@ -14,6 +14,7 @@ import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.SparkVersionFacet;
+import io.openlineage.spark.agent.facets.builder.GCPJobFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.GCPRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilderDelegate;
 import io.openlineage.spark.agent.facets.builder.SparkPropertyFacetBuilder;
@@ -207,7 +208,7 @@ class RddExecutionContext implements ExecutionContext {
             .inputs(buildInputs(inputs))
             .outputs(buildOutputs(outputs))
             .run(ol.newRunBuilder().runId(runId).facets(buildRunFacets(null, ol, jobStart)).build())
-            .job(buildJob(jobStart.jobId()))
+            .job(buildJob(jobStart.jobId(), jobStart, ol))
             .build();
 
     log.debug("Posting event for start {}: {}", jobStart, event);
@@ -237,7 +238,7 @@ class RddExecutionContext implements ExecutionContext {
                     .runId(runId)
                     .facets(buildRunFacets(buildJobErrorFacet(jobEnd.jobResult()), ol, jobEnd))
                     .build())
-            .job(buildJob(jobEnd.jobId()))
+            .job(buildJob(jobEnd.jobId(), jobEnd, ol))
             .build();
 
     log.debug("Posting event for end {}: {}", jobEnd, event);
@@ -294,6 +295,23 @@ class RddExecutionContext implements ExecutionContext {
         eventEmitter.getJobNamespace());
   }
 
+  protected OpenLineage.JobFacets buildJobFacets(
+      OpenLineage ol, SparkListenerEvent sparkListenerEvent) {
+    OpenLineage.JobFacetsBuilder jobFacetsBuilder = ol.newJobFacetsBuilder();
+    addGCPJobFacets(jobFacetsBuilder, sparkListenerEvent);
+    return jobFacetsBuilder.build();
+  }
+
+  private void addGCPJobFacets(OpenLineage.JobFacetsBuilder b0, SparkListenerEvent event) {
+    if (!GCPUtils.isDataprocRuntime()) return; // change this to isGCPRuntime
+    sparkContextOption.ifPresent(
+        context -> {
+          GCPJobFacetBuilder b1 =
+              new GCPJobFacetBuilder(context); // isDataprocRuntime should be handled internally
+          b1.accept(event, b0::put);
+        });
+  }
+
   protected ErrorFacet buildJobErrorFacet(JobResult jobResult) {
     if (jobResult instanceof JobFailed && ((JobFailed) jobResult).exception() != null) {
       return ErrorFacet.builder().exception(((JobFailed) jobResult).exception()).build();
@@ -301,7 +319,7 @@ class RddExecutionContext implements ExecutionContext {
     return null;
   }
 
-  protected OpenLineage.Job buildJob(int jobId) {
+  protected OpenLineage.Job buildJob(int jobId, SparkListenerEvent jobEvent, OpenLineage ol) {
     String suffix = jobSuffix;
     if (jobSuffix == null) {
       suffix = String.valueOf(jobId);
@@ -315,6 +333,7 @@ class RddExecutionContext implements ExecutionContext {
     return new OpenLineage.JobBuilder()
         .namespace(eventEmitter.getJobNamespace())
         .name(jobName.replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT))
+        .facets(buildJobFacets(ol, jobEvent))
         .build();
   }
 

@@ -18,6 +18,7 @@ import io.openlineage.spark.agent.facets.builder.CustomEnvironmentFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.DatabricksEnvironmentFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.DebugRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.ErrorFacetBuilder;
+import io.openlineage.spark.agent.facets.builder.GCPJobFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.GCPRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.OutputStatisticsOutputDatasetFacetBuilder;
@@ -229,6 +230,9 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                     eventHandlerFactories, factory -> factory.createJobFacetBuilders(context)));
 
     listBuilder.add(new OwnershipJobFacetBuilder(context));
+    if (GCPUtils.isDataprocRuntime()) {
+      listBuilder.add(new GCPJobFacetBuilder(context));
+    }
     return listBuilder.build();
   }
 
