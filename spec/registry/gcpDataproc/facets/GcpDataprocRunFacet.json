@@ -30,8 +30,8 @@
               "description": "Dataproc cluster name",
               "type": "string"
             },
-            "driverHost": {
-              "description": "Dataproc driver host",
+            "clusterUuid ": {
+              "description": "Dataproc cluster UUID",
               "type": "string"
             },
             "jobId": {
