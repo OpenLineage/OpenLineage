@@ -41,7 +41,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 @Slf4j
 @EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)")
-public class ColumnLineageWithTransformationTypesTest {
+class ColumnLineageWithTransformationTypesTest {
   private static final String FILE = "file";
 
   @SuppressWarnings("PMD")
@@ -291,14 +291,14 @@ public class ColumnLineageWithTransformationTypesTest {
             "INSERT INTO %s VALUES (%s)",
             table,
             Arrays.stream(fields)
-                .map(e -> e.split(";")[1].equals("string") ? "\"1\"" : "1")
+                .map(e -> "string".equals(e.split(";")[1]) ? "\"1\"" : "1")
                 .collect(Collectors.joining(","))));
   }
 
   @NotNull
   private OpenLineage.ColumnLineageDatasetFacet getColumnLineageDatasetFacet(
       OpenLineage.SchemaDatasetFacet schemaFacet, Dataset<Row> sql) {
-    Object dummy = sql.collect(); // trigger execution
+    sql.collect(); // trigger execution
 
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
