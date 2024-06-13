@@ -39,8 +39,13 @@ public class ArgumentParser {
   public static final String SPARK_CONF_NAMESPACE = "spark.openlineage.namespace";
   public static final String SPARK_CONF_PARENT_JOB_NAMESPACE =
       "spark.openlineage.parentJobNamespace";
+  
   public static final String SPARK_CONF_PARENT_JOB_NAME = "spark.openlineage.parentJobName";
+  public static final String ENV_VAR_PARENT_JOB_NAME = "OPENLINEAGE_PARENT_JOB_NAME";
+
   public static final String SPARK_CONF_PARENT_RUN_ID = "spark.openlineage.parentRunId";
+  public static final String ENV_VAR_PARENT_RUN_ID = "OPENLINEAGE_PARENT_RUN_ID";
+
   public static final String SPARK_CONF_APP_NAME = "spark.openlineage.appName";
   public static final String ARRAY_PREFIX_CHAR = "[";
   public static final String ARRAY_SUFFIX_CHAR = "]";
@@ -65,6 +70,9 @@ public class ArgumentParser {
     // TRY READING CONFIG FROM FILE
     Optional<SparkOpenLineageConfig> configFromFile = extractOpenLineageConfFromFile();
 
+    // TRY READING CONFIG FROM ENV VAR
+    Optional <SparkOpenLineageConfig> configFromEnvVar = extractOpenLineageConfFromEnvVar();
+
     if ("http".equals(conf.get(SPARK_CONF_TRANSPORT_TYPE, ""))) {
       findSparkConfigKey(conf, SPARK_CONF_HTTP_URL)
           .ifPresent(url -> UrlParser.parseUrl(url).forEach(conf::set));
@@ -72,8 +80,14 @@ public class ArgumentParser {
     SparkOpenLineageConfig configFromSparkConf = extractOpenLineageConfFromSparkConf(conf);
 
     SparkOpenLineageConfig targetConfig;
-    if (configFromFile.isPresent()) {
+    if (configFromFile.isPresent() && configFromEnvVar.isPresent()) {
+      targetConfig = configFromFile.get().mergeWith(configFromEnvVar.get()).mergeWith(configFromSparkConf);
+    }
+    else if (configFromFile.isPresent()) {
       targetConfig = configFromFile.get().mergeWith(configFromSparkConf);
+    }
+    else if (configFromEnvVar.isPresent()) {
+      targetConfig = configFromEnvVar.get().mergeWith(configFromSparkConf);
     } else {
       targetConfig = configFromSparkConf;
     }
@@ -128,6 +142,15 @@ public class ArgumentParser {
                     .toArray(String[]::new))
         .ifPresent(a -> config.getFacetsConfig().setDisabledFacets(a));
   }
+
+  private static void extractOpenLineageConfFromEnvVar(
+      SparkOpenLineageConfig config) {
+      Optional<SparkOpenLineageConfig> configFromEnvVar;
+
+      // Extract parent job name from environment variable using Environment.getEnvironmentVariable()
+
+      return configFromEnvVar;
+    }
 
   /**
    * Method iterates through SparkConf entries prefixed with `spark.openlineage` and rearranges them
