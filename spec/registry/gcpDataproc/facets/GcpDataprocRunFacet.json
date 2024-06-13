@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/GcpDataprocRunFacet.json",
+  "$defs": {
+    "GcpDataprocRunFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "spark.app.id": {
+              "description": "Spark application id",
+              "type": "string"
+            },
+            "spark.app.name": {
+              "description": "Spark application name",
+              "type": "string"
+            },
+            "spark.batch.id": {
+              "description": "Filled in case of Dataproc batch job.",
+              "type": "string"
+            },
+            "spark.batch.uuid": {
+              "description": "Filled in case of Dataproc batch job",
+              "type": "string"
+            },
+            "spark.cluster.name": {
+              "description": "Dataproc cluster name",
+              "type": "string"
+            },
+            "spark.job.id": {
+              "description": "Spark job id",
+              "type": "string"
+            },
+            "spark.job.uuid": {
+              "description": "Spark job uuid",
+              "type": "string"
+            },
+            "spark.project.id": {
+              "description": "GCP project id where the job was run",
+              "type": "string"
+            },
+            "spark.query.node.name": {
+              "description": "Query node summarization",
+              "type": "string"
+            },
+            "spark.session.id": {
+              "description": "Filled in case of Dataproc Session job",
+              "type": "string"
+            },
+            "spark.session.uuid": {
+              "description": "Filled in case of Dataproc Session job",
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "gcp_dataproc": {
+      "$ref": "#/$defs/GcpDataprocRunFacet"
+    }
+  }
+}

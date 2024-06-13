@@ -111,7 +111,7 @@ airflow/
 	{
 		producer: {
 			root_doc_URL: “https://airflow/doc”
-			produced_facets: [
+			facets: [
 				“ol:airflow:AirflowRunFacet.json”,
 				“ol:core:1-0-0/DatasetVersionDatasetFacet.json”,
 				…
@@ -170,7 +170,7 @@ manta/
 	{
 		consumer: {
 			root_doc_URL: “https://manta.com/doc”
-			consumed_facets: [ … ]
+			facets: [ … ]
 		}
 	}
 ```
