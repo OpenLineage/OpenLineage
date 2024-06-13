@@ -78,7 +78,7 @@ public class ColumnLevelLineageBuilder {
     schema.getFields().stream()
         .filter(field -> field.getName().equals(attributeName))
         .findAny()
-        .ifPresent(field -> outputs.put(field, exprId));
+        .ifPresent(field -> outputs.putIfAbsent(field, exprId));
   }
 
   /**
@@ -237,14 +237,16 @@ public class ColumnLevelLineageBuilder {
 
   @NotNull
   private List<TransformedInput> getInputsUsedFor(ExprId outputExprId) {
-    return findDependentInputs(outputExprId).stream()
-        .filter(dependency -> inputs.containsKey(dependency.getExprId()))
-        .flatMap(
-            dependency ->
-                inputs.get(dependency.getExprId()).stream()
-                    .map(e -> new TransformedInput(e, dependency.getTransformationInfo())))
-        .distinct()
-        .collect(Collectors.toList());
+    List<TransformedInput> collect =
+        findDependentInputs(outputExprId).stream()
+            .filter(dependency -> inputs.containsKey(dependency.getExprId()))
+            .flatMap(
+                dependency ->
+                    inputs.get(dependency.getExprId()).stream()
+                        .map(e -> new TransformedInput(e, dependency.getTransformationInfo())))
+            .distinct()
+            .collect(Collectors.toList());
+    return collect;
   }
 
   private List<Dependency> findDependentInputs(ExprId outputExprId) {

@@ -152,6 +152,9 @@ public class ExpressionDependencyCollector {
       branches.stream()
           .map(e -> e._2)
           .forEach(e -> traverseExpression(e, outputExprId, transformationInfo, builder));
+      if (cw.elseValue().isDefined()) {
+        traverseExpression(cw.elseValue().get(), outputExprId, transformationInfo, builder);
+      }
     } else if (expr instanceof If) {
       If i = (If) expr;
       traverseExpression(
