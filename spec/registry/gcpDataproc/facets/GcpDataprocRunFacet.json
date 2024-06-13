@@ -10,51 +10,56 @@
         {
           "type": "object",
           "properties": {
-            "spark.app.id": {
+            "appId": {
               "description": "Spark application id",
               "type": "string"
             },
-            "spark.app.name": {
+            "appName": {
               "description": "Spark application name",
               "type": "string"
             },
-            "spark.batch.id": {
+            "bactchId": {
               "description": "Filled in case of Dataproc batch job.",
               "type": "string"
             },
-            "spark.batch.uuid": {
+            "batchUuid": {
               "description": "Filled in case of Dataproc batch job",
               "type": "string"
             },
-            "spark.cluster.name": {
+            "clusterName": {
               "description": "Dataproc cluster name",
               "type": "string"
             },
-            "spark.job.id": {
+            "driverHost": {
+              "description": "Dataproc driver host",
+              "type": "string"
+            },
+            "jobId": {
               "description": "Spark job id",
               "type": "string"
             },
-            "spark.job.uuid": {
+            "jobUuid": {
               "description": "Spark job uuid",
               "type": "string"
             },
-            "spark.project.id": {
+            "projectId": {
               "description": "GCP project id where the job was run",
               "type": "string"
             },
-            "spark.query.node.name": {
+            "queryNodeName": {
               "description": "Query node summarization",
               "type": "string"
             },
-            "spark.session.id": {
+            "sessionId": {
               "description": "Filled in case of Dataproc Session job",
               "type": "string"
             },
-            "spark.session.uuid": {
+            "sessionUuid": {
               "description": "Filled in case of Dataproc Session job",
               "type": "string"
             }
           },
+          "required": ["appId", "appName", "projectId"],
           "additionalProperties": true
         }
       ],
