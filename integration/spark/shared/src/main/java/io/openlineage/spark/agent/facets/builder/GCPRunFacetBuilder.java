@@ -44,7 +44,7 @@ public class GCPRunFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, G
     Map<String, Object> dpProperties = GCPUtils.getDataprocRunFacetMap(sparkContext);
     maybeOLContext
         .flatMap(GCPUtils::getSparkQueryExecutionNodeName)
-        .ifPresent(p -> dpProperties.put("spark.query.node.name", p));
+        .ifPresent(p -> dpProperties.put("queryNodeName", p));
     return dpProperties;
   }
 }

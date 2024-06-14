@@ -87,32 +87,28 @@ public class GCPUtils {
 
     switch (resource) {
       case CLUSTER:
-        getDriverHost(sparkContext).ifPresent(p -> dataprocProperties.put("spark.driver.host", p));
-        getClusterName(sparkContext)
-            .ifPresent(p -> dataprocProperties.put("spark.cluster.name", p));
-        getClusterUUID().ifPresent(p -> dataprocProperties.put("spark.cluster.uuid", p));
-        getDataprocJobID(sparkContext).ifPresent(p -> dataprocProperties.put("spark.job.id", p));
-        getDataprocJobUUID(sparkContext)
-            .ifPresent(p -> dataprocProperties.put("spark.job.uuid", p));
+        getClusterName(sparkContext).ifPresent(p -> dataprocProperties.put("clusterName", p));
+        getClusterUUID().ifPresent(p -> dataprocProperties.put("clusterUuid", p));
+        getDataprocJobID(sparkContext).ifPresent(p -> dataprocProperties.put("jobId", p));
+        getDataprocJobUUID(sparkContext).ifPresent(p -> dataprocProperties.put("jobUuid", p));
         break;
       case BATCH:
-        getDataprocBatchID().ifPresent(p -> dataprocProperties.put("spark.batch.id", p));
-        getDataprocBatchUUID().ifPresent(p -> dataprocProperties.put("spark.batch.uuid", p));
+        getDataprocBatchID().ifPresent(p -> dataprocProperties.put("batchId", p));
+        getDataprocBatchUUID().ifPresent(p -> dataprocProperties.put("batchUuid", p));
         break;
       case INTERACTIVE:
-        getDataprocSessionID().ifPresent(p -> dataprocProperties.put("spark.session.id", p));
-        getDataprocSessionUUID().ifPresent(p -> dataprocProperties.put("spark.session.uuid", p));
+        getDataprocSessionID().ifPresent(p -> dataprocProperties.put("sessionId", p));
+        getDataprocSessionUUID().ifPresent(p -> dataprocProperties.put("sessionUuid", p));
         break;
     }
-    getGCPProjectId().ifPresent(p -> dataprocProperties.put("spark.project.id", p));
-    getSparkAppId(sparkContext).ifPresent(p -> dataprocProperties.put("spark.app.id", p));
-    getSparkAppName(sparkContext).ifPresent(p -> dataprocProperties.put("spark.app.name", p));
+    getGCPProjectId().ifPresent(p -> dataprocProperties.put("projectId", p));
+    getSparkAppId(sparkContext).ifPresent(p -> dataprocProperties.put("appId", p));
+    getSparkAppName(sparkContext).ifPresent(p -> dataprocProperties.put("appName", p));
     return dataprocProperties;
   }
 
   public static Map<String, Object> getOriginFacetMap(SparkContext sparkContext) {
-    return createDataprocOriginMap(
-        getDataprocRunFacetMap(sparkContext), identifyResource(sparkContext));
+    return createDataprocOriginMap(sparkContext);
   }
 
   public static Optional<String> getSparkQueryExecutionNodeName(OpenLineageContext context) {
@@ -185,26 +181,25 @@ public class GCPUtils {
     return fetchGCPMetadata(CLUSTER_UUID_URI);
   }
 
-  private static Map<String, Object> createDataprocOriginMap(
-      Map<String, Object> dataprocProperties, ResourceType resourceType) {
+  private static Map<String, Object> createDataprocOriginMap(SparkContext sparkContext) {
     Map<String, Object> originProperties = new HashMap<>();
     String nameFormat = "";
     String resourceID = "";
     String regionName = getDataprocRegion().orElse("");
-    String projectID = dataprocProperties.get("spark.project.id").toString();
+    String projectID = getGCPProjectId().orElse("");
 
-    switch (resourceType) {
+    switch (identifyResource(sparkContext)) {
       case CLUSTER:
         nameFormat = "projects/%s/regions/%s/clusters/%s";
-        resourceID = dataprocProperties.get("spark.cluster.name").toString();
+        resourceID = getClusterName(sparkContext).orElse("");
         break;
       case BATCH:
         nameFormat = "projects/%s/locations/%s/batches/%s";
-        resourceID = dataprocProperties.get("spark.batch.id").toString();
+        resourceID = getDataprocBatchID().orElse("");
         break;
       case INTERACTIVE:
         nameFormat = "projects/%s/locations/%s/sessions/%s";
-        resourceID = dataprocProperties.get("spark.session.id").toString();
+        resourceID = getDataprocSessionID().orElse("");
         break;
     }
     String dataprocResource = String.format(nameFormat, projectID, regionName, resourceID);
