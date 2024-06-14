@@ -27,15 +27,18 @@ public class GCPDataprocRunFacet implements OpenLineage.RunFacet {
     this.additionalProperties = new LinkedHashMap<>(properties);
   }
 
+  @Override
   public URI get_producer() {
     return this._producer;
   }
 
+  @Override
   public URI get_schemaURL() {
     return this._schemaURL;
   }
 
   @JsonAnyGetter
+  @Override
   public Map<String, Object> getAdditionalProperties() {
     return this.additionalProperties;
   }

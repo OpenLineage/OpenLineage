@@ -100,6 +100,9 @@ public class GCPUtils {
         getDataprocSessionID().ifPresent(p -> dataprocProperties.put("sessionId", p));
         getDataprocSessionUUID().ifPresent(p -> dataprocProperties.put("sessionUuid", p));
         break;
+      case UNKNOWN:
+        // do nothing
+        break;
     }
     getGCPProjectId().ifPresent(p -> dataprocProperties.put("projectId", p));
     getSparkAppId(sparkContext).ifPresent(p -> dataprocProperties.put("appId", p));
@@ -120,7 +123,7 @@ public class GCPUtils {
   }
 
   private static ResourceType identifyResource(SparkContext context) {
-    if (context.getConf().get(SPARK_MASTER, null).equals("yarn")) return ResourceType.CLUSTER;
+    if ("yarn".equals(context.getConf().get(SPARK_MASTER, ""))) return ResourceType.CLUSTER;
     if (getDataprocBatchID().isPresent()) return ResourceType.BATCH;
     if (getDataprocSessionID().isPresent()) return ResourceType.INTERACTIVE;
     return ResourceType.UNKNOWN;
@@ -200,6 +203,9 @@ public class GCPUtils {
       case INTERACTIVE:
         nameFormat = "projects/%s/locations/%s/sessions/%s";
         resourceID = getDataprocSessionID().orElse("");
+        break;
+      case UNKNOWN:
+        nameFormat = "projects/%s/regions/%s/unknown/%s";
         break;
     }
     String dataprocResource = String.format(nameFormat, projectID, regionName, resourceID);

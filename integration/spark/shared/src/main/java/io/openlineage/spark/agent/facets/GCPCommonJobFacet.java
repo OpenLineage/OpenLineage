@@ -33,19 +33,23 @@ public class GCPCommonJobFacet implements OpenLineage.JobFacet {
     this.additionalProperties = new LinkedHashMap<>(properties);
   }
 
+  @Override
   public URI get_producer() {
     return this._producer;
   }
 
+  @Override
   public URI get_schemaURL() {
     return this._schemaURL;
   }
 
+  @Override
   public Boolean get_deleted() {
     return this._deleted;
   }
 
   @JsonAnyGetter
+  @Override
   public Map<String, Object> getAdditionalProperties() {
     return this.additionalProperties;
   }
