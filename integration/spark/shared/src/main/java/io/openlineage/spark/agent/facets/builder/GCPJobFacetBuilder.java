@@ -5,7 +5,8 @@
 
 package io.openlineage.spark.agent.facets.builder;
 
-import io.openlineage.spark.agent.facets.GCPJobFacet;
+import io.openlineage.client.OpenLineage.JobFacet;
+import io.openlineage.spark.agent.facets.GCPCommonJobFacet;
 import io.openlineage.spark.agent.util.GCPUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -16,10 +17,10 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 
 /**
- * {@link CustomFacetBuilder} responsible for generating {@link GCPJobFacet} when using OpenLineage
- * on Google Cloud Platform (GCP).
+ * {@link CustomFacetBuilder} responsible for generating GCP-specific job facets when using
+ * OpenLineage on Google Cloud Platform (GCP).
  */
-public class GCPJobFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, GCPJobFacet> {
+public class GCPJobFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, JobFacet> {
 
   private final SparkContext sparkContext;
 
@@ -32,8 +33,8 @@ public class GCPJobFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, G
   }
 
   @Override
-  protected void build(SparkListenerEvent event, BiConsumer<String, ? super GCPJobFacet> consumer) {
-    consumer.accept("gcp_common", new GCPJobFacet(getCommonAttributes()));
+  protected void build(SparkListenerEvent event, BiConsumer<String, ? super JobFacet> consumer) {
+    consumer.accept("gcp_common", new GCPCommonJobFacet(getCommonAttributes()));
   }
 
   private Map<String, Object> getCommonAttributes() {

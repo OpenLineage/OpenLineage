@@ -303,11 +303,10 @@ class RddExecutionContext implements ExecutionContext {
   }
 
   private void addGCPJobFacets(OpenLineage.JobFacetsBuilder b0, SparkListenerEvent event) {
-    if (!GCPUtils.isDataprocRuntime()) return; // change this to isGCPRuntime
+    if (!GCPUtils.isDataprocRuntime()) return;
     sparkContextOption.ifPresent(
         context -> {
-          GCPJobFacetBuilder b1 =
-              new GCPJobFacetBuilder(context); // isDataprocRuntime should be handled internally
+          GCPJobFacetBuilder b1 = new GCPJobFacetBuilder(context);
           b1.accept(event, b0::put);
         });
   }
