@@ -61,7 +61,7 @@ class JdbcSourceVisitorTest {
     List<OpenLineage.InputDataset> inputDatasets = jdbcSourceVisitor.apply(source);
 
     assertEquals(1, inputDatasets.size());
-    assertEquals("postgres://host:port", inputDatasets.get(0).getNamespace());
+    assertEquals("postgres://host:5432", inputDatasets.get(0).getNamespace());
     assertEquals("database.jdbc_table", inputDatasets.get(0).getName());
   }
 
@@ -70,7 +70,7 @@ class JdbcSourceVisitorTest {
     when(provider.getParameterValues()).thenReturn(new String[0][0]);
     JdbcInputFormat jdbcInputFormat =
         new JdbcInputFormat.JdbcInputFormatBuilder()
-            .setDBUrl("jdbc:postgresql://host:port/database")
+            .setDBUrl("jdbc:postgresql://host:5432/database")
             .setRowTypeInfo(mock(RowTypeInfo.class))
             .setParametersProvider(provider)
             .setQuery(QUERY)
@@ -78,7 +78,7 @@ class JdbcSourceVisitorTest {
 
     JdbcRowDataInputFormat jdbcRowDataInputFormat =
         new JdbcRowDataInputFormat.Builder()
-            .setDBUrl("jdbc:postgresql://host:port/database")
+            .setDBUrl("jdbc:postgresql://host:5432/database")
             .setParametersProvider(provider)
             .setRowConverter(mock(JdbcRowConverter.class))
             .setQuery(QUERY)
@@ -86,7 +86,7 @@ class JdbcSourceVisitorTest {
 
     InternalJdbcConnectionOptions internalJdbcConnectionOptions =
         new InternalJdbcConnectionOptions.Builder()
-            .setDBUrl("jdbc:postgresql://host:port/database")
+            .setDBUrl("jdbc:postgresql://host:5432/database")
             .setTableName("jdbc_table")
             .build();
     JdbcRowDataLookupFunction jdbcRowDataLookupFunction =

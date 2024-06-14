@@ -122,8 +122,8 @@ Identifier:
 - Namespace: sqlserver://{host}:{port};database={database};
   - Scheme = sqlserver
   - Authority = {host}:{port}
-- Unique name: {schema}.{table}
-  - URI = sqlserver://{host}:{port};database={database}/{schema}.{table}
+- Unique name: {database}.{schema}.{table}
+  - URI = sqlserver://{host}:{port}/{database}.{schema}.{table}
 
 #### BigQuery
 

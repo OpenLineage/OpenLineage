@@ -6,7 +6,7 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.JdbcUtils;
+import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -15,6 +15,7 @@ import io.openlineage.sql.ColumnMeta;
 import io.openlineage.sql.SqlMeta;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,7 @@ public class JdbcColumnLineageCollector {
       List<DatasetIdentifier> datasetIdentifiers) {
     Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
     String jdbcUrl = relation.jdbcOptions().url();
+    Properties jdbcProperties = relation.jdbcOptions().asConnectionProperties();
     sqlMeta.ifPresent(
         meta -> {
           List<ColumnLineage> columnLineages = meta.columnLineage();
@@ -59,8 +61,8 @@ public class JdbcColumnLineageCollector {
                                   && context
                                       .getNamespaceResolver()
                                       .resolve(
-                                          JdbcUtils.getDatasetIdentifierFromJdbcUrl(
-                                              jdbcUrl, cm.origin().get().name()))
+                                          JdbcDatasetUtils.getDatasetIdentifier(
+                                              jdbcUrl, cm.origin().get().name(), jdbcProperties))
                                       .getName()
                                       .equals(di.getName()))
                       .forEach(

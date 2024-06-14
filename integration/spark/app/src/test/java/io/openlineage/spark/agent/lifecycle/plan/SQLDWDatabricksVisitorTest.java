@@ -30,6 +30,8 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import scala.Option;
 
 class SqlDwRelationParams {
@@ -128,14 +130,19 @@ class SQLDWDatabricksVisitorTest {
     when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
   }
 
-  @Test
-  void testSQLDWRelation() {
-    String inputName = "\"dbo\".\"table1\"";
-    String inputJdbcUrl =
-        "jdbc:sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB";
-    String expectedName = "dbo.table1";
-    String expectedNamespace =
-        "sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB;";
+  @ParameterizedTest
+  @CsvSource({
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;databaseName=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net,sqlserver://MYTESTSERVER.database.windows.net,schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net:1433,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;portNumber=1433;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net:1433,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net\\someinstance;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net/someinstance,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;instanceName=someinstance;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net/someinstance,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://;serverName=MYTESTSERVER.database.windows.net,sqlserver://MYTESTSERVER.database.windows.net,schema.table1",
+  })
+  void testSQLDWRelation(String inputJdbcUrl, String expectedNamespace, String expectedName) {
+    String inputName = "\"schema\".\"table1\"";
 
     // Instantiate a MockSQLDWRelation
     LogicalRelation lr =
@@ -164,14 +171,19 @@ class SQLDWDatabricksVisitorTest {
     assertEquals(expectedName, ds.getName());
   }
 
-  @Test
-  void testSpark2SQLDWRelation() {
-    String inputName = "\"dbo\".\"table1\"";
-    String inputJdbcUrl =
-        "jdbc:sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB";
-    String expectedName = "dbo.table1";
-    String expectedNamespace =
-        "sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB;";
+  @ParameterizedTest
+  @CsvSource({
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;databaseName=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net,sqlserver://MYTESTSERVER.database.windows.net,schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net:1433,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;portNumber=1433;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net:1433,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net\\someinstance;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net/someinstance,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;instanceName=someinstance;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net/someinstance,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://;serverName=MYTESTSERVER.database.windows.net,sqlserver://MYTESTSERVER.database.windows.net,schema.table1",
+  })
+  void testSpark2SQLDWRelation(String inputJdbcUrl, String expectedNamespace, String expectedName) {
+    String inputName = "\"schema\".\"table1\"";
 
     // Instantiate a MockSQLDWRelation
     LogicalRelation lr =
@@ -205,9 +217,8 @@ class SQLDWDatabricksVisitorTest {
     String inputName = "(SELECT * FROM dbo.table1) q";
     String inputJdbcUrl =
         "jdbc:sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB";
-    String expectedName = "COMPLEX";
-    String expectedNamespace =
-        "sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB;";
+    String expectedName = "MYTESTDB.COMPLEX";
+    String expectedNamespace = "sqlserver://MYTESTSERVER.database.windows.net:1433";
 
     // Instantiate a MockSQLDWRelation
     LogicalRelation lr =

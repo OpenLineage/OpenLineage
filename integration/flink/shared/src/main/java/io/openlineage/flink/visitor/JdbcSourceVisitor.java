@@ -7,11 +7,12 @@ package io.openlineage.flink.visitor;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.JdbcUtils;
+import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.wrapper.JdbcSourceWrapper;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.jdbc.JdbcInputFormat;
@@ -52,8 +53,8 @@ public class JdbcSourceVisitor extends Visitor<OpenLineage.InputDataset> {
 
     // TODO: implement namespace resolver
     DatasetIdentifier di =
-        JdbcUtils.getDatasetIdentifierFromJdbcUrl(
-            sourceWrapper.getConnectionUrl(), sourceWrapper.getTableName().get());
+        JdbcDatasetUtils.getDatasetIdentifier(
+            sourceWrapper.getConnectionUrl(), sourceWrapper.getTableName().get(), new Properties());
     return Collections.singletonList(inputDataset().getDataset(di.getName(), di.getNamespace()));
   }
 }

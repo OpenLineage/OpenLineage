@@ -7,7 +7,7 @@ package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.JdbcUtils;
+import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.sql.ColumnLineage;
 import io.openlineage.sql.ColumnMeta;
@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -32,10 +33,16 @@ import org.apache.spark.sql.types.StructType;
 public class JdbcSparkUtils {
 
   public static <D extends OpenLineage.Dataset> List<D> getDatasets(
-      DatasetFactory<D> datasetFactory, SqlMeta meta, StructType schema, String url) {
+      DatasetFactory<D> datasetFactory, SqlMeta meta, JDBCRelation relation) {
+
+    StructType schema = relation.schema();
+    String jdbcUrl = relation.jdbcOptions().url();
+    Properties jdbcProperties = relation.jdbcOptions().asConnectionProperties();
+
     if (meta.columnLineage().isEmpty()) {
       DatasetIdentifier di =
-          JdbcUtils.getDatasetIdentifierFromJdbcUrl(url, meta.inTables().get(0).qualifiedName());
+          JdbcDatasetUtils.getDatasetIdentifier(
+              jdbcUrl, meta.inTables().get(0).qualifiedName(), jdbcProperties);
       return Collections.singletonList(
           datasetFactory.getDataset(di.getName(), di.getNamespace(), schema));
     }
@@ -43,7 +50,8 @@ public class JdbcSparkUtils {
         .map(
             dbtm -> {
               DatasetIdentifier di =
-                  JdbcUtils.getDatasetIdentifierFromJdbcUrl(url, dbtm.qualifiedName());
+                  JdbcDatasetUtils.getDatasetIdentifier(
+                      jdbcUrl, dbtm.qualifiedName(), jdbcProperties);
               return datasetFactory.getDataset(
                   di.getName(), di.getNamespace(), generateJDBCSchema(dbtm, schema, meta));
             })
