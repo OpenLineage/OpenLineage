@@ -1,7 +1,7 @@
 {
   "consumer": {
     "root_doc_URL": "https://cloud.google.com/data-catalog/docs/reference/data-lineage/rpc/google.cloud.datacatalog.lineage.v1#google.cloud.datacatalog.lineage.v1.Lineage.ProcessOpenLineageRunEvent",
-    "facets": [
+    "consumed_facets": [
       "ol:gcp:GcpCommonJobFacet.json",
       "ol:gcpDataproc:GcpDataprocRunFacet.json"
     ]
