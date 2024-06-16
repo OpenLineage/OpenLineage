@@ -39,7 +39,7 @@
               "type": "string"
             },
             "jobUuid": {
-              "description": "Spark job uuid",
+              "description": "Populated only for Dataproc GCE workloads. A UUID that uniquely identifies a job within the project over time.",
               "type": "string"
             },
             "projectId": {
