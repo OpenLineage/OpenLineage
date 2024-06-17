@@ -32,27 +32,22 @@ import org.apache.spark.sql.execution.WholeStageCodegenExec;
 /** Util to extract values from GCP environment */
 public class GCPUtils {
 
-  private static final String PROJECT_ID_URI =
-      "http://metadata.google.internal/computeMetadata/v1/project/project-id";
-  private static final String BATCH_ID_URI =
-      "http://metadata.google.internal/computeMetadata/v1/instance/attributes/dataproc-batch-id";
-  private static final String BATCH_UUID_URI =
-      "http://metadata.google.internal/computeMetadata/v1/instance/attributes/dataproc-batch-uuid";
-  private static final String SESSION_ID_URI =
-      "http://metadata.google.internal/computeMetadata/v1/instance/attributes/dataproc-session-id";
-  private static final String SESSION_UUID_URI =
-      "http://metadata.google.internal/computeMetadata/v1/instance/attributes/dataproc-session-uuid";
-  private static final String CLUSTER_UUID_URI =
-      "http://metadata.google.internal/computeMetadata/v1/instance/attributes/dataproc-cluster-uuid";
-  private static final String DATAPROC_REGION_URI =
-      "http://metadata.google.internal/computeMetadata/v1/instance/attributes/dataproc-region";
+  private static final String BASE_URI = "http://metadata.google.internal/computeMetadata/v1";
+  public static final String PROJECT_ID_ENDPOINT = "/project/project-id";
+  public static final String BATCH_ID_ENDPOINT = "/instance/attributes/dataproc-batch-id";
+  public static final String BATCH_UUID_ENDPOINT = "/instance/attributes/dataproc-batch-uuid";
+  public static final String SESSION_ID_ENDPOINT = "/instance/attributes/dataproc-session-id";
+  public static final String SESSION_UUID_ENDPOINT = "/instance/attributes/dataproc-session-uuid";
+  public static final String CLUSTER_UUID_ENDPOINT = "/instance/attributes/dataproc-cluster-uuid";
+  public static final String DATAPROC_REGION_ENDPOINT = "/instance/attributes/dataproc-region";
   private static final String DATAPROC_CLASSPATH = "/usr/local/share/google/dataproc/lib";
   private static final CloseableHttpClient HTTP_CLIENT;
-  private static final String SPARK_YARN_TAGS = "spark.yarn.tags";
-  private static final String SPARK_DRIVER_HOST = "spark.driver.host";
-  private static final String SPARK_APP_ID = "spark.app.id";
-  private static final String SPARK_APP_NAME = "spark.app.name";
-  private static final String SPARK_MASTER = "spark.master";
+  public static final String SPARK_YARN_TAGS = "spark.yarn.tags";
+  public static final String SPARK_DRIVER_HOST = "spark.driver.host";
+  public static final String SPARK_APP_ID = "spark.app.id";
+  public static final String SPARK_APP_NAME = "spark.app.name";
+  public static final String GOOGLE_METADATA_API = "google.metadata.api.base-url";
+  public static final String SPARK_MASTER = "spark.master";
   private static final String JOB_ID_PREFIX = "dataproc_job_";
   private static final String JOB_UUID_PREFIX = "dataproc_uuid_";
   private static final String METADATA_FLAVOUR = "Metadata-Flavor";
@@ -81,32 +76,32 @@ public class GCPUtils {
     return (sparkDistClasspath != null && sparkDistClasspath.contains(DATAPROC_CLASSPATH));
   }
 
-  public static Map<String, Object> getDataprocRunFacetMap(SparkContext sparkContext) {
+  public static Map<String, Object> getDataprocRunFacetMap(SparkContext context) {
     Map<String, Object> dataprocProperties = new HashMap<>();
-    ResourceType resource = identifyResource(sparkContext);
+    ResourceType resource = identifyResource(context);
 
     switch (resource) {
       case CLUSTER:
-        getClusterName(sparkContext).ifPresent(p -> dataprocProperties.put("clusterName", p));
-        getClusterUUID().ifPresent(p -> dataprocProperties.put("clusterUuid", p));
-        getDataprocJobID(sparkContext).ifPresent(p -> dataprocProperties.put("jobId", p));
-        getDataprocJobUUID(sparkContext).ifPresent(p -> dataprocProperties.put("jobUuid", p));
+        getClusterName(context).ifPresent(p -> dataprocProperties.put("clusterName", p));
+        getClusterUUID(context).ifPresent(p -> dataprocProperties.put("clusterUuid", p));
+        getDataprocJobID(context).ifPresent(p -> dataprocProperties.put("jobId", p));
+        getDataprocJobUUID(context).ifPresent(p -> dataprocProperties.put("jobUuid", p));
         break;
       case BATCH:
-        getDataprocBatchID().ifPresent(p -> dataprocProperties.put("batchId", p));
-        getDataprocBatchUUID().ifPresent(p -> dataprocProperties.put("batchUuid", p));
+        getDataprocBatchID(context).ifPresent(p -> dataprocProperties.put("batchId", p));
+        getDataprocBatchUUID(context).ifPresent(p -> dataprocProperties.put("batchUuid", p));
         break;
       case INTERACTIVE:
-        getDataprocSessionID().ifPresent(p -> dataprocProperties.put("sessionId", p));
-        getDataprocSessionUUID().ifPresent(p -> dataprocProperties.put("sessionUuid", p));
+        getDataprocSessionID(context).ifPresent(p -> dataprocProperties.put("sessionId", p));
+        getDataprocSessionUUID(context).ifPresent(p -> dataprocProperties.put("sessionUuid", p));
         break;
       case UNKNOWN:
         // do nothing
         break;
     }
-    getGCPProjectId().ifPresent(p -> dataprocProperties.put("projectId", p));
-    getSparkAppId(sparkContext).ifPresent(p -> dataprocProperties.put("appId", p));
-    getSparkAppName(sparkContext).ifPresent(p -> dataprocProperties.put("appName", p));
+    getGCPProjectId(context).ifPresent(p -> dataprocProperties.put("projectId", p));
+    getSparkAppId(context).ifPresent(p -> dataprocProperties.put("appId", p));
+    getSparkAppName(context).ifPresent(p -> dataprocProperties.put("appName", p));
     return dataprocProperties;
   }
 
@@ -124,8 +119,9 @@ public class GCPUtils {
 
   private static ResourceType identifyResource(SparkContext context) {
     if ("yarn".equals(context.getConf().get(SPARK_MASTER, ""))) return ResourceType.CLUSTER;
-    if (getDataprocBatchID().isPresent()) return ResourceType.BATCH;
-    if (getDataprocSessionID().isPresent()) return ResourceType.INTERACTIVE;
+    if (getDataprocBatchID(context).isPresent()) return ResourceType.BATCH;
+    if (getDataprocSessionID(context).isPresent()) return ResourceType.INTERACTIVE;
+
     return ResourceType.UNKNOWN;
   }
 
@@ -140,8 +136,8 @@ public class GCPUtils {
         .map(s -> s.substring(0, s.lastIndexOf("-")));
   }
 
-  private static Optional<String> getDataprocRegion() {
-    return fetchGCPMetadata(DATAPROC_REGION_URI);
+  private static Optional<String> getDataprocRegion(SparkContext context) {
+    return fetchGCPMetadata(DATAPROC_REGION_ENDPOINT, context);
   }
 
   private static Optional<String> getDataprocJobID(SparkContext context) {
@@ -152,24 +148,25 @@ public class GCPUtils {
     return getPropertyFromYarnTag(context, JOB_UUID_PREFIX);
   }
 
-  private static Optional<String> getDataprocBatchID() {
-    return fetchGCPMetadata(BATCH_ID_URI);
+  private static Optional<String> getDataprocBatchID(SparkContext context) {
+    return fetchGCPMetadata(BATCH_ID_ENDPOINT, context);
   }
 
-  private static Optional<String> getDataprocBatchUUID() {
-    return fetchGCPMetadata(BATCH_UUID_URI);
+  private static Optional<String> getDataprocBatchUUID(SparkContext context) {
+    return fetchGCPMetadata(BATCH_UUID_ENDPOINT, context);
   }
 
-  private static Optional<String> getDataprocSessionID() {
-    return fetchGCPMetadata(SESSION_ID_URI);
+  private static Optional<String> getDataprocSessionID(SparkContext context) {
+    return fetchGCPMetadata(SESSION_ID_ENDPOINT, context);
   }
 
-  private static Optional<String> getDataprocSessionUUID() {
-    return fetchGCPMetadata(SESSION_UUID_URI);
+  private static Optional<String> getDataprocSessionUUID(SparkContext context) {
+    return fetchGCPMetadata(SESSION_UUID_ENDPOINT, context);
   }
 
-  private static Optional<String> getGCPProjectId() {
-    return fetchGCPMetadata(PROJECT_ID_URI).map(b -> b.substring(b.lastIndexOf('/') + 1));
+  private static Optional<String> getGCPProjectId(SparkContext context) {
+    return fetchGCPMetadata(PROJECT_ID_ENDPOINT, context)
+        .map(b -> b.substring(b.lastIndexOf('/') + 1));
   }
 
   private static Optional<String> getSparkAppId(SparkContext context) {
@@ -180,29 +177,29 @@ public class GCPUtils {
     return Optional.ofNullable(context.getConf().get(SPARK_APP_NAME));
   }
 
-  private static Optional<String> getClusterUUID() {
-    return fetchGCPMetadata(CLUSTER_UUID_URI);
+  private static Optional<String> getClusterUUID(SparkContext context) {
+    return fetchGCPMetadata(CLUSTER_UUID_ENDPOINT, context);
   }
 
-  private static Map<String, Object> createDataprocOriginMap(SparkContext sparkContext) {
+  private static Map<String, Object> createDataprocOriginMap(SparkContext context) {
     Map<String, Object> originProperties = new HashMap<>();
     String nameFormat = "";
     String resourceID = "";
-    String regionName = getDataprocRegion().orElse("");
-    String projectID = getGCPProjectId().orElse("");
+    String regionName = getDataprocRegion(context).orElse("");
+    String projectID = getGCPProjectId(context).orElse("");
 
-    switch (identifyResource(sparkContext)) {
+    switch (identifyResource(context)) {
       case CLUSTER:
         nameFormat = "projects/%s/regions/%s/clusters/%s";
-        resourceID = getClusterName(sparkContext).orElse("");
+        resourceID = getClusterName(context).orElse("");
         break;
       case BATCH:
         nameFormat = "projects/%s/locations/%s/batches/%s";
-        resourceID = getDataprocBatchID().orElse("");
+        resourceID = getDataprocBatchID(context).orElse("");
         break;
       case INTERACTIVE:
         nameFormat = "projects/%s/locations/%s/sessions/%s";
-        resourceID = getDataprocSessionID().orElse("");
+        resourceID = getDataprocSessionID(context).orElse("");
         break;
       case UNKNOWN:
         nameFormat = "projects/%s/regions/%s/unknown/%s";
@@ -231,7 +228,9 @@ public class GCPUtils {
         .map(tag -> tag.substring(tagPrefix.length()));
   }
 
-  private static Optional<String> fetchGCPMetadata(String httpURI) {
+  private static Optional<String> fetchGCPMetadata(String httpEndpoint, SparkContext context) {
+    String baseUri = context.getConf().get(GOOGLE_METADATA_API, BASE_URI);
+    String httpURI = baseUri + httpEndpoint;
     HttpGet httpGet = new HttpGet(httpURI);
     httpGet.addHeader(METADATA_FLAVOUR, GOOGLE);
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(httpGet)) {
