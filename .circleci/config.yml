@@ -126,12 +126,13 @@ jobs:
             #
             # This configuration is piped into yq along with the continue_config.yml file and the
             # union of the two files is output to complete_config.yml
-
+            cat workflow_files.txt
             yq eval-all '.workflows[].jobs |= map(select(.[].requires == null) |= .[].requires = ["always_run"])
                 | .workflows | . as $wf ireduce({}; . * $wf) |
                 (map(.jobs[] | select(has("workflow_complete") | not)) | . as $item ireduce ([]; (. *+ $item) ))
                 + [(map(.jobs[] | select(has("workflow_complete"))) | .[] as $item ireduce ({}; . *+ $item))] | {"workflows": {"build": {"jobs": .}}}' $FILES | \
             yq eval-all '. as $wf ireduce({}; . * $wf)' .circleci/continue_config.yml - > complete_config.yml
+            cat complete_config.yml
       - unless:
           condition:
             matches:

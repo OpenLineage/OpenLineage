@@ -2,30 +2,59 @@ workflows:
   openlineage-spark:
     jobs:
       - build-integration-spark-extension-interfaces:
+          context: release
           requires:
             - build-client-java
-      - build-integration-spark-scala-2_12:
+      - build-integration-spark-extension-entrypoint:
+          context: release
+          requires:
+            - build-client-java
+      - test-integration-spark:
           matrix:
             parameters:
               env-variant: [
-                'java:8-spark:2.4.8', 'java:8-spark:3.2.4',
-                'java:8-spark:3.3.4', 'java:17-spark:3.3.4',
-                'java:8-spark:3.4.3', 'java:8-spark:3.5.1', 'java:17-spark:3.5.1' ]
+                'java:8-spark:2.4.8-scala:2.12',
+                'java:8-spark:3.2.4-scala:2.12',
+                'java:8-spark:3.2.4-scala:2.13',
+                'java:8-spark:3.3.4-scala:2.12',
+                'java:8-spark:3.3.4-scala:2.13',
+                'java:17-spark:3.3.4-scala:2.12',
+                'java:17-spark:3.3.4-scala:2.13',
+                'java:8-spark:3.4.3-scala:2.12',
+                'java:8-spark:3.4.3-scala:2.13',
+                'java:8-spark:3.5.1-scala:2.12',
+                'java:8-spark:3.5.1-scala:2.13',
+                'java:17-spark:3.5.1-scala:2.12',
+                'java:17-spark:3.5.1-scala:2.13',
+                'java:17-spark:4.0.0-scala:2.13'
+              ]
+          requires:
+            - build-integration-sql-java
+            - build-client-java
+            - build-integration-spark-extension-interfaces
+            - build-integration-spark-extension-entrypoint
+      - build-integration-spark:
+          context: release
+          matrix:
+            alias: build-integration-spark-scala-2_12
+            parameters:
+              scala: ['2.12']
           requires:
            - build-integration-sql-java
            - build-client-java
            - build-integration-spark-extension-interfaces
-      - build-integration-spark-scala-2_13:
+           - build-integration-spark-extension-entrypoint
+      - build-integration-spark:
+          context: release
           matrix:
+            alias: build-integration-spark-scala-2_13
             parameters:
-              env-variant: [
-                'java:8-spark:3.2.4', 'java:8-spark:3.3.4', 'java:17-spark:3.3.4',
-                'java:8-spark:3.4.3', 'java:8-spark:3.5.1', 'java:17-spark:3.5.1',
-                'java:17-spark:4.0.0']
+              scala: ['2.13']
           requires:
-           - build-integration-sql-java
-           - build-client-java           
-           - build-integration-spark-extension-interfaces
+            - build-integration-sql-java
+            - build-client-java
+            - build-integration-spark-extension-interfaces
+            - build-integration-spark-extension-entrypoint
       - approval-integration-spark:
           type: approval
           requires:
@@ -42,24 +71,26 @@ workflows:
               spark-version: [ '3.4.2', '3.5.0' ]
           requires:
             - approval-integration-spark
-      - integration-test-integration-spark-scala-2_12:
+      - integration-test-integration-spark:
           context: integration-tests
           matrix:
             parameters:
               env-variant: [
-                'java:8-spark:2.4.8', 'java:8-spark:3.2.4',
-                'java:8-spark:3.3.4', 'java:17-spark:3.3.4',
-                'java:8-spark:3.4.3', 'java:8-spark:3.5.1', 'java:17-spark:3.5.1' ]
-          requires:
-            - approval-integration-spark
-      - integration-test-integration-spark-scala-2_13:
-          context: integration-tests
-          matrix:
-            parameters:
-              env-variant: [
-                'java:8-spark:3.2.4', 'java:8-spark:3.3.4', 'java:17-spark:3.3.4',
-                'java:8-spark:3.4.3', 'java:8-spark:3.5.1', 'java:17-spark:3.5.1',
-                'java:17-spark:4.0.0']
+                'java:8-spark:2.4.8-scala:2.12',
+                'java:8-spark:3.2.4-scala:2.12',
+                'java:8-spark:3.2.4-scala:2.13',
+                'java:8-spark:3.3.4-scala:2.12',
+                'java:8-spark:3.3.4-scala:2.13',
+                'java:17-spark:3.3.4-scala:2.12',
+                'java:17-spark:3.3.4-scala:2.13',
+                'java:8-spark:3.4.3-scala:2.12',
+                'java:8-spark:3.4.3-scala:2.13',
+                'java:8-spark:3.5.1-scala:2.12',
+                'java:8-spark:3.5.1-scala:2.13',
+                'java:17-spark:3.5.1-scala:2.12',
+                'java:17-spark:3.5.1-scala:2.13',
+                'java:17-spark:4.0.0-scala:2.13'
+              ]
           requires:
             - approval-integration-spark
       - configurable-integration-test-spark:
@@ -67,9 +98,29 @@ workflows:
       - slack-notify:
           context: slack-secrets
           requires:
-            - integration-test-integration-spark-scala-2_12
-            - integration-test-integration-spark-scala-2_13
+            - integration-test-integration-spark
             - jar-verification-spark
       - workflow_complete:
           requires:
             - slack-notify
+      - release-integration-spark:
+          context: release
+          requires:
+            - build-integration-spark-scala-2_12
+            - build-integration-spark-scala-2_13
+            - integration-test-integration-spark
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              only: main
+      - release-integration-spark-extension-interfaces:
+          context: release
+          requires:
+            - build-client-java
+            - build-integration-spark-extension-interfaces
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              only: main

@@ -12,8 +12,8 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id 'com.adarshr.test-logger' version '2.1.0'
-    id 'com.diffplug.spotless' version '5.1.0'
-    id 'com.github.johnrengelman.shadow' version '6.0.0'
+    id 'com.diffplug.spotless' version '6.12.0'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id "pmd"
 }
 
@@ -44,7 +44,7 @@ repositories {
 
 ext {
     dropwizardVersion = '2.0.28'
-    jacocoVersion = '0.8.7'
+    jacocoVersion = '0.8.12'
     lombokVersion = '1.18.22'
     kafkaVersion = '2.8.0'
     jacksonVersion = '2.12.2'
@@ -65,6 +65,19 @@ dependencies {
     testImplementation "io.dropwizard:dropwizard-testing:${dropwizardVersion}"
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java']
+        }
+    }
+    test {
+        java {
+            srcDirs = ['src/test/java']
+        }
+    }
+}
+
 compileJava {
     options.incremental = true
     options.compilerArgs << '-parameters'
@@ -78,12 +91,12 @@ compileTestJava {
 }
 
 task sourceJar(type: Jar) {
-    classifier 'sources'
+    archiveClassifier = 'sources'
     from sourceSets.main.allJava
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier 'javadoc'
+    archiveClassifier = 'javadoc'
     from javadoc.destinationDir
 }
 
@@ -131,7 +144,9 @@ publishing {
 
     repositories {
         maven {
-            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+            def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+            def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
             credentials {
                 username = System.getenv('RELEASE_USERNAME')
                 password = System.getenv('RELEASE_PASSWORD')
@@ -151,9 +166,10 @@ signing {
 mainClassName = 'io.openlineage.proxy.ProxyApp'
 
 shadowJar {
-    classifier = ''
+    archiveClassifier = ''
     version = project.version
     transform(ServiceFileTransformer)
+    dependsOn(distTar, distZip)
     manifest {
         attributes(
                 'Created-By': "Gradle ${gradle.gradleVersion}",
@@ -163,6 +179,14 @@ shadowJar {
                 'Implementation-Version': project.version,
                 'Main-Class': mainClassName)
     }
+}
+
+tasks.named("assemble") {
+    dependsOn(tasks.named("shadowJar"))
+}
+
+tasks.named("shadowJar") {
+    dependsOn(tasks.named("jar"))
 }
 
 runShadow {
@@ -186,8 +210,12 @@ jacoco {
 
 jacocoTestReport {
     reports {
-        xml.enabled = true
-        html.enabled = true
-        html.destination = file(coverageDir)
+        xml {
+            enabled true
+        }
+        html {
+            enabled true
+            destination = file(coverageDir)
+        }
     }
 }

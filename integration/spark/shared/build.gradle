@@ -37,6 +37,8 @@ ext {
     postgresqlVersion = "42.7.1"
     sqlLiteVersion = "3.45.0.0"
     testcontainersVersion = "1.19.3"
+    micrometerVersion = '1.13.2'
+
     sparkVersion = project.findProperty("shared.spark.version")
     sparkSeries = sparkVersion.substring(0, 3)
     scalaBinaryVersion = project.findProperty("scala.binary.version")
@@ -46,14 +48,13 @@ dependencies {
     // Design time dependencies
     api("io.openlineage:openlineage-java:${project.version}")
     api("io.openlineage:openlineage-sql-java:${project.version}")
-    api("io.micrometer:micrometer-core:${micrometerVersion}")
     api("io.openlineage:spark-extension-entrypoint:1.0.0")
 
     compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
-
+    compileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     compileOnly("com.databricks:databricks-dbutils-scala_${scalaBinaryVersion}:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
@@ -83,6 +84,7 @@ dependencies {
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
     testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
     testFixturesApi("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
+    testFixturesApi("io.micrometer:micrometer-core:${micrometerVersion}")
 
     testFixturesApi("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
     testFixturesApi("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
@@ -100,14 +102,15 @@ dependencies {
     // Scala 2.12 dependencies
     scala212Api("io.openlineage:openlineage-java:${project.version}")
     scala212Api("io.openlineage:openlineage-sql-java:${project.version}")
-    scala212Api(("io.micrometer:micrometer-core:${micrometerVersion}"))
     scala212Api("io.openlineage:spark-extension-entrypoint:1.0.0")
 
     scala212CompileOnly("org.apache.spark:spark-hive_2.12:${sparkVersion}")
     scala212CompileOnly("org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}")
     scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
     scala212CompileOnly("org.apache.spark:spark-streaming_2.12:${sparkVersion}")
+    scala212CompileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
+    scala212CompileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     scala212CompileOnly("com.databricks:databricks-dbutils-scala_2.12:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
@@ -137,6 +140,7 @@ dependencies {
     testScala212Implementation("org.junit.jupiter:junit-jupiter")
     testScala212Implementation("org.junit.jupiter:junit-jupiter-params")
     testScala212Implementation("org.junit-pioneer:junit-pioneer:1.9.1")
+    testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testScala212Implementation("org.mockito:mockito-core:${mockitoVersion}")
     testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
     testScala212Implementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
@@ -161,6 +165,9 @@ dependencies {
     scala213CompileOnly("org.apache.spark:spark-sql-kafka-0-10_2.13:${sparkVersion}")
     scala213CompileOnly("org.apache.spark:spark-sql_2.13:${sparkVersion}")
     scala213CompileOnly("org.apache.spark:spark-streaming_2.13:${sparkVersion}")
+    scala213CompileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
+
+    scala213CompileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     scala213CompileOnly("com.databricks:databricks-dbutils-scala_2.13:${databricksVersion}") {
         exclude(group: "com.fasterxml.jackson.core")
@@ -190,6 +197,7 @@ dependencies {
     testScala213Implementation("org.junit.jupiter:junit-jupiter")
     testScala213Implementation("org.junit.jupiter:junit-jupiter-params")
     testScala213Implementation("org.junit-pioneer:junit-pioneer:1.9.1")
+    testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testScala213Implementation("org.mockito:mockito-core:${mockitoVersion}")
     testScala213Implementation("org.mockito:mockito-inline:${mockitoVersion}")
     testScala213Implementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")

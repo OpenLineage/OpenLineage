@@ -12,3 +12,10 @@ include 'scala-fixtures'
 
 include 'snowflake'
 project(":snowflake").projectDir = file("./vendor/snowflake")
+
+buildCache {
+    local {
+        directory = new File(rootDir, 'build-cache')
+    }
+}
+

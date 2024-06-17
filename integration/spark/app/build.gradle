@@ -30,12 +30,12 @@ ext {
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.1'
     testcontainersVersion = '1.19.3'
-    micrometerVersion = '1.12.4'
     configurableTestConfig = [
         sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
         hostDir: project.findProperty('host.dir') ?: System.getProperty('host.dir'),
         testDir: project.findProperty('test.dir') ?: System.getProperty('test.dir')
     ]
+    micrometerVersion = '1.13.2'
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
@@ -97,6 +97,7 @@ dependencies {
     compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")
     compileOnly("org.apache.spark:spark-hive_${scala}:${spark}")
     compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scala}:${spark}")
+    compileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     testImplementation("org.apache.spark:spark-core_${scala}:${spark}")
     testImplementation("org.apache.spark:spark-sql_${scala}:${spark}")
@@ -130,6 +131,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.dataformat'
         exclude group: 'org.mock-server.mockserver-client-java'
     }
+    testImplementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testImplementation("io.micrometer:micrometer-registry-statsd:${micrometerVersion}")
     testImplementation('net.javacrumbs.json-unit:json-unit-assertj:2.38.0')
     testImplementation('net.javacrumbs.json-unit:json-unit-core:2.38.0')
