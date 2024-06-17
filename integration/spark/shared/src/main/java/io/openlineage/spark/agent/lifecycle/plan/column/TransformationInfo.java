@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.lifecycle.plan.column;
 
+import io.openlineage.client.OpenLineage;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,37 +14,41 @@ import lombok.Setter;
 @AllArgsConstructor
 public class TransformationInfo {
 
-  @Getter @Setter private String type;
+  public enum Types {
+    INDIRECT,
+    DIRECT
+  }
 
-  @Getter @Setter private String subType;
+  public enum Subtypes {
+    AGGREGATION,
+    TRANSFORMATION,
+    IDENTITY,
+    CONDITIONAL,
+    SORT,
+    GROUP_BY,
+    JOIN,
+    FILTER
+  }
+
+  @Getter @Setter private Types type;
+  @Getter @Setter private Subtypes subType;
   @Getter @Setter private String description;
   @Getter @Setter private Boolean masking;
 
   public static TransformationInfo identity() {
-    return new TransformationInfo("DIRECT", "IDENTITY", "", false);
+    return new TransformationInfo(Types.DIRECT, Subtypes.IDENTITY, "", false);
   }
 
   public static TransformationInfo transformation() {
-    return new TransformationInfo("DIRECT", "TRANSFORMATION", "", false);
+    return new TransformationInfo(Types.DIRECT, Subtypes.TRANSFORMATION, "", false);
   }
 
   public static TransformationInfo aggregation() {
-    return new TransformationInfo("DIRECT", "AGGREGATION", "", false);
+    return new TransformationInfo(Types.DIRECT, Subtypes.AGGREGATION, "", false);
   }
 
-  public static TransformationInfo indirect(String subType) {
-    return new TransformationInfo("INDIRECT", subType, "", false);
-  }
-  // easiest way to compare two transformations
-  public Integer numValue() { // FIXME - THAT'S SOOO UGLY, NEED TO FIX LATER
-    if ("INDIRECT".equals(type)) {
-      return 1;
-    } else if ("AGGREGATION".equals(subType)) {
-      return 2;
-    } else if ("TRANSFORMATION".equals(subType)) {
-      return 3;
-    }
-    return 4;
+  public static TransformationInfo indirect(Subtypes subType) {
+    return new TransformationInfo(Types.INDIRECT, subType, "", false);
   }
 
   @Override
@@ -63,14 +68,32 @@ public class TransformationInfo {
   }
 
   public TransformationInfo merge(TransformationInfo t) {
-    if (t != null) {
-      TransformationInfo res = this.numValue() < t.numValue() ? this : t;
-      return new TransformationInfo(
-          res.getType(),
-          res.getSubType(),
-          res.getDescription(),
-          this.getMasking() || t.getMasking());
+    TransformationInfo res;
+    if (this.type.equals(Types.INDIRECT)) {
+      res = this;
+    } else if (t != null) {
+      if (t.type.ordinal() < this.type.ordinal()) {
+        res = t;
+      } else if (t.subType.ordinal() < this.subType.ordinal()) {
+        res = t;
+      } else {
+        res = this;
+      }
+    } else {
+      return null;
     }
-    return null;
+    return new TransformationInfo(
+        res.getType(), res.getSubType(), res.getDescription(), this.getMasking() || t.getMasking());
+  }
+
+  public OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFieldsTransformations
+      toInputFieldsTransformations() {
+    return new OpenLineage
+            .ColumnLineageDatasetFacetFieldsAdditionalInputFieldsTransformationsBuilder()
+        .type(type.name())
+        .subtype(subType.name())
+        .description(description)
+        .masking(masking)
+        .build();
   }
 }

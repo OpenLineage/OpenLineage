@@ -5,6 +5,12 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.CONDITIONAL;
+import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.FILTER;
+import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.GROUP_BY;
+import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.JOIN;
+import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.SORT;
+
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
@@ -16,6 +22,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionDependenc
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.catalyst.expressions.Alias;
@@ -65,7 +72,7 @@ public class ExpressionDependencyCollector {
     CustomCollectorsUtils.collectExpressionDependencies(context, node);
     List<NamedExpression> expressions = new LinkedList<>();
     List<Expression> datasetDependencies = new LinkedList<>();
-    Option<TransformationInfo> datasetTransformation = Option.empty();
+    Optional<TransformationInfo> datasetTransformation = Optional.empty();
 
     if (node instanceof ColumnLevelLineageNode) {
       extensionColumnLineage(context, (ColumnLevelLineageNode) node);
@@ -75,27 +82,26 @@ public class ExpressionDependencyCollector {
     } else if (node instanceof Aggregate) {
       datasetDependencies.addAll(
           ScalaConversionUtils.<Expression>fromSeq(((Aggregate) node).groupingExpressions()));
-      datasetTransformation = Option.apply(TransformationInfo.indirect("GROUP_BY"));
+      datasetTransformation = Optional.of(TransformationInfo.indirect(GROUP_BY));
       expressions.addAll(
           ScalaConversionUtils.<NamedExpression>fromSeq(((Aggregate) node).aggregateExpressions()));
     } else if (node instanceof Join) {
       Option<Expression> condition = ((Join) node).condition();
       if (condition.isDefined()) {
-        datasetTransformation = Option.apply(TransformationInfo.indirect("JOIN"));
+        datasetTransformation = Optional.of(TransformationInfo.indirect(JOIN));
         datasetDependencies.add(condition.get());
       }
     } else if (node instanceof Filter) {
       datasetDependencies.add(((Filter) node).condition());
-      datasetTransformation = Option.apply(TransformationInfo.indirect("FILTER"));
+      datasetTransformation = Optional.of(TransformationInfo.indirect(FILTER));
     } else if (node instanceof Sort) {
       datasetDependencies.addAll(ScalaConversionUtils.<SortOrder>fromSeq(((Sort) node).order()));
-      datasetTransformation = Option.apply(TransformationInfo.indirect("SORT"));
+      datasetTransformation = Optional.of(TransformationInfo.indirect(SORT));
     } else if (node instanceof LogicalRelation) {
       if (((LogicalRelation) node).relation() instanceof JDBCRelation) {
         JdbcColumnLineageCollector.extractExpressionsFromJDBC(context, node);
       }
     }
-
     expressions.stream()
         .forEach(
             expr ->
@@ -105,12 +111,12 @@ public class ExpressionDependencyCollector {
                     TransformationInfo.identity(),
                     context.getBuilder()));
 
-    if (datasetTransformation.isDefined()) {
-      ExprId exprId = NamedExpression.newExprId();
-      context.getBuilder().addDatasetDependency(exprId);
-      TransformationInfo dt = datasetTransformation.get();
-      datasetDependencies.forEach(e -> traverseExpression(e, exprId, dt, context.getBuilder()));
-    }
+    datasetTransformation.ifPresent(
+        dt -> {
+          ExprId exprId = NamedExpression.newExprId();
+          context.getBuilder().addDatasetDependency(exprId);
+          datasetDependencies.forEach(e -> traverseExpression(e, exprId, dt, context.getBuilder()));
+        });
   }
 
   public static void traverseExpression(
@@ -130,79 +136,113 @@ public class ExpressionDependencyCollector {
         builder.addDependency(outputExprId, attRef.exprId(), transformationInfo);
       }
     } else if (expr instanceof Alias) {
-      Alias alias = (Alias) expr;
-      traverseExpression(
-          alias.child(),
-          outputExprId,
-          transformationInfo.merge(TransformationInfo.identity()),
-          builder);
+      handleAlias((Alias) expr, outputExprId, transformationInfo, builder);
     } else if (expr instanceof CaseWhen) {
-      CaseWhen cw = (CaseWhen) expr;
-      List<Tuple2<Expression, Expression>> branches =
-          ScalaConversionUtils.<Tuple2<Expression, Expression>>fromSeq(cw.branches());
-      branches.stream()
-          .map(e -> e._1)
-          .forEach(
-              e ->
-                  traverseExpression(
-                      e,
-                      outputExprId,
-                      transformationInfo.merge(TransformationInfo.indirect("CONDITIONAL")),
-                      builder));
-      branches.stream()
-          .map(e -> e._2)
-          .forEach(e -> traverseExpression(e, outputExprId, transformationInfo, builder));
-      if (cw.elseValue().isDefined()) {
-        traverseExpression(cw.elseValue().get(), outputExprId, transformationInfo, builder);
-      }
+      handleCaseWhen((CaseWhen) expr, outputExprId, transformationInfo, builder);
     } else if (expr instanceof If) {
-      If i = (If) expr;
-      traverseExpression(
-          i.predicate(),
-          outputExprId,
-          transformationInfo.merge(TransformationInfo.indirect("CONDITIONAL")),
-          builder);
-      traverseExpression(i.trueValue(), outputExprId, transformationInfo, builder);
-      traverseExpression(i.falseValue(), outputExprId, transformationInfo, builder);
-
+      handleIf((If) expr, outputExprId, transformationInfo, builder);
     } else if (expr instanceof AggregateExpression) {
-      AggregateExpression aggr = (AggregateExpression) expr;
-
-      // in databricks `resultId` method is not present. Instead, there exists `resultIds`
-      if (MethodUtils.getAccessibleMethod(AggregateExpression.class, "resultId") != null) {
-        builder.addDependency(
-            outputExprId,
-            aggr.resultId(),
-            transformationInfo.merge(TransformationInfo.aggregation()));
-      } else {
-        try {
-          Seq<ExprId> resultIds = (Seq<ExprId>) MethodUtils.invokeMethod(aggr, "resultIds");
-          ScalaConversionUtils.<ExprId>fromSeq(resultIds).stream()
-              .forEach(
-                  e ->
-                      builder.addDependency(
-                          outputExprId,
-                          e,
-                          transformationInfo.merge(TransformationInfo.aggregation())));
-        } catch (Exception e) {
-          // do nothing
-          log.warn("Failed extracting resultIds from AggregateExpression", e);
-        }
-      }
-      traverseExpression(
-          aggr.aggregateFunction(),
-          outputExprId,
-          transformationInfo.merge(TransformationInfo.aggregation()),
-          builder);
+      handleAggregateExpression(
+          (AggregateExpression) expr, outputExprId, transformationInfo, builder);
     } else if (expr != null && expr.children() != null) {
-      ScalaConversionUtils.<Expression>fromSeq(expr.children()).stream()
-          .forEach(
-              child ->
-                  traverseExpression(
-                      child,
-                      outputExprId,
-                      transformationInfo.merge(TransformationInfo.transformation()),
-                      builder));
+      handleGenericExpression(expr, outputExprId, transformationInfo, builder);
     }
+  }
+
+  private static void handleGenericExpression(
+      Expression expr,
+      ExprId outputExprId,
+      TransformationInfo transformationInfo,
+      ColumnLevelLineageBuilder builder) {
+    ScalaConversionUtils.<Expression>fromSeq(expr.children()).stream()
+        .forEach(
+            child ->
+                traverseExpression(
+                    child,
+                    outputExprId,
+                    transformationInfo.merge(TransformationInfo.transformation()),
+                    builder));
+  }
+
+  private static void handleAggregateExpression(
+      AggregateExpression expr,
+      ExprId outputExprId,
+      TransformationInfo transformationInfo,
+      ColumnLevelLineageBuilder builder) {
+    AggregateExpression aggr = expr;
+
+    // in databricks `resultId` method is not present. Instead, there exists `resultIds`
+    if (MethodUtils.getAccessibleMethod(AggregateExpression.class, "resultId") != null) {
+      builder.addDependency(
+          outputExprId,
+          aggr.resultId(),
+          transformationInfo.merge(TransformationInfo.aggregation()));
+    } else {
+      try {
+        Seq<ExprId> resultIds = (Seq<ExprId>) MethodUtils.invokeMethod(aggr, "resultIds");
+        ScalaConversionUtils.<ExprId>fromSeq(resultIds).stream()
+            .forEach(
+                e ->
+                    builder.addDependency(
+                        outputExprId,
+                        e,
+                        transformationInfo.merge(TransformationInfo.aggregation())));
+      } catch (Exception e) {
+        // do nothing
+        log.warn("Failed extracting resultIds from AggregateExpression", e);
+      }
+    }
+    traverseExpression(
+        aggr.aggregateFunction(), outputExprId,
+        transformationInfo.merge(TransformationInfo.aggregation()), builder);
+  }
+
+  private static void handleIf(
+      If expr,
+      ExprId outputExprId,
+      TransformationInfo transformationInfo,
+      ColumnLevelLineageBuilder builder) {
+    If i = expr;
+    traverseExpression(
+        i.predicate(), outputExprId,
+        transformationInfo.merge(TransformationInfo.indirect(CONDITIONAL)), builder);
+    traverseExpression(i.trueValue(), outputExprId, transformationInfo, builder);
+    traverseExpression(i.falseValue(), outputExprId, transformationInfo, builder);
+  }
+
+  private static void handleCaseWhen(
+      CaseWhen expr,
+      ExprId outputExprId,
+      TransformationInfo transformationInfo,
+      ColumnLevelLineageBuilder builder) {
+    CaseWhen cw = expr;
+    List<Tuple2<Expression, Expression>> branches =
+        ScalaConversionUtils.<Tuple2<Expression, Expression>>fromSeq(cw.branches());
+    branches.stream()
+        .map(e -> e._1)
+        .forEach(
+            e ->
+                traverseExpression(
+                    e,
+                    outputExprId,
+                    transformationInfo.merge(TransformationInfo.indirect(CONDITIONAL)),
+                    builder));
+    branches.stream()
+        .map(e -> e._2)
+        .forEach(e -> traverseExpression(e, outputExprId, transformationInfo, builder));
+    if (cw.elseValue().isDefined()) {
+      traverseExpression(cw.elseValue().get(), outputExprId, transformationInfo, builder);
+    }
+  }
+
+  private static void handleAlias(
+      Alias expr,
+      ExprId outputExprId,
+      TransformationInfo transformationInfo,
+      ColumnLevelLineageBuilder builder) {
+    Alias alias = expr;
+    traverseExpression(
+        alias.child(), outputExprId,
+        transformationInfo.merge(TransformationInfo.identity()), builder);
   }
 }

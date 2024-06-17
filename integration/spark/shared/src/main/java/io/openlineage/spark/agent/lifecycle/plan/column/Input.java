@@ -14,7 +14,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class Input {
   @Getter @Setter DatasetIdentifier datasetIdentifier;
-  @Getter @Setter String name;
+  @Getter @Setter String fieldName;
 
   @Override
   public boolean equals(Object o) {
@@ -22,11 +22,11 @@ public class Input {
     if (o == null || getClass() != o.getClass()) return false;
     Input input = (Input) o;
     return Objects.equals(datasetIdentifier, input.datasetIdentifier)
-        && Objects.equals(name, input.name);
+        && Objects.equals(fieldName, input.fieldName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(datasetIdentifier, name);
+    return Objects.hash(datasetIdentifier, fieldName);
   }
 }

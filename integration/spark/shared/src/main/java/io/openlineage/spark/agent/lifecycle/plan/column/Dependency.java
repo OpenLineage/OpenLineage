@@ -12,7 +12,7 @@ import lombok.Setter;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 
 @AllArgsConstructor
-public class Dependency {
+class Dependency {
   @Getter @Setter private ExprId exprId;
 
   @Getter @Setter private TransformationInfo transformationInfo;

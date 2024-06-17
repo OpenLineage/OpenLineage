@@ -200,26 +200,14 @@ public class ColumnLevelLineageBuilder {
                 new OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFieldsBuilder()
                     .namespace(field.getKey().getDatasetIdentifier().getNamespace())
                     .name(field.getKey().getDatasetIdentifier().getName())
-                    .field(field.getKey().getName())
+                    .field(field.getKey().getFieldName())
                     .transformations(
                         field.getValue().stream()
                             .map(TransformedInput::getTransformationInfo)
-                            .map(ColumnLevelLineageBuilder::inputFieldTransformations)
+                            .map(TransformationInfo::toInputFieldsTransformations)
                             .collect(Collectors.toList()))
                     .build())
         .collect(Collectors.toList());
-  }
-
-  @NotNull
-  private static OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFieldsTransformations
-      inputFieldTransformations(TransformationInfo e) {
-    return new OpenLineage
-            .ColumnLineageDatasetFacetFieldsAdditionalInputFieldsTransformationsBuilder()
-        .type(e.getType())
-        .subtype(e.getSubType())
-        .description(e.getDescription())
-        .masking(e.getMasking())
-        .build();
   }
 
   List<TransformedInput> getInputsUsedFor(String outputName) {

@@ -20,6 +20,6 @@ public class TransformedInput {
   }
 
   public String getName() {
-    return input.getName();
+    return input.getFieldName();
   }
 }

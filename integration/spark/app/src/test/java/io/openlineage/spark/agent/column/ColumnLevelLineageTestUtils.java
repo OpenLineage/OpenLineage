@@ -84,8 +84,8 @@ public class ColumnLevelLineageTestUtils {
                         .map(
                             t ->
                                 new TransformationInfo(
-                                    t.getType(),
-                                    t.getSubtype(),
+                                    TransformationInfo.Types.valueOf(t.getType()),
+                                    TransformationInfo.Subtypes.valueOf(t.getSubtype()),
                                     t.getDescription(),
                                     t.getMasking()))
                         .collect(Collectors.toSet())
