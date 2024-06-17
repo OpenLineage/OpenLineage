@@ -13,20 +13,27 @@ JAVA_SRC=$SRC/java/io/openlineage/sql
 RESOURCES=$ROOT/src/main/resources/io/openlineage/sql
 SCRIPTS=$ROOT/script
 
+if [[ -f $ROOT/target/debug ]]; then
+  LIBS=$ROOT/..
+elif [[ -f ~/openlineage/integration/sql ]]
+  LIBS=~/openlineage/integration/sql
+fi
+
+
 mkdir -p $RESOURCES
 
 # Native lib should be compiled at this point by compile.sh
-if [[ -f "$ROOT/../target/debug/libopenlineage_sql_java_x86_64.so" ]]; then
-    cp $ROOT/../target/debug/libopenlineage_sql_java_x86_64.so $RESOURCES
+if [[ -f "$LIBS/target/debug/libopenlineage_sql_java_x86_64.so" ]]; then
+    cp $LIBS/target/debug/libopenlineage_sql_java_x86_64.so $RESOURCES
 fi
-if [[ -f "$ROOT/../target/debug/libopenlineage_sql_java_aarch64.so" ]]; then
-    cp $ROOT/../target/debug/libopenlineage_sql_java_aarch64.so $RESOURCES
+if [[ -f "$LIBS/target/debug/libopenlineage_sql_java_aarch64.so" ]]; then
+    cp $LIBS/target/debug/libopenlineage_sql_java_aarch64.so $RESOURCES
 fi
-if [[ -f "$ROOT/../target/debug/libopenlineage_sql_java.dylib" ]]; then
-    cp $ROOT/../target/debug/libopenlineage_sql_java.dylib $RESOURCES
+if [[ -f "$LIBS/target/debug/libopenlineage_sql_java.dylib" ]]; then
+    cp $LIBS/target/debug/libopenlineage_sql_java.dylib $RESOURCES
 fi
-if [[ -f "$ROOT/../target/debug/libopenlineage_sql_java_arm64.dylib" ]]; then
-    cp $ROOT/../target/debug/libopenlineage_sql_java_arm64.dylib $RESOURCES
+if [[ -f "$LIBS/target/debug/libopenlineage_sql_java_arm64.dylib" ]]; then
+    cp $LIBS/target/debug/libopenlineage_sql_java_arm64.dylib $RESOURCES
 fi
 
 # Let's generate this header every run so that it is always

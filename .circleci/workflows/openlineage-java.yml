@@ -18,12 +18,12 @@ workflows:
                 "quay.io/pypa/manylinux2014_aarch64",
               ]
               resource_class: [ "arm.medium" ]
-      - compile-integration-sql-java-macos
+#      - compile-integration-sql-java-macos
       - build-integration-sql-java:
           requires:
             - compile-integration-sql-java-linux-arm
             - compile-integration-sql-java-linux-x86
-            - compile-integration-sql-java-macos
+#            - compile-integration-sql-java-macos
       - publish-javadoc:
           filters:
             branches:

@@ -1,28 +1,26 @@
 workflows:
   openlineage-spark:
     jobs:
-      - build-integration-spark-interfaces-scala:
-          matrix:
-            parameters:
-              scala-binary-version: [ '2.12', '2.13' ]
+      - test-integration-spakr-scala-2_12:
           requires:
+          - build-integration-sql-java
+          - build-client-java
+      - test-integration-spakr-scala-2_13:
+          requires:
+            - build-integration-sql-java
             - build-client-java
       - build-integration-spark-scala-2_12:
           matrix:
             parameters:
               spark-version: [ '2.4.8', '3.2.4', '3.3.4', '3.4.2', '3.5.0' ]
           requires:
-           - build-integration-sql-java
-           - build-client-java
-           - build-integration-spark-interfaces-scala
+           - test-integration-spark-scala-2_12
       - build-integration-spark-scala-2_13:
           matrix:
             parameters:
               spark-version: [ '3.2.4', '3.3.4', '3.4.2', '3.5.0' ]
           requires:
-           - build-integration-sql-java
-           - build-client-java           
-           - build-integration-spark-interfaces-scala
+           - test-integration-spark-scala-2_12
       - approval-integration-spark:
           type: approval
           requires:

@@ -88,21 +88,22 @@ jobs:
               fi
             else
               # Changes to the spec require all workflows to run
-              check_change spec "*"
-              check_change .circleci "*"
-              check_change integration/sql/ "*"
-
-              check_change client/java/ openlineage-java.yml openlineage-flink.yml openlineage-spark.yml
-              check_change integration/spark/ openlineage-java.yml openlineage-spark.yml
-              check_change integration/spark-interfaces-scala/ openlineage-java.yml openlineage-spark.yml
-              check_change integration/flink/ openlineage-java.yml openlineage-flink.yml
-              check_change client/python/ openlineage-integration-python.yml openlineage-integration-dbt.yml openlineage-integration-dagster.yml openlineage-integration-airflow.yml
-              check_change integration/common/ openlineage-integration-python.yml openlineage-integration-airflow.yml openlineage-integration-dbt.yml
-              check_change integration/airflow/ openlineage-integration-python.yml openlineage-integration-airflow.yml
-              check_change integration/dagster/ openlineage-integration-python.yml openlineage-integration-dagster.yml
-              check_change integration/dbt/ openlineage-integration-python.yml openlineage-integration-dbt.yml openlineage-integration-airflow.yml
-              check_change proxy/backend/ openlineage-proxy-backend.yml
-              check_change proxy/fluentd/ openlineage-proxy-fluentd.yml
+              check_change "*" openlineage-java.yml openlineage-spark.yml
+              #              check_change spec "*"
+              #              check_change .circleci "*"
+              #              check_change integration/sql/ "*"
+              #
+              #              check_change client/java/ openlineage-java.yml openlineage-flink.yml openlineage-spark.yml
+              #              check_change integration/spark/ openlineage-java.yml openlineage-spark.yml
+              #              check_change integration/spark-interfaces-scala/ openlineage-java.yml openlineage-spark.yml
+              #              check_change integration/flink/ openlineage-java.yml openlineage-flink.yml
+              #              check_change client/python/ openlineage-integration-python.yml openlineage-integration-dbt.yml openlineage-integration-dagster.yml openlineage-integration-airflow.yml
+              #              check_change integration/common/ openlineage-integration-python.yml openlineage-integration-airflow.yml openlineage-integration-dbt.yml
+              #              check_change integration/airflow/ openlineage-integration-python.yml openlineage-integration-airflow.yml
+              #              check_change integration/dagster/ openlineage-integration-python.yml openlineage-integration-dagster.yml
+              #              check_change integration/dbt/ openlineage-integration-python.yml openlineage-integration-dbt.yml openlineage-integration-airflow.yml
+              #              check_change proxy/backend/ openlineage-proxy-backend.yml
+              #              check_change proxy/fluentd/ openlineage-proxy-fluentd.yml
             fi
             touch workflow_files.txt
             FILES=$(sort workflow_files.txt | uniq | tr "\n" " ")
@@ -124,6 +125,7 @@ jobs:
                 (map(.jobs[] | select(has("workflow_complete") | not)) | . as $item ireduce ([]; (. *+ $item) ))
                 + [(map(.jobs[] | select(has("workflow_complete"))) | .[] as $item ireduce ({}; . *+ $item))] | {"workflows": {"build": {"jobs": .}}}' $FILES | \
             yq eval-all '. as $wf ireduce({}; . * $wf)' .circleci/continue_config.yml - > complete_config.yml
+            cat complete_config.yml
       - unless:
           condition:
             matches:

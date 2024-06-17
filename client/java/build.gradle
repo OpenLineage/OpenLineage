@@ -113,6 +113,7 @@ task generateCode(type: JavaExec) {
     def rootUrl = "file:$rootDir/../../spec/".toString()
     args rootUrl + "OpenLineage.json"
     args rootUrl
+    outputs.files("src/main/java/server", "src/main/java/client/OpenLineage.java")
 }
 
 openApiGenerate {
@@ -153,6 +154,8 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
+delombok.dependsOn tasks.generateCode
+sourceJar.dependsOn tasks.generateCode
 compileJava.dependsOn tasks.generateCode
 
 test {
@@ -245,6 +248,8 @@ spotless {
         removeUnusedImports()
     }
 }
+
+spotlessJava.dependsOn generateCode
 
 def reportsDir = "${buildDir}/reports";
 def coverageDir = "${reportsDir}/coverage";
