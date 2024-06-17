@@ -24,7 +24,7 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.Header;
 import scala.Tuple2;
 
-public class GCPUtilsTest {
+class GCPUtilsTest {
 
   private static String TEST_URI;
   public static final Header METADATA_HEADER = new Header("Metadata-Flavor", "Google");
@@ -40,6 +40,12 @@ public class GCPUtilsTest {
   private final SparkContext sparkContext = mock(SparkContext.class);
   private final SparkConf sparkConf = new SparkConf();
   private static ClientAndServer mockServer;
+
+  private static final Map<String, Object> EXPECTED_FACET_DATAPROC_CLUSTER = new HashMap<>();
+
+  private static final Map<String, Object> EXPECTED_FACET_DATAPROC_BATCH = new HashMap<>();
+
+  private static final Map<String, Object> EXPECTED_FACET_DATAPROC_SESSION = new HashMap<>();
 
   @BeforeAll
   public static void setup() {
@@ -145,38 +151,25 @@ public class GCPUtilsTest {
     assertThat(dataprocRunFacet).isEqualTo(EXPECTED_FACET_DATAPROC_SESSION);
   }
 
-  private static final Map<String, Object> EXPECTED_FACET_DATAPROC_CLUSTER =
-      new HashMap<String, Object>() {
-        {
-          put("projectId", TEST_PROJECT_ID);
-          put("appId", TEST_APP_ID);
-          put("appName", TEST_APP_NAME);
-          put("clusterName", TEST_CLUSTER_NAME);
-          put("clusterUuid", TEST_RESOURCE_UUID);
-          put("jobId", TEST_JOB_ID);
-          put("jobUuid", TEST_RESOURCE_UUID);
-        }
-      };
+  static {
+    EXPECTED_FACET_DATAPROC_CLUSTER.put("jobUuid", TEST_RESOURCE_UUID);
+    EXPECTED_FACET_DATAPROC_CLUSTER.put("jobId", TEST_JOB_ID);
+    EXPECTED_FACET_DATAPROC_CLUSTER.put("clusterUuid", TEST_RESOURCE_UUID);
+    EXPECTED_FACET_DATAPROC_CLUSTER.put("clusterName", TEST_CLUSTER_NAME);
+    EXPECTED_FACET_DATAPROC_CLUSTER.put("appName", TEST_APP_NAME);
+    EXPECTED_FACET_DATAPROC_CLUSTER.put("appId", TEST_APP_ID);
+    EXPECTED_FACET_DATAPROC_CLUSTER.put("projectId", TEST_PROJECT_ID);
 
-  private static final Map<String, Object> EXPECTED_FACET_DATAPROC_BATCH =
-      new HashMap<String, Object>() {
-        {
-          put("projectId", TEST_PROJECT_ID);
-          put("appId", TEST_APP_ID);
-          put("appName", TEST_APP_NAME);
-          put("batchId", TEST_BATCH_ID);
-          put("batchUuid", TEST_RESOURCE_UUID);
-        }
-      };
+    EXPECTED_FACET_DATAPROC_BATCH.put("batchUuid", TEST_RESOURCE_UUID);
+    EXPECTED_FACET_DATAPROC_BATCH.put("batchId", TEST_BATCH_ID);
+    EXPECTED_FACET_DATAPROC_BATCH.put("appName", TEST_APP_NAME);
+    EXPECTED_FACET_DATAPROC_BATCH.put("appId", TEST_APP_ID);
+    EXPECTED_FACET_DATAPROC_BATCH.put("projectId", TEST_PROJECT_ID);
 
-  private static final Map<String, Object> EXPECTED_FACET_DATAPROC_SESSION =
-      new HashMap<String, Object>() {
-        {
-          put("projectId", TEST_PROJECT_ID);
-          put("appId", TEST_APP_ID);
-          put("appName", TEST_APP_NAME);
-          put("sessionId", TEST_SESSION_ID);
-          put("sessionUuid", TEST_RESOURCE_UUID);
-        }
-      };
+    EXPECTED_FACET_DATAPROC_SESSION.put("sessionUuid", TEST_RESOURCE_UUID);
+    EXPECTED_FACET_DATAPROC_SESSION.put("sessionId", TEST_SESSION_ID);
+    EXPECTED_FACET_DATAPROC_SESSION.put("appName", TEST_APP_NAME);
+    EXPECTED_FACET_DATAPROC_SESSION.put("appId", TEST_APP_ID);
+    EXPECTED_FACET_DATAPROC_SESSION.put("projectId", TEST_PROJECT_ID);
+  }
 }
