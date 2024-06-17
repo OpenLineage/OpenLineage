@@ -5,19 +5,22 @@ workflows:
         pattern: '^pull\/[0-9]+$'
         value: << pipeline.git.branch >>
     jobs:
-      - build-integration-sql:
-          name: "build-integration-sql-x86"
+      - build-integration-sql-python:
+          name: "build-integration-sql-python-x86"
           image: "quay.io/pypa/manylinux2014_x86_64"
           resource_class: "medium"
           run_tests: true
-      - build-integration-sql:
-          name: "build-integration-sql-arm"
+      - build-integration-sql-python:
+          name: "build-integration-sql-python-arm"
           image: "quay.io/pypa/manylinux2014_aarch64"
           resource_class: "arm.medium"
           run_tests: true
+      - build-integration-sql-python-macos
       - unit-test-integration-common:
           requires:
-            - build-integration-sql-x86
+            - build-integration-sql-python-x86
+            - build-integration-sql-python-arm
+            - build-integration-sql-python-macos
       - build-integration-common:
           filters:
             branches:
@@ -36,14 +39,18 @@ workflows:
                 ]
                 install_parser: [ true ]
           requires:
-            - build-integration-sql-x86
+            - build-integration-sql-python-x86
+            - build-integration-sql-python-arm
+            - build-integration-sql-python-macos
       - approval-integration-airflow:
           type: approval
           requires:
             - unit-test-integration-airflow
             - unit-test-integration-common
             - unit-tests-client-python
-            - build-integration-sql-x86
+            - build-integration-sql-python-x86
+            - build-integration-sql-python-arm
+            - build-integration-sql-python-macos
       - integration-test-integration-airflow:
           matrix:
             parameters:

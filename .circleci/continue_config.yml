@@ -20,6 +20,30 @@ param_build_tag: &param_build_tag
       type: string
 
 commands:
+  publish_shadow_jar_local:
+    description: "Build shadow JAR and publish to maven local repo"
+    steps:
+      - run: ./gradlew --console=plain javadoc sourceJar shadowJar
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+
+          ./gradlew --console=plain publishToMavenLocal --info
+  publish_shadow_jar:
+    description: "Build shadow JAR and publish to maven public repo"
+    steps:
+      - run: ./gradlew --console=plain javadoc sourceJar shadowJar
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+
+          ./gradlew --console=plain publish --info
+
+
   install_integration_common:
     description: "Install common integration"
     parameters:
@@ -44,6 +68,137 @@ parameters:
     default: "inactive"
 
 jobs:
+
+  # SQL
+  build-integration-sql-python:
+    parameters:
+      image:
+        type: string
+      resource_class:
+        type: string
+      run_tests:
+        type: boolean
+    working_directory: ~/openlineage/integration/sql
+    machine:
+      image: ubuntu-2404:current
+    resource_class: << parameters.resource_class >>
+    steps:
+      - *checkout_project_root
+      - run: docker run -it -v $PWD:/code << parameters.image >> bash -c 'cd /code; RUN_TESTS=<<parameters.run_tests>> bash iface-py/script/build.sh'
+      - persist_to_workspace:
+          root: ./iface-py
+          paths:
+            - ./target/wheels/*.whl
+#      - when:
+#          condition:
+#            equal: [ "quay.io/pypa/manylinux2014_x86_64", << parameters.image >> ]
+#          steps:
+#            - persist_to_workspace:
+#                root: ~/
+#                paths:
+#                  - openlineage/integration/sql/target/wheels/*.tar.gz
+      - store_artifacts:
+          path: ./iface-py/target/wheels
+          destination: sql-artifacts
+
+
+  build-integration-sql-python-macos:
+    working_directory: ~/openlineage/integration/sql
+    macos:
+      xcode: 14.2.0
+    resource_class: macos.m1.medium.gen1
+    steps:
+      - *checkout_project_root
+      - run: RUN_TESTS=true bash iface-py/script/setup-macos.sh
+      - run: RUN_TESTS=true bash iface-py/script/build-macos.sh
+      - persist_to_workspace:
+          root: ./iface-py
+          paths:
+            - target/wheels/*.whl
+      - store_artifacts:
+          path: ./iface-py/target/wheels
+          destination: sql-artifacts-macos
+
+  compile-integration-sql-java-linux:
+    parameters:
+      image:
+        type: string
+      resource_class:
+        type: string
+    working_directory: ~/openlineage/integration/sql
+    machine:
+      image: ubuntu-2404:current
+    resource_class: << parameters.resource_class >>
+    steps:
+      - *checkout_project_root
+      - run: docker run -it -v $PWD:/code << parameters.image >> bash -c 'cd /code/iface-java && bash script/compile.sh'
+      - run: ls ~/openlineage/integration/sql/target/debug
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - openlineage/integration/sql/target/debug/*.so
+      - store_artifacts:
+          path: ./target/debug/
+          destination: sql-linux-artifacts
+
+  compile-integration-sql-java-macos:
+    parameters:
+      resource_class:
+        type: string
+        default: "macos.m1.medium.gen1"
+    working_directory: ~/openlineage/integration/sql/iface-java
+    macos:
+      xcode: 14.2.0
+    resource_class: << parameters.resource_class >>
+    steps:
+      - *checkout_project_root
+      - run: bash script/compile.sh
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - openlineage/integration/sql/target/debug/*.dylib
+      - store_artifacts:
+          path: ../target/debug/*.dylib
+          destination: sql-macos-artifacts
+
+  build-integration-sql-java:
+    working_directory: ~/openlineage/integration/sql/iface-java
+    docker:
+      - image: cimg/openjdk:17.0
+    resource_class: "medium"
+    steps:
+      - *checkout_project_root
+      - attach_workspace:
+          at: ~/
+      - run: bash script/build.sh
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - .m2/repository/io/openlineage/openlineage-sql-java
+            - openlineage/integration/sql/iface-java/build-cache
+            - openlineage/integration/sql/iface-java/build
+      - store_artifacts:
+          path: ./build/libs
+          destination: sql-java-artifacts
+
+  release-integration-sql-java:
+    working_directory: ~/openlineage/integration/sql/iface-java
+    docker:
+      - image: cimg/openjdk:17.0
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../../.circleci/checksum.sh /tmp/checksum.txt
+      - restore_cache:
+          keys:
+            - v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-release-client-java-{{ .Branch }}
+      - attach_workspace:
+          at: ../
+      - publish_shadow_jar
+
+  # PYTHON
   unit-test-client-python:
     working_directory: ~/openlineage/client/python
     parameters:
@@ -96,312 +251,6 @@ jobs:
       - run: pip install -U -e .[docs]
       - run: cd docs && make html && python convert.py && ./release-api-reference.sh
 
-  build-client-java:
-    working_directory: ~/openlineage/client/java
-    docker:
-      - image: cimg/openjdk:11.0
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - restore_cache:
-          keys:
-            - v1-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-            - v1-client-java-{{ .Branch }}
-      - run: ./gradlew --no-daemon --console=plain --stacktrace build
-      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
-      - run: ./gradlew --no-daemon --console=plain --info check
-      - run: bash <(curl -s https://codecov.io/bash)
-      - run: ./gradlew --console=plain javadoc
-      - run: ./gradlew --console=plain publishToMavenLocal --info
-      - persist_to_workspace:
-          root: ~/.m2/repository/io/openlineage/
-          paths:
-            - openlineage-java
-      - store_test_results:
-          path: client/java/build/test-results/test
-      - store_artifacts:
-          path: build/reports/tests/test
-          destination: test-report
-      - store_artifacts:
-          path: build/reports/tests/pmd
-          destination: pmd-report
-      - save_cache:
-          key: v1-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-          paths:
-            - ~/.gradle
-
-  release-client-java:
-    working_directory: ~/openlineage/client/java
-    docker:
-      - image: cimg/openjdk:8.0
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
-
-          # publish jar to maven local so it can be found by dependents
-          ./gradlew --console=plain publishToMavenLocal --info
-
-          # Publish *.jar
-          ./gradlew --no-daemon --console=plain publish --info
-      - store_artifacts:
-          path: ./build/libs
-          destination: java-client-artifacts
-      - save_cache:
-          key: v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-          paths:
-            - ~/.m2
-
-  release-integration-spark:
-    working_directory: ~/openlineage/integration/spark
-    docker:
-      - image: cimg/openjdk:17.0
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - restore_cache:
-          keys:
-            - v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-            - v1-release-client-java-{{ .Branch }}
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
-
-          cd ../../client/java
-          ./gradlew --no-daemon --console=plain publishToMavenLocal
-          cd -
-          # Publish *.jar
-          ./gradlew --no-daemon --console=plain clean publish -Pscala.binary.version=2.12
-          ./gradlew --no-daemon --console=plain clean publish -Pscala.binary.version=2.13
-      - store_artifacts:
-          path: ./build/libs
-          destination: spark-client-artifacts
-
-  build-integration-spark-scala-2_12:
-    parameters:
-      env-variant:
-        type: string
-    working_directory: ~/openlineage/integration/spark
-    machine:
-      image: ubuntu-2404:current
-    resource_class: large
-    environment:
-      TESTCONTAINERS_RYUK_DISABLED: "true"
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - run:
-          name: Spark & Java version Variable
-          command: |
-            SPARK=`echo << parameters.env-variant >> | cut -d ':' -f 3`
-            JAVA_VERSION_NUMBER=`echo << parameters.env-variant >> | cut -d ':' -f 2 | cut -d "-" -f 1`
-            echo spark=$SPARK java=$JAVA_VERSION_NUMBER
-
-            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
-            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
-            
-            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
-            echo 'export SPARK_VERSION_VAR='${SPARK} >> "$BASH_ENV"
-            echo 'export JAVA_VERSION_NUMBER='${JAVA_VERSION_NUMBER} >> "$BASH_ENV"
-            echo 'export JAVA_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
-            echo 'export JAVAC_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
-      - restore_cache:
-          keys:
-            - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-            - v1-integration-spark-{{ .Branch }}
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - run: |
-          echo "Setting default Java to ${JAVA_BIN}"
-          sudo update-alternatives --set java ${JAVA_BIN}
-          sudo update-alternatives --set javac ${JAVAC_BIN}
-      - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
-      - run:
-          when: on_fail
-          command: cat build/test-results/test/TEST-*.xml
-      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
-      - run: ./gradlew --no-daemon --console=plain --info check -x test -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
-      - run: if [ ${JAVA_VERSION_NUMBER} -eq "17" ]; then ./gradlew --console=plain javadoc -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}; fi
-      - store_test_results:
-          path: build/test-results/test
-      - store_artifacts:
-          path: build/reports/tests/test
-          destination: test-report
-      - store_artifacts:
-          path: build/reports/tests/pmd
-          destination: pmd-report
-      - save_cache:
-          key: v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-          paths:
-            - ~/.gradle
-
-  build-integration-spark-scala-2_13:
-    parameters:
-      env-variant:
-        type: string
-    working_directory: ~/openlineage/integration/spark
-    machine:
-      image: ubuntu-2404:current
-    resource_class: large
-    environment:
-      TESTCONTAINERS_RYUK_DISABLED: "true"
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - run:
-          name: Spark & Java version Variable
-          command: |
-            SPARK=`echo << parameters.env-variant >> | cut -d ':' -f 3`
-            JAVA_VERSION_NUMBER=`echo << parameters.env-variant >> | cut -d ':' -f 2 | cut -d "-" -f 1`
-            echo spark=$SPARK java=$JAVA_VERSION_NUMBER
-
-            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
-            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
-
-            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
-            echo 'export SPARK_VERSION_VAR='${SPARK} >> "$BASH_ENV"
-            echo 'export JAVA_VERSION_NUMBER='${JAVA_VERSION_NUMBER} >> "$BASH_ENV"
-            echo 'export JAVA_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
-            echo 'export JAVAC_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
-      - restore_cache:
-          keys:
-            - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-            - v1-integration-spark-{{ .Branch }}
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - run: |
-          echo "Setting default Java to ${JAVA_BIN}"
-          sudo update-alternatives --set java ${JAVA_BIN}
-          sudo update-alternatives --set javac ${JAVAC_BIN}
-      - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
-      - run:
-          when: on_fail
-          command: cat build/test-results/test/TEST-*.xml
-      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
-      - run: ./gradlew --no-daemon --console=plain --info check -x test -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
-      - run: if [ ${JAVA_VERSION_NUMBER} -eq "17" ]; then ./gradlew --console=plain javadoc -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}; fi
-      - store_test_results:
-          path: build/test-results/test
-      - store_artifacts:
-          path: build/reports/tests/test
-          destination: test-report
-      - store_artifacts:
-          path: build/reports/tests/pmd
-          destination: pmd-report
-      - save_cache:
-          key: v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-          paths:
-            - ~/.gradle
-
-  jar-verification-spark:
-    working_directory: ~/openlineage/integration/spark
-    machine:
-      image: ubuntu-2404:current
-    resource_class: medium
-    environment:
-      TESTCONTAINERS_RYUK_DISABLED: "true"
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - restore_cache:
-          keys:
-            - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-            - v1-integration-spark-{{ .Branch }}
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - run: |
-          sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
-          sudo update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
-      - run: ./gradlew --no-daemon --console=plain clean clean jarVerification -Pscala.binary.version=2.12 -Pjava.compile.home=/usr/lib/jvm/java-17-openjdk-amd64
-      - run: ./gradlew --no-daemon --console=plain clean clean jarVerification -Pscala.binary.version=2.13 -Pjava.compile.home=/usr/lib/jvm/java-17-openjdk-amd64
-
-  release-integration-flink:
-    working_directory: ~/openlineage/integration/flink
-    docker:
-      - image: cimg/openjdk:11.0
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - restore_cache:
-          keys:
-            - v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-            - v1-release-client-java-{{ .Branch }}
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
-
-          cd ../../client/java
-          ./gradlew --no-daemon --console=plain publishToMavenLocal
-          cd -
-          # Publish *.jar
-          ./gradlew --no-daemon --console=plain publish
-      - store_artifacts:
-          path: ./build/libs
-          destination: flink-client-artifacts
-
-  build-integration-flink:
-    parameters:
-      flink-version:
-        type: string
-    working_directory: ~/openlineage/integration/flink
-    docker:
-      - image: cimg/openjdk:11.0
-    resource_class: large
-    environment:
-      TESTCONTAINERS_RYUK_DISABLED: "true"
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - restore_cache:
-          keys:
-            - v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-            - v1-integration-flink-{{ .Branch }}
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pflink.version=<< parameters.flink-version >>
-      - run:
-          when: on_fail
-          command: cat build/test-results/test/TEST-*.xml
-      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
-      - run: ./gradlew --console=plain javadoc
-      - store_test_results:
-          path: app/build/test-results/test
-      - store_artifacts:
-          path: app/build/reports/tests/test
-          destination: test-report
-      - save_cache:
-          key: v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-          paths:
-            - ~/.gradle
-
   unit-test-integration-common:
     working_directory: ~/openlineage/integration/common
     docker:
@@ -415,290 +264,6 @@ jobs:
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
           path: test-results
-
-  build-integration-common:
-    working_directory: ~/openlineage/integration/common
-    docker:
-      - image: cimg/python:3.8
-    <<: *param_build_tag
-    steps:
-      - *checkout_project_root
-      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./dist/*.whl
-            - ./dist/*.tar.gz
-
-  build-integration-sql:
-    parameters:
-      image:
-        type: string
-      resource_class:
-        type: string
-      run_tests:
-        type: boolean
-    working_directory: ~/openlineage/integration/sql
-    machine:
-      image: ubuntu-2004:current
-    resource_class: << parameters.resource_class >>
-    steps:
-      - *checkout_project_root
-      - run: docker run -it -v $PWD:/code << parameters.image >> bash -c 'cd /code; RUN_TESTS=<<parameters.run_tests>> bash iface-py/script/build.sh'
-      - persist_to_workspace:
-          root: ./iface-py
-          paths:
-            - ./target/wheels/*.whl
-      - when:
-          condition:
-            equal: [ "quay.io/pypa/manylinux2014_x86_64", << parameters.image >> ]
-          steps:
-            - persist_to_workspace:
-                root: ./iface-py
-                paths:
-                  - target/wheels/*.tar.gz
-      - store_artifacts:
-          path: ./iface-py/target/wheels
-          destination: sql-artifacts
-
-  compile-integration-sql-java-linux:
-    parameters:
-      image:
-        type: string
-      resource_class:
-        type: string
-    working_directory: ~/openlineage/integration/sql
-    machine:
-      image: ubuntu-2004:current
-    resource_class: << parameters.resource_class >>
-    steps:
-      - *checkout_project_root
-      - run: docker run -it -v $PWD:/code << parameters.image >> bash -c 'cd /code/iface-java && bash script/compile.sh'
-      - persist_to_workspace:
-          root: ./
-          paths:
-            - target/debug/*.so
-      - store_artifacts:
-          path: ./target/debug/
-          destination: sql-linux-artifacts
-
-
-  compile-integration-sql-java-macos:
-    parameters:
-      resource_class:
-        type: string
-        default: "macos.m1.medium.gen1"
-    working_directory: ~/openlineage/integration/sql/iface-java
-    macos:
-      xcode: 14.2.0
-    resource_class: << parameters.resource_class >>
-    steps:
-      - *checkout_project_root
-      - run: bash script/compile.sh
-      - persist_to_workspace:
-          root: ../
-          paths:
-            - target/debug/*.dylib
-      - store_artifacts:
-          path: ../target/debug/*.dylib
-          destination: sql-macos-artifacts
-
-  build-integration-sql-java:
-    working_directory: ~/openlineage/integration/sql/iface-java
-    docker:
-      - image: cimg/openjdk:8.0
-    resource_class: "medium"
-    steps:
-      - *checkout_project_root
-      - attach_workspace:
-          at: ../
-      - run: bash script/build.sh
-      - persist_to_workspace:
-          root: ~/.m2/repository/io/openlineage/
-          paths:
-            - openlineage-sql-java
-      - store_artifacts:
-          path: ./build/libs
-          destination: sql-java-artifacts
-
-  release-integration-sql-java:
-    working_directory: ~/openlineage/integration/sql/iface-java
-    docker:
-      - image: cimg/openjdk:8.0
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../../.circleci/checksum.sh /tmp/checksum.txt
-      - restore_cache:
-          keys:
-            - v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-            - v1-release-client-java-{{ .Branch }}
-      - attach_workspace:
-          at: ../
-      - run: bash script/build.sh
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
-
-          cd ../../../client/java
-          ./gradlew --no-daemon --console=plain publishToMavenLocal
-          cd -
-          # Publish *.jar
-          ./gradlew --no-daemon --console=plain publish
-
-  build-integration-spark-extension-interfaces:
-    working_directory: ~/openlineage/integration/spark-extension-interfaces
-    docker:
-      - image: cimg/openjdk:8.0
-    resource_class: "medium"
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - restore_cache:
-          keys:
-            - v1-spark-extension-interfaces-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-            - v1-spark-extension-interfaces-{{ .Branch }}
-      - run: ./gradlew --no-daemon --console=plain --stacktrace build
-      - run: ./gradlew --no-daemon --console=plain --info check
-      - run: ./gradlew --console=plain javadoc
-      - run: ./gradlew --console=plain publishToMavenLocal --info
-      - persist_to_workspace:
-          root: ~/.m2/repository/io/openlineage/
-          paths:
-            - spark-extension-interfaces
-      - save_cache:
-          key: v1-spark-extension-interfaces-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-          paths:
-            - ~/.gradle
-
-  build-integration-spark-extension-entrypoint:
-    working_directory: ~/openlineage/integration/spark-extension-entrypoint
-    docker:
-      - image: cimg/openjdk:8.0
-    resource_class: "medium"
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - restore_cache:
-          keys:
-            - v1-spark-extension-entrypoint-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-            - v1-spark-extension-entrypoint-{{ .Branch }}
-      - run: ./gradlew --no-daemon --console=plain --stacktrace build
-      - run: ./gradlew --no-daemon --console=plain --info check
-      - run: ./gradlew --console=plain javadoc
-      - run: ./gradlew --console=plain publishToMavenLocal --info
-      - persist_to_workspace:
-          root: ~/.m2/repository/io/openlineage/
-          paths:
-            - spark-extension-entrypoint
-      - save_cache:
-          key: v1-spark-extension-entrypoint-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-          paths:
-            - ~/.gradle
-
-  release-integration-spark-extension-interfaces:
-    working_directory: ~/openlineage/integration/spark-extension-interfaces
-    docker:
-      - image: cimg/openjdk:8.0
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
-          
-          # TODO remove, depend on client build in interfaces build
-          cd ../../client/java
-          ./gradlew --no-daemon --console=plain publishToMavenLocal
-          cd -
-
-          ./gradlew --console=plain publishToMavenLocal --info
-
-          # Publish *.jar
-          ./gradlew --no-daemon --console=plain publish --info
-      - persist_to_workspace:
-          root: ~/.m2/repository/io/openlineage/
-          paths:
-            - spark-extension-interfaces
-      - store_artifacts:
-          path: ./build/libs
-          destination: spark-extension-interfaces-artifacts
-      - save_cache:
-          key: v1-release-spark-extension-interfaces-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-          paths:
-            - ~/.m2
-
-  release-integration-spark-extension-entrypoint:
-    working_directory: ~/openlineage/integration/spark-extension-entrypoint
-    docker:
-      - image: cimg/openjdk:8.0
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
-          
-          # TODO remove, depend on client build in interfaces build
-          cd ../../client/java
-          ./gradlew --no-daemon --console=plain publishToMavenLocal
-          cd -
-
-          ./gradlew --console=plain publishToMavenLocal -Prelease=true --info
-
-          # Publish *.jar
-          ./gradlew --no-daemon --console=plain publish -Prelease=true --info
-      - persist_to_workspace:
-          root: ~/.m2/repository/io/openlineage/
-          paths:
-            - spark-extension-entrypoint
-      - store_artifacts:
-          path: ./build/libs
-          destination: spark-extension-entrypoint-artifacts
-      - save_cache:
-          key: v1-release-spark-extension-spark-extension-entrypoint-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-          paths:
-            - ~/.m2
-
-  build-integration-sql-macos:
-    working_directory: ~/openlineage/integration/sql
-    macos:
-      xcode: 14.2.0
-    resource_class: macos.m1.medium.gen1
-    steps:
-      - *checkout_project_root
-      - run: RUN_TESTS=true bash iface-py/script/setup-macos.sh
-      - run: RUN_TESTS=true bash iface-py/script/build-macos.sh
-      - persist_to_workspace:
-          root: ./iface-py
-          paths:
-            - target/wheels/*.whl
-      - store_artifacts:
-          path: ./iface-py/target/wheels
-          destination: sql-artifacts-macos
 
   build-integration-dbt:
     working_directory: ~/openlineage/integration/dbt
@@ -714,237 +279,19 @@ jobs:
             - ./dist/*.whl
             - ./dist/*.tar.gz
 
-  integration-test-integration-spark-scala-2_12:
-    parameters:
-      env-variant:
-        type: string
-    working_directory: ~/openlineage/integration/spark
-    machine:
-      image: ubuntu-2404:current
-    resource_class: large
-    environment:
-      TESTCONTAINERS_RYUK_DISABLED: "true"
-    steps:
-      - *checkout_project_root
-      - gcp-cli/install
-      - gcp-cli/initialize
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - run:
-          name: Spark & Java version Variable
-          command: |
-            SPARK=`echo << parameters.env-variant >> | cut -d ':' -f 3`
-            JAVA_VERSION_NUMBER=`echo << parameters.env-variant >> | cut -d ':' -f 2 | cut -d "-" -f 1`
-            echo spark=$SPARK java=$JAVA_VERSION_NUMBER
-
-            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
-            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
-
-            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
-            echo 'export SPARK_VERSION_VAR='${SPARK} >> "$BASH_ENV"
-            echo 'export JAVA_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
-            echo 'export JAVAC_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
-      - run: mkdir -p app/build/gcloud && echo $GCLOUD_SERVICE_KEY > app/build/gcloud/gcloud-service-key.json && chmod 644 app/build/gcloud/gcloud-service-key.json
-      - restore_cache:
-          keys:
-            - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-            - v1-integration-spark-{{ .Branch }}
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - run: |
-          echo "Setting default Java to ${JAVA_BIN}"
-          sudo update-alternatives --set java ${JAVA_BIN}
-          sudo update-alternatives --set javac ${JAVAC_BIN}
-      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
-      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
-      - store_test_results:
-          path: app/build/test-results/integrationTest
-      - store_artifacts:
-          path: app/build/reports/tests/integrationTest
-          destination: test-report
-      - save_cache:
-          key: v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-          paths:
-            - ~/.gradle
-
-  integration-test-integration-spark-scala-2_13:
-    parameters:
-      env-variant:
-        type: string
-    working_directory: ~/openlineage/integration/spark
-    machine:
-      image: ubuntu-2404:current
-    resource_class: large
-    environment:
-      TESTCONTAINERS_RYUK_DISABLED: "true"
-    steps:
-      - *checkout_project_root
-      - gcp-cli/install
-      - gcp-cli/initialize
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - run:
-          name: Spark & Java version Variable
-          command: |
-            SPARK=`echo << parameters.env-variant >> | cut -d ':' -f 3`
-            JAVA_VERSION_NUMBER=`echo << parameters.env-variant >> | cut -d ':' -f 2 | cut -d "-" -f 1`
-            echo spark=$SPARK java=$JAVA_VERSION_NUMBER
-
-            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
-            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
-
-            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
-            echo 'export SPARK_VERSION_VAR='${SPARK} >> "$BASH_ENV"
-            echo 'export JAVA_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
-            echo 'export JAVAC_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
-      - run: mkdir -p app/build/gcloud && echo $GCLOUD_SERVICE_KEY > app/build/gcloud/gcloud-service-key.json && chmod 644 app/build/gcloud/gcloud-service-key.json
-      - restore_cache:
-          keys:
-            - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-            - v1-integration-spark-{{ .Branch }}
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - run: |
-          echo "Setting default Java to ${JAVA_BIN}"
-          sudo update-alternatives --set java ${JAVA_BIN}
-          sudo update-alternatives --set javac ${JAVAC_BIN}
-      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
-      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
-      - store_test_results:
-          path: app/build/test-results/integrationTest
-      - store_artifacts:
-          path: app/build/reports/tests/integrationTest
-          destination: test-report
-      - save_cache:
-          key: v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-          paths:
-            - ~/.gradle
-
-  integration-test-databricks-integration-spark:
-    parameters:
-      spark-version:
-        type: string
-    working_directory: ~/openlineage/integration/spark
-    machine:
-      image: ubuntu-2004:current
-    resource_class: large
-    environment:
-      TESTCONTAINERS_RYUK_DISABLED: "true"
-      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
-    steps:
-      - *checkout_project_root
-      - when:
-          condition:
-            or:
-              - equal: [ enabled, << pipeline.parameters.databricks-test >> ]
-              - equal: [ active, << pipeline.parameters.nightly-run >> ]
-          steps:
-            - run:
-                name: Generate cache key
-                command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-            - restore_cache:
-                keys:
-                  - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-                  - v1-integration-spark-{{ .Branch }}
-            - attach_workspace:
-                at: ~/.m2/repository/io/openlineage/
-            - run: |
-                sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-                sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-            - run: ./gradlew --console=plain shadowJar -x test
-            - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test   -Pspark.version=<< parameters.spark-version >> -PdatabricksHost=$DATABRICKS_HOST -PdatabricksToken=$DATABRICKS_TOKEN
-            - store_test_results:
-                path: app/build/test-results/databricksIntegrationTest
-            - store_artifacts:
-                path: app/build/reports/tests/databricksIntegrationTest
-                destination: test-report
-            - store_artifacts:
-                path: app/build/cluster-log4j.log
-                destination: cluster-log4j.log
-            - save_cache:
-                key: v1-databricks-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-                paths:
-                  - ~/.gradle
-
-  configurable-integration-test-spark:
-    working_directory: ~/openlineage/
-    machine:
-      image: ubuntu-2004:current
-    resource_class: large
-    steps:
-      - *checkout_project_root
-      - when:
-          condition:
-            equal: [ active, << pipeline.parameters.nightly-run >> ]
-          steps:
-            - restore_cache:
-                keys:
-                  - v1-configurable-integration-test
-            - run: ./integration/spark/cli/configurable-test.sh --spark ./integration/spark/cli/spark-conf.yml --test ./integration/spark/cli/tests
-            - run: ./integration/spark/cli/configurable-test.sh --spark ./integration/spark/cli/spark-conf-docker.yml --test ./integration/spark/cli/tests
-            - store_artifacts:
-                path: integration/spark/cli/runs
-                destination: test-report
-            - save_cache:
-                key: configurable-integration-test
-                paths:
-                  - ~/.gradle
-
-  slack-notify:
+  build-integration-common:
+    working_directory: ~/openlineage/integration/common
     docker:
-      - image: 'cimg/base:stable'
+      - image: cimg/python:3.8
+    <<: *param_build_tag
     steps:
       - *checkout_project_root
-      - when:
-          condition:
-            equal: [ active, << pipeline.parameters.nightly-run >> ]
-          steps:
-            - slack/notify:
-                event: pass
-                template: basic_success_1
-            - slack/notify:
-                event: fail
-                template: basic_fail_1
-
-  integration-test-integration-flink:
-    parameters:
-      flink-version:
-        type: string
-    working_directory: ~/openlineage/integration/flink
-    machine:
-      image: ubuntu-2004:2023.02.1
-    resource_class: large
-    environment:
-      TESTCONTAINERS_RYUK_DISABLED: "true"
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - restore_cache:
-          keys:
-            - v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-            - v1-integration-flink-{{ .Branch }}
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - run: chmod -R 777 data/iceberg/db
-      - run: ./gradlew --console=plain examples:stateful:build -Pflink.version=<< parameters.flink-version >>
-      - run: ./gradlew --no-daemon --console=plain integrationTest --i -Pflink.version=<< parameters.flink-version >>
-      - run:
-          when: on_fail
-          command: cat app/build/test-results/integrationTest/TEST-*.xml
-      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
-      - store_test_results:
-          path: app/build/test-results/integrationTest
-      - store_artifacts:
-          path: app/build/reports/tests/integrationTest
-          destination: test-report
-      - save_cache:
-          key: v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
+      - persist_to_workspace:
+          root: .
           paths:
-            - ~/.gradle
+            - ./dist/*.whl
+            - ./dist/*.tar.gz
 
   unit-test-integration-airflow:
     parameters:
@@ -990,7 +337,7 @@ jobs:
         type: string
     working_directory: ~/openlineage/integration/
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2404:current
     resource_class: large
     steps:
       - *checkout_project_root
@@ -1016,7 +363,7 @@ jobs:
         type: string
     working_directory: ~/openlineage/integration/
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2404:current
     steps:
       - *checkout_project_root
       - run: ../.circleci/get-docker-compose.sh
@@ -1067,10 +414,676 @@ jobs:
       - run: mkdir -p target/wheels && cp target/wheels/* dist/
       - run: python -m twine upload --non-interactive --verbose --repository pypi dist/*
 
+
+# JAVA
+
+  build-client-java:
+    working_directory: ~/openlineage/client/java
+    parameters:
+      release:
+        default: false
+        type: boolean
+    docker:
+      - image: cimg/openjdk:17.0
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - restore_cache:
+          keys:
+            - v1-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-client-java-{{ .Branch }}
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
+      - run: ./gradlew --no-daemon --console=plain --info check
+      - run: bash <(curl -s https://codecov.io/bash)
+      - publish_shadow_jar_local
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - .m2/repository/io/openlineage/openlineage-java
+            - openlineage/client/java/build-cache
+            - openlineage/client/java/build
+      - store_test_results:
+          path: client/java/build/test-results/test
+      - store_artifacts:
+          path: build/reports/tests/test
+          destination: test-report
+      - store_artifacts:
+          path: build/reports/tests/pmd
+          destination: pmd-report
+      - store_artifacts:
+          path: build/libs
+          destination: libs
+      - save_cache:
+          key: v1-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  release-client-java:
+    working_directory: ~/openlineage/client/java
+    docker:
+      - image: cimg/openjdk:17.0
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - attach_workspace:
+          at: ~/
+      - publish_shadow_jar
+      - store_artifacts:
+          path: ./build/libs
+          destination: java-client-artifacts
+      - save_cache:
+          key: v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.m2
+
+  release-integration-spark:
+    working_directory: ~/openlineage/integration/spark
+    docker:
+      - image: cimg/openjdk:17.0
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - restore_cache:
+          keys:
+            - v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-release-client-java-{{ .Branch }}
+      - attach_workspace:
+          at: ~/
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+
+          # Publish *.jar
+          ./gradlew --no-daemon --console=plain clean publish -Pscala.binary.version=2.12 -Pjava.compile.home=/usr/local/jdk-17.0.11
+          ./gradlew --no-daemon --console=plain clean publish -Pscala.binary.version=2.13 -Pjava.compile.home=/usr/local/jdk-17.0.11
+      - store_artifacts:
+          path: ./build/libs
+          destination: spark-client-artifacts
+
+  build-integration-spark:
+    working_directory: ~/openlineage/integration/spark
+    parameters:
+      scala:
+        type: string
+      release:
+        type: boolean
+        default: false
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - run:
+          name: Java version Variable
+          command: |
+            JAVA=17
+
+            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
+            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
+
+            JAVA_BIN=$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java")
+            JAVAC_BIN=$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac")
+            echo "Setting default Java to ${JAVA_BIN}"
+            sudo update-alternatives --set java ${JAVA_BIN}
+            sudo update-alternatives --set javac ${JAVAC_BIN}
+      - restore_cache:
+          keys:
+            - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-integration-spark-{{ .Branch }}
+      - attach_workspace:
+          at: ~/
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+                  
+          ./gradlew --console=plain javadoc sourceJar shadowJar -Pscala.binary.version=<< parameters.scala >> -Pjava.compile.home=/usr/lib/jvm/java-17-openjdk-amd64
+          ./gradlew --console=plain publishToMavenLocal -Pscala.binary.version=<< parameters.scala >> -Pjava.compile.home=/usr/lib/jvm/java-17-openjdk-amd64
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - .m2/repository/io/openlineage/openlineage-spark_<< parameters.scala >>
+            - openlineage/integration/spark/build-cache
+            - openlineage/integration/spark/build/libs
+      - store_artifacts:
+          path: build/libs
+          destination: libs
+      - save_cache:
+          key: v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  test-integration-spark:
+    parameters:
+      env-variant:
+        type: string
+    working_directory: ~/openlineage/integration/spark
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Spark & Java version Variable
+          command: |
+            JAVA=$(echo << parameters.env-variant >> | cut -d '-' -f 1 | cut -d ':' -f 2)
+            SPARK=$(echo << parameters.env-variant >> | cut -d '-' -f 2 | cut -d ':' -f 2)
+            SCALA=$(echo << parameters.env-variant >> | cut -d '-' -f 3 | cut -d ':' -f 2)
+            echo spark=$SPARK java=$JAVA scala=$SCALA
+            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
+            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
+            
+            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
+            echo 'export SPARK='${SPARK} >> "$BASH_ENV"
+            echo 'export JAVA_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
+            echo 'export JAVAC_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
+            echo 'export SCALA='${SCALA} >> "$BASH_ENV"
+            echo "${JAVA}"
+            echo "${JAVA_BIN}"
+            echo "${JAVAC_BIN}"
+      - restore_cache:
+          keys:
+            - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-integration-spark-{{ .Branch }}
+      - run: |
+          echo "Setting default Java to ${JAVA_BIN}"
+          sudo update-alternatives --set java ${JAVA_BIN}
+          sudo update-alternatives --set javac ${JAVAC_BIN}
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build check -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
+      - run:
+          when: on_fail
+          command: cat build/test-results/test/TEST-*.xml
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
+      - store_test_results:
+          path: build/test-results/test
+      - store_artifacts:
+          path: build/reports/tests/test
+          destination: test-report
+      - store_artifacts:
+          path: build/reports/tests/pmd
+          destination: pmd-report
+
+  integration-test-integration-spark:
+    parameters:
+      env-variant:
+        type: string
+    working_directory: ~/openlineage/integration/spark
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - *checkout_project_root
+      - gcp-cli/install
+      - gcp-cli/initialize
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - run:
+          name: Spark & Java version Variable
+          command: |
+            JAVA=$(echo << parameters.env-variant >> | cut -d '-' -f 1 | cut -d ':' -f 2)
+            SPARK=$(echo << parameters.env-variant >> | cut -d '-' -f 2 | cut -d ':' -f 2)
+            SCALA=$(echo << parameters.env-variant >> | cut -d '-' -f 3 | cut -d ':' -f 2)
+            echo spark=$SPARK java=$JAVA scala=$SCALA
+            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
+            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
+            
+            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
+            echo 'export SPARK_VERSION_VAR='${SPARK} >> "$BASH_ENV"
+            echo 'export SCALA='${SCALA} >> "$BASH_ENV"
+            echo 'export JAVA_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
+            echo 'export JAVAC_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
+            echo $JAVA_BIN
+      - run: mkdir -p app/build/gcloud && echo $GCLOUD_SERVICE_KEY > app/build/gcloud/gcloud-service-key.json && chmod 644 app/build/gcloud/gcloud-service-key.json
+      - restore_cache:
+          keys:
+            - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-integration-spark-{{ .Branch }}
+      - attach_workspace:
+          at: ~/
+      - run: |
+          echo "Setting default Java to ${JAVA_BIN}"
+          sudo update-alternatives --set java ${JAVA_BIN}
+          sudo update-alternatives --set javac ${JAVAC_BIN}
+      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
+      - store_test_results:
+          path: app/build/test-results/integrationTest
+      - store_artifacts:
+          path: app/build/reports/tests/integrationTest
+          destination: test-report
+      - save_cache:
+          key: v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  build-integration-spark-extension-interfaces:
+    parameters:
+      release:
+        type: boolean
+        default: false
+    working_directory: ~/openlineage/integration/spark-extension-interfaces
+    docker:
+      - image: cimg/openjdk:17.0
+    resource_class: "medium"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - attach_workspace:
+          at: ~/
+      - restore_cache:
+          keys:
+            - v1-spark-extension-interfaces-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-spark-extension-interfaces-{{ .Branch }}
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build
+      - run: ./gradlew --no-daemon --console=plain --info check
+      - run: |
+            # Get, then decode the GPG private key used to sign *.jar
+            export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+            export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+            export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+
+            ./gradlew --console=plain publishToMavenLocal --info
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - .m2/repository/io/openlineage/spark-extension-interfaces
+            - openlineage/integration/spark-extension-interfaces/build-cache
+            - openlineage/integration/spark-extension-interfaces/build
+      - save_cache:
+          key: v1-spark-extension-interfaces-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  build-integration-spark-extension-entrypoint:
+    parameters:
+      release:
+        type: boolean
+        default: false
+    working_directory: ~/openlineage/integration/spark-extension-entrypoint
+    docker:
+      - image: cimg/openjdk:17.0
+    resource_class: "medium"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - attach_workspace:
+          at: ~/
+      - restore_cache:
+          keys:
+            - v1-spark-extension-entrypoint-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-spark-extension-entrypoint-{{ .Branch }}
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build
+      - run: ./gradlew --no-daemon --console=plain --info check
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - .m2/repository/io/openlineage/spark-extension-entrypoint
+            - openlineage/integration/spark-extension-entrypoint/build-cache
+            - openlineage/integration/spark-extension-entrypoint/build
+      - save_cache:
+          key: v1-spark-extension-entrypoint-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  release-integration-spark-extension-interfaces:
+    working_directory: ~/openlineage/integration/spark-extension-interfaces
+    docker:
+      - image: cimg/openjdk:17.0
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - attach_workspace:
+          at: ~/
+      - publish_shadow_jar
+      - store_artifacts:
+          path: ./build/libs
+          destination: spark-extension-interfaces-artifacts
+      - save_cache:
+          key: v1-release-spark-extension-interfaces-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.m2
+
+  release-integration-spark-extension-entrypoint:
+    working_directory: ~/openlineage/integration/spark-extension-entrypoint
+    docker:
+      - image: cimg/openjdk:17.0
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - attach_workspace:
+          at: ~/
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+
+          ./gradlew --console=plain publish --info
+      - store_artifacts:
+          path: ./build/libs
+          destination: spark-extension-entrypoint-artifacts
+      - save_cache:
+          key: v1-release-spark-extension-spark-extension-entrypoint-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.m2
+
+  integration-test-databricks-integration-spark:
+    parameters:
+      spark-version:
+        type: string
+    working_directory: ~/openlineage/integration/spark
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+      JDK11_HOME: /usr/lib/jvm/java-11-openjdk-amd64
+    steps:
+      - *checkout_project_root
+      - when:
+          condition:
+            or:
+              - equal: [ enabled, << pipeline.parameters.databricks-test >> ]
+              - equal: [ active, << pipeline.parameters.nightly-run >> ]
+          steps:
+            - run:
+                name: Generate cache key
+                command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+            - restore_cache:
+                keys:
+                  - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+                  - v1-integration-spark-{{ .Branch }}
+            - run:
+                name: Java version Variable
+                command: |
+                  JAVA=8
+                  JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
+
+                  echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
+                  echo 'export JAVA_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
+                  echo 'export JAVAC_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
+                  echo "${JAVA}"
+                  echo "${JAVA_BIN}"
+                  echo "${JAVAC_BIN}"
+            - attach_workspace:
+                at: ~/
+            - run: |
+                sudo update-alternatives --set java ${JAVA_BIN}
+                sudo update-alternatives --set javac ${JAVAC_BIN}
+            - run: ./gradlew --console=plain shadowJar -x test
+            - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test   -Pspark.version=<< parameters.spark-version >> -PdatabricksHost=$DATABRICKS_HOST -PdatabricksToken=$DATABRICKS_TOKEN
+            - store_test_results:
+                path: app/build/test-results/databricksIntegrationTest
+            - store_artifacts:
+                path: app/build/reports/tests/databricksIntegrationTest
+                destination: test-report
+            - store_artifacts:
+                path: app/build/cluster-log4j.log
+                destination: cluster-log4j.log
+            - save_cache:
+                key: v1-databricks-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+                paths:
+                  - ~/.gradle
+
+  configurable-integration-test-spark:
+    working_directory: ~/openlineage/
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    steps:
+      - *checkout_project_root
+      - when:
+          condition:
+            equal: [ active, << pipeline.parameters.nightly-run >> ]
+          steps:
+            - restore_cache:
+                keys:
+                  - v1-configurable-integration-test
+            - run: ./integration/spark/cli/configurable-test.sh --spark ./integration/spark/cli/spark-conf.yml --test ./integration/spark/cli/tests
+            - run: ./integration/spark/cli/configurable-test.sh --spark ./integration/spark/cli/spark-conf-docker.yml --test ./integration/spark/cli/tests
+            - store_artifacts:
+                path: integration/spark/cli/runs
+                destination: test-report
+            - save_cache:
+                key: configurable-integration-test
+                paths:
+                  - ~/.gradle
+
+  jar-verification-spark:
+    working_directory: ~/openlineage/integration/spark
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - restore_cache:
+          keys:
+            - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-integration-spark-{{ .Branch }}
+      - run:
+          name: Java version Variable
+          command: |
+            JAVA=17
+
+            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
+            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
+
+            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
+            echo 'export JAVA_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
+            echo 'export JAVAC_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
+            echo "${JAVA}"
+            echo "${JAVA_BIN}"
+            echo "${JAVAC_BIN}"
+      - attach_workspace:
+          at: ~/
+      - run: |
+          sudo update-alternatives --set java ${JAVA_BIN}
+          sudo update-alternatives --set javac ${JAVAC_BIN}
+      - run: ./gradlew --no-daemon --console=plain clean jarVerification -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
+      - run: ./gradlew --no-daemon --console=plain clean jarVerification -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
+
+  slack-notify:
+    docker:
+      - image: 'cimg/base:stable'
+    steps:
+      - *checkout_project_root
+      - when:
+          condition:
+            equal: [ active, << pipeline.parameters.nightly-run >> ]
+          steps:
+            - slack/notify:
+                event: pass
+                template: basic_success_1
+            - slack/notify:
+                event: fail
+                template: basic_fail_1
+
+# FLINK
+
+  release-integration-flink:
+    working_directory: ~/openlineage/integration/flink
+    docker:
+      - image: cimg/openjdk:11.0
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - restore_cache:
+          keys:
+            - v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-release-client-java-{{ .Branch }}
+      - attach_workspace:
+          at: ~/
+      - publish_shadow_jar
+      - store_artifacts:
+          path: ./build/libs
+          destination: flink-client-artifacts
+
+  integration-test-integration-flink:
+    parameters:
+      flink-version:
+        type: string
+    working_directory: ~/openlineage/integration/flink
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - restore_cache:
+          keys:
+            - v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-integration-flink-{{ .Branch }}
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Java version Variable
+          command: |
+            JAVA=17
+
+            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
+            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
+            JAVA_BIN=$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java")
+            JAVAC_BIN=$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac")
+
+            echo "${JAVA}"
+            echo "${JAVA_BIN}"
+            echo "${JAVAC_BIN}"
+            echo "Setting default Java to ${JAVA_BIN}"
+
+            sudo update-alternatives --set java ${JAVA_BIN}
+            sudo update-alternatives --set javac ${JAVAC_BIN}
+      - run: chmod -R 777 data/iceberg/db
+      - run: ./gradlew --console=plain examples:stateful:build -Pflink.version=<< parameters.flink-version >>
+      - run: ./gradlew --no-daemon --console=plain integrationTest --i -Pflink.version=<< parameters.flink-version >>
+      - run:
+          when: on_fail
+          command: cat app/build/test-results/integrationTest/TEST-*.xml
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
+      - store_test_results:
+          path: app/build/test-results/integrationTest
+      - store_artifacts:
+          path: app/build/reports/tests/integrationTest
+          destination: test-report
+      - save_cache:
+          key: v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  build-integration-flink:
+    working_directory: ~/openlineage/integration/flink
+    docker:
+      - image: cimg/openjdk:11.0
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - restore_cache:
+          keys:
+            - v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-integration-flink-{{ .Branch }}
+      - attach_workspace:
+          at: ~/
+      - publish_shadow_jar_local
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - .m2/repository/io/openlineage/openlineage-flink
+            - openlineage/integration/flink/build-cache
+            - openlineage/integration/flink/build/libs
+      - store_artifacts:
+          path: build/libs
+          destination: libs
+
+  test-integration-flink:
+    parameters:
+      flink-version:
+        type: string
+    working_directory: ~/openlineage/integration/flink
+    docker:
+      - image: cimg/openjdk:11.0
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - restore_cache:
+          keys:
+            - v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-integration-flink-{{ .Branch }}
+      - attach_workspace:
+          at: ~/
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build check -Pflink.version=<< parameters.flink-version >>
+      - run:
+          when: on_fail
+          command: cat build/test-results/test/TEST-*.xml
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
+      - run: ./gradlew --console=plain javadoc
+      - store_test_results:
+          path: app/build/test-results/test
+      - store_artifacts:
+          path: app/build/reports/tests/test
+          destination: test-report
+      - save_cache:
+          key: v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  # REST
   publish-javadoc:
     working_directory: ~/openlineage/client/java
     docker:
-      - image: cimg/openjdk:11.0
+      - image: cimg/openjdk:17.0
     steps:
       - *checkout_project_root
       - when:
@@ -1086,7 +1099,7 @@ jobs:
   publish-spec:
     working_directory: ~/openlineage
     docker:
-      - image: cimg/base:2021.07
+      - image: cimg/base:2024.08
     steps:
       - *checkout_project_root
       - add_ssh_keys:
@@ -1106,7 +1119,7 @@ jobs:
   build-proxy-backend:
     working_directory: ~/openlineage/proxy/backend
     docker:
-      - image: cimg/openjdk:11.0
+      - image: cimg/openjdk:17.0
     steps:
       - *checkout_project_root
       - run:
@@ -1132,7 +1145,7 @@ jobs:
   build-image-proxy-backend:
     working_directory: ~/openlineage/proxy/backend
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2404:current
     steps:
       - *checkout_project_root
       - run: docker build --no-cache --tag "openlineage/proxy:${CIRCLE_SHA1}" .
@@ -1143,7 +1156,7 @@ jobs:
   release-proxy-backend:
     working_directory: ~/openlineage/proxy/backend
     docker:
-      - image: cimg/openjdk:11.0
+      - image: cimg/openjdk:17.0
     steps:
       - *checkout_project_root
       - run: |
@@ -1153,15 +1166,15 @@ jobs:
           export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
 
           # publish jar to maven local so it can be found by dependents
-          ./gradlew --console=plain publishToMavenLocal
+          ./gradlew --info --console=plain publishToMavenLocal
 
           # Publish *.jar
-          ./gradlew --console=plain publish
+          ./gradlew --info --console=plain publish
 
   release-docker-proxy-backend:
     working_directory: ~/openlineage/proxy/backend
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2404:current
     steps:
       - *checkout_project_root
       - run: ./docker/login.sh
@@ -1201,213 +1214,298 @@ jobs:
 
   always_run:
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2404:current
     steps:
       - run: echo "This steps always run."
 
   workflow_complete:
     working_directory: ~/openlineage
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2404:current
     steps:
       - run: echo "Complete"
 
-workflows:
-  release:
-    # Only trigger CI job on release (=X.Y.Z) with possible (rcX)
-    jobs:
-      - compile-integration-sql-java-linux:
-          matrix:
-            alias: compile-integration-sql-java-linux-x86
-            parameters:
-              image: [
-                "quay.io/pypa/manylinux2014_x86_64",
-              ]
-              resource_class: [ "medium" ]
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          context: release
-      - compile-integration-sql-java-linux:
-          matrix:
-            alias: compile-integration-sql-java-linux-arm
-            parameters:
-              image: [
-                "quay.io/pypa/manylinux2014_aarch64",
-              ]
-              resource_class: [ "arm.medium" ]
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          context: release
-      - compile-integration-sql-java-macos:
-          matrix:
-            alias: compile-integration-sql-java-macos-x86
-            parameters:
-              resource_class: [ "macos.m1.medium.gen1" ]
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          context: release
-      - release-client-java:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          context: release
-      - release-integration-spark:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          context: release
-          requires:
-            - release-client-java
-            - build-integration-sql-java
-      - release-integration-sql-java:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          context: release
-          requires:
-            - compile-integration-sql-java-linux-x86
-            - compile-integration-sql-java-linux-arm
-            - compile-integration-sql-java-macos-x86
-      - release-integration-spark-extension-interfaces:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          context: release
-          requires:
-            - release-client-java
-      - release-integration-flink:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          context: release
-          requires:
-            - release-client-java
-            - build-integration-sql-java
-      - release-proxy-backend:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          context: release
-      - release-docker-proxy-backend:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          context: release
-      - build-client-python:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-      - build-integration-common:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-      - build-integration-airflow:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          requires:
-            - build-integration-sql-x86
-            - build-integration-sql-arm
-            - build-integration-sql-macos
-      - build-integration-dbt:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-      - build-integration-dagster:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-      - build-integration-sql-java:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          requires:
-            - compile-integration-sql-java-linux-x86
-            - compile-integration-sql-java-linux-arm
-            - compile-integration-sql-java-macos-x86
-      - build-integration-sql:
-          matrix:
-            alias: build-integration-sql-x86
-            parameters:
-              image: [
-                "quay.io/pypa/manylinux2014_x86_64",
-                "quay.io/pypa/manylinux2014_i686",
-              ]
-              resource_class: [ "medium" ]
-              run_tests: [ false ]
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-      - build-integration-sql:
-          matrix:
-            alias: build-integration-sql-arm
-            parameters:
-              image: [
-                "quay.io/pypa/manylinux2014_aarch64",
-              ]
-              resource_class: [ "arm.medium" ]
-              run_tests: [ false ]
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-      - build-integration-sql-macos:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-      - release-python:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          context: release
-          requires:
-            - build-client-python
-            - build-integration-common
-            - build-integration-airflow
-            - build-integration-dbt
-            - build-integration-dagster
-            - build-integration-sql-x86
-            - build-integration-sql-arm
-            - build-integration-sql-macos
+#workflows:
+#  release:
+#    # Only trigger CI job on release (=X.Y.Z) with possible (rcX)
+#    jobs:
+#      - compile-integration-sql-java-linux:
+#          matrix:
+#            alias: compile-integration-sql-java-linux-x86
+#            parameters:
+#              image: [
+#                "quay.io/pypa/manylinux2014_x86_64",
+#              ]
+#              resource_class: [ "medium" ]
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#          context: release
+#      - compile-integration-sql-java-linux:
+#          matrix:
+#            alias: compile-integration-sql-java-linux-arm
+#            parameters:
+#              image: [
+#                "quay.io/pypa/manylinux2014_aarch64",
+#              ]
+#              resource_class: [ "arm.medium" ]
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#          context: release
+#      - compile-integration-sql-java-macos:
+#          matrix:
+#            alias: compile-integration-sql-java-macos-x86
+#            parameters:
+#              resource_class: [ "macos.m1.medium.gen1" ]
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#          context: release
+#      - build-client-java:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#          context: release
+#      - release-client-java:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#          context: release
+#      - release-integration-spark:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#          context: release
+#          requires:
+#            - build-client-java
+#            - build-integration-sql-java
+#      - release-integration-sql-java:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#          context: release
+#          requires:
+#            - build-integration-sql-java
+#      - release-integration-spark-extension-interfaces:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#          context: release
+#          requires:
+#            - build-client-java
+#      - release-integration-flink:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#          context: release
+#          requires:
+#            - build-client-java
+#            - build-integration-sql-java
+#      - release-proxy-backend:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#          context: release
+#      - release-docker-proxy-backend:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#          context: release
+#      - build-client-python:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#      - build-integration-common:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#      - build-integration-airflow:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#          requires:
+#            - build-integration-sql-python-x86
+#            - build-integration-sql-python-arm
+#            - build-integration-sql-python-macos
+#      - build-integration-dbt:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#      - build-integration-dagster:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#      - build-integration-sql-java:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#          requires:
+#            - compile-integration-sql-java-linux-x86
+#            - compile-integration-sql-java-linux-arm
+#            - compile-integration-sql-java-macos-x86
+#      - build-integration-sql-python:
+#          matrix:
+#            alias: build-integration-sql-python-x86
+#            parameters:
+#              image: [
+#                "quay.io/pypa/manylinux2014_x86_64",
+#                "quay.io/pypa/manylinux2014_i686",
+#              ]
+#              resource_class: [ "medium" ]
+#              run_tests: [ false ]
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#      - build-integration-sql-python:
+#          matrix:
+#            alias: build-integration-sql-python-arm
+#            parameters:
+#              image: [
+#                "quay.io/pypa/manylinux2014_aarch64",
+#              ]
+#              resource_class: [ "arm.medium" ]
+#              run_tests: [ false ]
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#      - build-integration-sql-python-macos:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#      - release-python:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#            branches:
+#              ignore: /.*/
+#          context: release
+#          requires:
+#            - build-client-python
+#            - build-integration-common
+#            - build-integration-airflow
+#            - build-integration-dbt
+#            - build-integration-dagster
+#            - build-integration-sql-python-x86
+#            - build-integration-sql-python-arm
+#            - build-integration-sql-python-macos
+#
+#  test-release:
+#    jobs:
+#      - compile-integration-sql-java-linux:
+#          matrix:
+#            alias: compile-integration-sql-java-linux-x86
+#            parameters:
+#              image: [
+#                "quay.io/pypa/manylinux2014_x86_64",
+#              ]
+#              resource_class: [ "medium" ]
+#          context: release
+#      - compile-integration-sql-java-linux:
+#          matrix:
+#            alias: compile-integration-sql-java-linux-arm
+#            parameters:
+#              image: [
+#                "quay.io/pypa/manylinux2014_aarch64",
+#              ]
+#              resource_class: [ "arm.medium" ]
+#          context: release
+#      - compile-integration-sql-java-macos:
+#          matrix:
+#            alias: compile-integration-sql-java-macos-x86
+#            parameters:
+#              resource_class: [ "macos.m1.medium.gen1" ]
+#          context: release
+#      - build-client-java:
+#          context: release
+#          release: true
+#      - release-client-java:
+#          context: release
+#          requires:
+#            - build-client-java
+#      - build-integration-spark:
+#          matrix:
+#            parameters:
+#              scala: [ "2.12", "2.13" ]
+#          context: release
+#          release: true
+#          requires:
+#            - build-client-java
+#            - build-integration-sql-java
+#            - build-integration-spark-extension-interfaces
+#            - build-integration-spark-extension-entrypoint
+#      - build-integration-sql-java:
+#          context: release
+#          requires:
+#            - compile-integration-sql-java-linux-x86
+#            - compile-integration-sql-java-linux-arm
+#            - compile-integration-sql-java-macos-x86
+#      - build-integration-spark-extension-interfaces:
+#          context: release
+#          release: true
+#          requires:
+#            - build-client-java
+#      - build-integration-spark-extension-entrypoint:
+#          context: release
+#          requires:
+#            - build-client-java
+#      - release-integration-spark:
+#          context: release
+#          requires:
+#            - build-integration-spark
+#      - release-integration-sql-java:
+#          context: release
+#          requires:
+#            - build-integration-sql-java
+#      - release-integration-spark-extension-interfaces:
+#          context: release
+#          requires:
+#            - build-client-java
+#            - build-integration-spark-extension-interfaces
+#      - release-integration-flink:
+#          context: release
+#          requires:
+#            - build-client-java
+#            - build-integration-sql-java
+#      - release-proxy-backend:
+#          context: release
