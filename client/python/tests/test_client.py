@@ -5,12 +5,11 @@ from __future__ import annotations
 import logging
 import os
 import re
-import uuid
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
-from openlineage.client.client import OpenLineageClient
+from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions
 from openlineage.client.run import (
     SCHEMA_URL,
     Dataset,
@@ -21,9 +20,14 @@ from openlineage.client.run import (
     RunEvent,
     RunState,
 )
+from openlineage.client.transport.http import HttpTransport
+from openlineage.client.transport.noop import NoopTransport
+from openlineage.client.uuid import generate_new_uuid
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+    from pytest_mock import MockerFixture
 
 
 def test_client_fails_with_wrong_event_type() -> None:
@@ -203,7 +207,7 @@ def test_client_filters_exact_job_name_events(
         factory.create.return_value = transport
         client = OpenLineageClient(factory=factory)
 
-        run = Run(runId=str(uuid.uuid4()))
+        run = Run(runId=str(generate_new_uuid()))
         event = RunEvent(
             eventType=RunState.START,
             eventTime="2021-11-03T10:53:52.427343",
@@ -231,3 +235,157 @@ def test_setting_ol_client_log_level() -> None:
         OpenLineageClient()
         assert parent_logger.getEffectiveLevel() == logging.CRITICAL
         assert logger.getEffectiveLevel() == logging.CRITICAL
+
+
+@patch.dict("os.environ", {})
+@patch("warnings.warn")
+def test_client_with_url_and_options(mock_warn) -> None:
+    timeout = 10
+    options = OpenLineageClientOptions(timeout=timeout, verify=True, api_key="xxx")
+    client = OpenLineageClient(url="http://example.com", options=options)
+    mock_warn.assert_any_call(
+        message="Initializing OpenLineageClient with url, options and session is deprecated.",
+        category=DeprecationWarning,
+        stacklevel=2,
+    )
+    assert client.transport.kind == HttpTransport.kind
+    assert client.transport.url == "http://example.com"
+    assert client.transport.timeout == timeout
+    assert client.transport.verify is True
+    assert client.transport.config.auth.api_key == "xxx"
+
+
+@patch.dict(
+    "os.environ",
+    {"OPENLINEAGE_URL": "http://example.com", "OPENLINEAGE_ENDPOINT": "v7", "OPENLINEAGE_API_KEY": "xxx"},
+)
+def test_init_with_openlineage_url_env_var_warning() -> None:
+    client = OpenLineageClient()
+    assert client.transport.kind == HttpTransport.kind
+    assert client.transport.url == "http://example.com"
+    assert client.transport.endpoint == "v7"
+    assert client.transport.config.auth.api_key == "xxx"
+
+
+@patch("warnings.warn")
+def test_from_environment_deprecation_warning(mock_warn) -> None:
+    OpenLineageClient.from_environment()
+    mock_warn.assert_called_once_with(
+        message="`OpenLineageClient.from_environment()` is deprecated. Use `OpenLineageClient()`.",
+        category=DeprecationWarning,
+        stacklevel=2,
+    )
+
+
+@patch.dict("os.environ", {"OPENLINEAGE_DISABLED": "true"})
+def test_client_disabled() -> None:
+    client = OpenLineageClient()
+    assert isinstance(client.transport, NoopTransport)
+
+
+def test_client_with_yaml_config(mocker: MockerFixture, root: Path) -> None:
+    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": str(root / "config" / "http.yml")})
+    client = OpenLineageClient()
+    assert client.transport.kind == HttpTransport.kind
+    assert client.transport.url == "http://localhost:5050"
+    assert client.transport.endpoint == "api/v1/lineage"
+    assert client.transport.config.auth.api_key == "random_token"
+
+
+def test_get_config_file_content(root: Path) -> None:
+    result = OpenLineageClient._get_config_file_content(str(root / "config" / "http.yml"))  # noqa: SLF001
+    assert result == {
+        "transport": {
+            "auth": {"apiKey": "random_token", "type": "api_key"},
+            "compression": "gzip",
+            "endpoint": "api/v1/lineage",
+            "type": "http",
+            "url": "http://localhost:5050",
+        }
+    }
+
+
+@patch("yaml.safe_load", return_value=None)
+def test_get_config_file_content_empty(mock_yaml) -> None:  # noqa: ARG001
+    result = OpenLineageClient._get_config_file_content("empty.yml")  # noqa: SLF001
+    assert result == {}
+
+
+@patch("os.path.isfile", return_value=False)
+def test_find_yaml_config_path_no_config_passed_and_no_files_found(mock_is_file) -> None:
+    result = OpenLineageClient._find_yaml_config_path()  # noqa: SLF001
+    mock_is_file.assert_any_call(os.path.join(os.getcwd(), "openlineage.yml"))
+    mock_is_file.assert_any_call(os.path.join(os.path.expanduser("~/.openlineage"), "openlineage.yml"))
+    assert result is None
+
+
+@patch("os.path.isfile", return_value=True)
+@patch("os.access", return_value=True)
+def test_find_yaml_config_path_cwd_found(mock_access, mock_is_file) -> None:  # noqa: ARG001
+    result = OpenLineageClient._find_yaml_config_path()  # noqa: SLF001
+    path = os.path.join(os.getcwd(), "openlineage.yml")
+    mock_is_file.assert_any_call(path)
+    assert result == path
+
+
+@patch("os.path.isfile", side_effect=[False, True])
+@patch("os.access", return_value=True)
+def test_find_yaml_config_path_user_home_found(mock_access, mock_is_file) -> None:  # noqa: ARG001
+    result = OpenLineageClient._find_yaml_config_path()  # noqa: SLF001
+    path = os.path.join(os.path.expanduser("~/.openlineage"), "openlineage.yml")
+    mock_is_file.assert_any_call(path)
+    assert result == path
+
+
+@patch("os.path.isfile", return_value=False)
+def test_find_yaml_config_path_checks_all_paths(mock_is_file, mocker: MockerFixture, root: Path) -> None:
+    path = str(root / "config" / "openlineage.yml")
+    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": path})
+    result = OpenLineageClient._find_yaml_config_path()  # noqa: SLF001
+    mock_is_file.assert_any_call(path)
+    mock_is_file.assert_any_call(os.path.join(os.getcwd(), "openlineage.yml"))
+    mock_is_file.assert_any_call(os.path.join(os.path.expanduser("~/.openlineage"), "openlineage.yml"))
+    assert result is None
+
+
+@patch("yaml.safe_load", return_value=None)
+def test_config_file_content_empty_file(mock_yaml) -> None:  # noqa: ARG001
+    assert OpenLineageClient().config == {}
+
+
+def test_config(mocker: MockerFixture, root: Path) -> None:
+    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": str(root / "config" / "http.yml")})
+    assert OpenLineageClient().config == {
+        "transport": {
+            "auth": {"apiKey": "random_token", "type": "api_key"},
+            "compression": "gzip",
+            "endpoint": "api/v1/lineage",
+            "type": "http",
+            "url": "http://localhost:5050",
+        }
+    }
+
+
+@patch.dict(
+    "os.environ",
+    {"OPENLINEAGE_URL": "http://example.com", "OPENLINEAGE_ENDPOINT": "v7", "OPENLINEAGE_API_KEY": "xxx"},
+)
+def test_http_transport_from_env_variables() -> None:
+    transport = OpenLineageClient._http_transport_from_env_variables()  # noqa: SLF001
+    assert transport.kind == HttpTransport.kind
+    assert transport.url == "http://example.com"
+    assert transport.endpoint == "v7"
+    assert transport.config.auth.api_key == "xxx"
+
+
+def test_http_transport_from_url_no_options() -> None:
+    timeout = 10
+    options = OpenLineageClientOptions(timeout=timeout, verify=True, api_key="xxx")
+    transport = OpenLineageClient._http_transport_from_url(  # noqa: SLF001
+        url="http://example.com", options=options, session=None
+    )
+    assert transport.kind == HttpTransport.kind
+    assert transport.url == "http://example.com"
+    assert transport.timeout == timeout
+    assert transport.verify is True
+    assert transport.config.auth.api_key == "xxx"

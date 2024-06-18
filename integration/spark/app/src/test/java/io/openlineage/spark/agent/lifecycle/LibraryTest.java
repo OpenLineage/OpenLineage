@@ -129,6 +129,11 @@ class LibraryTest {
     assertThat(first.getInputs().get(0).getName()).endsWith("test_data");
     assertThat(first.getEventType()).isEqualTo(EventType.START);
 
+    assertThat(first.getJob().getFacets().getJobType())
+        .hasFieldOrPropertyWithValue("jobType", "RDD_JOB")
+        .hasFieldOrPropertyWithValue("processingType", "BATCH")
+        .hasFieldOrPropertyWithValue("integration", "SPARK");
+
     // verify second job event
     RunEvent second = events.get(2);
 

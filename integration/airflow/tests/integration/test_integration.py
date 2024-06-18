@@ -13,7 +13,7 @@ from typing import Dict, List
 import psycopg2
 import pytest
 import requests
-from openlineage.client.run import RunState
+from openlineage.client.event_v2 import RunState
 from openlineage.common.test import match, setup_jinja
 from openlineage.common.utils import get_from_nullable_chain
 from packaging.version import Version
@@ -87,29 +87,11 @@ params = [
         ),
     ),
     ("source_code_dag", "requests/source_code.json", True),
-    pytest.param(
-        "default_extractor_dag",
-        "requests/default_extractor.json",
-        True,
-        marks=pytest.mark.skipif(
-            not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"),  # both extract and extract_on_complete
-            reason="Airflow < 2.3.0",  # run on 2.3+
-        ),
-    ),
+    pytest.param("default_extractor_dag", "requests/default_extractor.json", True),
     ("custom_extractor", "requests/custom_extractor.json", True),
     ("unknown_operator_dag", "requests/unknown_operator.json", True),
-    pytest.param(
-        "secrets",
-        "requests/secrets.json",
-        True,
-        marks=pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.1.0"), reason="Airflow < 2.1.0"),
-    ),
-    pytest.param(
-        "mysql_orders_popular_day_of_week",
-        "requests/mysql.json",
-        True,
-        marks=pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.2.4"), reason="Airflow < 2.2.4"),
-    ),
+    pytest.param("secrets", "requests/secrets.json", True),
+    pytest.param("mysql_orders_popular_day_of_week", "requests/mysql.json", True),
     pytest.param(
         "trino_orders_popular_day_of_week",
         "requests/trino.json",
@@ -152,12 +134,7 @@ params = [
         False,
         marks=pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.4.0"), reason="Airflow < 2.4.0"),
     ),
-    pytest.param(
-        "task_group_dag",
-        "requests/task_group.json",
-        False,
-        marks=pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"),
-    ),
+    pytest.param("task_group_dag", "requests/task_group.json", False),
     ("sftp_dag", "requests/sftp.json", True),
     pytest.param(
         "ftp_dag",
@@ -165,18 +142,8 @@ params = [
         True,
         marks=pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.5.0"), reason="Airflow < 2.5.0"),
     ),
-    pytest.param(
-        "s3copy_dag",
-        "requests/s3copy.json",
-        True,
-        marks=pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"),
-    ),
-    pytest.param(
-        "s3transform_dag",
-        "requests/s3transform.json",
-        True,
-        marks=pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"),
-    ),
+    pytest.param("s3copy_dag", "requests/s3copy.json", True),
+    pytest.param("s3transform_dag", "requests/s3transform.json", True),
 ]
 
 
@@ -405,18 +372,8 @@ def test_integration(dag_id, request_path, check_duplicates, airflow_db_conn):
 @pytest.mark.parametrize(
     "dag_id, request_path, check_duplicates",
     [
-        pytest.param(
-            "async_dag",
-            "requests/failing/async.json",
-            True,
-            marks=pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"),
-        ),
-        pytest.param(
-            "bash_dag",
-            "requests/failing/bash.json",
-            True,
-            marks=pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"),
-        ),
+        pytest.param("async_dag", "requests/failing/async.json", True),
+        pytest.param("bash_dag", "requests/failing/bash.json", True),
     ],
 )
 def test_failing_dag(dag_id, request_path, check_duplicates, airflow_db_conn):
@@ -488,7 +445,6 @@ def test_integration_ordered(dag_id, request_dir: str, skip_jobs: List[str], air
         pytest.param(
             "mysql_orders_popular_day_of_week",
             "requests/airflow_run_facet/mysql.json",
-            marks=pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.2.4"), reason="Airflow < 2.2.4"),
         )
     ],
 )
@@ -518,7 +474,7 @@ def test_airflow_mapped_task_facet(airflow_db_conn):
     started_events = [event for event in mapped_events if event["eventType"] == "START"]
     assert len(started_events) == 3
     assert started_events[0]["job"]["name"] == f"{dag_id}.{task_id}"
-    assert set([event["job"]["facets"]["sourceCode"]["source"] for event in started_events]) == set(
+    assert set([event["job"]["facets"]["sourceCode"]["sourceCode"] for event in started_events]) == set(
         ["echo 1", "echo 2", "echo 3"]
     )
     assert sorted([event["run"]["facets"]["airflow_mappedTask"]["mapIndex"] for event in started_events]) == [

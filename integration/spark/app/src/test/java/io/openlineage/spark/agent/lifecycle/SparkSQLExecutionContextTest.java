@@ -63,22 +63,23 @@ class SparkSQLExecutionContextTest {
   }
 
   @BeforeEach
-  void setup() {
+  void setup(SparkSession spark) {
     when(olContext.getQueryExecution()).thenReturn(Optional.of(queryExecution));
+    when(olContext.getSparkContext()).thenReturn(Optional.of(spark.sparkContext()));
+    when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
     when(olContext.getOpenLineage()).thenReturn(openLineage);
     when(olContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
     when(olContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
-    when(eventEmitter.getOverriddenAppName()).thenReturn(Optional.of("app-name"));
+    when(olContext.getRunUuid())
+        .thenReturn(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b"));
+
+    when(eventEmitter.getOverriddenAppName()).thenReturn(Optional.of("test-rdd"));
     when(queryExecution.executedPlan().nodeName()).thenReturn("some-node-name");
 
     when(eventEmitter.getJobNamespace()).thenReturn("ns_name");
-    when(eventEmitter.getParentJobName()).thenReturn(Optional.of("parent_name"));
-    when(eventEmitter.getParentJobNamespace()).thenReturn(Optional.of("parent_namespace"));
-    when(eventEmitter.getParentRunId())
-        .thenReturn(Optional.of(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b")));
     when(eventEmitter.getApplicationRunId())
         .thenReturn(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
-    when(eventEmitter.getApplicationJobName()).thenReturn("test_rdd");
+    when(eventEmitter.getApplicationJobName()).thenReturn("app-name");
   }
 
   @Test
@@ -86,8 +87,6 @@ class SparkSQLExecutionContextTest {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
-      when(olContext.getSparkContext()).thenReturn(spark.sparkContext());
-      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
     }
 
     context.start(mock(SparkListenerSQLExecutionStart.class));
@@ -105,8 +104,6 @@ class SparkSQLExecutionContextTest {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
-      when(olContext.getSparkContext()).thenReturn(spark.sparkContext());
-      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
 
       context.start(mock(SparkListenerJobStart.class));
       context.start(mock(SparkListenerSQLExecutionStart.class));
@@ -124,8 +121,6 @@ class SparkSQLExecutionContextTest {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
-      when(olContext.getSparkContext()).thenReturn(spark.sparkContext());
-      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
 
       context.start(mock(SparkListenerJobStart.class));
       context.start(mock(SparkListenerSQLExecutionStart.class));
@@ -145,8 +140,6 @@ class SparkSQLExecutionContextTest {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
-      when(olContext.getSparkContext()).thenReturn(spark.sparkContext());
-      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
 
       context.start(mock(SparkListenerJobStart.class));
       context.start(mock(SparkListenerSQLExecutionStart.class));
@@ -166,8 +159,6 @@ class SparkSQLExecutionContextTest {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
-      when(olContext.getSparkContext()).thenReturn(spark.sparkContext());
-      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
 
       context.start(mock(SparkListenerJobStart.class));
       context.end(mock(SparkListenerJobEnd.class));
@@ -187,8 +178,6 @@ class SparkSQLExecutionContextTest {
     when(jobEnd.jobResult()).thenReturn(mock(JobFailed.class));
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
-      when(olContext.getSparkContext()).thenReturn(spark.sparkContext());
-      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
 
       context.start(mock(SparkListenerJobStart.class));
       context.end(jobEnd);
@@ -206,8 +195,6 @@ class SparkSQLExecutionContextTest {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
-      when(olContext.getSparkContext()).thenReturn(spark.sparkContext());
-      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
 
       context.start(mock(SparkListenerJobStart.class));
       context.start(mock(SparkListenerSQLExecutionStart.class));
@@ -219,7 +206,7 @@ class SparkSQLExecutionContextTest {
     for (RunEvent event : lineageEvent.getAllValues()) {
       OpenLineage.JobTypeJobFacet jobType = event.getJob().getFacets().getJobType();
       assertThat(jobType).isNotNull();
-      assertThat(jobType.getJobType()).isEqualTo("JOB");
+      assertThat(jobType.getJobType()).isEqualTo("SQL_JOB");
       assertThat(jobType.getIntegration()).isEqualTo("SPARK");
       assertThat(jobType.getProcessingType()).isEqualTo("BATCH");
     }
@@ -230,8 +217,6 @@ class SparkSQLExecutionContextTest {
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
       when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
-      when(olContext.getSparkContext()).thenReturn(spark.sparkContext());
-      when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
       when(queryExecution.optimizedPlan().isStreaming()).thenReturn(true);
 
       context.start(mock(SparkListenerJobStart.class));
@@ -244,9 +229,54 @@ class SparkSQLExecutionContextTest {
     for (RunEvent event : lineageEvent.getAllValues()) {
       OpenLineage.JobTypeJobFacet jobType = event.getJob().getFacets().getJobType();
       assertThat(jobType).isNotNull();
-      assertThat(jobType.getJobType()).isEqualTo("JOB");
+      assertThat(jobType.getJobType()).isEqualTo("SQL_JOB");
       assertThat(jobType.getIntegration()).isEqualTo("SPARK");
       assertThat(jobType.getProcessingType()).isEqualTo("STREAMING");
+    }
+  }
+
+  @Test
+  void testRunAndJobAreSet(SparkSession spark) {
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.start(mock(SparkListenerJobStart.class));
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+      context.end(mock(SparkListenerJobEnd.class));
+    }
+
+    for (RunEvent runEvent : lineageEvent.getAllValues()) {
+      OpenLineage.Run run = runEvent.getRun();
+      OpenLineage.Job job = runEvent.getJob();
+      assertThat(job.getName()).isEqualTo("test_rdd.some_node_name");
+      assertThat(job.getNamespace()).isEqualTo("ns_name");
+      assertThat(run.getRunId()).isEqualTo(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b"));
+    }
+  }
+
+  @Test
+  void testParentRunFacetIsSet(SparkSession spark) {
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+      when(olContext.getSparkContext()).thenReturn(Optional.of(spark.sparkContext()));
+
+      context.start(mock(SparkListenerJobStart.class));
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+      context.end(mock(SparkListenerJobEnd.class));
+    }
+
+    for (RunEvent runEvent : lineageEvent.getAllValues()) {
+      OpenLineage.ParentRunFacet parentRunFacet = runEvent.getRun().getFacets().getParent();
+      OpenLineage.ParentRunFacetJob parentJob = parentRunFacet.getJob();
+      OpenLineage.ParentRunFacetRun parentRun = parentRunFacet.getRun();
+      assertThat(parentJob.getName()).isEqualTo("app_name");
+      assertThat(parentJob.getNamespace()).isEqualTo("ns_name");
+      assertThat(parentRun.getRunId())
+          .isEqualTo(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
     }
   }
 }

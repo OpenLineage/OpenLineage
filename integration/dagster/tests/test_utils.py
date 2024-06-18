@@ -4,6 +4,7 @@
 import uuid
 from unittest.mock import patch
 
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.dagster.utils import (
     get_event_log_records,
     get_repository_name,
@@ -24,7 +25,7 @@ def test_to_utc_iso_8601():
 
 def test_make_step_run_id():
     run_id = make_step_run_id()
-    assert uuid.UUID(run_id).version == 4
+    assert uuid.UUID(run_id).version == 7
 
 
 def test_make_step_job_name():
@@ -49,7 +50,7 @@ def test_get_event_log_records(mock_instance):
 @patch("openlineage.dagster.utils.DagsterInstance")
 def test_get_repository_name(mock_instance):
     expected_repo = "test_repo"
-    pipeline_run_id = str(uuid.uuid4())
+    pipeline_run_id = str(generate_new_uuid())
     pipeline_run = make_pipeline_run_with_external_pipeline_origin(expected_repo)
     mock_instance.get_run_by_id.return_value = pipeline_run
     actual_repo = get_repository_name(mock_instance, pipeline_run_id)

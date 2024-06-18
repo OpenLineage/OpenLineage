@@ -18,10 +18,13 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URI;
 import java.util.List;
+import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.TableIdentifier$;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat$;
+import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.CreateDataSourceTableAsSelectCommand;
@@ -43,7 +46,9 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
 
   @BeforeEach
   public void setUp() {
-    when(session.sparkContext()).thenReturn(mock(SparkContext.class));
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(sparkContext.getConf()).thenReturn(new SparkConf());
+    when(session.sparkContext()).thenReturn(sparkContext);
   }
 
   @Test
@@ -92,5 +97,18 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
         outputDataset.getFacets().getLifecycleStateChange().getLifecycleStateChange());
     assertEquals("directory", outputDataset.getName());
     assertEquals("s3://bucket", outputDataset.getNamespace());
+  }
+
+  @Test
+  void testJobNameSuffix() {
+    CreateDataSourceTableAsSelectCommandVisitor visitor =
+        new CreateDataSourceTableAsSelectCommandVisitor(mock(OpenLineageContext.class));
+    CreateDataSourceTableAsSelectCommand command = mock(CreateDataSourceTableAsSelectCommand.class);
+
+    CatalogTable catalogTable = mock(CatalogTable.class);
+    when(command.table()).thenReturn(catalogTable);
+    when(catalogTable.identifier()).thenReturn(new TableIdentifier("table", Option.apply("db")));
+
+    assertThat(visitor.jobNameSuffix(command)).isPresent().get().isEqualTo("db_table");
   }
 }

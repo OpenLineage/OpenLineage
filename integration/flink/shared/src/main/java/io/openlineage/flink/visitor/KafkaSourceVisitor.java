@@ -8,7 +8,6 @@ package io.openlineage.flink.visitor;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.flink.api.OpenLineageContext;
-import io.openlineage.flink.utils.AvroSchemaUtils;
 import io.openlineage.flink.utils.KafkaUtils;
 import io.openlineage.flink.visitor.wrapper.KafkaSourceWrapper;
 import java.util.Collections;
@@ -34,7 +33,7 @@ public class KafkaSourceVisitor extends Visitor<OpenLineage.InputDataset> {
   @Override
   public List<OpenLineage.InputDataset> apply(Object kafkaSource) {
     try {
-      KafkaSourceWrapper wrapper = KafkaSourceWrapper.of((KafkaSource<?>) kafkaSource);
+      KafkaSourceWrapper wrapper = KafkaSourceWrapper.of((KafkaSource<?>) kafkaSource, context);
       List<String> topics = wrapper.getTopics();
       Properties properties = wrapper.getProps();
 
@@ -48,12 +47,7 @@ public class KafkaSourceVisitor extends Visitor<OpenLineage.InputDataset> {
                     inputDataset().getDatasetFacetsBuilder();
                 // The issue here is that we assign dataset a schema that we're trying to read with.
                 // The read schema may be in mismatch with real dataset schema.
-                wrapper
-                    .getAvroSchema()
-                    .map(
-                        schema ->
-                            datasetFacetsBuilder.schema(
-                                AvroSchemaUtils.convert(context.getOpenLineage(), schema)));
+                wrapper.getSchemaFacet().map(facet -> datasetFacetsBuilder.schema(facet));
                 return inputDataset().getDataset(di, datasetFacetsBuilder);
               })
           .collect(Collectors.toList());

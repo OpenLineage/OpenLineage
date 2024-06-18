@@ -466,7 +466,16 @@ def redact_with_exclusions(source: Any):
                     dict_key: _redact(subval, name=dict_key, depth=(depth + 1))
                     for dict_key, subval in item.items()
                 }
-            elif is_dataclass(item) or (is_json_serializable(item) and hasattr(item, "__dict__")):
+            if attr.has(type(item)):
+                for dict_key, subval in attr.asdict(item, recurse=False).items():
+                    if _is_name_redactable(dict_key, item):
+                        setattr(
+                            item,
+                            dict_key,
+                            _redact(subval, name=dict_key, depth=(depth + 1)),
+                        )
+                return item
+            if is_json_serializable(item) and hasattr(item, "__dict__"):
                 for dict_key, subval in item.__dict__.items():
                     if _is_name_redactable(dict_key, item):
                         setattr(
@@ -495,10 +504,6 @@ def redact_with_exclusions(source: Any):
             return item
 
     return _redact(source, name=None, depth=0)
-
-
-def is_dataclass(item):
-    return getattr(item.__class__, "__attrs_attrs__", None) is not None
 
 
 def is_json_serializable(item):

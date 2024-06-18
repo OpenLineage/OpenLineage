@@ -4,8 +4,8 @@
 from typing import Optional, Tuple, cast
 from urllib.parse import urlparse
 
-from openlineage.client.facet import SchemaDatasetFacet, SchemaField
-from openlineage.client.run import Dataset
+from openlineage.client.event_v2 import Dataset
+from openlineage.client.facet_v2 import schema_dataset
 
 from airflow.lineage.entities import File, Table
 
@@ -32,9 +32,9 @@ def convert_to_dataset(obj):
             namespace=obj.cluster,
             name=f"{obj.database}.{obj.name}",
             facets={
-                "schema": SchemaDatasetFacet(
+                "schema": schema_dataset.SchemaDatasetFacet(
                     fields=[
-                        SchemaField(
+                        schema_dataset.SchemaDatasetFacetFields(
                             name=column.name,
                             type=column.data_type,
                             description=column.description,

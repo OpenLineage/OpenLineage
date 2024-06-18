@@ -5,7 +5,7 @@ from typing import List, Optional
 from urllib.parse import urlparse
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
-from openlineage.client.run import Dataset
+from openlineage.client.event_v2 import Dataset
 
 
 class S3CopyObjectExtractor(BaseExtractor):

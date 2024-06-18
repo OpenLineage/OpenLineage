@@ -4,24 +4,27 @@
 import collections
 import datetime
 import logging
-import uuid
 from abc import abstractmethod
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import attr
-from openlineage.client.facet import (
-    Assertion,
+from openlineage.client.event_v2 import Dataset, InputDataset, Job, OutputDataset, Run, RunEvent, RunState
+from openlineage.client.facet_v2 import (
     BaseFacet,
-    DataQualityAssertionsDatasetFacet,
-    DataSourceDatasetFacet,
-    OutputStatisticsOutputDatasetFacet,
-    ParentRunFacet,
-    SchemaDatasetFacet,
-    SchemaField,
-    SqlJobFacet,
+    DatasetFacet,
+    InputDatasetFacet,
+    JobFacet,
+    OutputDatasetFacet,
+    data_quality_assertions_dataset,
+    datasource_dataset,
+    documentation_dataset,
+    output_statistics_output_dataset,
+    parent_run,
+    schema_dataset,
+    sql_job,
 )
-from openlineage.client.run import Dataset, Job, OutputDataset, Run, RunEvent, RunState
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.snowflake import fix_account_name
 from openlineage.common.schema import GITHUB_LOCATION
 from openlineage.common.utils import get_from_multiple_chains, get_from_nullable_chain
@@ -36,6 +39,7 @@ class Adapter(Enum):
     POSTGRES = "postgres"
     DATABRICKS = "databricks"
     SQLSERVER = "sqlserver"
+    DREMIO = "dremio"
 
     @staticmethod
     def adapters() -> str:
@@ -72,7 +76,7 @@ class DbtRun:
     output: Optional[Dataset] = attr.ib()
     job_name: str = attr.ib()
     namespace: str = attr.ib()
-    run_id: str = attr.ib(factory=lambda: str(uuid.uuid4()))
+    run_id: str = attr.ib(factory=lambda: str(generate_new_uuid()))
 
 
 @attr.s
@@ -122,8 +126,11 @@ class ParentRunMetadata:
     job_name: str = attr.ib()
     job_namespace: str = attr.ib()
 
-    def to_openlineage(self) -> ParentRunFacet:
-        return ParentRunFacet.create(runId=self.run_id, name=self.job_name, namespace=self.job_namespace)
+    def to_openlineage(self) -> parent_run.ParentRunFacet:
+        return parent_run.ParentRunFacet(
+            run=parent_run.Run(runId=self.run_id),
+            job=parent_run.Job(namespace=self.job_namespace, name=self.job_name),
+        )
 
 
 @attr.s
@@ -144,6 +151,8 @@ class DbtArtifactProcessor:
         job_namespace: str,
         skip_errors: bool = False,
         logger: Optional[logging.Logger] = None,
+        models: Optional[Sequence[str]] = None,
+        selector: Optional[str] = None,
     ):
         self.producer = producer
         self._dbt_run_metadata: Optional[ParentRunMetadata] = None
@@ -154,6 +163,8 @@ class DbtArtifactProcessor:
         self.skip_errors = skip_errors
         self.run_metadata = None
         self.command = None
+        self.models = models or []
+        self.selector = selector
 
     @property
     def dbt_run_metadata(self):
@@ -245,7 +256,7 @@ class DbtArtifactProcessor:
                         )
                     )
 
-            run_id = str(uuid.uuid4())
+            run_id = str(generate_new_uuid())
             if name.startswith("snapshot."):
                 job_name = (
                     f"{output_node['database']}.{output_node['schema']}"
@@ -264,9 +275,9 @@ class DbtArtifactProcessor:
             else:
                 sql = output_node["compiled_sql"]
 
-            job_facets = {}
+            job_facets: Dict[str, JobFacet] = {}
             if sql:
-                job_facets["sql"] = SqlJobFacet(sql)
+                job_facets["sql"] = sql_job.SQLJobFacet(sql)
 
             events.add(
                 self.to_openlineage_events(
@@ -301,9 +312,13 @@ class DbtArtifactProcessor:
             if len(assertions[name]) == 0:
                 continue
 
-            assertion_facet = DataQualityAssertionsDatasetFacet(assertions=assertions[name])
+            assertion_facet = data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet(
+                assertions=assertions[name]
+            )
 
-            namespace, name, _ = self.extract_dataset_data(ModelNode(node), assertion_facet, has_facets=False)
+            namespace, name, _, _ = self.extract_dataset_data(
+                ModelNode(node), assertion_facet, has_facets=False
+            )
 
             job_name = (
                 f"{node['database']}.{node['schema']}."
@@ -311,7 +326,8 @@ class DbtArtifactProcessor:
                 + (".build.test" if self.command == "build" else ".test")
             )
 
-            run_id = str(uuid.uuid4())
+            run_id = str(generate_new_uuid())
+            dataset_facets: Dict[str, InputDatasetFacet] = {"dataQualityAssertions": assertion_facet}
             events.add(
                 self.to_openlineage_events(
                     "success",
@@ -320,10 +336,12 @@ class DbtArtifactProcessor:
                     self.get_run(run_id),
                     Job(self.job_namespace, job_name),
                     [
-                        Dataset(
-                            namespace,
-                            name,
-                            facets={"dataQualityAssertions": assertion_facet},
+                        InputDataset(
+                            namespace=namespace,
+                            name=name,
+                            inputFacets=dataset_facets,
+                            # TODO: remove this next release
+                            facets=dataset_facets,  # type: ignore
                         )
                     ],
                     None,
@@ -331,7 +349,9 @@ class DbtArtifactProcessor:
             )
         return events
 
-    def parse_assertions(self, context: DbtRunContext, nodes: Dict) -> Dict[str, List[Assertion]]:
+    def parse_assertions(
+        self, context: DbtRunContext, nodes: Dict
+    ) -> Dict[str, List[data_quality_assertions_dataset.Assertion]]:
         assertions = collections.defaultdict(list)
         for run in context.run_results["results"]:
             if not run["unique_id"].startswith("test."):
@@ -344,7 +364,7 @@ class DbtArtifactProcessor:
                     model_node = node
 
             assertions[model_node].append(
-                Assertion(
+                data_quality_assertions_dataset.Assertion(
                     assertion=test_node["test_metadata"]["name"],
                     success=True if run["status"] == "pass" else False,
                     column=get_from_nullable_chain(test_node["test_metadata"], ["kwargs", "column_name"]),
@@ -370,8 +390,8 @@ class DbtArtifactProcessor:
         completed_at: str,
         run: Run,
         job: Job,
-        inputs: List[Dataset],
-        output: Optional[Dataset],
+        inputs: List[InputDataset],
+        output: Optional[OutputDataset],
     ) -> Optional[DbtRunResult]:
         start = RunEvent(
             eventType=RunState.START,
@@ -415,15 +435,14 @@ class DbtArtifactProcessor:
     def node_to_dataset(
         self,
         node: ModelNode,
-        assertions: Optional[DataQualityAssertionsDatasetFacet] = None,
         has_facets: bool = False,
     ) -> Dataset:
-        name, namespace, facets = self.extract_dataset_data(node, assertions, has_facets)
-        return Dataset(name, namespace, facets)
+        namespace, name, facets, _ = self.extract_dataset_data(node, None, has_facets)
+        return Dataset(name=name, namespace=namespace, facets=facets)
 
     def node_to_output_dataset(self, node: ModelNode, has_facets: bool = False) -> OutputDataset:
-        name, namespace, facets = self.extract_dataset_data(node, None, has_facets)
-        output_facets = {}
+        namespace, name, facets, _ = self.extract_dataset_data(node, None, has_facets)
+        output_facets: Dict[str, OutputDatasetFacet] = {}
         if has_facets and node.catalog_node:
             bytes = get_from_multiple_chains(
                 node.catalog_node,
@@ -451,28 +470,37 @@ class DbtArtifactProcessor:
             if rows:
                 rows = int(rows)
 
-                output_facets["outputStatistics"] = OutputStatisticsOutputDatasetFacet(
+                output_facets[
+                    "outputStatistics"
+                ] = output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
                     rowCount=rows, size=bytes
                 )
-        return OutputDataset(name, namespace, facets, output_facets)
+        return OutputDataset(name=name, namespace=namespace, facets=facets, outputFacets=output_facets)
 
     def extract_dataset_data(
         self,
         node: ModelNode,
-        assertions: Optional[DataQualityAssertionsDatasetFacet],
+        assertions: Optional[data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet],
         has_facets: bool = False,
-    ) -> Tuple[str, str, Dict]:
+    ) -> Tuple[str, str, Dict, Dict]:
+        facets: Dict[str, DatasetFacet]
+        input_facets: Dict[str, InputDatasetFacet] = {}
         if has_facets:
             facets = {
-                "dataSource": DataSourceDatasetFacet(name=self.dataset_namespace, uri=self.dataset_namespace),
-                "schema": SchemaDatasetFacet(
+                "dataSource": datasource_dataset.DatasourceDatasetFacet(
+                    name=self.dataset_namespace, uri=self.dataset_namespace
+                ),
+                "schema": schema_dataset.SchemaDatasetFacet(
                     fields=self.extract_metadata_fields(node.metadata_node["columns"].values())
+                ),
+                "documentation": documentation_dataset.DocumentationDatasetFacet(
+                    description=node.metadata_node["description"]
                 ),
             }
             if assertions:
-                facets["dataQualityAssertions"] = assertions
+                input_facets["dataQualityAssertions"] = assertions
             if node.catalog_node:
-                facets["schema"] = SchemaDatasetFacet(
+                facets["schema"] = schema_dataset.SchemaDatasetFacet(
                     fields=self.extract_catalog_fields(
                         node.catalog_node["columns"].values(),
                         node.metadata_node["columns"],
@@ -486,10 +514,11 @@ class DbtArtifactProcessor:
             f"{node.metadata_node['schema']}."
             f"{node.metadata_node['name']}",
             facets,
+            input_facets,
         )
 
     @staticmethod
-    def extract_metadata_fields(columns: List[Dict]) -> List[SchemaField]:
+    def extract_metadata_fields(columns: List[Dict]) -> List[schema_dataset.SchemaDatasetFacetFields]:
         """
         Extract table field info from metadata's node column info
         Should be used only in the lack of catalog's presence, as there's less
@@ -502,11 +531,17 @@ class DbtArtifactProcessor:
                 of_type = field["data_type"]
             if "description" in field and field["description"] is not None:
                 description = field["description"]
-            fields.append(SchemaField(name=field["name"], type=of_type or "", description=description))
+            fields.append(
+                schema_dataset.SchemaDatasetFacetFields(
+                    name=field["name"], type=of_type or "", description=description
+                )
+            )
         return fields
 
     @staticmethod
-    def extract_catalog_fields(columns: List[Dict], metadata_columns: Dict) -> List[SchemaField]:
+    def extract_catalog_fields(
+        columns: List[Dict], metadata_columns: Dict
+    ) -> List[schema_dataset.SchemaDatasetFacetFields]:
         """Extract table field info from catalog's node column info"""
         fields = []
         for field in columns:
@@ -516,7 +551,9 @@ class DbtArtifactProcessor:
                 type = field["type"]
             description = get_from_nullable_chain(metadata_columns, [name, "description"])
             assert isinstance(type, str)
-            fields.append(SchemaField(name=name, type=type, description=description))
+            fields.append(
+                schema_dataset.SchemaDatasetFacetFields(name=name, type=type, description=description)
+            )
         return fields
 
     def extract_adapter_type(self, profile: Dict):
@@ -544,6 +581,8 @@ class DbtArtifactProcessor:
             return f"databricks://{profile['host']}"
         elif self.adapter_type == Adapter.SQLSERVER:
             return f"mssql://{profile['server']}:{profile['port']}"
+        elif self.adapter_type == Adapter.DREMIO:
+            return f"dremio://{profile['software_host']}:{profile['port']}"
         elif self.adapter_type == Adapter.SPARK:
             port = ""
 
@@ -569,12 +608,12 @@ class DbtArtifactProcessor:
             )
 
     def get_run(self, run_id: str) -> Run:
+        run_facets = {"dbt_version": self.dbt_version_facet()}
+        if self._dbt_run_metadata:
+            run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
         return Run(
             runId=run_id,
-            facets={
-                "parent": self._dbt_run_metadata.to_openlineage() if self._dbt_run_metadata else None,
-                "dbt_version": self.dbt_version_facet(),
-            },
+            facets=run_facets,
         )
 
     def dbt_version_facet(self):

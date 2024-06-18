@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 
 import aiohttp
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
-from openlineage.client.facet import ErrorMessageRunFacet
+from openlineage.client.facet_v2 import error_message_run
 from openlineage.common.provider.dbt import DbtCloudArtifactProcessor, ParentRunMetadata
 
 from airflow.hooks.base import BaseHook
@@ -45,7 +45,7 @@ class DbtCloudExtractor(BaseExtractor):
 
         except Exception as e:
             self.log.exception("Exception has occurred in extract()")
-            error = ErrorMessageRunFacet(str(e), "python")
+            error = error_message_run.ErrorMessageRunFacet(str(e), "python")
             error.stackTrace = traceback.format_exc()
             run_facets["errorMessage"] = error
             raise Exception(e)

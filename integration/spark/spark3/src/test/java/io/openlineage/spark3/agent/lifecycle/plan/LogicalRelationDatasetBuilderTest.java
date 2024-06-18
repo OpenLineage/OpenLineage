@@ -63,7 +63,7 @@ class LogicalRelationDatasetBuilderTest {
   void setup() {
     when(openLineageContext.getOpenLineage())
         .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
-    when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
     when(openLineageContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
     when(facet.getDatasetVersion()).thenReturn(SOME_VERSION);
@@ -118,7 +118,7 @@ class LogicalRelationDatasetBuilderTest {
 
     try (MockedStatic pathUtils = mockStatic(PathUtils.class)) {
       try (MockedStatic mockedFacetUtils = mockStatic(DatasetVersionDatasetFacetUtils.class)) {
-        when(PathUtils.fromCatalogTable(catalogTable)).thenReturn(di);
+        when(PathUtils.fromCatalogTable(catalogTable, session)).thenReturn(di);
         when(DatasetVersionDatasetFacetUtils.extractVersionFromLogicalRelation(logicalRelation))
             .thenReturn(Optional.of(SOME_VERSION));
         when(logicalRelation.schema()).thenReturn(schema);

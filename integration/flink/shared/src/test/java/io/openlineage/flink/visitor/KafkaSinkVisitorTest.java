@@ -13,14 +13,15 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
 import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.utils.AvroSchemaUtils;
 import io.openlineage.flink.visitor.wrapper.KafkaSinkWrapper;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import lombok.SneakyThrows;
-import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,16 +36,18 @@ class KafkaSinkVisitorTest {
   Properties props = new Properties();
   KafkaSinkWrapper wrapper = mock(KafkaSinkWrapper.class);
   OpenLineage openLineage = new OpenLineage(mock(URI.class));
-  Schema schema =
-      SchemaBuilder.record("OutputEvent")
-          .namespace("io.openlineage.flink.avro.event")
-          .fields()
-          .name("a")
-          .type()
-          .nullable()
-          .longType()
-          .noDefault()
-          .endRecord();
+  SchemaDatasetFacet schemaFacet =
+      AvroSchemaUtils.convert(
+          openLineage,
+          SchemaBuilder.record("OutputEvent")
+              .namespace("io.openlineage.flink.avro.event")
+              .fields()
+              .name("a")
+              .type()
+              .nullable()
+              .longType()
+              .noDefault()
+              .endRecord());
 
   @BeforeEach
   @SneakyThrows
@@ -63,18 +66,18 @@ class KafkaSinkVisitorTest {
   @SneakyThrows
   void testApply() {
     try (MockedStatic<KafkaSinkWrapper> mockedStatic = mockStatic(KafkaSinkWrapper.class)) {
-      when(KafkaSinkWrapper.of(kafkaSink)).thenReturn(wrapper);
+      when(KafkaSinkWrapper.of(kafkaSink, context)).thenReturn(wrapper);
 
       when(wrapper.getKafkaTopic()).thenReturn("topic");
       when(wrapper.getKafkaProducerConfig()).thenReturn(props);
-      when(wrapper.getAvroSchema()).thenReturn(Optional.of(schema));
+      when(wrapper.getSchemaFacet()).thenReturn(Optional.of(schemaFacet));
 
       OpenLineage.OutputDataset outputDataset = visitor.apply(kafkaSink).get(0);
       List<OpenLineage.SchemaDatasetFacetFields> fields =
           outputDataset.getFacets().getSchema().getFields();
 
       assertEquals("topic", outputDataset.getName());
-      assertEquals("kafka://server1;server2", outputDataset.getNamespace());
+      assertEquals("kafka://server1", outputDataset.getNamespace());
 
       assertEquals(1, fields.size());
       assertEquals("a", fields.get(0).getName());
@@ -86,7 +89,7 @@ class KafkaSinkVisitorTest {
   @SneakyThrows
   void testApplyWhenIllegalAccessExceptionThrown() {
     try (MockedStatic<KafkaSinkWrapper> mockedStatic = mockStatic(KafkaSinkWrapper.class)) {
-      when(KafkaSinkWrapper.of(kafkaSink)).thenReturn(wrapper);
+      when(KafkaSinkWrapper.of(kafkaSink, context)).thenReturn(wrapper);
 
       when(wrapper.getKafkaProducerConfig()).thenReturn(props);
       when(wrapper.getKafkaTopic()).thenThrow(new IllegalAccessException(""));

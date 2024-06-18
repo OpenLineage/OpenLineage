@@ -52,9 +52,14 @@ public class OptimizedCreateHiveTableAsSelectCommandVisitor
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+    if (!context.getSparkSession().isPresent()) {
+      return Collections.emptyList();
+    }
+
     OptimizedCreateHiveTableAsSelectCommand command = (OptimizedCreateHiveTableAsSelectCommand) x;
     CatalogTable table = command.tableDesc();
-    DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(table);
+    DatasetIdentifier datasetIdentifier =
+        PathUtils.fromCatalogTable(table, context.getSparkSession().get());
     StructType schema = outputSchema(ScalaConversionUtils.fromSeq(command.outputColumns()));
 
     OpenLineage.OutputDataset outputDataset;

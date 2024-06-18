@@ -101,4 +101,10 @@ public class AlterTableCommandDatasetBuilder
     }
     return Collections.singletonList(outputDataset().getDataset(di.get(), builder));
   }
+
+  @Override
+  public Optional<String> jobNameSuffix(LogicalPlan alterTableCommand) {
+    ResolvedTable resolvedTable = (ResolvedTable) ((AlterTableCommand) alterTableCommand).table();
+    return Optional.of(identToSuffix(resolvedTable.identifier()));
+  }
 }

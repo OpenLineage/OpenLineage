@@ -348,7 +348,9 @@ class ContainerTest {
                 "jobmanager.rpc.address: jobmanager\n"
                     + "execution.attached: true\n"
                     + "openlineage.transport.url: http://openlineageclient:1080\n"
-                    + "openlineage.transport.type: http\n")
+                    + "openlineage.transport.type: http\n"
+                    + "openlineage.dataset.namespaceResolvers.kafka-cluster-prod.type: hostList\n"
+                    + "openlineage.dataset.namespaceResolvers.kafka-cluster-prod.hosts: [kafka-host]\n")
             .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
             .dependsOn(Arrays.asList(generateEvents, openLineageClientMockContainer));
 
@@ -431,6 +433,18 @@ class ContainerTest {
                   .last()
                   .isEqualTo("complete");
             });
+  }
+
+  @Test
+  void testProtobuf() {
+    Properties jobProperties = new Properties();
+    jobProperties.put("inputTopics", "io.openlineage.flink.kafka.protobuf_input");
+    jobProperties.put("outputTopics", "io.openlineage.flink.kafka.protobuf_output");
+    jobProperties.put("jobName", "flink_protobuf");
+    runUntilCheckpoint(
+        "io.openlineage.flink.FlinkProtobufApplication", jobProperties, generateEvents);
+
+    verify("events/expected_protobuf.json");
   }
 
   @SneakyThrows

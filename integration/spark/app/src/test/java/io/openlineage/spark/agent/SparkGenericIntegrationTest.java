@@ -93,13 +93,13 @@ class SparkGenericIntegrationTest {
   }
 
   @Test
-  void sparkEmitsApplicationLevelEvents() {
+  void sparkEmitsEventsWithFacets() {
     Dataset<Row> df = createTempDataset();
 
     Dataset<Row> agg = df.groupBy("a").count();
     agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
-
     spark.stop();
+
     verifyEvents(
         mockServer,
         "applicationLevelStartApplication.json",
@@ -108,6 +108,11 @@ class SparkGenericIntegrationTest {
         "applicationLevelCompleteApplication.json");
 
     List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
+
+    // test UnknownEntryFacetListener clears its static list of visited nodes
+    assertThat(UnknownEntryFacetListener.getInstance().getVisitedNodesSize()).isEqualTo(0);
+
+    // same runId for Spark application events, and parentRunId for Spark job events
     assertThat(
             events.stream()
                 .map(
@@ -121,19 +126,77 @@ class SparkGenericIntegrationTest {
                 .collect(Collectors.toSet()))
         .hasSize(1);
 
-    // test UnknownEntryFacetListener clears its static list of visited nodes
-    assertThat(UnknownEntryFacetListener.getInstance().getVisitedNodesSize()).isEqualTo(0);
+    // Both Spark application and Spark job events have processing_engine facet
+    assertThat(events)
+        .allMatch(
+            event -> {
+              String eventSparkVersion =
+                  event.getRun().getFacets().getProcessing_engine().getVersion();
+              return eventSparkVersion.equals(spark.sparkContext().version());
+            });
+
+    // Both Spark application and Spark job events have spark_properties facet
+    assertThat(events)
+        .allMatch(
+            event -> {
+              OpenLineage.RunFacet sparkPropertyFacet =
+                  event.getRun().getFacets().getAdditionalProperties().get("spark_properties");
+              Map<String, String> sparkProperties =
+                  (Map<String, String>)
+                      sparkPropertyFacet.getAdditionalProperties().get("properties");
+              String appName = sparkProperties.get("spark.app.name");
+              return appName != null && appName.equals(spark.sparkContext().appName());
+            });
+
+    // Both Spark application and Spark job events have environment-properties facet
+    assertThat(events)
+        .allMatch(
+            event -> {
+              return event
+                      .getRun()
+                      .getFacets()
+                      .getAdditionalProperties()
+                      .get("environment-properties")
+                  != null;
+            });
+
+    // Both Spark application and Spark job events have jobType facet
+    assertThat(events)
+        .allMatch(
+            event -> {
+              return event.getJob().getFacets().getJobType() != null;
+            });
+
+    // Only Spark application START events have spark_applicationDetails facet
+    assertThat(
+            events.stream()
+                .filter(
+                    event ->
+                        event.getEventType() == RunEvent.EventType.START
+                            && event.getJob().getFacets().getJobType().getJobType()
+                                == "APPLICATION")
+                .collect(Collectors.toList()))
+        .allMatch(
+            event -> {
+              return event
+                      .getRun()
+                      .getFacets()
+                      .getAdditionalProperties()
+                      .get("spark_applicationDetails")
+                  != null;
+            });
   }
 
   @Test
   @SneakyThrows
   @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
-  void sparkGathersMetrics() {
+  void sparkEmitsDebugFacet() {
     Dataset<Row> df = createTempDataset();
 
     Dataset<Row> agg = df.groupBy("a").count();
     agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
     spark.stop();
+
     List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
     events.stream()
         .map(

@@ -11,28 +11,41 @@ import static io.openlineage.kafka.KafkaClientProvider.aKafkaSink;
 import static org.apache.flink.api.common.eventtime.WatermarkStrategy.noWatermarks;
 
 import io.openlineage.flink.avro.event.InputEvent;
+import io.openlineage.flink.utils.KafkaUtils;
 import io.openlineage.util.OpenLineageFlinkJobListenerBuilder;
+import java.util.Collections;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.KafkaSourceBuilder;
 import org.apache.flink.formats.avro.registry.confluent.ConfluentRegistryAvroDeserializationSchema;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.NewTopic;
 
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 public class FlinkSourceWithGenericRecordApplication {
 
   public static void main(String[] args) throws Exception {
+    // create manually topic as
+    Admin admin = Admin.create(fromResource("kafka-consumer.conf").toProperties());
+    admin.createTopics(
+        Collections.singletonList(new NewTopic(
+            "io.openlineage.flink.kafka.input_no_schema_registry", 1, (short) 1)
+        )
+    );
+
+    // Then go with regular app
     ParameterTool parameters = ParameterTool.fromArgs(args);
     StreamExecutionEnvironment env = setupEnv(args);
 
     KafkaSourceBuilder<GenericRecord> builder =
         KafkaSource.<GenericRecord>builder()
             .setProperties(fromResource("kafka-consumer.conf").toProperties())
-            .setBootstrapServers("kafka:9092")
+            .setBootstrapServers("kafka-host:9092")
             .setValueOnlyDeserializer(
                 ConfluentRegistryAvroDeserializationSchema.forGeneric(InputEvent.getClassSchema()));
 

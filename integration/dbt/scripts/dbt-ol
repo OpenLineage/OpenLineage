@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2018-2023 contributors to the OpenLineage project
+# Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -8,29 +8,30 @@ import os
 import subprocess
 import sys
 import time
-import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
 from openlineage.client.client import OpenLineageClient
-from openlineage.client.facet import JobTypeJobFacet
-from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
+from openlineage.client.facet_v2 import job_type_job
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt import (
     DbtLocalArtifactProcessor,
     ParentRunMetadata,
     UnsupportedDbtCommand,
 )
+from openlineage.common.utils import parse_multiple_args, parse_single_arg
 from tqdm import tqdm
 
-__version__ = "1.14.0"
+__version__ = "1.17.0"
 
-from openlineage.common.utils import parse_single_arg
 
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
-JOB_TYPE_FACET = JobTypeJobFacet(
+JOB_TYPE_FACET = job_type_job.JobTypeJobFacet(
     jobType="JOB",
     integration="DBT",
     processingType="BATCH",
+    producer=PRODUCER,
 )
 
 
@@ -38,7 +39,7 @@ def dbt_run_event(
     state: RunState,
     job_name: str,
     job_namespace: str,
-    run_id: str = str(uuid.uuid4()),
+    run_id: str = str(generate_new_uuid()),
     parent: Optional[ParentRunMetadata] = None,
 ) -> RunEvent:
     return RunEvent(
@@ -113,6 +114,8 @@ def main():
     target = parse_single_arg(args, ["-t", "--target"])
     project_dir = parse_single_arg(args, ["--project-dir"], default="./")
     profile_name = parse_single_arg(args, ["--profile"])
+    model_selector = parse_single_arg(args, ["--selector"])
+    models = parse_multiple_args(args, ["-m", "-s", "--model", "--models", "--select"])
 
     # We can get this if we have been orchestrated by an external system like airflow
     parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
@@ -136,12 +139,14 @@ def main():
         project_dir=project_dir,
         profile_name=profile_name,
         logger=logger,
+        models=models,
+        selector=model_selector,
     )
 
     # Always emit "wrapping event" around dbt run. This indicates start of dbt execution, since
     # both the start and complete events for dbt models won't get emitted until end of execution.
     start_event = dbt_run_event_start(
-        job_name=f"dbt-run-{processor.project_name}",
+        job_name=processor.job_name,
         job_namespace=job_namespace,
         parent_run_metadata=parent_run_metadata,
     )

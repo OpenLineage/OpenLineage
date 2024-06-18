@@ -10,21 +10,32 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.HashMap;
 import lombok.SneakyThrows;
-import org.apache.commons.lang.reflect.FieldUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.v2.jdbc.JDBCTableCatalog;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class JdbcHandlerTest {
 
+  OpenLineageContext context = mock(OpenLineageContext.class);
+
+  @BeforeEach
+  public void setup() {
+    context = mock(OpenLineageContext.class);
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
+  }
+
   @Test
   @SneakyThrows
   void testGetDatasetIdentifier() {
-    JdbcHandler handler = new JdbcHandler();
+    JdbcHandler handler = new JdbcHandler(context);
 
     JDBCTableCatalog tableCatalog = new JDBCTableCatalog();
     JDBCOptions options = mock(JDBCOptions.class);
@@ -45,7 +56,7 @@ class JdbcHandlerTest {
   @Test
   @SneakyThrows
   void testGetDatasetIdentifierWithDatabase() {
-    JdbcHandler handler = new JdbcHandler();
+    JdbcHandler handler = new JdbcHandler(context);
 
     JDBCTableCatalog tableCatalog = new JDBCTableCatalog();
     JDBCOptions options = mock(JDBCOptions.class);

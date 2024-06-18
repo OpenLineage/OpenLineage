@@ -70,7 +70,12 @@ class KafkaTransport(Transport):
         self.producer = None
         if not self._is_airflow_sqlalchemy:
             self._setup_producer(self.kafka_config.config)
-        log.debug("Constructing openlineage client to send events to topic %s", config.topic)
+        log.debug(
+            "Constructing OpenLineage transport that will send events "
+            "to kafka topic `%s` using the following config: %s",
+            self.topic,
+            self.kafka_config,
+        )
 
     def _get_message_key(self, event: Event) -> str:
         if isinstance(event, (DatasetEvent, event_v2.DatasetEvent)):
@@ -159,7 +164,7 @@ class KafkaTransport(Transport):
 
 def _check_if_airflow_sqlalchemy_context() -> bool:
     try:
-        from airflow.version import version  # type: ignore[import]
+        from airflow.version import version  # type: ignore[import-not-found]
 
         parsed_version = Version(version)
         if Version("2.3.0") <= parsed_version < Version("2.6.0"):

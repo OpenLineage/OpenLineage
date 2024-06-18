@@ -105,4 +105,4 @@ If you discover a vulnerability in the project, please [open an issue](https://g
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2023 contributors to the OpenLineage project
+Copyright 2018-2024 contributors to the OpenLineage project

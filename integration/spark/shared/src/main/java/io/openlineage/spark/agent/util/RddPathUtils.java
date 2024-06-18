@@ -116,7 +116,7 @@ public class RddPathUtils {
     public Stream<Path> extract(ParallelCollectionRDD rdd) {
       try {
         Object data = FieldUtils.readField(rdd, "data", true);
-        log.debug("ParallelCollectionRDD data: {} {}", data);
+        log.debug("ParallelCollectionRDD data: {}", data);
         if (data instanceof Seq) {
           return ScalaConversionUtils.fromSeq((Seq) data).stream()
               .map(

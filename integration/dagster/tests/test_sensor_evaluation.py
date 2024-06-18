@@ -3,10 +3,10 @@
 
 import tempfile
 import time
-import uuid
 from unittest import mock
 from unittest.mock import call, patch
 
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.dagster.sensor import openlineage_sensor
 
 from dagster import (
@@ -51,7 +51,7 @@ def test_sensor_with_complete_job_run_and_repository(
             repository_name = "a_repository"
             pipeline_name = "a_job"
             step_key = "an_op"
-            step_run_id = str(uuid.uuid4())
+            step_run_id = str(generate_new_uuid())
             mock_step_run_id.return_value = step_run_id
             mock_get_repository_name.return_value = repository_name
 
@@ -96,7 +96,7 @@ def test_sensor_with_complete_job_run_and_repository(
 def test_sensor_start_pipeline(mock_event_log_records, mock_adapter):
     with instance_for_test() as instance:
         pipeline_name = "a_job"
-        pipeline_run_id = str(uuid.uuid4())
+        pipeline_run_id = str(generate_new_uuid())
         timestamp = time.time()
         mock_event_log_records.return_value = [
             make_test_event_log_record(DagsterEventType.RUN_START, pipeline_name, pipeline_run_id, timestamp)
@@ -115,7 +115,7 @@ def test_sensor_start_pipeline(mock_event_log_records, mock_adapter):
 def test_sensor_complete_pipeline(mock_event_log_records, mock_adapter):
     with instance_for_test() as instance:
         pipeline_name = "a_job"
-        pipeline_run_id = str(uuid.uuid4())
+        pipeline_run_id = str(generate_new_uuid())
         timestamp = time.time()
         mock_event_log_records.return_value = [
             make_test_event_log_record(
@@ -136,7 +136,7 @@ def test_sensor_complete_pipeline(mock_event_log_records, mock_adapter):
 def test_sensor_fail_pipeline(mock_event_log_records, mock_adapter):
     with instance_for_test() as instance:
         pipeline_name = "a_job"
-        pipeline_run_id = str(uuid.uuid4())
+        pipeline_run_id = str(generate_new_uuid())
         timestamp = time.time()
         mock_event_log_records.return_value = [
             make_test_event_log_record(
@@ -157,7 +157,7 @@ def test_sensor_fail_pipeline(mock_event_log_records, mock_adapter):
 def test_sensor_cancel_pipeline(mock_event_log_records, mock_adapter):
     with instance_for_test() as instance:
         pipeline_name = "a_job"
-        pipeline_run_id = str(uuid.uuid4())
+        pipeline_run_id = str(generate_new_uuid())
         timestamp = time.time()
         mock_event_log_records.return_value = [
             make_test_event_log_record(
@@ -179,9 +179,9 @@ def test_sensor_cancel_pipeline(mock_event_log_records, mock_adapter):
 def test_sensor_start_step(mock_event_log_records, mock_adapter, mock_new_step_run_id):
     with instance_for_test() as instance:
         pipeline_name = "a_job"
-        pipeline_run_id = str(uuid.uuid4())
+        pipeline_run_id = str(generate_new_uuid())
         timestamp = time.time()
-        step_run_id = str(uuid.uuid4())
+        step_run_id = str(generate_new_uuid())
         step_key = "an_op"
         mock_event_log_records.return_value = [
             make_test_event_log_record(
@@ -217,9 +217,9 @@ def test_sensor_start_step(mock_event_log_records, mock_adapter, mock_new_step_r
 def test_sensor_complete_step(mock_event_log_records, mock_adapter, mock_new_step_run_id):
     with instance_for_test() as instance:
         pipeline_name = "a_job"
-        pipeline_run_id = str(uuid.uuid4())
+        pipeline_run_id = str(generate_new_uuid())
         timestamp = time.time()
-        step_run_id = str(uuid.uuid4())
+        step_run_id = str(generate_new_uuid())
         step_key = "an_op"
         mock_new_step_run_id.return_value = step_run_id
         mock_event_log_records.return_value = [
@@ -255,9 +255,9 @@ def test_sensor_complete_step(mock_event_log_records, mock_adapter, mock_new_ste
 def test_sensor_fail_step(mock_event_log_records, mock_adapter, mock_new_step_run_id):
     with instance_for_test() as instance:
         pipeline_name = "a_job"
-        pipeline_run_id = str(uuid.uuid4())
+        pipeline_run_id = str(generate_new_uuid())
         timestamp = time.time()
-        step_run_id = str(uuid.uuid4())
+        step_run_id = str(generate_new_uuid())
         step_key = "an_op"
         mock_event_log_records.return_value = [
             make_test_event_log_record(

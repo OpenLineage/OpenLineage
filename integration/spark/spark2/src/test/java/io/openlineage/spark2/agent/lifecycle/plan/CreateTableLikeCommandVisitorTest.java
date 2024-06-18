@@ -18,6 +18,7 @@ import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URI;
 import java.util.List;
 import lombok.SneakyThrows;
+import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalog.Catalog;
@@ -57,7 +58,9 @@ class CreateTableLikeCommandVisitorTest {
 
   @BeforeEach
   public void setUp() {
-    when(session.sparkContext()).thenReturn(mock(SparkContext.class));
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(sparkContext.getConf()).thenReturn(new SparkConf());
+    when(session.sparkContext()).thenReturn(sparkContext);
     when(session.catalog()).thenReturn(catalog);
     when(catalog.currentDatabase()).thenReturn("default");
     when(session.sessionState()).thenReturn(sessionState);

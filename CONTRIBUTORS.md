@@ -1,16 +1,14 @@
 # Contributors to OpenLineage
 
+| Organization | Integration or Feature |
+| ------------ | ------------ |
+| [Astronomer](https://www.astronomer.io/) | Integrations, clients, spec, documentation, developer and user support, community management, talks |
+| [Atlan](https://atlan.com/) | Contributions to Airflow integration, Python client and documentation |
 
-This file recognizes the people who have make an important contribution to OpenLineage.
+For pointers on getting started as a contributor, see the [OpenLineage Contributing Guide](CONTRIBUTING.md).
 
-| Name           | Email or GitHub Id |
-| -------------- | -----------------
-| Howard Yoo | howardyoo |
-
-
-
-To understand how to become an OpenLineage contributor see the [OpenLineage Contributing Guide](CONTRIBUTING.md).
+To add your organization to this table, open a [pull request](https://github.com/OpenLineage/OpenLineage/pulls).
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2023 contributors to the OpenLineage project
+Copyright 2018-2024 contributors to the OpenLineage project

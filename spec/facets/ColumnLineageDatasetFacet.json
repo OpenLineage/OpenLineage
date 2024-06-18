@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-2/ColumnLineageDatasetFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-1-0/ColumnLineageDatasetFacet.json",
   "$defs": {
     "ColumnLineageDatasetFacet": {
       "allOf": [
@@ -32,6 +32,32 @@
                         "field": {
                           "type": "string",
                           "description": "The input field"
+                        },
+                        "transformations": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "description": "The type of the transformation. Allowed values are: DIRECT, INDIRECT",
+                                "type": "string"
+                              },
+                              "subtype": {
+                                "type": "string",
+                                "description": "The subtype of the transformation"
+                              },
+                              "description": {
+                                "type": "string",
+                                "description": "a string representation of the transformation applied"
+                              },
+                              "masking": {
+                                "type": "boolean",
+                                "description": "is transformation masking the data or not"
+                              }
+                            },
+                            "required": ["type"],
+                            "additionalProperties": true
+                          }
                         }
                       },
                       "additionalProperties": true,
@@ -40,11 +66,13 @@
                   },
                   "transformationDescription": {
                     "type": "string",
-                    "description": "a string representation of the transformation applied"
+                    "description": "a string representation of the transformation applied",
+                    "deprecated": true
                   },
                   "transformationType": {
                     "type": "string",
-                    "description": "IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no original data available (like a hash of PII for example)"
+                    "description": "IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no original data available (like a hash of PII for example)",
+                    "deprecated": true
                   }
                 },
                 "additionalProperties": true,

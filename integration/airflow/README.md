@@ -71,6 +71,8 @@ This means you don't have to do anything besides configuring it, which is descri
 
 ### Airflow 2.1 - 2.2
 
+> **Note:** As of version 1.15.0, Airflow versions below 2.3.0 are no longer supported. The description below pertains to earlier versions.
+
 This method has limited support: it does not support tracking failed jobs, and job starts are registered only when a job ends.
 
 Set your LineageBackend in your [airflow.cfg](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-config.html) or via environmental variable `AIRFLOW__LINEAGE__BACKEND` to 
@@ -258,7 +260,7 @@ Same information, but compacted to one string, can be passed using `linage_paren
 
 ```python
 def my_task_function(templates_dict, **kwargs):
-    parent_job_namespace, parent_job_name, parent_run_id = templates_dict["parentRun"].split("/")
+    parent_job_namespace, parent_job_name, parent_run_id = templates_dict["parentRunInfo"].split("/")
     ...
 
 
@@ -267,7 +269,7 @@ PythonOperator(
     python_callable=my_task_function,
     templates_dict={
         # joined components as one string `<namespace>/<name>/<run_id>`
-        "parentRun": "{{ macros.OpenLineagePlugin.lineage_parent_id(task_instance) }}",
+        "parentRunInfo": "{{ macros.OpenLineagePlugin.lineage_parent_id(task_instance) }}",
     },
     provide_context=False,
     dag=dag,
@@ -326,4 +328,4 @@ python -m pytest test_integration.py::test_integration[great_expectations_valida
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2023 contributors to the OpenLineage project
+Copyright 2018-2024 contributors to the OpenLineage project

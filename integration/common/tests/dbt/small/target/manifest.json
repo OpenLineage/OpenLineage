@@ -109,7 +109,7 @@
 				"filter": null
 			},
 			"external": null,
-			"description": "",
+			"description": "A source table",
 			"columns": {},
 			"meta": {},
 			"source_meta": {},

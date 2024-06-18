@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -8,6 +8,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'pmd'
     id 'signing'
     id 'jacoco'
     id "com.adarshr.test-logger"
@@ -181,6 +182,9 @@ shadowJar {
     relocate 'org.yaml', 'io.openlineage.flink.shaded.org.yaml'
     relocate 'org.apache.hc', 'io.openlineage.flink.shaded.org.apache.hc'
     relocate 'org.apache.commons.codec', 'io.openlineage.flink.shaded.org.apache.commons.codec'
+    relocate 'org.apache.commons.lang3', 'io.openlineage.flink.shaded.org.apache.commons.lang3'
+    relocate "org.hdrhistogram", "io.openlineage.spark.shaded.org.hdrhistogram"
+    relocate "org.latencyutils", "io.openlineage.spark.shaded.org.latencyutils"
     dependencies {
         exclude(dependency('org.slf4j::'))
     }

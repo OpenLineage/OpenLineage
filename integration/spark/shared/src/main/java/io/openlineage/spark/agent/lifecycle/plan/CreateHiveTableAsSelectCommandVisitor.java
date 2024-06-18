@@ -14,6 +14,7 @@ import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.IntStream;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
@@ -35,9 +36,13 @@ public class CreateHiveTableAsSelectCommandVisitor
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+    if (!context.getSparkSession().isPresent()) {
+      return Collections.emptyList();
+    }
+
     CreateHiveTableAsSelectCommand command = (CreateHiveTableAsSelectCommand) x;
     CatalogTable table = command.tableDesc();
-    DatasetIdentifier di = PathUtils.fromCatalogTable(table);
+    DatasetIdentifier di = PathUtils.fromCatalogTable(table, context.getSparkSession().get());
 
     // zip query outputs with attribute names
     LogicalPlan query = command.query();
@@ -64,5 +69,10 @@ public class CreateHiveTableAsSelectCommandVisitor
         attrs.stream()
             .map(a -> new StructField(a.name(), a.dataType(), a.nullable(), a.metadata()))
             .toArray(StructField[]::new));
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(CreateHiveTableAsSelectCommand command) {
+    return Optional.of(tableIdentifierToSuffix(command.tableIdentifier()));
   }
 }

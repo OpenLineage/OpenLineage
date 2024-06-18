@@ -7,21 +7,34 @@ package io.openlineage.flink.visitor.lifecycle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
+import io.openlineage.client.metrics.MicrometerProvider;
+import io.openlineage.flink.client.CheckpointFacet;
+import io.openlineage.flink.client.EventEmitter;
+import io.openlineage.flink.client.FlinkOpenLineageConfig;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
 import org.apache.flink.configuration.Configuration;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 public class FlinkExecutionContextTest {
 
   Configuration config = new Configuration();
+
+  @AfterEach
+  void cleanUp() {
+    MicrometerProvider.clear();
+  }
 
   @Test
   void testBuildEventForEventTypeWithJobOwnershipFacet() {
@@ -75,5 +88,69 @@ public class FlinkExecutionContextTest {
                 .getFacets()
                 .getOwnership())
         .isNull();
+  }
+
+  @Test
+  void testEmitCheckpointEventIncrementsMetrics() {
+    FlinkExecutionContext context = setupMetricsContext();
+    context.onJobCheckpoint(new CheckpointFacet(1, 2, 3, 4, 5));
+
+    assertThat(
+            MicrometerProvider.getMeterRegistry()
+                .counter("openlineage.flink.event.checkpoint.start")
+                .count())
+        .isGreaterThanOrEqualTo(1.0);
+    assertThat(
+            MicrometerProvider.getMeterRegistry()
+                .counter("openlineage.flink.event.checkpoint.end")
+                .count())
+        .isGreaterThanOrEqualTo(1.0);
+  }
+
+  @Test
+  void testEmitSubmittedEventIncrementsMetrics() {
+    FlinkExecutionContext context = setupMetricsContext();
+    context.onJobSubmitted();
+
+    assertThat(
+            MicrometerProvider.getMeterRegistry()
+                .counter("openlineage.flink.event.submitted.start")
+                .count())
+        .isGreaterThanOrEqualTo(1.0);
+    assertThat(
+            MicrometerProvider.getMeterRegistry()
+                .counter("openlineage.flink.event.submitted.end")
+                .count())
+        .isGreaterThanOrEqualTo(1.0);
+  }
+
+  @Test
+  void testEmitCompletedEventIncrementsMetrics() {
+    FlinkExecutionContext context = setupMetricsContext();
+    context.onJobCompleted(mock(JobExecutionResult.class));
+
+    assertThat(
+            MicrometerProvider.getMeterRegistry()
+                .counter("openlineage.flink.event.completed.start")
+                .count())
+        .isGreaterThanOrEqualTo(1.0);
+    assertThat(
+            MicrometerProvider.getMeterRegistry()
+                .counter("openlineage.flink.event.completed.end")
+                .count())
+        .isGreaterThanOrEqualTo(1.0);
+  }
+
+  FlinkExecutionContext setupMetricsContext() {
+    FlinkOpenLineageConfig config = mock(FlinkOpenLineageConfig.class);
+    when(config.getMetricsConfig()).thenReturn(Map.of("type", "simple"));
+    return FlinkExecutionContextFactory.getContext(
+        config,
+        "jobNamespace",
+        "jobName",
+        mock(JobID.class),
+        "streaming",
+        mock(EventEmitter.class),
+        Collections.emptyList());
   }
 }

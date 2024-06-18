@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.airflow.utils import get_job_name, try_import_from_string
-from openlineage.client.facet import SqlJobFacet
+from openlineage.client.facet_v2 import sql_job
 from openlineage.common.provider.bigquery import (
     BigQueryDatasetsProvider,
     BigQueryErrorRunFacet,
@@ -54,7 +54,7 @@ class BigQueryExtractor(BaseExtractor):
             ds.input_facets = self._get_input_facets()
 
         run_facets = stats.run_facets
-        job_facets = {"sql": SqlJobFacet(self.operator.sql)}
+        job_facets = {"sql": sql_job.SQLJobFacet(self.operator.sql)}
 
         return TaskMetadata(
             name=get_job_name(task=self.operator),

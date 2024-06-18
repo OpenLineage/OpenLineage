@@ -214,6 +214,16 @@ class SparkDeltaIntegrationTest {
         .saveAsTable("movies");
 
     verifyEvents(mockServer, "pysparkDeltaSaveAsTableComplete.json");
+
+    assertThat(
+            MockServerUtils.getEventsEmitted(mockServer).stream()
+                .map(e -> e.getJob().getName())
+                .filter(
+                    j ->
+                        j.startsWith(
+                            "delta_integration_test.execute_create_data_source_table_as_select_command"))
+                .filter(j -> j.endsWith("movies"))) // job name ends with dataset name
+        .hasSize(2);
   }
 
   @Test

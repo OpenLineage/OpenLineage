@@ -40,19 +40,20 @@ public class JdbcSourceVisitor extends Visitor<OpenLineage.InputDataset> {
     log.debug("Apply source {} in JdbcSourceVisitor", object);
     JdbcSourceWrapper sourceWrapper;
     if (object instanceof JdbcInputFormat) {
-      sourceWrapper = JdbcSourceWrapper.of(object, JdbcInputFormat.class);
+      sourceWrapper = JdbcSourceWrapper.of(object);
     } else if (object instanceof JdbcRowDataInputFormat) {
-      sourceWrapper = JdbcSourceWrapper.of(object, JdbcRowDataInputFormat.class);
+      sourceWrapper = JdbcSourceWrapper.of(object);
     } else if (object instanceof JdbcRowDataLookupFunction) {
-      sourceWrapper = JdbcSourceWrapper.of(object, JdbcRowDataLookupFunction.class);
+      sourceWrapper = JdbcSourceWrapper.of(object);
     } else {
       throw new UnsupportedOperationException(
           String.format("Unsupported JDBC Source type %s", object.getClass().getCanonicalName()));
     }
 
+    // TODO: implement namespace resolver
     DatasetIdentifier di =
         JdbcUtils.getDatasetIdentifierFromJdbcUrl(
             sourceWrapper.getConnectionUrl(), sourceWrapper.getTableName().get());
-    return Collections.singletonList(createInputDataset(context, di.getNamespace(), di.getName()));
+    return Collections.singletonList(inputDataset().getDataset(di.getName(), di.getNamespace()));
   }
 }

@@ -14,7 +14,7 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-flink</artifactId>
-    <version>1.13.0</version>
+    <version>1.16.0</version>
 </dependency>
 ```
 
@@ -51,4 +51,4 @@ execution.job-listener.openlineage.namespace : "custom job namespace"
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2023 contributors to the OpenLineage project
+Copyright 2018-2024 contributors to the OpenLineage project

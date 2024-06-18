@@ -7,7 +7,6 @@ package io.openlineage.spark.agent.util;
 
 import static io.openlineage.spark.agent.util.PathUtils.enrichHiveMetastoreURIWithTableName;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -16,8 +15,8 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
@@ -28,8 +27,10 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.internal.SessionState;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import org.mockito.MockedStatic;
 import scala.Option;
 import scala.Some;
@@ -47,13 +48,23 @@ class PathUtilsTest {
   SparkSession sparkSession = mock(SparkSession.class);
   SparkContext sparkContext = mock(SparkContext.class);
   SparkConf sparkConf = new SparkConf();
+  Configuration hadoopConf = new Configuration();
   CatalogTable catalogTable = mock(CatalogTable.class);
   CatalogStorageFormat catalogStorageFormat = mock(CatalogStorageFormat.class);
 
+  @BeforeEach
+  void setConf() {
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
+  }
+
   @AfterEach
-  void clearSparkConf() {
+  void clearConf() {
     Tuple2<String, String>[] configuration = sparkConf.getAll();
     Arrays.stream(configuration).forEach(tuple -> sparkConf.remove(tuple._1()));
+
+    hadoopConf.clear();
   }
 
   @Test
@@ -135,14 +146,11 @@ class PathUtilsTest {
   void testFromCatalogTableWithStorage() throws URISyntaxException {
     sparkConf.set("spark.sql.catalogImplementation", "hive");
     sparkConf.set("spark.sql.hive.metastore.uris", "thrift://10.1.0.1:9083");
-    when(sparkContext.getConf()).thenReturn(sparkConf);
-    when(sparkSession.sparkContext()).thenReturn(sparkContext);
-
     when(catalogTable.storage()).thenReturn(catalogStorageFormat);
     when(catalogTable.identifier()).thenReturn(TableIdentifier.apply(TABLE));
     when(catalogStorageFormat.locationUri()).thenReturn(Option.apply(new URI("/tmp/warehouse")));
 
-    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
+    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, sparkSession);
     assertThat(di.getName()).isEqualTo("/tmp/warehouse");
     assertThat(di.getNamespace()).isEqualTo("file");
     assertThat(di.getSymlinks()).hasSize(1);
@@ -151,21 +159,47 @@ class PathUtilsTest {
 
     sparkConf.set(
         "spark.sql.hive.metastore.uris", "anotherprotocol://127.0.0.1:1010,yetanother://something");
-    di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
+    di = PathUtils.fromCatalogTable(catalogTable, sparkSession);
     assertThat(di.getSymlinks().get(0).getName()).isEqualTo(TABLE);
     assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("hive://127.0.0.1:1010");
 
     sparkConf.remove("spark.sql.hive.metastore.uris");
-    sparkConf.set("spark.hadoop.hive.metastore.uris", "thrift://10.1.0.1:9083");
-    di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
+
+    hadoopConf.set("hive.metastore.uris", "thrift://10.1.0.1:9083");
+    di = PathUtils.fromCatalogTable(catalogTable, sparkSession);
     assertThat(di.getSymlinks().get(0).getName()).isEqualTo(TABLE);
     assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("hive://10.1.0.1:9083");
   }
 
   @Test
-  void testFromCatalogWithDefaultStorage() throws URISyntaxException {
-    sparkConf.remove("spark.hadoop.hive.metastore.uris");
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-west-2")
+  void testFromCatalogTableWithGlue() throws URISyntaxException {
+    hadoopConf.set(
+        "hive.metastore.client.factory.class",
+        "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
+    sparkConf.set("spark.sql.catalogImplementation", "hive");
+    sparkConf.set("spark.glue.accountId", "123456789");
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+
+    when(catalogTable.provider()).thenReturn(Option.apply("hive"));
     when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+    when(catalogTable.identifier()).thenReturn(TableIdentifier.apply(TABLE));
+    when(catalogStorageFormat.locationUri())
+        .thenReturn(Option.apply(new URI("s3://bucket/directory")));
+
+    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+    assertThat(di.getName()).isEqualTo("directory");
+    assertThat(di.getNamespace()).isEqualTo("s3://bucket");
+    assertThat(di.getSymlinks()).hasSize(1);
+    assertThat(di.getSymlinks().get(0).getName()).isEqualTo(TABLE);
+    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("aws:glue:us-west-2:123456789");
+  }
+
+  @Test
+  void testFromCatalogWithDefaultStorage() throws URISyntaxException {
+    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+    when(catalogTable.provider()).thenReturn(Option.empty());
     when(catalogStorageFormat.locationUri())
         .thenReturn(Option.apply(new URI("hdfs://namenode:8020/warehouse/table")));
     TableIdentifier tableIdentifier = mock(TableIdentifier.class);
@@ -173,7 +207,7 @@ class PathUtilsTest {
     when(tableIdentifier.database()).thenReturn(Option.apply("db"));
     when(tableIdentifier.table()).thenReturn("table");
 
-    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
+    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, sparkSession);
     assertThat(di.getName()).isEqualTo("/warehouse/table");
     assertThat(di.getNamespace()).isEqualTo("hdfs://namenode:8020");
     assertThat(di.getSymlinks()).hasSize(1);
@@ -183,8 +217,8 @@ class PathUtilsTest {
 
   @Test
   void testFromCatalogWithDefaultStorageAndNoWarehouse() throws URISyntaxException {
-    sparkConf.remove("spark.hadoop.hive.metastore.uris");
     when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+    when(catalogTable.provider()).thenReturn(Option.empty());
     when(catalogStorageFormat.locationUri()).thenReturn(Option.apply(new URI("s3://s3-db/table")));
 
     TableIdentifier tableIdentifier = mock(TableIdentifier.class);
@@ -192,21 +226,12 @@ class PathUtilsTest {
     when(tableIdentifier.database()).thenReturn(Option.apply("db"));
     when(tableIdentifier.table()).thenReturn("table");
 
-    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
+    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, sparkSession);
     assertThat(di.getName()).isEqualTo("table");
     assertThat(di.getNamespace()).isEqualTo("s3://s3-db");
     assertThat(di.getSymlinks()).hasSize(1);
     assertThat(di.getSymlinks().get(0).getName()).isEqualTo("db.table");
     assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("s3://s3-db");
-  }
-
-  @Test
-  void testFromCatalogExceptionIsThrownWhenUnableToExtractDatasetIdentifier() {
-    try (MockedStatic<SparkSession> mocked = mockStatic(SparkSession.class)) {
-      mocked.when(SparkSession::active).thenThrow(new IllegalStateException("some message"));
-      mocked.when(SparkSession::getDefaultSession).thenReturn(Option.empty());
-      assertThrows(IllegalArgumentException.class, () -> PathUtils.fromCatalogTable(catalogTable));
-    }
   }
 
   @Test
@@ -262,15 +287,17 @@ class PathUtilsTest {
         mockedStatic.when(SparkSession::getActiveSession).thenReturn(Some.apply(sparkSession));
 
         // Mock the chain of method calls
+        when(sparkContext.getConf()).thenReturn(sparkConf);
         when(sparkSession.sparkContext()).thenReturn(sparkContext);
         when(sparkSession.sessionState()).thenReturn(sessionState);
         when(sessionState.catalog()).thenReturn(sessionCatalog);
 
         when(sessionCatalog.defaultTablePath(tableIdentifier)).thenReturn(tableUri);
         when(catalogTable.identifier()).thenReturn(tableIdentifier);
+        when(catalogTable.provider()).thenReturn(Option.empty());
 
         DatasetIdentifier datasetIdentifier =
-            PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
+            PathUtils.fromCatalogTable(catalogTable, sparkSession);
 
         assertThat(datasetIdentifier).isNotNull();
         assertThat(datasetIdentifier.getNamespace()).isEqualTo(expectedNamespace);

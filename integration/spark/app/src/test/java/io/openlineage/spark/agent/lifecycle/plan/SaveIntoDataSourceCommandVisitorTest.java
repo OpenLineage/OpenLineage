@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
@@ -34,6 +35,7 @@ import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
 import org.apache.spark.sql.sources.CreatableRelationProvider;
+import org.apache.spark.sql.sources.RelationProvider;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StringType$;
@@ -41,6 +43,7 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
 
@@ -132,6 +135,64 @@ class SaveIntoDataSourceCommandVisitorTest {
             withSettings().extraInterfaces(CreatableRelationProvider.class));
     when(command.dataSource()).thenReturn((CreatableRelationProvider) provider);
     assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
+  }
+
+  @Test
+  void testJobNameSuffixForLineageRelationProvider() {
+    CreatableRelationProvider dataSource =
+        mock(
+            CreatableRelationProvider.class,
+            withSettings().extraInterfaces(LineageRelationProvider.class));
+    when(command.dataSource()).thenReturn(dataSource);
+    when(((LineageRelationProvider) dataSource).getLineageDatasetIdentifier(any(), any(), any()))
+        .thenReturn(new DatasetIdentifier("a", "b"));
+
+    assertThat(visitor.jobNameSuffix(command)).isPresent().get().isEqualTo("a");
+  }
+
+  @Test
+  void testJobNameSuffixForDeltaDataSource() {
+    CreatableRelationProvider dataSource =
+        mock(
+            DeltaDataSource.class, withSettings().extraInterfaces(CreatableRelationProvider.class));
+    when(command.dataSource()).thenReturn(dataSource);
+    when(command.options()).thenReturn(options);
+
+    assertThat(visitor.jobNameSuffix(command)).isPresent().get().isEqualTo("some-path");
+  }
+
+  @Test
+  void testJobNameSuffixForKustoRelation() {
+    CreatableRelationProvider dataSource =
+        mock(
+            DeltaDataSource.class, withSettings().extraInterfaces(CreatableRelationProvider.class));
+    when(command.dataSource()).thenReturn(dataSource);
+    try (MockedStatic mock = mockStatic(KustoRelationVisitor.class)) {
+      when(KustoRelationVisitor.isKustoSource(dataSource)).thenReturn(true);
+      when(command.options())
+          .thenReturn(
+              (Map<String, String>)
+                  ScalaConversionUtils.fromJavaMap(
+                      Collections.singletonMap("kustotable", "some-table")));
+
+      assertThat(visitor.jobNameSuffix(command)).isPresent().get().isEqualTo("some-table");
+    }
+  }
+
+  @Test
+  void testJobNameSuffixForRelationProvider() {
+    CreatableRelationProvider dataSource =
+        mock(
+            CreatableRelationProvider.class,
+            withSettings().extraInterfaces(RelationProvider.class));
+    when(command.dataSource()).thenReturn(dataSource);
+    when(command.options())
+        .thenReturn(
+            (Map<String, String>)
+                ScalaConversionUtils.fromJavaMap(
+                    Collections.singletonMap("kustotable", "some-table")));
+
+    assertThat(visitor.jobNameSuffix(command)).isPresent().get().isEqualTo("some-table");
   }
 
   abstract class DeltaDataSource implements CreatableRelationProvider {}

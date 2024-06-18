@@ -47,7 +47,7 @@ class JdbcSourceVisitorTest {
 
   @Test
   @SneakyThrows
-  public void testIsDefined() {
+  void testIsDefined() {
     assertFalse(jdbcSourceVisitor.isDefinedAt(mock(Object.class)));
     assertTrue(jdbcSourceVisitor.isDefinedAt(mock(JdbcInputFormat.class)));
     assertTrue(jdbcSourceVisitor.isDefinedAt(mock(JdbcRowDataInputFormat.class)));
@@ -57,7 +57,7 @@ class JdbcSourceVisitorTest {
   @SneakyThrows
   @ParameterizedTest
   @MethodSource("provideArguments")
-  public void testApply(Object source) {
+  void testApply(Object source) {
     List<OpenLineage.InputDataset> inputDatasets = jdbcSourceVisitor.apply(source);
 
     assertEquals(1, inputDatasets.size());

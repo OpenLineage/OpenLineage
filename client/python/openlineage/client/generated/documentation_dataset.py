@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
-from attr import define
+import attr
 from openlineage.client.generated.base import DatasetFacet
 
 
-@define
+@attr.define
 class DocumentationDatasetFacet(DatasetFacet):
     description: str
     """The description of the dataset."""

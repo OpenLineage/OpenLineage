@@ -28,28 +28,6 @@ public final class KafkaConfig implements TransportConfig, MergeConfig<KafkaConf
     properties = new Properties();
   }
 
-  /**
-   * @deprecated
-   *     <p>Since version 1.13.0.
-   *     <p>Will be removed in version 1.16.0.
-   *     <p>Please use {@link #getMessageKey()} instead
-   */
-  @Deprecated
-  String getLocalServerId() {
-    return messageKey;
-  }
-
-  /**
-   * @deprecated
-   *     <p>Since version 1.13.0.
-   *     <p>Will be removed in version 1.16.0.
-   *     <p>Please use {@link #setMessageKey()} instead
-   */
-  @Deprecated
-  void setLocalServerId(String localServerId) {
-    this.messageKey = localServerId;
-  }
-
   @Override
   public KafkaConfig mergeWithNonNull(io.openlineage.client.transports.KafkaConfig other) {
     Properties p = new Properties();

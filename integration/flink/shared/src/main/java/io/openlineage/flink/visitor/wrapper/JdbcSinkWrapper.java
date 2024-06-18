@@ -17,15 +17,13 @@ import org.apache.flink.connector.jdbc.xa.JdbcXaSinkFunction;
 @Slf4j
 public class JdbcSinkWrapper {
   private Object sink;
-  private Class sinkClass;
 
-  public <T> JdbcSinkWrapper(T sink, Class sinkClass) {
+  public <T> JdbcSinkWrapper(T sink) {
     this.sink = sink;
-    this.sinkClass = sinkClass;
   }
 
-  public static <T> JdbcSinkWrapper of(T sink, Class sourceClass) {
-    return new JdbcSinkWrapper(sink, sourceClass);
+  public static <T> JdbcSinkWrapper of(T sink) {
+    return new JdbcSinkWrapper(sink);
   }
 
   public String getConnectionUrl() {

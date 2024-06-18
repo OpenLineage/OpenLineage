@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.jdbc.JdbcRowOutputFormat;
 import org.apache.flink.connector.jdbc.internal.GenericJdbcSinkFunction;
 import org.apache.flink.connector.jdbc.internal.JdbcOutputFormat;
-import org.apache.flink.connector.jdbc.table.JdbcRowDataLookupFunction;
 import org.apache.flink.connector.jdbc.xa.JdbcXaSinkFunction;
 
 @Slf4j
@@ -43,13 +42,13 @@ public class JdbcSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
     log.debug("Apply sink {} in JdbcSinkVisitor", object);
     JdbcSinkWrapper sinkWrapper;
     if (object instanceof JdbcRowOutputFormat) {
-      sinkWrapper = JdbcSinkWrapper.of(object, JdbcRowOutputFormat.class);
+      sinkWrapper = JdbcSinkWrapper.of(object);
     } else if (object instanceof JdbcOutputFormat) {
-      sinkWrapper = JdbcSinkWrapper.of(object, JdbcOutputFormat.class);
+      sinkWrapper = JdbcSinkWrapper.of(object);
     } else if (object instanceof GenericJdbcSinkFunction) {
-      sinkWrapper = JdbcSinkWrapper.of(object, GenericJdbcSinkFunction.class);
+      sinkWrapper = JdbcSinkWrapper.of(object);
     } else if (object instanceof JdbcXaSinkFunction) {
-      sinkWrapper = JdbcSinkWrapper.of(object, JdbcRowDataLookupFunction.class);
+      sinkWrapper = JdbcSinkWrapper.of(object);
     } else {
       throw new UnsupportedOperationException(
           String.format("Unsupported JDBC sink type %s", object.getClass().getCanonicalName()));
@@ -58,6 +57,6 @@ public class JdbcSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
     DatasetIdentifier di =
         JdbcUtils.getDatasetIdentifierFromJdbcUrl(
             sinkWrapper.getConnectionUrl(), sinkWrapper.getTableName().get());
-    return Collections.singletonList(createOutputDataset(context, di.getNamespace(), di.getName()));
+    return Collections.singletonList(outputDataset().getDataset(di.getName(), di.getNamespace()));
   }
 }

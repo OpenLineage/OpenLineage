@@ -85,6 +85,9 @@ class CustomEnvironmentVariablesCaptureTest {
             .filter(
                 e ->
                     e.getEventType().equals(EventType.START)
+                        && e.getJob().getFacets() != null
+                        // Exclude SparkApplication start event because env variable was set after
+                        && e.getJob().getFacets().getJobType().getJobType() != "APPLICATION"
                         && e.getRun().getFacets() != null
                         && e.getRun()
                                 .getFacets()

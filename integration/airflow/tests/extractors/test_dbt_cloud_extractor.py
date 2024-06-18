@@ -2,13 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-import uuid
 from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
 import pytz
 from openlineage.airflow.utils import try_import_from_string
+from openlineage.client.uuid import generate_new_uuid
 from packaging.version import Version
 from pytest_mock import MockerFixture
 
@@ -43,8 +43,8 @@ async def get_dbt_artifact_async(*args, **kwargs):
 
 
 def emit_event(event):
-    assert event.run.facets["parent"].run["runId"] == TASK_UUID
-    assert event.run.facets["parent"].job["name"] == "TestDBTCloudExtractor.task_id"
+    assert event.run.facets["parent"].run.runId == TASK_UUID
+    assert event.run.facets["parent"].job.name == "TestDBTCloudExtractor.task_id"
     assert event.job.namespace == "default"
     assert event.job.name.startswith("SANDBOX.TEST_SCHEMA.my_new_project")
 
@@ -138,7 +138,7 @@ class TestDbtCloudExtractorE2E:
         execution_date = datetime.utcnow().replace(tzinfo=pytz.utc)
         default_args = {"dbt_cloud_conn_id": "dbt_cloud"}
         dag = DAG(dag_id="TestDBTCloudExtractor", default_args=default_args)
-        dag.create_dagrun(run_id=str(uuid.uuid4()), state=State.QUEUED, execution_date=execution_date)
+        dag.create_dagrun(run_id=str(generate_new_uuid()), state=State.QUEUED, execution_date=execution_date)
 
         task = DbtCloudRunJobOperator(
             dag=dag,

@@ -1,4 +1,4 @@
-// Copyright 2018-2023 contributors to the OpenLineage project
+// Copyright 2018-2024 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
 mod context;
@@ -15,7 +15,7 @@ use visitor::Visit;
 
 use anyhow::{anyhow, Result};
 use sqlparser::parser::Parser;
-use sqlparser::parser::ParserError::ParserError;
+use sqlparser::parser::ParserError::{ParserError, RecursionLimitExceeded, TokenizerError};
 
 pub fn parse_multiple_statements(
     sql: Vec<&str>,
@@ -30,12 +30,20 @@ pub fn parse_multiple_statements(
     for (index, statement) in sql.iter().enumerate() {
         let ast = Parser::parse_sql(dialect.as_base(), statement);
 
-        if let Err(ParserError(s)) = ast {
+        if let Err(x) = ast {
+            let message = match x {
+                TokenizerError(s) => s.clone(),
+                ParserError(s) => s.clone(),
+                RecursionLimitExceeded => {
+                    { "Recursion limit exceeded when parsing SQL" }.to_string()
+                }
+            };
             errors.push(ExtractionError {
                 index,
-                message: s.clone(),
+                message,
                 origin_statement: statement.to_string(),
             });
+
             continue;
         }
         let ast = ast.unwrap();

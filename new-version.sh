@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2018-2022 contributors to the OpenLineage project
+# Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 #
 # NOTE: This script was inspired by https://github.com/MarquezProject/marquez/blob/main/new-version.sh

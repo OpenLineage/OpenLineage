@@ -8,8 +8,8 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import attr
 from openlineage.airflow.utils import LoggingMixin, get_job_name
-from openlineage.client.facet import BaseFacet
-from openlineage.client.run import Dataset
+from openlineage.client.event_v2 import Dataset
+from openlineage.client.facet_v2 import BaseFacet
 
 
 @attr.s

@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Utility class to handle removing path patterns in dataset names. Given a configured regex pattern
@@ -77,7 +77,8 @@ public class RemovePathPatternUtils {
   }
 
   private static Optional<Pattern> getPattern(OpenLineageContext context) {
-    return Optional.ofNullable(context.getSparkContext())
+    return context
+        .getSparkContext()
         .map(sparkContext -> sparkContext.conf())
         .filter(conf -> conf.contains(SPARK_OPENLINEAGE_DATASET_REMOVE_PATH_PATTERN))
         .map(conf -> conf.get(SPARK_OPENLINEAGE_DATASET_REMOVE_PATH_PATTERN))

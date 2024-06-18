@@ -16,11 +16,16 @@ import io.openlineage.spark.api.QueryPlanVisitor;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.scheduler.SparkListenerJobEnd;
+import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.CreateTableLikeCommand;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link CreateTableLikeCommand} and extracts the
@@ -32,6 +37,11 @@ public class CreateTableLikeCommandVisitor
 
   public CreateTableLikeCommandVisitor(OpenLineageContext context) {
     super(context);
+  }
+
+  @Override
+  public boolean isDefinedAt(SparkListenerEvent event) {
+    return (event instanceof SparkListenerSQLExecutionEnd || event instanceof SparkListenerJobEnd);
   }
 
   @Override
@@ -62,5 +72,10 @@ public class CreateTableLikeCommandVisitor
                               .CREATE));
             })
         .orElse(Collections.emptyList());
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(CreateTableLikeCommand command) {
+    return Optional.ofNullable(command.targetTable()).map(TableIdentifier::identifier);
   }
 }

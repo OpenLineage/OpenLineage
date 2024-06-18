@@ -86,7 +86,15 @@ public class DebugRunFacet extends OpenLineage.DefaultRunFacet {
   @Value
   @Builder
   public static class SystemDebugFacet {
+    @Deprecated
+    /**
+     * @deprecated
+     *     <p>Since version 1.15.0.
+     *     <p>Will be removed in version 1.18.0.
+     *     <p>Please use {@link SparkApplicationDetailsFacet} instead
+     */
     String sparkDeployMode;
+
     String javaVersion;
     String javaVendor;
     String osArch;

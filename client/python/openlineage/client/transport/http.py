@@ -16,6 +16,8 @@ if TYPE_CHECKING:
     from openlineage.client.client import Event, OpenLineageClientOptions
     from requests.adapters import HTTPAdapter, Response
 
+import http.client as http_client
+
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields, try_import_from_string
@@ -123,7 +125,12 @@ class HttpTransport(Transport):
         url = config.url.strip()
         self.config = config
 
-        log.debug("Constructing openlineage client to send events to %s - config %s", url, config)
+        log.debug(
+            "Constructing OpenLineage transport that will send events "
+            "to HTTP endpoint `%s` using the following config: %s",
+            urljoin(url, config.endpoint),
+            config,
+        )
         try:
             from urllib3.util import parse_url
 
@@ -155,6 +162,10 @@ class HttpTransport(Transport):
             self.session.mount(self.url, adapter)
 
     def emit(self, event: Event) -> Response:
+        # If anyone overrides debuglevel manually, we can potentially leak secrets to logs.
+        # Override this setting to make sure it does not happen.
+        prev_debuglevel = http_client.HTTPConnection.debuglevel
+        http_client.HTTPConnection.debuglevel = 0
         body, headers = self._prepare_request(Serde.to_json(event))
 
         if self.session:
@@ -177,6 +188,7 @@ class HttpTransport(Transport):
                     verify=self.verify,
                 )
             resp.close()
+        http_client.HTTPConnection.debuglevel = prev_debuglevel
         resp.raise_for_status()
         return resp
 

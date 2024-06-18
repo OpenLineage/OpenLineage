@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import datetime
 import os
-import uuid
 from typing import TYPE_CHECKING
 from unittest import mock
 
@@ -16,6 +15,7 @@ from openlineage.client.transport.msk_iam import (
     _detect_running_region,
     _oauth_cb,
 )
+from openlineage.client.uuid import generate_new_uuid
 
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture
@@ -26,7 +26,7 @@ def event() -> RunEvent:
     return RunEvent(
         eventType=RunState.START,
         eventTime=datetime.datetime.now().isoformat(),
-        run=Run(runId=str(uuid.uuid4())),
+        run=Run(runId=str(generate_new_uuid())),
         job=Job(namespace="kafka", name="test"),
         producer="prod",
         schemaURL="schema",

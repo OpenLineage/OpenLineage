@@ -44,16 +44,7 @@ public class FileTransport extends Transport {
     emit(OpenLineageClientUtils.toJson(jobEvent));
   }
 
-  /**
-   * @deprecated
-   *     <p>Since version 1.13.0.
-   *     <p>Will be removed in version 1.16.0.
-   *     <p>Please use {@link #emit(OpenLineage.DatasetEvent)} or {@link
-   *     #emit(OpenLineage.JobEvent)} instead
-   */
-  @Deprecated
-  @Override
-  public void emit(String eventAsJson) {
+  private void emit(String eventAsJson) {
     try {
       FileUtils.writeStringToFile(
           file,

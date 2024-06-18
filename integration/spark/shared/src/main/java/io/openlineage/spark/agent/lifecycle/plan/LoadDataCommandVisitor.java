@@ -11,6 +11,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.LoadDataCommand;
@@ -29,12 +30,24 @@ public class LoadDataCommandVisitor
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+    if (!context.getSparkSession().isPresent()) {
+      return Collections.emptyList();
+    }
+
     LoadDataCommand command = (LoadDataCommand) x;
     return catalogTableFor(command.table())
         .map(
             table ->
                 Collections.singletonList(
-                    outputDataset().getDataset(PathUtils.fromCatalogTable(table), table.schema())))
+                    outputDataset()
+                        .getDataset(
+                            PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
+                            table.schema())))
         .orElseGet(Collections::emptyList);
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(LoadDataCommand command) {
+    return Optional.of(tableIdentifierToSuffix(command.table()));
   }
 }

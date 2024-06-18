@@ -9,6 +9,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,12 +17,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.spark.SparkContext;
 import org.apache.spark.package$;
@@ -46,11 +45,13 @@ import scala.PartialFunction;
  *
  * @apiNote This interface is evolving and may change in future releases
  */
-@RequiredArgsConstructor
-@AllArgsConstructor
 @Builder
 public class OpenLineageContext {
-  @Default @NonNull @Getter final UUID runUuid = UUID.randomUUID();
+  // filled up only for SparkListenerApplication{Start,End} events
+  @Setter @Getter UUID applicationUuid;
+
+  // filled up for SparkListener non-application events
+  @Default @NonNull @Getter final UUID runUuid = UUIDUtils.generateNewUUID();
 
   /** {@link SparkSession} instance when an application is using a Spark SQL configuration */
   final SparkSession sparkSession;
@@ -59,8 +60,15 @@ public class OpenLineageContext {
     return Optional.ofNullable(sparkSession);
   }
 
-  /** The non-null {@link SparkContext} running for the application we're reporting run data for */
-  @NonNull @Getter final SparkContext sparkContext;
+  /** The {@link SparkContext} running for the application we're reporting run data for */
+  final SparkContext sparkContext;
+
+  public Optional<SparkContext> getSparkContext() {
+    if (sparkContext != null) {
+      return Optional.of(sparkContext);
+    }
+    return getSparkSession().map(session -> session.sparkContext());
+  }
 
   /** The list of custom environment variables to be captured */
   @Default @NonNull @Getter final List<String> customEnvironmentVariables = Collections.emptyList();
@@ -112,7 +120,9 @@ public class OpenLineageContext {
   }
 
   /** Spark version of currently running job */
-  @Default @NonNull @Getter String sparkVersion = package$.MODULE$.SPARK_VERSION();
+  public String getSparkVersion() {
+    return getSparkContext().map(sc -> sc.version()).orElse(package$.MODULE$.SPARK_VERSION());
+  }
 
   /**
    * Job name is build when the first event of the run is build is created on the top of ready event

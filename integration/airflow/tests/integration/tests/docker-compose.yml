@@ -24,7 +24,6 @@ x-airflow-base: &airflow-base
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
     AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: 120
-    AIRFLOW__LINEAGE__BACKEND: openlineage.lineage_backend.OpenLineageBackend
     AIRFLOW_CONN_MYSQL_CONN: mysql://food_delivery:food_delivery@mysql:3306/food_delivery
     AIRFLOW_CONN_TRINO_CONN: trino://trino@trino:8080/default?catalog=memory
     AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=openlineage-ci&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json

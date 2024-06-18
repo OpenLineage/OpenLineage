@@ -23,11 +23,16 @@ import org.apache.spark.SparkContext;
  */
 public final class SparkProcessingEngineRunFacetBuilderDelegate {
   private final OpenLineage ol;
-  private final SparkContext sparkContext;
+  private final String version;
 
   public SparkProcessingEngineRunFacetBuilderDelegate(OpenLineage ol, SparkContext sparkContext) {
     this.ol = ol;
-    this.sparkContext = sparkContext;
+    this.version = sparkContext.version();
+  }
+
+  public SparkProcessingEngineRunFacetBuilderDelegate(OpenLineage ol, String version) {
+    this.ol = ol;
+    this.version = version;
   }
 
   public ProcessingEngineRunFacet buildFacet() {
@@ -36,7 +41,7 @@ public final class SparkProcessingEngineRunFacetBuilderDelegate {
     //  snake_case
     return ol.newProcessingEngineRunFacetBuilder()
         .name("spark")
-        .version(sparkContext.version())
+        .version(version)
         .openlineageAdapterVersion(this.getClass().getPackage().getImplementationVersion())
         .build();
   }

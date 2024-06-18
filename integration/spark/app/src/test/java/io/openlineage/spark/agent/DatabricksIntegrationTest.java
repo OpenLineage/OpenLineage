@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -181,7 +180,6 @@ class DatabricksIntegrationTest {
   }
 
   @Test
-  @Disabled // TODO: this assertions are not working
   void testWriteReadFromTableWithLocation() {
     List<RunEvent> runEvents = runScript(workspace, clusterId, "dataset_names.py");
 
@@ -204,7 +202,6 @@ class DatabricksIntegrationTest {
             .get();
 
     // assert input and output are the same
-    // https://github.com/OpenLineage/OpenLineage/issues/2543
     assertThat(inputDataset.getNamespace()).isEqualTo(outputDataset.getNamespace());
     assertThat(inputDataset.getName()).isEqualTo(outputDataset.getName());
     assertThat(runEvents.size()).isLessThan(20);

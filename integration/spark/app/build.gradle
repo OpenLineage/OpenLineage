@@ -13,7 +13,7 @@ plugins {
     id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
     id "com.adarshr.test-logger" version "3.2.0"
-    id "org.gradle.test-retry" version "1.5.8"
+    id "org.gradle.test-retry" version "1.5.9"
 }
 
 ext {
@@ -83,7 +83,6 @@ dependencies {
     implementation(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
     implementation("org.apache.httpcomponents.client5:httpclient5:5.3")
-    implementation("io.micrometer:micrometer-core:${micrometerVersion}")
 
     compileOnly("org.apache.spark:spark-core_${scala}:${spark}")
     compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")

@@ -19,15 +19,13 @@ import org.apache.flink.connector.jdbc.table.JdbcRowDataLookupFunction;
 @Slf4j
 public class JdbcSourceWrapper {
   private Object source;
-  private Class sourceClass;
 
-  public <T> JdbcSourceWrapper(T source, Class sourceClass) {
+  public <T> JdbcSourceWrapper(T source) {
     this.source = source;
-    this.sourceClass = sourceClass;
   }
 
-  public static <T> JdbcSourceWrapper of(T source, Class sourceClass) {
-    return new JdbcSourceWrapper(source, sourceClass);
+  public static <T> JdbcSourceWrapper of(T source) {
+    return new JdbcSourceWrapper(source);
   }
 
   public String getConnectionUrl() {

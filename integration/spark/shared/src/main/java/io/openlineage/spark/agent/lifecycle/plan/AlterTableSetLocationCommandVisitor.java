@@ -30,7 +30,7 @@ public class AlterTableSetLocationCommandVisitor
     Optional<CatalogTable> tableOption =
         catalogTableFor(((AlterTableSetLocationCommand) x).tableName());
 
-    if (!tableOption.isPresent()) {
+    if (!tableOption.isPresent() || !context.getSparkSession().isPresent()) {
       return Collections.emptyList();
     }
 
@@ -39,6 +39,8 @@ public class AlterTableSetLocationCommandVisitor
     // The generated datasets will not include partition nor location information
     return Collections.singletonList(
         outputDataset()
-            .getDataset(PathUtils.fromCatalogTable(catalogTable), catalogTable.schema()));
+            .getDataset(
+                PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get()),
+                catalogTable.schema()));
   }
 }

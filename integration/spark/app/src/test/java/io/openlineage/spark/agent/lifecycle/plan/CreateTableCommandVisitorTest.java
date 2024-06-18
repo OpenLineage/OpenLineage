@@ -13,10 +13,14 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.lifecycle.CatalogTableTestUtils;
+import java.net.URI;
 import java.util.List;
+import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
+import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
+import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.execution.command.CreateTableCommand;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +36,9 @@ class CreateTableCommandVisitorTest {
 
   @BeforeEach
   public void setup() {
-    when(session.sparkContext()).thenReturn(mock(SparkContext.class));
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(sparkContext.getConf()).thenReturn(new SparkConf());
+    when(session.sparkContext()).thenReturn(sparkContext);
     command = new CreateTableCommand(CatalogTableTestUtils.getCatalogTable(table), true);
     visitor = new CreateTableCommandVisitor(SparkAgentTestExtension.newContext(session));
   }
@@ -50,5 +56,21 @@ class CreateTableCommandVisitorTest {
         outputDataset.getFacets().getLifecycleStateChange().getLifecycleStateChange());
     assertEquals("some-location", outputDataset.getName());
     assertEquals("file", outputDataset.getNamespace());
+  }
+
+  @Test
+  void testJobNameSuffix() {
+    CatalogTable catalogTable = mock(CatalogTable.class);
+    CatalogStorageFormat storage = mock(CatalogStorageFormat.class);
+    command = mock(CreateTableCommand.class);
+
+    when(command.table()).thenReturn(catalogTable);
+    when(catalogTable.identifier()).thenReturn(new TableIdentifier("table", Option.apply("db")));
+    when(catalogTable.storage()).thenReturn(storage);
+    when(catalogTable.provider()).thenReturn(Option.<String>empty());
+    when(storage.locationUri())
+        .thenReturn((Option<URI>) Option.apply(URI.create("/tmp/a/b/c/warehouse/table")));
+
+    assertThat(visitor.jobNameSuffix(command).get()).isEqualTo("warehouse_table");
   }
 }

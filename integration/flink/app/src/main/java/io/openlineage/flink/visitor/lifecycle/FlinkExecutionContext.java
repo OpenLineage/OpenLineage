@@ -5,6 +5,7 @@
 
 package io.openlineage.flink.visitor.lifecycle;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.JobFacets;
 import io.openlineage.client.OpenLineage.JobFacetsBuilder;
@@ -13,6 +14,7 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunEventBuilder;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
+import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.flink.SinkLineage;
 import io.openlineage.flink.TransformationUtils;
 import io.openlineage.flink.api.OpenLineageContext;
@@ -57,6 +59,8 @@ public class FlinkExecutionContext implements ExecutionContext {
   private final String processingType;
   private final CircuitBreaker circuitBreaker;
   private final FlinkOpenLineageConfig config;
+  @Getter private final MeterRegistry meterRegistry;
+  @Getter private final DatasetNamespaceCombinedResolver namespaceResolver;
 
   @Getter private final List<Transformation<?>> transformations;
 
@@ -70,7 +74,9 @@ public class FlinkExecutionContext implements ExecutionContext {
                   .run(new OpenLineage.RunBuilder().runId(runId).build())
                   .build();
           log.debug("Posting event for onJobSubmitted {}: {}", jobId, runEvent);
+          meterRegistry.counter("openlineage.flink.event.submitted.start").increment();
           eventEmitter.emit(runEvent);
+          meterRegistry.counter("openlineage.flink.event.submitted.end").increment();
           return null;
         });
   }
@@ -90,7 +96,9 @@ public class FlinkExecutionContext implements ExecutionContext {
                           .build())
                   .build();
           log.debug("Posting event for onJobCheckpoint {}: {}", jobId, runEvent);
+          meterRegistry.counter("openlineage.flink.event.checkpoint.start").increment();
           eventEmitter.emit(runEvent);
+          meterRegistry.counter("openlineage.flink.event.checkpoint.end").increment();
           return null;
         });
   }
@@ -119,11 +127,13 @@ public class FlinkExecutionContext implements ExecutionContext {
     circuitBreaker.run(
         () -> {
           OpenLineage openLineage = openLineageContext.getOpenLineage();
+          meterRegistry.counter("openlineage.flink.event.completed.start").increment();
           eventEmitter.emit(
               commonEventBuilder()
                   .run(openLineage.newRun(runId, null))
                   .eventType(EventType.COMPLETE)
                   .build());
+          meterRegistry.counter("openlineage.flink.event.completed.end").increment();
           return null;
         });
   }
@@ -133,6 +143,7 @@ public class FlinkExecutionContext implements ExecutionContext {
     circuitBreaker.run(
         () -> {
           OpenLineage openLineage = openLineageContext.getOpenLineage();
+          meterRegistry.counter("openlineage.flink.event.failed.start").increment();
           eventEmitter.emit(
               commonEventBuilder()
                   .run(
@@ -149,6 +160,7 @@ public class FlinkExecutionContext implements ExecutionContext {
                   .eventType(EventType.FAIL)
                   .eventTime(ZonedDateTime.now())
                   .build());
+          meterRegistry.counter("openlineage.flink.event.failed.end").increment();
           return null;
         });
   }
@@ -217,7 +229,14 @@ public class FlinkExecutionContext implements ExecutionContext {
       inputDatasets.addAll(
           inputVisitors.stream()
               .filter(inputVisitor -> inputVisitor.isDefinedAt(transformation))
-              .map(inputVisitor -> inputVisitor.apply(transformation))
+              .map(
+                  inputVisitor ->
+                      meterRegistry
+                          .timer(
+                              "openlineage.flink.dataset.input.extraction.time",
+                              "visitor",
+                              inputVisitor.getClass().getName())
+                          .record(() -> inputVisitor.apply(transformation)))
               .flatMap(List::stream)
               .collect(Collectors.toList()));
     }
@@ -232,7 +251,14 @@ public class FlinkExecutionContext implements ExecutionContext {
     log.debug("Getting output dataset from sink {}", sink.toString());
     return outputVisitors.stream()
         .filter(outputVisitor -> outputVisitor.isDefinedAt(sink))
-        .map(outputVisitor -> outputVisitor.apply(sink))
+        .map(
+            outputVisitor ->
+                meterRegistry
+                    .timer(
+                        "openlineage.flink.dataset.output.extraction.time",
+                        "visitor",
+                        outputVisitor.getClass().getName())
+                    .record(() -> outputVisitor.apply(sink)))
         .flatMap(List::stream)
         .collect(Collectors.toList());
   }

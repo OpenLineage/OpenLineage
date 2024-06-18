@@ -10,7 +10,7 @@ from openlineage.airflow.extractors.s3_extractor import (
     S3CopyObjectExtractor,
     S3FileTransformExtractor,
 )
-from openlineage.client.run import Dataset
+from openlineage.client.event_v2 import Dataset
 
 from airflow.models import DAG
 from airflow.providers.amazon.aws.operators.s3 import (

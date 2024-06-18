@@ -11,6 +11,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.hive.execution.InsertIntoHiveTable;
@@ -40,6 +41,10 @@ public class InsertIntoHiveTableVisitor
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+    if (!context.getSparkSession().isPresent()) {
+      return Collections.emptyList();
+    }
+
     InsertIntoHiveTable cmd = (InsertIntoHiveTable) x;
     CatalogTable table = cmd.table();
 
@@ -48,13 +53,25 @@ public class InsertIntoHiveTableVisitor
       outputDataset =
           outputDataset()
               .getDataset(
-                  PathUtils.fromCatalogTable(table),
+                  PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
                   table.schema(),
                   OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
     } else {
-      outputDataset = outputDataset().getDataset(PathUtils.fromCatalogTable(table), table.schema());
+      outputDataset =
+          outputDataset()
+              .getDataset(
+                  PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
+                  table.schema());
     }
 
     return Collections.singletonList(outputDataset);
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(InsertIntoHiveTable plan) {
+    return context
+        .getSparkSession()
+        .map(session -> PathUtils.fromCatalogTable(plan.table(), session))
+        .map(table -> trimPath(table.getName()));
   }
 }

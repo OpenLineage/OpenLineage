@@ -1,11 +1,12 @@
 /*
-/* Copyright 2018-2023 contributors to the OpenLineage project
+/* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 plugins {
     id 'java-library'
     id 'jacoco'
+    id 'pmd'
     id 'com.adarshr.test-logger'
     id 'com.diffplug.spotless'
     id 'io.franzbecker.gradle-lombok'

@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.sql.ColumnMeta;
 import java.util.Arrays;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
 
 class JdbcColumnLineageExpressionCollectorTest {
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
+  ColumnLevelLineageContext context = mock(ColumnLevelLineageContext.class);
   ExprId exprId1 = ExprId.apply(20);
   ExprId exprId2 = ExprId.apply(21);
   ExprId dependencyId1 = ExprId.apply(0);
@@ -61,6 +63,7 @@ class JdbcColumnLineageExpressionCollectorTest {
         ScalaConversionUtils.<String, String>asScalaMapEmpty();
     when(jdbcOptions.parameters())
         .thenReturn(CaseInsensitiveMap$.MODULE$.<String>apply(properties));
+    when(context.getBuilder()).thenReturn(builder);
   }
 
   @Test
@@ -76,7 +79,7 @@ class JdbcColumnLineageExpressionCollectorTest {
         .thenAnswer(invocation -> mockMap.get(invocation.getArgument(0)));
 
     JdbcColumnLineageCollector.extractExpressionsFromJDBC(
-        relation, builder, Arrays.asList(expression1, expression2));
+        context, relation, Arrays.asList(expression1, expression2));
 
     verify(builder, times(1)).addDependency(exprId2, dependencyId1);
     verify(builder, times(1)).addDependency(exprId2, dependencyId2);
@@ -88,7 +91,7 @@ class JdbcColumnLineageExpressionCollectorTest {
     when(jdbcOptions.url()).thenReturn(url);
 
     JdbcColumnLineageCollector.extractExpressionsFromJDBC(
-        relation, builder, Arrays.asList(expression1, expression2));
+        context, relation, Arrays.asList(expression1, expression2));
 
     verify(builder, never()).addDependency(any(ExprId.class), any(ExprId.class));
   }

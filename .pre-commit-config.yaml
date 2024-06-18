@@ -99,3 +99,11 @@ repos:
         entry: python ./.pre_commit/check-redactions.py
         always_run: true
         pass_filenames: false
+      - id: pmd
+        name: pmd
+        description: "Runs the PMD static code analyzer."
+        language: docker_image
+        entry: -v ./.pmd_cache:/opt/.pmd_cache --entrypoint .pre_commit/run-pmd.sh cimg/openjdk:8.0
+        files: ^client/java/src/.*\.java$|^integration/spark/spark-interfaces-scala/.*\.java$
+        exclude: ".*test.*"
+        require_serial: true

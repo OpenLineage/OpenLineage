@@ -12,8 +12,10 @@ import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.sql.catalyst.analysis.NamedRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.ReplaceIcebergData;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
@@ -66,5 +68,14 @@ public class ReplaceIcebergDataDatasetBuilder
 
     return PlanUtils3.fromDataSourceV2Relation(
         outputDataset(), context, table, datasetFacetsBuilder);
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(LogicalPlan plan) {
+    if (!(plan instanceof ReplaceIcebergData)) {
+      return Optional.empty();
+    }
+    ReplaceIcebergData replace = (ReplaceIcebergData) plan;
+    return Optional.ofNullable(replace.table()).map(NamedRelation::name);
   }
 }

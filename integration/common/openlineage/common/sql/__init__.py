@@ -26,6 +26,7 @@ def parse(
         sql = [sql]
     try:
         return parse_sql(sql, dialect=dialect, default_schema=default_schema)
-    except Exception as e:
+    except BaseException as e:
+        # PanicException is a BaseException https://pyo3.rs/main/doc/pyo3/panic/struct.panicexception
         log.error(f"SQL parser failed: {e}")
         return None

@@ -12,20 +12,22 @@ import java.net.URI;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.internal.StaticSQLConf;
 
 @Slf4j
+@SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
 public class PathUtils {
 
   private static final String DEFAULT_SCHEME = "file";
   private static final String DEFAULT_SEPARATOR = "/";
-  private static Optional<SparkConf> sparkConf = Optional.empty();
 
   public static DatasetIdentifier fromPath(Path path) {
     return fromPath(path, DEFAULT_SCHEME);
@@ -43,46 +45,50 @@ public class PathUtils {
     return DatasetIdentifierUtils.fromURI(location, defaultScheme);
   }
 
-  public static DatasetIdentifier fromCatalogTable(CatalogTable catalogTable) {
-    return fromCatalogTable(catalogTable, loadSparkConf());
-  }
-
   /**
    * Create DatasetIdentifier from CatalogTable, using storage's locationURI if it exists. In other
    * way, use defaultTablePath.
    */
   @SneakyThrows
   public static DatasetIdentifier fromCatalogTable(
-      CatalogTable catalogTable, Optional<SparkConf> sparkConf) {
-
+      CatalogTable catalogTable, SparkSession sparkSession) {
     DatasetIdentifier di;
     URI uri;
-
     if (catalogTable.storage() != null && catalogTable.storage().locationUri().isDefined()) {
       uri = prepareUriFromLocation(catalogTable);
       di = PathUtils.fromURI(uri, DEFAULT_SCHEME);
     } else {
-      // try to obtain location
-      try {
-        uri = prepareUriFromDefaultTablePath(catalogTable);
-        di = PathUtils.fromURI(uri, DEFAULT_SCHEME);
-      } catch (IllegalStateException e) {
-        // session inactive - no way to find DatasetProvider
-        throw new IllegalArgumentException(
-            "Unable to extract DatasetIdentifier from a CatalogTable", e);
-      }
+      uri = prepareUriFromDefaultTablePath(catalogTable, sparkSession);
+      di = PathUtils.fromURI(uri, DEFAULT_SCHEME);
     }
 
-    Optional<URI> metastoreUri = extractMetastoreUri(sparkConf);
-    // TODO: Is the call to "metastoreUri.get()" really needed?
-    //   Java's Optional should prevent the null in the first place.
-    if (metastoreUri.isPresent() && metastoreUri.get() != null) {
+    SparkContext sparkContext = sparkSession.sparkContext();
+    SparkConf sparkConf = sparkContext.getConf();
+    Configuration hadoopConf = sparkContext.hadoopConfiguration();
+    Optional<URI> metastoreUri = extractMetastoreUri(sparkContext);
+    if (metastoreUri.isPresent()) {
       // dealing with Hive tables
       DatasetIdentifier symlink = prepareHiveDatasetIdentifier(catalogTable, metastoreUri.get());
       return di.withSymlink(
           symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.TABLE);
+    } else if (catalogTable.provider().isDefined()
+        && "hive".equals(catalogTable.provider().get())
+        && "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
+            .equals(
+                SparkConfUtils.findHadoopConfigKey(
+                        hadoopConf, "hive.metastore.client.factory.class")
+                    .orElse(""))) {
+      String region = System.getenv().get("AWS_DEFAULT_REGION");
+      if (region == null || region.isEmpty()) {
+        region = System.getenv("AWS_REGION");
+      }
+      String accountId =
+          SparkConfUtils.findSparkConfigKey(sparkConf, "spark.glue.accountId").orElse("");
+      return di.withSymlink(
+          nameFromTableIdentifier(catalogTable.identifier()),
+          String.format("aws:glue:%s:%s", region, accountId),
+          DatasetIdentifier.SymlinkType.TABLE);
     } else {
-
       return di.withSymlink(
           nameFromTableIdentifier(catalogTable.identifier()),
           StringUtils.substringBeforeLast(uri.toString(), File.separator),
@@ -90,9 +96,9 @@ public class PathUtils {
     }
   }
 
-  private static URI prepareUriFromDefaultTablePath(CatalogTable catalogTable) {
-    URI uri =
-        SparkSession.active().sessionState().catalog().defaultTablePath(catalogTable.identifier());
+  private static URI prepareUriFromDefaultTablePath(
+      CatalogTable catalogTable, SparkSession sparkSession) {
+    URI uri = sparkSession.sessionState().catalog().defaultTablePath(catalogTable.identifier());
 
     return uri;
   }
@@ -133,36 +139,21 @@ public class PathUtils {
         "hive", null, metastoreUri.getHost(), metastoreUri.getPort(), qualifiedName, null, null);
   }
 
-  /**
-   * SparkConf does not change through job lifetime but it can get lost once session is closed. It's
-   * good to have it set in case of SPARK-29046
-   */
-  private static Optional<SparkConf> loadSparkConf() {
-    if (!sparkConf.isPresent() && SparkSession.getDefaultSession().isDefined()) {
-      sparkConf = Optional.of(SparkSession.getDefaultSession().get().sparkContext().getConf());
-    }
-    return sparkConf;
-  }
-
-  private static Optional<URI> extractMetastoreUri(Optional<SparkConf> sparkConf) {
-    // make sure SparkConf is present
-    if (!sparkConf.isPresent()) {
-      return Optional.empty();
-    }
-
+  private static Optional<URI> extractMetastoreUri(SparkContext context) {
     // make sure enableHiveSupport is called
     Optional<String> setting =
         SparkConfUtils.findSparkConfigKey(
-            sparkConf.get(), StaticSQLConf.CATALOG_IMPLEMENTATION().key());
+            context.getConf(), StaticSQLConf.CATALOG_IMPLEMENTATION().key());
     if (!setting.isPresent() || !"hive".equals(setting.get())) {
       return Optional.empty();
     }
 
-    return SparkConfUtils.getMetastoreUri(sparkConf.get());
+    return SparkConfUtils.getMetastoreUri(context);
   }
 
   private static String nameFromTableIdentifier(TableIdentifier identifier) {
-    // we create name instead of calling `unquotedString` method which includes spark_catalog
+    // we create name instead of calling `unquotedString` method which includes
+    // spark_catalog
     // for Spark 3.4
     String name;
     if (identifier.database().isDefined()) {

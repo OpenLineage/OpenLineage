@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 def _detect_running_region() -> None | str:
     """Dynamically determine the region."""
-    import boto3  # type: ignore[import]
+    import boto3  # type: ignore[import-untyped]
 
     checks = [
         # check if set through ENV vars
@@ -44,7 +44,7 @@ class MSKIAMConfig(KafkaConfig):
 
 
 def _oauth_cb(config: MSKIAMConfig, *_: Any) -> tuple[str, float]:
-    from aws_msk_iam_sasl_signer import MSKAuthTokenProvider  # type: ignore[import]
+    from aws_msk_iam_sasl_signer import MSKAuthTokenProvider  # type: ignore[import-untyped]
 
     region = config.region
     if config.aws_profile:
@@ -78,7 +78,7 @@ class MSKIAMTransport(KafkaTransport):
 
     def _setup_producer(self, config: dict) -> None:  # type: ignore[type-arg]
         try:
-            log.debug("Setup the MSK transport with this configuration: %s", self.msk_config)
+            log.debug("Use MSK producer with the following config: %s", self.msk_config)
 
             # https://github.com/confluentinc/librdkafka/blob/master/CONFIGURATION.md
             if self.msk_config.region is None:

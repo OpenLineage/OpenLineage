@@ -5,16 +5,13 @@
 
 package io.openlineage.spark.agent;
 
-import static io.openlineage.spark.agent.lifecycle.ExecutionContext.CAMEL_TO_SNAKE_CASE;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
-import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.openlineage.client.Environment;
-import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
@@ -25,11 +22,9 @@ import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import java.io.PrintWriter;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -37,7 +32,6 @@ import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
@@ -70,9 +64,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
   private static ContextFactory contextFactory;
   private static JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
-  private final Function1<SparkSession, SparkContext> sparkContextFromSession =
+  private static final Function1<SparkSession, SparkContext> sparkContextFromSession =
       ScalaConversionUtils.toScalaFn(SparkSession::sparkContext);
-  private final Function0<Option<SparkContext>> activeSparkContext =
+  private static final Function0<Option<SparkContext>> activeSparkContext =
       ScalaConversionUtils.toScalaFn(SparkContext$.MODULE$::getActive);
 
   private static CircuitBreaker circuitBreaker = new NoOpCircuitBreaker();
@@ -81,7 +75,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   private static String sparkVersion = package$.MODULE$.SPARK_VERSION();
 
-  private static final boolean isDisabled = checkIfDisabled();
+  private final boolean isDisabled = checkIfDisabled();
 
   /** called by the tests */
   public static void init(ContextFactory contextFactory) {
@@ -228,6 +222,15 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     jobMetrics.addMetrics(taskEnd.stageId(), taskEnd.taskMetrics());
   }
 
+  public static ExecutionContext getSparkApplicationExecutionContext() {
+    Optional<SparkContext> sparkContext =
+        asJavaOptional(
+            SparkSession.getDefaultSession()
+                .map(sparkContextFromSession)
+                .orElse(activeSparkContext));
+    return contextFactory.createSparkApplicationExecutionContext(sparkContext.orElse(null));
+  }
+
   public static Optional<ExecutionContext> getSparkSQLExecutionContext(long executionId) {
     return Optional.ofNullable(
         sparkSqlExecutionRegistry.computeIfAbsent(
@@ -251,20 +254,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     return outputs.get(rdd);
   }
 
-  @SuppressWarnings(
-      "PMD") // javadoc -> Closing a ByteArrayOutputStream has no effect. The methods in this class
-  // can be called after the stream has been closed without generating an IOException.
-  private static OpenLineage.RunFacets errorRunFacet(Exception e, OpenLineage ol) {
-    OpenLineage.RunFacet errorFacet = ol.newRunFacet();
-    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-    e.printStackTrace(new PrintWriter(buffer, true));
-    errorFacet.getAdditionalProperties().put("exception", buffer.toString());
-
-    OpenLineage.RunFacetsBuilder runFacetsBuilder = ol.newRunFacetsBuilder();
-    runFacetsBuilder.put("lineage.error", errorFacet);
-    return runFacetsBuilder.build();
-  }
-
   private static void clear() {
     sparkSqlExecutionRegistry.clear();
     rddExecutionRegistry.clear();
@@ -273,13 +262,17 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onApplicationEnd(SparkListenerApplicationEnd applicationEnd) {
+    if (isDisabled) {
+      return;
+    }
     meterRegistry.counter("openlineage.spark.event.app.end").increment();
     meterRegistry
         .counter("openlineage.spark.event.app.end.memoryusage")
         .increment(RuntimeUtils.getMemoryFractionUsage());
+
     circuitBreaker.run(
         () -> {
-          emitApplicationEndEvent(applicationEnd.time());
+          getSparkApplicationExecutionContext().end(applicationEnd);
           return null;
         });
     close();
@@ -293,20 +286,24 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onApplicationStart(SparkListenerApplicationStart applicationStart) {
+    if (isDisabled) {
+      return;
+    }
     initializeContextFactoryIfNotInitialized(applicationStart.appName());
     meterRegistry.counter("openlineage.spark.event.app.start").increment();
     meterRegistry
         .counter("openlineage.spark.event.app.start.memoryusage")
         .increment(RuntimeUtils.getMemoryFractionUsage());
+
     circuitBreaker.run(
         () -> {
-          emitApplicationStartEvent(applicationStart.time());
+          getSparkApplicationExecutionContext().start(applicationStart);
           return null;
         });
   }
 
   private void initializeContextFactoryIfNotInitialized() {
-    if (contextFactory != null || isDisabled) {
+    if (contextFactory != null) {
       return;
     }
     asJavaOptional(activeSparkContext.apply())
@@ -314,13 +311,13 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   private void initializeContextFactoryIfNotInitialized(String appName) {
-    if (contextFactory != null || isDisabled) {
+    if (contextFactory != null) {
       return;
     }
     SparkEnv sparkEnv = SparkEnv$.MODULE$.get();
     if (sparkEnv == null) {
       log.warn(
-          "Open lineage listener instantiated, but no configuration could be found. "
+          "OpenLineage listener instantiated, but no configuration could be found. "
               + "Lineage events will not be collected");
       return;
     }
@@ -328,7 +325,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   private void initializeContextFactoryIfNotInitialized(SparkConf sparkConf, String appName) {
-    if (contextFactory != null || isDisabled) {
+    if (contextFactory != null) {
       return;
     }
     try {
@@ -338,7 +335,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       contextFactory = new ContextFactory(new EventEmitter(config, appName), meterRegistry, config);
       circuitBreaker = new CircuitBreakerFactory(config.getCircuitBreaker()).build();
     } catch (URISyntaxException e) {
-      log.error("Unable to parse open lineage endpoint. Lineage events will not be collected", e);
+      log.error("Unable to parse OpenLineage endpoint. Lineage events will not be collected", e);
     }
   }
 
@@ -369,54 +366,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
                             Tag.of("openlineage.spark.integration.version", Versions.getVersion()),
                             Tag.of("openlineage.spark.version", sparkVersion),
                             Tag.of("openlineage.spark.disabled.facets", disabledFacets))));
-  }
-
-  private void emitApplicationEvent(Long time, OpenLineage.RunEvent.EventType eventType) {
-    OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
-    EventEmitter emitter = contextFactory.openLineageEventEmitter;
-    OpenLineage.RunBuilder runBuilder =
-        openLineage.newRunBuilder().runId(emitter.getApplicationRunId());
-    if (emitter.getParentRunId().isPresent()
-        && emitter.getParentJobName().isPresent()
-        && emitter.getParentJobNamespace().isPresent()) {
-      runBuilder.facets(
-          openLineage
-              .newRunFacetsBuilder()
-              .parent(
-                  openLineage.newParentRunFacet(
-                      openLineage.newParentRunFacetRun(emitter.getParentRunId().get()),
-                      openLineage.newParentRunFacetJob(
-                          emitter.getParentJobNamespace().get(), emitter.getParentJobName().get())))
-              .build());
-    }
-    OpenLineage.RunEvent applicationEvent =
-        openLineage
-            .newRunEventBuilder()
-            .eventType(eventType)
-            .eventTime(toZonedTime(time))
-            .job(
-                openLineage
-                    .newJobBuilder()
-                    .namespace(emitter.getJobNamespace())
-                    .name(
-                        emitter
-                            .getApplicationJobName()
-                            .replaceAll(CAMEL_TO_SNAKE_CASE, "_$1")
-                            .toLowerCase(Locale.ROOT))
-                    .build())
-            .run(runBuilder.build())
-            .inputs(Collections.emptyList())
-            .outputs(Collections.emptyList())
-            .build();
-    emitter.emit(applicationEvent);
-  }
-
-  private void emitApplicationStartEvent(Long time) {
-    emitApplicationEvent(time, OpenLineage.RunEvent.EventType.START);
-  }
-
-  private void emitApplicationEndEvent(Long time) {
-    emitApplicationEvent(time, OpenLineage.RunEvent.EventType.COMPLETE);
   }
 
   private static boolean checkIfDisabled() {

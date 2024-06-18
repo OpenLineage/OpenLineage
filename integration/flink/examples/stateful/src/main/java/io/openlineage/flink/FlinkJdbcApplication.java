@@ -29,6 +29,7 @@ public class FlinkJdbcApplication {
     public static final String INPUT_QUERY = "select * from source_event";
     public static final String OUTPUT_QUERY = "insert into sink_event(event_uid, content, created_at) values (?, ?, ?)";
 
+    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
     public static final JdbcStatementBuilder<Row> TEST_ENTRY_JDBC_STATEMENT_BUILDER =
             (ps, row) -> {
                 if (row.getArity() == 3) {

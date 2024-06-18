@@ -5,7 +5,6 @@ import json
 import os
 import tempfile
 import time
-import uuid
 from os import listdir
 from os.path import exists, isfile, join
 from typing import Any, Dict, List
@@ -15,6 +14,7 @@ import pytest
 from openlineage.client import OpenLineageClient
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.transport.file import FileConfig, FileTransport
+from openlineage.client.uuid import generate_new_uuid
 
 
 def emit_test_events(client: OpenLineageClient, debuff_time: int = 0) -> List[Dict[str, Any]]:
@@ -37,7 +37,7 @@ def emit_test_events(client: OpenLineageClient, debuff_time: int = 0) -> List[Di
         event = RunEvent(
             eventType=test_event["eventType"],
             eventTime=datetime.datetime.now().isoformat(),
-            run=Run(runId=str(uuid.uuid4())),
+            run=Run(runId=str(generate_new_uuid())),
             job=Job(namespace=test_event["namespace"], name=test_event["name"]),
             producer=test_event["producer"],
         )
@@ -107,7 +107,7 @@ def test_file_transport_raises_error_with_non_writeable_file(mock_dt, append) ->
     event = RunEvent(
         eventType=RunState.START,
         eventTime=datetime.datetime.now().isoformat(),
-        run=Run(runId=str(uuid.uuid4())),
+        run=Run(runId=str(generate_new_uuid())),
         job=Job(namespace="file", name="test"),
         producer="prod",
     )

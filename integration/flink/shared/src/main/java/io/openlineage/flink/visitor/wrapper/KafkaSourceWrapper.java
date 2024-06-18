@@ -5,6 +5,10 @@
 
 package io.openlineage.flink.visitor.wrapper;
 
+import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
+import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.utils.AvroSchemaUtils;
+import io.openlineage.flink.utils.ProtobufUtils;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +38,8 @@ import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicsDescript
 @Slf4j
 public class KafkaSourceWrapper {
 
+  private final OpenLineageContext context;
+
   private static final String VALUE_ONLY_DESERIALIZATION_SCHEMA_WRAPPER_CLASS =
       "org.apache.flink.connector.kafka.source.reader.deserializer.KafkaValueOnlyDeserializationSchemaWrapper";
   private static final String DESERIALIZATION_SCHEMA_WRARPPER_CLASS =
@@ -45,16 +51,19 @@ public class KafkaSourceWrapper {
 
   @Getter private final KafkaSubscriber kafkaSubscriber;
 
-  private KafkaSourceWrapper(KafkaSource kafkaSource, KafkaSubscriber kafkaSubscriber) {
+  private KafkaSourceWrapper(
+      KafkaSource kafkaSource, KafkaSubscriber kafkaSubscriber, OpenLineageContext context) {
     this.kafkaSource = kafkaSource;
     this.kafkaSubscriber = kafkaSubscriber;
+    this.context = context;
   }
 
-  public static KafkaSourceWrapper of(KafkaSource kafkaSource) throws IllegalAccessException {
+  public static KafkaSourceWrapper of(KafkaSource kafkaSource, OpenLineageContext context)
+      throws IllegalAccessException {
     Field subscriberField = FieldUtils.getField(KafkaSource.class, "subscriber", true);
     KafkaSubscriber kafkaSubscriber = (KafkaSubscriber) subscriberField.get(kafkaSource);
 
-    return new KafkaSourceWrapper(kafkaSource, kafkaSubscriber);
+    return new KafkaSourceWrapper(kafkaSource, kafkaSubscriber, context);
   }
 
   public KafkaSubscriber getSubscriber() {
@@ -101,7 +110,7 @@ public class KafkaSourceWrapper {
         .get();
   }
 
-  public Optional<Schema> getAvroSchema() {
+  public Optional<SchemaDatasetFacet> getSchemaFacet() {
     try {
       final Class deserializationSchemaWrapperClass =
           Class.forName(VALUE_ONLY_DESERIALIZATION_SCHEMA_WRAPPER_CLASS);
@@ -109,6 +118,9 @@ public class KafkaSourceWrapper {
       final Class dynamicDeserializationSchemaClass =
           Class.forName(DYNAMIC_DESERIALIZATION_SCHEMA_CLASS);
       KafkaRecordDeserializationSchema recordDeserializationSchema = getDeserializationSchema();
+      log.debug(
+          "Deserialization schema is {} when extracting schema facet for Kafka source",
+          recordDeserializationSchema);
       if (recordDeserializationSchema
           .getClass()
           .isAssignableFrom(deserializationSchemaWrapperClass)) {
@@ -143,27 +155,33 @@ public class KafkaSourceWrapper {
     }
   }
 
-  private Optional<Schema> convert(DeserializationSchema schema) {
+  private Optional<SchemaDatasetFacet> convert(DeserializationSchema schema) {
     if (schema instanceof AvroDeserializationSchema) {
       AvroDeserializationSchema avroDeserializationSchema = (AvroDeserializationSchema) schema;
       return convert(avroDeserializationSchema.getProducedType());
     } else if (schema instanceof AvroRowDataDeserializationSchema) {
       AvroRowDataDeserializationSchema rowDataDeserializationSchema =
           (AvroRowDataDeserializationSchema) schema;
+      log.debug("Extracting Avro schema {}", schema);
       return convert(rowDataDeserializationSchema.getProducedType());
+    } else if (ProtobufUtils.isProtobufDeserializationSchema(schema)) {
+      log.debug("Extracting Protobuf schema {}", schema);
+      return ProtobufUtils.convert(context.getOpenLineage(), schema);
     }
 
     return Optional.empty();
   }
 
-  private Optional<Schema> convert(TypeInformation<?> typeInformation) {
+  private Optional<SchemaDatasetFacet> convert(TypeInformation<?> typeInformation) {
     if (typeInformation.getTypeClass().equals(org.apache.avro.generic.GenericRecord.class)) {
       // GenericRecordAvroTypeInfo -> try to extract private schema field
       return WrapperUtils.<Schema>getFieldValue(
-          typeInformation.getClass(), typeInformation, "schema");
+              typeInformation.getClass(), typeInformation, "schema")
+          .map(s -> AvroSchemaUtils.convert(context.getOpenLineage(), s));
     } else {
       return Optional.ofNullable(typeInformation.getTypeClass())
-          .flatMap(aClass -> WrapperUtils.<Schema>invokeStatic(aClass, "getClassSchema"));
+          .flatMap(aClass -> WrapperUtils.<Schema>invokeStatic(aClass, "getClassSchema"))
+          .map(s -> AvroSchemaUtils.convert(context.getOpenLineage(), s));
     }
   }
 }

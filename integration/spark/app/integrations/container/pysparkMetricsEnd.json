@@ -21,8 +21,7 @@
     }
   },
   "job": {
-    "namespace": "testEmitMetrics",
-    "name": "open_lineage_integration_emit_metrics.execute_create_table_command.emit_test_create_table_emit_test"
+    "namespace": "testEmitMetrics"
   },
   "inputs": [],
   "outputs": [

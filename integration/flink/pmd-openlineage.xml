@@ -7,6 +7,9 @@
     <description>
         Rules for Debugging OpenLineage
     </description>
+    <exclude-pattern>.*/proto/event/.*</exclude-pattern>
+    <exclude-pattern>.*/avro/event/.*</exclude-pattern>
+    <exclude-pattern>.*/generated-main-avro-java/.*</exclude-pattern>
     <rule ref="category/java/errorprone.xml">
         <exclude name="EmptyCatchBlock"/> <!-- Openlineage should not fail Spark job -->
         <exclude name="UseProperClassLoader"/>

@@ -5,14 +5,14 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from attr import define, field
+import attr
 from openlineage.client.generated.base import DatasetFacet
 
 
-@define
+@attr.define
 class DatasourceDatasetFacet(DatasetFacet):
-    name: str | None = field(default=None)
-    uri: str | None = field(default=None)
+    name: str | None = attr.field(default=None)
+    uri: str | None = attr.field(default=None)
     _additional_skip_redact: ClassVar[list[str]] = ["name", "uri"]
 
     @staticmethod
@@ -23,7 +23,4 @@ class DatasourceDatasetFacet(DatasetFacet):
     def uri_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
         from urllib.parse import urlparse
 
-        result = urlparse(value)
-        if value and not all([result.scheme, result.netloc]):
-            msg = "uri is not a valid URI"
-            raise ValueError(msg)
+        urlparse(value)

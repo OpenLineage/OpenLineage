@@ -5,7 +5,7 @@ from typing import List, Optional
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.airflow.utils import get_job_name
-from openlineage.client.facet import SqlJobFacet
+from openlineage.client.facet_v2 import sql_job
 from openlineage.common.provider.redshift_data import RedshiftDataDatasetsProvider
 from openlineage.common.sql import SqlMeta, parse
 
@@ -20,7 +20,7 @@ class RedshiftDataExtractor(BaseExtractor):
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
         self.log.debug(f"extract_on_complete({task_instance})")
-        job_facets = {"sql": SqlJobFacet(self.operator.sql)}
+        job_facets = {"sql": sql_job.SQLJobFacet(self.operator.sql)}
 
         self.log.debug(f"Sending SQL to parser: {self.operator.sql}")
         sql_meta: Optional[SqlMeta] = parse(
@@ -62,7 +62,7 @@ class RedshiftDataExtractor(BaseExtractor):
             inputs=[ds.to_openlineage_dataset() for ds in stats.inputs],
             outputs=[ds.to_openlineage_dataset() for ds in stats.output],
             run_facets=stats.run_facets,
-            job_facets={"sql": SqlJobFacet(self.operator.sql)},
+            job_facets={"sql": sql_job.SQLJobFacet(self.operator.sql)},
         )
 
     @property

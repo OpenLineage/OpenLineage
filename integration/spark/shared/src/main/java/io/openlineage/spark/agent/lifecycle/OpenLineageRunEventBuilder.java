@@ -14,18 +14,14 @@ import io.openlineage.client.OpenLineage.DatasetFacets;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.InputDatasetFacet;
 import io.openlineage.client.OpenLineage.InputDatasetInputFacets;
-import io.openlineage.client.OpenLineage.JobBuilder;
 import io.openlineage.client.OpenLineage.JobFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OutputDatasetFacet;
 import io.openlineage.client.OpenLineage.OutputDatasetOutputFacets;
-import io.openlineage.client.OpenLineage.ParentRunFacet;
 import io.openlineage.client.OpenLineage.RunEvent;
-import io.openlineage.client.OpenLineage.RunEventBuilder;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
-import io.openlineage.spark.agent.hooks.HookUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.FacetUtils;
@@ -35,14 +31,14 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
-import java.util.ArrayList;
-import java.util.Arrays;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
@@ -51,14 +47,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.SparkListenerEvent;
-import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
-import org.apache.spark.scheduler.SparkListenerStageSubmitted;
 import org.apache.spark.scheduler.Stage;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
-import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import scala.Function1;
 import scala.PartialFunction;
 
@@ -191,133 +183,15 @@ class OpenLineageRunEventBuilder {
                 }));
   }
 
-  RunEvent buildRun(
-      ParentRunFacet applicationParentRunFacet,
-      RunEventBuilder runEventBuilder,
-      JobBuilder jobBuilder,
-      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
-      SparkListenerStageSubmitted event) {
-    Stage stage = stageMap.get(event.stageInfo().stageId());
-    RDD<?> rdd = stage.rdd();
-
-    List<Object> nodes = new ArrayList<>();
-    nodes.addAll(Arrays.asList(event.stageInfo(), stage));
-
-    nodes.addAll(Rdds.flattenRDDs(rdd));
-
-    return populateRun(
-        applicationParentRunFacet, runEventBuilder, jobBuilder, jobFacetsBuilder, nodes);
-  }
-
-  RunEvent buildRun(
-      ParentRunFacet applicationParentRunFacet,
-      RunEventBuilder runEventBuilder,
-      JobBuilder jobBuilder,
-      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
-      SparkListenerStageCompleted event) {
-    Stage stage = stageMap.get(event.stageInfo().stageId());
-    RDD<?> rdd = stage.rdd();
-
-    List<Object> nodes = new ArrayList<>();
-    nodes.addAll(Arrays.asList(event.stageInfo(), stage));
-
-    nodes.addAll(Rdds.flattenRDDs(rdd));
-
-    return populateRun(
-        applicationParentRunFacet, runEventBuilder, jobBuilder, jobFacetsBuilder, nodes);
-  }
-
-  RunEvent buildRun(
-      ParentRunFacet applicationParentRunFacet,
-      RunEventBuilder runEventBuilder,
-      JobBuilder jobBuilder,
-      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
-      SparkListenerSQLExecutionStart event) {
-    return buildRun(
-        applicationParentRunFacet,
-        runEventBuilder,
-        jobBuilder,
-        jobFacetsBuilder,
-        event,
-        Optional.empty());
-  }
-
-  RunEvent buildRun(
-      ParentRunFacet applicationParentRunFacet,
-      RunEventBuilder runEventBuilder,
-      JobBuilder jobBuilder,
-      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
-      SparkListenerSQLExecutionEnd event) {
-    return buildRun(
-        applicationParentRunFacet,
-        runEventBuilder,
-        jobBuilder,
-        jobFacetsBuilder,
-        event,
-        Optional.empty());
-  }
-
-  RunEvent buildRun(
-      ParentRunFacet parentRunFacet,
-      RunEventBuilder runEventBuilder,
-      JobBuilder jobBuilder,
-      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
-      SparkListenerJobStart event) {
-    return buildRun(
-        parentRunFacet,
-        runEventBuilder,
-        jobBuilder,
-        jobFacetsBuilder,
-        event,
-        Optional.ofNullable(jobMap.get(event.jobId())));
-  }
-
-  RunEvent buildRun(
-      ParentRunFacet applicationParentRunFacet,
-      RunEventBuilder runEventBuilder,
-      JobBuilder jobBuilder,
-      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
-      SparkListenerJobEnd event) {
-    return buildRun(
-        applicationParentRunFacet,
-        runEventBuilder,
-        jobBuilder,
-        jobFacetsBuilder,
-        event,
-        Optional.ofNullable(jobMap.get(event.jobId())));
-  }
-
-  private RunEvent buildRun(
-      ParentRunFacet applicationParentRunFacet,
-      RunEventBuilder runEventBuilder,
-      JobBuilder jobBuilder,
-      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
-      Object event,
-      Optional<ActiveJob> job) {
-    List<Object> nodes = new ArrayList<>();
-    nodes.add(event);
-    job.ifPresent(
-        j -> {
-          nodes.add(j);
-          nodes.addAll(Rdds.flattenRDDs(j.finalStage().rdd()));
-        });
-
-    return populateRun(
-        applicationParentRunFacet, runEventBuilder, jobBuilder, jobFacetsBuilder, nodes);
-  }
-
-  private RunEvent populateRun(
-      ParentRunFacet applicationParentRunFacet,
-      RunEventBuilder runEventBuilder,
-      JobBuilder jobBuilder,
-      OpenLineage.JobFacetsBuilder jobFacetsBuilder,
-      List<Object> nodes) {
+  RunEvent buildRun(OpenLineageRunEventContext context) {
     OpenLineage openLineage = openLineageContext.getOpenLineage();
-
+    List<Object> nodes = context.loadNodes(stageMap, jobMap);
+    UUID runId = context.getOverwriteRunId().orElse(openLineageContext.getRunUuid());
     RunFacetsBuilder runFacetsBuilder = openLineage.newRunFacetsBuilder();
 
-    runFacetsBuilder.parent(applicationParentRunFacet);
-    OpenLineage.JobFacets jobFacets = buildJobFacets(nodes, jobFacetBuilders, jobFacetsBuilder);
+    runFacetsBuilder.parent(context.getApplicationParentRunFacet());
+    OpenLineage.JobFacets jobFacets =
+        buildJobFacets(nodes, jobFacetBuilders, context.getJobFacetsBuilder());
     List<InputDataset> inputDatasets = buildInputDatasets(nodes);
     List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);
     openLineageContext
@@ -333,17 +207,16 @@ class OpenLineageRunEventBuilder {
     unknownEntryFacetListener.clear();
 
     RunFacets runFacets = buildRunFacets(nodes, runFacetBuilders, runFacetsBuilder);
-    OpenLineage.RunBuilder runBuilder =
-        openLineage.newRunBuilder().runId(openLineageContext.getRunUuid()).facets(runFacets);
-    runEventBuilder
+    OpenLineage.RunBuilder runBuilder = openLineage.newRunBuilder().runId(runId).facets(runFacets);
+    context
+        .getRunEventBuilder()
         .run(runBuilder.build())
-        .job(jobBuilder.facets(jobFacets).build())
+        .job(context.getJobBuilder().facets(jobFacets).build())
         .inputs(RemovePathPatternUtils.removeInputsPathPattern(openLineageContext, inputDatasets))
         .outputs(
             RemovePathPatternUtils.removeOutputsPathPattern(openLineageContext, outputDatasets));
 
-    HookUtils.preBuild(openLineageContext, runEventBuilder);
-    return runEventBuilder.build();
+    return context.getRunEventBuilder().build();
   }
 
   private List<InputDataset> buildInputDatasets(List<Object> nodes) {
@@ -356,10 +229,12 @@ class OpenLineageRunEventBuilder {
                 log.debug("Physical plan executed {}", qe.executedPlan().toJSON());
               }
             });
-    log.debug(
-        "Visiting query plan {} with input dataset builders {}",
-        openLineageContext.getQueryExecution(),
-        inputDatasetBuilders);
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "Visiting query plan {} with input dataset builders {}",
+          openLineageContext.getQueryExecution(),
+          inputDatasetBuilders);
+    }
 
     Function1<LogicalPlan, Collection<InputDataset>> inputVisitor =
         visitLogicalPlan(PlanUtils.merge(inputDatasetQueryPlanVisitors));
@@ -433,12 +308,22 @@ class OpenLineageRunEventBuilder {
   }
 
   private List<OutputDataset> buildOutputDatasets(List<Object> nodes) {
-    log.debug(
-        "Visiting query plan {} with output dataset builders {}",
-        openLineageContext.getQueryExecution(),
-        outputDatasetBuilders);
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "Visiting query plan {} with output dataset builders {}",
+          openLineageContext.getQueryExecution(),
+          outputDatasetBuilders);
+    }
     Function1<LogicalPlan, Collection<OutputDataset>> visitor =
-        visitLogicalPlan(PlanUtils.merge(outputDatasetQueryPlanVisitors));
+        visitLogicalPlan(
+            PlanUtils.merge(
+                outputDatasetQueryPlanVisitors.stream()
+                    .filter(v -> v instanceof QueryPlanVisitor)
+                    .filter(v -> !nodes.isEmpty() && nodes.get(0) instanceof SparkListenerEvent)
+                    .filter(
+                        v ->
+                            (((QueryPlanVisitor) v).isDefinedAt((SparkListenerEvent) nodes.get(0))))
+                    .collect(Collectors.toList())));
     List<OutputDataset> datasets =
         Stream.concat(
                 buildDatasets(nodes, outputDatasetBuilders),

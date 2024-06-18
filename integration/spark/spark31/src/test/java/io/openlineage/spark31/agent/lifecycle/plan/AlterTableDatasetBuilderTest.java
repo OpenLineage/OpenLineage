@@ -5,6 +5,7 @@
 
 package io.openlineage.spark31.agent.lifecycle.plan;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -127,5 +128,11 @@ class AlterTableDatasetBuilderTest {
         assertEquals("v2", outputDatasets.get(0).getFacets().getVersion().getDatasetVersion());
       }
     }
+  }
+
+  @Test
+  void testJobNameSuffix() {
+    when(alterTable.ident()).thenReturn(Identifier.of(new String[] {"a", "b"}, "c"));
+    assertThat(builder.jobNameSuffix(alterTable).get()).isEqualTo("a_b_c");
   }
 }

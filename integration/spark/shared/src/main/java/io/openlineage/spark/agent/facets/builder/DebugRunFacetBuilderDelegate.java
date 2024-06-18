@@ -79,7 +79,8 @@ public class DebugRunFacetBuilderDelegate {
   }
 
   private List<String> getSparkJars() {
-    return Optional.ofNullable(olContext.getSparkContext())
+    return olContext
+        .getSparkContext()
         .map(sc -> sc.listJars())
         .map(jars -> ScalaConversionUtils.fromSeq(jars))
         .orElse(null);
@@ -167,18 +168,20 @@ public class DebugRunFacetBuilderDelegate {
   }
 
   private String getDeployMode() {
-    return Optional.ofNullable(olContext.getSparkContext()).map(sc -> sc.deployMode()).orElse(null);
+    return olContext.getSparkContext().map(sc -> sc.deployMode()).orElse(null);
   }
 
   private String getSparkConfOrNull(String confKey) {
-    return Optional.ofNullable(olContext.getSparkContext())
+    return olContext
+        .getSparkContext()
         .map(sc -> sc.conf())
         .map(c -> c.get(confKey, null))
         .orElse(null);
   }
 
   private Map<String, String> getOpenLineageConfig() {
-    return Optional.ofNullable(olContext.getSparkContext())
+    return olContext
+        .getSparkContext()
         .map(sc -> sc.conf())
         .map(conf -> conf.getAllWithPrefix("spark.openlineage."))
         .map(arr -> Arrays.stream(arr))

@@ -38,30 +38,42 @@ public class TruncateTableCommandVisitor
     TruncateTableCommand command = (TruncateTableCommand) x;
 
     Optional<CatalogTable> tableOpt = catalogTableFor(command.tableName());
-    if (tableOpt.isPresent()) {
-      CatalogTable table = tableOpt.get();
-      DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(table);
-
-      DatasetFactory<OutputDataset> datasetFactory = outputDataset();
-      return Collections.singletonList(
-          datasetFactory.getDataset(
-              datasetIdentifier,
-              new OpenLineage.DatasetFacetsBuilder()
-                  .schema(null)
-                  .dataSource(
-                      PlanUtils.datasourceFacet(
-                          context.getOpenLineage(), datasetIdentifier.getNamespace()))
-                  .lifecycleStateChange(
-                      context
-                          .getOpenLineage()
-                          .newLifecycleStateChangeDatasetFacet(
-                              OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
-                                  .TRUNCATE,
-                              null))));
-
-    } else {
-      // table does not exist, cannot prepare an event
+    if (!tableOpt.isPresent() || !context.getSparkSession().isPresent()) {
       return Collections.emptyList();
     }
+
+    CatalogTable table = tableOpt.get();
+    DatasetIdentifier datasetIdentifier =
+        PathUtils.fromCatalogTable(table, context.getSparkSession().get());
+
+    DatasetFactory<OutputDataset> datasetFactory = outputDataset();
+    return Collections.singletonList(
+        datasetFactory.getDataset(
+            datasetIdentifier,
+            new OpenLineage.DatasetFacetsBuilder()
+                .schema(null)
+                .dataSource(
+                    PlanUtils.datasourceFacet(
+                        context.getOpenLineage(), datasetIdentifier.getNamespace()))
+                .lifecycleStateChange(
+                    context
+                        .getOpenLineage()
+                        .newLifecycleStateChangeDatasetFacet(
+                            OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
+                                .TRUNCATE,
+                            null))));
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(TruncateTableCommand command) {
+    Optional<CatalogTable> tableOpt = catalogTableFor(command.tableName());
+    if (!tableOpt.isPresent() || !context.getSparkSession().isPresent()) {
+      return Optional.empty();
+    }
+
+    CatalogTable table = tableOpt.get();
+    DatasetIdentifier datasetIdentifier =
+        PathUtils.fromCatalogTable(table, context.getSparkSession().get());
+    return Optional.of(trimPath(datasetIdentifier.getName()));
   }
 }

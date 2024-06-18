@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
@@ -108,7 +109,9 @@ class KustoRelationVisitorTest {
 
   @BeforeEach
   public void setUp() {
-    when(session.sparkContext()).thenReturn(mock(SparkContext.class));
+    SparkContext sparkContext = mock(SparkContext.class);
+    when(sparkContext.getConf()).thenReturn(new SparkConf());
+    when(session.sparkContext()).thenReturn(sparkContext);
     when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
   }
 

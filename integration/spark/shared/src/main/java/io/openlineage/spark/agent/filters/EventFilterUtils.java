@@ -54,7 +54,6 @@ public class EventFilterUtils {
   static boolean isDeltaPlan() {
     return SparkSessionUtils.activeSession()
         .map(SparkSession::sparkContext)
-        .filter(context -> context != null)
         .map(SparkContext::conf)
         .map(conf -> conf.get("spark.sql.extensions", ""))
         .filter(extension -> "io.delta.sql.DeltaSparkSessionExtension".equals(extension))

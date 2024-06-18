@@ -16,7 +16,7 @@ public class SparkSessionUtils {
     try {
       return Optional.of(SparkSession.active());
     } catch (IllegalStateException e) {
-      log.warn("Cannot obtain active spark session", e);
+      log.debug("Cannot obtain active spark session", e);
       return Optional.empty();
     }
   }

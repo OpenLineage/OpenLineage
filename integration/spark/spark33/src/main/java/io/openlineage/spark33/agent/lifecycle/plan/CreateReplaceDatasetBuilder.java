@@ -10,7 +10,7 @@ import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.Lifecy
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
+import io.openlineage.spark.api.AbstractOnCompleteOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.reflect.MethodUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTable;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
@@ -37,7 +37,7 @@ import org.apache.spark.sql.types.StructType;
  */
 @Slf4j
 public class CreateReplaceDatasetBuilder
-    extends AbstractQueryPlanOutputDatasetBuilder<LogicalPlan> {
+    extends AbstractOnCompleteOutputDatasetBuilder<LogicalPlan> {
 
   public CreateReplaceDatasetBuilder(OpenLineageContext context) {
     super(context, false);
@@ -124,7 +124,7 @@ public class CreateReplaceDatasetBuilder
 
   private Optional<TableCatalog> callCatalogMethod(LogicalPlan plan) {
     try {
-      return Optional.of((TableCatalog) MethodUtils.invokeMethod(plan, "catalog", null));
+      return Optional.of((TableCatalog) MethodUtils.invokeMethod(plan, "catalog", (Object[]) null));
     } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
       log.error("Could not obtain catalog plugin", e);
       return Optional.empty();
@@ -165,5 +165,25 @@ public class CreateReplaceDatasetBuilder
     CatalogUtils3.getStorageDatasetFacet(context, catalog, tableProperties)
         .map(storageDatasetFacet -> builder.storage(storageDatasetFacet));
     return Collections.singletonList(outputDataset().getDataset(di.get(), builder));
+  }
+
+  @Override
+  public Optional<String> jobNameSuffix(LogicalPlan plan) {
+    if (!this.isDefinedAtLogicalPlan(plan)) {
+      return Optional.empty();
+    }
+
+    Identifier identifier = null;
+    if (plan instanceof CreateTableAsSelect) {
+      identifier = ((CreateTableAsSelect) plan).tableName();
+    } else if (plan instanceof ReplaceTable) {
+      identifier = ((ReplaceTable) plan).tableName();
+    } else if (plan instanceof ReplaceTableAsSelect) {
+      identifier = ((ReplaceTableAsSelect) plan).tableName();
+    } else if (plan instanceof CreateTable) {
+      identifier = ((CreateTable) plan).tableName();
+    }
+
+    return Optional.of(identToSuffix(identifier));
   }
 }

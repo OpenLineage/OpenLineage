@@ -17,7 +17,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.reflect.MethodUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.Partition;
 import org.apache.spark.api.python.PythonRDD;
 import org.apache.spark.rdd.RDD;

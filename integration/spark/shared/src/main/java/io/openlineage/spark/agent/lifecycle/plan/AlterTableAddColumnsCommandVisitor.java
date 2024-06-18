@@ -29,7 +29,7 @@ public class AlterTableAddColumnsCommandVisitor
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     Optional<CatalogTable> tableOption = catalogTableFor(((AlterTableAddColumnsCommand) x).table());
-    if (!tableOption.isPresent()) {
+    if (!tableOption.isPresent() || !context.getSparkSession().isPresent()) {
       return Collections.emptyList();
     }
     CatalogTable catalogTable = tableOption.get();
@@ -41,7 +41,9 @@ public class AlterTableAddColumnsCommandVisitor
     if (tableColumns.containsAll(addedColumns)) {
       return Collections.singletonList(
           outputDataset()
-              .getDataset(PathUtils.fromCatalogTable(catalogTable), catalogTable.schema()));
+              .getDataset(
+                  PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get()),
+                  catalogTable.schema()));
     } else {
       // apply triggered before applying the change - do not send an event
       return Collections.emptyList();

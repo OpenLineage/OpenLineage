@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2018-2023 contributors to the OpenLineage project
+# Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 set -e
@@ -55,6 +55,12 @@ cp spec/OpenLineage.yml ${WEBSITE_DIR}/static/spec/OpenLineage.yml
 
 # Copy changed spec JSON files to target location
 git diff --name-only $PREV_SPEC_COMMIT HEAD 'spec/*.json' | while read LINE; do
+
+  #ignore registry files
+  if [[ $LINE =~ "registry.json" ]]; then
+      continue
+  fi
+
   # extract target file name from $id field in spec files
   URL=$(cat $LINE | jq -r '.["$id"]')
 

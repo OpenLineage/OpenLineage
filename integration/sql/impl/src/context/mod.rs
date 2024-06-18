@@ -1,4 +1,4 @@
-// Copyright 2018-2023 contributors to the OpenLineage project
+// Copyright 2018-2024 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
 mod alias_table;
@@ -172,8 +172,8 @@ impl<'a> Context<'a> {
     pub fn push_frame(&mut self) {
         let mut frame = ContextFrame::new();
         if let Some(recent) = self.frames.last() {
-            frame.table = recent.table.clone();
-            frame.column = recent.column.clone();
+            frame.table.clone_from(&recent.table);
+            frame.column.clone_from(&recent.column);
         }
         self.frames.push(frame);
     }

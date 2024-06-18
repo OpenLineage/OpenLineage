@@ -1,0 +1,5 @@
+# These owners are be the default owners for everything in
+# the repo. The exceptions are vendor specific code owners
+*       @OpenLineage/committers
+
+spec/registry/core @OpenLineage/committers
