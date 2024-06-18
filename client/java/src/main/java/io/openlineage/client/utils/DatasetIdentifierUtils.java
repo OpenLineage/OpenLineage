@@ -35,11 +35,14 @@ public class DatasetIdentifierUtils {
       return new DatasetIdentifier(uri.getPath(), defaultScheme);
     }
 
+    String path = uri.getPath();
     String name =
-        Optional.of(uri.getPath())
-            .map(DatasetIdentifierUtils::removeLastSlash)
-            .map(DatasetIdentifierUtils::removeFirstSlashIfSingleSlashInString)
-            .get();
+        ("/".equals(path) || path.isEmpty())
+            ? "/"
+            : Optional.of(path)
+                .map(DatasetIdentifierUtils::removeLastSlash)
+                .map(DatasetIdentifierUtils::removeFirstSlashIfSingleSlashInString)
+                .get();
 
     String namespace =
         Optional.ofNullable(uri.getAuthority())
