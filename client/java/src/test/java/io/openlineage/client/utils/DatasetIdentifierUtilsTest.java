@@ -58,6 +58,24 @@ class DatasetIdentifierUtilsTest {
   }
 
   @Test
+  void testFromURIWithRootOrEmptyPath() throws URISyntaxException {
+    URI uri1 = new URI("s3://data-bucket/");
+    assertThat(DatasetIdentifierUtils.fromURI(uri1))
+        .hasFieldOrPropertyWithValue("name", "/")
+        .hasFieldOrPropertyWithValue("namespace", "s3://data-bucket");
+
+    URI uri2 = new URI("/");
+    assertThat(DatasetIdentifierUtils.fromURI(uri2))
+        .hasFieldOrPropertyWithValue("name", "/")
+        .hasFieldOrPropertyWithValue("namespace", FILE);
+
+    URI uri3 = new URI("");
+    assertThat(DatasetIdentifierUtils.fromURI(uri3))
+        .hasFieldOrPropertyWithValue("name", "/")
+        .hasFieldOrPropertyWithValue("namespace", FILE);
+  }
+
+  @Test
   @SneakyThrows
   void testFromURIWithSchema() {
     URI uri = new URI(HOME_TEST);
