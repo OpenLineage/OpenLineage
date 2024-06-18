@@ -59,7 +59,6 @@
               "type": "string"
             }
           },
-          "required": ["appId", "appName", "projectId"],
           "additionalProperties": true
         }
       ],

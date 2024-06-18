@@ -1,6 +1,6 @@
 {
   "producer": {
     "root_doc_URL": "https://cloud.google.com/dataproc/docs/guides/lineage",
-    "facets": ["ol:gcpDataproc:GcpDataprocRunFacet.json"]
+    "produced_facets": ["ol:gcp:dataproc:GcpDataprocRunFacet.json"]
   }
 }
