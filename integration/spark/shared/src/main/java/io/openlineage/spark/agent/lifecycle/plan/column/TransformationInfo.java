@@ -96,4 +96,18 @@ public class TransformationInfo {
         .masking(masking)
         .build();
   }
+
+  @Override
+  public String toString() {
+    return "TransformationInfo("
+        + type
+        + ", "
+        + subType
+        + ", '"
+        + description
+        + '\''
+        + ", "
+        + masking
+        + ')';
+  }
 }

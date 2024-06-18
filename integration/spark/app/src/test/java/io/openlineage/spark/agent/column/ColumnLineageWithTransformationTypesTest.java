@@ -119,12 +119,17 @@ class ColumnLineageWithTransformationTypesTest {
 
   @Test
   void simpleQueryOnlyTransform() {
-    createTable("t1", "a;int");
+    createTable("t1", "a;int", "b;int");
     OpenLineage.ColumnLineageDatasetFacet facet =
-        getFacetForQuery(getSchemaFacet("a;int"), "SELECT concat(a, 'test') AS a FROM t1");
+        getFacetForQuery(
+            getSchemaFacet("a;int", "b;int"), "SELECT concat(a, 'test') AS a, a+b as b FROM t1");
 
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+    assertColumnDependsOnType(
+        facet, "b", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+    assertColumnDependsOnType(
+        facet, "b", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.transformation());
   }
 
   @Test
