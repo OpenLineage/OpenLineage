@@ -72,6 +72,7 @@ dependencies {
         exclude(group: "com.fasterxml.jackson.datatype")
         exclude(group: "com.fasterxml.jackson.dataformat")
     }
+    testFixturesApi("org.mock-server:mockserver-netty:${mockserverVersion}:shaded")
     testFixturesApi("org.awaitility:awaitility:${awaitilityVersion}")
     testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
@@ -138,6 +139,7 @@ dependencies {
         exclude(group: "com.fasterxml.jackson.datatype")
         exclude(group: "com.fasterxml.jackson.dataformat")
     }
+    testScala212Implementation("org.mock-server:mockserver-netty:${mockserverVersion}:shaded")
     testScala212Implementation("org.postgresql:postgresql:${postgresqlVersion}")
     testScala212Implementation("org.xerial:sqlite-jdbc:${sqlLiteVersion}")
 
@@ -188,6 +190,7 @@ dependencies {
         exclude(group: "com.fasterxml.jackson.datatype")
         exclude(group: "com.fasterxml.jackson.dataformat")
     }
+    testScala213Implementation("org.mock-server:mockserver-netty:${mockserverVersion}:shaded")
     testScala213Implementation("org.postgresql:postgresql:${postgresqlVersion}")
     testScala213Implementation("org.xerial:sqlite-jdbc:${sqlLiteVersion}")
 }
