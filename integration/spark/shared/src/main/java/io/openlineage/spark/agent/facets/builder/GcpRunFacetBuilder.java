@@ -6,7 +6,7 @@
 package io.openlineage.spark.agent.facets.builder;
 
 import io.openlineage.client.OpenLineage.RunFacet;
-import io.openlineage.spark.agent.facets.GCPDataprocRunFacet;
+import io.openlineage.spark.agent.facets.GcpDataprocRunFacet;
 import io.openlineage.spark.agent.util.GCPUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -38,7 +38,7 @@ public class GCPRunFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, R
   @Override
   protected void build(SparkListenerEvent event, BiConsumer<String, ? super RunFacet> consumer) {
     if (GCPUtils.isDataprocRuntime())
-      consumer.accept("gcp_dataproc", new GCPDataprocRunFacet(getDataprocAttributes()));
+      consumer.accept("gcp_dataproc", new GcpDataprocRunFacet(getDataprocAttributes()));
   }
 
   private Map<String, Object> getDataprocAttributes() {

@@ -6,7 +6,7 @@
 package io.openlineage.spark.agent.facets.builder;
 
 import io.openlineage.client.OpenLineage.JobFacet;
-import io.openlineage.spark.agent.facets.GCPCommonJobFacet;
+import io.openlineage.spark.agent.facets.GcpLineageJobFacet;
 import io.openlineage.spark.agent.util.GCPUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -34,10 +34,10 @@ public class GCPJobFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, J
 
   @Override
   protected void build(SparkListenerEvent event, BiConsumer<String, ? super JobFacet> consumer) {
-    consumer.accept("dataplex", new GCPCommonJobFacet(getCommonAttributes()));
+    consumer.accept("gcp_lineage", new GcpLineageJobFacet(getGcpLineageAttributes()));
   }
 
-  private Map<String, Object> getCommonAttributes() {
+  private Map<String, Object> getGcpLineageAttributes() {
 
     Map<String, Object> commonProperties = new HashMap<>();
     commonProperties.put("origin", GCPUtils.getOriginFacetMap(sparkContext));
