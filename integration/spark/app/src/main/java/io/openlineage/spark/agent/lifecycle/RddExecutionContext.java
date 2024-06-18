@@ -221,15 +221,20 @@ class RddExecutionContext implements ExecutionContext {
             .eventType(OpenLineage.RunEvent.EventType.START)
             .inputs(buildInputs(inputs))
             .outputs(buildOutputs(outputs))
-            .run(ol.newRunBuilder().runId(runId).facets(buildRunFacets(null, ol, jobStart)).build())
-            .job(buildJob(jobStart.jobId(), jobStart, ol))
             .run(
                 openLineage
                     .newRunBuilder()
                     .runId(runId)
                     .facets(buildRunFacets(null, jobStart))
                     .build())
-            .job(buildJob(jobStart.jobId(), jobStart, ol))
+            .job(buildJob(jobStart.jobId(), jobStart))
+            .run(
+                openLineage
+                    .newRunBuilder()
+                    .runId(runId)
+                    .facets(buildRunFacets(null, jobStart))
+                    .build())
+            .job(buildJob(jobStart.jobId(), jobStart))
             .build();
     log.debug("Posting event for start {}: {}", jobStart, event);
     eventEmitter.emit(event);
@@ -260,7 +265,7 @@ class RddExecutionContext implements ExecutionContext {
                     .runId(runId)
                     .facets(buildRunFacets(buildJobErrorFacet(jobEnd.jobResult()), jobEnd))
                     .build())
-            .job(buildJob(jobEnd.jobId(), jobEnd, ol))
+            .job(buildJob(jobEnd.jobId(), jobEnd))
             .build();
     log.debug("Posting event for end {}: {}", jobEnd, event);
     eventEmitter.emit(event);
@@ -302,7 +307,7 @@ class RddExecutionContext implements ExecutionContext {
           b1.accept(event, b0::put);
         });
   }
-  
+
   private void addSparkJobDetailsFacet(OpenLineage.RunFacetsBuilder b0, SparkListenerEvent event) {
     b0.put("spark_jobDetails", new SparkJobDetailsFacetBuilder().buildFacet(event));
   }
@@ -314,9 +319,8 @@ class RddExecutionContext implements ExecutionContext {
         eventEmitter.getJobNamespace());
   }
 
-  protected OpenLineage.JobFacets buildJobFacets(
-      OpenLineage ol, SparkListenerEvent sparkListenerEvent) {
-    OpenLineage.JobFacetsBuilder jobFacetsBuilder = ol.newJobFacetsBuilder();
+  protected OpenLineage.JobFacets buildJobFacets(SparkListenerEvent sparkListenerEvent) {
+    OpenLineage.JobFacetsBuilder jobFacetsBuilder = openLineage.newJobFacetsBuilder();
     addGCPJobFacets(jobFacetsBuilder, sparkListenerEvent);
     return jobFacetsBuilder.build();
   }
@@ -337,7 +341,7 @@ class RddExecutionContext implements ExecutionContext {
     return null;
   }
 
-  protected OpenLineage.Job buildJob(int jobId, SparkListenerEvent jobEvent, OpenLineage ol) {
+  protected OpenLineage.Job buildJob(int jobId, SparkListenerEvent jobEvent) {
     String suffix = jobSuffix;
     if (jobSuffix == null) {
       suffix = String.valueOf(jobId);

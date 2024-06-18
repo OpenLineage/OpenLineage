@@ -25,7 +25,7 @@ public class GCPJobFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, J
   private final SparkContext sparkContext;
 
   public GCPJobFacetBuilder(OpenLineageContext openLineageContext) {
-    this.sparkContext = openLineageContext.getSparkContext();
+    this.sparkContext = openLineageContext.getSparkContext().get();
   }
 
   public GCPJobFacetBuilder(SparkContext sparkContext) {

@@ -26,7 +26,7 @@ public class GCPRunFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, R
   private final Optional<OpenLineageContext> maybeOLContext;
 
   public GCPRunFacetBuilder(OpenLineageContext openLineageContext) {
-    this.sparkContext = openLineageContext.getSparkContext();
+    this.sparkContext = openLineageContext.getSparkContext().get();
     this.maybeOLContext = Optional.of(openLineageContext);
   }
 
