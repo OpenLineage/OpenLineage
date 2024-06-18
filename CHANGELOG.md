@@ -9,6 +9,10 @@
 * **Spark: fix events emitted for `drop table` for Spark 3.4 and above** [`#2745`](https://github.com/OpenLineage/OpenLineage/pull/2745) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)[@savannavalgi](https://github.com/savannavalgi)
   *Include dataset being dropped within the event, as it used to be prior to Spark 3.4.*
 
+### Removed
+* **Spark: Remove `spark-interfaces-scala` module** [`#2781`](https://github.com/OpenLineage/OpenLineage/pull/2781)[@ddebowczyk92](https://github.com/ddebowczyk92)
+  *Removes `spark-interfaces-scala` module*
+
 ## [1.16.0](https://github.com/OpenLineage/OpenLineage/compare/1.15.0...1.16.0) - 2024-05-28
 ### Added
 * **Spark: add `jobType` facet to Spark application events** [`#2719`](https://github.com/OpenLineage/OpenLineage/pull/2719) [@dolfinus](https://github.com/dolfinus)  

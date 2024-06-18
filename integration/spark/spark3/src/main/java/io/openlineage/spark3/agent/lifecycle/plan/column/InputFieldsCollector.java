@@ -12,15 +12,10 @@ import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.BigQueryUtils;
-import io.openlineage.spark.agent.util.ExtensionPlanUtils;
 import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark.extension.scala.v1.ColumnLevelLineageNode;
-import io.openlineage.spark.extension.scala.v1.DatasetFieldLineage;
-import io.openlineage.spark.extension.scala.v1.InputDatasetFieldFromDelegate;
-import io.openlineage.spark.extension.scala.v1.InputDatasetFieldWithIdentifier;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import io.openlineage.sql.SqlMeta;
 import java.net.URI;
@@ -35,7 +30,6 @@ import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
-import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -58,10 +52,6 @@ public class InputFieldsCollector {
     discoverInputsFromNode(context, plan);
     CustomCollectorsUtils.collectInputs(context, plan);
 
-    if (plan instanceof ColumnLevelLineageNode) {
-      extensionColumnLineage(context, (ColumnLevelLineageNode) plan);
-    }
-
     // hacky way to replace `plan instanceof UnaryNode` which fails for Spark 3.2.1
     // because of java.lang.IncompatibleClassChangeError: UnaryNode, but class was expected
     // probably related to single code base for different Spark versions
@@ -80,34 +70,6 @@ public class InputFieldsCollector {
     } else {
       extractInternalInputs(node, context.getBuilder(), datasetIdentifiers);
     }
-  }
-
-  private static void extensionColumnLineage(
-      ColumnLevelLineageContext context, ColumnLevelLineageNode node) {
-    List<DatasetFieldLineage> inputs =
-        ScalaConversionUtils.<DatasetFieldLineage>fromSeq(
-            node.columnLevelLineageInputs(
-                    ExtensionPlanUtils.context(context.getEvent(), context.getOlContext()))
-                .toSeq());
-
-    inputs.stream()
-        .filter(i -> i instanceof InputDatasetFieldWithIdentifier)
-        .map(i -> (InputDatasetFieldWithIdentifier) i)
-        .forEach(
-            i ->
-                context
-                    .getBuilder()
-                    .addInput(
-                        ExprId.apply(i.exprId().exprId()),
-                        new DatasetIdentifier(
-                            i.datasetIdentifier().getNamespace(), i.datasetIdentifier().getName()),
-                        i.field()));
-
-    inputs.stream()
-        .filter(i -> i instanceof InputDatasetFieldFromDelegate)
-        .map(i -> (InputDatasetFieldFromDelegate) i)
-        .filter(i -> i.delegate() instanceof LogicalPlan)
-        .forEach(i -> discoverInputsFromNode(context, (LogicalPlan) i.delegate()));
   }
 
   private static boolean isJDBCNode(LogicalPlan node) {
