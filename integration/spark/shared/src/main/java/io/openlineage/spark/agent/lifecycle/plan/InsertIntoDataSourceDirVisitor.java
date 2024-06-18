@@ -30,7 +30,7 @@ public class InsertIntoDataSourceDirVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoDataSourceDirCommand command = (InsertIntoDataSourceDirCommand) x;
     // URI is required by the InsertIntoDataSourceDirCommand
-    DatasetIdentifier di = PathUtils.fromURI(command.storage().locationUri().get(), "file");
+    DatasetIdentifier di = PathUtils.fromURI(command.storage().locationUri().get());
 
     OpenLineage.OutputDataset outputDataset;
     if (command.overwrite()) {

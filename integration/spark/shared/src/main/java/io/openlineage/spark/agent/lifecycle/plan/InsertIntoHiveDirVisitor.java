@@ -41,14 +41,13 @@ public class InsertIntoHiveDirVisitor
                 outputDataset =
                     outputDataset()
                         .getDataset(
-                            PathUtils.fromURI(uri, "file"),
+                            PathUtils.fromURI(uri),
                             cmd.query().schema(),
                             OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
                                 .OVERWRITE);
               } else {
                 outputDataset =
-                    outputDataset()
-                        .getDataset(PathUtils.fromURI(uri, "file"), cmd.query().schema());
+                    outputDataset().getDataset(PathUtils.fromURI(uri), cmd.query().schema());
               }
               return Collections.singletonList(outputDataset);
             })
@@ -58,6 +57,6 @@ public class InsertIntoHiveDirVisitor
   @Override
   public Optional<String> jobNameSuffix(InsertIntoHiveDirCommand command) {
     return ScalaConversionUtils.asJavaOptional(command.storage().locationUri())
-        .map(uri -> trimPath(PathUtils.fromURI(uri, "file").getName()));
+        .map(uri -> trimPath(PathUtils.fromURI(uri).getName()));
   }
 }

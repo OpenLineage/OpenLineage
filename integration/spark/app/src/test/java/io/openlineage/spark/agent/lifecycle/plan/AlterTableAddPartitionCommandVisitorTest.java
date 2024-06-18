@@ -106,7 +106,7 @@ class AlterTableAddPartitionCommandVisitorTest {
     assertEquals(2, datasets.get(0).getFacets().getSchema().getFields().size());
     assertThat(datasets.get(0).getFacets().getSymlinks().getIdentifiers().get(0).getName())
         .endsWith("default.table5");
-    assertThat(datasets.get(0).getName().endsWith("table5"));
+    assertThat(datasets.get(0).getName().endsWith("/table5"));
     assertThat(datasets).singleElement().hasFieldOrPropertyWithValue("namespace", "file");
   }
 }

@@ -61,7 +61,7 @@ public class CreateTableLikeCommandVisitor
               URI location =
                   ScalaConversionUtils.<URI>asJavaOptional(command.fileFormat().locationUri())
                       .orElse(defaultLocation);
-              DatasetIdentifier di = PathUtils.fromURI(location, "file");
+              DatasetIdentifier di = PathUtils.fromURI(location);
 
               return singletonList(
                   outputDataset()

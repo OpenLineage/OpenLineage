@@ -5,9 +5,6 @@
 
 package io.openlineage.client.utils.jdbc;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
 class JdbcUrlSanitizer {
   private static final String SLASH_DELIMITER_USER_PASSWORD_REGEX =
       "[A-Za-z0-9_%]+//?[A-Za-z0-9_%]*@";

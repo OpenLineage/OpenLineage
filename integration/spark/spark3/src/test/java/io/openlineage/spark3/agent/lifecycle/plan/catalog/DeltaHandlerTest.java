@@ -44,10 +44,10 @@ class DeltaHandlerTest {
   @Test
   void testGetIdentifierLoadsTablePath() {
     when(deltaCatalog.loadTable(identifier)).thenReturn(deltaTable);
-    when(deltaTable.properties().get("location")).thenReturn("/some-location");
+    when(deltaTable.properties().get("location")).thenReturn("/some/location");
 
     assertEquals(
-        "/some-location",
+        "/some/location",
         deltaHandler
             .getDatasetIdentifier(
                 mock(SparkSession.class), deltaCatalog, identifier, Collections.emptyMap())

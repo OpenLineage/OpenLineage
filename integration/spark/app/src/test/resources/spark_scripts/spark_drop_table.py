@@ -5,7 +5,7 @@ import os
 
 from pyspark.sql import SparkSession
 
-os.makedirs("/tmp/ctas_load", exist_ok=True)
+os.makedirs("/tmp/drop_test", exist_ok=True)
 
 
 spark = (

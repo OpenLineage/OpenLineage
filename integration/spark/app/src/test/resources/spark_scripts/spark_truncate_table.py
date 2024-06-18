@@ -6,7 +6,7 @@ import time
 
 from pyspark.sql import SparkSession
 
-os.makedirs("/tmp/ctas_load", exist_ok=True)
+os.makedirs("/tmp/truncate_test", exist_ok=True)
 
 
 spark = (

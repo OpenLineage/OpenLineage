@@ -6,7 +6,7 @@
 package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.DatasetIdentifierUtils;
+import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import java.io.File;
 import java.net.URI;
 import java.util.Optional;
@@ -25,24 +25,12 @@ import org.apache.spark.sql.internal.StaticSQLConf;
 @Slf4j
 @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
 public class PathUtils {
-
-  private static final String DEFAULT_SCHEME = "file";
-  private static final String DEFAULT_SEPARATOR = "/";
-
   public static DatasetIdentifier fromPath(Path path) {
-    return fromPath(path, DEFAULT_SCHEME);
-  }
-
-  public static DatasetIdentifier fromPath(Path path, String defaultScheme) {
-    return fromURI(path.toUri(), defaultScheme);
+    return fromURI(path.toUri());
   }
 
   public static DatasetIdentifier fromURI(URI location) {
-    return fromURI(location, DEFAULT_SCHEME);
-  }
-
-  public static DatasetIdentifier fromURI(URI location, String defaultScheme) {
-    return DatasetIdentifierUtils.fromURI(location, defaultScheme);
+    return FilesystemDatasetUtils.fromLocation(location);
   }
 
   /**
@@ -52,14 +40,16 @@ public class PathUtils {
   @SneakyThrows
   public static DatasetIdentifier fromCatalogTable(
       CatalogTable catalogTable, SparkSession sparkSession) {
+    String tableName = nameFromTableIdentifier(catalogTable.identifier());
+
     DatasetIdentifier di;
     URI uri;
     if (catalogTable.storage() != null && catalogTable.storage().locationUri().isDefined()) {
-      uri = prepareUriFromLocation(catalogTable);
-      di = PathUtils.fromURI(uri, DEFAULT_SCHEME);
+      uri = catalogTable.storage().locationUri().get();
+      di = fromURI(uri);
     } else {
       uri = prepareUriFromDefaultTablePath(catalogTable, sparkSession);
-      di = PathUtils.fromURI(uri, DEFAULT_SCHEME);
+      di = fromURI(uri);
     }
 
     SparkContext sparkContext = sparkSession.sparkContext();
@@ -68,7 +58,8 @@ public class PathUtils {
     Optional<URI> metastoreUri = extractMetastoreUri(sparkContext);
     if (metastoreUri.isPresent()) {
       // dealing with Hive tables
-      DatasetIdentifier symlink = prepareHiveDatasetIdentifier(catalogTable, metastoreUri.get());
+      URI hiveUri = prepareHiveUri(metastoreUri.get());
+      DatasetIdentifier symlink = FilesystemDatasetUtils.fromLocationAndName(hiveUri, tableName);
       return di.withSymlink(
           symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.TABLE);
     } else if (catalogTable.provider().isDefined()
@@ -85,14 +76,15 @@ public class PathUtils {
       String accountId =
           SparkConfUtils.findSparkConfigKey(sparkConf, "spark.glue.accountId").orElse("");
       return di.withSymlink(
-          nameFromTableIdentifier(catalogTable.identifier()),
+          tableName,
           String.format("aws:glue:%s:%s", region, accountId),
           DatasetIdentifier.SymlinkType.TABLE);
     } else {
+      URI warehouseUri = new URI(StringUtils.substringBeforeLast(uri.toString(), File.separator));
+      DatasetIdentifier symlink =
+          FilesystemDatasetUtils.fromLocationAndName(warehouseUri, tableName);
       return di.withSymlink(
-          nameFromTableIdentifier(catalogTable.identifier()),
-          StringUtils.substringBeforeLast(uri.toString(), File.separator),
-          DatasetIdentifier.SymlinkType.TABLE);
+          symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.TABLE);
     }
   }
 
@@ -104,39 +96,8 @@ public class PathUtils {
   }
 
   @SneakyThrows
-  private static URI prepareUriFromLocation(CatalogTable catalogTable) {
-    URI uri = catalogTable.storage().locationUri().get();
-
-    if (uri.getPath() != null
-        && uri.getPath().startsWith(DEFAULT_SEPARATOR)
-        && uri.getScheme() == null) {
-      uri = new URI(DEFAULT_SCHEME, null, uri.getPath(), null, null);
-    } else if (uri.getScheme() != null && uri.getScheme().equals(DEFAULT_SCHEME)) {
-      // Normalize the URI if it is already a file scheme but has three slashes
-      String path = uri.getPath();
-      if (uri.toString().startsWith(DEFAULT_SCHEME + ":///")) {
-        uri = new URI(DEFAULT_SCHEME, null, path, null, null);
-      }
-    }
-
-    return uri;
-  }
-
-  @SneakyThrows
-  private static DatasetIdentifier prepareHiveDatasetIdentifier(
-      CatalogTable catalogTable, URI metastoreUri) {
-    String qualifiedName = nameFromTableIdentifier(catalogTable.identifier());
-    if (!qualifiedName.startsWith(DEFAULT_SEPARATOR)) {
-      qualifiedName = String.format("/%s", qualifiedName);
-    }
-    return PathUtils.fromPath(
-        new Path(enrichHiveMetastoreURIWithTableName(metastoreUri, qualifiedName)));
-  }
-
-  @SneakyThrows
-  public static URI enrichHiveMetastoreURIWithTableName(URI metastoreUri, String qualifiedName) {
-    return new URI(
-        "hive", null, metastoreUri.getHost(), metastoreUri.getPort(), qualifiedName, null, null);
+  public static URI prepareHiveUri(URI uri) {
+    return new URI("hive", uri.getAuthority(), null, null, null);
   }
 
   private static Optional<URI> extractMetastoreUri(SparkContext context) {

@@ -87,7 +87,7 @@ public class DeltaHandler implements CatalogHandler {
                 }));
     URI uri = prepareUriFromPath(path);
 
-    DatasetIdentifier di = PathUtils.fromPath(path, DEFAULT_SCHEME);
+    DatasetIdentifier di = PathUtils.fromPath(path);
 
     return di.withSymlink(
         identifier.toString(),

@@ -125,7 +125,7 @@ class IcebergHandlerTest {
 
     DatasetIdentifier.Symlink symlink = datasetIdentifier.getSymlinks().get(0);
     assertEquals("schema.table", datasetIdentifier.getName());
-    assertEquals("s3a://lakehouse", datasetIdentifier.getNamespace());
+    assertEquals("s3://lakehouse", datasetIdentifier.getNamespace());
     // symlink
     assertEquals("schema.table", symlink.getName());
     assertEquals("http://lakehouse-host:8080", symlink.getNamespace());
