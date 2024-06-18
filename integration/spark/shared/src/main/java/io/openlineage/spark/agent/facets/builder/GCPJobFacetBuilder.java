@@ -34,7 +34,7 @@ public class GCPJobFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, J
 
   @Override
   protected void build(SparkListenerEvent event, BiConsumer<String, ? super JobFacet> consumer) {
-    consumer.accept("gcp_common", new GCPCommonJobFacet(getCommonAttributes()));
+    consumer.accept("dataplex", new GCPCommonJobFacet(getCommonAttributes()));
   }
 
   private Map<String, Object> getCommonAttributes() {

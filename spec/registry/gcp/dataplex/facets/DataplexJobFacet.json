@@ -36,7 +36,7 @@
   },
   "type": "object",
   "properties": {
-    "gcp_common": {
+    "dataplex": {
       "$ref": "#/$defs/GcpCommonJobFacet"
     }
   }
