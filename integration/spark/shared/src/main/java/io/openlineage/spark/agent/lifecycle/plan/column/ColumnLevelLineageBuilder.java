@@ -19,15 +19,17 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.shaded.com.google.common.collect.Streams;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Builder class used to store information required to build {@link
@@ -39,8 +41,9 @@ import org.apache.spark.sql.catalyst.expressions.ExprId;
 @Slf4j
 public class ColumnLevelLineageBuilder {
 
-  private Map<ExprId, Set<ExprId>> exprDependencies = new HashMap<>();
-  @Getter private Map<ExprId, Set<Pair<DatasetIdentifier, String>>> inputs = new HashMap<>();
+  private Map<ExprId, Set<Dependency>> exprDependencies = new HashMap<>();
+  private List<ExprId> datasetDependencies = new LinkedList<>();
+  @Getter private Map<ExprId, Set<Input>> inputs = new HashMap<>();
   private Map<OpenLineage.SchemaDatasetFacetFields, ExprId> outputs = new HashMap<>();
   private Map<ColumnMeta, ExprId> externalExpressionMappings = new HashMap<>();
   private final OpenLineage.SchemaDatasetFacet schema;
@@ -62,7 +65,7 @@ public class ColumnLevelLineageBuilder {
    */
   public void addInput(ExprId exprId, DatasetIdentifier datasetIdentifier, String attributeName) {
     inputs.computeIfAbsent(exprId, k -> new HashSet<>());
-    inputs.get(exprId).add(Pair.of(datasetIdentifier, attributeName));
+    inputs.get(exprId).add(new Input(datasetIdentifier, attributeName));
   }
 
   /**
@@ -75,7 +78,7 @@ public class ColumnLevelLineageBuilder {
     schema.getFields().stream()
         .filter(field -> field.getName().equals(attributeName))
         .findAny()
-        .ifPresent(field -> outputs.put(field, exprId));
+        .ifPresent(field -> outputs.putIfAbsent(field, exprId));
   }
 
   /**
@@ -86,7 +89,20 @@ public class ColumnLevelLineageBuilder {
    * @param inputExprId
    */
   public void addDependency(ExprId outputExprId, ExprId inputExprId) {
-    exprDependencies.computeIfAbsent(outputExprId, k -> new HashSet<>()).add(inputExprId);
+    exprDependencies
+        .computeIfAbsent(outputExprId, k -> new HashSet<>())
+        .add(new Dependency(inputExprId, TransformationInfo.identity()));
+  }
+
+  public void addDependency(
+      ExprId outputExprId, ExprId inputExprId, TransformationInfo transformationInfo) {
+    exprDependencies
+        .computeIfAbsent(outputExprId, k -> new HashSet<>())
+        .add(new Dependency(inputExprId, transformationInfo));
+  }
+
+  public void addDatasetDependency(ExprId outputExprId) {
+    datasetDependencies.add(outputExprId);
   }
 
   public boolean hasOutputs() {
@@ -145,10 +161,18 @@ public class ColumnLevelLineageBuilder {
     OpenLineage.ColumnLineageDatasetFacetFieldsBuilder fieldsBuilder =
         context.getOpenLineage().newColumnLineageDatasetFacetFieldsBuilder();
 
+    List<TransformedInput> datasetDependencyInputs =
+        datasetDependencies.stream()
+            .flatMap(e -> getInputsUsedFor(e).stream())
+            .distinct()
+            .collect(Collectors.toList());
+
     schema.getFields().stream()
         .map(field -> Pair.of(field, getInputsUsedFor(field.getName())))
         .filter(pair -> !pair.getRight().isEmpty())
-        .map(pair -> Pair.of(pair.getLeft(), facetInputFields(pair.getRight())))
+        .map(
+            pair ->
+                Pair.of(pair.getLeft(), facetInputFields(pair.getRight(), datasetDependencyInputs)))
         .forEach(
             pair ->
                 fieldsBuilder.put(
@@ -163,19 +187,30 @@ public class ColumnLevelLineageBuilder {
   }
 
   private List<OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields> facetInputFields(
-      List<Pair<DatasetIdentifier, String>> inputFields) {
-    return inputFields.stream()
+      List<TransformedInput> inputFields, List<TransformedInput> datasetDependencyInputs) {
+
+    Stream<TransformedInput> concat =
+        Streams.concat(inputFields.stream(), datasetDependencyInputs.stream());
+    Map<Input, List<TransformedInput>> collect =
+        concat.collect(Collectors.groupingBy(TransformedInput::getInput, Collectors.toList()));
+
+    return collect.entrySet().stream()
         .map(
             field ->
                 new OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFieldsBuilder()
-                    .namespace(field.getLeft().getNamespace())
-                    .name(field.getLeft().getName())
-                    .field(field.getRight())
+                    .namespace(field.getKey().getDatasetIdentifier().getNamespace())
+                    .name(field.getKey().getDatasetIdentifier().getName())
+                    .field(field.getKey().getFieldName())
+                    .transformations(
+                        field.getValue().stream()
+                            .map(TransformedInput::getTransformationInfo)
+                            .map(TransformationInfo::toInputFieldsTransformations)
+                            .collect(Collectors.toList()))
                     .build())
         .collect(Collectors.toList());
   }
 
-  List<Pair<DatasetIdentifier, String>> getInputsUsedFor(String outputName) {
+  List<TransformedInput> getInputsUsedFor(String outputName) {
     Optional<OpenLineage.SchemaDatasetFacetFields> outputField =
         schema.getFields().stream()
             .filter(field -> field.getName().equalsIgnoreCase(outputName))
@@ -184,26 +219,39 @@ public class ColumnLevelLineageBuilder {
       return Collections.emptyList();
     }
 
-    return findDependentInputs(outputs.get(outputField.get())).stream()
-        .filter(inputExprId -> inputs.containsKey(inputExprId))
-        .flatMap(inputExprId -> inputs.get(inputExprId).stream())
-        .filter(Objects::nonNull)
-        .distinct()
-        .collect(Collectors.toList());
+    ExprId outputExprId = outputs.get(outputField.get());
+    return getInputsUsedFor(outputExprId);
   }
 
-  private List<ExprId> findDependentInputs(ExprId outputExprId) {
-    List<ExprId> dependentInputs = new LinkedList<>();
-    dependentInputs.add(outputExprId);
+  @NotNull
+  private List<TransformedInput> getInputsUsedFor(ExprId outputExprId) {
+    List<TransformedInput> collect =
+        findDependentInputs(outputExprId).stream()
+            .filter(dependency -> inputs.containsKey(dependency.getExprId()))
+            .flatMap(
+                dependency ->
+                    inputs.get(dependency.getExprId()).stream()
+                        .map(e -> new TransformedInput(e, dependency.getTransformationInfo())))
+            .distinct()
+            .collect(Collectors.toList());
+    return collect;
+  }
+
+  private List<Dependency> findDependentInputs(ExprId outputExprId) {
+    List<Dependency> dependentInputs = new LinkedList<>();
+    dependentInputs.add(new Dependency(outputExprId, TransformationInfo.identity()));
     boolean continueSearch = true;
 
-    Set<ExprId> newDependentInputs = Collections.singleton(outputExprId);
+    Set<Dependency> newDependentInputs =
+        Collections.singleton(new Dependency(outputExprId, TransformationInfo.identity()));
     while (continueSearch) {
       newDependentInputs =
           newDependentInputs.stream()
-              .filter(exprId -> exprDependencies.containsKey(exprId))
-              .flatMap(exprId -> exprDependencies.get(exprId).stream())
-              .filter(exprId -> !dependentInputs.contains(exprId)) // filter already added
+              .filter(dependency -> exprDependencies.containsKey(dependency.getExprId()))
+              .flatMap(
+                  dependency ->
+                      exprDependencies.get(dependency.getExprId()).stream().map(dependency::merge))
+              .filter(dependency -> !dependentInputs.contains(dependency)) // filter already added
               .collect(Collectors.toSet());
 
       dependentInputs.addAll(newDependentInputs);

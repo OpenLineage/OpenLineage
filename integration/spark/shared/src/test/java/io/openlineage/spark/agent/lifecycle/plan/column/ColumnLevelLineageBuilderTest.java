@@ -16,7 +16,6 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,12 +55,12 @@ class ColumnLevelLineageBuilderTest {
     builder.addOutput(rootExprId, "a");
     builder.addInput(rootExprId, di, INPUT_A);
 
-    List<Pair<DatasetIdentifier, String>> inputs = builder.getInputsUsedFor("a");
+    List<TransformedInput> inputs = builder.getInputsUsedFor("a");
 
     assertTrue(builder.hasOutputs());
     assertEquals(1, inputs.size());
-    assertEquals(INPUT_A, inputs.get(0).getRight());
-    assertEquals(di, inputs.get(0).getLeft());
+    assertEquals(INPUT_A, inputs.get(0).getName());
+    assertEquals(di, inputs.get(0).getDatasetIdentifier());
   }
 
   @Test
@@ -87,14 +86,14 @@ class ColumnLevelLineageBuilderTest {
     builder.addInput(grandChildExprId1, di1, "input1");
     builder.addInput(grandChildExprId1, di2, "input2");
 
-    List<Pair<DatasetIdentifier, String>> inputs = builder.getInputsUsedFor("a");
+    List<TransformedInput> inputs = builder.getInputsUsedFor("a");
 
     assertTrue(builder.hasOutputs());
     assertEquals(2, inputs.size());
-    assertEquals("input1", inputs.get(0).getRight());
-    assertEquals("input2", inputs.get(1).getRight());
-    assertEquals(di1, inputs.get(0).getLeft());
-    assertEquals(di2, inputs.get(1).getLeft());
+    assertEquals("input1", inputs.get(1).getName());
+    assertEquals("input2", inputs.get(0).getName());
+    assertEquals(di1, inputs.get(1).getDatasetIdentifier());
+    assertEquals(di2, inputs.get(0).getDatasetIdentifier());
   }
 
   @Test
@@ -103,7 +102,7 @@ class ColumnLevelLineageBuilderTest {
     builder.addDependency(rootExprId, childExprId);
     builder.addDependency(childExprId, rootExprId); // cycle that should not happen
 
-    List<Pair<DatasetIdentifier, String>> inputs = builder.getInputsUsedFor("a");
+    List<TransformedInput> inputs = builder.getInputsUsedFor("a");
     assertEquals(0, inputs.size());
   }
 
@@ -122,12 +121,12 @@ class ColumnLevelLineageBuilderTest {
     assertEquals(2, facetFields.size());
 
     assertEquals(DB, facetFields.get(0).getNamespace());
-    assertEquals(TABLE_A, facetFields.get(0).getName());
-    assertEquals(INPUT_A, facetFields.get(0).getField());
+    assertEquals("tableB", facetFields.get(0).getName());
+    assertEquals("inputB", facetFields.get(0).getField());
 
-    assertEquals(DB, facetFields.get(0).getNamespace());
-    assertEquals(TABLE_A, facetFields.get(0).getName());
-    assertEquals(INPUT_A, facetFields.get(0).getField());
+    assertEquals(DB, facetFields.get(1).getNamespace());
+    assertEquals(TABLE_A, facetFields.get(1).getName());
+    assertEquals(INPUT_A, facetFields.get(1).getField());
   }
 
   @Test
