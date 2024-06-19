@@ -60,6 +60,9 @@ import scala.collection.immutable.Seq;
 
 class ExpressionDependencyCollectorTest {
 
+  final String NAME1 = "name1";
+  final String NAME2 = "name2";
+  final String NAME3 = "name3";
   ColumnLevelLineageBuilder builder = Mockito.mock(ColumnLevelLineageBuilder.class);
   ColumnLevelLineageContext context = mock(ColumnLevelLineageContext.class);
   LongAccumulator exprIdAccumulator = new LongAccumulator(Long::sum, 0L);
@@ -69,8 +72,8 @@ class ExpressionDependencyCollectorTest {
   ExprId exprId4 = ExprId.apply(24);
   ExprId exprId5 = ExprId.apply(25);
 
-  NamedExpression expression1 = field("name1", exprId1);
-  NamedExpression expression2 = field("name2", exprId2);
+  NamedExpression expression1 = field(NAME1, exprId1);
+  NamedExpression expression2 = field(NAME2, exprId2);
 
   @BeforeEach
   void setup() {
@@ -81,9 +84,9 @@ class ExpressionDependencyCollectorTest {
 
   @Test
   void testCollectFromProjectPlan() {
-    Alias alias = alias(exprId3, "name2", expression2);
+    Alias alias = alias(exprId3, NAME2, expression2);
     Alias alias2 =
-        alias(exprId4, "name3", new Add((Expression) expression1, (Expression) expression2));
+        alias(exprId4, NAME3, new Add((Expression) expression1, (Expression) expression2));
 
     Project project =
         new Project(getNamedExpressionSeq(expression1, alias, alias2), mock(LogicalPlan.class));
@@ -104,7 +107,7 @@ class ExpressionDependencyCollectorTest {
       Seq<Expression> children =
           ScalaConversionUtils.fromList(Collections.singletonList((Expression) expression2));
       Alias alias3 =
-          alias(exprId5, "name3", (Expression) new Count(children).toAggregateExpression());
+          alias(exprId5, NAME3, (Expression) new Count(children).toAggregateExpression());
 
       Aggregate aggregate =
           new Aggregate(
@@ -132,7 +135,7 @@ class ExpressionDependencyCollectorTest {
       mockNewExprId(exprIdAccumulator, utilities);
       ExprId datasetDependencyExpression = ExprId.apply(0);
       EqualTo equalTo = new EqualTo((Expression) expression1, (Expression) expression2);
-      AttributeReference expression3 = field("name3", exprId3);
+      AttributeReference expression3 = field(NAME3, exprId3);
       GreaterThan greaterThan = new GreaterThan(expression3, new Literal(5, IntegerType$.MODULE$));
       Filter filter = new Filter(new And(equalTo, greaterThan), mock(LogicalPlan.class));
 
@@ -170,7 +173,7 @@ class ExpressionDependencyCollectorTest {
               mock(LogicalPlan.class),
               mock(LogicalPlan.class),
               JoinType.apply("inner"),
-                  ScalaConversionUtils.toScalaOption((Expression) equalTo),
+              ScalaConversionUtils.toScalaOption((Expression) equalTo),
               JoinHint.NONE());
 
       LogicalPlan plan = new CreateTableAsSelect(null, null, null, join, null, null, false);
@@ -226,7 +229,7 @@ class ExpressionDependencyCollectorTest {
     try (MockedStatic<NamedExpression> utilities = mockStatic(NamedExpression.class)) {
       mockNewExprId(exprIdAccumulator, utilities);
 
-      AttributeReference expression3 = field("name3", exprId3);
+      AttributeReference expression3 = field(NAME3, exprId3);
       EqualTo equalTo = new EqualTo((Expression) expression1, (Expression) expression2);
       GreaterThan greaterThan = new GreaterThan(expression3, new Literal(5, IntegerType$.MODULE$));
 
@@ -235,7 +238,7 @@ class ExpressionDependencyCollectorTest {
               mock(LogicalPlan.class),
               mock(LogicalPlan.class),
               JoinType.apply("inner"),
-                  ScalaConversionUtils.toScalaOption((Expression) equalTo),
+              ScalaConversionUtils.toScalaOption((Expression) equalTo),
               JoinHint.NONE());
       Filter filter = new Filter(new And(equalTo, greaterThan), join);
       Sort sort =
@@ -292,14 +295,12 @@ class ExpressionDependencyCollectorTest {
     }
   }
 
-
-
   @Test
   void testCollectIFExpressions() {
     If ifExpr =
         new If(
             new EqualTo((Expression) expression1, (Expression) expression2),
-            field("name3", exprId3),
+            field(NAME3, exprId3),
             field("name4", exprId4));
     Alias res = alias(exprId5, "res", ifExpr);
     Project project = new Project(getNamedExpressionSeq(res), mock(LogicalPlan.class));
@@ -318,7 +319,7 @@ class ExpressionDependencyCollectorTest {
 
   @Test
   void testCollectMultipleDirectTransformationsForOneInput() {
-    AttributeReference expression3 = field("name3", exprId3);
+    AttributeReference expression3 = field(NAME3, exprId3);
     If ifExpr =
         new If(
             new EqualTo((Expression) expression1, (Expression) expression2),
@@ -347,7 +348,7 @@ class ExpressionDependencyCollectorTest {
                 Collections.singletonList(
                     ScalaConversionUtils.toScalaTuple(
                         (Expression) expression1, (Expression) expression2))),
-            ScalaConversionUtils.toScalaOption((Expression) field("name3", exprId3)));
+            ScalaConversionUtils.toScalaOption((Expression) field(NAME3, exprId3)));
     Alias res = alias(exprId4, "res", caseWhen);
     Project project = new Project(getNamedExpressionSeq(res), mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
@@ -376,7 +377,7 @@ class ExpressionDependencyCollectorTest {
     when(binaryExpression.children()).thenReturn(children);
 
     ExprId rootAliasExprId = mock(ExprId.class);
-    Alias rootAlias = alias(rootAliasExprId, "name2", (Expression) binaryExpression);
+    Alias rootAlias = alias(rootAliasExprId, NAME2, (Expression) binaryExpression);
 
     Project project =
         new Project(
