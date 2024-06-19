@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.Builder;
@@ -145,4 +146,6 @@ public class OpenLineageContext {
    * file. All the configuration should be read from this object.
    */
   @NonNull @Getter final SparkOpenLineageConfig openLineageConfig;
+
+  @NonNull @Getter private Map<String, String> jobProperties;
 }

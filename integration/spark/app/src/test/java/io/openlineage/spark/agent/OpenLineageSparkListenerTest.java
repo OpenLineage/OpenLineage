@@ -7,6 +7,7 @@ package io.openlineage.spark.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -163,7 +164,7 @@ class OpenLineageSparkListenerTest {
       listener.onOtherEvent(mock(SparkListenerSQLExecutionEnd.class));
 
       verify(contextFactory, never()).createSparkApplicationExecutionContext(sparkContext);
-      verify(contextFactory, never()).createSparkSQLExecutionContext(anyLong());
+      verify(contextFactory, never()).createSparkSQLExecutionContext(anyLong(), anyMap());
     }
   }
 

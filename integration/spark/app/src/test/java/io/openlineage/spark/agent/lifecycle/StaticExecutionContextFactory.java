@@ -16,6 +16,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -101,7 +102,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
   }
 
   @Override
-  public Optional<ExecutionContext> createSparkSQLExecutionContext(long executionId) {
+  public Optional<ExecutionContext> createSparkSQLExecutionContext(long executionId, Map<String, String> jobProperties) {
     return Optional.ofNullable(SQLExecution.getQueryExecution(executionId))
         .map(
             qe -> {

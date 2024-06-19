@@ -15,6 +15,7 @@ import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.Vendors;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -67,7 +68,8 @@ public class ContextFactory {
     return new RddExecutionContext(openLineageEventEmitter);
   }
 
-  public Optional<ExecutionContext> createSparkSQLExecutionContext(long executionId) {
+  public Optional<ExecutionContext> createSparkSQLExecutionContext(
+      long executionId, Map<String, String> jobProperties) {
     QueryExecution queryExecution = SQLExecution.getQueryExecution(executionId);
     if (queryExecution == null) {
       log.error("Query execution is null: can't emit event for executionId {}", executionId);
@@ -87,6 +89,7 @@ public class ContextFactory {
             .vendors(Vendors.getVendors())
             .meterRegistry(meterRegistry)
             .openLineageConfig(config)
+            .jobProperties(jobProperties)
             .build();
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, handlerFactory);
@@ -96,7 +99,7 @@ public class ContextFactory {
   }
 
   public Optional<ExecutionContext> createSparkSQLExecutionContext(
-      SparkListenerSQLExecutionEnd event) {
+      SparkListenerSQLExecutionEnd event, Map<String, String> jobProperties) {
     return executionFromCompleteEvent(event)
         .map(
             queryExecution -> {
@@ -114,6 +117,7 @@ public class ContextFactory {
                       .vendors(Vendors.getVendors())
                       .meterRegistry(meterRegistry)
                       .openLineageConfig(config)
+                      .jobProperties(jobProperties)
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, handlerFactory);
