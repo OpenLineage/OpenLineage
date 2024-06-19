@@ -133,14 +133,13 @@ public class ExpressionDependencyCollector {
         builder.addDependency(outputExprId, attRef.exprId(), transformationInfo);
       }
     } else if (expr instanceof Alias) {
-      handleAlias((Alias) expr, outputExprId, transformationInfo, builder);
+      handleExpression((Alias) expr, outputExprId, transformationInfo, builder);
     } else if (expr instanceof CaseWhen) {
-      handleCaseWhen((CaseWhen) expr, outputExprId, transformationInfo, builder);
+      handleExpression((CaseWhen) expr, outputExprId, transformationInfo, builder);
     } else if (expr instanceof If) {
-      handleIf((If) expr, outputExprId, transformationInfo, builder);
+      handleExpression((If) expr, outputExprId, transformationInfo, builder);
     } else if (expr instanceof AggregateExpression) {
-      handleAggregateExpression(
-          (AggregateExpression) expr, outputExprId, transformationInfo, builder);
+      handleExpression((AggregateExpression) expr, outputExprId, transformationInfo, builder);
     } else if (expr != null && expr.children() != null) {
       handleGenericExpression(expr, outputExprId, transformationInfo, builder);
     }
@@ -161,7 +160,7 @@ public class ExpressionDependencyCollector {
                     builder));
   }
 
-  private static void handleAggregateExpression(
+  private static void handleExpression(
       AggregateExpression expr,
       ExprId outputExprId,
       TransformationInfo transformationInfo,
@@ -194,7 +193,7 @@ public class ExpressionDependencyCollector {
         transformationInfo.merge(TransformationInfo.aggregation()), builder);
   }
 
-  private static void handleIf(
+  private static void handleExpression(
       If expr,
       ExprId outputExprId,
       TransformationInfo transformationInfo,
@@ -207,7 +206,7 @@ public class ExpressionDependencyCollector {
     traverseExpression(i.falseValue(), outputExprId, transformationInfo, builder);
   }
 
-  private static void handleCaseWhen(
+  private static void handleExpression(
       CaseWhen expr,
       ExprId outputExprId,
       TransformationInfo transformationInfo,
@@ -232,7 +231,7 @@ public class ExpressionDependencyCollector {
     }
   }
 
-  private static void handleAlias(
+  private static void handleExpression(
       Alias expr,
       ExprId outputExprId,
       TransformationInfo transformationInfo,
