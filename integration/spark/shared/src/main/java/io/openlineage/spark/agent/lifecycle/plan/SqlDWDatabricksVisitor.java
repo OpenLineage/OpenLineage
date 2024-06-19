@@ -6,6 +6,8 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
@@ -13,8 +15,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
@@ -37,8 +38,6 @@ import org.apache.spark.sql.sources.BaseRelation;
 public class SqlDWDatabricksVisitor<D extends OpenLineage.Dataset>
     extends QueryPlanVisitor<LogicalPlan, D> {
   private final DatasetFactory<D> factory;
-  private static final Pattern dbJdbcPattern = Pattern.compile("database=([^;]*);?");
-  private static final Pattern serverJdbcPattern = Pattern.compile("jdbc:([^;]*);?");
   private static final String DATABRICKS_CLASS_NAME = "com.databricks.spark.sqldw.SqlDWRelation";
   private static final String SPARK3_TABLE_FIELD_NAME = "tableNameOrSubquery";
   private static final String SPARK2_TABLE_FIELD_NAME =
@@ -103,50 +102,34 @@ public class SqlDWDatabricksVisitor<D extends OpenLineage.Dataset>
     if (tableName.startsWith("(")) {
       tableName = "COMPLEX";
     }
+
     return Optional.of(tableName);
   }
 
-  private Optional<String> getNameSpace(BaseRelation relation) {
-
-    String jdbcUrl;
+  private Optional<String> getJdbcUrl(BaseRelation relation) {
     try {
       Object fieldDetails = FieldUtils.readField(relation, "params", true);
-      jdbcUrl = (String) MethodUtils.invokeMethod(fieldDetails, true, "jdbcUrl");
+      String jdbcUrl = (String) MethodUtils.invokeMethod(fieldDetails, true, "jdbcUrl");
+      if (jdbcUrl.startsWith("jdbc:sqlserver:")) {
+        return Optional.of(jdbcUrl);
+      }
     } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
       log.warn("Unable to discover SQLDW jdbcUrl Parameters");
-      return Optional.empty();
     }
-
-    Matcher serverMatcher = serverJdbcPattern.matcher(jdbcUrl);
-    boolean serverIsFound = serverMatcher.find();
-    Matcher dbMatcher = dbJdbcPattern.matcher(jdbcUrl);
-    boolean dbIsFound = dbMatcher.find();
-
-    if (!(dbIsFound && serverIsFound)) {
-      log.warn("Unable to discover SQLDW database name or server name from jdbc url");
-      return Optional.empty();
-    }
-
-    String databaseSubString = dbMatcher.group(1);
-    String serverSubString = serverMatcher.group(1);
-    String output = String.format("%s;database=%s;", serverSubString, databaseSubString);
-
-    return Optional.of(output);
+    return Optional.empty();
   }
 
   @Override
   public List<D> apply(LogicalPlan x) {
     BaseRelation relation = ((LogicalRelation) x).relation();
-    List<D> output;
     Optional<String> name = getName(relation);
-    Optional<String> namespace = getNameSpace(relation);
-    if (name.isPresent() && namespace.isPresent()) {
-      output =
-          Collections.singletonList(
-              factory.getDataset(name.get(), namespace.get(), relation.schema()));
-    } else {
-      output = Collections.emptyList();
+    Optional<String> jdbcUrl = getJdbcUrl(relation);
+    if (!name.isPresent() || !jdbcUrl.isPresent()) {
+      return Collections.emptyList();
     }
-    return output;
+    DatasetIdentifier di =
+        JdbcDatasetUtils.getDatasetIdentifier(jdbcUrl.get(), name.get(), new Properties());
+    return Collections.singletonList(
+        factory.getDataset(di.getName(), di.getNamespace(), relation.schema()));
   }
 }

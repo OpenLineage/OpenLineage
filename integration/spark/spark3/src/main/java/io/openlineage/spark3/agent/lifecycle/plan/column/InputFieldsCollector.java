@@ -7,7 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.JdbcUtils;
+import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
@@ -174,17 +175,19 @@ public class InputFieldsCollector {
   private static List<DatasetIdentifier> extractDatasetIdentifier(
       ColumnLevelLineageContext context, JDBCRelation relation) {
     Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
+    String jdbcUrl = relation.jdbcOptions().url();
+    Properties jdbcProperties = relation.jdbcOptions().asConnectionProperties();
     return sqlMeta
         .map(
             meta ->
                 meta.inTables().stream()
                     .map(
-                        e ->
+                        table ->
                             context
                                 .getNamespaceResolver()
                                 .resolve(
-                                    JdbcUtils.getDatasetIdentifierFromJdbcUrl(
-                                        relation.jdbcOptions().url(), e.qualifiedName())))
+                                    JdbcDatasetUtils.getDatasetIdentifier(
+                                        jdbcUrl, table.qualifiedName(), jdbcProperties)))
                     .collect(Collectors.toList()))
         .orElse(Collections.emptyList());
   }

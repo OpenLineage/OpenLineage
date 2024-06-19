@@ -70,7 +70,7 @@ class JdbcRelationHandlerTest {
         new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
     StructType schema2 = new StructType().add("j2", DataTypes.StringType);
 
-    jdbcRelationHandler.getDatasets(relation, url);
+    jdbcRelationHandler.getDatasets(relation);
 
     verify(datasetFactory, times(1))
         .getDataset("test.jdbc_source1", "postgres://localhost:5432", schema1);
@@ -88,7 +88,7 @@ class JdbcRelationHandlerTest {
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcTable);
     when(relation.schema()).thenReturn(schema);
 
-    jdbcRelationHandler.getDatasets(relation, url);
+    jdbcRelationHandler.getDatasets(relation);
 
     verify(datasetFactory, times(1))
         .getDataset("test.tablename", "postgres://localhost:5432", schema);
@@ -107,7 +107,7 @@ class JdbcRelationHandlerTest {
         new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
     StructType schema2 = new StructType().add("j2", DataTypes.StringType);
 
-    jdbcRelationHandler.getDatasets(relation, url);
+    jdbcRelationHandler.getDatasets(relation);
 
     verify(datasetFactory, times(1))
         .getDataset("test.jdbc_source1", "postgres://localhost:5432", schema1);
@@ -123,7 +123,7 @@ class JdbcRelationHandlerTest {
         new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
     StructType schema2 = new StructType().add("j2", DataTypes.StringType);
 
-    jdbcRelationHandler.getDatasets(relation, mysqlUrl);
+    jdbcRelationHandler.getDatasets(relation);
 
     verify(datasetFactory, times(1))
         .getDataset("test.jdbc_source1", "mysql://localhost:3306", schema1);
@@ -139,7 +139,7 @@ class JdbcRelationHandlerTest {
         new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
     StructType schema2 = new StructType().add("j2", DataTypes.StringType);
 
-    jdbcRelationHandler.getDatasets(relation, unknownUrl);
+    jdbcRelationHandler.getDatasets(relation);
 
     verify(datasetFactory, times(1))
         .getDataset("test.jdbc_source1", "unknown://localhost:1234", schema1);
@@ -150,7 +150,8 @@ class JdbcRelationHandlerTest {
   @Test
   void testInvalidJdbcString() {
     when(jdbcOptions.tableOrQuery()).thenReturn(invalidJdbc);
-    List datasets = jdbcRelationHandler.getDatasets(relation, url);
+    when(jdbcOptions.url()).thenReturn("jdbc:" + url);
+    List datasets = jdbcRelationHandler.getDatasets(relation);
     assertTrue(datasets.isEmpty());
     verify(datasetFactory, never())
         .getDataset(any(String.class), any(String.class), any(StructType.class));

@@ -58,7 +58,7 @@ class JdbcSinkVisitorTest {
     List<OpenLineage.OutputDataset> outputDatasets = jdbcSinkVisitor.apply(source);
 
     assertEquals(1, outputDatasets.size());
-    assertEquals("postgres://host:port", outputDatasets.get(0).getNamespace());
+    assertEquals("postgres://host:5432", outputDatasets.get(0).getNamespace());
     assertEquals("database.jdbc_table", outputDatasets.get(0).getName());
   }
 
@@ -68,7 +68,7 @@ class JdbcSinkVisitorTest {
 
     JdbcConnectorOptions internalJdbcConnectionOptions =
         new JdbcConnectorOptions.Builder()
-            .setDBUrl("jdbc:postgresql://host:port/database")
+            .setDBUrl("jdbc:postgresql://host:5432/database")
             .setTableName("jdbc_table")
             .build();
 

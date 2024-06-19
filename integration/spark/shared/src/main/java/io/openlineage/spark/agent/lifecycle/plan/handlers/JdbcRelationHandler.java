@@ -34,15 +34,14 @@ public class JdbcRelationHandler<D extends OpenLineage.Dataset> {
     // driver format looks like oracle:<drivertype>:<user>/<password>@<database>
     // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db
     // format.
-    JDBCRelation relation = (JDBCRelation) x.relation();
-    return getDatasets(relation, relation.jdbcOptions().url());
+    return getDatasets((JDBCRelation) x.relation());
   }
 
-  public List<D> getDatasets(JDBCRelation relation, String url) {
+  public List<D> getDatasets(JDBCRelation relation) {
     Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
     if (!sqlMeta.isPresent()) {
       return Collections.emptyList();
     }
-    return JdbcSparkUtils.getDatasets(datasetFactory, sqlMeta.get(), relation.schema(), url);
+    return JdbcSparkUtils.getDatasets(datasetFactory, sqlMeta.get(), relation);
   }
 }
