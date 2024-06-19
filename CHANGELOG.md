@@ -2,6 +2,8 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.16.0...HEAD)
 ### Added
+* **Spark: add transformation extraction** [`#2756`](https://github.com/OpenLineage/OpenLineage/pull/2756) [@tnazarew](https://github.com/tnazarew)  
+  *Add transformation type extraction mechanism to spark integration*
 * **Spec: add transformation type info** [`#2756`](https://github.com/OpenLineage/OpenLineage/pull/2756) [@tnazarew](https://github.com/tnazarew)  
   *Add information about transformation type in `ColumnLineageDatasetFacet`. `transformationType` and `transformationDescription` marked deprecated*
 
