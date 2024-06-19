@@ -14,7 +14,6 @@ import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInf
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
-import io.openlineage.spark.agent.util.ExtensionPlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
@@ -74,9 +73,7 @@ public class ExpressionDependencyCollector {
     List<Expression> datasetDependencies = new LinkedList<>();
     Optional<TransformationInfo> datasetTransformation = Optional.empty();
 
-    if (node instanceof ColumnLevelLineageNode) {
-      extensionColumnLineage(context, (ColumnLevelLineageNode) node);
-    } else if (node instanceof Project) {
+    if (node instanceof Project) {
       expressions.addAll(
           ScalaConversionUtils.<NamedExpression>fromSeq(((Project) node).projectList()));
     } else if (node instanceof Aggregate) {
