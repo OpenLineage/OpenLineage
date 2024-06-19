@@ -16,13 +16,10 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineage.OutputDataset;
-import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.extension.scala.v1.LineageRelationProvider;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -37,14 +34,10 @@ import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
 import org.apache.spark.sql.sources.CreatableRelationProvider;
 import org.apache.spark.sql.sources.RelationProvider;
 import org.apache.spark.sql.types.IntegerType$;
-import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StringType$;
-import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
 
 class SaveIntoDataSourceCommandVisitorTest {
@@ -99,55 +92,6 @@ class SaveIntoDataSourceCommandVisitorTest {
     assertEquals("string", datasets.get(0).getFacets().getSchema().getFields().get(0).getType());
     assertEquals("b", datasets.get(0).getFacets().getSchema().getFields().get(1).getName());
     assertEquals("integer", datasets.get(0).getFacets().getSchema().getFields().get(1).getType());
-  }
-
-  @Test
-  void testSchemaExtractedFromLineageRelationProvider() {
-    StructType schema =
-        new StructType(
-            new StructField[] {
-              new StructField("field", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
-            });
-    LineageRelationProvider provider =
-        mock(
-            LineageRelationProvider.class,
-            withSettings().extraInterfaces(CreatableRelationProvider.class));
-    DatasetIdentifier identifier = new DatasetIdentifier("name", "namespace");
-    when(command.dataSource()).thenReturn((CreatableRelationProvider) provider);
-    when(command.schema()).thenReturn(schema);
-    when(provider.getLineageDatasetIdentifier(any(), eq(sqlContext), eq(options)))
-        .thenReturn(identifier);
-
-    List<OutputDataset> datasets = visitor.apply(mock(SparkListenerEvent.class), command);
-    assertThat(datasets).hasSize(1);
-    assertThat(datasets.get(0))
-        .hasFieldOrPropertyWithValue("name", "name")
-        .hasFieldOrPropertyWithValue("namespace", "namespace");
-    assertThat(datasets.get(0).getFacets().getSchema().getFields().get(0))
-        .hasFieldOrPropertyWithValue("name", "field");
-  }
-
-  @Test
-  void testIsDefinedAtLogicalPlanForLineageRelationProvider() {
-    LineageRelationProvider provider =
-        mock(
-            LineageRelationProvider.class,
-            withSettings().extraInterfaces(CreatableRelationProvider.class));
-    when(command.dataSource()).thenReturn((CreatableRelationProvider) provider);
-    assertThat(visitor.isDefinedAtLogicalPlan(command)).isTrue();
-  }
-
-  @Test
-  void testJobNameSuffixForLineageRelationProvider() {
-    CreatableRelationProvider dataSource =
-        mock(
-            CreatableRelationProvider.class,
-            withSettings().extraInterfaces(LineageRelationProvider.class));
-    when(command.dataSource()).thenReturn(dataSource);
-    when(((LineageRelationProvider) dataSource).getLineageDatasetIdentifier(any(), any(), any()))
-        .thenReturn(new DatasetIdentifier("a", "b"));
-
-    assertThat(visitor.jobNameSuffix(command)).isPresent().get().isEqualTo("a");
   }
 
   @Test

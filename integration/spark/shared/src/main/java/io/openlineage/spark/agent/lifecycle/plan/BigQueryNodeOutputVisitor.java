@@ -16,7 +16,6 @@ import io.openlineage.spark.agent.util.SparkSessionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import io.openlineage.spark.extension.scala.v1.LineageRelationProvider;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -51,7 +50,6 @@ public class BigQueryNodeOutputVisitor
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof SaveIntoDataSourceCommand
-        && !(((SaveIntoDataSourceCommand) plan).dataSource() instanceof LineageRelationProvider)
         && ((SaveIntoDataSourceCommand) plan).dataSource() instanceof BigQueryRelationProvider;
   }
 

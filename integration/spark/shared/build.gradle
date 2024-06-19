@@ -27,6 +27,7 @@ ext {
     databricksVersion = "0.1.4"
     junit5Version = "5.10.1"
     kafkaClientsVersion = "3.6.1"
+    micrometerVersion = '1.13.0'
     mockitoVersion = "4.11.0"
     mockserverVersion = "5.14.0"
     postgresqlVersion = "42.7.1"
@@ -42,7 +43,7 @@ dependencies {
     // Design time dependencies
     api("io.openlineage:openlineage-java:${project.version}")
     api("io.openlineage:openlineage-sql-java:${project.version}")
-    api("io.openlineage:spark-interfaces-scala_${scalaBinaryVersion}:${project.version}")
+    api("io.micrometer:micrometer-core:${micrometerVersion}")
 
     compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
@@ -94,7 +95,7 @@ dependencies {
     // Scala 2.12 dependencies
     scala212Api("io.openlineage:openlineage-java:${project.version}")
     scala212Api("io.openlineage:openlineage-sql-java:${project.version}")
-    scala212Api("io.openlineage:spark-interfaces-scala_2.12:${project.version}")
+    scala212Api(("io.micrometer:micrometer-core:${micrometerVersion}"))
 
     scala212CompileOnly("org.apache.spark:spark-hive_2.12:${sparkVersion}")
     scala212CompileOnly("org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}")
@@ -146,7 +147,7 @@ dependencies {
     // Scala 2.13 dependencies
     scala213Api("io.openlineage:openlineage-java:${project.version}")
     scala213Api("io.openlineage:openlineage-sql-java:${project.version}")
-    scala213Api("io.openlineage:spark-interfaces-scala_2.13:${project.version}")
+    scala213Api(("io.micrometer:micrometer-core:${micrometerVersion}"))
 
     scala213CompileOnly("org.apache.spark:spark-hive_2.13:${sparkVersion}")
     scala213CompileOnly("org.apache.spark:spark-sql-kafka-0-10_2.13:${sparkVersion}")
