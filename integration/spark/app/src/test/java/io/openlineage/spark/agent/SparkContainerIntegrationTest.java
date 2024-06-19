@@ -312,6 +312,14 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3)
+  void testColumnLevelLineage() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "testColumnLevelLineage", "spark_cll.py");
+    verifyEvents(mockServerClient, "pysparkCLLStart.json", "pysparkCLLEnd.json");
+  }
+
+  @Test
   void testAlterTable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testAlterTable", "spark_alter_table.py");
