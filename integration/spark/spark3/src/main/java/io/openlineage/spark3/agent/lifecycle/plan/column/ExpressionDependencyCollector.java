@@ -32,7 +32,6 @@ import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.expressions.HiveHash;
 import org.apache.spark.sql.catalyst.expressions.If;
-
 import org.apache.spark.sql.catalyst.expressions.Md5;
 import org.apache.spark.sql.catalyst.expressions.Murmur3Hash;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;

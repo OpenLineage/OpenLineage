@@ -365,10 +365,10 @@ class ExpressionDependencyCollectorTest {
   @Test
   void testCollectMaskingExpressions() {
     If ifExpr =
-            new If(
-                    new EqualTo((Expression) expression1, (Expression) expression2),
-                    field(NAME3, exprId3),
-                    new Sha1(field("name4", exprId4)));
+        new If(
+            new EqualTo((Expression) expression1, (Expression) expression2),
+            field(NAME3, exprId3),
+            new Sha1(field("name4", exprId4)));
 
     Alias res = alias(exprId5, "name5", ifExpr);
 
@@ -377,13 +377,14 @@ class ExpressionDependencyCollectorTest {
     ExpressionDependencyCollector.collect(context, plan);
 
     verify(builder, times(1))
-            .addDependency(
-                    exprId5, exprId1, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
+        .addDependency(
+            exprId5, exprId1, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
     verify(builder, times(1))
-            .addDependency(
-                    exprId5, exprId2, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
+        .addDependency(
+            exprId5, exprId2, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
     verify(builder, times(1)).addDependency(exprId5, exprId3, TransformationInfo.identity());
-    verify(builder, times(1)).addDependency(exprId5, exprId4, TransformationInfo.transformation(true));
+    verify(builder, times(1))
+        .addDependency(exprId5, exprId4, TransformationInfo.transformation(true));
   }
 
   @Test

@@ -193,19 +193,20 @@ class ColumnLineageWithTransformationTypesTest {
     assertColumnDependsOnType(
         facet, "tat", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation());
   }
+
   @Test
   void simpleQueryMasking() {
     createTable("t1", "a;int", "b;int");
     OpenLineage.ColumnLineageDatasetFacet facet =
         getFacetForQuery(
             getSchemaFacet("i;int", "t;int", "mt;string", "a;int", "ma;string"),
-            "SELECT " +
-                    "a as i, " +
-                    "a + 1 as t, " +
-                    "sha1(string(a + 1)) as mt, " +
-                    "sum(b) as a, " +
-                    "sha1(string(sum(b))) as ma " +
-                    "FROM t1 GROUP BY a");
+            "SELECT "
+                + "a as i, "
+                + "a + 1 as t, "
+                + "sha1(string(a + 1)) as mt, "
+                + "sum(b) as a, "
+                + "sha1(string(sum(b))) as ma "
+                + "FROM t1 GROUP BY a");
 
     assertColumnDependsOnType(
         facet, "i", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
