@@ -27,12 +27,21 @@ import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.catalyst.expressions.Alias;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.CaseWhen;
+import org.apache.spark.sql.catalyst.expressions.Crc32;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
+import org.apache.spark.sql.catalyst.expressions.HiveHash;
 import org.apache.spark.sql.catalyst.expressions.If;
+
+import org.apache.spark.sql.catalyst.expressions.Md5;
+import org.apache.spark.sql.catalyst.expressions.Murmur3Hash;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
+import org.apache.spark.sql.catalyst.expressions.Sha1;
+import org.apache.spark.sql.catalyst.expressions.Sha2;
 import org.apache.spark.sql.catalyst.expressions.SortOrder;
+import org.apache.spark.sql.catalyst.expressions.XxHash64;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
+import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.Join;
@@ -51,6 +60,17 @@ import scala.collection.Seq;
  */
 @Slf4j
 public class ExpressionDependencyCollector {
+  private static Boolean isMasking(Expression expression) {
+
+    return expression instanceof Crc32
+        || expression instanceof HiveHash
+        || expression instanceof Md5
+        || expression instanceof Murmur3Hash
+        || expression instanceof Sha1
+        || expression instanceof Sha2
+        || expression instanceof XxHash64
+        || expression instanceof Count;
+  }
 
   private static final List<ExpressionDependencyVisitor> expressionDependencyVisitors =
       Arrays.asList(new UnionDependencyVisitor(), new IcebergMergeIntoDependencyVisitor());
@@ -156,7 +176,7 @@ public class ExpressionDependencyCollector {
                 traverseExpression(
                     child,
                     outputExprId,
-                    transformationInfo.merge(TransformationInfo.transformation()),
+                    transformationInfo.merge(TransformationInfo.transformation(isMasking(expr))),
                     builder));
   }
 

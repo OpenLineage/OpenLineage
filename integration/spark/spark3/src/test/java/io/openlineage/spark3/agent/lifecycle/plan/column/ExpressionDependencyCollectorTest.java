@@ -34,6 +34,7 @@ import org.apache.spark.sql.catalyst.expressions.If;
 import org.apache.spark.sql.catalyst.expressions.Literal;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.expressions.NullOrdering;
+import org.apache.spark.sql.catalyst.expressions.Sha1;
 import org.apache.spark.sql.catalyst.expressions.SortDirection;
 import org.apache.spark.sql.catalyst.expressions.SortOrder;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
@@ -359,6 +360,30 @@ class ExpressionDependencyCollectorTest {
             exprId4, exprId1, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
     verify(builder, times(1)).addDependency(exprId4, exprId2, TransformationInfo.identity());
     verify(builder, times(1)).addDependency(exprId4, exprId3, TransformationInfo.identity());
+  }
+
+  @Test
+  void testCollectMaskingExpressions() {
+    If ifExpr =
+            new If(
+                    new EqualTo((Expression) expression1, (Expression) expression2),
+                    field(NAME3, exprId3),
+                    new Sha1(field("name4", exprId4)));
+
+    Alias res = alias(exprId5, "name5", ifExpr);
+
+    Project project = new Project(getNamedExpressionSeq(res), mock(LogicalPlan.class));
+    LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
+    ExpressionDependencyCollector.collect(context, plan);
+
+    verify(builder, times(1))
+            .addDependency(
+                    exprId5, exprId1, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
+    verify(builder, times(1))
+            .addDependency(
+                    exprId5, exprId2, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
+    verify(builder, times(1)).addDependency(exprId5, exprId3, TransformationInfo.identity());
+    verify(builder, times(1)).addDependency(exprId5, exprId4, TransformationInfo.transformation(true));
   }
 
   @Test

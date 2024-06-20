@@ -40,15 +40,27 @@ public class TransformationInfo {
   }
 
   public static TransformationInfo transformation() {
-    return new TransformationInfo(Types.DIRECT, Subtypes.TRANSFORMATION, "", false);
+    return transformation(false);
+  }
+
+  public static TransformationInfo transformation(Boolean isMasking) {
+    return new TransformationInfo(Types.DIRECT, Subtypes.TRANSFORMATION, "", isMasking);
   }
 
   public static TransformationInfo aggregation() {
-    return new TransformationInfo(Types.DIRECT, Subtypes.AGGREGATION, "", false);
+    return aggregation(false);
+  }
+
+  public static TransformationInfo aggregation(Boolean isMasking) {
+    return new TransformationInfo(Types.DIRECT, Subtypes.AGGREGATION, "", isMasking);
   }
 
   public static TransformationInfo indirect(Subtypes subType) {
-    return new TransformationInfo(Types.INDIRECT, subType, "", false);
+    return TransformationInfo.indirect(subType, false);
+  }
+
+  public static TransformationInfo indirect(Subtypes subType, Boolean isMasking) {
+    return new TransformationInfo(Types.INDIRECT, subType, "", isMasking);
   }
 
   @Override
