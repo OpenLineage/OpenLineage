@@ -6,6 +6,8 @@
   *Add transformation type extraction mechanism to spark integration*
 * **Spec: add transformation type info** [`#2756`](https://github.com/OpenLineage/OpenLineage/pull/2756) [@tnazarew](https://github.com/tnazarew)  
   *Add information about transformation type in `ColumnLineageDatasetFacet`. `transformationType` and `transformationDescription` marked deprecated*
+* **Spark: add GCP run and job facets** [`#2643`](https://github.com/OpenLineage/OpenLineage/pull/2643) [@codelixir](https://github.com/codelixir)
+  *Add `GCPRunFacetBuilder` and `GCPJobFacetBuilder` to report additional facets when running on Google Cloud Platform.*
 
 ### Fixed
 * **Spark: fix events emitted for `drop table` for Spark 3.4 and above** [`#2745`](https://github.com/OpenLineage/OpenLineage/pull/2745) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)[@savannavalgi](https://github.com/savannavalgi)
