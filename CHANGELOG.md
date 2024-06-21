@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.17.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.17.1...HEAD)
 
-## [1.17.0](https://github.com/OpenLineage/OpenLineage/compare/1.16.0...1.17.0) - 2024-06-21
+## [1.17.1](https://github.com/OpenLineage/OpenLineage/compare/1.16.0...1.17.1) - 2024-06-21
 ### Added
 * **Java: dataset namespace resolver feature** [`#2720`](https://github.com/OpenLineage/OpenLineage/pull/2720) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Adds a dataset namespace resolving mechanism that resolves dataset namespaces based on the resolvers configured. The core mechanism is implemented in openlineage-java and can be used within the Flink and Spark integrations.*
@@ -19,7 +19,7 @@
 * **Spec: implementing facet registry (following #2161)** [`#2729`](https://github.com/OpenLineage/OpenLineage/pull/2729) [@harels](https://github.com/harels)  
     *Introduces the foundations of the new facet Registry into the repo.*
 * **Spec: register GCP common job facet** [`#2740`](https://github.com/OpenLineage/OpenLineage/pull/2740) [@ngorchakova](https://github.com/ngorchakova)  
-    *Registers the GCP job facet that contains common attributes that will improve the way lineage is parsed and displayed by the GCP platform. Based on the proposal https://github.com/OpenLineage/OpenLineage/pull/2228/files, GCP Lineage would like to define facets that are expected from integrations. The list of support facets is not final and will be extended further by next PR.*
+    *Registers the GCP job facet that contains common attributes that will improve the way lineage is parsed and displayed by the GCP platform. Based on the [proposal](https://github.com/OpenLineage/OpenLineage/pull/2228/files), GCP Lineage would like to define facets that are expected from integrations. The list of support facets is not final and will be extended further by next PR.*
 
 ### Removed
 * **Java: remove deprecated `localServerId` option from Kafka config** [`#2738`](https://github.com/OpenLineage/OpenLineage/pull/2738) [@dolfinus](https://github.com/dolfinus)  
