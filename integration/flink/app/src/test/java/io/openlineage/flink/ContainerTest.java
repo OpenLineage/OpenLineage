@@ -29,11 +29,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.matchers.MatchType;
+import org.mockserver.model.ClearType;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.JsonBody;
 import org.mockserver.model.RequestDefinition;
@@ -91,12 +92,13 @@ class ContainerTest {
 
   private static GenericContainer taskManager;
 
-  @BeforeEach
-  public void setup() {
+  @BeforeAll
+  public static void setup() {
     mockServerClient =
         new MockServerClient(
             openLineageClientMockContainer.getHost(),
             openLineageClientMockContainer.getServerPort());
+
     mockServerClient
         .when(request("/api/v1/lineage"))
         .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
@@ -106,7 +108,8 @@ class ContainerTest {
 
   @AfterEach
   public void cleanup() {
-    mockServerClient.reset();
+    mockServerClient.clear(request("/api/v1/lineage"), ClearType.LOG);
+
     try {
       if (taskManager != null) taskManager.stop();
     } catch (Exception e2) {
