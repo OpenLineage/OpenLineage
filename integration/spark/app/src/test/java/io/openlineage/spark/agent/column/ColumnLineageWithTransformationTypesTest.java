@@ -109,8 +109,9 @@ class ColumnLineageWithTransformationTypesTest {
   @Test
   void simpleQueryOnlyIdentity() {
     createTable("t1", "a;int");
+    spark.sql("DROP TABLE IF EXISTS res");
     OpenLineage.ColumnLineageDatasetFacet facet =
-        getFacetForQuery(getSchemaFacet("a;int"), "SELECT a FROM t1");
+        getFacetForQuery(getSchemaFacet("a;int"), "CREATE TABLE res AS SELECT a FROM t1");
 
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());

@@ -68,7 +68,9 @@ public class ExpressionDependencyCollector {
         || expression instanceof Sha1
         || expression instanceof Sha2
         || expression instanceof XxHash64
-        || expression instanceof Count;
+        || expression instanceof Count
+        || "org.apache.spark.sql.catalyst.expressions.Mask"
+            .equals(expression.getClass().getCanonicalName()); // available since Spark 3.5.0
   }
 
   private static final List<ExpressionDependencyVisitor> expressionDependencyVisitors =
