@@ -140,8 +140,8 @@ jobs:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
-          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
 
           # publish jar to maven local so it can be found by dependents
           ./gradlew --console=plain publishToMavenLocal --info
@@ -174,8 +174,8 @@ jobs:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
-          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
 
           cd ../../client/java
           ./gradlew --no-daemon --console=plain publishToMavenLocal
@@ -320,8 +320,8 @@ jobs:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
-          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
 
           cd ../../client/java
           ./gradlew --no-daemon --console=plain publishToMavenLocal
@@ -507,8 +507,8 @@ jobs:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
-          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
 
           cd ../../../client/java
           ./gradlew --no-daemon --console=plain publishToMavenLocal
@@ -908,8 +908,8 @@ jobs:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
-          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
 
           # publish jar to maven local so it can be found by dependents
           ./gradlew --console=plain publishToMavenLocal
