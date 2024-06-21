@@ -11,7 +11,7 @@
 * **Spark: add GCP run and job facets** [`#2643`](https://github.com/OpenLineage/OpenLineage/pull/2643) [@codelixir](https://github.com/codelixir)  
     *Adds `GCPRunFacetBuilder` and `GCPJobFacetBuilder` to report additional facets when running on Google Cloud Platform.*
 * **Spark: improve namespace format for SQLServer** [`#2773`](https://github.com/OpenLineage/OpenLineage/pull/2773) [@dolfinus](https://github.com/dolfinus)  
-    *Improve namespace format for SQLServer.*
+    *Improves the namespace format for SQLServer.*
 * **Spark: verify jar content after build** [`#2698`](https://github.com/OpenLineage/OpenLineage/pull/2698) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Adds a tool to verify `shadowJar` content and prevent reported issues. These are hard to prevent currently and require manual verification of manually unpacked jar content.*
 * **Spec: add transformation type info** [`#2756`](https://github.com/OpenLineage/OpenLineage/pull/2756) [@tnazarew](https://github.com/tnazarew)  
@@ -26,8 +26,8 @@
     *Removes `localServerId` from Kafka config, deprecated since 1.13.0.*
 * **Java: remove deprecated `Transport.emit(String)`** [`#2737`](https://github.com/OpenLineage/OpenLineage/pull/2737) [@dolfinus](https://github.com/dolfinus)  
     *Removes `Transport.emit(String)` support, deprecated since 1.13.0.*
-* **Spark: remove `spark-interfaces-scala` module** [`#2781`](https://github.com/OpenLineage/OpenLineage/pull/2781)[@ddebowczyk92](https://github.com/ddebowczyk92). 
-    *Replaces existing `spark-interfaces-scala` interfaces with new ones decoupled from the Scala binary version. Allows for improved integration in environments where one cannot guarantee the same version of `openlineage-java`.*
+* **Spark: remove `spark-interfaces-scala` module** [`#2781`](https://github.com/OpenLineage/OpenLineage/pull/2781)[@ddebowczyk92](https://github.com/ddebowczyk92).  
+    *Replaces the existing `spark-interfaces-scala` interfaces with new ones decoupled from the Scala binary version. Allows for improved integration in environments where one cannot guarantee the same version of `openlineage-java`.*
 
 ### Fixed
 * **Java: repair empty dataset name** [`#2776`](https://github.com/OpenLineage/OpenLineage/pull/2776) [@kacpermuda](https://github.com/kacpermuda)  
