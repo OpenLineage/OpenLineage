@@ -30,6 +30,8 @@
     *Replaces the existing `spark-interfaces-scala` interfaces with new ones decoupled from the Scala binary version. Allows for improved integration in environments where one cannot guarantee the same version of `openlineage-java`.*
 
 ### Fixed
+* **Flink: use `namespace.name` as Avro complex field type** [`#2763`](https://github.com/OpenLineage/OpenLineage/pull/2763) [@dolfinus](https://github.com/dolfinus)  
+    *`namespace.name` is now used as Avro `"type"` of complex fields (record, enum, fixed).*
 * **Java: repair empty dataset name** [`#2776`](https://github.com/OpenLineage/OpenLineage/pull/2776) [@kacpermuda](https://github.com/kacpermuda)  
     *The dataset name should not be empty.*
 * **Spark: fix events emitted for `drop table` for Spark 3.4 and above** [`#2745`](https://github.com/OpenLineage/OpenLineage/pull/2745) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)[@savannavalgi](https://github.com/savannavalgi)  
@@ -46,8 +48,6 @@
     *Fixes the `historyUrl` format in `spark_applicationDetails`.*
 * **Spark: add log info when emitting lineage from Spark (following #2650)** [`#2769`](https://github.com/OpenLineage/OpenLineage/pull/2769) [@algorithmy1](https://github.com/algorithmy1)  
     *Enhances logging.*
-* **Flink: use `namespace.name` as Avro complex field type** [`#2763`](https://github.com/OpenLineage/OpenLineage/pull/2763) [@dolfinus](https://github.com/dolfinus)  
-    *`namespace.name` is now used as Avro `"type"` of complex fields (record, enum, fixed).*
 * **SQL: allow self-recursive aliases** [`#2753`](https://github.com/OpenLineage/OpenLineage/pull/2753) [@mobuchowski](https://github.com/mobuchowski)  
     *Expressions like `select * from test_orders as test_orders` are now parsed properly.*
 
