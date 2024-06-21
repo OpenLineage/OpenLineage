@@ -161,7 +161,7 @@ class InputFieldsCollectorTest {
         try (MockedStatic pathUtils = mockStatic(PathUtils.class)) {
           when(Rdds.findFileLikeRdds(rdd)).thenReturn(listRDD);
           when(PlanUtils.findRDDPaths(listRDD)).thenReturn(Collections.singletonList(path));
-          when(PathUtils.fromURI(path.toUri())).thenReturn(new DatasetIdentifier("/tmp", FILE));
+          when(PathUtils.fromPath(path)).thenReturn(new DatasetIdentifier("/tmp", FILE));
 
           InputFieldsCollector.collect(context, plan);
           verify(builder, times(1))

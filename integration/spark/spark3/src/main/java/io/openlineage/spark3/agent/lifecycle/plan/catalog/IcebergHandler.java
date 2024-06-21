@@ -122,22 +122,18 @@ public class IcebergHandler implements CatalogHandler {
   @SneakyThrows
   private DatasetIdentifier.Symlink getHiveIdentifier(
       SparkSession session, @Nullable String confUri, String table) {
-    String slashPrefixedTable = String.format("/%s", table);
-    URI uri;
+    URI metastoreUri;
     if (confUri == null) {
-      uri =
+      metastoreUri =
           SparkConfUtils.getMetastoreUri(session.sparkContext())
               .orElseThrow(() -> new UnsupportedCatalogException("hive"));
     } else {
-      uri = new URI(confUri);
+      metastoreUri = new URI(confUri);
     }
-    DatasetIdentifier metastoreIdentifier =
-        PathUtils.fromPath(
-            new Path(PathUtils.enrichHiveMetastoreURIWithTableName(uri, slashPrefixedTable)));
 
     return new DatasetIdentifier.Symlink(
-        metastoreIdentifier.getName(),
-        metastoreIdentifier.getNamespace(),
+        table,
+        PathUtils.prepareHiveUri(metastoreUri).toString(),
         DatasetIdentifier.SymlinkType.TABLE);
   }
 

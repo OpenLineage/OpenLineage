@@ -262,12 +262,12 @@ class GoogleCloudIntegrationTest {
     List<RunEvent> eventsEmitted = MockServerUtils.getEventsEmitted(mockServer);
 
     assertThat(eventsEmitted.get(eventsEmitted.size() - 1).getOutputs().get(0))
-        .hasFieldOrPropertyWithValue("name", outputUri.getPath())
+        .hasFieldOrPropertyWithValue("name", outputUri.getPath().replaceFirst("^/", ""))
         .hasFieldOrPropertyWithValue(
             "namespace", BUCKET_URI.getScheme() + "://" + BUCKET_URI.getHost());
 
     assertThat(eventsEmitted.get(eventsEmitted.size() - 2).getInputs().get(0))
-        .hasFieldOrPropertyWithValue("name", inputUri.getPath())
+        .hasFieldOrPropertyWithValue("name", inputUri.getPath().replaceFirst("^/", ""))
         .hasFieldOrPropertyWithValue(
             "namespace", BUCKET_URI.getScheme() + "://" + BUCKET_URI.getHost());
   }

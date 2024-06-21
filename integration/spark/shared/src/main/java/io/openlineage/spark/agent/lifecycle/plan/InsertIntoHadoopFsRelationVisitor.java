@@ -32,7 +32,7 @@ public class InsertIntoHadoopFsRelationVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoHadoopFsRelationCommand command = (InsertIntoHadoopFsRelationCommand) x;
 
-    DatasetIdentifier di = PathUtils.fromURI(command.outputPath().toUri(), "file");
+    DatasetIdentifier di = PathUtils.fromPath(command.outputPath());
     OpenLineage.OutputDataset outputDataset;
     if (SaveMode.Overwrite == command.mode()) {
       outputDataset =
@@ -50,7 +50,7 @@ public class InsertIntoHadoopFsRelationVisitor
 
   @Override
   public Optional<String> jobNameSuffix(InsertIntoHadoopFsRelationCommand command) {
-    DatasetIdentifier di = PathUtils.fromURI(command.outputPath().toUri(), "file");
+    DatasetIdentifier di = PathUtils.fromPath(command.outputPath());
     return Optional.of(trimPath(di.getName()));
   }
 }

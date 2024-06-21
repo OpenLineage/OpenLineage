@@ -157,7 +157,7 @@ public class InputFieldsCollector {
   private static List<DatasetIdentifier> extractDatasetIdentifier(LogicalRDD logicalRDD) {
     List<RDD<?>> fileLikeRdds = Rdds.findFileLikeRdds(logicalRDD.rdd());
     return PlanUtils.findRDDPaths(fileLikeRdds).stream()
-        .map(path -> PathUtils.fromURI(path.toUri()))
+        .map(path -> PathUtils.fromPath(path))
         .collect(Collectors.toList());
   }
 

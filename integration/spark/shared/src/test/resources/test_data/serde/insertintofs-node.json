@@ -46,7 +46,7 @@
             "name": "MANAGED"
           },
           "storage": {
-            "locationUri": "/some-location",
+            "locationUri": "/some/location",
             "inputFormat": null,
             "outputFormat": null,
             "serde": null,

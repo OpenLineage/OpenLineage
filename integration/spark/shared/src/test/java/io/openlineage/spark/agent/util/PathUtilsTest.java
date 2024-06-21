@@ -5,7 +5,6 @@
 
 package io.openlineage.spark.agent.util;
 
-import static io.openlineage.spark.agent.util.PathUtils.enrichHiveMetastoreURIWithTableName;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -99,10 +98,6 @@ class PathUtilsTest {
     assertThat(di.getName()).isEqualTo(HOME_TEST);
     assertThat(di.getNamespace()).isEqualTo(FILE);
 
-    di = PathUtils.fromPath(new Path(HOME_TEST), "hive");
-    assertThat(di.getName()).isEqualTo(HOME_TEST);
-    assertThat(di.getNamespace()).isEqualTo("hive");
-
     di = PathUtils.fromPath(new Path("home/test"));
     assertThat(di.getName()).isEqualTo("home/test");
     assertThat(di.getNamespace()).isEqualTo(FILE);
@@ -121,19 +116,19 @@ class PathUtilsTest {
 
   @Test
   void testFromURI() throws URISyntaxException {
-    DatasetIdentifier di = PathUtils.fromURI(new URI("file:///home/test"), null);
+    DatasetIdentifier di = PathUtils.fromURI(new URI("file:///home/test"));
     assertThat(di.getName()).isEqualTo(HOME_TEST);
     assertThat(di.getNamespace()).isEqualTo(FILE);
 
-    di = PathUtils.fromURI(new URI(null, null, HOME_TEST, null), FILE);
+    di = PathUtils.fromURI(new URI(null, null, HOME_TEST, null));
     assertThat(di.getName()).isEqualTo(HOME_TEST);
     assertThat(di.getNamespace()).isEqualTo(FILE);
 
-    di = PathUtils.fromURI(new URI("hdfs", null, "localhost", 8020, HOME_TEST, null, null), FILE);
+    di = PathUtils.fromURI(new URI("hdfs", null, "localhost", 8020, HOME_TEST, null, null));
     assertThat(di.getName()).isEqualTo(HOME_TEST);
     assertThat(di.getNamespace()).isEqualTo("hdfs://localhost:8020");
 
-    di = PathUtils.fromURI(new URI("s3://data-bucket/path"), FILE);
+    di = PathUtils.fromURI(new URI("s3://data-bucket/path"));
     assertThat(di.getName()).isEqualTo("path");
     assertThat(di.getNamespace()).isEqualTo("s3://data-bucket");
 
@@ -232,12 +227,6 @@ class PathUtilsTest {
     assertThat(di.getSymlinks()).hasSize(1);
     assertThat(di.getSymlinks().get(0).getName()).isEqualTo("db.table");
     assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("s3://s3-db");
-  }
-
-  @Test
-  void testEnrichMetastoreUriWithTableName() throws URISyntaxException {
-    assertThat(enrichHiveMetastoreURIWithTableName(new URI("thrift://10.1.0.1:9083"), "/db/table"))
-        .isEqualTo(new URI("hive://10.1.0.1:9083/db/table"));
   }
 
   static class FromCatalogTableShouldReturnTheCorrectScheme {

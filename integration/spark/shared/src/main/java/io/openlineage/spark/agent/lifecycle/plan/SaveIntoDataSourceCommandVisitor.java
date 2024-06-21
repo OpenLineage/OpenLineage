@@ -124,8 +124,7 @@ public class SaveIntoDataSourceCommandVisitor
       if (command.options().contains("path")) {
         URI uri = URI.create(command.options().get("path").get());
         return Collections.singletonList(
-            outputDataset()
-                .getDataset(PathUtils.fromURI(uri, "file"), schema, lifecycleStateChange));
+            outputDataset().getDataset(PathUtils.fromURI(uri), schema, lifecycleStateChange));
       }
     }
 
