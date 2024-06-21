@@ -39,6 +39,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.client.MockServerClient;
+import org.mockserver.model.ClearType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -77,6 +78,7 @@ class SparkScalaContainerTest {
         new MockServerClient(
             openLineageClientMockContainer.getHost(),
             openLineageClientMockContainer.getServerPort());
+
     mockServerClient
         .when(request("/api/v1/lineage"))
         .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
@@ -85,8 +87,8 @@ class SparkScalaContainerTest {
   }
 
   @AfterEach
-  public void cleanupSpark() {
-    mockServerClient.reset();
+  public void cleanup() {
+    mockServerClient.clear(request("/api/v1/lineage"), ClearType.LOG);
     try {
       if (spark != null) spark.stop();
     } catch (Exception e) {
