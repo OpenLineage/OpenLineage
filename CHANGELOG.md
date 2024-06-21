@@ -1,21 +1,57 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.16.0...HEAD)
-### Added
-* **Spark: add transformation extraction** [`#2756`](https://github.com/OpenLineage/OpenLineage/pull/2756) [@tnazarew](https://github.com/tnazarew)  
-  *Add transformation type extraction mechanism to spark integration*
-* **Spec: add transformation type info** [`#2756`](https://github.com/OpenLineage/OpenLineage/pull/2756) [@tnazarew](https://github.com/tnazarew)  
-  *Add information about transformation type in `ColumnLineageDatasetFacet`. `transformationType` and `transformationDescription` marked deprecated*
-* **Spark: add GCP run and job facets** [`#2643`](https://github.com/OpenLineage/OpenLineage/pull/2643) [@codelixir](https://github.com/codelixir)
-  *Add `GCPRunFacetBuilder` and `GCPJobFacetBuilder` to report additional facets when running on Google Cloud Platform.*
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.17.0...HEAD)
 
-### Fixed
-* **Spark: fix events emitted for `drop table` for Spark 3.4 and above** [`#2745`](https://github.com/OpenLineage/OpenLineage/pull/2745) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)[@savannavalgi](https://github.com/savannavalgi)
-  *Include dataset being dropped within the event, as it used to be prior to Spark 3.4.*
+## [1.17.0](https://github.com/OpenLineage/OpenLineage/compare/1.16.0...1.17.0) - 2024-06-21
+### Added
+* **Java: dataset namespace resolver feature** [`#2720`](https://github.com/OpenLineage/OpenLineage/pull/2720) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds a dataset namespace resolving mechanism that resolves dataset namespaces based on the resolvers configured. The core mechanism is implemented in openlineage-java and can be used within the Flink and Spark integrations.*
+* **Spark: add transformation extraction** [`#2758`](https://github.com/OpenLineage/OpenLineage/pull/2758) [@tnazarew](https://github.com/tnazarew)  
+    *Adds a transformation type extraction mechanism.*
+* **Spark: add GCP run and job facets** [`#2643`](https://github.com/OpenLineage/OpenLineage/pull/2643) [@codelixir](https://github.com/codelixir)  
+    *Adds `GCPRunFacetBuilder` and `GCPJobFacetBuilder` to report additional facets when running on Google Cloud Platform.*
+* **Spark: improve namespace format for SQLServer** [`#2773`](https://github.com/OpenLineage/OpenLineage/pull/2773) [@dolfinus](https://github.com/dolfinus)  
+    *Improves the namespace format for SQLServer.*
+* **Spark: verify jar content after build** [`#2698`](https://github.com/OpenLineage/OpenLineage/pull/2698) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds a tool to verify `shadowJar` content and prevent reported issues. These are hard to prevent currently and require manual verification of manually unpacked jar content.*
+* **Spec: add transformation type info** [`#2756`](https://github.com/OpenLineage/OpenLineage/pull/2756) [@tnazarew](https://github.com/tnazarew)  
+    *Adds information about the transformation type in `ColumnLineageDatasetFacet`. `transformationType` and `transformationDescription` are marked as deprecated.*
+* **Spec: implementing facet registry (following #2161)** [`#2729`](https://github.com/OpenLineage/OpenLineage/pull/2729) [@harels](https://github.com/harels)  
+    *Introduces the foundations of the new facet Registry into the repo.*
+* **Spec: register GCP common job facet** [`#2740`](https://github.com/OpenLineage/OpenLineage/pull/2740) [@ngorchakova](https://github.com/ngorchakova)  
+    *Registers the GCP job facet that contains common attributes that will improve the way lineage is parsed and displayed by the GCP platform. Based on the proposal https://github.com/OpenLineage/OpenLineage/pull/2228/files, GCP Lineage would like to define facets that are expected from integrations. The list of support facets is not final and will be extended further by next PR.*
 
 ### Removed
-* **Spark: Remove `spark-interfaces-scala` module** [`#2781`](https://github.com/OpenLineage/OpenLineage/pull/2781)[@ddebowczyk92](https://github.com/ddebowczyk92)
-  *Removes `spark-interfaces-scala` module*
+* **Java: remove deprecated `localServerId` option from Kafka config** [`#2738`](https://github.com/OpenLineage/OpenLineage/pull/2738) [@dolfinus](https://github.com/dolfinus)  
+    *Removes `localServerId` from Kafka config, deprecated since 1.13.0.*
+* **Java: remove deprecated `Transport.emit(String)`** [`#2737`](https://github.com/OpenLineage/OpenLineage/pull/2737) [@dolfinus](https://github.com/dolfinus)  
+    *Removes `Transport.emit(String)` support, deprecated since 1.13.0.*
+* **Spark: remove `spark-interfaces-scala` module** [`#2781`](https://github.com/OpenLineage/OpenLineage/pull/2781)[@ddebowczyk92](https://github.com/ddebowczyk92)  
+    *Replaces the existing `spark-interfaces-scala` interfaces with new ones decoupled from the Scala binary version. Allows for improved integration in environments where one cannot guarantee the same version of `openlineage-java`.*
+
+### Changed
+* **Spark: add log info when emitting lineage from Spark (following #2650)** [`#2769`](https://github.com/OpenLineage/OpenLineage/pull/2769) [@algorithmy1](https://github.com/algorithmy1)  
+    *Enhances logging.*
+
+### Fixed
+* **Flink: use `namespace.name` as Avro complex field type** [`#2763`](https://github.com/OpenLineage/OpenLineage/pull/2763) [@dolfinus](https://github.com/dolfinus)  
+    *`namespace.name` is now used as Avro `"type"` of complex fields (record, enum, fixed).*
+* **Java: repair empty dataset name** [`#2776`](https://github.com/OpenLineage/OpenLineage/pull/2776) [@kacpermuda](https://github.com/kacpermuda)  
+    *The dataset name should not be empty.*
+* **Spark: fix events emitted for `drop table` for Spark 3.4 and above** [`#2745`](https://github.com/OpenLineage/OpenLineage/pull/2745) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)[@savannavalgi](https://github.com/savannavalgi)  
+    *Includes dataset being dropped within the event, as it used to be prior to Spark 3.4.*
+* **Spark, Flink: fix S3 dataset names** [`#2782`](https://github.com/OpenLineage/OpenLineage/pull/2782) [@dolfinus](https://github.com/dolfinus)  
+    *Drops the leading slash from the object storage dataset name. Converts `s3a://` and `s3n://` schemes to `s3://`.*
+* **Spark: fix Hive metastore namespace** [`#2761`](https://github.com/OpenLineage/OpenLineage/pull/2761) [@dolfinus](https://github.com/dolfinus)  
+    *Fixes the dataset namespace for cases when the Hive metastore URL is set using `$SPARK_CONF_DIR/hive-site.xml`.*
+* **Spark: fix NPE in column-level lineage** [`#2749`](https://github.com/OpenLineage/OpenLineage/pull/2749) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *The Spark agent now checks to determine if `cur.getDependencies()` is not null before adding dependencies.*
+* **Spark: refactor `OpenLineageRunEventBuilder`** [`#2754`](https://github.com/OpenLineage/OpenLineage/pull/2754) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds a separate class containing all the input arguments to call `OpenLineageRunEventBuilder::buildRun`.*
+* **Spark: fix `historyUrl` format** [`#2741`](https://github.com/OpenLineage/OpenLineage/pull/2741) [@dolfinus](https://github.com/dolfinus)  
+    *Fixes the `historyUrl` format in `spark_applicationDetails`.*
+* **SQL: allow self-recursive aliases** [`#2753`](https://github.com/OpenLineage/OpenLineage/pull/2753) [@mobuchowski](https://github.com/mobuchowski)  
+    *Expressions like `select * from test_orders as test_orders` are now parsed properly.*
 
 ## [1.16.0](https://github.com/OpenLineage/OpenLineage/compare/1.15.0...1.16.0) - 2024-05-28
 ### Added
