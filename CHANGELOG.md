@@ -29,6 +29,10 @@
 * **Spark: remove `spark-interfaces-scala` module** [`#2781`](https://github.com/OpenLineage/OpenLineage/pull/2781)[@ddebowczyk92](https://github.com/ddebowczyk92)  
     *Replaces the existing `spark-interfaces-scala` interfaces with new ones decoupled from the Scala binary version. Allows for improved integration in environments where one cannot guarantee the same version of `openlineage-java`.*
 
+### Changed
+* **Spark: add log info when emitting lineage from Spark (following #2650)** [`#2769`](https://github.com/OpenLineage/OpenLineage/pull/2769) [@algorithmy1](https://github.com/algorithmy1)  
+    *Enhances logging.*
+
 ### Fixed
 * **Flink: use `namespace.name` as Avro complex field type** [`#2763`](https://github.com/OpenLineage/OpenLineage/pull/2763) [@dolfinus](https://github.com/dolfinus)  
     *`namespace.name` is now used as Avro `"type"` of complex fields (record, enum, fixed).*
@@ -46,8 +50,6 @@
     *Adds a separate class containing all the input arguments to call `OpenLineageRunEventBuilder::buildRun`.*
 * **Spark: fix `historyUrl` format** [`#2741`](https://github.com/OpenLineage/OpenLineage/pull/2741) [@dolfinus](https://github.com/dolfinus)  
     *Fixes the `historyUrl` format in `spark_applicationDetails`.*
-* **Spark: add log info when emitting lineage from Spark (following #2650)** [`#2769`](https://github.com/OpenLineage/OpenLineage/pull/2769) [@algorithmy1](https://github.com/algorithmy1)  
-    *Enhances logging.*
 * **SQL: allow self-recursive aliases** [`#2753`](https://github.com/OpenLineage/OpenLineage/pull/2753) [@mobuchowski](https://github.com/mobuchowski)  
     *Expressions like `select * from test_orders as test_orders` are now parsed properly.*
 
