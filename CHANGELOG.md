@@ -26,7 +26,7 @@
     *Removes `localServerId` from Kafka config, deprecated since 1.13.0.*
 * **Java: remove deprecated `Transport.emit(String)`** [`#2737`](https://github.com/OpenLineage/OpenLineage/pull/2737) [@dolfinus](https://github.com/dolfinus)  
     *Removes `Transport.emit(String)` support, deprecated since 1.13.0.*
-* **Spark: remove `spark-interfaces-scala` module** [`#2781`](https://github.com/OpenLineage/OpenLineage/pull/2781)[@ddebowczyk92](https://github.com/ddebowczyk92).  
+* **Spark: remove `spark-interfaces-scala` module** [`#2781`](https://github.com/OpenLineage/OpenLineage/pull/2781)[@ddebowczyk92](https://github.com/ddebowczyk92)  
     *Replaces the existing `spark-interfaces-scala` interfaces with new ones decoupled from the Scala binary version. Allows for improved integration in environments where one cannot guarantee the same version of `openlineage-java`.*
 
 ### Fixed
