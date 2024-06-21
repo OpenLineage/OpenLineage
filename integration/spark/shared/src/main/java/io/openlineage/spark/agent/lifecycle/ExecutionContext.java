@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import java.util.Optional;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
@@ -42,4 +43,10 @@ public interface ExecutionContext {
   void end(SparkListenerSQLExecutionEnd sqlEnd);
 
   void end(SparkListenerStageCompleted stageCompleted);
+
+  default Optional<Integer> getActiveJobId() {
+    return Optional.empty();
+  }
+
+  default void setActiveJobId(Integer activeJobId) {}
 }

@@ -7,19 +7,25 @@ package io.openlineage.spark.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.openlineage.spark.agent.JobMetricsHolder.Metric;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import org.apache.spark.executor.TaskMetrics;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class JobMetricsHolderTest {
+  JobMetricsHolder underTest;
+
+  @BeforeEach
+  void beforeEach() {
+    underTest = new JobMetricsHolder();
+  }
 
   @Test
   void testPollMetricsSumByJobId() {
-    JobMetricsHolder underTest = new JobMetricsHolder();
-
     // on job start event
     underTest.addJobStages(0, new HashSet<>(Arrays.asList(1, 2, 3)));
     // on task end event
@@ -41,8 +47,6 @@ class JobMetricsHolderTest {
 
   @Test
   void testMultipleJobsPollMetricsByJobId() {
-    JobMetricsHolder underTest = new JobMetricsHolder();
-
     // on job start event
     underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
     underTest.addJobStages(1, new HashSet<>(Arrays.asList(2)));
@@ -64,13 +68,12 @@ class JobMetricsHolderTest {
 
   @Test
   void testCleanUpClearsBothMaps() {
-    JobMetricsHolder underTest = new JobMetricsHolder();
-
     underTest.addJobStages(0, Collections.singleton(1));
     underTest.addMetrics(1, outputTaskMetrics(10, 1));
 
     underTest.cleanUp(0);
 
+    assertThat(true).isTrue();
     assertThat(underTest.getJobStages()).isEmpty();
     assertThat(underTest.getStageMetrics()).isEmpty();
   }
@@ -82,8 +85,6 @@ class JobMetricsHolderTest {
    */
   @Test
   void testCleanupOnExist() {
-    JobMetricsHolder underTest = new JobMetricsHolder();
-
     // on job start event
     underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
     // on task end event
@@ -91,14 +92,12 @@ class JobMetricsHolderTest {
 
     underTest.cleanUp(0);
 
-    Map<JobMetricsHolder.Metric, Number> jobMetrics = underTest.pollMetrics(0);
-
-    assertThat(jobMetrics).isEmpty();
+    assertThat(underTest.getJobStages()).isEmpty();
+    assertThat(underTest.getStageMetrics()).isEmpty();
   }
 
   @Test
   void testAddMetricsWhenNull() {
-    JobMetricsHolder underTest = new JobMetricsHolder();
     underTest.addMetrics(1, null);
     underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
 
@@ -110,6 +109,28 @@ class JobMetricsHolderTest {
     JobMetricsHolder underTest = new JobMetricsHolder();
     underTest.addJobStages(0, null);
 
+    assertThat(underTest.pollMetrics(0)).isEmpty();
+  }
+
+  @Test
+  void testMetricsCanBePolledAfterCleanup() {
+    // add some stage and metric
+    underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
+    underTest.addMetrics(1, outputTaskMetrics(100, 10));
+
+    underTest.cleanUp(0);
+    Map<JobMetricsHolder.Metric, Number> jobMetrics = underTest.pollMetrics(0);
+
+    assertThat(jobMetrics.get(Metric.WRITE_RECORDS)).isEqualTo(10L);
+  }
+
+  @Test
+  void testPollingMetricsClearsMetrics() {
+    // add some stage and metric
+    underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
+    underTest.addMetrics(1, outputTaskMetrics(100, 10));
+
+    assertThat(underTest.pollMetrics(0).get(Metric.WRITE_RECORDS)).isEqualTo(10L);
     assertThat(underTest.pollMetrics(0)).isEmpty();
   }
 

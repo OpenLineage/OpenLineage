@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.facets.builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
@@ -23,6 +24,7 @@ import org.apache.spark.executor.TaskMetrics;
 import org.apache.spark.scheduler.JobSucceeded$;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -56,19 +58,22 @@ class OutputStatisticsOutputDatasetFacetBuilderTest {
                 .openLineageConfig(new SparkOpenLineageConfig())
                 .build());
     assertThat(builder.isDefinedAt(new SparkListenerJobEnd(1, 1L, JobSucceeded$.MODULE$))).isTrue();
-    assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionEnd(1L, 1L))).isFalse();
+    assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionEnd(1L, 1L))).isTrue();
+    assertThat(builder.isDefinedAt(mock(SparkListenerSQLExecutionStart.class))).isFalse();
   }
 
   @Test
   void testBuild() {
+    OpenLineageContext context =
+        OpenLineageContext.builder()
+            .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .sparkContext(sparkContext)
+            .meterRegistry(new SimpleMeterRegistry())
+            .openLineageConfig(new SparkOpenLineageConfig())
+            .activeJobId(1)
+            .build();
     OutputStatisticsOutputDatasetFacetBuilder builder =
-        new OutputStatisticsOutputDatasetFacetBuilder(
-            OpenLineageContext.builder()
-                .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-                .sparkContext(sparkContext)
-                .meterRegistry(new SimpleMeterRegistry())
-                .openLineageConfig(new SparkOpenLineageConfig())
-                .build());
+        new OutputStatisticsOutputDatasetFacetBuilder(context);
     JobMetricsHolder.getInstance().addJobStages(1, Collections.singleton(1));
     TaskMetrics taskMetrics = new TaskMetrics();
     taskMetrics.outputMetrics().setBytesWritten(10L);

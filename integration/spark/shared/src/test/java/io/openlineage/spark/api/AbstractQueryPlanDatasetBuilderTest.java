@@ -14,11 +14,14 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.PlanUtils;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -129,6 +132,7 @@ class AbstractQueryPlanDatasetBuilderTest {
   void testApplyWhenExceptionIsThrown() {
     OpenLineageContext context = mock(OpenLineageContext.class);
     when(context.getQueryExecution()).thenReturn(Optional.of(mock(QueryExecution.class)));
+    Logger.getLogger(PlanUtils.class).setLevel(Level.ERROR);
     AbstractQueryPlanDatasetBuilder<SparkListenerJobEnd, LocalRelation, InputDataset> builder =
         new AbstractQueryPlanDatasetBuilder<SparkListenerJobEnd, LocalRelation, InputDataset>(
             context, false) {

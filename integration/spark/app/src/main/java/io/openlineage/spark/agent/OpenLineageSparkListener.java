@@ -77,6 +77,13 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   private final boolean isDisabled = checkIfDisabled();
 
+  /**
+   * Id of the last active job. Has to be stored within the listener, as some jobs use both
+   * RddExecutionContext and SparkSQLExecutionContext. jobId is required for to collect job metrics
+   * which are collected within RddExecutionContext but emitted within SparkSQLExecutionContext.
+   */
+  private Optional<Integer> activeJobId = Optional.empty();
+
   /** called by the tests */
   public static void init(ContextFactory contextFactory) {
     OpenLineageSparkListener.contextFactory = contextFactory;
@@ -98,13 +105,14 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   /** called by the SparkListener when a spark-sql (Dataset api) execution starts */
-  private static void sparkSQLExecStart(SparkListenerSQLExecutionStart startEvent) {
+  private void sparkSQLExecStart(SparkListenerSQLExecutionStart startEvent) {
     getSparkSQLExecutionContext(startEvent.executionId())
         .ifPresent(
             context -> {
               meterRegistry.counter("openlineage.spark.event.sql.start").increment();
               circuitBreaker.run(
                   () -> {
+                    activeJobId.ifPresent(id -> context.setActiveJobId(id));
                     context.start(startEvent);
                     return null;
                   });
@@ -112,12 +120,14 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   /** called by the SparkListener when a spark-sql (Dataset api) execution ends */
-  private static void sparkSQLExecEnd(SparkListenerSQLExecutionEnd endEvent) {
+  private void sparkSQLExecEnd(SparkListenerSQLExecutionEnd endEvent) {
+    log.debug("sparkSQLExecEnd with activeJobId {}", activeJobId);
     ExecutionContext context = sparkSqlExecutionRegistry.remove(endEvent.executionId());
     meterRegistry.counter("openlineage.spark.event.sql.end").increment();
     if (context != null) {
       circuitBreaker.run(
           () -> {
+            activeJobId.ifPresent(id -> context.setActiveJobId(id));
             context.end(endEvent);
             return null;
           });
@@ -128,6 +138,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
               c ->
                   circuitBreaker.run(
                       () -> {
+                        activeJobId.ifPresent(id -> context.setActiveJobId(id));
                         c.end(endEvent);
                         return null;
                       }));
@@ -140,6 +151,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (isDisabled) {
       return;
     }
+    activeJobId = Optional.of(jobStart.jobId());
+    log.debug("onJobStart called {}", jobStart);
     initializeContextFactoryIfNotInitialized();
     meterRegistry.counter("openlineage.spark.event.job.start").increment();
     Optional<ActiveJob> activeJob =
@@ -219,6 +232,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (isDisabled || sparkVersion.startsWith("2")) {
       return;
     }
+    log.debug("onTaskEnd {}", taskEnd);
     jobMetrics.addMetrics(taskEnd.stageId(), taskEnd.taskMetrics());
   }
 
