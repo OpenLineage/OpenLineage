@@ -32,17 +32,21 @@ public class InsertIntoHadoopFsRelationVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoHadoopFsRelationCommand command = (InsertIntoHadoopFsRelationCommand) x;
 
-    DatasetIdentifier di = PathUtils.fromPath(command.outputPath());
+    Optional<DatasetIdentifier> di = getDatasetIdentifier(command);
+    if (!di.isPresent()) {
+      return Collections.emptyList();
+    }
+
     OpenLineage.OutputDataset outputDataset;
     if (SaveMode.Overwrite == command.mode()) {
       outputDataset =
           outputDataset()
               .getDataset(
-                  di,
+                  di.get(),
                   command.query().schema(),
                   OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
     } else {
-      outputDataset = outputDataset().getDataset(di, command.query().schema());
+      outputDataset = outputDataset().getDataset(di.get(), command.query().schema());
     }
 
     return Collections.singletonList(outputDataset);
@@ -50,7 +54,20 @@ public class InsertIntoHadoopFsRelationVisitor
 
   @Override
   public Optional<String> jobNameSuffix(InsertIntoHadoopFsRelationCommand command) {
-    DatasetIdentifier di = PathUtils.fromPath(command.outputPath());
-    return Optional.of(trimPath(di.getName()));
+    return getDatasetIdentifier(command).map(di -> trimPath(di.getName()));
+  }
+
+  private Optional<DatasetIdentifier> getDatasetIdentifier(
+      InsertIntoHadoopFsRelationCommand command) {
+    if (!context.getSparkSession().isPresent()) {
+      return Optional.empty();
+    }
+
+    if (command.catalogTable().isDefined()) {
+      return Optional.of(
+          PathUtils.fromCatalogTable(
+              command.catalogTable().get(), context.getSparkSession().get()));
+    }
+    return Optional.of(PathUtils.fromPath(command.outputPath()));
   }
 }
