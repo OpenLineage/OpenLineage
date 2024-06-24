@@ -194,6 +194,19 @@ class SparkContainerIntegrationTest {
 
   @Test
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
+  void testPysparkSQLHadoopFSTest() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network,
+        openLineageClientMockContainer,
+        "testPysparkSQLHadoopFSTest",
+        "spark_hadoop_fs_relation.py");
+
+    verifyEvents(
+        mockServerClient, "pysparkHadoopFSStartEvent.json", "pysparkHadoopFSEndEvent.json");
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   void testOverwriteName() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
