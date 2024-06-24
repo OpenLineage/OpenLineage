@@ -127,6 +127,8 @@ dependencies {
         exclude group: 'org.mock-server.mockserver-client-java'
     }
     testImplementation("io.micrometer:micrometer-registry-statsd:${micrometerVersion}")
+    testImplementation('net.javacrumbs.json-unit:json-unit-assertj:2.38.0')
+    testImplementation('net.javacrumbs.json-unit:json-unit-core:2.38.0')
 
     testRuntimeOnly("org.slf4j:slf4j-api:1.7.36")
     testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.22.1"))

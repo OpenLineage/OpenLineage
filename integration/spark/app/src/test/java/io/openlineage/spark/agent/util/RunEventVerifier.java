@@ -5,6 +5,9 @@
 
 package io.openlineage.spark.agent.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.io.File;
@@ -18,18 +21,14 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.jsonunit.core.Configuration;
+import net.javacrumbs.jsonunit.core.Option;
+import net.javacrumbs.jsonunit.core.internal.Diff;
+import net.javacrumbs.jsonunit.core.internal.Options;
+import net.javacrumbs.jsonunit.core.listener.Difference;
+import net.javacrumbs.jsonunit.core.listener.DifferenceContext;
+import net.javacrumbs.jsonunit.core.listener.DifferenceListener;
 import org.apache.commons.lang.StringUtils;
-import org.mockserver.serialization.ObjectMapperFactory;
-import shaded_package.com.fasterxml.jackson.core.JsonProcessingException;
-import shaded_package.com.fasterxml.jackson.databind.JsonNode;
-import shaded_package.com.fasterxml.jackson.databind.JsonSerializer;
-import shaded_package.com.fasterxml.jackson.databind.ObjectWriter;
-import shaded_package.net.javacrumbs.jsonunit.core.Configuration;
-import shaded_package.net.javacrumbs.jsonunit.core.Option;
-import shaded_package.net.javacrumbs.jsonunit.core.internal.Diff;
-import shaded_package.net.javacrumbs.jsonunit.core.internal.Options;
-import shaded_package.net.javacrumbs.jsonunit.core.listener.DifferenceContext;
-import shaded_package.net.javacrumbs.jsonunit.core.listener.DifferenceListener;
 
 /**
  * Utility class to verify if expected JSON content of the OpenLineage event is present among the
@@ -39,7 +38,9 @@ import shaded_package.net.javacrumbs.jsonunit.core.listener.DifferenceListener;
 public class RunEventVerifier {
 
   private final List<String> events;
-  private String diffDescription;
+
+  @SuppressWarnings("PMD.AvoidStringBufferField")
+  private StringBuilder diffDescription = new StringBuilder();
 
   @SneakyThrows
   private RunEventVerifier(List<String> events) {
@@ -71,23 +72,22 @@ public class RunEventVerifier {
   @SneakyThrows
   public boolean match(File... expectationFiles) {
     boolean matchesAll = true;
+
     for (File expectationFile : expectationFiles) {
       String expectedJson =
           new String(Files.readAllBytes(expectationFile.toPath()), StandardCharsets.UTF_8);
       JsonStringMatcher matcher = new JsonStringMatcher(expectedJson);
 
       // each event has to be valid for some of the events contained
-      boolean matches = events.stream().filter(e -> matcher.matches(e)).findAny().isPresent();
+      boolean matches = events.stream().anyMatch(e -> matcher.matches(e));
 
       if (!matches) {
-        diffDescription =
-            new StringBuilder()
-                .append("Couldn't match event for ")
-                .append(expectationFile.getName())
-                .append(System.lineSeparator())
-                .append(bestEffortDiffDescription(events, expectedJson))
-                .append(System.lineSeparator())
-                .toString();
+        diffDescription
+            .append("Couldn't match event for ")
+            .append(expectationFile.getName())
+            .append(System.lineSeparator())
+            .append(bestEffortDiffDescription(events, expectedJson))
+            .append(System.lineSeparator());
       }
 
       matchesAll = matchesAll && matches;
@@ -185,12 +185,12 @@ public class RunEventVerifier {
    */
   @Slf4j
   public static class JsonStringMatcher {
-    private static final ObjectWriter PRETTY_PRINTER =
-        ObjectMapperFactory.createObjectMapper(true, false, new JsonSerializer[0]);
+    private final ObjectMapper MAPPER;
     private final String matcher;
     private JsonNode matcherJsonNode;
 
     JsonStringMatcher(String matcher) {
+      MAPPER = new ObjectMapper();
       this.matcher = matcher;
     }
 
@@ -200,28 +200,22 @@ public class RunEventVerifier {
 
     public Diff diff(String matched) {
       try {
-        if (shaded_package.org.apache.commons.lang3.StringUtils.isNotBlank(this.matcher)) {
+        if (StringUtils.isNotBlank(this.matcher)) {
           Options options = Options.empty();
           options =
               options.with(
                   Option.IGNORING_ARRAY_ORDER,
                   new Option[] {Option.IGNORING_EXTRA_ARRAY_ITEMS, Option.IGNORING_EXTRA_FIELDS});
-          JsonStringMatcher.Difference diffListener = new JsonStringMatcher.Difference();
+          DifferenceResolver diffListener = new DifferenceResolver(MAPPER);
           Configuration diffConfig =
               Configuration.empty().withDifferenceListener(diffListener).withOptions(options);
 
           try {
             if (this.matcherJsonNode == null) {
-              this.matcherJsonNode =
-                  ObjectMapperFactory.createObjectMapper().readTree(this.matcher);
+              this.matcherJsonNode = MAPPER.readTree(matcher);
             }
 
-            return Diff.create(
-                this.matcherJsonNode,
-                ObjectMapperFactory.createObjectMapper().readTree(matched),
-                "",
-                "",
-                diffConfig);
+            return Diff.create(this.matcherJsonNode, MAPPER.readTree(matched), "", "", diffConfig);
           } catch (Exception e) {
             log.error(
                 "exception while perform json match failed expected:{}found:{}",
@@ -237,17 +231,17 @@ public class RunEventVerifier {
       throw new AssertionError("Unable to create Json diff.");
     }
 
-    private static class Difference implements DifferenceListener {
+    private static class DifferenceResolver implements DifferenceListener {
       public List<String> differences;
+      private ObjectMapper MAPPER;
 
-      Difference() {
+      DifferenceResolver(ObjectMapper MAPPER) {
         this.differences = new ArrayList();
+        this.MAPPER = MAPPER;
       }
 
       @Override
-      public void diff(
-          shaded_package.net.javacrumbs.jsonunit.core.listener.Difference difference,
-          DifferenceContext context) {
+      public void diff(Difference difference, DifferenceContext context) {
         switch (difference.getType()) {
           case EXTRA:
             this.differences.add(
@@ -273,7 +267,7 @@ public class RunEventVerifier {
 
       private String prettyPrint(Object value) {
         try {
-          return JsonStringMatcher.PRETTY_PRINTER.writeValueAsString(value);
+          return this.MAPPER.writeValueAsString(value);
         } catch (JsonProcessingException e) {
           return String.valueOf(value);
         }

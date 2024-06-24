@@ -62,11 +62,14 @@ public class ConfigurableTestConfig {
    */
   @SneakyThrows
   public String generatePySparkCode() {
+    String scriptContent =
+        new String(Files.readAllBytes(inputScript.toPath()), StandardCharsets.UTF_8);
+
     if (inputScript.getName().toLowerCase(Locale.ROOT).endsWith(".py")) {
-      return new String(Files.readAllBytes(inputScript.toPath()), StandardCharsets.UTF_8);
+      return scriptContent;
     } else {
       // decorate sql lines into pyspark code
-      return decorateSqlToPySpark(Files.readAllLines(inputScript.toPath()));
+      return decorateSqlToPySpark(Arrays.asList(scriptContent.split(";")));
     }
   }
 
@@ -137,7 +140,11 @@ public class ConfigurableTestConfig {
     sparkSession += ".getOrCreate()";
     script.add(sparkSession);
 
-    sqls.forEach(line -> script.add("spark.sql('" + line + "')"));
+    sqls.stream()
+        .filter(l -> !l.isEmpty())
+        .forEach(
+            line ->
+                script.add("spark.sql('" + line.replace(System.lineSeparator(), "").trim() + "')"));
     script.add("");
 
     // make sure OL events get written to file
