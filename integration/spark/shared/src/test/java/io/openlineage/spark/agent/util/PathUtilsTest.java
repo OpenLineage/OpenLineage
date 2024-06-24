@@ -169,18 +169,18 @@ class PathUtilsTest {
     TableIdentifier tableIdentifier = mock(TableIdentifier.class);
     when(catalogTable.identifier()).thenReturn(tableIdentifier);
     when(tableIdentifier.database()).thenReturn(Option.apply("database"));
-    when(tableIdentifier.table()).thenReturn("table");
+    when(tableIdentifier.table()).thenReturn("mytable");
     when(catalogStorageFormat.locationUri())
-        .thenReturn(Option.apply(new URI("s3://bucket/warehouse/table")));
+        .thenReturn(Option.apply(new URI("s3://bucket/warehouse/mytable")));
 
     DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
     assertThat(datasetIdentifier)
-        .hasFieldOrPropertyWithValue("name", "warehouse/table")
+        .hasFieldOrPropertyWithValue("name", "warehouse/mytable")
         .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
     assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
     assertThat(datasetIdentifier.getSymlinks().get(0))
-        .hasFieldOrPropertyWithValue("name", "database.table")
-        .hasFieldOrPropertyWithValue("namespace", "aws:glue:us-west-2:123456789")
+        .hasFieldOrPropertyWithValue("name", "table/database/mytable")
+        .hasFieldOrPropertyWithValue("namespace", "arn:aws:glue:us-west-2:123456789")
         .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
   }
 
