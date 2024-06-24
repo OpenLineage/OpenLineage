@@ -177,9 +177,10 @@ class SparkScalaContainerTest {
                       .map(r -> r.getBodyAsString())
                       .map(event -> OpenLineageClientUtils.runEventFromJson(event))
                       .collect(Collectors.toList());
-              RunEvent lastEvent = events.get(events.size() - 2);
 
               assertThat(events).isNotEmpty();
+
+              RunEvent lastEvent = events.get(events.size() - 2);
               assertThat(lastEvent.getOutputs().get(0))
                   .hasFieldOrPropertyWithValue("namespace", "file")
                   .hasFieldOrPropertyWithValue("name", "/tmp/scala-test/rdd_output");

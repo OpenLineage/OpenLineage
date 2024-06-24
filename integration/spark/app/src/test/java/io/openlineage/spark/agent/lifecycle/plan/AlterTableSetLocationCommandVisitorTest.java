@@ -6,7 +6,6 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
@@ -79,12 +78,13 @@ class AlterTableSetLocationCommandVisitorTest {
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
-    assertEquals(1, datasets.get(0).getFacets().getSchema().getFields().size());
-    assertThat(datasets.get(0).getFacets().getSymlinks().getIdentifiers().get(0).getName())
-        .endsWith("default.table1");
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "/tmp/dir")
         .hasFieldOrPropertyWithValue("namespace", "file");
+
+    assertThat(datasets.get(0).getFacets().getSchema().getFields()).hasSize(1);
+    // custom location, no metastore -> no symlinks
+    assertThat(datasets.get(0).getFacets().getSymlinks()).isNull();
   }
 }

@@ -206,7 +206,6 @@ public class SparkContainerUtils {
     addSparkConfig(sparkConf, "spark.sql.warehouse.dir=/tmp/warehouse");
     addSparkConfig(sparkConf, "spark.sql.shuffle.partitions=1");
     addSparkConfig(sparkConf, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
-    addSparkConfig(sparkConf, "spark.sql.warehouse.dir=/tmp/warehouse");
     addSparkConfig(sparkConf, "spark.jars.ivy=/tmp/.ivy2/");
     addSparkConfig(sparkConf, "spark.openlineage.facets.disabled=");
     addSparkConfig(

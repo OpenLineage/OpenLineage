@@ -7,6 +7,7 @@ package io.openlineage.client.utils.filesystem;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
+import lombok.SneakyThrows;
 
 public class FilesystemDatasetUtils {
   private static final FilesystemDatasetExtractor[] extractors = {
@@ -46,5 +47,30 @@ public class FilesystemDatasetUtils {
   public static DatasetIdentifier fromLocationAndName(URI location, String name) {
     FilesystemDatasetExtractor extractor = getExtractor(location);
     return extractor.extract(location, name);
+  }
+
+  /**
+   * Get URI from DatasetIdentifier
+   *
+   * @param di dataset identifier
+   * @return URI
+   */
+  @SneakyThrows
+  public static URI toLocation(DatasetIdentifier di) {
+    String namespace = di.getNamespace();
+    if (!namespace.contains(":/")) {
+      // 'file'
+      namespace = namespace + ":/";
+    }
+    String name = di.getName();
+    if ("/".equals(name)) {
+      return new URI(namespace);
+    }
+
+    String location =
+        FilesystemUriSanitizer.removeLastSlash(namespace)
+            + "/"
+            + FilesystemUriSanitizer.removeFirstSlash(name);
+    return new URI(location);
   }
 }

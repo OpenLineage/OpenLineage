@@ -7,6 +7,7 @@ package io.openlineage.client.utils.filesystem;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,7 @@ class FilesystemDatasetUtilsTestForS3 {
 
   @Test
   @SneakyThrows
-  void testfromLocationAndName() {
+  void testFromLocationAndName() {
     assertThat(
             FilesystemDatasetUtils.fromLocationAndName(
                 new URI("s3://bucket/warehouse"), "default.table"))
@@ -78,5 +79,25 @@ class FilesystemDatasetUtilsTestForS3 {
                 new URI("s3n://bucket/warehouse/location"), "default.table"))
         .hasFieldOrPropertyWithValue("namespace", "s3://bucket/warehouse/location")
         .hasFieldOrPropertyWithValue("name", "default.table");
+  }
+
+  @Test
+  @SneakyThrows
+  void toLocation() {
+    assertThat(FilesystemDatasetUtils.toLocation(new DatasetIdentifier("/", "s3://bucket")))
+        .isEqualTo(new URI("s3://bucket"));
+
+    assertThat(FilesystemDatasetUtils.toLocation(new DatasetIdentifier("warehouse", "s3://bucket")))
+        .isEqualTo(new URI("s3://bucket/warehouse"));
+
+    assertThat(
+            FilesystemDatasetUtils.toLocation(
+                new DatasetIdentifier("warehouse/location", "s3://bucket")))
+        .isEqualTo(new URI("s3://bucket/warehouse/location"));
+
+    assertThat(
+            FilesystemDatasetUtils.toLocation(
+                new DatasetIdentifier("default.table", "s3://bucket/warehouse/location")))
+        .isEqualTo(new URI("s3://bucket/warehouse/location/default.table"));
   }
 }

@@ -8,6 +8,7 @@ package io.openlineage.client.utils.filesystem;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -69,7 +70,7 @@ class FilesystemDatasetUtilsTestForLocal {
 
   @Test
   @SneakyThrows
-  void testfromLocationAndName() {
+  void testFromLocationAndName() {
     assertThat(FilesystemDatasetUtils.fromLocationAndName(new URI(""), "default.table"))
         .hasFieldOrPropertyWithValue("namespace", "file")
         .hasFieldOrPropertyWithValue("name", "default.table");
@@ -118,5 +119,21 @@ class FilesystemDatasetUtilsTestForLocal {
     assertThat(FilesystemDatasetUtils.fromLocationAndName(uri, "default.table"))
         .hasFieldOrPropertyWithValue("namespace", "file:C:/home/test")
         .hasFieldOrPropertyWithValue("name", "default.table");
+  }
+
+  @Test
+  @SneakyThrows
+  void toLocation() {
+    assertThat(FilesystemDatasetUtils.toLocation(new DatasetIdentifier("/", "file")))
+        .isEqualTo(new URI("file:/"));
+
+    assertThat(
+            FilesystemDatasetUtils.toLocation(new DatasetIdentifier("/warehouse/location", "file")))
+        .isEqualTo(new URI("file:/warehouse/location"));
+
+    assertThat(
+            FilesystemDatasetUtils.toLocation(
+                new DatasetIdentifier("default.table", "file:/warehouse/location")))
+        .isEqualTo(new URI("file:/warehouse/location/default.table"));
   }
 }

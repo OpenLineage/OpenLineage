@@ -7,6 +7,7 @@ package io.openlineage.client.utils.filesystem;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,7 @@ class FilesystemDatasetUtilsTestForGCS {
 
   @Test
   @SneakyThrows
-  void testfromLocationAndName() {
+  void testFromLocationAndName() {
     assertThat(
             FilesystemDatasetUtils.fromLocationAndName(
                 new URI("gs://bucket/warehouse"), "default.table"))
@@ -50,5 +51,25 @@ class FilesystemDatasetUtilsTestForGCS {
     assertThat(FilesystemDatasetUtils.fromLocationAndName(new URI("gs://bucket/warehouse"), ""))
         .hasFieldOrPropertyWithValue("namespace", "gs://bucket/warehouse")
         .hasFieldOrPropertyWithValue("name", "/");
+  }
+
+  @Test
+  @SneakyThrows
+  void toLocation() {
+    assertThat(FilesystemDatasetUtils.toLocation(new DatasetIdentifier("/", "gs://bucket")))
+        .isEqualTo(new URI("gs://bucket"));
+
+    assertThat(FilesystemDatasetUtils.toLocation(new DatasetIdentifier("warehouse", "gs://bucket")))
+        .isEqualTo(new URI("gs://bucket/warehouse"));
+
+    assertThat(
+            FilesystemDatasetUtils.toLocation(
+                new DatasetIdentifier("warehouse/location", "gs://bucket")))
+        .isEqualTo(new URI("gs://bucket/warehouse/location"));
+
+    assertThat(
+            FilesystemDatasetUtils.toLocation(
+                new DatasetIdentifier("default.table", "gs://bucket/warehouse/location")))
+        .isEqualTo(new URI("gs://bucket/warehouse/location/default.table"));
   }
 }

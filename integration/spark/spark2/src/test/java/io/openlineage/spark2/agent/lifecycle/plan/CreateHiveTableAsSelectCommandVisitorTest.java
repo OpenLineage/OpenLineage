@@ -59,7 +59,9 @@ class CreateHiveTableAsSelectCommandVisitorTest {
   @BeforeEach
   public void setUp() {
     SparkContext sparkContext = mock(SparkContext.class);
-    when(sparkContext.getConf()).thenReturn(new SparkConf());
+    SparkConf conf = new SparkConf();
+    conf.set("spark.sql.warehouse.dir", "s3://bucket/warehouse/location");
+    when(sparkContext.getConf()).thenReturn(conf);
     when(session.sparkContext()).thenReturn(sparkContext);
   }
 
@@ -78,10 +80,11 @@ class CreateHiveTableAsSelectCommandVisitorTest {
     CreateHiveTableAsSelectCommand command =
         new CreateHiveTableAsSelectCommand(
             SparkUtils.catalogTable(
-                TableIdentifier$.MODULE$.apply("tablename", Option.<String>apply("db")),
+                TableIdentifier$.MODULE$.apply("tablename", Option.<String>apply("database")),
                 CatalogTableType.EXTERNAL(),
                 CatalogStorageFormat$.MODULE$.apply(
-                    Option.<URI>apply(URI.create("s3://bucket/directory")),
+                    Option.<URI>apply(
+                        URI.create("s3://bucket/warehouse/location/database.db/tablename")),
                     null,
                     null,
                     null,
@@ -148,7 +151,7 @@ class CreateHiveTableAsSelectCommandVisitorTest {
     assertEquals(
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE,
         outputDataset.getFacets().getLifecycleStateChange().getLifecycleStateChange());
-    assertEquals("directory", outputDataset.getName());
+    assertEquals("warehouse/location/database.db/tablename", outputDataset.getName());
     assertEquals("s3://bucket", outputDataset.getNamespace());
   }
 
