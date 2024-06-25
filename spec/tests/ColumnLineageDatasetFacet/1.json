@@ -1,30 +1,46 @@
 {
   "columnLineage": {
     "fields": {
-      "order_day_of_week": {
+      "NAME": {
         "inputFields": [
           {
-            "field": "order_placed_on",
-            "name": "public.top_delivery_times",
-            "namespace": "postgres://postgres:5432"
+            "namespace": "SnowflakeOpenLineage",
+            "name": "CUSTOMERS",
+            "field": "NAME",
+            "transformations": [
+              {
+                "type": "DIRECT",
+                "masking": false
+              }
+            ]
+          },
+          {   
+            "namespace": "SnowflakeOpenLineage",
+            "name": "CUSTOMERS",
+            "field": "ID",
+            "transformations": [
+              { 
+                "type": "INDIRECT",
+                "subtype": "FILTER",
+                "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
+              }
+            ]
+          },
+          {
+            "namespace": "SnowflakeOpenLineage",
+            "name": "DISCOUNTS",
+            "field": "CUSTOMERS_ID",
+            "transformations": [
+              {
+                "type": "INDIRECT",
+                "subtype": "FILTER",
+                "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
+              } 
+            ]
           }
-        ],
-        "transformationDescription": "",
-        "transformationType": ""
+        "transformationDescription": "SELECT NAME",
+        "transformationType": "IDENTITY"
       },
-      "order_placed_on": {
-        "inputFields": [
-          {
-            "field": "order_placed_on",
-            "name": "public.top_delivery_times",
-            "namespace": "postgres://postgres:5432"
-          }
-        ],
-        "transformationDescription": "",
-        "transformationType": ""
-      }
-    },
-    "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
-    "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ColumnLineageDatasetFacet.json"
+    }
   }
 }
