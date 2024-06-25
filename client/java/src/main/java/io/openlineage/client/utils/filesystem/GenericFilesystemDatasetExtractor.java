@@ -9,6 +9,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
 import java.util.Optional;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 
 public class GenericFilesystemDatasetExtractor implements FilesystemDatasetExtractor {
   @Override
@@ -26,7 +27,12 @@ public class GenericFilesystemDatasetExtractor implements FilesystemDatasetExtra
 
   @Override
   public DatasetIdentifier extract(URI location, String rawName) {
-    String namespace = FilesystemUriSanitizer.removeLastSlash(location.toString());
+    String namespace =
+        Optional.of(location.toString())
+            .map(FilesystemUriSanitizer::removeLastSlash)
+            .map(scheme -> StringUtils.stripEnd(scheme, ":"))
+            .get();
+
     String name =
         Optional.of(rawName)
             .map(FilesystemUriSanitizer::removeLastSlash)
