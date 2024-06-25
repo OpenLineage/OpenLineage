@@ -40,8 +40,6 @@ public class PathUtils {
   @SneakyThrows
   public static DatasetIdentifier fromCatalogTable(
       CatalogTable catalogTable, SparkSession sparkSession) {
-    String tableName = nameFromTableIdentifier(catalogTable.identifier());
-
     URI locationUri;
     if (catalogTable.storage() != null && catalogTable.storage().locationUri().isDefined()) {
       locationUri = catalogTable.storage().locationUri().get();
@@ -57,21 +55,19 @@ public class PathUtils {
     SparkContext sparkContext = sparkSession.sparkContext();
     SparkConf sparkConf = sparkContext.getConf();
     Configuration hadoopConf = sparkContext.hadoopConfiguration();
+
     Optional<URI> metastoreUri = getMetastoreUri(sparkContext);
+    Optional<String> glueArn = getGlueArn(catalogTable, sparkConf, hadoopConf);
+
     if (metastoreUri.isPresent()) {
       // dealing with Hive tables
       URI hiveUri = prepareHiveUri(metastoreUri.get());
+      String tableName = nameFromTableIdentifier(catalogTable.identifier());
       symlinkDataset = Optional.of(FilesystemDatasetUtils.fromLocationAndName(hiveUri, tableName));
-    } else if (catalogTable.provider().isDefined()
-        && "hive".equals(catalogTable.provider().get())
-        && "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
-            .equals(
-                SparkConfUtils.findHadoopConfigKey(
-                        hadoopConf, "hive.metastore.client.factory.class")
-                    .orElse(""))) {
-      symlinkDataset =
-          getGlueUri(sparkConf)
-              .map(uri -> FilesystemDatasetUtils.fromLocationAndName(uri, tableName));
+    } else if (glueArn.isPresent()) {
+      // Use ARN format 'arn:aws:glue:{region}:{account_id}:table/{database}/{table}'
+      String tableName = nameFromTableIdentifier(catalogTable.identifier(), "/");
+      symlinkDataset = Optional.of(new DatasetIdentifier("table/" + tableName, glueArn.get()));
     } else {
       Optional<URI> warehouseLocation =
           getWarehouseLocation(sparkConf, hadoopConf)
@@ -84,6 +80,7 @@ public class PathUtils {
         if (!relativePath.equals(locationUri)) {
           // if there is no metastore, and table has custom location,
           // it cannot be accessed via default warehouse location
+          String tableName = nameFromTableIdentifier(catalogTable.identifier());
           symlinkDataset =
               Optional.of(
                   FilesystemDatasetUtils.fromLocationAndName(warehouseLocation.get(), tableName));
@@ -152,7 +149,20 @@ public class PathUtils {
   }
 
   @SneakyThrows
-  private static Optional<URI> getGlueUri(SparkConf sparkConf) {
+  private static Optional<String> getGlueArn(
+      CatalogTable catalogTable, SparkConf sparkConf, Configuration hadoopConf) {
+    if (!catalogTable.provider().isDefined() || !"hive".equals(catalogTable.provider().get())) {
+      return Optional.empty();
+    }
+
+    Optional<String> clientFactory =
+        SparkConfUtils.findHadoopConfigKey(hadoopConf, "hive.metastore.client.factory.class");
+    if (!clientFactory.isPresent()
+        || !"com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
+            .equals(clientFactory.get())) {
+      return Optional.empty();
+    }
+
     Optional<String> region =
         Optional.ofNullable(System.getenv("AWS_DEFAULT_REGION"))
             .filter(s -> !s.isEmpty())
@@ -166,17 +176,21 @@ public class PathUtils {
       return Optional.empty();
     }
 
-    return Optional.of(new URI("aws:glue:" + region.get() + ":" + accountId.get()));
+    return Optional.of("arn:aws:glue:" + region.get() + ":" + accountId.get());
   }
 
   /** Get DatasetIdentifier name in format database.table or table */
   private static String nameFromTableIdentifier(TableIdentifier identifier) {
+    return nameFromTableIdentifier(identifier, ".");
+  }
+
+  private static String nameFromTableIdentifier(TableIdentifier identifier, String delimiter) {
     // calling `unquotedString` method includes `spark_catalog`, so instead get proper identifier
     // manually
     String name;
     if (identifier.database().isDefined()) {
       // include database in name
-      name = String.format("%s.%s", identifier.database().get(), identifier.table());
+      name = identifier.database().get() + delimiter + identifier.table();
     } else {
       // just table name
       name = identifier.table();
