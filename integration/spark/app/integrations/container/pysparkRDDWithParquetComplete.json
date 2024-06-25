@@ -1,36 +1,46 @@
 {
-  "eventType" : "COMPLETE",
-  "job" : {
-    "namespace" : "testRddWithParquet",
-    "name" : "open_lineage_integration_rd_d_with_parquet.execute_insert_into_hadoop_fs_relation_command.tmp_rdd_c"
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "testRddWithParquet",
+    "name": "open_lineage_integration_rd_d_with_parquet.execute_insert_into_hadoop_fs_relation_command.tmp_rdd_c"
   },
-  "inputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/rdd_a",
-    "facets" : {
-      "schema" : {
-        "fields" : [ ]
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/rdd_a",
+      "facets": {
+        "schema": {
+          "fields": []
+        }
+      }
+    },
+    {
+      "namespace": "file",
+      "name": "/tmp/rdd_b",
+      "facets": {
+        "schema": {
+          "fields": []
+        }
       }
     }
-  }, {
-    "namespace" : "file",
-    "name" : "/tmp/rdd_b",
-    "facets" : {
-      "schema" : {
-        "fields" : [ ]
+  ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/rdd_c",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "_1",
+              "type": "string"
+            }
+          ]
+        },
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "OVERWRITE"
+        }
       }
     }
-  } ],
-  "outputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/rdd_c",
-    "facets" : {
-      "schema" : {
-        "fields" : [ {
-          "name" : "_1",
-          "type" : "string"
-        } ]
-      }
-    }
-  } ]
+  ]
 }

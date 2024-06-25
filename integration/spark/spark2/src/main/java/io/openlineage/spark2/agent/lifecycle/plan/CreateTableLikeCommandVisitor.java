@@ -55,7 +55,7 @@ public class CreateTableLikeCommandVisitor
                 }
               }
 
-              DatasetIdentifier di = PathUtils.fromURI(location, "file");
+              DatasetIdentifier di = PathUtils.fromURI(location);
               return Collections.singletonList(
                   outputDataset()
                       .getDataset(

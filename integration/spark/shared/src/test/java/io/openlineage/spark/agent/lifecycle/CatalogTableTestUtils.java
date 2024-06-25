@@ -41,7 +41,7 @@ public class CatalogTableTestUtils {
     params.add(CatalogTableType.MANAGED());
     params.add(
         CatalogStorageFormat.apply(
-            Option.apply(new URI("/some-location")),
+            Option.apply(new URI("/some/location")),
             Option.empty(),
             Option.empty(),
             Option.empty(),

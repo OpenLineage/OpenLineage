@@ -20,7 +20,6 @@ import org.apache.spark.sql.execution.datasources.v2.V2SessionCatalog;
 
 @Slf4j
 public class V2SessionCatalogHandler implements CatalogHandler {
-
   @Override
   public boolean hasClasses() {
     return true;
@@ -37,17 +36,33 @@ public class V2SessionCatalogHandler implements CatalogHandler {
       TableCatalog tableCatalog,
       Identifier identifier,
       Map<String, String> properties) {
-    V2SessionCatalog catalog = (V2SessionCatalog) tableCatalog;
-    Map<String, String> namespaceMetadata = catalog.loadNamespaceMetadata(identifier.namespace());
-    if (namespaceMetadata.containsKey("location")) {
-      DatasetIdentifier di =
-          PathUtils.fromPath(new Path(namespaceMetadata.get("location"), identifier.name()));
+    V2SessionCatalog v2Catalog = (V2SessionCatalog) tableCatalog;
+
+    Map<String, String> namespaceMetadata = v2Catalog.loadNamespaceMetadata(identifier.namespace());
+    String namespaceLocation = namespaceMetadata.get("location");
+
+    String tableLocation = properties.get(TableCatalog.PROP_LOCATION);
+    DatasetIdentifier di;
+    if (tableLocation != null) {
+      di = PathUtils.fromPath(new Path(tableLocation));
+    } else {
+      if (namespaceLocation == null) {
+        throw new OpenLineageClientException(
+            "Unable to extract DatasetIdentifier from V2SessionCatalog");
+      }
+
+      // table is dropped, no information in catalog
+      di =
+          PathUtils.fromPath(
+              PathUtils.reconstructDefaultLocation(
+                  namespaceLocation, identifier.namespace(), identifier.name()));
+    }
+
+    if (namespaceLocation != null) {
       di.withSymlink(
           new Symlink(identifier.toString(), namespaceMetadata.get("location"), SymlinkType.TABLE));
-      return di;
     }
-    throw new OpenLineageClientException(
-        "Unable to extract DatasetIdentifier from V2SessionCatalog");
+    return di;
   }
 
   @Override

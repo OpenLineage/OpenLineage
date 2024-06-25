@@ -59,7 +59,9 @@ class CreateTableLikeCommandVisitorTest {
   @BeforeEach
   public void setUp() {
     SparkContext sparkContext = mock(SparkContext.class);
-    when(sparkContext.getConf()).thenReturn(new SparkConf());
+    SparkConf conf = new SparkConf();
+    conf.set("spark.sql.warehouse.dir", "file:/tmp/warehouse");
+    when(sparkContext.getConf()).thenReturn(conf);
     when(session.sparkContext()).thenReturn(sparkContext);
     when(session.catalog()).thenReturn(catalog);
     when(catalog.currentDatabase()).thenReturn("default");

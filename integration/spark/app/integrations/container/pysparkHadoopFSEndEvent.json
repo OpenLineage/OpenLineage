@@ -1,0 +1,66 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "testPysparkSQLHadoopFSTest",
+    "name": "open_lineage_integration_hadoop_f_s_relation.execute_insert_into_hadoop_fs_relation_command.warehouse_target"
+  },
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/warehouse/test",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "key",
+              "type": "integer"
+            },
+            {
+              "name": "value",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "inputFacets": {}
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/warehouse/target",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "key",
+              "type": "integer"
+            },
+            {
+              "name": "value",
+              "type": "string"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/warehouse",
+              "name": "default.target",
+              "type": "TABLE"
+            }
+          ]
+        }
+      },
+      "outputFacets": {}
+    }
+  ]
+}

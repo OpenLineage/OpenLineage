@@ -114,7 +114,7 @@ public abstract class AbstractDatabricksHandler implements CatalogHandler {
                   .toString());
     }
     Path path = new Path(location.get());
-    DatasetIdentifier di = PathUtils.fromPath(path, "file");
+    DatasetIdentifier di = PathUtils.fromPath(path);
     return di.withSymlink(
         identifier.toString(),
         StringUtils.substringBeforeLast(

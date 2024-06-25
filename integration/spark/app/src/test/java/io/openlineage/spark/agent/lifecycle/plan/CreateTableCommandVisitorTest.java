@@ -54,7 +54,7 @@ class CreateTableCommandVisitorTest {
     assertEquals(
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE,
         outputDataset.getFacets().getLifecycleStateChange().getLifecycleStateChange());
-    assertEquals("some-location", outputDataset.getName());
+    assertEquals("/some/location", outputDataset.getName());
     assertEquals("file", outputDataset.getNamespace());
   }
 

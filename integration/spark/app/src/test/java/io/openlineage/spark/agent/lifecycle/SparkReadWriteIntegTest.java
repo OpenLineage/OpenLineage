@@ -753,16 +753,18 @@ class SparkReadWriteIntegTest {
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     OpenLineage.RunEvent lastEvent = events.get(events.size() - 1);
 
+    String namespace = bucketUrl.replaceFirst("^s3a://", "s3://");
+
     assertThat(lastEvent.getOutputs())
         .hasSize(1)
         .first()
-        .hasFieldOrPropertyWithValue(NAMESPACE, bucketUrl)
+        .hasFieldOrPropertyWithValue(NAMESPACE, namespace)
         .hasFieldOrPropertyWithValue(NAME, cDatasetName);
 
     assertThat(lastEvent.getInputs().stream().filter(d -> d.getName().contains("rdd_b")).findAny())
         .isPresent()
         .get()
-        .hasFieldOrPropertyWithValue(NAMESPACE, bucketUrl)
+        .hasFieldOrPropertyWithValue(NAMESPACE, namespace)
         .hasFieldOrPropertyWithValue(NAME, bDatasetName);
   }
 

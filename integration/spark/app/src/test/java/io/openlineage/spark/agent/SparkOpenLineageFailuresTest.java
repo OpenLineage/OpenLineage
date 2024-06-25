@@ -30,6 +30,7 @@ import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -38,6 +39,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 import org.mockserver.client.MockServerClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
@@ -65,12 +68,7 @@ class SparkOpenLineageFailuresTest {
 
   private static MockServerClient mockServerClient;
 
-  @AfterEach
-  public void cleanupSpark() {
-    if (mockServerClient != null) {
-      mockServerClient.reset();
-    }
-  }
+  private static final Logger logger = LoggerFactory.getLogger(SparkOpenLineageFailuresTest.class);
 
   @BeforeAll
   public static void setup() {
@@ -80,6 +78,21 @@ class SparkOpenLineageFailuresTest {
             openLineageClientMockContainer.getServerPort());
 
     Awaitility.await().until(openLineageClientMockContainer::isRunning);
+  }
+
+  @AfterEach
+  public void cleanup() {
+    mockServerClient.reset();
+  }
+
+  @AfterAll
+  public static void tearDown() {
+    try {
+      openLineageClientMockContainer.stop();
+    } catch (Exception e) {
+      logger.error("Unable to shut down openlineage client container", e);
+    }
+    network.close();
   }
 
   @Test
@@ -177,15 +190,8 @@ class SparkOpenLineageFailuresTest {
   }
 
   private void configureMockServerToRespondWith(int statusCode) {
-    mockServerClient =
-        new MockServerClient(
-            openLineageClientMockContainer.getHost(),
-            openLineageClientMockContainer.getServerPort());
-
     mockServerClient
         .when(request("/api/v1/lineage"))
         .respond(org.mockserver.model.HttpResponse.response().withStatusCode(statusCode));
-
-    Awaitility.await().until(openLineageClientMockContainer::isRunning);
   }
 }
