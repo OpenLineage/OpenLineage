@@ -81,6 +81,10 @@ class PathUtilsTest {
         .hasFieldOrPropertyWithValue("name", "/home/test")
         .hasFieldOrPropertyWithValue("namespace", "file");
 
+    assertThat(PathUtils.fromPath(new Path("dbfs:/home/test")))
+        .hasFieldOrPropertyWithValue("name", "/home/test")
+        .hasFieldOrPropertyWithValue("namespace", "dbfs");
+
     assertThat(PathUtils.fromPath(new Path("hdfs://namenode:8020/home/test")))
         .hasFieldOrPropertyWithValue("name", "/home/test")
         .hasFieldOrPropertyWithValue("namespace", "hdfs://namenode:8020");
@@ -92,9 +96,17 @@ class PathUtilsTest {
         .hasFieldOrPropertyWithValue("name", "/home/test")
         .hasFieldOrPropertyWithValue("namespace", "file");
 
+    assertThat(PathUtils.fromURI(new URI("file:/home/test")))
+        .hasFieldOrPropertyWithValue("name", "/home/test")
+        .hasFieldOrPropertyWithValue("namespace", "file");
+
     assertThat(PathUtils.fromURI(new URI("file:///home/test")))
         .hasFieldOrPropertyWithValue("name", "/home/test")
         .hasFieldOrPropertyWithValue("namespace", "file");
+
+    assertThat(PathUtils.fromURI(new URI("dbfs:/home/test")))
+        .hasFieldOrPropertyWithValue("name", "/home/test")
+        .hasFieldOrPropertyWithValue("namespace", "dbfs");
 
     assertThat(PathUtils.fromURI(new URI("hdfs://localhost:8020/home/test")))
         .hasFieldOrPropertyWithValue("name", "/home/test")
