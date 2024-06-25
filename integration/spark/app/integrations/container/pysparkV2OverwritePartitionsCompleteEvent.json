@@ -7,7 +7,7 @@
   "inputs" : [ ],
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/iceberg/default.partitioned_tbl",
+    "name" : "/tmp/iceberg/default/partitioned_tbl",
     "facets" : {
       "dataSource" : {
         "name" : "file",
@@ -28,7 +28,7 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/iceberg",
+            "namespace": "file:/tmp/iceberg",
             "name": "default.partitioned_tbl",
             "type": "TABLE"
           }
