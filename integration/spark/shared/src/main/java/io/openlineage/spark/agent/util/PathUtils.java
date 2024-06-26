@@ -9,6 +9,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import java.net.URI;
 import java.util.Optional;
+import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
@@ -59,16 +60,17 @@ public class PathUtils {
     Optional<URI> metastoreUri = getMetastoreUri(sparkContext);
     Optional<String> glueArn = getGlueArn(catalogTable, sparkConf, hadoopConf);
 
-    if (metastoreUri.isPresent()) {
+    if (glueArn.isPresent()) {
+      // Even if glue catalog is used, it will have a hive metastore URI
+      // Use ARN format 'arn:aws:glue:{region}:{account_id}:table/{database}/{table}'
+      String tableName = nameFromTableIdentifier(catalogTable.identifier(), "/");
+      symlinkDataset = Optional.of(new DatasetIdentifier("table/" + tableName, glueArn.get()));
+    } else if (metastoreUri.isPresent()) {
       // dealing with Hive tables
       URI hiveUri = prepareHiveUri(metastoreUri.get());
       String tableName = nameFromTableIdentifier(catalogTable.identifier());
       symlinkDataset = Optional.of(FilesystemDatasetUtils.fromLocationAndName(hiveUri, tableName));
-    } else if (glueArn.isPresent()) {
-      // Use ARN format 'arn:aws:glue:{region}:{account_id}:table/{database}/{table}'
-      String tableName = nameFromTableIdentifier(catalogTable.identifier(), "/");
-      symlinkDataset = Optional.of(new DatasetIdentifier("table/" + tableName, glueArn.get()));
-    } else {
+    }  else {
       Optional<URI> warehouseLocation =
           getWarehouseLocation(sparkConf, hadoopConf)
               // perform normalization
@@ -157,6 +159,9 @@ public class PathUtils {
 
     Optional<String> clientFactory =
         SparkConfUtils.findHadoopConfigKey(hadoopConf, "hive.metastore.client.factory.class");
+    // Fetch from spark config if set.
+    clientFactory = clientFactory.isPresent() ? clientFactory :
+            SparkConfUtils.findSparkConfigKey(sparkConf, "hive.metastore.client.factory.class");
     if (!clientFactory.isPresent()
         || !"com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
             .equals(clientFactory.get())) {
@@ -171,12 +176,25 @@ public class PathUtils {
 
     Optional<String> accountId =
         SparkConfUtils.findSparkConfigKey(sparkConf, "spark.glue.accountId");
+    // For AWS Glue catalog in EMR spark
+    // Glue catalog with EMR guide: https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-glue.html
+    Optional<String> glueCatalogIdForEMR =
+            SparkConfUtils.findSparkConfigKey(sparkConf, "hive.metastore.glue.catalogid");
+    // For AWS Glue access in Athena for Spark
+    // Guide: https://docs.aws.amazon.com/athena/latest/ug/spark-notebooks-cross-account-glue.html
+    Optional<String> glueCatalogIdForAthena =
+            SparkConfUtils.findSparkConfigKey(sparkConf, "spark.hadoop.hive.metastore.glue.catalogid");
 
-    if (!region.isPresent() || !accountId.isPresent()) {
+    Optional<String> glueCatalogId = Stream.of(glueCatalogIdForEMR, glueCatalogIdForAthena, accountId)
+            .filter(Optional::isPresent)
+            .findFirst()
+            .orElse(Optional.empty());
+
+    if (!region.isPresent() || !glueCatalogId.isPresent()) {
       return Optional.empty();
     }
 
-    return Optional.of("arn:aws:glue:" + region.get() + ":" + accountId.get());
+    return Optional.of("arn:aws:glue:" + region.get() + ":" + glueCatalogId.get());
   }
 
   /** Get DatasetIdentifier name in format database.table or table */
