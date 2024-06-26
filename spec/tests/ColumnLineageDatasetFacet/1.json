@@ -10,6 +10,7 @@
             "transformations": [
               {
                 "type": "DIRECT",
+                "subType": "IDENTITY",
                 "masking": false
               }
             ]
@@ -21,7 +22,7 @@
             "transformations": [
               { 
                 "type": "INDIRECT",
-                "subtype": "FILTER",
+                "subtype": "JOIN",
                 "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
               }
             ]
@@ -33,15 +34,138 @@
             "transformations": [
               {
                 "type": "INDIRECT",
-                "subtype": "FILTER",
+                "subtype": "JOIN",
                 "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
               } 
             ]
           }
+        ],
         "transformationDescription": "SELECT NAME",
         "transformationType": "IDENTITY"
       },
+      "AMOUNT_OFF": {
+        "inputFields": [
+          {
+            "namespace": "SnowflakeOpenLineage",
+            "name": "DISCOUNTS",
+            "field": "AMOUNT_OFF",
+            "transformations": [
+              {
+                "type": "DIRECT",
+                "subType": "IDENTITY",
+                "masking": false
+              }
+            ]
+          },
+          {   
+            "namespace": "SnowflakeOpenLineage",
+            "name": "CUSTOMERS",
+            "field": "ID",
+            "transformations": [
+              { 
+                "type": "INDIRECT",
+                "subtype": "JOIN",
+                "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
+              }
+            ]
+          },
+          {
+            "namespace": "SnowflakeOpenLineage",
+            "name": "DISCOUNTS",
+            "field": "CUSTOMERS_ID",
+            "transformations": [
+              {
+                "type": "INDIRECT",
+                "subtype": "JOIN",
+                "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
+              } 
+            ]
+          }
+        ],
+        "transformationType": "IDENTITY"
+      },
+      "STARTS_AT": {
+        "inputFields": [
+          {
+            "namespace": "SnowflakeOpenLineage",
+            "name": "DISCOUNTS",
+            "field": "STARTS_AT",
+            "transformations": [
+              {
+                "type": "DIRECT",
+                "subType": "IDENTITY",
+                "masking": false
+              }
+            ]
+          },
+          {   
+            "namespace": "SnowflakeOpenLineage",
+            "name": "CUSTOMERS",
+            "field": "ID",
+            "transformations": [
+              { 
+                "type": "INDIRECT",
+                "subtype": "JOIN",
+                "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
+              }
+            ]
+          },
+          {
+            "namespace": "SnowflakeOpenLineage",
+            "name": "DISCOUNTS",
+            "field": "CUSTOMERS_ID",
+            "transformations": [
+              {
+                "type": "INDIRECT",
+                "subtype": "JOIN",
+                "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
+              } 
+            ]
+          }
+        ],
+        "transformationType": "IDENTITY"
+      },
+      "ENDS_AT": {
+        "inputFields": [
+          {
+            "namespace": "SnowflakeOpenLineage",
+            "name": "DISCOUNTS",
+            "field": "ENDS_AT",
+            "transformations": [
+              {
+                "type": "DIRECT",
+                "subType": "IDENTITY",
+                "masking": false
+              }
+            ]
+          },
+          {   
+            "namespace": "SnowflakeOpenLineage",
+            "name": "CUSTOMERS",
+            "field": "ID",
+            "transformations": [
+              { 
+                "type": "INDIRECT",
+                "subtype": "JOIN",
+                "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
+              }
+            ]
+          },
+          {
+            "namespace": "SnowflakeOpenLineage",
+            "name": "DISCOUNTS",
+            "field": "CUSTOMERS_ID",
+            "transformations": [
+              {
+                "type": "INDIRECT",
+                "subtype": "JOIN",
+                "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
+              } 
+            ]
+          }
+        ],
+        "transformationType": "IDENTITY"
+      }
     }
   }
 }
-
