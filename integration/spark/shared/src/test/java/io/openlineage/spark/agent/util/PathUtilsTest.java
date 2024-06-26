@@ -232,7 +232,7 @@ class PathUtilsTest {
         "hive.metastore.client.factory.class",
         "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
     sparkConf.set("spark.sql.catalogImplementation", "hive");
-    sparkConf.set("spark.hadoop.hive.metastore.glue.catalogid", "123456789012");
+    hadoopConf.set("hive.metastore.glue.catalogid", "123456789012");
 
     when(catalogTable.provider()).thenReturn(Option.apply("hive"));
     when(catalogTable.storage()).thenReturn(catalogStorageFormat);

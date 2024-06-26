@@ -25,6 +25,7 @@ import org.apache.spark.sql.internal.StaticSQLConf;
 @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
 public class PathUtils {
   private static final String DEFAULT_DB = "default";
+  private static final String HIVE_METASTORE_GLUE_CATALOG_ID_KEY = "hive.metastore.glue.catalogid";
 
   public static DatasetIdentifier fromPath(Path path) {
     return fromURI(path.toUri());
@@ -182,11 +183,13 @@ public class PathUtils {
     // Glue catalog with EMR guide:
     // https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-glue.html
     Optional<String> glueCatalogIdForEMR =
-        SparkConfUtils.findSparkConfigKey(sparkConf, "hive.metastore.glue.catalogid");
+        SparkConfUtils.findSparkConfigKey(sparkConf, HIVE_METASTORE_GLUE_CATALOG_ID_KEY);
     // For AWS Glue access in Athena for Spark
     // Guide: https://docs.aws.amazon.com/athena/latest/ug/spark-notebooks-cross-account-glue.html
+    // spark config "spark.hadoop.hive.metastore.glue.catalogid" is copied to hadoop
+    // "hive.metastore.glue.catalogid" by SparkHadoopUtil (removing the prefix spark.hadoop)
     Optional<String> glueCatalogIdForAthena =
-        SparkConfUtils.findSparkConfigKey(sparkConf, "spark.hadoop.hive.metastore.glue.catalogid");
+        SparkConfUtils.findHadoopConfigKey(hadoopConf, HIVE_METASTORE_GLUE_CATALOG_ID_KEY);
 
     Optional<String> glueCatalogId =
         Stream.of(glueCatalogIdForEMR, glueCatalogIdForAthena, accountId)
