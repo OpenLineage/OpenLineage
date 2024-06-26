@@ -9,7 +9,6 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -18,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JdbcDatasetUtils {
   private static final JdbcExtractor[] extractors = {
-    new SqlServerJdbcExtractor(), new GenericJdbcExtractor()
+    new PostgresJdbcExtractor(), new SqlServerJdbcExtractor(), new GenericJdbcExtractor()
   };
 
   private static JdbcExtractor getExtractor(String jdbcUri) throws URISyntaxException {
@@ -48,15 +47,11 @@ public class JdbcDatasetUtils {
   public static DatasetIdentifier getDatasetIdentifier(
       String jdbcUrl, List<String> parts, Properties properties) {
 
-    String uri = JdbcUrlSanitizer.fixScheme(jdbcUrl);
+    String uri = jdbcUrl.replaceAll("^jdbc:", "");
     try {
       JdbcExtractor extractor = getExtractor(uri);
       JdbcLocation location = extractor.extract(uri, properties);
-      Optional<String> database = location.getDatabase();
-      if (database.isPresent()) {
-        parts.add(0, database.get());
-      }
-      return new DatasetIdentifier(String.join(".", parts), location.getNamespace());
+      return new DatasetIdentifier(location.toName(parts), location.toNamespace());
     } catch (URISyntaxException e) {
       log.debug("Failed to parse jdbc url", e);
       return new DatasetIdentifier(

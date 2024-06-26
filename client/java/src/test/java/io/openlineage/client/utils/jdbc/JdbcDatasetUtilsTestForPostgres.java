@@ -17,7 +17,7 @@ class JdbcDatasetUtilsTestForPostgres {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:postgresql://test.host.com", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "postgres://test.host.com")
+        .hasFieldOrPropertyWithValue("namespace", "postgres://test.host.com:5432")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -26,7 +26,7 @@ class JdbcDatasetUtilsTestForPostgres {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:postgresql://192.168.1.1", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "postgres://192.168.1.1")
+        .hasFieldOrPropertyWithValue("namespace", "postgres://192.168.1.1:5432")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -38,7 +38,7 @@ class JdbcDatasetUtilsTestForPostgres {
                 "schema.table1",
                 new Properties()))
         .hasFieldOrPropertyWithValue(
-            "namespace", "postgres://[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]")
+            "namespace", "postgres://[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]:5432")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -48,7 +48,7 @@ class JdbcDatasetUtilsTestForPostgres {
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:postgresql://hostname?user=fred&password=sec%40ret",
                 "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "postgres://hostname")
+        .hasFieldOrPropertyWithValue("namespace", "postgres://hostname:5432")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -56,8 +56,8 @@ class JdbcDatasetUtilsTestForPostgres {
   void testGetDatasetIdentifierWithPort() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:postgresql://hostname:5432", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "postgres://hostname:5432")
+                "jdbc:postgresql://hostname:5433", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "postgres://hostname:5433")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -66,7 +66,7 @@ class JdbcDatasetUtilsTestForPostgres {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:postgresql://hostname/mydb", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "postgres://hostname")
+        .hasFieldOrPropertyWithValue("namespace", "postgres://hostname:5432")
         .hasFieldOrPropertyWithValue("name", "mydb.schema.table1");
   }
 
@@ -77,7 +77,7 @@ class JdbcDatasetUtilsTestForPostgres {
                 "jdbc:postgresql://hostname?ssl=true&applicationName=MyApp",
                 "schema.table1",
                 new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "postgres://hostname")
+        .hasFieldOrPropertyWithValue("namespace", "postgres://hostname:5432")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -86,7 +86,7 @@ class JdbcDatasetUtilsTestForPostgres {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:postgresql://hostname1,hostname2", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "postgres://hostname1,hostname2")
+        .hasFieldOrPropertyWithValue("namespace", "postgres://hostname1:5432,hostname2:5432")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     assertThat(
