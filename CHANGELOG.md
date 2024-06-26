@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.17.1...HEAD)
 
+### Added
+* **Spark: Configurable integration test.** [`#2755`](https://github.com/OpenLineage/OpenLineage/pull/2755) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Provide command line tool capable of running Spark integration tests that can be created without Java any experience.*
+
 ## [1.17.1](https://github.com/OpenLineage/OpenLineage/compare/1.16.0...1.17.1) - 2024-06-21
 ### Added
 * **Java: dataset namespace resolver feature** [`#2720`](https://github.com/OpenLineage/OpenLineage/pull/2720) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
@@ -136,7 +140,7 @@
 
 ## [1.13.1](https://github.com/OpenLineage/OpenLineage/compare/1.12.0...1.13.1) - 2024-04-25
 ### Added
-* **Java: allow timeout for circuit breakers** [`#2609`](https://github.com/OpenLineage/OpenLineage/pull/2609) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+* **Java: allow timeout for circuit breakers** [`#2609`](https://github.com/OpenLineage/OpenLineage/pull/2609) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)[@athityakumar](https://github.com/athityakumar)  
     *Extends the circuit breaker mechanism to contain a global timeout that stops running OpenLineage integration code when a specified amount of time has elapsed.*
 * **Java: handle `DataSetEvent` and `JobEvent` in `Transport.emit`** [`#2611`](https://github.com/OpenLineage/OpenLineage/pull/2611) [@dolfinus](https://github.com/dolfinus)  
     *Adds overloads `Transport.emit(OpenLineage.DatasetEvent)` and `Transport.emit(OpenLineage.JobEvent)`, reusing the implementation of `Transport.emit(OpenLineage.RunEvent)`. **Please note**: `Transport.emit(String)` is now deprecated and will be removed in 1.16.0.*

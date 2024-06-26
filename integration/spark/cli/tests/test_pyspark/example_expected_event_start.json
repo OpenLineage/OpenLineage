@@ -1,0 +1,68 @@
+{
+  "eventType": "START",
+  "run": {
+    "facets": {
+      "parent": {
+        "run": {
+        },
+        "job": {
+          "namespace": "default",
+          "name": "cl_i_test_application"
+        }
+      },
+      "spark_properties": {
+        "properties": {
+          "spark.master": "local",
+          "spark.app.name": "CLI test application"
+        }
+      },
+      "processing_engine": {
+        "name": "spark"
+      },
+      "environment-properties": {
+        "environment-properties": {}
+      }
+    }
+  },
+  "job": {
+    "namespace": "default",
+    "name": "cl_i_test_application.execute_create_hive_table_as_select_command.default_t2",
+    "facets": {
+      "jobType": {
+        "processingType": "BATCH",
+        "integration": "SPARK",
+        "jobType": "SQL_JOB"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/opt/bitnami/spark/spark-warehouse/t1",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "integer"
+            },
+            {
+              "name": "b",
+              "type": "string"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/opt/bitnami/spark/spark-warehouse",
+              "name": "default.t1",
+              "type": "TABLE"
+            }
+          ]
+        }
+      },
+      "inputFacets": {}
+    }
+  ]
+}

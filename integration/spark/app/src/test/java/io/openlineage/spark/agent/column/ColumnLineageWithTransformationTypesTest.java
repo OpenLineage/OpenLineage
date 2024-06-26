@@ -84,7 +84,6 @@ class ColumnLineageWithTransformationTypesTest {
             .config("spark.extraListeners", LastQueryExecutionSparkEventListener.class.getName())
             .config("spark.driver.host", LOCAL_IP)
             .config("spark.driver.bindAddress", LOCAL_IP)
-            .config("spark.driver.extraJavaOptions", "-Dderby.system.home=/tmp/col_non_v2/derby")
             .enableHiveSupport()
             .getOrCreate();
 
