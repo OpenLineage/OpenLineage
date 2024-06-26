@@ -70,7 +70,7 @@ public class PathUtils {
       URI hiveUri = prepareHiveUri(metastoreUri.get());
       String tableName = nameFromTableIdentifier(catalogTable.identifier());
       symlinkDataset = Optional.of(FilesystemDatasetUtils.fromLocationAndName(hiveUri, tableName));
-    }  else {
+    } else {
       Optional<URI> warehouseLocation =
           getWarehouseLocation(sparkConf, hadoopConf)
               // perform normalization
@@ -160,8 +160,10 @@ public class PathUtils {
     Optional<String> clientFactory =
         SparkConfUtils.findHadoopConfigKey(hadoopConf, "hive.metastore.client.factory.class");
     // Fetch from spark config if set.
-    clientFactory = clientFactory.isPresent() ? clientFactory :
-            SparkConfUtils.findSparkConfigKey(sparkConf, "hive.metastore.client.factory.class");
+    clientFactory =
+        clientFactory.isPresent()
+            ? clientFactory
+            : SparkConfUtils.findSparkConfigKey(sparkConf, "hive.metastore.client.factory.class");
     if (!clientFactory.isPresent()
         || !"com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
             .equals(clientFactory.get())) {
@@ -177,15 +179,17 @@ public class PathUtils {
     Optional<String> accountId =
         SparkConfUtils.findSparkConfigKey(sparkConf, "spark.glue.accountId");
     // For AWS Glue catalog in EMR spark
-    // Glue catalog with EMR guide: https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-glue.html
+    // Glue catalog with EMR guide:
+    // https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-glue.html
     Optional<String> glueCatalogIdForEMR =
-            SparkConfUtils.findSparkConfigKey(sparkConf, "hive.metastore.glue.catalogid");
+        SparkConfUtils.findSparkConfigKey(sparkConf, "hive.metastore.glue.catalogid");
     // For AWS Glue access in Athena for Spark
     // Guide: https://docs.aws.amazon.com/athena/latest/ug/spark-notebooks-cross-account-glue.html
     Optional<String> glueCatalogIdForAthena =
-            SparkConfUtils.findSparkConfigKey(sparkConf, "spark.hadoop.hive.metastore.glue.catalogid");
+        SparkConfUtils.findSparkConfigKey(sparkConf, "spark.hadoop.hive.metastore.glue.catalogid");
 
-    Optional<String> glueCatalogId = Stream.of(glueCatalogIdForEMR, glueCatalogIdForAthena, accountId)
+    Optional<String> glueCatalogId =
+        Stream.of(glueCatalogIdForEMR, glueCatalogIdForAthena, accountId)
             .filter(Optional::isPresent)
             .findFirst()
             .orElse(Optional.empty());

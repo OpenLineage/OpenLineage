@@ -200,8 +200,8 @@ class PathUtilsTest {
   @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-east-1")
   void testFromCatalogTableWithEMRGlue() throws URISyntaxException {
     hadoopConf.set(
-            "hive.metastore.client.factory.class",
-            "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
+        "hive.metastore.client.factory.class",
+        "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
     sparkConf.set("spark.sql.catalogImplementation", "hive");
     sparkConf.set("hive.metastore.glue.catalogid", "123456789012");
 
@@ -212,25 +212,25 @@ class PathUtilsTest {
     when(tableIdentifier.database()).thenReturn(Option.apply("database"));
     when(tableIdentifier.table()).thenReturn("mytable");
     when(catalogStorageFormat.locationUri())
-            .thenReturn(Option.apply(new URI("s3://bucket/warehouse/mytable")));
+        .thenReturn(Option.apply(new URI("s3://bucket/warehouse/mytable")));
 
     DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
     assertThat(datasetIdentifier)
-            .hasFieldOrPropertyWithValue("name", "warehouse/mytable")
-            .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
+        .hasFieldOrPropertyWithValue("name", "warehouse/mytable")
+        .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
     assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
     assertThat(datasetIdentifier.getSymlinks().get(0))
-            .hasFieldOrPropertyWithValue("name", "table/database/mytable")
-            .hasFieldOrPropertyWithValue("namespace", "arn:aws:glue:us-east-1:123456789012")
-            .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
+        .hasFieldOrPropertyWithValue("name", "table/database/mytable")
+        .hasFieldOrPropertyWithValue("namespace", "arn:aws:glue:us-east-1:123456789012")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
   }
 
   @Test
   @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-east-1")
   void testFromCatalogTableWithAthenaGlue() throws URISyntaxException {
     sparkConf.set(
-            "hive.metastore.client.factory.class",
-            "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
+        "hive.metastore.client.factory.class",
+        "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
     sparkConf.set("spark.sql.catalogImplementation", "hive");
     sparkConf.set("spark.hadoop.hive.metastore.glue.catalogid", "123456789012");
 
@@ -241,17 +241,17 @@ class PathUtilsTest {
     when(tableIdentifier.database()).thenReturn(Option.apply("database"));
     when(tableIdentifier.table()).thenReturn("mytable");
     when(catalogStorageFormat.locationUri())
-            .thenReturn(Option.apply(new URI("s3://bucket/warehouse/mytable")));
+        .thenReturn(Option.apply(new URI("s3://bucket/warehouse/mytable")));
 
     DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
     assertThat(datasetIdentifier)
-            .hasFieldOrPropertyWithValue("name", "warehouse/mytable")
-            .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
+        .hasFieldOrPropertyWithValue("name", "warehouse/mytable")
+        .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
     assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
     assertThat(datasetIdentifier.getSymlinks().get(0))
-            .hasFieldOrPropertyWithValue("name", "table/database/mytable")
-            .hasFieldOrPropertyWithValue("namespace", "arn:aws:glue:us-east-1:123456789012")
-            .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
+        .hasFieldOrPropertyWithValue("name", "table/database/mytable")
+        .hasFieldOrPropertyWithValue("namespace", "arn:aws:glue:us-east-1:123456789012")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
   }
 
   @Test
