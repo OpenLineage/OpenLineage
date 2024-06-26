@@ -10,7 +10,7 @@
             "transformations": [
               {
                 "type": "DIRECT",
-                "subType": "IDENTITY",
+                "subtype": "IDENTITY",
                 "masking": false
               }
             ]
@@ -52,7 +52,7 @@
             "transformations": [
               {
                 "type": "DIRECT",
-                "subType": "IDENTITY",
+                "subtype": "IDENTITY",
                 "masking": false
               }
             ]
@@ -93,7 +93,7 @@
             "transformations": [
               {
                 "type": "DIRECT",
-                "subType": "IDENTITY",
+                "subtype": "IDENTITY",
                 "masking": false
               }
             ]
@@ -134,7 +134,7 @@
             "transformations": [
               {
                 "type": "DIRECT",
-                "subType": "IDENTITY",
+                "subtype": "IDENTITY",
                 "masking": false
               }
             ]
