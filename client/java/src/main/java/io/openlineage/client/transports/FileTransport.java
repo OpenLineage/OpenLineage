@@ -51,7 +51,7 @@ public class FileTransport extends Transport {
           eventAsJson.replace(System.lineSeparator(), "") + System.lineSeparator(),
           StandardCharsets.UTF_8,
           true);
-      log.info("emitted event: " + eventAsJson);
+      log.debug("emitted event: " + eventAsJson);
     } catch (IOException | IllegalArgumentException e) {
       log.error("Writing event to a file {} failed: {}", file.getPath(), e);
     }

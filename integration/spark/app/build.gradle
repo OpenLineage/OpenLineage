@@ -28,6 +28,11 @@ ext {
     postgresqlVersion = '42.7.1'
     testcontainersVersion = '1.19.3'
     micrometerVersion = '1.12.4'
+    configurableTestConfig = [
+        sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
+        hostDir: project.findProperty('host.dir') ?: System.getProperty('host.dir'),
+        testDir: project.findProperty('test.dir') ?: System.getProperty('test.dir')
+    ]
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
@@ -122,6 +127,8 @@ dependencies {
         exclude group: 'org.mock-server.mockserver-client-java'
     }
     testImplementation("io.micrometer:micrometer-registry-statsd:${micrometerVersion}")
+    testImplementation('net.javacrumbs.json-unit:json-unit-assertj:2.38.0')
+    testImplementation('net.javacrumbs.json-unit:json-unit-core:2.38.0')
 
     testRuntimeOnly("org.slf4j:slf4j-api:1.7.36")
     testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.22.1"))
@@ -363,6 +370,7 @@ tasks.register("integrationTest", Test.class) {
     classpath = files(tasks.shadowJar.outputs.files.singleFile, sourceSets.test.runtimeClasspath)
     useJUnitPlatform {
         includeTags("integration-test")
+        excludeTags("configurable-integration-test")
         excludeTags("databricks")
         logger.warn("[IntegrationTest] hasDeltaDependencies: ${hasDeltaDependencies(spark, scala)}")
         if (!hasDeltaDependencies(spark, scala)) {
@@ -386,6 +394,21 @@ tasks.register("databricksIntegrationTest", Test) {
     useJUnitPlatform {
         includeTags("databricks")
     }
+}
+
+tasks.register("configurableIntegrationTest", Test) {
+    group = "verification"
+    dependsOn(integrationTestDependencies)
+    testClassesDirs = testSourceSet.output.classesDirs
+    classpath = files(tasks.shadowJar.outputs.files.singleFile, sourceSets.test.runtimeClasspath)
+    useJUnitPlatform {
+        includeTags("configurable-integration-test")
+    }
+    systemProperties.put("spark.conf.file", configurableTestConfig["sparkConfFile"] )
+    systemProperties.put("test.dir", configurableTestConfig["testDir"] )
+    systemProperties.put("host.dir", configurableTestConfig["hostDir"] )
+
+    environment("TESTCONTAINERS_HOST_OVERRIDE", "host.docker.internal")
 }
 
 tasks.named("classes") {
