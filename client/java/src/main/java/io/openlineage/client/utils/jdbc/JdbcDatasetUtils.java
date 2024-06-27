@@ -17,7 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JdbcDatasetUtils {
   private static final JdbcExtractor[] extractors = {
-    new PostgresJdbcExtractor(), new SqlServerJdbcExtractor(), new GenericJdbcExtractor()
+    new PostgresJdbcExtractor(),
+    new OracleJdbcExtractor(),
+    new SqlServerJdbcExtractor(),
+    new GenericJdbcExtractor()
   };
 
   private static JdbcExtractor getExtractor(String jdbcUri) throws URISyntaxException {
