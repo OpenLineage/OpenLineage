@@ -138,7 +138,7 @@ class ColumnLineageWithTransformationTypesTest {
         getFacetForQuery(getSchemaFacet("a;int"), "SELECT count(a) AS a FROM t1");
 
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.aggregation());
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.aggregation(true));
   }
 
   @Test

@@ -119,7 +119,8 @@ class ExpressionDependencyCollectorTest {
 
       ExpressionDependencyCollector.collect(context, plan);
 
-      verify(builder, times(1)).addDependency(exprId5, exprId2, TransformationInfo.aggregation());
+      verify(builder, times(1))
+          .addDependency(exprId5, exprId2, TransformationInfo.aggregation(true));
       verify(builder, times(1)).addDatasetDependency(datasetDependencyExpression);
       verify(builder, times(1))
           .addDependency(

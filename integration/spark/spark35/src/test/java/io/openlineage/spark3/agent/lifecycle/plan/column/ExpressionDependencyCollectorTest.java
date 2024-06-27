@@ -36,9 +36,7 @@ import org.apache.spark.sql.types.Metadata$;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
 import scala.Option;
 import scala.collection.immutable.Seq;
 
@@ -104,18 +102,10 @@ class ExpressionDependencyCollectorTest {
     return ScalaConversionUtils.fromList(Arrays.stream(expressions).collect(Collectors.toList()));
   }
 
-  private static Seq<Expression> getExpressionSeq(Expression... expressions) {
-    return ScalaConversionUtils.fromList(Arrays.stream(expressions).collect(Collectors.toList()));
-  }
-
   @NotNull
   private AttributeReference field(String name, ExprId exprId) {
     return new AttributeReference(
         name, IntegerType$.MODULE$, false, Metadata$.MODULE$.empty(), exprId, null);
-  }
-
-  private static Alias alias(ExprId aliasExprId, String aliasName, NamedExpression child) {
-    return alias(aliasExprId, aliasName, (Expression) child);
   }
 
   @NotNull
@@ -127,17 +117,5 @@ class ExpressionDependencyCollectorTest {
         ScalaConversionUtils.asScalaSeqEmpty(),
         Option.empty(),
         ScalaConversionUtils.asScalaSeqEmpty());
-  }
-
-  private static void mockNewExprId(LongAccumulator id, MockedStatic<NamedExpression> utilities) {
-    utilities
-        .when(NamedExpression::newExprId)
-        .thenAnswer(
-            (Answer<ExprId>)
-                invocation -> {
-                  ExprId exprId = ExprId.apply(id.get());
-                  id.accumulate(1);
-                  return exprId;
-                });
   }
 }
