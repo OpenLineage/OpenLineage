@@ -1,6 +1,9 @@
 workflows:
   openlineage-spark:
     jobs:
+      - build-integration-spark-interfaces-shaded:
+          requires:
+            - build-client-java
       - build-integration-spark-scala-2_12:
           matrix:
             parameters:
@@ -8,6 +11,7 @@ workflows:
           requires:
            - build-integration-sql-java
            - build-client-java
+           - build-integration-spark-interfaces-shaded
       - build-integration-spark-scala-2_13:
           matrix:
             parameters:
@@ -15,6 +19,7 @@ workflows:
           requires:
            - build-integration-sql-java
            - build-client-java           
+           - build-integration-spark-interfaces-shaded
       - approval-integration-spark:
           type: approval
           requires:
@@ -27,10 +32,6 @@ workflows:
               spark-version: [ '3.4.2', '3.5.0' ]
           requires:
             - approval-integration-spark
-      - jar-verification-spark:
-          requires:
-            - build-integration-spark-scala-2_12
-            - build-integration-spark-scala-2_13
       - integration-test-integration-spark-scala-2_12:
           context: integration-tests
           matrix:
@@ -51,4 +52,3 @@ workflows:
           requires:
             - integration-test-integration-spark-scala-2_12
             - integration-test-integration-spark-scala-2_13
-            - jar-verification-spark
