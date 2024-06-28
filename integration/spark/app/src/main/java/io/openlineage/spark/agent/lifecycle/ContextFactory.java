@@ -56,6 +56,7 @@ public class ContextFactory {
             .vendors(Vendors.getVendors())
             .meterRegistry(meterRegistry)
             .openLineageConfig(config)
+            .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .build();
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, handlerFactory);
@@ -87,6 +88,7 @@ public class ContextFactory {
             .vendors(Vendors.getVendors())
             .meterRegistry(meterRegistry)
             .openLineageConfig(config)
+            .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .build();
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, handlerFactory);
@@ -114,6 +116,8 @@ public class ContextFactory {
                       .vendors(Vendors.getVendors())
                       .meterRegistry(meterRegistry)
                       .openLineageConfig(config)
+                      .sparkExtensionVisitorWrapper(
+                          new SparkOpenLineageExtensionVisitorWrapper(config))
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, handlerFactory);

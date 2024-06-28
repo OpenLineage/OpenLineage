@@ -36,6 +36,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   @Setter @Getter private String parentRunId;
   @Setter @Getter private String overriddenAppName;
   @Setter @NonNull private String debugFacet;
+  @Setter @Getter private String testExtensionProvider;
   @Setter private JobNameConfig jobName;
   @Setter private JobConfig job;
 
@@ -46,6 +47,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       String parentRunId,
       String overriddenAppName,
       String debugFacet,
+      String testExtensionProvider,
       JobNameConfig jobName,
       JobConfig job,
       TransportConfig transportConfig,
@@ -60,6 +62,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.parentRunId = parentRunId;
     this.overriddenAppName = overriddenAppName;
     this.debugFacet = debugFacet;
+    this.testExtensionProvider = testExtensionProvider;
     this.jobName = jobName;
     this.job = job;
   }
@@ -125,6 +128,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(parentRunId, other.parentRunId),
         mergePropertyWith(overriddenAppName, other.overriddenAppName),
         mergeWithDefaultValue(debugFacet, other.debugFacet, DEFAULT_DEBUG_FACET),
+        mergePropertyWith(testExtensionProvider, other.testExtensionProvider),
         mergePropertyWith(jobName, other.jobName),
         mergePropertyWith(job, other.job),
         mergePropertyWith(transportConfig, other.transportConfig),
