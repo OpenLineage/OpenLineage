@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.util;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,6 +17,7 @@ import scala.Function0;
 import scala.Function1;
 import scala.Option;
 import scala.Tuple2;
+import scala.collection.Iterator;
 import scala.collection.JavaConverters;
 import scala.collection.Set;
 import scala.collection.immutable.Seq;
@@ -93,6 +95,16 @@ public class ScalaConversionUtils {
         scala.collection.immutable.Map$.MODULE$.apply(scalaSeq);
   }
 
+  public static <K, V> Map<K, V> toJavaMap(scala.collection.immutable.Map<K, V> map) {
+    Iterator<Tuple2<K, V>> iterator = map.iterator();
+    HashMap<K, V> result = new HashMap<>(map.size());
+    while (iterator.hasNext()) {
+      Tuple2<K, V> item = iterator.next();
+      result.put(item._1(), item._2());
+    }
+    return result;
+  }
+
   /**
    * Convert a {@link Seq} to a Java {@link List}.
    *
@@ -135,14 +147,7 @@ public class ScalaConversionUtils {
    * @return
    */
   public static <T> Optional<T> asJavaOptional(Option<T> opt) {
-    return Optional.ofNullable(
-        opt.getOrElse(
-            new AbstractFunction0<T>() {
-              @Override
-              public T apply() {
-                return null;
-              }
-            }));
+    return opt == null || opt.isEmpty() ? Optional.empty() : Optional.ofNullable(opt.get());
   }
 
   public static <T> Option<T> toScalaOption(T t) {
