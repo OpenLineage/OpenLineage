@@ -35,8 +35,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * This class serves as a container that wraps all the interface method calls exposed by this package.
- * The openlineage-spark accesses these wrapper methods through reflection.
+ * This class serves as a container that wraps all the interface method calls exposed by this
+ * package. The openlineage-spark accesses these wrapper methods through reflection.
  */
 public final class SparkOpenLineageExtensionVisitor {
 
@@ -66,8 +66,7 @@ public final class SparkOpenLineageExtensionVisitor {
       DatasetIdentifier datasetIdentifier =
           provider.getLineageDatasetIdentifier(
               sparkListenerEventName, openLineage, sqlContext, parameters);
-      return mapper.convertValue(
-          datasetIdentifier, new TypeReference<Map<String, Object>>() {});
+      return mapper.convertValue(datasetIdentifier, new TypeReference<Map<String, Object>>() {});
     }
     return Collections.emptyMap();
   }
@@ -77,8 +76,7 @@ public final class SparkOpenLineageExtensionVisitor {
       LineageRelation lineageRelation = (LineageRelation) lineageNode;
       DatasetIdentifier datasetIdentifier =
           lineageRelation.getLineageDatasetIdentifier(sparkListenerEventName, openLineage);
-      return mapper.convertValue(
-          datasetIdentifier, new TypeReference<Map<String, Object>>() {});
+      return mapper.convertValue(datasetIdentifier, new TypeReference<Map<String, Object>>() {});
     } else if (lineageNode instanceof InputLineageNode) {
       InputLineageNode inputLineageNode = (InputLineageNode) lineageNode;
       return handleInputLineageNode(sparkListenerEventName, inputLineageNode);
