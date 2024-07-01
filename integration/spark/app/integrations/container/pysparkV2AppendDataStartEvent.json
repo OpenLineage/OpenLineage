@@ -6,7 +6,7 @@
   },
   "inputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/iceberg/default.append_source1",
+    "name" : "/tmp/iceberg/default/append_source1",
     "facets" : {
       "dataSource" : {
         "name" : "file",
@@ -22,7 +22,7 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/iceberg",
+            "namespace": "file:/tmp/iceberg",
             "name": "default.append_source1",
             "type": "TABLE"
           }
@@ -31,7 +31,7 @@
     }
   }, {
     "namespace" : "file",
-    "name" : "/tmp/iceberg/default.append_source2",
+    "name" : "/tmp/iceberg/default/append_source2",
     "facets" : {
       "dataSource" : {
         "name" : "file",
@@ -47,7 +47,7 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/iceberg",
+            "namespace": "file:/tmp/iceberg",
             "name": "default.append_source2",
             "type": "TABLE"
           }
