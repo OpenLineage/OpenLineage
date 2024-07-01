@@ -16,7 +16,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
-import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.shaded.spark.extension.v1.InputDatasetWithDelegate;
 import io.openlineage.shaded.spark.extension.v1.InputDatasetWithFacets;
@@ -67,7 +66,7 @@ public final class SparkOpenLineageExtensionVisitor {
       DatasetIdentifier datasetIdentifier =
           provider.getLineageDatasetIdentifier(
               sparkListenerEventName, openLineage, sqlContext, parameters);
-      return OpenLineageClientUtils.convertValue(
+      return mapper.convertValue(
           datasetIdentifier, new TypeReference<Map<String, Object>>() {});
     }
     return Collections.emptyMap();
@@ -78,7 +77,7 @@ public final class SparkOpenLineageExtensionVisitor {
       LineageRelation lineageRelation = (LineageRelation) lineageNode;
       DatasetIdentifier datasetIdentifier =
           lineageRelation.getLineageDatasetIdentifier(sparkListenerEventName, openLineage);
-      return OpenLineageClientUtils.convertValue(
+      return mapper.convertValue(
           datasetIdentifier, new TypeReference<Map<String, Object>>() {});
     } else if (lineageNode instanceof InputLineageNode) {
       InputLineageNode inputLineageNode = (InputLineageNode) lineageNode;
@@ -151,13 +150,11 @@ public final class SparkOpenLineageExtensionVisitor {
     return buildMapWithDatasetsAndDelegates(serializedDatasets, delegateNodes);
   }
 
-  private static HashMap<String, Object> buildMapWithDatasetsAndDelegates(
+  private static Map<String, Object> buildMapWithDatasetsAndDelegates(
       List<Map<String, Object>> serializedDatasets, List<Object> delegateNodes) {
-    return new HashMap<String, Object>() {
-      {
-        put("datasets", serializedDatasets);
-        put("delegateNodes", delegateNodes);
-      }
-    };
+    Map<String, Object> map = new HashMap<>();
+    map.put("datasets", serializedDatasets);
+    map.put("delegateNodes", delegateNodes);
+    return map;
   }
 }
