@@ -16,19 +16,6 @@ class JdbcUrlSanitizer {
   private static final String QUERY_PARAMS_REGEX = "\\?.*$";
 
   /**
-   * Convert jdbcUrl scheme to compatible with naming convention
-   *
-   * @param jdbcUrl url to database
-   * @return String
-   */
-  public static String fixScheme(String jdbcUrl) {
-    return jdbcUrl
-        .replaceAll("^jdbc:", "")
-        // TODO: implement in PostgresJdbcExtractor
-        .replaceAll("^postgresql:", "postgres:");
-  }
-
-  /**
    * JdbcUrl can contain username and password this method clean-up credentials from jdbcUrl. Also
    * drop query params as they include a lot of useless options, like timeout
    *
