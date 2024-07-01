@@ -1,3 +1,7 @@
+/*
+/* Copyright 2018-2024 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 package io.openlineage.shaded.spark.extension.v1.lifecycle.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
