@@ -19,6 +19,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDepe
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionDependencyVisitor;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -59,18 +60,25 @@ import scala.collection.Seq;
  */
 @Slf4j
 public class ExpressionDependencyCollector {
-  private static Boolean isMasking(Expression expression) {
+  // Generally available masking expressions
+  private static final List<Class> classes =
+      Arrays.asList(
+          Crc32.class,
+          HiveHash.class,
+          Md5.class,
+          Murmur3Hash.class,
+          Sha1.class,
+          Sha2.class,
+          XxHash64.class,
+          Count.class);
 
-    return expression instanceof Crc32
-        || expression instanceof HiveHash
-        || expression instanceof Md5
-        || expression instanceof Murmur3Hash
-        || expression instanceof Sha1
-        || expression instanceof Sha2
-        || expression instanceof XxHash64
-        || expression instanceof Count
-        || "org.apache.spark.sql.catalyst.expressions.Mask"
-            .equals(expression.getClass().getCanonicalName()); // available since Spark 3.5.0
+  // Masking expressions not available in all supported versions
+  private static final List<String> classNames =
+      Collections.singletonList("org.apache.spark.sql.catalyst.expressions.Mask");
+
+  private static Boolean isMasking(Expression expression) {
+    return classes.stream().anyMatch(c -> c.equals(expression.getClass()))
+        || classNames.stream().anyMatch(n -> n.equals(expression.getClass().getCanonicalName()));
   }
 
   private static final List<ExpressionDependencyVisitor> expressionDependencyVisitors =
