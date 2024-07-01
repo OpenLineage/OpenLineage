@@ -24,7 +24,7 @@ pmd {
     rulesMinimumPriority = 5
     ruleSetFiles = rootProject.files("pmd-openlineage.xml")
     ruleSets = []
-    ignoreFailures = true
+    ignoreFailures = false
 }
 
 pmdMain {
