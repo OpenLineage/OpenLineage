@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.spark.sql.SaveMode;
+import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand;
 
@@ -28,12 +29,18 @@ public class InsertIntoHadoopFsRelationVisitor
     super(context);
   }
 
-  @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    InsertIntoHadoopFsRelationCommand command = (InsertIntoHadoopFsRelationCommand) x;
+  private DatasetIdentifier getDatasetIdentifier(InsertIntoHadoopFsRelationCommand command) {
+    if (command.catalogTable().isDefined() && context.getSparkSession().isPresent()) {
+      CatalogTable ctable = command.catalogTable().get();
+      return PathUtils.fromCatalogTable(ctable, context.getSparkSession().get());
+    } else {
+      return PathUtils.fromPath(command.outputPath());
+    }
+  }
 
-    DatasetIdentifier di = PathUtils.fromPath(command.outputPath());
+  private OpenLineage.OutputDataset createOutputDataset(InsertIntoHadoopFsRelationCommand command) {
     OpenLineage.OutputDataset outputDataset;
+    DatasetIdentifier di = getDatasetIdentifier(command);
     if (SaveMode.Overwrite == command.mode()) {
       outputDataset =
           outputDataset()
@@ -45,6 +52,13 @@ public class InsertIntoHadoopFsRelationVisitor
       outputDataset = outputDataset().getDataset(di, command.query().schema());
     }
 
+    return outputDataset;
+  }
+
+  @Override
+  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+    InsertIntoHadoopFsRelationCommand command = (InsertIntoHadoopFsRelationCommand) x;
+    OpenLineage.OutputDataset outputDataset = createOutputDataset(command);
     return Collections.singletonList(outputDataset);
   }
 
