@@ -136,6 +136,7 @@ done
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/sql/iface-java/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/gradle.properties
+perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark-interfaces-shaded/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/flink/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/flink/examples/stateful/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./proxy/backend/gradle.properties
@@ -171,6 +172,7 @@ fi
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./client/java/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/sql/iface-java/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/spark/gradle.properties
+perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/spark-interfaces-shaded/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/examples/stateful/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./proxy/backend/gradle.properties

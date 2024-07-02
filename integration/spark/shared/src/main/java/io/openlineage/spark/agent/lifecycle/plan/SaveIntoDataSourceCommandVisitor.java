@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.DatasetFacetsUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -66,6 +67,7 @@ public class SaveIntoDataSourceCommandVisitor
         return false;
       }
       return command.dataSource() instanceof SchemaRelationProvider
+          || context.getSparkExtensionVisitorWrapper().isDefinedAt(command.dataSource())
           || command.dataSource() instanceof RelationProvider;
     }
     return false;
@@ -90,6 +92,19 @@ public class SaveIntoDataSourceCommandVisitor
   @SuppressWarnings("PMD.AvoidDuplicateLiterals")
   public List<OutputDataset> apply(SparkListenerEvent event, SaveIntoDataSourceCommand command) {
     BaseRelation relation;
+
+    if (context.getSparkExtensionVisitorWrapper().isDefinedAt(command.dataSource())) {
+      DatasetIdentifier datasetIdentifier =
+          context
+              .getSparkExtensionVisitorWrapper()
+              .getLineageDatasetIdentifier(
+                  command.dataSource(),
+                  event.getClass().getName(),
+                  context.getSparkSession().get().sqlContext(),
+                  command.options());
+      return Collections.singletonList(
+          outputDataset().getDataset(datasetIdentifier, getSchema(command)));
+    }
 
     // Kafka has some special handling because the Source and Sink relations require different
     // options. A KafkaRelation for writes uses the "topic" option, while the same relation for
