@@ -131,6 +131,12 @@ public class OpenLineageContext {
    */
   @Getter @Setter String jobName;
 
+  @Setter Integer activeJobId;
+
+  public Optional<Integer> getActiveJobId() {
+    return Optional.ofNullable(activeJobId);
+  }
+
   /**
    * Contains the vendors like Snowflake to separate the dependencies from the app and shared
    * project.

@@ -6,7 +6,7 @@
   },
   "inputs" : [  {
     "namespace" : "file",
-    "name" : "/tmp/iceberg/default.source",
+    "name" : "/tmp/iceberg/default/source",
     "facets" : {
       "dataSource": {
         "name": "file",
@@ -27,7 +27,7 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/iceberg",
+            "namespace": "file:/tmp/iceberg",
             "name": "default.source",
             "type": "TABLE"
           }

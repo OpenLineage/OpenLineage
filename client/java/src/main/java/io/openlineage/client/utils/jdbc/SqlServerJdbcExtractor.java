@@ -26,7 +26,7 @@ public class SqlServerJdbcExtractor implements JdbcExtractor {
 
   private static final Pattern URL =
       Pattern.compile(
-          "(?:\\w+)://(?<host>[\\w\\d\\.]+)?(?:\\\\)?(?<instance>[\\w]+)?(?:\\:)?(?<port>\\d+)?(?<params>.*)");
+          "(?:\\w+)://(?<host>[\\w\\d\\.]+)?(?:\\\\)?(?<instance>[\\w]+)?(?::)?(?<port>\\d+)?(?<params>.*)");
 
   @Override
   public boolean isDefinedAt(String jdbcUri) {
@@ -79,13 +79,20 @@ public class SqlServerJdbcExtractor implements JdbcExtractor {
       host = "[" + host + "]";
     }
 
-    Optional<String> port = Optional.ofNullable(finalProperties.getProperty(PORT_PROPERTY));
+    String port = finalProperties.getProperty(PORT_PROPERTY);
+    String authority;
+    if (port != null) {
+      authority = host + ":" + port;
+    } else {
+      authority = host;
+    }
+
     Optional<String> instance = Optional.ofNullable(finalProperties.getProperty(INSTANCE_PROPERTY));
     Optional<String> database =
         Optional.ofNullable(finalProperties.getProperty(DATABASE_NAME_PROPERTY))
             .map(Optional::of)
             .orElseGet(() -> Optional.ofNullable(finalProperties.getProperty(DATABASE_PROPERTY)));
 
-    return new JdbcLocation(SCHEME, host, port, instance, database);
+    return new JdbcLocation(SCHEME, authority, instance, database);
   }
 }

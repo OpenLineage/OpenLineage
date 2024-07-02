@@ -5,6 +5,7 @@
 
 package io.openlineage.client.utils.jdbc;
 
+import java.util.List;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,19 +15,22 @@ import lombok.Setter;
 @AllArgsConstructor
 public class JdbcLocation {
   @NonNull @Getter @Setter private String scheme;
-  @NonNull @Getter @Setter private String host;
-  @Getter @Setter private Optional<String> port;
+  @NonNull @Getter @Setter private String authority;
   @Getter @Setter private Optional<String> instance;
   @Getter @Setter private Optional<String> database;
 
-  public String getNamespace() {
-    String result = String.format("%s://%s", scheme, host);
-    if (port.isPresent()) {
-      result = String.format("%s:%s", result, port.get());
-    }
+  public String toNamespace() {
+    String result = String.format("%s://%s", scheme, authority);
     if (instance.isPresent()) {
       result = String.format("%s/%s", result, instance.get());
     }
     return result;
+  }
+
+  public String toName(List<String> parts) {
+    if (database.isPresent()) {
+      parts.add(0, database.get());
+    }
+    return String.join(".", parts);
   }
 }

@@ -6,7 +6,7 @@
   },
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/iceberg/default.table",
+    "name" : "/tmp/iceberg/default/table",
     "facets" : {
       "schema" : {
         "fields" : [ {
@@ -20,7 +20,7 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/iceberg",
+            "namespace": "file:/tmp/iceberg",
             "name": "default.table",
             "type": "TABLE"
           }

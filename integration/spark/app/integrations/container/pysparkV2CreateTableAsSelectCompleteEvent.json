@@ -7,7 +7,7 @@
   "inputs" : [ ],
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/iceberg/default.target",
+    "name" : "/tmp/iceberg/default/target",
     "facets" : {
       "dataSource" : {
         "name" : "file",
@@ -25,7 +25,7 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/iceberg",
+            "namespace": "file:/tmp/iceberg",
             "name": "default.target",
             "type": "TABLE"
           }
@@ -38,12 +38,12 @@
             "inputFields": [
               {
                 "namespace": "file",
-                "name": "/tmp/iceberg/default.source1",
+                "name": "/tmp/iceberg/default/source1",
                 "field": "a"
               },
               {
                 "namespace": "file",
-                "name": "/tmp/iceberg/default.source2",
+                "name": "/tmp/iceberg/default/source2",
                 "field": "a"
               }
             ]
@@ -52,12 +52,12 @@
             "inputFields": [
               {
                 "namespace": "file",
-                "name": "/tmp/iceberg/default.source1",
+                "name": "/tmp/iceberg/default/source1",
                 "field": "b"
               },
               {
                 "namespace": "file",
-                "name": "/tmp/iceberg/default.source2",
+                "name": "/tmp/iceberg/default/source2",
                 "field": "b"
               }
             ]

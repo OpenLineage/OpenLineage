@@ -23,6 +23,7 @@ import io.openlineage.spark.api.JobNameBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.ActiveJob;
@@ -55,7 +56,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private boolean emittedOnSqlExecutionEnd = false;
   private boolean emittedOnJobStart = false;
   private boolean emittedOnJobEnd = false;
-
+  private Integer activeJobId;
   private AtomicBoolean finished = new AtomicBoolean(false);
 
   public SparkSQLExecutionContext(
@@ -83,6 +84,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
       return;
     }
 
+    olContext.setActiveJobId(activeJobId);
     // only one START event is expected, in case it was already sent with jobStart, we send running
     EventType eventType = emittedOnJobStart ? RUNNING : START;
     emittedOnSqlExecutionStart = true;
@@ -113,6 +115,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
     // TODO: can we get failed event here?
     // If not, then we probably need to use this only for LogicalPlans that emit no Job events.
     // Maybe use QueryExecutionListener?
+    olContext.setActiveJobId(activeJobId);
     if (!olContext.getQueryExecution().isPresent()) {
       log.info(NO_EXECUTION_INFO, olContext);
       return;
@@ -212,8 +215,20 @@ class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   @Override
+  public Optional<Integer> getActiveJobId() {
+    return Optional.ofNullable(activeJobId);
+  }
+
+  @Override
+  public void setActiveJobId(Integer activeJobId) {
+    this.activeJobId = activeJobId;
+  }
+
+  @Override
   public void setActiveJob(ActiveJob activeJob) {
+    olContext.setActiveJobId(activeJob.jobId());
     runEventBuilder.registerJob(activeJob);
+    log.debug("Registering jobId: {} into runUid: {}", activeJob, olContext.getRunUuid());
   }
 
   @Override
@@ -254,6 +269,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
     log.debug("SparkListenerJobEnd - executionId: {}", executionId);
+    olContext.setActiveJobId(jobEnd.jobId());
     if (!finished.compareAndSet(false, true)) {
       log.debug("Event already finished, returning");
       return;

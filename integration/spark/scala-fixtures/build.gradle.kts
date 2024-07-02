@@ -8,11 +8,11 @@ repositories {
 }
 
 configureScalaVariant("2.11", "2.4.8")
-configureScalaVariant("2.12", "3.5.0")
-configureScalaVariant("2.13", "3.5.0")
+configureScalaVariant("2.12", "3.5.1")
+configureScalaVariant("2.13", "3.5.1")
 
 dependencies {
-    compileOnly("org.apache.spark:spark-sql_2.12:3.5.0")
+    compileOnly("org.apache.spark:spark-sql_2.12:3.5.1")
 }
 
 fun configureScalaVariant(scalaBinaryVersion: String, sparkVersion: String) {

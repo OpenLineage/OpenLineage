@@ -6,7 +6,7 @@
   "inputs" : [ ],
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/iceberg/default.tbl",
+    "name" : "/tmp/iceberg/default/tbl",
     "facets" : {
       "dataSource" : {
         "name" : "file",
@@ -24,7 +24,7 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/iceberg",
+            "namespace": "file:/tmp/iceberg",
             "name": "default.tbl",
             "type": "TABLE"
           }
