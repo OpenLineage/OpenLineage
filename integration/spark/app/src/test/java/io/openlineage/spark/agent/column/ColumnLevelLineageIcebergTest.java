@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.column;
 import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertColumnDependsOn;
 import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertColumnDependsOnInputs;
 import static org.apache.spark.sql.functions.col;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
@@ -62,8 +63,8 @@ class ColumnLevelLineageIcebergTest {
 
   private static final String INT_TYPE = "int";
   private static final String FILE = "file";
-  private static final String T1_EXPECTED_NAME = "/tmp/column_level_lineage/db.t1";
-  private static final String T2_EXPECTED_NAME = "/tmp/column_level_lineage/db.t2";
+  private static final String T1_EXPECTED_NAME = "/tmp/column_level_lineage/db/t1";
+  private static final String T2_EXPECTED_NAME = "/tmp/column_level_lineage/db/t2";
   private static final String CREATE_T1_FROM_TEMP =
       "CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp";
   SparkSession spark;
@@ -158,9 +159,16 @@ class ColumnLevelLineageIcebergTest {
             .get();
 
     assertColumnDependsOn(facet, "a", FILE, T1_EXPECTED_NAME, "a");
-    assertColumnDependsOn(facet, "a", FILE, "/tmp/column_level_lineage/db.t2", "a");
-    assertColumnDependsOn(facet, "b", FILE, "/tmp/column_level_lineage/db.t2", "b");
+    assertColumnDependsOn(facet, "a", FILE, T2_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "b", FILE, T2_EXPECTED_NAME, "b");
     assertColumnDependsOn(facet, "b", FILE, T1_EXPECTED_NAME, "b");
+
+    // check that dataset name is a real path
+    FileSystem local = FileSystem.get(spark.sparkContext().hadoopConfiguration());
+    assertThat(local.exists(new Path(T1_EXPECTED_NAME))).isTrue();
+    assertThat(local.exists(new Path(T1_EXPECTED_NAME))).isTrue();
+    assertThat(local.listStatus(new Path(T1_EXPECTED_NAME)).length).isGreaterThan(0);
+    assertThat(local.listStatus(new Path(T2_EXPECTED_NAME)).length).isGreaterThan(0);
   }
 
   @Test
@@ -320,7 +328,7 @@ class ColumnLevelLineageIcebergTest {
         ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(event, context, outputSchema).get();
 
     assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "a");
-    assertColumnDependsOn(facet, "c", FILE, "/tmp/column_level_lineage/db.t2", "a");
+    assertColumnDependsOn(facet, "c", FILE, T2_EXPECTED_NAME, "a");
     assertColumnDependsOnInputs(facet, "c", 2);
   }
 
@@ -364,7 +372,7 @@ class ColumnLevelLineageIcebergTest {
     assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "d", FILE, T1_EXPECTED_NAME, "b");
     assertColumnDependsOnInputs(facet, "c", 1);
-    assertColumnDependsOnInputs(facet, "d", 1);
+    assertColumnDependsOnInputs(facet, "d", 2);
   }
 
   @Test

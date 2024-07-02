@@ -7,11 +7,12 @@ package io.openlineage.flink.visitor;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.JdbcUtils;
+import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.wrapper.JdbcSinkWrapper;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.jdbc.JdbcRowOutputFormat;
@@ -55,8 +56,8 @@ public class JdbcSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
     }
 
     DatasetIdentifier di =
-        JdbcUtils.getDatasetIdentifierFromJdbcUrl(
-            sinkWrapper.getConnectionUrl(), sinkWrapper.getTableName().get());
+        JdbcDatasetUtils.getDatasetIdentifier(
+            sinkWrapper.getConnectionUrl(), sinkWrapper.getTableName().get(), new Properties());
     return Collections.singletonList(outputDataset().getDataset(di.getName(), di.getNamespace()));
   }
 }

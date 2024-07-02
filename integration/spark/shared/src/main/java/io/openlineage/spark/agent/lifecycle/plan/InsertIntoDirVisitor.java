@@ -37,7 +37,7 @@ public class InsertIntoDirVisitor
     return optionalUri
         .map(
             uri -> {
-              DatasetIdentifier di = PathUtils.fromURI(uri, "file");
+              DatasetIdentifier di = PathUtils.fromURI(uri);
               OpenLineage.OutputDataset outputDataset;
               if (cmd.overwrite()) {
                 outputDataset =

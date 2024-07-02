@@ -37,7 +37,7 @@
     },
     {
       "namespace": "file",
-      "name": "/tmp/iceberg/default.v2_source_1",
+      "name": "/tmp/iceberg/default/v2_source_1",
       "facets": {
         "schema": {
           "fields": [
@@ -54,7 +54,7 @@
         "symlinks": {
           "identifiers": [
             {
-              "namespace": "/tmp/iceberg",
+              "namespace": "file:/tmp/iceberg",
               "name": "default.v2_source_1",
               "type": "TABLE"
             }
@@ -64,7 +64,7 @@
     },
     {
       "namespace": "file",
-      "name": "/tmp/iceberg/default.v2_source_2",
+      "name": "/tmp/iceberg/default/v2_source_2",
       "facets": {
         "schema": {
           "fields": [
@@ -81,7 +81,7 @@
         "symlinks": {
           "identifiers": [
             {
-              "namespace": "/tmp/iceberg",
+              "namespace": "file:/tmp/iceberg",
               "name": "default.v2_source_2",
               "type": "TABLE"
             }
@@ -112,7 +112,7 @@
               "inputFields": [
                 {
                   "namespace": "file",
-                  "name": "/tmp/iceberg/default.v2_source_1",
+                  "name": "/tmp/iceberg/default/v2_source_1",
                   "field": "k"
                 }
               ]
@@ -121,7 +121,7 @@
               "inputFields": [
                 {
                   "namespace": "file",
-                  "name": "/tmp/iceberg/default.v2_source_2",
+                  "name": "/tmp/iceberg/default/v2_source_2",
                   "field": "v2"
                 },
                 {
@@ -134,7 +134,7 @@
                 },
                 {
                   "namespace": "file",
-                  "name": "/tmp/iceberg/default.v2_source_1",
+                  "name": "/tmp/iceberg/default/v2_source_1",
                   "field": "v1"
                 }
               ]

@@ -20,8 +20,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockserver.configuration.Configuration;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.Header;
+import org.slf4j.event.Level;
 import scala.Tuple2;
 
 class GCPUtilsTest {
@@ -49,7 +51,9 @@ class GCPUtilsTest {
 
   @BeforeAll
   public static void setup() {
-    mockServer = ClientAndServer.startClientAndServer();
+    Configuration config = Configuration.configuration();
+    config.logLevel(Level.ERROR);
+    mockServer = ClientAndServer.startClientAndServer(config);
     TEST_URI = String.format("http://localhost:%s", mockServer.getPort());
   }
 

@@ -6,13 +6,12 @@
 package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.DatasetIdentifierUtils;
-import java.io.File;
+import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import java.net.URI;
 import java.util.Optional;
+import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
@@ -25,24 +24,15 @@ import org.apache.spark.sql.internal.StaticSQLConf;
 @Slf4j
 @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
 public class PathUtils {
-
-  private static final String DEFAULT_SCHEME = "file";
-  private static final String DEFAULT_SEPARATOR = "/";
+  private static final String DEFAULT_DB = "default";
+  private static final String HIVE_METASTORE_GLUE_CATALOG_ID_KEY = "hive.metastore.glue.catalogid";
 
   public static DatasetIdentifier fromPath(Path path) {
-    return fromPath(path, DEFAULT_SCHEME);
-  }
-
-  public static DatasetIdentifier fromPath(Path path, String defaultScheme) {
-    return fromURI(path.toUri(), defaultScheme);
+    return fromURI(path.toUri());
   }
 
   public static DatasetIdentifier fromURI(URI location) {
-    return fromURI(location, DEFAULT_SCHEME);
-  }
-
-  public static DatasetIdentifier fromURI(URI location, String defaultScheme) {
-    return DatasetIdentifierUtils.fromURI(location, defaultScheme);
+    return FilesystemDatasetUtils.fromLocation(location);
   }
 
   /**
@@ -52,94 +42,105 @@ public class PathUtils {
   @SneakyThrows
   public static DatasetIdentifier fromCatalogTable(
       CatalogTable catalogTable, SparkSession sparkSession) {
-    DatasetIdentifier di;
-    URI uri;
+    URI locationUri;
     if (catalogTable.storage() != null && catalogTable.storage().locationUri().isDefined()) {
-      uri = prepareUriFromLocation(catalogTable);
-      di = PathUtils.fromURI(uri, DEFAULT_SCHEME);
+      locationUri = catalogTable.storage().locationUri().get();
     } else {
-      uri = prepareUriFromDefaultTablePath(catalogTable, sparkSession);
-      di = PathUtils.fromURI(uri, DEFAULT_SCHEME);
+      locationUri = getDefaultLocationUri(sparkSession, catalogTable.identifier());
     }
+    DatasetIdentifier locationDataset = fromURI(locationUri);
+    // perform normalization
+    locationUri = FilesystemDatasetUtils.toLocation(locationDataset);
+
+    Optional<DatasetIdentifier> symlinkDataset = Optional.empty();
 
     SparkContext sparkContext = sparkSession.sparkContext();
     SparkConf sparkConf = sparkContext.getConf();
     Configuration hadoopConf = sparkContext.hadoopConfiguration();
-    Optional<URI> metastoreUri = extractMetastoreUri(sparkContext);
-    if (metastoreUri.isPresent()) {
+
+    Optional<URI> metastoreUri = getMetastoreUri(sparkContext);
+    Optional<String> glueArn = getGlueArn(catalogTable, sparkConf, hadoopConf);
+
+    if (glueArn.isPresent()) {
+      // Even if glue catalog is used, it will have a hive metastore URI
+      // Use ARN format 'arn:aws:glue:{region}:{account_id}:table/{database}/{table}'
+      String tableName = nameFromTableIdentifier(catalogTable.identifier(), "/");
+      symlinkDataset = Optional.of(new DatasetIdentifier("table/" + tableName, glueArn.get()));
+    } else if (metastoreUri.isPresent()) {
       // dealing with Hive tables
-      DatasetIdentifier symlink = prepareHiveDatasetIdentifier(catalogTable, metastoreUri.get());
-      return di.withSymlink(
-          symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.TABLE);
-    } else if (catalogTable.provider().isDefined()
-        && "hive".equals(catalogTable.provider().get())
-        && "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
-            .equals(
-                SparkConfUtils.findHadoopConfigKey(
-                        hadoopConf, "hive.metastore.client.factory.class")
-                    .orElse(""))) {
-      String region = System.getenv().get("AWS_DEFAULT_REGION");
-      if (region == null || region.isEmpty()) {
-        region = System.getenv("AWS_REGION");
-      }
-      String accountId =
-          SparkConfUtils.findSparkConfigKey(sparkConf, "spark.glue.accountId").orElse("");
-      return di.withSymlink(
-          nameFromTableIdentifier(catalogTable.identifier()),
-          String.format("aws:glue:%s:%s", region, accountId),
-          DatasetIdentifier.SymlinkType.TABLE);
+      URI hiveUri = prepareHiveUri(metastoreUri.get());
+      String tableName = nameFromTableIdentifier(catalogTable.identifier());
+      symlinkDataset = Optional.of(FilesystemDatasetUtils.fromLocationAndName(hiveUri, tableName));
     } else {
-      return di.withSymlink(
-          nameFromTableIdentifier(catalogTable.identifier()),
-          StringUtils.substringBeforeLast(uri.toString(), File.separator),
-          DatasetIdentifier.SymlinkType.TABLE);
-    }
-  }
+      Optional<URI> warehouseLocation =
+          getWarehouseLocation(sparkConf, hadoopConf)
+              // perform normalization
+              .map(FilesystemDatasetUtils::fromLocation)
+              .map(FilesystemDatasetUtils::toLocation);
 
-  private static URI prepareUriFromDefaultTablePath(
-      CatalogTable catalogTable, SparkSession sparkSession) {
-    URI uri = sparkSession.sessionState().catalog().defaultTablePath(catalogTable.identifier());
-
-    return uri;
-  }
-
-  @SneakyThrows
-  private static URI prepareUriFromLocation(CatalogTable catalogTable) {
-    URI uri = catalogTable.storage().locationUri().get();
-
-    if (uri.getPath() != null
-        && uri.getPath().startsWith(DEFAULT_SEPARATOR)
-        && uri.getScheme() == null) {
-      uri = new URI(DEFAULT_SCHEME, null, uri.getPath(), null, null);
-    } else if (uri.getScheme() != null && uri.getScheme().equals(DEFAULT_SCHEME)) {
-      // Normalize the URI if it is already a file scheme but has three slashes
-      String path = uri.getPath();
-      if (uri.toString().startsWith(DEFAULT_SCHEME + ":///")) {
-        uri = new URI(DEFAULT_SCHEME, null, path, null, null);
+      if (warehouseLocation.isPresent()) {
+        URI relativePath = warehouseLocation.get().relativize(locationUri);
+        if (!relativePath.equals(locationUri)) {
+          // if there is no metastore, and table has custom location,
+          // it cannot be accessed via default warehouse location
+          String tableName = nameFromTableIdentifier(catalogTable.identifier());
+          symlinkDataset =
+              Optional.of(
+                  FilesystemDatasetUtils.fromLocationAndName(warehouseLocation.get(), tableName));
+        }
       }
     }
 
-    return uri;
-  }
-
-  @SneakyThrows
-  private static DatasetIdentifier prepareHiveDatasetIdentifier(
-      CatalogTable catalogTable, URI metastoreUri) {
-    String qualifiedName = nameFromTableIdentifier(catalogTable.identifier());
-    if (!qualifiedName.startsWith(DEFAULT_SEPARATOR)) {
-      qualifiedName = String.format("/%s", qualifiedName);
+    if (symlinkDataset.isPresent()) {
+      locationDataset.withSymlink(
+          symlinkDataset.get().getName(),
+          symlinkDataset.get().getNamespace(),
+          DatasetIdentifier.SymlinkType.TABLE);
     }
-    return PathUtils.fromPath(
-        new Path(enrichHiveMetastoreURIWithTableName(metastoreUri, qualifiedName)));
+
+    return locationDataset;
+  }
+
+  public static URI getDefaultLocationUri(SparkSession sparkSession, TableIdentifier identifier) {
+    return sparkSession.sessionState().catalog().defaultTablePath(identifier);
+  }
+
+  public static Path reconstructDefaultLocation(String warehouse, String[] namespace, String name) {
+    String database = null;
+    if (namespace.length == 1) {
+      // {"database"}
+      database = namespace[0];
+    } else if (namespace.length > 1) {
+      // {"spark_catalog", "database"}
+      database = namespace[1];
+    }
+
+    // /warehouse/mytable
+    if (database == null || database.equals(DEFAULT_DB)) {
+      return new Path(warehouse, name);
+    }
+
+    // /warehouse/mydb.db/mytable
+    return new Path(warehouse, database + ".db", name);
   }
 
   @SneakyThrows
-  public static URI enrichHiveMetastoreURIWithTableName(URI metastoreUri, String qualifiedName) {
-    return new URI(
-        "hive", null, metastoreUri.getHost(), metastoreUri.getPort(), qualifiedName, null, null);
+  public static URI prepareHiveUri(URI uri) {
+    return new URI("hive", uri.getAuthority(), null, null, null);
   }
 
-  private static Optional<URI> extractMetastoreUri(SparkContext context) {
+  @SneakyThrows
+  private static Optional<URI> getWarehouseLocation(SparkConf sparkConf, Configuration hadoopConf) {
+    Optional<String> warehouseLocation =
+        SparkConfUtils.findSparkConfigKey(sparkConf, StaticSQLConf.WAREHOUSE_PATH().key());
+    if (!warehouseLocation.isPresent()) {
+      warehouseLocation =
+          SparkConfUtils.findHadoopConfigKey(hadoopConf, "hive.metastore.warehouse.dir");
+    }
+    return warehouseLocation.map(URI::create);
+  }
+
+  private static Optional<URI> getMetastoreUri(SparkContext context) {
     // make sure enableHiveSupport is called
     Optional<String> setting =
         SparkConfUtils.findSparkConfigKey(
@@ -147,18 +148,74 @@ public class PathUtils {
     if (!setting.isPresent() || !"hive".equals(setting.get())) {
       return Optional.empty();
     }
-
     return SparkConfUtils.getMetastoreUri(context);
   }
 
+  @SneakyThrows
+  private static Optional<String> getGlueArn(
+      CatalogTable catalogTable, SparkConf sparkConf, Configuration hadoopConf) {
+    if (!catalogTable.provider().isDefined() || !"hive".equals(catalogTable.provider().get())) {
+      return Optional.empty();
+    }
+
+    Optional<String> clientFactory =
+        SparkConfUtils.findHadoopConfigKey(hadoopConf, "hive.metastore.client.factory.class");
+    // Fetch from spark config if set.
+    clientFactory =
+        clientFactory.isPresent()
+            ? clientFactory
+            : SparkConfUtils.findSparkConfigKey(sparkConf, "hive.metastore.client.factory.class");
+    if (!clientFactory.isPresent()
+        || !"com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
+            .equals(clientFactory.get())) {
+      return Optional.empty();
+    }
+
+    Optional<String> region =
+        Optional.ofNullable(System.getenv("AWS_DEFAULT_REGION"))
+            .filter(s -> !s.isEmpty())
+            .map(Optional::of)
+            .orElseGet(() -> Optional.ofNullable(System.getenv("AWS_REGION")));
+
+    Optional<String> accountId =
+        SparkConfUtils.findSparkConfigKey(sparkConf, "spark.glue.accountId");
+    // For AWS Glue catalog in EMR spark
+    // Glue catalog with EMR guide:
+    // https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-glue.html
+    Optional<String> glueCatalogIdForEMR =
+        SparkConfUtils.findSparkConfigKey(sparkConf, HIVE_METASTORE_GLUE_CATALOG_ID_KEY);
+    // For AWS Glue access in Athena for Spark
+    // Guide: https://docs.aws.amazon.com/athena/latest/ug/spark-notebooks-cross-account-glue.html
+    // spark config "spark.hadoop.hive.metastore.glue.catalogid" is copied to hadoop
+    // "hive.metastore.glue.catalogid" by SparkHadoopUtil (removing the prefix spark.hadoop)
+    Optional<String> glueCatalogIdForAthena =
+        SparkConfUtils.findHadoopConfigKey(hadoopConf, HIVE_METASTORE_GLUE_CATALOG_ID_KEY);
+
+    Optional<String> glueCatalogId =
+        Stream.of(glueCatalogIdForEMR, glueCatalogIdForAthena, accountId)
+            .filter(Optional::isPresent)
+            .findFirst()
+            .orElse(Optional.empty());
+
+    if (!region.isPresent() || !glueCatalogId.isPresent()) {
+      return Optional.empty();
+    }
+
+    return Optional.of("arn:aws:glue:" + region.get() + ":" + glueCatalogId.get());
+  }
+
+  /** Get DatasetIdentifier name in format database.table or table */
   private static String nameFromTableIdentifier(TableIdentifier identifier) {
-    // we create name instead of calling `unquotedString` method which includes
-    // spark_catalog
-    // for Spark 3.4
+    return nameFromTableIdentifier(identifier, ".");
+  }
+
+  private static String nameFromTableIdentifier(TableIdentifier identifier, String delimiter) {
+    // calling `unquotedString` method includes `spark_catalog`, so instead get proper identifier
+    // manually
     String name;
     if (identifier.database().isDefined()) {
       // include database in name
-      name = String.format("%s.%s", identifier.database().get(), identifier.table());
+      name = identifier.database().get() + delimiter + identifier.table();
     } else {
       // just table name
       name = identifier.table();

@@ -1,0 +1,301 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "testColumnLevelLineage"
+  },
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/cll_test/cll_source2",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "integer"
+            },
+            {
+              "name": "c",
+              "type": "integer"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "namespace": "file",
+      "name": "/tmp/cll_test/cll_source1",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "integer"
+            },
+            {
+              "name": "b",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/cll_test/tbl1",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "ident",
+              "type": "integer"
+            },
+            {
+              "name": "trans",
+              "type": "string"
+            },
+            {
+              "name": "agg",
+              "type": "long"
+            }
+          ]
+        },
+        "columnLineage": {
+          "fields": {
+            "ident": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
+                  "field": "a",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "GROUP_BY",
+                      "description": "",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "JOIN",
+                      "description": "",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "FILTER",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
+                  "field": "b",
+                  "transformations": [
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "GROUP_BY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source2",
+                  "field": "a",
+                  "transformations": [
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "JOIN",
+                      "description": "",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "FILTER",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "trans": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
+                  "field": "a",
+                  "transformations": [
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "GROUP_BY",
+                      "description": "",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "JOIN",
+                      "description": "",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "FILTER",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
+                  "field": "b",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "TRANSFORMATION",
+                      "description": "",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "GROUP_BY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source2",
+                  "field": "a",
+                  "transformations": [
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "JOIN",
+                      "description": "",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "FILTER",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "agg": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
+                  "field": "a",
+                  "transformations": [
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "GROUP_BY",
+                      "description": "",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "JOIN",
+                      "description": "",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "FILTER",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source1",
+                  "field": "b",
+                  "transformations": [
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "GROUP_BY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source2",
+                  "field": "c",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "AGGREGATION",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/cll_test/cll_source2",
+                  "field": "a",
+                  "transformations": [
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "JOIN",
+                      "description": "",
+                      "masking": false
+                    },
+                    {
+                      "type": "INDIRECT",
+                      "subtype": "FILTER",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/cll_test",
+              "name": "default.tbl1",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

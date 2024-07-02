@@ -47,7 +47,9 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
   @BeforeEach
   public void setUp() {
     SparkContext sparkContext = mock(SparkContext.class);
-    when(sparkContext.getConf()).thenReturn(new SparkConf());
+    SparkConf conf = new SparkConf();
+    conf.set("spark.sql.warehouse.dir", "s3://bucket/warehouse/location");
+    when(sparkContext.getConf()).thenReturn(conf);
     when(session.sparkContext()).thenReturn(sparkContext);
   }
 
@@ -66,10 +68,11 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
     CreateDataSourceTableAsSelectCommand command =
         new CreateDataSourceTableAsSelectCommand(
             SparkUtils.catalogTable(
-                TableIdentifier$.MODULE$.apply("tablename", Option.apply("db")),
+                TableIdentifier$.MODULE$.apply("tablename", Option.apply("database")),
                 CatalogTableType.EXTERNAL(),
                 CatalogStorageFormat$.MODULE$.apply(
-                    Option.apply(URI.create("s3://bucket/directory")),
+                    Option.apply(
+                        URI.create("s3://bucket/warehouse/location/database.db/tablename")),
                     null,
                     null,
                     null,
@@ -95,7 +98,7 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
     assertEquals(
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE,
         outputDataset.getFacets().getLifecycleStateChange().getLifecycleStateChange());
-    assertEquals("directory", outputDataset.getName());
+    assertEquals("warehouse/location/database.db/tablename", outputDataset.getName());
     assertEquals("s3://bucket", outputDataset.getNamespace());
   }
 

@@ -1,0 +1,95 @@
+{
+  "eventType": "COMPLETE",
+  "run": {
+    "facets": {
+      "parent": {
+        "job": {
+          "namespace": "default",
+          "name": "cl_i_test_application"
+        }
+      },
+      "spark_properties": {
+        "properties": {
+          "spark.master": "local",
+          "spark.app.name": "CLI test application"
+        }
+      },
+      "processing_engine": {
+        "name": "spark"
+      },
+      "environment-properties": {
+        "environment-properties": {}
+      }
+    }
+  },
+  "job": {
+    "namespace": "default",
+    "name": "INCORRECT_JOB_NAME",
+    "facets": {
+      "jobType": {
+        "processingType": "BATCH",
+        "integration": "SPARK",
+        "jobType": "SQL_JOB"
+      }
+    }
+  },
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/opt/bitnami/spark/spark-warehouse/t2",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "INCORRECT_FIELD_A",
+              "type": "integer"
+            },
+            {
+              "name": "b",
+              "type": "string"
+            }
+          ]
+        },
+        "columnLineage": {
+          "fields": {
+            "a": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/opt/bitnami/spark/spark-warehouse/t1",
+                  "field": "a"
+                }
+              ]
+            },
+            "b": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/opt/bitnami/spark/spark-warehouse/t1",
+                  "field": "b"
+                }
+              ]
+            }
+          }
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/opt/bitnami/spark/spark-warehouse",
+              "name": "default.t2",
+              "type": "TABLE"
+            }
+          ]
+        },
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "CREATE"
+        }
+      },
+      "outputFacets": {}
+    }
+  ]
+}

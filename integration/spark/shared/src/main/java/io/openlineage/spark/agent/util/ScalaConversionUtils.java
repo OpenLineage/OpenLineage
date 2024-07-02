@@ -145,6 +145,10 @@ public class ScalaConversionUtils {
             }));
   }
 
+  public static <T> Option<T> toScalaOption(T t) {
+    return Option.apply(t);
+  }
+
   /**
    * Convert a {@link Supplier} to a Scala {@link Function0}
    *
@@ -176,5 +180,9 @@ public class ScalaConversionUtils {
         return fn.apply(arg);
       }
     };
+  }
+
+  public static <A, B> Tuple2<A, B> toScalaTuple(A a, B b) {
+    return new Tuple2<A, B>(a, b);
   }
 }

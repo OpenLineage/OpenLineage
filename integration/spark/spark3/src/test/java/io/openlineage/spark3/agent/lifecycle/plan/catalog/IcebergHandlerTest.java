@@ -5,8 +5,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -18,7 +17,8 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
-import org.apache.commons.lang3.StringUtils;
+import java.util.stream.Stream;
+import lombok.SneakyThrows;
 import org.apache.iceberg.spark.SparkCatalog;
 import org.apache.iceberg.spark.source.SparkTable;
 import org.apache.spark.sql.RuntimeConfig;
@@ -27,7 +27,9 @@ import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import scala.collection.immutable.Map;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
@@ -40,10 +42,12 @@ class IcebergHandlerTest {
 
   @ParameterizedTest
   @CsvSource({
-    "hdfs://namenode:8020/tmp/warehouse,hdfs://namenode:8020,/tmp/warehouse/database.schema.table",
-    "/tmp/warehouse,file,/tmp/warehouse/database.schema.table"
+    "hdfs://namenode:8020/tmp/warehouse,hdfs://namenode:8020/tmp/warehouse,hdfs://namenode:8020,/tmp/warehouse/database/table",
+    "/tmp/warehouse,file:/tmp/warehouse,file,/tmp/warehouse/database/table"
   })
-  void testGetDatasetIdentifierForHadoop(String warehouseConf, String namespace, String name) {
+  @SneakyThrows
+  void testGetDatasetIdentifierForHadoop(
+      String warehouseConf, String warehouseLocation, String namespace, String name) {
     when(sparkSession.conf()).thenReturn(runtimeConfig);
     when(runtimeConfig.getAll())
         .thenReturn(
@@ -54,24 +58,30 @@ class IcebergHandlerTest {
                 warehouseConf));
 
     SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
     when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn(warehouseLocation + "/database/table");
 
     DatasetIdentifier datasetIdentifier =
         icebergHandler.getDatasetIdentifier(
-            sparkSession,
-            sparkCatalog,
-            Identifier.of(new String[] {"database", "schema"}, "table"),
-            new HashMap<>());
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
 
-    assertEquals(name, datasetIdentifier.getName());
-    assertEquals(namespace, datasetIdentifier.getNamespace());
-    assertEquals("database.schema.table", datasetIdentifier.getSymlinks().get(0).getName());
-    assertEquals(
-        StringUtils.substringBeforeLast(name, "/"),
-        datasetIdentifier.getSymlinks().get(0).getNamespace());
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", namespace)
+        .hasFieldOrPropertyWithValue("name", name);
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", warehouseLocation)
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
 
   @Test
+  @SneakyThrows
   void testGetDatasetIdentifierForHive() {
     when(sparkSession.conf()).thenReturn(runtimeConfig);
     when(runtimeConfig.getAll())
@@ -83,91 +93,75 @@ class IcebergHandlerTest {
                 "thrift://metastore-host:10001",
                 "spark.sql.catalog.test.warehouse",
                 "/tmp/warehouse"));
+
     SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
     when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("file:/tmp/warehouse/database/table");
 
     DatasetIdentifier datasetIdentifier =
         icebergHandler.getDatasetIdentifier(
             sparkSession,
             sparkCatalog,
-            Identifier.of(new String[] {"database", "schema"}, "table"),
+            Identifier.of(new String[] {"database"}, "table"),
             new HashMap<>());
 
-    DatasetIdentifier.Symlink symlink = datasetIdentifier.getSymlinks().get(0);
-    assertEquals("/tmp/warehouse/database.schema.table", datasetIdentifier.getName());
-    assertEquals("file", datasetIdentifier.getNamespace());
-    assertEquals("database.schema.table", symlink.getName());
-    assertEquals("hive://metastore-host:10001", symlink.getNamespace());
-    assertEquals("TABLE", symlink.getType().toString());
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "hive://metastore-host:10001")
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
 
   @Test
+  @SneakyThrows
   void testGetDatasetIdentifierForRest() {
     when(sparkSession.conf()).thenReturn(runtimeConfig);
     when(runtimeConfig.getAll())
         .thenReturn(
             new Map.Map3<>(
-                "spark.sql.catalog.iceberg.type",
+                "spark.sql.catalog.test.type",
                 "rest",
-                "spark.sql.catalog.iceberg.uri",
+                "spark.sql.catalog.test.uri",
                 "http://lakehouse-host:8080",
-                "spark.sql.catalog.iceberg.warehouse",
-                "s3a://lakehouse/"));
+                "spark.sql.catalog.test.warehouse",
+                "s3a://lakehouse/warehouse"));
+
     SparkCatalog sparkCatalog = mock(SparkCatalog.class);
-    when(sparkCatalog.name()).thenReturn("iceberg");
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("s3a://lakehouse/warehouse/database/table");
 
     DatasetIdentifier datasetIdentifier =
         icebergHandler.getDatasetIdentifier(
             sparkSession,
             sparkCatalog,
-            Identifier.of(new String[] {"schema"}, "table"),
+            Identifier.of(new String[] {"database"}, "table"),
             new HashMap<>());
 
-    DatasetIdentifier.Symlink symlink = datasetIdentifier.getSymlinks().get(0);
-    assertEquals("schema.table", datasetIdentifier.getName());
-    assertEquals("s3a://lakehouse", datasetIdentifier.getNamespace());
-    // symlink
-    assertEquals("schema.table", symlink.getName());
-    assertEquals("http://lakehouse-host:8080", symlink.getNamespace());
-    assertEquals("TABLE", symlink.getType().toString());
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "s3://lakehouse")
+        .hasFieldOrPropertyWithValue("name", "warehouse/database/table");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "http://lakehouse-host:8080")
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
 
   @Test
-  void testGetStorageDatasetFacet() {
-    when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
-    Optional<OpenLineage.StorageDatasetFacet> storageDatasetFacet =
-        icebergHandler.getStorageDatasetFacet(
-            Collections.singletonMap("format", "iceberg/parquet"));
-    assertEquals("iceberg", storageDatasetFacet.get().getStorageLayer());
-    assertEquals("parquet", storageDatasetFacet.get().getFileFormat());
-  }
-
-  @Test
-  void testStorageDatasetFacetWhenFormatNotProvided() {
-    when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
-    Optional<OpenLineage.StorageDatasetFacet> storageDatasetFacet =
-        icebergHandler.getStorageDatasetFacet(new HashMap<>());
-    assertEquals("iceberg", storageDatasetFacet.get().getStorageLayer());
-    assertEquals("", storageDatasetFacet.get().getFileFormat());
-  }
-
-  @Test
-  void testGetVersionString() throws NoSuchTableException {
-    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
-    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
-    Identifier identifier = Identifier.of(new String[] {"database", "schema"}, "table");
-
-    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
-    when(sparkTable.table().currentSnapshot().snapshotId()).thenReturn(1500100900L);
-
-    Optional<String> version =
-        icebergHandler.getDatasetVersion(sparkCatalog, identifier, Collections.emptyMap());
-
-    assertTrue(version.isPresent());
-    assertEquals(version.get(), "1500100900");
-  }
-
-  @Test
+  @SneakyThrows
   void testGetDatasetIdentifierForGlue() {
     when(sparkSession.conf()).thenReturn(runtimeConfig);
     when(runtimeConfig.getAll())
@@ -179,18 +173,116 @@ class IcebergHandlerTest {
                 "/tmp/warehouse"));
 
     SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
     when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("file:/tmp/warehouse/database/table");
 
     DatasetIdentifier datasetIdentifier =
         icebergHandler.getDatasetIdentifier(
             sparkSession,
             sparkCatalog,
-            Identifier.of(new String[] {"database", "schema"}, "table"),
+            Identifier.of(new String[] {"database"}, "table"),
             new HashMap<>());
 
-    assertEquals("/tmp/warehouse/database.schema.table", datasetIdentifier.getName());
-    assertEquals("file", datasetIdentifier.getNamespace());
-    assertEquals("database.schema.table", datasetIdentifier.getSymlinks().get(0).getName());
-    assertEquals("/tmp/warehouse", datasetIdentifier.getSymlinks().get(0).getNamespace());
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "file:/tmp/warehouse")
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  private static Stream<Arguments> missingTableOptions() {
+    return Stream.of(
+        Arguments.of(Identifier.of(new String[] {}, "table"), "table", "/tmp/iceberg/table"),
+        Arguments.of(
+            Identifier.of(new String[] {"database"}, "table"),
+            "database.table",
+            "/tmp/iceberg/database/table"),
+        Arguments.of(
+            Identifier.of(new String[] {"nested", "namespace"}, "table"),
+            "nested.namespace.table",
+            "/tmp/iceberg/nested/namespace/table"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("missingTableOptions")
+  @SneakyThrows
+  void testGetDatasetIdentifierMissingTable(Identifier identifier, String name, String location) {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.test.type",
+                "hadoop",
+                "spark.sql.catalog.test.warehouse",
+                "file:/tmp/iceberg"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+
+    when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenThrow(new NoSuchTableException(identifier));
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", location);
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "file:/tmp/iceberg")
+        .hasFieldOrPropertyWithValue("name", name)
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetStorageDatasetFacet() {
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    Optional<OpenLineage.StorageDatasetFacet> storageDatasetFacet =
+        icebergHandler.getStorageDatasetFacet(
+            Collections.singletonMap("format", "iceberg/parquet"));
+
+    assertThat(storageDatasetFacet.get())
+        .hasFieldOrPropertyWithValue("storageLayer", "iceberg")
+        .hasFieldOrPropertyWithValue("fileFormat", "parquet");
+  }
+
+  @Test
+  @SneakyThrows
+  void testStorageDatasetFacetWhenFormatNotProvided() {
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    Optional<OpenLineage.StorageDatasetFacet> storageDatasetFacet =
+        icebergHandler.getStorageDatasetFacet(new HashMap<>());
+
+    assertThat(storageDatasetFacet.get())
+        .hasFieldOrPropertyWithValue("storageLayer", "iceberg")
+        .hasFieldOrPropertyWithValue("fileFormat", "");
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetVersionString() {
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database", "schema"}, "table");
+
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().currentSnapshot().snapshotId()).thenReturn(1500100900L);
+
+    Optional<String> version =
+        icebergHandler.getDatasetVersion(sparkCatalog, identifier, Collections.emptyMap());
+
+    assertThat(version.isPresent()).isTrue();
+    assertThat(version.get()).isEqualTo("1500100900");
   }
 }

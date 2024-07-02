@@ -5,16 +5,14 @@
 
 package io.openlineage.spark.agent.util;
 
-import static io.openlineage.spark.agent.util.PathUtils.enrichHiveMetastoreURIWithTableName;
+import static io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -26,149 +24,147 @@ import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.internal.SessionState;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
-import org.mockito.MockedStatic;
 import scala.Option;
-import scala.Some;
-import scala.Tuple2;
 
 @Slf4j
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class PathUtilsTest {
 
-  private static final String HOME_TEST = "/home/test";
-  private static final String SCHEME = "scheme";
-  private static final String FILE = "file";
-  private static final String TABLE = "table";
-
-  SparkSession sparkSession = mock(SparkSession.class);
-  SparkContext sparkContext = mock(SparkContext.class);
-  SparkConf sparkConf = new SparkConf();
-  Configuration hadoopConf = new Configuration();
-  CatalogTable catalogTable = mock(CatalogTable.class);
-  CatalogStorageFormat catalogStorageFormat = mock(CatalogStorageFormat.class);
+  SparkSession sparkSession;
+  SparkContext sparkContext;
+  SparkConf sparkConf;
+  Configuration hadoopConf;
+  CatalogTable catalogTable;
+  CatalogStorageFormat catalogStorageFormat;
+  SessionState sessionState;
+  SessionCatalog sessionCatalog;
 
   @BeforeEach
   void setConf() {
+    sparkSession = mock(SparkSession.class);
+    sparkContext = mock(SparkContext.class);
+    sparkConf = new SparkConf();
+    hadoopConf = new Configuration();
+    catalogTable = mock(CatalogTable.class);
+    catalogStorageFormat = mock(CatalogStorageFormat.class);
+    sessionState = mock(SessionState.class);
+    sessionCatalog = mock(SessionCatalog.class);
+
     when(sparkContext.getConf()).thenReturn(sparkConf);
-    when(sparkSession.sparkContext()).thenReturn(sparkContext);
     when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
-  }
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
 
-  @AfterEach
-  void clearConf() {
-    Tuple2<String, String>[] configuration = sparkConf.getAll();
-    Arrays.stream(configuration).forEach(tuple -> sparkConf.remove(tuple._1()));
+    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+    when(catalogTable.provider()).thenReturn(Option.empty());
 
-    hadoopConf.clear();
-  }
-
-  @Test
-  void testPathSeparation() {
-    Path path = new Path("scheme:/asdf/fdsa");
-    assertThat(path.toUri().getScheme()).isEqualTo(SCHEME);
-    assertThat(path.toUri().getAuthority()).isNull();
-    assertThat(path.toUri().getPath()).isEqualTo("/asdf/fdsa");
-
-    path = new Path("scheme://asdf/fdsa");
-    assertThat(path.toUri().getScheme()).isEqualTo(SCHEME);
-    assertThat(path.toUri().getAuthority()).isEqualTo("asdf");
-    assertThat(path.toUri().getPath()).isEqualTo("/fdsa");
-  }
-
-  @Test
-  void testPathSeparationWithNullAuthority() {
-    Path path = new Path("scheme:///asdf/fdsa");
-    assertThat(path.toUri().getScheme()).isEqualTo(SCHEME);
-    assertThat(path.toUri().getAuthority()).isNull();
-    assertThat(path.toUri().getPath()).isEqualTo("/asdf/fdsa");
-
-    path = new Path("scheme:////asdf/fdsa");
-    assertThat(path.toUri().getScheme()).isEqualTo(SCHEME);
-    assertThat(path.toUri().getAuthority()).isNull();
-    assertThat(path.toUri().getPath()).isEqualTo("/asdf/fdsa");
+    when(sparkSession.sessionState()).thenReturn(sessionState);
+    when(sessionState.catalog()).thenReturn(sessionCatalog);
   }
 
   @Test
   void testFromPathWithoutSchema() {
-    DatasetIdentifier di = PathUtils.fromPath(new Path(HOME_TEST));
-    assertThat(di.getName()).isEqualTo(HOME_TEST);
-    assertThat(di.getNamespace()).isEqualTo(FILE);
+    assertThat(PathUtils.fromPath(new Path("/home/test")))
+        .hasFieldOrPropertyWithValue("name", "/home/test")
+        .hasFieldOrPropertyWithValue("namespace", "file");
 
-    di = PathUtils.fromPath(new Path(HOME_TEST), "hive");
-    assertThat(di.getName()).isEqualTo(HOME_TEST);
-    assertThat(di.getNamespace()).isEqualTo("hive");
-
-    di = PathUtils.fromPath(new Path("home/test"));
-    assertThat(di.getName()).isEqualTo("home/test");
-    assertThat(di.getNamespace()).isEqualTo(FILE);
+    assertThat(PathUtils.fromPath(new Path("home/test")))
+        .hasFieldOrPropertyWithValue("name", "home/test")
+        .hasFieldOrPropertyWithValue("namespace", "file");
   }
 
   @Test
   void testFromPathWithSchema() {
-    DatasetIdentifier di = PathUtils.fromPath(new Path("file:/home/test"));
-    assertThat(di.getName()).isEqualTo(HOME_TEST);
-    assertThat(di.getNamespace()).isEqualTo(FILE);
+    assertThat(PathUtils.fromPath(new Path("file:/home/test")))
+        .hasFieldOrPropertyWithValue("name", "/home/test")
+        .hasFieldOrPropertyWithValue("namespace", "file");
 
-    di = PathUtils.fromPath(new Path("hdfs://namenode:8020/home/test"));
-    assertThat(di.getName()).isEqualTo(HOME_TEST);
-    assertThat(di.getNamespace()).isEqualTo("hdfs://namenode:8020");
+    assertThat(PathUtils.fromPath(new Path("dbfs:/home/test")))
+        .hasFieldOrPropertyWithValue("name", "/home/test")
+        .hasFieldOrPropertyWithValue("namespace", "dbfs");
+
+    assertThat(PathUtils.fromPath(new Path("hdfs://namenode:8020/home/test")))
+        .hasFieldOrPropertyWithValue("name", "/home/test")
+        .hasFieldOrPropertyWithValue("namespace", "hdfs://namenode:8020");
   }
 
   @Test
   void testFromURI() throws URISyntaxException {
-    DatasetIdentifier di = PathUtils.fromURI(new URI("file:///home/test"), null);
-    assertThat(di.getName()).isEqualTo(HOME_TEST);
-    assertThat(di.getNamespace()).isEqualTo(FILE);
+    assertThat(PathUtils.fromURI(new URI("/home/test")))
+        .hasFieldOrPropertyWithValue("name", "/home/test")
+        .hasFieldOrPropertyWithValue("namespace", "file");
 
-    di = PathUtils.fromURI(new URI(null, null, HOME_TEST, null), FILE);
-    assertThat(di.getName()).isEqualTo(HOME_TEST);
-    assertThat(di.getNamespace()).isEqualTo(FILE);
+    assertThat(PathUtils.fromURI(new URI("file:/home/test")))
+        .hasFieldOrPropertyWithValue("name", "/home/test")
+        .hasFieldOrPropertyWithValue("namespace", "file");
 
-    di = PathUtils.fromURI(new URI("hdfs", null, "localhost", 8020, HOME_TEST, null, null), FILE);
-    assertThat(di.getName()).isEqualTo(HOME_TEST);
-    assertThat(di.getNamespace()).isEqualTo("hdfs://localhost:8020");
+    assertThat(PathUtils.fromURI(new URI("file:///home/test")))
+        .hasFieldOrPropertyWithValue("name", "/home/test")
+        .hasFieldOrPropertyWithValue("namespace", "file");
 
-    di = PathUtils.fromURI(new URI("s3://data-bucket/path"), FILE);
-    assertThat(di.getName()).isEqualTo("path");
-    assertThat(di.getNamespace()).isEqualTo("s3://data-bucket");
+    assertThat(PathUtils.fromURI(new URI("dbfs:/home/test")))
+        .hasFieldOrPropertyWithValue("name", "/home/test")
+        .hasFieldOrPropertyWithValue("namespace", "dbfs");
 
-    di = PathUtils.fromURI(new URI("gs://gs-bucket/test.csv"));
-    assertThat(di.getName()).isEqualTo("test.csv");
-    assertThat(di.getNamespace()).isEqualTo("gs://gs-bucket");
+    assertThat(PathUtils.fromURI(new URI("hdfs://localhost:8020/home/test")))
+        .hasFieldOrPropertyWithValue("name", "/home/test")
+        .hasFieldOrPropertyWithValue("namespace", "hdfs://localhost:8020");
+
+    assertThat(PathUtils.fromURI(new URI("s3://data-bucket/home/test")))
+        .hasFieldOrPropertyWithValue("name", "home/test")
+        .hasFieldOrPropertyWithValue("namespace", "s3://data-bucket");
+
+    assertThat(PathUtils.fromURI(new URI("gs://gs-bucket/test.csv")))
+        .hasFieldOrPropertyWithValue("name", "test.csv")
+        .hasFieldOrPropertyWithValue("namespace", "gs://gs-bucket");
   }
 
   @Test
-  void testFromCatalogTableWithStorage() throws URISyntaxException {
+  void testFromCatalogTableWithHiveMetastore() throws URISyntaxException {
     sparkConf.set("spark.sql.catalogImplementation", "hive");
     sparkConf.set("spark.sql.hive.metastore.uris", "thrift://10.1.0.1:9083");
-    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
-    when(catalogTable.identifier()).thenReturn(TableIdentifier.apply(TABLE));
-    when(catalogStorageFormat.locationUri()).thenReturn(Option.apply(new URI("/tmp/warehouse")));
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(catalogTable.identifier()).thenReturn(tableIdentifier);
+    when(tableIdentifier.database()).thenReturn(Option.apply("database"));
+    when(tableIdentifier.table()).thenReturn("table");
+    when(catalogStorageFormat.locationUri())
+        .thenReturn(Option.apply(new URI("/tmp/warehouse/database.db/table")));
 
-    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, sparkSession);
-    assertThat(di.getName()).isEqualTo("/tmp/warehouse");
-    assertThat(di.getNamespace()).isEqualTo("file");
-    assertThat(di.getSymlinks()).hasSize(1);
-    assertThat(di.getSymlinks().get(0).getName()).isEqualTo(TABLE);
-    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("hive://10.1.0.1:9083");
+    DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database.db/table")
+        .hasFieldOrPropertyWithValue("namespace", "file");
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+    assertThat(datasetIdentifier.getSymlinks().get(0))
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("namespace", "hive://10.1.0.1:9083")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
 
     sparkConf.set(
         "spark.sql.hive.metastore.uris", "anotherprotocol://127.0.0.1:1010,yetanother://something");
-    di = PathUtils.fromCatalogTable(catalogTable, sparkSession);
-    assertThat(di.getSymlinks().get(0).getName()).isEqualTo(TABLE);
-    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("hive://127.0.0.1:1010");
+    datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database.db/table")
+        .hasFieldOrPropertyWithValue("namespace", "file");
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+    assertThat(datasetIdentifier.getSymlinks().get(0))
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("namespace", "hive://127.0.0.1:1010")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
 
     sparkConf.remove("spark.sql.hive.metastore.uris");
-
-    hadoopConf.set("hive.metastore.uris", "thrift://10.1.0.1:9083");
-    di = PathUtils.fromCatalogTable(catalogTable, sparkSession);
-    assertThat(di.getSymlinks().get(0).getName()).isEqualTo(TABLE);
-    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("hive://10.1.0.1:9083");
+    hadoopConf.set("hive.metastore.uris", "thrift://10.1.0.1:9084");
+    datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database.db/table")
+        .hasFieldOrPropertyWithValue("namespace", "file");
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+    assertThat(datasetIdentifier.getSymlinks().get(0))
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("namespace", "hive://10.1.0.1:9084")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
   }
 
   @Test
@@ -179,179 +175,158 @@ class PathUtilsTest {
         "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
     sparkConf.set("spark.sql.catalogImplementation", "hive");
     sparkConf.set("spark.glue.accountId", "123456789");
-    when(sparkContext.getConf()).thenReturn(sparkConf);
-    when(sparkSession.sparkContext()).thenReturn(sparkContext);
 
     when(catalogTable.provider()).thenReturn(Option.apply("hive"));
     when(catalogTable.storage()).thenReturn(catalogStorageFormat);
-    when(catalogTable.identifier()).thenReturn(TableIdentifier.apply(TABLE));
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(catalogTable.identifier()).thenReturn(tableIdentifier);
+    when(tableIdentifier.database()).thenReturn(Option.apply("database"));
+    when(tableIdentifier.table()).thenReturn("mytable");
     when(catalogStorageFormat.locationUri())
-        .thenReturn(Option.apply(new URI("s3://bucket/directory")));
+        .thenReturn(Option.apply(new URI("s3://bucket/warehouse/mytable")));
 
-    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, sparkSession);
-    assertThat(di.getName()).isEqualTo("directory");
-    assertThat(di.getNamespace()).isEqualTo("s3://bucket");
-    assertThat(di.getSymlinks()).hasSize(1);
-    assertThat(di.getSymlinks().get(0).getName()).isEqualTo(TABLE);
-    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("aws:glue:us-west-2:123456789");
+    DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("name", "warehouse/mytable")
+        .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+    assertThat(datasetIdentifier.getSymlinks().get(0))
+        .hasFieldOrPropertyWithValue("name", "table/database/mytable")
+        .hasFieldOrPropertyWithValue("namespace", "arn:aws:glue:us-west-2:123456789")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
+  }
+
+  @Test
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-east-1")
+  void testFromCatalogTableWithEMRGlue() throws URISyntaxException {
+    hadoopConf.set(
+        "hive.metastore.client.factory.class",
+        "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
+    sparkConf.set("spark.sql.catalogImplementation", "hive");
+    sparkConf.set("hive.metastore.glue.catalogid", "123456789012");
+
+    when(catalogTable.provider()).thenReturn(Option.apply("hive"));
+    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(catalogTable.identifier()).thenReturn(tableIdentifier);
+    when(tableIdentifier.database()).thenReturn(Option.apply("database"));
+    when(tableIdentifier.table()).thenReturn("mytable");
+    when(catalogStorageFormat.locationUri())
+        .thenReturn(Option.apply(new URI("s3://bucket/warehouse/mytable")));
+
+    DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("name", "warehouse/mytable")
+        .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+    assertThat(datasetIdentifier.getSymlinks().get(0))
+        .hasFieldOrPropertyWithValue("name", "table/database/mytable")
+        .hasFieldOrPropertyWithValue("namespace", "arn:aws:glue:us-east-1:123456789012")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
+  }
+
+  @Test
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-east-1")
+  void testFromCatalogTableWithAthenaGlue() throws URISyntaxException {
+    sparkConf.set(
+        "hive.metastore.client.factory.class",
+        "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
+    sparkConf.set("spark.sql.catalogImplementation", "hive");
+    hadoopConf.set("hive.metastore.glue.catalogid", "123456789012");
+
+    when(catalogTable.provider()).thenReturn(Option.apply("hive"));
+    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(catalogTable.identifier()).thenReturn(tableIdentifier);
+    when(tableIdentifier.database()).thenReturn(Option.apply("database"));
+    when(tableIdentifier.table()).thenReturn("mytable");
+    when(catalogStorageFormat.locationUri())
+        .thenReturn(Option.apply(new URI("s3://bucket/warehouse/mytable")));
+
+    DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("name", "warehouse/mytable")
+        .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+    assertThat(datasetIdentifier.getSymlinks().get(0))
+        .hasFieldOrPropertyWithValue("name", "table/database/mytable")
+        .hasFieldOrPropertyWithValue("namespace", "arn:aws:glue:us-east-1:123456789012")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
   }
 
   @Test
   void testFromCatalogWithDefaultStorage() throws URISyntaxException {
-    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
-    when(catalogTable.provider()).thenReturn(Option.empty());
     when(catalogStorageFormat.locationUri())
-        .thenReturn(Option.apply(new URI("hdfs://namenode:8020/warehouse/table")));
+        .thenReturn(Option.apply(new URI("hdfs://namenode:8020/warehouse/database.db/table")));
+    sparkConf.set("spark.sql.warehouse.dir", "hdfs://namenode:8020/warehouse");
+
     TableIdentifier tableIdentifier = mock(TableIdentifier.class);
     when(catalogTable.identifier()).thenReturn(tableIdentifier);
-    when(tableIdentifier.database()).thenReturn(Option.apply("db"));
+    when(tableIdentifier.database()).thenReturn(Option.apply("database"));
     when(tableIdentifier.table()).thenReturn("table");
 
-    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, sparkSession);
-    assertThat(di.getName()).isEqualTo("/warehouse/table");
-    assertThat(di.getNamespace()).isEqualTo("hdfs://namenode:8020");
-    assertThat(di.getSymlinks()).hasSize(1);
-    assertThat(di.getSymlinks().get(0).getName()).isEqualTo("db.table");
-    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("hdfs://namenode:8020/warehouse");
+    DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("name", "/warehouse/database.db/table")
+        .hasFieldOrPropertyWithValue("namespace", "hdfs://namenode:8020");
+
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+    assertThat(datasetIdentifier.getSymlinks().get(0))
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("namespace", "hdfs://namenode:8020/warehouse")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
+
+    sparkConf.remove("spark.sql.warehouse.dir");
+    hadoopConf.set("hive.metastore.warehouse.dir", "hdfs://namenode:8020/warehouse");
+    datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("name", "/warehouse/database.db/table")
+        .hasFieldOrPropertyWithValue("namespace", "hdfs://namenode:8020");
+
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+    assertThat(datasetIdentifier.getSymlinks().get(0))
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("namespace", "hdfs://namenode:8020/warehouse")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
   }
 
   @Test
   void testFromCatalogWithDefaultStorageAndNoWarehouse() throws URISyntaxException {
-    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
-    when(catalogTable.provider()).thenReturn(Option.empty());
-    when(catalogStorageFormat.locationUri()).thenReturn(Option.apply(new URI("s3://s3-db/table")));
+    when(catalogStorageFormat.locationUri())
+        .thenReturn(Option.apply(new URI("s3://bucket/warehouse/database.db/table")));
 
     TableIdentifier tableIdentifier = mock(TableIdentifier.class);
     when(catalogTable.identifier()).thenReturn(tableIdentifier);
-    when(tableIdentifier.database()).thenReturn(Option.apply("db"));
+    when(tableIdentifier.database()).thenReturn(Option.apply("database"));
     when(tableIdentifier.table()).thenReturn("table");
 
-    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, sparkSession);
-    assertThat(di.getName()).isEqualTo("table");
-    assertThat(di.getNamespace()).isEqualTo("s3://s3-db");
-    assertThat(di.getSymlinks()).hasSize(1);
-    assertThat(di.getSymlinks().get(0).getName()).isEqualTo("db.table");
-    assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("s3://s3-db");
+    DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("name", "warehouse/database.db/table")
+        .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
+
+    // without warehouse other Spark sessions can access this table only by location
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(0);
   }
 
   @Test
-  void testEnrichMetastoreUriWithTableName() throws URISyntaxException {
-    assertThat(enrichHiveMetastoreURIWithTableName(new URI("thrift://10.1.0.1:9083"), "/db/table"))
-        .isEqualTo(new URI("hive://10.1.0.1:9083/db/table"));
-  }
+  void testFromCatalogWithDefaultStorageAndCustomLocation() throws URISyntaxException {
+    when(catalogStorageFormat.locationUri())
+        .thenReturn(Option.apply(new URI("hdfs://namenode:8020/custom/path/table")));
+    sparkConf.set("spark.sql.warehouse.dir", "hdfs://namenode:8020/warehouse");
 
-  static class FromCatalogTableShouldReturnTheCorrectScheme {
-    private final SparkConf sparkConf;
-    private final URI tableUri;
-    private final String tableName;
-    private final String databaseName;
-    private final String expectedNamespace;
-    private final String expectedName;
-    private final String expectedSymlinkNamespace;
-    private final String expectedSymlinkName;
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(catalogTable.identifier()).thenReturn(tableIdentifier);
+    when(tableIdentifier.database()).thenReturn(Option.apply("database"));
+    when(tableIdentifier.table()).thenReturn("table");
 
-    public FromCatalogTableShouldReturnTheCorrectScheme(
-        SparkConf sparkConf,
-        URI tableUri,
-        String tableName,
-        String databaseName,
-        String expectedNamespace,
-        String expectedName,
-        String expectedSymlinkNamespace,
-        String expectedSymlinkName) {
-      this.sparkConf = sparkConf;
-      this.tableUri = tableUri;
-      this.tableName = tableName;
-      this.databaseName = databaseName;
-      this.expectedNamespace = expectedNamespace;
-      this.expectedName = expectedName;
-      this.expectedSymlinkNamespace = expectedSymlinkNamespace;
-      this.expectedSymlinkName = expectedSymlinkName;
-    }
+    DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("name", "/custom/path/table")
+        .hasFieldOrPropertyWithValue("namespace", "hdfs://namenode:8020");
 
-    public void performTest() {
-      try (MockedStatic<SparkSession> mockedStatic = mockStatic(SparkSession.class)) {
-        // Mock the dependencies
-        SparkSession sparkSession = mock(SparkSession.class);
-        SparkContext sparkContext = mock(SparkContext.class);
-        SessionState sessionState = mock(SessionState.class);
-        SessionCatalog sessionCatalog = mock(SessionCatalog.class);
-        CatalogTable catalogTable = mock(CatalogTable.class);
-        TableIdentifier tableIdentifier =
-            TableIdentifier.apply(tableName, Some.apply(databaseName));
-
-        // **intensive sweating commences**
-        // TODO - We need to have PathUtils decide which accessor we should use
-        mockedStatic.when(SparkSession::active).thenReturn(sparkSession);
-        mockedStatic.when(SparkSession::getDefaultSession).thenReturn(Option.empty());
-        mockedStatic.when(SparkSession::getActiveSession).thenReturn(Some.apply(sparkSession));
-
-        // Mock the chain of method calls
-        when(sparkContext.getConf()).thenReturn(sparkConf);
-        when(sparkSession.sparkContext()).thenReturn(sparkContext);
-        when(sparkSession.sessionState()).thenReturn(sessionState);
-        when(sessionState.catalog()).thenReturn(sessionCatalog);
-
-        when(sessionCatalog.defaultTablePath(tableIdentifier)).thenReturn(tableUri);
-        when(catalogTable.identifier()).thenReturn(tableIdentifier);
-        when(catalogTable.provider()).thenReturn(Option.empty());
-
-        DatasetIdentifier datasetIdentifier =
-            PathUtils.fromCatalogTable(catalogTable, sparkSession);
-
-        assertThat(datasetIdentifier).isNotNull();
-        assertThat(datasetIdentifier.getNamespace()).isEqualTo(expectedNamespace);
-        assertThat(datasetIdentifier.getName()).isEqualTo(expectedName);
-        assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
-        assertThat(datasetIdentifier.getSymlinks().get(0)).isNotNull();
-        // The namespace in the symlink should be equal to the database name
-        assertThat(datasetIdentifier.getSymlinks().get(0).getNamespace())
-            .isEqualTo(expectedSymlinkNamespace);
-        // The name in the symlink should be equal to the table name
-        assertThat(datasetIdentifier.getSymlinks().get(0).getName()).isEqualTo(expectedSymlinkName);
-      }
-    }
-  }
-
-  @Nested
-  class WithHiveSupport {
-    @Test
-    @SuppressWarnings("PMD")
-    void testFromCatalogTableShouldReturnADatasetIdentifierWithTheActualScheme() {
-      SparkConf sparkConf = new SparkConf();
-      sparkConf.set("spark.sql.hive.metastore.uris", "thrift://127.0.0.1:9876");
-      sparkConf.set("spark.sql.catalogImplementation", "hive");
-      URI tableUri = URI.create("hdfs://namenode/user/hive/warehouse/foo.db/bar");
-      new FromCatalogTableShouldReturnTheCorrectScheme(
-              sparkConf,
-              tableUri,
-              "bar",
-              "foo",
-              "hdfs://namenode",
-              tableUri.getPath(),
-              "hive://127.0.0.1:9876",
-              "foo.bar")
-          .performTest();
-    }
-  }
-
-  @Nested
-  class WithoutHiveSupport {
-    @Test
-    @SuppressWarnings("PMD")
-    void testFromCatalogTableShouldReturnADatasetIdentifierWithTheActualScheme() {
-      SparkConf sparkConf = new SparkConf();
-      URI tableUri = URI.create("hdfs://namenode/user/hive/warehouse/foo.db/bar");
-      new FromCatalogTableShouldReturnTheCorrectScheme(
-              sparkConf,
-              tableUri,
-              "bar",
-              "foo",
-              "hdfs://namenode",
-              tableUri.getPath(),
-              "hdfs://namenode/user/hive/warehouse/foo.db",
-              "foo.bar")
-          .performTest();
-    }
+    // without metastore other Spark sessions can access this table only by custom location, not by
+    // name
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(0);
   }
 }

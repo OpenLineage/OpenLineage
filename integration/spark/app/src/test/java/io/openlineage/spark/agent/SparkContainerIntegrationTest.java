@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.client.MockServerClient;
+import org.mockserver.model.ClearType;
 import org.mockserver.model.RegexBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,11 +59,12 @@ class SparkContainerIntegrationTest {
   private static final Logger logger = LoggerFactory.getLogger(SparkContainerIntegrationTest.class);
 
   @BeforeAll
-  public static void setup() {
+  public static void setupMockServer() {
     mockServerClient =
         new MockServerClient(
             openLineageClientMockContainer.getHost(),
             openLineageClientMockContainer.getServerPort());
+
     mockServerClient
         .when(request("/api/v1/lineage"))
         .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
@@ -71,8 +73,8 @@ class SparkContainerIntegrationTest {
   }
 
   @AfterEach
-  public void cleanupSpark() {
-    mockServerClient.reset();
+  public void cleanupEverything() {
+    mockServerClient.clear(request("/api/v1/lineage"), ClearType.LOG);
     try {
       if (pyspark != null) pyspark.stop();
     } catch (Exception e2) {
@@ -86,7 +88,7 @@ class SparkContainerIntegrationTest {
   }
 
   @AfterAll
-  public static void tearDown() {
+  public static void tearDownMockServer() {
     try {
       openLineageClientMockContainer.stop();
     } catch (Exception e2) {
@@ -188,6 +190,19 @@ class SparkContainerIntegrationTest {
         "pysparkHiveCompleteEvent.json",
         "pysparkHiveSelectStartEvent.json",
         "pysparkHiveSelectEndEvent.json");
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
+  void testPysparkSQLHadoopFSTest() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network,
+        openLineageClientMockContainer,
+        "testPysparkSQLHadoopFSTest",
+        "spark_hadoop_fs_relation.py");
+
+    verifyEvents(
+        mockServerClient, "pysparkHadoopFSStartEvent.json", "pysparkHadoopFSEndEvent.json");
   }
 
   @Test
@@ -309,6 +324,14 @@ class SparkContainerIntegrationTest {
         "testOptimizedCreateAsSelectAndLoad",
         "spark_octas_load.py");
     verifyEvents(mockServerClient, "pysparkOCTASStart.json", "pysparkOCTASEnd.json");
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3)
+  void testColumnLevelLineage() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "testColumnLevelLineage", "spark_cll.py");
+    verifyEvents(mockServerClient, "pysparkCLLStart.json", "pysparkCLLEnd.json");
   }
 
   @Test

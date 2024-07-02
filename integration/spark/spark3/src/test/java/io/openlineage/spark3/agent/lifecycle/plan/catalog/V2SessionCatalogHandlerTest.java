@@ -26,25 +26,56 @@ class V2SessionCatalogHandlerTest {
   private V2SessionCatalog catalog = mock(V2SessionCatalog.class);
 
   @Test
-  void testGetDatasetIdentifierWhenLocationPresent() {
-    Identifier id = Identifier.of(new String[] {"db", "schema"}, "table");
-    when(catalog.loadNamespaceMetadata(id.namespace()))
-        .thenReturn(Collections.singletonMap("location", "file:/tmp/warehouse/location"));
+  void testGetDatasetIdentifierWhenOnlyTableLocationPresent() {
+    Identifier id = Identifier.of(new String[] {"catalog", "schema"}, "table");
+
+    HashMap<String, String> properties = new HashMap();
+    properties.put("location", "file:/tmp/warehouse/schema.db/table");
+
+    when(catalog.loadNamespaceMetadata(id.namespace())).thenReturn(Collections.emptyMap());
 
     DatasetIdentifier datasetIdentifier =
-        catalogHandler.getDatasetIdentifier(mock(SparkSession.class), catalog, id, new HashMap<>());
+        catalogHandler.getDatasetIdentifier(mock(SparkSession.class), catalog, id, properties);
 
-    assertThat(datasetIdentifier.getName()).isEqualTo("/tmp/warehouse/location/table");
-    assertThat("file").isEqualTo(datasetIdentifier.getNamespace());
-    assertThat("db.schema.table").isEqualTo(datasetIdentifier.getSymlinks().get(0).getName());
-    assertThat("file:/tmp/warehouse/location")
-        .isEqualTo(datasetIdentifier.getSymlinks().get(0).getNamespace());
-    assertThat(datasetIdentifier.getSymlinks().get(0).getType()).isEqualTo(SymlinkType.TABLE);
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/schema.db/table")
+        .hasFieldOrPropertyWithValue("namespace", "file");
+
+    // no warehouse -> no symlinks
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(0);
   }
 
   @Test
-  void testGetDatasetIdentifierWhenNoLocationPresent() {
-    Identifier id = Identifier.of(new String[] {"db", "schema"}, "table");
+  void testGetDatasetIdentifierWhenWarehouseLocationPresent() {
+    Identifier id = Identifier.of(new String[] {"catalog", "schema"}, "table");
+
+    HashMap<String, String> properties = new HashMap();
+    properties.put("location", "file:/tmp/warehouse/schema.db/table");
+
+    when(catalog.loadNamespaceMetadata(id.namespace()))
+        .thenReturn(Collections.singletonMap("location", "file:/tmp/warehouse"));
+
+    DatasetIdentifier datasetIdentifier =
+        catalogHandler.getDatasetIdentifier(mock(SparkSession.class), catalog, id, properties);
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/schema.db/table")
+        .hasFieldOrPropertyWithValue("namespace", "file");
+
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+
+    assertThat(datasetIdentifier.getSymlinks().get(0))
+        .hasFieldOrPropertyWithValue("name", "catalog.schema.table")
+        .hasFieldOrPropertyWithValue("namespace", "file:/tmp/warehouse")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
+  }
+
+  @Test
+  void testGetDatasetIdentifierWhenNoTableLocationPresent() {
+    Identifier id = Identifier.of(new String[] {"catalog", "schema"}, "table");
+
+    HashMap<String, String> properties = new HashMap();
+
     when(catalog.loadNamespaceMetadata(id.namespace())).thenReturn(Collections.emptyMap());
 
     OpenLineageClientException thrown =
@@ -52,7 +83,7 @@ class V2SessionCatalogHandlerTest {
             OpenLineageClientException.class,
             () ->
                 catalogHandler.getDatasetIdentifier(
-                    mock(SparkSession.class), catalog, id, new HashMap<>()));
+                    mock(SparkSession.class), catalog, id, properties));
 
     assertThat(thrown.getMessage())
         .contains("Unable to extract DatasetIdentifier from V2SessionCatalog");

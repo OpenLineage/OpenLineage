@@ -7,21 +7,23 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.util.SparkConfUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.io.File;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.iceberg.CatalogProperties;
+import org.apache.iceberg.Table;
+import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.spark.SparkCatalog;
 import org.apache.iceberg.spark.SparkSessionCatalog;
 import org.apache.iceberg.spark.source.SparkTable;
@@ -65,7 +67,39 @@ public class IcebergHandler implements CatalogHandler {
       Identifier identifier,
       Map<String, String> properties) {
     String catalogName = tableCatalog.name();
+    Map<String, String> catalogConf = getCatalogConf(session, catalogName);
+    String catalogType = getCatalogType(catalogConf);
+    if (catalogType == null) {
+      throw new UnsupportedCatalogException(catalogName);
+    }
 
+    Path warehouseLocation = new Path(catalogConf.get(CatalogProperties.WAREHOUSE_LOCATION));
+    Optional<Table> table = getIcebergTable(tableCatalog, identifier);
+    Path tableLocation;
+    if (table.isPresent()) {
+      tableLocation = new Path(table.get().location());
+    } else {
+      tableLocation = reconstructDefaultLocation(warehouseLocation, identifier);
+    }
+    DatasetIdentifier di = PathUtils.fromPath(tableLocation);
+
+    DatasetIdentifier symlink;
+    String tableName = identifier.toString();
+    if ("hive".equals(catalogType)) {
+      symlink = getHiveIdentifier(session, catalogConf.get(CatalogProperties.URI), tableName);
+    } else if ("rest".equals(catalogType)) {
+      symlink = getRestIdentifier(catalogConf.get(CatalogProperties.URI), tableName);
+    } else if ("nessie".equals(catalogType)) {
+      symlink = getNessieIdentifier(catalogConf.get(CatalogProperties.URI), tableName);
+    } else {
+      symlink = FilesystemDatasetUtils.fromLocationAndName(warehouseLocation.toUri(), tableName);
+    }
+
+    return di.withSymlink(
+        symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  private Map<String, String> getCatalogConf(SparkSession session, String catalogName) {
     String prefix = String.format("spark.sql.catalog.%s", catalogName);
     Map<String, String> conf =
         ScalaConversionUtils.<String, String>fromMap(session.conf().getAll());
@@ -77,74 +111,34 @@ public class IcebergHandler implements CatalogHandler {
                 Collectors.toMap(
                     x -> x.getKey().substring(prefix.length() + 1), // handle dot after prefix
                     Map.Entry::getValue));
-
-    String catalogType = getCatalogType(catalogConf);
-    if (catalogType == null) {
-      throw new UnsupportedCatalogException(catalogName);
-    }
-
-    String warehouse = catalogConf.get(CatalogProperties.WAREHOUSE_LOCATION);
-    DatasetIdentifier di = PathUtils.fromPath(new Path(warehouse, identifier.toString()));
-
-    if ("hive".equals(catalogType)) {
-      di.withSymlink(
-          getHiveIdentifier(
-              session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
-    } else if ("hadoop".equals(catalogType)) {
-      di.withSymlink(
-          identifier.toString(),
-          StringUtils.substringBeforeLast(
-              di.getName(), File.separator), // parent location from a name becomes a namespace
-          DatasetIdentifier.SymlinkType.TABLE);
-    } else if ("rest".equals(catalogType)) {
-      di.withSymlink(
-          getRestIdentifier(catalogConf.get(CatalogProperties.URI), identifier.toString()));
-    } else if ("nessie".equals(catalogType)) {
-      di.withSymlink(
-          getNessieIdentifier(catalogConf.get(CatalogProperties.URI), identifier.toString()));
-    } else if ("glue".equals(catalogType)) {
-      di.withSymlink(
-          identifier.toString(),
-          StringUtils.substringBeforeLast(di.getName(), File.separator),
-          DatasetIdentifier.SymlinkType.TABLE);
-    }
-
-    return di;
+    return catalogConf;
   }
 
   @SneakyThrows
-  private DatasetIdentifier.Symlink getNessieIdentifier(@Nullable String confUri, String table) {
-
-    String uri = new URI(confUri).toString();
-    return new DatasetIdentifier.Symlink(table, uri, DatasetIdentifier.SymlinkType.TABLE);
-  }
-
-  @SneakyThrows
-  private DatasetIdentifier.Symlink getHiveIdentifier(
+  private DatasetIdentifier getHiveIdentifier(
       SparkSession session, @Nullable String confUri, String table) {
-    String slashPrefixedTable = String.format("/%s", table);
-    URI uri;
+    URI metastoreUri;
     if (confUri == null) {
-      uri =
+      metastoreUri =
           SparkConfUtils.getMetastoreUri(session.sparkContext())
               .orElseThrow(() -> new UnsupportedCatalogException("hive"));
     } else {
-      uri = new URI(confUri);
+      metastoreUri = new URI(confUri);
     }
-    DatasetIdentifier metastoreIdentifier =
-        PathUtils.fromPath(
-            new Path(PathUtils.enrichHiveMetastoreURIWithTableName(uri, slashPrefixedTable)));
 
-    return new DatasetIdentifier.Symlink(
-        metastoreIdentifier.getName(),
-        metastoreIdentifier.getNamespace(),
-        DatasetIdentifier.SymlinkType.TABLE);
+    return new DatasetIdentifier(table, PathUtils.prepareHiveUri(metastoreUri).toString());
   }
 
   @SneakyThrows
-  private DatasetIdentifier.Symlink getRestIdentifier(@Nullable String confUri, String table) {
+  private DatasetIdentifier getNessieIdentifier(@Nullable String confUri, String table) {
     String uri = new URI(confUri).toString();
-    return new DatasetIdentifier.Symlink(table, uri, DatasetIdentifier.SymlinkType.TABLE);
+    return new DatasetIdentifier(table, uri);
+  }
+
+  @SneakyThrows
+  private DatasetIdentifier getRestIdentifier(@Nullable String confUri, String table) {
+    String uri = new URI(confUri).toString();
+    return new DatasetIdentifier(table, uri);
   }
 
   @Override
@@ -159,18 +153,38 @@ public class IcebergHandler implements CatalogHandler {
   @Override
   public Optional<String> getDatasetVersion(
       TableCatalog tableCatalog, Identifier identifier, Map<String, String> properties) {
-    SparkTable table;
+    return getIcebergTable(tableCatalog, identifier)
+        .map(table -> table.currentSnapshot())
+        .map(snapshot -> Long.toString(snapshot.snapshotId()));
+  }
+
+  @SneakyThrows
+  private Optional<Table> getIcebergTable(TableCatalog tableCatalog, Identifier identifier) {
     try {
-      table = (SparkTable) tableCatalog.loadTable(identifier);
+      if (tableCatalog instanceof SparkCatalog) {
+        SparkCatalog sparkCatalog = (SparkCatalog) tableCatalog;
+        SparkTable sparkTable = (SparkTable) sparkCatalog.loadTable(identifier);
+        return Optional.ofNullable(sparkTable.table());
+      } else {
+        TableIdentifier tableIdentifier = TableIdentifier.parse(identifier.toString());
+        SparkSessionCatalog sparkCatalog = (SparkSessionCatalog) tableCatalog;
+        return Optional.ofNullable(sparkCatalog.icebergCatalog().loadTable(tableIdentifier));
+      }
     } catch (NoSuchTableException | ClassCastException e) {
       log.error("Failed to load table from catalog: {}", identifier, e);
       return Optional.empty();
     }
+  }
 
-    if (table.table() != null && table.table().currentSnapshot() != null) {
-      return Optional.of(Long.toString(table.table().currentSnapshot().snapshotId()));
+  private Path reconstructDefaultLocation(Path warehouseLocation, Identifier identifier) {
+    // namespace1.namespace2.table -> /warehouseLocation/namespace1/namespace2/table
+    String[] namespace = identifier.namespace();
+    ArrayList<String> pathComponents = new ArrayList(namespace.length + 1);
+    for (String component : namespace) {
+      pathComponents.add(component);
     }
-    return Optional.empty();
+    pathComponents.add(identifier.name());
+    return new Path(warehouseLocation, String.join(Path.SEPARATOR, pathComponents));
   }
 
   @Override
