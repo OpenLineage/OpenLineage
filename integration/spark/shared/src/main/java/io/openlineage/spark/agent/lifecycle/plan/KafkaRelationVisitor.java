@@ -126,9 +126,7 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
   }
 
   public static boolean isKafkaSource(CreatableRelationProvider provider) {
-    log.debug("Checking if provider is KafkaSourceProvider");
     if (!hasKafkaClasses()) {
-      log.debug("Kafka classes are not available to check whether provider is KafkaSourceProvider");
       return false;
     }
 
