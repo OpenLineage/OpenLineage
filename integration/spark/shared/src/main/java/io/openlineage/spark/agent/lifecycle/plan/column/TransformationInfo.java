@@ -60,7 +60,8 @@ public class TransformationInfo {
    * Method that simplifies the creation of {@link TransformationInfo} object representing {@link
    * Types#DIRECT}, {@link Subtypes#TRANSFORMATION} transformation.
    *
-   * @param isMasking - is transformation masking
+   * @param isMasking - is transformation masking e.g. {@link
+   *     org.apache.spark.sql.catalyst.expressions.Sha1}
    */
   public static TransformationInfo transformation(Boolean isMasking) {
     return new TransformationInfo(Types.DIRECT, Subtypes.TRANSFORMATION, "", isMasking);
@@ -76,7 +77,8 @@ public class TransformationInfo {
    * Method that simplifies the creation of {@link TransformationInfo} object representing {@link
    * Types#DIRECT}, {@link Subtypes#AGGREGATION} transformation.
    *
-   * @param isMasking - is transformation masking
+   * @param isMasking - is transformation masking e.g. {@link
+   *     org.apache.spark.sql.catalyst.expressions.aggregate.Count}
    */
   public static TransformationInfo aggregation(Boolean isMasking) {
     return new TransformationInfo(Types.DIRECT, Subtypes.AGGREGATION, "", isMasking);
@@ -99,7 +101,8 @@ public class TransformationInfo {
    * @param subType - the subtype of the transformation viable subtypes: {@link
    *     Subtypes#CONDITIONAL},{@link Subtypes#SORT},{@link Subtypes#GROUP_BY},{@link
    *     Subtypes#JOIN},{@link Subtypes#FILTER},
-   * @param isMasking - is transformation masking
+   * @param isMasking - is transformation masking (no indirect transformation is masking, but their
+   *     dependencies can be)
    */
   public static TransformationInfo indirect(Subtypes subType, Boolean isMasking) {
     return new TransformationInfo(Types.INDIRECT, subType, "", isMasking);
