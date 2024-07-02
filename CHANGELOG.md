@@ -7,6 +7,8 @@
   *Provide command line tool capable of running Spark integration tests that can be created without Java any experience.*
 * **Spark: Support latest versions 3.4.3 and 3.5.1.** [`#2743`](https://github.com/OpenLineage/OpenLineage/pull/2743) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Upgrade CI workflows to run tests against latest Spark versions: 3.4.2 -> 3.4.3 and 3.5.0 -> 3.5.1.*
+* **Spark: add extraction of the masking property in column level lineage** [`#2789`](https://github.com/OpenLineage/OpenLineage/pull/2789) [@tnazarew](https://github.com/tnazarew)  
+  *Add extraction of the masking property during collection of dependencies for ColumnLineageDatasetFacet creation*
 
 ## [1.17.1](https://github.com/OpenLineage/OpenLineage/compare/1.16.0...1.17.1) - 2024-06-21
 ### Added
