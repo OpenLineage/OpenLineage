@@ -20,17 +20,17 @@ import org.apache.spark.scheduler.SparkListenerEvent;
  * {@link CustomFacetBuilder} responsible for generating GCP-specific run facets when using
  * OpenLineage on Google Cloud Platform (GCP).
  */
-public class GCPRunFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, RunFacet> {
+public class GcpRunFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, RunFacet> {
 
   private final SparkContext sparkContext;
   private final Optional<OpenLineageContext> maybeOLContext;
 
-  public GCPRunFacetBuilder(OpenLineageContext openLineageContext) {
+  public GcpRunFacetBuilder(OpenLineageContext openLineageContext) {
     this.sparkContext = openLineageContext.getSparkContext().get();
     this.maybeOLContext = Optional.of(openLineageContext);
   }
 
-  public GCPRunFacetBuilder(SparkContext sparkContext) {
+  public GcpRunFacetBuilder(SparkContext sparkContext) {
     this.sparkContext = sparkContext;
     this.maybeOLContext = Optional.empty();
   }

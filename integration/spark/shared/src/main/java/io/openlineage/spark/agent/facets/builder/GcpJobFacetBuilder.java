@@ -20,15 +20,15 @@ import org.apache.spark.scheduler.SparkListenerEvent;
  * {@link CustomFacetBuilder} responsible for generating GCP-specific job facets when using
  * OpenLineage on Google Cloud Platform (GCP).
  */
-public class GCPJobFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, JobFacet> {
+public class GcpJobFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, JobFacet> {
 
   private final SparkContext sparkContext;
 
-  public GCPJobFacetBuilder(OpenLineageContext openLineageContext) {
+  public GcpJobFacetBuilder(OpenLineageContext openLineageContext) {
     this.sparkContext = openLineageContext.getSparkContext().get();
   }
 
-  public GCPJobFacetBuilder(SparkContext sparkContext) {
+  public GcpJobFacetBuilder(SparkContext sparkContext) {
     this.sparkContext = sparkContext;
   }
 
