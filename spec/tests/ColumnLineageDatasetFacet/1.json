@@ -15,12 +15,12 @@
               }
             ]
           },
-          {   
+          {
             "namespace": "SnowflakeOpenLineage",
             "name": "CUSTOMERS",
             "field": "ID",
             "transformations": [
-              { 
+              {
                 "type": "INDIRECT",
                 "subtype": "JOIN",
                 "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
@@ -36,7 +36,7 @@
                 "type": "INDIRECT",
                 "subtype": "JOIN",
                 "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
-              } 
+              }
             ]
           }
         ],
@@ -57,12 +57,12 @@
               }
             ]
           },
-          {   
+          {
             "namespace": "SnowflakeOpenLineage",
             "name": "CUSTOMERS",
             "field": "ID",
             "transformations": [
-              { 
+              {
                 "type": "INDIRECT",
                 "subtype": "JOIN",
                 "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
@@ -78,7 +78,7 @@
                 "type": "INDIRECT",
                 "subtype": "JOIN",
                 "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
-              } 
+              }
             ]
           }
         ],
@@ -98,12 +98,12 @@
               }
             ]
           },
-          {   
+          {
             "namespace": "SnowflakeOpenLineage",
             "name": "CUSTOMERS",
             "field": "ID",
             "transformations": [
-              { 
+              {
                 "type": "INDIRECT",
                 "subtype": "JOIN",
                 "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
@@ -119,7 +119,7 @@
                 "type": "INDIRECT",
                 "subtype": "JOIN",
                 "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
-              } 
+              }
             ]
           }
         ],
@@ -139,12 +139,12 @@
               }
             ]
           },
-          {   
+          {
             "namespace": "SnowflakeOpenLineage",
             "name": "CUSTOMERS",
             "field": "ID",
             "transformations": [
-              { 
+              {
                 "type": "INDIRECT",
                 "subtype": "JOIN",
                 "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
@@ -160,11 +160,10 @@
                 "type": "INDIRECT",
                 "subtype": "JOIN",
                 "description": "ON (DISCOUNTS.CUSTOMERS_ID=CUSTOMERS.ID)"
-              } 
+              }
             ]
           }
-        ],
-        "transformationType": "IDENTITY"
+        ]
       }
     },
     "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
