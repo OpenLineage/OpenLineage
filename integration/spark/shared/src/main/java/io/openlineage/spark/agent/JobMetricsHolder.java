@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.executor.OutputMetrics;
 import org.apache.spark.executor.TaskMetrics;
 import org.apache.spark.scheduler.SparkListenerJobStart;
@@ -28,14 +29,22 @@ import org.apache.spark.scheduler.SparkListenerTaskEnd;
  * {@link org.apache.spark.scheduler.SparkListener#onTaskEnd(SparkListenerTaskEnd)} provides metrics
  * per task
  */
+@Slf4j
 public class JobMetricsHolder {
   private final Map<Integer, Set<Integer>> jobStages = new ConcurrentHashMap<>();
   private final Map<Integer, TaskMetrics> stageMetrics = new ConcurrentHashMap<>();
+
+  /**
+   * Aggregated job metrics (jobId is key of the parent map). Can be used to access job's metrics
+   * after cleanup, when stage metrics are already cleared.
+   */
+  private final Map<Integer, Map<Metric, Number>> jobMetrics = new ConcurrentHashMap<>();
 
   // Use singleton instance
   JobMetricsHolder() {}
 
   public void addJobStages(int jobId, Set<Integer> stages) {
+    log.debug("JobMetricsHolder addStage for jobId {}", jobId);
     if (stages != null) {
       jobStages.put(jobId, stages);
     }
@@ -47,7 +56,21 @@ public class JobMetricsHolder {
     }
   }
 
+  /**
+   * Can be only polled once. Polling metrics causes removing them from the map.
+   *
+   * @param jobId
+   * @return
+   */
   public Map<Metric, Number> pollMetrics(int jobId) {
+    if (jobMetrics.containsKey(jobId)) {
+      return jobMetrics.remove(jobId);
+    } else {
+      return computeJobMetricsAndClearTemporaryResults(jobId);
+    }
+  }
+
+  private Map<Metric, Number> computeJobMetricsAndClearTemporaryResults(int jobId) {
     return Optional.ofNullable(jobStages.remove(jobId))
         .map(
             stages ->
@@ -61,6 +84,7 @@ public class JobMetricsHolder {
   }
 
   public void cleanUp(int jobId) {
+    jobMetrics.put(jobId, computeJobMetricsAndClearTemporaryResults(jobId));
     Set<Integer> stages = jobStages.remove(jobId);
     stages = stages == null ? Collections.emptySet() : stages;
     stages.forEach(stageMetrics::remove);

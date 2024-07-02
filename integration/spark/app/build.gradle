@@ -480,7 +480,7 @@ List<Dependency> icebergDependencies(String spark, String scala) {
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
                     dependencies.create("org.scala-lang.modules:scala-collection-compat_${scala}:2.11.0"),
             ],
-            "3.4.2": [
+            "3.4.3": [
                     dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.4_${scala}:1.3.0"),
                     dependencies.create("org.scala-lang:scala-library:${scalaVersion}"),
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
@@ -495,7 +495,7 @@ List<Dependency> deltaDependencies(String spark, String scala) {
     final def registry = [
             "3.2.4": "1.1.0",
             "3.3.4": "2.1.0",
-            "3.4.2": "2.4.0",
+            "3.4.3": "2.4.0",
     ]
 
     def delta = registry.get(spark)
@@ -512,8 +512,8 @@ List<Dependency> gcsDependencies(String spark, String scala) {
             "2.4.8": "hadoop2-2.2.9",
             "3.2.4": "hadoop3-2.2.9",
             "3.3.4": "hadoop3-2.2.9",
-            "3.4.2": "hadoop3-2.2.9",
-            "3.5.0": "hadoop3-2.2.9",
+            "3.4.3": "hadoop3-2.2.9",
+            "3.5.1": "hadoop3-2.2.9",
     ]
 
     def gcs = registry.get(spark)
@@ -532,8 +532,8 @@ List<Dependency> hadoopClientDependencies(String spark, String scala) {
             "2.4.8": "2.10.2",
             "3.2.4": "3.3.4",
             "3.3.4": "3.3.2",
-            "3.4.2": "3.3.4",
-            "3.5.0": "3.3.4",
+            "3.4.3": "3.3.4",
+            "3.5.1": "3.3.4",
     ]
 
     def hadoopClient = registry.get(spark)
@@ -582,12 +582,12 @@ List<Dependency> additionalJars(String spark, String scala) {
                         exclude(group: "org.slf4j")
                     }),
             ],
-            "3.4.2": [
+            "3.4.3": [
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
                         exclude(group: "org.slf4j")
                     }),
             ],
-            "3.5.0": [
+            "3.5.1": [
                     dependencies.create("org.slf4j:slf4j-api:2.0.10"),
                     dependencies.create("org.slf4j:slf4j-reload4j:2.0.10"),
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {

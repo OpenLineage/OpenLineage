@@ -4,14 +4,14 @@ workflows:
       - build-integration-spark-scala-2_12:
           matrix:
             parameters:
-              spark-version: [ '2.4.8', '3.2.4', '3.3.4', '3.4.2', '3.5.0' ]
+              spark-version: [ '2.4.8', '3.2.4', '3.3.4', '3.4.3', '3.5.1' ]
           requires:
            - build-integration-sql-java
            - build-client-java
       - build-integration-spark-scala-2_13:
           matrix:
             parameters:
-              spark-version: [ '3.2.4', '3.3.4', '3.4.2', '3.5.0' ]
+              spark-version: [ '3.2.4', '3.3.4', '3.4.3', '3.5.1' ]
           requires:
            - build-integration-sql-java
            - build-client-java           
@@ -35,14 +35,14 @@ workflows:
           context: integration-tests
           matrix:
             parameters:
-              spark-version: [ '2.4.8', '3.2.4', '3.3.4', '3.4.2', '3.5.0' ]
+              spark-version: [ '2.4.8', '3.2.4', '3.3.4', '3.4.3', '3.5.1' ]
           requires:
             - approval-integration-spark
       - integration-test-integration-spark-scala-2_13:
           context: integration-tests
           matrix:
             parameters:
-              spark-version: [ '3.2.4', '3.3.4', '3.4.2', '3.5.0' ]
+              spark-version: [ '3.2.4', '3.3.4', '3.4.3', '3.5.1' ]
           requires:
             - approval-integration-spark
       - configurable-integration-test-spark:

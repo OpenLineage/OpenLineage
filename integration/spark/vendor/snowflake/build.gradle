@@ -17,12 +17,12 @@ ext {
             '3.1.3': '2.11.0',
             '3.2.4': '2.11.0',
             '3.3.4': '2.11.0',
-            '3.4.2': '2.15.0'
+            '3.4.3': '2.15.0'
     ]
 
     sparkProp = project.findProperty('spark.version').toString()
     // because snowflake doesn't have a 3.5.0 connector yet
-    spark = sparkProp == "3.5.0" ? "3.4.2" : sparkProp
+    spark = sparkProp == "3.5.1" ? "3.4.3" : sparkProp
 
     series = spark.substring(0, 3)
     scala = project.findProperty('scala.binary.version').toString()
