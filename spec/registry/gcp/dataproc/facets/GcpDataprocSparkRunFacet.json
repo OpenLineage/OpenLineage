@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-0/GcpDataprocRunFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/GcpDataprocSparkRunFacet.json",
   "$defs": {
-    "GcpDataprocRunFacet": {
+    "GcpDataprocSparkRunFacet": {
       "allOf": [
         {
           "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunFacet"
@@ -18,7 +18,7 @@
               "description": "App name set in the spark configuration of the current context. It may be provided by the user.",
               "type": "string"
             },
-            "bactchId": {
+            "batchId": {
               "description": "Populated only for Dataproc serverless batches. The resource id of the batch.",
               "type": "string"
             },
@@ -59,6 +59,7 @@
               "type": "string"
             }
           },
+          "required": ["appId", "appName", "projectId"],
           "additionalProperties": true
         }
       ],
@@ -67,8 +68,8 @@
   },
   "type": "object",
   "properties": {
-    "gcp_dataproc": {
-      "$ref": "#/$defs/GcpDataprocRunFacet"
+    "gcp_dataproc_spark": {
+      "$ref": "#/$defs/GcpDataprocSparkRunFacet"
     }
   }
 }

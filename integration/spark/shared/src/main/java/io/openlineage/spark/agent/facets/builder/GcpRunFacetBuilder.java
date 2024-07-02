@@ -38,7 +38,7 @@ public class GCPRunFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, R
   @Override
   protected void build(SparkListenerEvent event, BiConsumer<String, ? super RunFacet> consumer) {
     if (GCPUtils.isDataprocRuntime())
-      consumer.accept("gcp_dataproc", new GcpDataprocRunFacet(getDataprocAttributes()));
+      consumer.accept("gcp_dataproc_spark", new GcpDataprocRunFacet(getDataprocAttributes()));
   }
 
   private Map<String, Object> getDataprocAttributes() {
