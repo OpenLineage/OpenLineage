@@ -12,20 +12,18 @@ import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
 class JdbcDatasetUtilsTestForOracle {
-  // https://docs.oracle.com/en/database/oracle/oracle-database/21/jjdbc/data-sources-and-URLs.html#GUID-EF07727C-50AB-4DCE-8EDC-57F0927FF61A
-
   @Test
   void testGetDatasetIdentifierWithHost() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:@//test.host.com", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@//test.host.com")
+        .hasFieldOrPropertyWithValue("namespace", "oracle://test.host.com:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:@test.host.com", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@test.host.com")
+        .hasFieldOrPropertyWithValue("namespace", "oracle://test.host.com:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -34,13 +32,13 @@ class JdbcDatasetUtilsTestForOracle {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:@//192.168.1.1", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@//192.168.1.1")
+        .hasFieldOrPropertyWithValue("namespace", "oracle://192.168.1.1:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:@192.168.1.1", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@192.168.1.1")
+        .hasFieldOrPropertyWithValue("namespace", "oracle://192.168.1.1:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -52,7 +50,7 @@ class JdbcDatasetUtilsTestForOracle {
                 "schema.table1",
                 new Properties()))
         .hasFieldOrPropertyWithValue(
-            "namespace", "oracle:thin:@//[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]")
+            "namespace", "oracle://[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     assertThat(
@@ -61,7 +59,7 @@ class JdbcDatasetUtilsTestForOracle {
                 "schema.table1",
                 new Properties()))
         .hasFieldOrPropertyWithValue(
-            "namespace", "oracle:thin:@[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]")
+            "namespace", "oracle://[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -70,40 +68,40 @@ class JdbcDatasetUtilsTestForOracle {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:user/password@//hostname", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@//hostname")
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:user/password@hostname", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@hostname")
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:fred/sec%40ret@//hostname", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@//hostname")
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:fred/sec%40ret@hostname", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@hostname")
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
   @Test
-  void testGetDatasetIdentifierWithPort() {
+  void testGetDatasetIdentifierWithCustomPort() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:oracle:thin:@//hostname:1521", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@//hostname:1521")
+                "jdbc:oracle:thin:@//hostname:1522", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1522")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:oracle:thin:@hostname:1521", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@hostname:1521")
+                "jdbc:oracle:thin:@hostname:1522", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1522")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -112,7 +110,7 @@ class JdbcDatasetUtilsTestForOracle {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:@tcp://hostname", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@tcp://hostname")
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -121,8 +119,8 @@ class JdbcDatasetUtilsTestForOracle {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:@//hostname/serviceName", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@//hostname/serviceName")
-        .hasFieldOrPropertyWithValue("name", "schema.table1");
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1521")
+        .hasFieldOrPropertyWithValue("name", "serviceName.schema.table1");
   }
 
   @Test
@@ -130,8 +128,8 @@ class JdbcDatasetUtilsTestForOracle {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:@hostname:sid", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@hostname:sid")
-        .hasFieldOrPropertyWithValue("name", "schema.table1");
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1521")
+        .hasFieldOrPropertyWithValue("name", "sid.schema.table1");
   }
 
   @Test
@@ -141,7 +139,7 @@ class JdbcDatasetUtilsTestForOracle {
                 "jdbc:oracle:thin:@//hostname?connect_timeout=30&retry_count=3",
                 "schema.table1",
                 new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@//hostname")
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     assertThat(
@@ -149,7 +147,7 @@ class JdbcDatasetUtilsTestForOracle {
                 "jdbc:oracle:thin:@hostname?connect_timeout=30&retry_count=3",
                 "schema.table1",
                 new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@hostname")
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -157,19 +155,20 @@ class JdbcDatasetUtilsTestForOracle {
   void testGetDatasetIdentifierWithMultipleHostsInSimpleFormat() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:oracle:thin:@//myhost1:1521,myhost2:1521", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@//myhost1:1521,myhost2:1521")
+                "jdbc:oracle:thin:@//myhost1,myhost2", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://myhost1:1521,myhost2:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:@myhost1:1521,myhost2:1521", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle:thin:@myhost1:1521,myhost2:1521")
+        .hasFieldOrPropertyWithValue("namespace", "oracle://myhost1:1521,myhost2:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
   @Test
   void testGetDatasetIdentifierWithTnsFormat() {
+    // Currently TNS format is not parsed properly. Just drop credentials
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=hostname)(PORT=1521)))(CONNECT_DATA=(INSTANCE_NAME=ORCL)))",
