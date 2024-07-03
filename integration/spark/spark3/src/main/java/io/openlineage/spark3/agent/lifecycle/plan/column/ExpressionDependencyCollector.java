@@ -19,6 +19,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDepe
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionDependencyVisitor;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -27,12 +28,20 @@ import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.catalyst.expressions.Alias;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.CaseWhen;
+import org.apache.spark.sql.catalyst.expressions.Crc32;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
+import org.apache.spark.sql.catalyst.expressions.HiveHash;
 import org.apache.spark.sql.catalyst.expressions.If;
+import org.apache.spark.sql.catalyst.expressions.Md5;
+import org.apache.spark.sql.catalyst.expressions.Murmur3Hash;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
+import org.apache.spark.sql.catalyst.expressions.Sha1;
+import org.apache.spark.sql.catalyst.expressions.Sha2;
 import org.apache.spark.sql.catalyst.expressions.SortOrder;
+import org.apache.spark.sql.catalyst.expressions.XxHash64;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
+import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.Join;
@@ -51,6 +60,26 @@ import scala.collection.Seq;
  */
 @Slf4j
 public class ExpressionDependencyCollector {
+  // Generally available masking expressions
+  private static final List<Class> classes =
+      Arrays.asList(
+          Crc32.class,
+          HiveHash.class,
+          Md5.class,
+          Murmur3Hash.class,
+          Sha1.class,
+          Sha2.class,
+          XxHash64.class,
+          Count.class);
+
+  // Masking expressions not available in all supported versions
+  private static final List<String> classNames =
+      Collections.singletonList("org.apache.spark.sql.catalyst.expressions.Mask");
+
+  private static Boolean isMasking(Expression expression) {
+    return classes.stream().anyMatch(c -> c.equals(expression.getClass()))
+        || classNames.stream().anyMatch(n -> n.equals(expression.getClass().getCanonicalName()));
+  }
 
   private static final List<ExpressionDependencyVisitor> expressionDependencyVisitors =
       Arrays.asList(new UnionDependencyVisitor(), new IcebergMergeIntoDependencyVisitor());
@@ -156,7 +185,7 @@ public class ExpressionDependencyCollector {
                 traverseExpression(
                     child,
                     outputExprId,
-                    transformationInfo.merge(TransformationInfo.transformation()),
+                    transformationInfo.merge(TransformationInfo.transformation(isMasking(expr))),
                     builder));
   }
 
