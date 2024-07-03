@@ -75,8 +75,8 @@ class LogicalRelationDatasetBuilderTest {
   @ParameterizedTest
   @CsvSource({
     "jdbc:postgresql://postgreshost:5432/sparkdata,postgres://postgreshost:5432,sparkdata.my_spark_table",
-    "jdbc:oracle:oci8:@sparkdata,oracle:oci8:@sparkdata,my_spark_table",
-    "jdbc:oracle:thin@sparkdata:1521:orcl,oracle:thin@sparkdata:1521:orcl,my_spark_table",
+    "jdbc:oracle:oci8:@sparkdata,oracle://sparkdata:1521,my_spark_table",
+    "jdbc:oracle:thin@sparkdata:1522:orcl,oracle://sparkdata:1522,orcl.my_spark_table",
     "jdbc:mysql://localhost/sparkdata,mysql://localhost,sparkdata.my_spark_table"
   })
   void testApply(String connectionUri, String targetUri, String targetTableName) {
