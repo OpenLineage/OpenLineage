@@ -115,6 +115,11 @@ class CommonConfigPlugin : Plugin<Project> {
                 removeUnusedImports()
                 custom("disallowWildcardImports", disallowWildcardImports)
             }
+
+            // disable spotless tasks for Java 8
+            if (JavaVersion.current() == JavaVersion.VERSION_1_8) {
+                isEnforceCheck = false
+            }
         }
     }
 

@@ -8,6 +8,12 @@ workflows:
           matrix:
             parameters:
               spark-version: [ '2.4.8', '3.2.4', '3.3.4', '3.4.3', '3.5.1' ]
+              java-version: [ 'java-8', 'java-17']
+            exclude:
+              - spark-version: '2.4.8'
+                java-version: 'java-17'
+              - spark-version: '3.2.4'
+                java-version: 'java-17'
           requires:
            - build-integration-sql-java
            - build-client-java
@@ -16,6 +22,12 @@ workflows:
           matrix:
             parameters:
               spark-version: [ '3.2.4', '3.3.4', '3.4.3', '3.5.1' ]
+              java-version: [ 'java-8', 'java-17' ]
+            exclude:
+              - spark-version: '2.4.8'
+                java-version: 'java-17'
+              - spark-version: '3.2.4'
+                java-version: 'java-17'
           requires:
            - build-integration-sql-java
            - build-client-java           

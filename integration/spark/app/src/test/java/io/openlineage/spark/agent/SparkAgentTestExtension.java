@@ -155,6 +155,7 @@ public class SparkAgentTestExtension
         .config("spark.sql.warehouse.dir", warehouseDir)
         .config("spark.openlineage.facets.custom_environment_variables", "[TEST_VAR;]")
         .config("spark.openlineage.facets.disabled", "[spark_unknown;]")
+        .config("spark.ui.enabled", false)
         .getOrCreate();
   }
 

@@ -195,13 +195,14 @@ jobs:
     parameters:
       spark-version:
         type: string
+      java-version:
+        type: string
     working_directory: ~/openlineage/integration/spark
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2404:current
     resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
-      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
       - *checkout_project_root
       - run:
@@ -213,9 +214,20 @@ jobs:
             - v1-integration-spark-{{ .Branch }}
       - attach_workspace:
           at: ~/.m2/repository/io/openlineage/
-      - run: |
-          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-          sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
+      - when:
+          condition:
+            equal: [ java-17, << parameters.java-version >> ]
+          steps:
+            - run: |
+                sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+                sudo update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
+      - when:
+          condition:
+            equal: [ java-8, << parameters.java-version >> ]
+          steps:
+            - run: |
+                sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+                sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
       - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.12
       - run:
           when: on_fail
@@ -240,13 +252,14 @@ jobs:
     parameters:
       spark-version:
         type: string
+      java-version:
+        type: string
     working_directory: ~/openlineage/integration/spark
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2404:current
     resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
-      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
       - *checkout_project_root
       - run:
@@ -258,9 +271,20 @@ jobs:
             - v1-integration-spark-{{ .Branch }}
       - attach_workspace:
           at: ~/.m2/repository/io/openlineage/
-      - run: |
-          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-          sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
+      - when:
+          condition:
+            equal: [ java-17, << parameters.java-version >> ]
+          steps:
+            - run: |
+                sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+                sudo update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
+      - when:
+          condition:
+            equal: [ java-8, << parameters.java-version >> ]
+          steps:
+            - run: |
+                sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+                sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
       - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.13
       - run:
           when: on_fail
@@ -288,7 +312,6 @@ jobs:
     resource_class: medium
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
-      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
       - *checkout_project_root
       - run:
