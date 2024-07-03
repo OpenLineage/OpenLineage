@@ -3,7 +3,9 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.util;
+package io.openlineage.spark.agent;
+
+import static io.openlineage.spark.agent.SparkContainerProperties.SPARK_DOCKER_IMAGE;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,11 +16,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -29,17 +31,29 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.platform.commons.util.StringUtils;
 import org.testcontainers.shaded.org.yaml.snakeyaml.Yaml;
 import org.testcontainers.shaded.org.yaml.snakeyaml.constructor.Constructor;
+import org.testcontainers.utility.DockerImageName;
 
 @NoArgsConstructor
 @Getter
 @Setter
 @Slf4j
 public class ConfigurableTestConfig {
+
+  /**
+   * Location of .ivy2 repository. This is mounted as a docker volume to avoid downloading the same
+   * packages for each test within suite. On the other hand, this can cause PermissionException
+   * issues when different Docker images of Spark are sharing the same location. In order to avoid
+   * this, location should be cleared before all the tests.
+   */
+  public static final Path IVY_DIR = Paths.get("/usr/lib/openlineage/integration/spark/cli/.ivy2");
+
   String appName;
   String sparkVersion;
   String scalaBinaryVersion;
+  DockerTestConfig docker = new DockerTestConfig();
   boolean enableHiveSupport;
   List<String> packages;
   Map<String, String> sparkConf;
@@ -52,6 +66,16 @@ public class ConfigurableTestConfig {
     loadFromTestDir(testDir, conf);
 
     return conf;
+  }
+
+  public DockerImageName loadSparkDockerImage() {
+    String image;
+    if (docker != null && StringUtils.isNotBlank(docker.getImage())) {
+      image = docker.getImage();
+    } else {
+      image = SPARK_DOCKER_IMAGE;
+    }
+    return DockerImageName.parse(image);
   }
 
   /**
@@ -74,7 +98,7 @@ public class ConfigurableTestConfig {
   }
 
   @SneakyThrows
-  public Path generateRunDir(Path testDir) {
+  public Path createDirs(Path testDir) {
     Path runDir =
         Paths.get(
             "/usr/lib/openlineage/integration/spark/cli/runs/run"
@@ -83,21 +107,11 @@ public class ConfigurableTestConfig {
                 + testDir.getFileName());
     log.info("Test run output will be written to: {}", runDir);
     Files.createDirectories(runDir);
+    Files.createDirectories(IVY_DIR);
 
-    Set<PosixFilePermission> perms = new HashSet<>();
-    perms.add(PosixFilePermission.OWNER_READ);
-    perms.add(PosixFilePermission.OWNER_WRITE);
-    perms.add(PosixFilePermission.OWNER_EXECUTE);
-
-    perms.add(PosixFilePermission.OTHERS_READ);
-    perms.add(PosixFilePermission.OTHERS_WRITE);
-    perms.add(PosixFilePermission.OTHERS_EXECUTE);
-
-    perms.add(PosixFilePermission.GROUP_READ);
-    perms.add(PosixFilePermission.GROUP_WRITE);
-    perms.add(PosixFilePermission.GROUP_EXECUTE);
-
+    Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwxrwxrwx");
     Files.setPosixFilePermissions(runDir, perms);
+    Files.setPosixFilePermissions(IVY_DIR, perms);
 
     return runDir;
   }
@@ -105,9 +119,10 @@ public class ConfigurableTestConfig {
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
-    builder.append("ConfigurableTestConf[");
+    builder.append("ConfigurableTestConfig[");
     builder.append("appName: ").append(this.getAppName()).append(", ");
     builder.append("inputScript: ").append(this.getInputScript()).append(", ");
+    builder.append("sparkDockerImage: ").append(this.loadSparkDockerImage()).append(", ");
     builder.append("sparkVersion: ").append(this.getSparkVersion()).append(", ");
     builder.append("scalaBinaryVersion: ").append(this.getScalaBinaryVersion()).append(", ");
     builder
@@ -197,5 +212,14 @@ public class ConfigurableTestConfig {
     if (conf.getExpectationJsons() == null || conf.getExpectationJsons().isEmpty()) {
       throw new RuntimeException("No JSON expectation files found in test directory specified");
     }
+  }
+
+  @NoArgsConstructor
+  @Getter
+  @Setter
+  public static class DockerTestConfig {
+    String image;
+    String sparkSubmit = "./bin/spark-submit";
+    String waitForLogMessage = ".*ShutdownHookManager - Shutdown hook called.*";
   }
 }

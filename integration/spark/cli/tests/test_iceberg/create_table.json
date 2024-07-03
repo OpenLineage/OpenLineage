@@ -2,7 +2,7 @@
   "eventType" : "COMPLETE",
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/iceberg/default.create_table_test",
+    "name" : "/tmp/iceberg/default/create_table_test",
     "facets" : {
       "dataSource" : {
         "name" : "file",
@@ -20,7 +20,7 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/iceberg",
+            "namespace": "file:/tmp/iceberg",
             "name": "default.create_table_test",
             "type": "TABLE"
           }
