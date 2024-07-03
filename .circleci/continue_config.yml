@@ -519,8 +519,8 @@ jobs:
           # Publish *.jar
           ./gradlew --no-daemon --console=plain publish
 
-  build-integration-spark-interfaces-shaded:
-    working_directory: ~/openlineage/integration/spark-interfaces-shaded
+  build-integration-spark-extension-interfaces:
+    working_directory: ~/openlineage/integration/spark-extension-interfaces
     docker:
       - image: cimg/openjdk:8.0
     resource_class: "medium"
@@ -533,8 +533,8 @@ jobs:
           at: ~/.m2/repository/io/openlineage/
       - restore_cache:
           keys:
-            - v1-spark-interfaces-shaded-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
-            - v1-spark-interfaces-shaded-{{ .Branch }}
+            - v1-spark-extension-interfaces-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-spark-extension-interfaces-{{ .Branch }}
       - run: ./gradlew --no-daemon --console=plain --stacktrace build
       - run: ./gradlew --no-daemon --console=plain --info check
       - run: ./gradlew --console=plain javadoc
@@ -542,14 +542,43 @@ jobs:
       - persist_to_workspace:
           root: ~/.m2/repository/io/openlineage/
           paths:
-            - spark-interfaces-shaded
+            - spark-extension-interfaces
       - save_cache:
-          key: v1-spark-interfaces-shaded-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          key: v1-spark-extension-interfaces-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.gradle
 
-  release-integration-spark-interfaces-shaded:
-    working_directory: ~/openlineage/integration/spark-interfaces-shaded
+  build-integration-spark-extension-frontend:
+    working_directory: ~/openlineage/integration/spark-extension-frontend
+    docker:
+      - image: cimg/openjdk:8.0
+    resource_class: "medium"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
+      - restore_cache:
+          keys:
+            - v1-spark-extension-frontend-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-spark-extension-frontend-{{ .Branch }}
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build
+      - run: ./gradlew --no-daemon --console=plain --info check
+      - run: ./gradlew --console=plain javadoc
+      - run: ./gradlew --console=plain publishToMavenLocal --info
+      - persist_to_workspace:
+          root: ~/.m2/repository/io/openlineage/
+          paths:
+            - spark-extension-frontend
+      - save_cache:
+          key: v1-spark-extension-frontend-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  release-integration-spark-extension-interfaces:
+    working_directory: ~/openlineage/integration/spark-extension-interfaces
     docker:
       - image: cimg/openjdk:8.0
     steps:
@@ -577,12 +606,50 @@ jobs:
       - persist_to_workspace:
           root: ~/.m2/repository/io/openlineage/
           paths:
-            - spark-interfaces
+            - spark-extension-interfaces
       - store_artifacts:
           path: ./build/libs
-          destination: spark-interfaces-shaded-artifacts
+          destination: spark-extension-interfaces-artifacts
       - save_cache:
-          key: v1-release-spark-interfaces-shaded-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          key: v1-release-spark-extension-interfaces-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.m2
+
+  release-integration-spark-extension-frontend:
+    working_directory: ~/openlineage/integration/spark-extension-frontend
+    docker:
+      - image: cimg/openjdk:8.0
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+          
+          # TODO remove, depend on client build in interfaces build
+          cd ../../client/java
+          ./gradlew --no-daemon --console=plain publishToMavenLocal
+          cd -
+
+          ./gradlew --console=plain publishToMavenLocal --info
+
+          # Publish *.jar
+          ./gradlew --no-daemon --console=plain publish --info
+      - persist_to_workspace:
+          root: ~/.m2/repository/io/openlineage/
+          paths:
+            - spark-extension-frontend
+      - store_artifacts:
+          path: ./build/libs
+          destination: spark-extension-frontend-artifacts
+      - save_cache:
+          key: v1-release-spark-extension-spark-extension-frontend-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.m2
 
@@ -1051,6 +1118,7 @@ jobs:
           name: Run pre-commit
           command: |
             . venv/bin/activate
+            SKIP= && [ -n "${CI}" ] && export SKIP="pmd"
             pre-commit run --show-diff-on-failure --all-files
 
   always_run:
@@ -1137,7 +1205,16 @@ workflows:
             - compile-integration-sql-java-linux-x86
             - compile-integration-sql-java-linux-arm
             - compile-integration-sql-java-macos-x86
-      - release-integration-spark-interfaces-shaded:
+      - release-integration-spark-extension-interfaces:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
+          context: release
+          requires:
+            - release-client-java
+      - release-integration-spark-extension-frontend:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/

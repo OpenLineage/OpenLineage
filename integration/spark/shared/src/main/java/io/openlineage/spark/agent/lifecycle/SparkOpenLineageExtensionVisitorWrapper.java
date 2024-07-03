@@ -14,7 +14,7 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.DatasetIdentifier.Symlink;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import io.openlineage.unshaded.spark.extension.v1.OpenLineageExtensionProvider;
+import io.openlineage.spark.extension.OpenLineageExtensionProvider;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,12 +30,18 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * A helper class that uses reflection to call all methods of SparkOpenLineageExtensionVisitor,
- * which are exposed by the extensions implementing interfaces from `spark-interfaces-shaded`
+ * which are exposed by the extensions implementing interfaces from `spark-extension-interfaces`
  * package.
  */
 @Slf4j
 public final class SparkOpenLineageExtensionVisitorWrapper {
+
+  /**
+   * Stores instances of SparkOpenLineageExtensionVisitor provided by connectors that implement
+   * interfaces from spark-extension-interfaces.
+   */
   private final List<Object> extensionObjects;
+
   private final boolean hasLoadedObjects;
   private final ObjectMapper objectMapper =
       OpenLineageClientUtils.newObjectMapper()

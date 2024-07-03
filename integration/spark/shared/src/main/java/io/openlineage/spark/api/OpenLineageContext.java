@@ -156,7 +156,7 @@ public class OpenLineageContext {
   /**
    * Helper class that uses reflection to call methods of SparkOpenLineageExtensionVisitor
    * instances. This class acts as a bridge, facilitating communication between openlineage-spark
-   * and the extension implementations provided by spark-interfaces-shaded.
+   * and the extension implementations provided by spark-extension-interfaces.
    */
   @NonNull @Getter final SparkOpenLineageExtensionVisitorWrapper sparkExtensionVisitorWrapper;
 }

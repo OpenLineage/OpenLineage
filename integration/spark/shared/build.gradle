@@ -43,7 +43,7 @@ dependencies {
     api("io.openlineage:openlineage-java:${project.version}")
     api("io.openlineage:openlineage-sql-java:${project.version}")
     api("io.micrometer:micrometer-core:${micrometerVersion}")
-    api("io.openlineage:spark-interfaces-unshaded:1.0.0-SNAPSHOT")
+    api("io.openlineage:spark-extension-frontend:1.0.0-SNAPSHOT")
 
     compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
@@ -91,13 +91,13 @@ dependencies {
         exclude(group: "com.fasterxml.jackson.core")
         exclude(group: "com.fasterxml.jackson.module")
     }
-    testFixturesApi("io.openlineage:spark-interfaces-shaded:${project.version}")
+    testFixturesApi("io.openlineage:spark-extension-interfaces:${project.version}")
 
     // Scala 2.12 dependencies
     scala212Api("io.openlineage:openlineage-java:${project.version}")
     scala212Api("io.openlineage:openlineage-sql-java:${project.version}")
     scala212Api(("io.micrometer:micrometer-core:${micrometerVersion}"))
-    scala212Api("io.openlineage:spark-interfaces-unshaded:1.0.0-SNAPSHOT")
+    scala212Api("io.openlineage:spark-extension-frontend:1.0.0-SNAPSHOT")
 
     scala212CompileOnly("org.apache.spark:spark-hive_2.12:${sparkVersion}")
     scala212CompileOnly("org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}")
@@ -145,13 +145,13 @@ dependencies {
     testScala212Implementation("org.mock-server:mockserver-netty:${mockserverVersion}:shaded")
     testScala212Implementation("org.postgresql:postgresql:${postgresqlVersion}")
     testScala212Implementation("org.xerial:sqlite-jdbc:${sqlLiteVersion}")
-    testScala212Implementation("io.openlineage:spark-interfaces-shaded:${project.version}")
+    testScala212Implementation("io.openlineage:spark-extension-interfaces:${project.version}")
 
     // Scala 2.13 dependencies
     scala213Api("io.openlineage:openlineage-java:${project.version}")
     scala213Api("io.openlineage:openlineage-sql-java:${project.version}")
     scala213Api(("io.micrometer:micrometer-core:${micrometerVersion}"))
-    scala213Api("io.openlineage:spark-interfaces-unshaded:1.0.0-SNAPSHOT")
+    scala213Api("io.openlineage:spark-extension-frontend:1.0.0-SNAPSHOT")
 
     scala213CompileOnly("org.apache.spark:spark-hive_2.13:${sparkVersion}")
     scala213CompileOnly("org.apache.spark:spark-sql-kafka-0-10_2.13:${sparkVersion}")
@@ -197,5 +197,5 @@ dependencies {
     }
     testScala213Implementation("org.postgresql:postgresql:${postgresqlVersion}")
     testScala213Implementation("org.xerial:sqlite-jdbc:${sqlLiteVersion}")
-    testScala213Implementation("io.openlineage:spark-interfaces-shaded:${project.version}")
+    testScala213Implementation("io.openlineage:spark-extension-interfaces:${project.version}")
 }

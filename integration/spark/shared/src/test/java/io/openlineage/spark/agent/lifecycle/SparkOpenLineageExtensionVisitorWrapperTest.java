@@ -10,16 +10,16 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
-import io.openlineage.shaded.spark.extension.client.utils.DatasetIdentifier;
-import io.openlineage.shaded.spark.extension.v1.InputDatasetWithDelegate;
-import io.openlineage.shaded.spark.extension.v1.InputDatasetWithIdentifier;
-import io.openlineage.shaded.spark.extension.v1.InputLineageNode;
-import io.openlineage.shaded.spark.extension.v1.LineageRelation;
-import io.openlineage.shaded.spark.extension.v1.LineageRelationProvider;
-import io.openlineage.shaded.spark.extension.v1.OutputDatasetWithDelegate;
-import io.openlineage.shaded.spark.extension.v1.OutputDatasetWithIdentifier;
-import io.openlineage.shaded.spark.extension.v1.OutputLineageNode;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark.shade.client.utils.DatasetIdentifier;
+import io.openlineage.spark.shade.extension.v1.InputDatasetWithDelegate;
+import io.openlineage.spark.shade.extension.v1.InputDatasetWithIdentifier;
+import io.openlineage.spark.shade.extension.v1.InputLineageNode;
+import io.openlineage.spark.shade.extension.v1.LineageRelation;
+import io.openlineage.spark.shade.extension.v1.LineageRelationProvider;
+import io.openlineage.spark.shade.extension.v1.OutputDatasetWithDelegate;
+import io.openlineage.spark.shade.extension.v1.OutputDatasetWithIdentifier;
+import io.openlineage.spark.shade.extension.v1.OutputLineageNode;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -218,6 +218,7 @@ class SparkOpenLineageExtensionVisitorWrapperTest {
     assertThat(outputDataset.getNamespace()).isEqualTo("b");
   }
 
+  @Test
   void testOutputDatasetWithDelegate() {
     // given
     LogicalPlan delegate = mock(LogicalPlan.class);
