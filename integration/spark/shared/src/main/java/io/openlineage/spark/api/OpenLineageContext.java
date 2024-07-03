@@ -158,5 +158,5 @@ public class OpenLineageContext {
    * instances. This class acts as a bridge, facilitating communication between openlineage-spark
    * and the extension implementations provided by spark-extension-interfaces.
    */
-  @NonNull @Getter final SparkOpenLineageExtensionVisitorWrapper sparkExtensionVisitorWrapper;
+  @Getter final SparkOpenLineageExtensionVisitorWrapper sparkExtensionVisitorWrapper;
 }

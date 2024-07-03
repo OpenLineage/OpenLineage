@@ -15,6 +15,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
@@ -59,6 +60,9 @@ class LogicalRelationDatasetBuilderTest {
   SparkContext sparkContext = mock(SparkContext.class);
   SessionState sessionState = mock(SessionState.class);
 
+  SparkOpenLineageExtensionVisitorWrapper visitorWrapper =
+      mock(SparkOpenLineageExtensionVisitorWrapper.class);
+
   @BeforeEach
   void setup() {
     when(openLineageContext.getOpenLineage())
@@ -66,6 +70,7 @@ class LogicalRelationDatasetBuilderTest {
     when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
     when(openLineageContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    when(openLineageContext.getSparkExtensionVisitorWrapper()).thenReturn(visitorWrapper);
     when(facet.getDatasetVersion()).thenReturn(SOME_VERSION);
     when(session.sessionState()).thenReturn(sessionState);
   }

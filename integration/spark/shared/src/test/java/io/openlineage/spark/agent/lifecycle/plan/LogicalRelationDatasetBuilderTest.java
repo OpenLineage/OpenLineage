@@ -15,6 +15,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
@@ -65,11 +66,15 @@ class LogicalRelationDatasetBuilderTest {
       new LogicalRelationDatasetBuilder(
           openLineageContext, DatasetFactory.output(openLineageContext), false);
 
+  SparkOpenLineageExtensionVisitorWrapper visitorWrapper =
+      mock(SparkOpenLineageExtensionVisitorWrapper.class);
+
   @BeforeEach
   public void setUp() {
     when(session.sparkContext()).thenReturn(mock(SparkContext.class));
     when(openLineageContext.getOpenLineage())
         .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    when(openLineageContext.getSparkExtensionVisitorWrapper()).thenReturn(visitorWrapper);
   }
 
   @ParameterizedTest
@@ -111,13 +116,15 @@ class LogicalRelationDatasetBuilderTest {
                                 ScalaConversionUtils.asScalaSeqEmpty()))),
                     Option.empty(),
                     false)));
+    SparkOpenLineageConfig config = new SparkOpenLineageConfig();
     OpenLineageContext context =
         OpenLineageContext.builder()
             .sparkContext(mock(SparkContext.class))
             .openLineage(openLineage)
             .queryExecution(qe)
             .meterRegistry(new SimpleMeterRegistry())
-            .openLineageConfig(new SparkOpenLineageConfig())
+            .openLineageConfig(config)
+            .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .build();
     LogicalRelationDatasetBuilder visitor =
         new LogicalRelationDatasetBuilder<>(

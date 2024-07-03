@@ -31,6 +31,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+@SuppressWarnings("PMD")
 class SparkOpenLineageExtensionVisitorWrapperTest {
   static SparkOpenLineageConfig sparkOpenLineageConfig = mock(SparkOpenLineageConfig.class);
   static SparkListenerEvent event = mock(SparkListenerEvent.class);

@@ -173,6 +173,7 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
     return Collections.emptyMap();
   }
 
+  @SuppressWarnings("PMD") // always point locally
   private Optional<ImmutablePair<Object, Method>> getMethod(
       Object classInstance, String methodName, Class<?>... parameterTypes) {
     try {
@@ -215,6 +216,7 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
     return classInstance;
   }
 
+  @SuppressWarnings("PMD") // always point locally
   private abstract static class DatasetIdentifierMixin {
     private final String name;
     private final String namespace;
@@ -231,6 +233,7 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
     }
   }
 
+  @SuppressWarnings("PMD") // always point locally
   private abstract static class SymlinkMixin {
     private final String name;
     private final String namespace;

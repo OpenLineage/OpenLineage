@@ -17,6 +17,7 @@ import static org.mockito.Mockito.withSettings;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -49,6 +50,9 @@ class SaveIntoDataSourceCommandVisitorTest {
   OpenLineage.OutputDataset dataset = mock(OpenLineage.OutputDataset.class);
   SparkSession sparkSession = mock(SparkSession.class);
   SQLContext sqlContext = mock(SQLContext.class);
+
+  SparkOpenLineageExtensionVisitorWrapper wrapper =
+      mock(SparkOpenLineageExtensionVisitorWrapper.class);
   Map<String, String> options =
       ScalaConversionUtils.fromJavaMap(Collections.singletonMap("path", "some-path"));
 
@@ -56,6 +60,7 @@ class SaveIntoDataSourceCommandVisitorTest {
   public void setup() {
     when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
     when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
+    when(context.getSparkExtensionVisitorWrapper()).thenReturn(wrapper);
     when(sparkSession.sqlContext()).thenReturn(sqlContext);
     when(command.options()).thenReturn(options);
   }

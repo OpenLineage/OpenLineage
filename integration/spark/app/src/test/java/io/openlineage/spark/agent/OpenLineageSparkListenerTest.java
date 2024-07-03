@@ -20,6 +20,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
+import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -81,6 +82,7 @@ class OpenLineageSparkListenerTest {
         .thenReturn(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
     when(emitter.getApplicationJobName()).thenReturn("test_rdd");
 
+    SparkOpenLineageConfig openLineageConfig = new SparkOpenLineageConfig();
     olContext =
         OpenLineageContext.builder()
             .sparkSession(sparkSession)
@@ -88,7 +90,9 @@ class OpenLineageSparkListenerTest {
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(qe)
             .meterRegistry(new SimpleMeterRegistry())
-            .openLineageConfig(new SparkOpenLineageConfig())
+            .openLineageConfig(openLineageConfig)
+            .sparkExtensionVisitorWrapper(
+                new SparkOpenLineageExtensionVisitorWrapper(openLineageConfig))
             .build();
   }
 

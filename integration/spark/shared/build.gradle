@@ -195,6 +195,7 @@ dependencies {
         exclude(group: "com.fasterxml.jackson.datatype")
         exclude(group: "com.fasterxml.jackson.dataformat")
     }
+    testScala213Implementation("org.mock-server:mockserver-netty:${mockserverVersion}:shaded")
     testScala213Implementation("org.postgresql:postgresql:${postgresqlVersion}")
     testScala213Implementation("org.xerial:sqlite-jdbc:${sqlLiteVersion}")
     testScala213Implementation("io.openlineage:spark-extension-interfaces:${project.version}")
