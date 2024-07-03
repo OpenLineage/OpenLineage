@@ -19,6 +19,7 @@ public class JdbcDatasetUtils {
   private static final JdbcExtractor[] extractors = {
     new PostgresJdbcExtractor(),
     new OracleJdbcExtractor(),
+    new MySqlJdbcExtractor(),
     new SqlServerJdbcExtractor(),
     new GenericJdbcExtractor()
   };

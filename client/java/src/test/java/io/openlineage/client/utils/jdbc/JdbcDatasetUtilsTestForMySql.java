@@ -11,15 +11,13 @@ import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
-class JdbcDatasetUtilsTestForMysql {
-  // https://dev.mysql.com/doc/connector-j/en/connector-j-reference-jdbc-url-format.html
-
+class JdbcDatasetUtilsTestForMySql {
   @Test
   void testGetDatasetIdentifierWithHost() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:mysql://test.host.com", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "mysql://test.host.com")
+        .hasFieldOrPropertyWithValue("namespace", "mysql://test.host.com:3306")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -28,7 +26,7 @@ class JdbcDatasetUtilsTestForMysql {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:mysql://192.168.1.1", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "mysql://192.168.1.1")
+        .hasFieldOrPropertyWithValue("namespace", "mysql://192.168.1.1:3306")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -40,7 +38,7 @@ class JdbcDatasetUtilsTestForMysql {
                 "schema.table1",
                 new Properties()))
         .hasFieldOrPropertyWithValue(
-            "namespace", "mysql://[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]")
+            "namespace", "mysql://[3ffe:8311:eeee:f70f:0:5eae:10.203.31.9]:3306")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -50,22 +48,22 @@ class JdbcDatasetUtilsTestForMysql {
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:mysql://hostname?user=fred&password=sec%40ret",
                 "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "mysql://hostname")
+        .hasFieldOrPropertyWithValue("namespace", "mysql://hostname:3306")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:mysql://fred:sec%40ret@hostname", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "mysql://hostname")
+        .hasFieldOrPropertyWithValue("namespace", "mysql://hostname:3306")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
   @Test
-  void testGetDatasetIdentifierWithPort() {
+  void testGetDatasetIdentifierWithCustomPort() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:mysql://hostname:1521", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "mysql://hostname:1521")
+                "jdbc:mysql://hostname:3307", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "mysql://hostname:3307")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -74,7 +72,7 @@ class JdbcDatasetUtilsTestForMysql {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:mysql://hostname/mydb", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "mysql://hostname")
+        .hasFieldOrPropertyWithValue("namespace", "mysql://hostname:3306")
         .hasFieldOrPropertyWithValue("name", "mydb.schema.table1");
   }
 
@@ -85,18 +83,65 @@ class JdbcDatasetUtilsTestForMysql {
                 "jdbc:mysql://hostname?ssl=true&applicationName=MyApp",
                 "schema.table1",
                 new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "mysql://hostname")
+        .hasFieldOrPropertyWithValue("namespace", "mysql://hostname:3306")
+        .hasFieldOrPropertyWithValue("name", "schema.table1");
+  }
+
+  @Test
+  void testGetDatasetIdentifierWithDNSSrv() {
+    // failover
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:mysql+srv://domain.com", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "mysql://domain.com:3306")
+        .hasFieldOrPropertyWithValue("name", "schema.table1");
+
+    // load balance
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:mysql+srv:loadbalance://domain.com", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "mysql://domain.com:3306")
+        .hasFieldOrPropertyWithValue("name", "schema.table1");
+
+    // replication
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:mysql+srv:loadbalance://domain.com", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "mysql://domain.com:3306")
+        .hasFieldOrPropertyWithValue("name", "schema.table1");
+
+    // with credentials
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:mysql+srv://username:pwd@domain.com:3307", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "mysql://domain.com:3307")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
   @Test
   void testGetDatasetIdentifierWithMultipleHostsInSimpleFormat() {
+    // failover
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:mysql://myhost1:1111,myhost2:2222", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "mysql://myhost1:1111,myhost2:2222")
+                "jdbc:mysql://myhost1,myhost2", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "mysql://myhost1:3306,myhost2:3306")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
+    // load balance
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:mysql:loadbalance://myhost1,myhost2", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "mysql://myhost1:3306,myhost2:3306")
+        .hasFieldOrPropertyWithValue("name", "schema.table1");
+
+    // replication
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:mysql:loadbalance://myhost1,myhost2", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "mysql://myhost1:3306,myhost2:3306")
+        .hasFieldOrPropertyWithValue("name", "schema.table1");
+
+    // with credentials
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:mysql://username:pwd@myhost1:1111,username:pwd@myhost2:2222",
@@ -108,6 +153,7 @@ class JdbcDatasetUtilsTestForMysql {
 
   @Test
   void testGetDatasetIdentifierWithMultipleHostsInAddressFormat() {
+    // Not supported yet
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:mysql://address=(host=myhost1)(port=1111),address=(host=myhost2)(port=2222)",
@@ -130,6 +176,7 @@ class JdbcDatasetUtilsTestForMysql {
 
   @Test
   void testGetDatasetIdentifierWithMultipleHostsInKeyValueFormat() {
+    // Not supported yet
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:mysql://(host=myhost1,port=1111),(host=myhost2,port=2222)",
