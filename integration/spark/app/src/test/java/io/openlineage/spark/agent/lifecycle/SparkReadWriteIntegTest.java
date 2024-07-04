@@ -510,7 +510,7 @@ class SparkReadWriteIntegTest {
         .containsExactlyInAnyOrder(Pair.of(NAME, "string"), Pair.of(AGE, "long"));
   }
 
-  // @Test
+  @Test
   void testWriteWithKafkaSourceProvider(SparkSession spark)
       throws InterruptedException, TimeoutException {
     kafkaContainer.start();
@@ -557,7 +557,7 @@ class SparkReadWriteIntegTest {
         .hasFieldOrPropertyWithValue(NAMESPACE, kafkaNamespace);
   }
 
-  // @Test
+  @Test
   void testReadWithKafkaSourceProviderUsingAssignConfig(SparkSession spark)
       throws InterruptedException, TimeoutException, ExecutionException {
     kafkaContainer.start();
