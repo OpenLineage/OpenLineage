@@ -2,7 +2,7 @@
 /* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
-package io.openlineage.shaded.spark.extension.v1.lifecycle.plan;
+package io.openlineage.spark.shade.extension.v1.lifecycle.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.list;
@@ -16,7 +16,6 @@ import io.openlineage.spark.shade.extension.v1.InputDatasetWithIdentifier;
 import io.openlineage.spark.shade.extension.v1.InputLineageNode;
 import io.openlineage.spark.shade.extension.v1.LineageRelation;
 import io.openlineage.spark.shade.extension.v1.LineageRelationProvider;
-import io.openlineage.spark.shade.extension.v1.lifecycle.plan.SparkOpenLineageExtensionVisitor;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Map;

@@ -21,11 +21,14 @@ import io.openlineage.spark.shade.extension.v1.OutputDatasetWithDelegate;
 import io.openlineage.spark.shade.extension.v1.OutputDatasetWithFacets;
 import io.openlineage.spark.shade.extension.v1.OutputDatasetWithIdentifier;
 import io.openlineage.spark.shade.extension.v1.OutputLineageNode;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
@@ -34,10 +37,7 @@ import java.util.stream.Collectors;
  */
 public final class SparkOpenLineageExtensionVisitor {
   private static final ObjectMapper mapper = OpenLineageClientUtils.newObjectMapper();
-  private final OpenLineage openLineage =
-      new OpenLineage(
-          URI.create(
-              "https://github.com/OpenLineage/OpenLineage/tree/1.18.0/integration/spark-extension-interfaces"));
+  private final OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
 
   public boolean isDefinedAt(Object lineageNode) {
     return lineageNode instanceof LineageRelationProvider
@@ -141,5 +141,28 @@ public final class SparkOpenLineageExtensionVisitor {
     map.put("datasets", serializedDatasets);
     map.put("delegateNodes", delegateNodes);
     return map;
+  }
+
+  private static class Versions {
+    public static final URI OPEN_LINEAGE_PRODUCER_URI = getProducerUri();
+
+    private static URI getProducerUri() {
+      return URI.create(
+          String.format(
+              "https://github.com/OpenLineage/OpenLineage/tree/%s/integration/spark-extension-interfaces",
+              getVersion()));
+    }
+
+    @SuppressWarnings("PMD")
+    public static String getVersion() {
+      try {
+        Properties properties = new Properties();
+        InputStream is = Versions.class.getResourceAsStream("version.properties");
+        properties.load(is);
+        return properties.getProperty("version");
+      } catch (IOException exception) {
+        return "main";
+      }
+    }
   }
 }

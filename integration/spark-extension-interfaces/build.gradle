@@ -17,6 +17,7 @@ ext {
     jacksonVersion = '2.15.3'
 }
 
+final def mainSourceSet = sourceSets.main
 
 pmd {
     consoleOutput = true
@@ -200,6 +201,7 @@ archivesBaseName = "spark-extension-interfaces"
 
 shadowJar {
     dependsOn test
+    dependsOn("createVersionProperties")
 
     dependencies {
         exclude 'org/slf4j/**'
@@ -230,4 +232,21 @@ shadowJar {
         )
     }
     zip64 true
+}
+
+tasks.register("createVersionProperties") {
+    group = "resources"
+    def processResourcesTask = tasks.named(mainSourceSet.processResourcesTaskName, ProcessResources.class)
+    dependsOn(processResourcesTask)
+    doLast {
+        def resourcesDir = processResourcesTask.get().getDestinationDir()
+        def destinationDir = resourcesDir.toPath().resolve("io/openlineage/spark/shade/extension/v1/lifecycle/plan")
+        destinationDir.toFile().mkdirs()
+        def destinationFile = destinationDir.resolve("version.properties").toFile()
+        destinationFile.withWriter { w ->
+            Properties p = new Properties()
+            p["version"] = project.version.toString()
+            p.store w, null
+        }
+    }
 }
