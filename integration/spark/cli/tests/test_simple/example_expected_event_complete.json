@@ -36,7 +36,7 @@
   "outputs": [
     {
       "namespace": "file",
-      "name": "/opt/bitnami/spark/spark-warehouse/t2",
+      "name": "${json-unit.regex}.*/spark-warehouse/t2",
       "facets": {
         "dataSource": {
           "name": "file",
@@ -60,7 +60,7 @@
               "inputFields": [
                 {
                   "namespace": "file",
-                  "name": "/opt/bitnami/spark/spark-warehouse/t1",
+                  "name": "${json-unit.regex}.*/spark-warehouse/t1",
                   "field": "a"
                 }
               ]
@@ -69,7 +69,7 @@
               "inputFields": [
                 {
                   "namespace": "file",
-                  "name": "/opt/bitnami/spark/spark-warehouse/t1",
+                  "name": "${json-unit.regex}.*/spark-warehouse/t1",
                   "field": "b"
                 }
               ]
@@ -79,7 +79,7 @@
         "symlinks": {
           "identifiers": [
             {
-              "namespace": "file:/opt/bitnami/spark/spark-warehouse",
+              "namespace": "${json-unit.regex}file:.*/spark-warehouse",
               "name": "default.t2",
               "type": "TABLE"
             }

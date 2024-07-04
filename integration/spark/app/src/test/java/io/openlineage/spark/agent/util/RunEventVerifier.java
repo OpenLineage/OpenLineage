@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -53,9 +54,14 @@ public class RunEventVerifier {
    * @param eventsFile
    * @return
    */
-  @SneakyThrows
   public static RunEventVerifier of(File eventsFile) {
-    return new RunEventVerifier(Files.readAllLines(eventsFile.toPath()));
+    List<String> lines;
+    try {
+      lines = Files.readAllLines(eventsFile.toPath());
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to read events files", e);
+    }
+    return new RunEventVerifier(lines);
   }
 
   @SneakyThrows

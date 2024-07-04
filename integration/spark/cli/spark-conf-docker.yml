@@ -1,0 +1,11 @@
+appName: "CLI test application"
+docker:
+  image: "apache/spark:3.3.3-scala2.12-java11-python3-ubuntu"
+  sparkSubmit: /opt/spark/bin/spark-submit
+  waitForLogMessage: ".*ShutdownHookManager: Shutdown hook called.*"
+scalaBinaryVersion: 2.12
+enableHiveSupport: true
+packages:
+  - org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.5.2
+sparkConf:
+  spark.openlineage.debugFacet: enabled
