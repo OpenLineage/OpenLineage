@@ -21,6 +21,7 @@ public class JdbcDatasetUtils {
     new OracleJdbcExtractor(),
     new MySqlJdbcExtractor(),
     new SqlServerJdbcExtractor(),
+    new TeradataJdbcExtractor(),
     new GenericJdbcExtractor()
   };
 
