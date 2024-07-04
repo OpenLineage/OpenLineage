@@ -38,7 +38,7 @@
   "inputs": [
     {
       "namespace": "file",
-      "name": "/opt/bitnami/spark/spark-warehouse/t1",
+      "name": "${json-unit.regex}.*/spark-warehouse/t1",
       "facets": {
         "schema": {
           "fields": [
@@ -55,7 +55,7 @@
         "symlinks": {
           "identifiers": [
             {
-              "namespace": "file:/opt/bitnami/spark/spark-warehouse",
+              "namespace": "${json-unit.regex}file:.*/spark-warehouse",
               "name": "default.t1",
               "type": "TABLE"
             }

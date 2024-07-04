@@ -691,6 +691,7 @@ jobs:
                 keys:
                   - v1-configurable-integration-test
             - run: ./integration/spark/cli/configurable-test.sh --spark ./integration/spark/cli/spark-conf.yml --test ./integration/spark/cli/tests
+            - run: ./integration/spark/cli/configurable-test.sh --spark ./integration/spark/cli/spark-conf-docker.yml --test ./integration/spark/cli/tests
             - store_artifacts:
                 path: integration/spark/cli/runs
                 destination: test-report

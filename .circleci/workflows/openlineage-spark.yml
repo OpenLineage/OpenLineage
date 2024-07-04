@@ -46,6 +46,7 @@ workflows:
           requires:
             - approval-integration-spark
       - configurable-integration-test-spark:
+          context: integration-tests
       - workflow_complete:
           requires:
             - integration-test-integration-spark-scala-2_12
