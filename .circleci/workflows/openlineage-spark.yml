@@ -4,7 +4,7 @@ workflows:
       - build-integration-spark-extension-interfaces:
           requires:
             - build-client-java
-      - build-integration-spark-extension-frontend:
+      - build-integration-spark-extension-entrypoint:
           requires:
             - build-client-java
       - build-integration-spark-scala-2_12:
@@ -15,7 +15,7 @@ workflows:
            - build-integration-sql-java
            - build-client-java
            - build-integration-spark-extension-interfaces
-           - build-integration-spark-extension-frontend
+           - build-integration-spark-extension-entrypoint
       - build-integration-spark-scala-2_13:
           matrix:
             parameters:
@@ -24,7 +24,7 @@ workflows:
            - build-integration-sql-java
            - build-client-java           
            - build-integration-spark-extension-interfaces
-           - build-integration-spark-extension-frontend
+           - build-integration-spark-extension-entrypoint
       - approval-integration-spark:
           type: approval
           requires:

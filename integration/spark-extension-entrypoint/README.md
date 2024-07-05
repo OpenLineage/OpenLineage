@@ -1,6 +1,6 @@
-# Spark Interfaces Frontend
+# Spark Extension Entrypoint
 
-The `spark-extension-frontend` module contains a single interface that extension developers must implement to expose 
+The `spark-extension-entrypoint` module contains a single interface that extension developers must implement to expose 
 lineage data. Given that shading of the `spark-extension-interfaces` module is required, and the outcome will vary across 
 different Spark extensions, a systematic approach is needed to "bridge" and allow the `openlineage-spark` integration to
 identify the shaded resources.
@@ -21,7 +21,7 @@ developers can ensure that their extensions are compatible with `openlineage-spa
 ## Implementation
 
 To implement the interface:
-* Include `spark-extension-frontend` as runtime dependency.
+* Include `spark-extension-entrypoint` as runtime dependency.
 * Implement the `io.openlineage.spark.extension.OpenLineageExtensionProvider` interface in your extension.
 * Ensure the implementation is exposed using Java’s ServiceLoader facility by placing a configuration file in the `META-INF/services` directory within the JAR.
 

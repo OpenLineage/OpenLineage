@@ -10,7 +10,7 @@ The primary purpose of this module is to define the necessary interfaces that ex
 lineage data. These interfaces ensure a standardized way for extensions to communicate lineage information to
 `openlineage-spark`.
 
-## Why We Need Two Modules: `spark-extension-interfaces` and `spark-extension-frontend`
+## Why We Need Two Modules: `spark-extension-interfaces` and `spark-extension-entrypoint`
 
 ### Shading and Versioning
 
@@ -20,7 +20,7 @@ of the same interface being used in different extensions.
 
 ### Forward Compatibility
 
-The `spark-extension-frontend` module contains a single interface that remains unchanged over time. This interface acts
+The `spark-extension-entrypoint` module contains a single interface that remains unchanged over time. This interface acts
 as a bridge, allowing `openlineage-spark` to identify and interact with the shaded resources in a forward-compatible
 manner. This separation ensures that even if the interfaces in `spark-extension-interfaces` evolve, the communication
 protocol remains stable and compatible.
