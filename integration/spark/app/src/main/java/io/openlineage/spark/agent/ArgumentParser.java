@@ -55,6 +55,9 @@ public class ArgumentParser {
 
   private static final String SPARK_CONF_DEBUG_FACET = "spark.openlineage.debugFacet";
 
+  private static final String SPARK_TEST_EXTENSION_PROVIDER =
+      "spark.openlineage.testExtensionProvider";
+
   public static final Set<String> PROPERTIES_PREFIXES =
       new HashSet<>(
           Arrays.asList("transport.properties.", "transport.urlParams.", "transport.headers."));
@@ -113,6 +116,8 @@ public class ArgumentParser {
         .ifPresent(config::setParentJobNamespace);
     findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID).ifPresent(config::setParentRunId);
     findSparkConfigKey(conf, SPARK_CONF_DEBUG_FACET).ifPresent(config::setDebugFacet);
+    findSparkConfigKey(conf, SPARK_TEST_EXTENSION_PROVIDER)
+        .ifPresent(config::setTestExtensionProvider);
     findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_APPEND_DATASET_NAME)
         .map(Boolean::valueOf)
         .ifPresent(v -> config.getJobName().setAppendDatasetName(v));

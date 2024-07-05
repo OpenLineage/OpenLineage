@@ -10,6 +10,7 @@ import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
 import com.google.cloud.spark.bigquery.SparkBigQueryConfig;
 import com.google.cloud.spark.bigquery.direct.DirectBigQueryRelation;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.ReflectionUtils;
 import io.openlineage.spark.agent.util.SqlUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -48,6 +49,7 @@ public class BigQueryNodeInputVisitor
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof LogicalRelation
+        && ReflectionUtils.hasClass("com.google.cloud.spark.bigquery.BigQueryRelation")
         && ((LogicalRelation) plan).relation() instanceof BigQueryRelation;
   }
 
