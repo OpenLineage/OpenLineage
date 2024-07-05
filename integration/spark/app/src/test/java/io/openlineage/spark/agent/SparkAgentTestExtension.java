@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -159,13 +160,15 @@ public class SparkAgentTestExtension
 
   public static OpenLineageContext newContext(SparkSession sparkSession) {
     OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
+    SparkOpenLineageConfig config = new SparkOpenLineageConfig();
     return OpenLineageContext.builder()
         .sparkSession(sparkSession)
         .sparkContext(sparkSession.sparkContext())
         .openLineage(openLineage)
         .customEnvironmentVariables(Arrays.asList("TEST_VAR"))
         .meterRegistry(new SimpleMeterRegistry())
-        .openLineageConfig(new SparkOpenLineageConfig())
+        .openLineageConfig(config)
+        .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
         .build();
   }
 }

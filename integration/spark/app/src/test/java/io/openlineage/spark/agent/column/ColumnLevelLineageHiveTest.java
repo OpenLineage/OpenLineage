@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -81,6 +82,7 @@ class ColumnLevelLineageHiveTest {
             .enableHiveSupport()
             .getOrCreate();
 
+    SparkOpenLineageConfig config = new SparkOpenLineageConfig();
     context =
         OpenLineageContext.builder()
             .sparkSession(spark)
@@ -88,7 +90,8 @@ class ColumnLevelLineageHiveTest {
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(queryExecution)
             .meterRegistry(new SimpleMeterRegistry())
-            .openLineageConfig(new SparkOpenLineageConfig())
+            .openLineageConfig(config)
+            .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .build();
 
     FileSystem.get(spark.sparkContext().hadoopConfiguration())

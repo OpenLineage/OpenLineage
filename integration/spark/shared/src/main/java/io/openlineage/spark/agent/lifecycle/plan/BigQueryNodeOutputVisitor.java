@@ -50,6 +50,7 @@ public class BigQueryNodeOutputVisitor
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof SaveIntoDataSourceCommand
+        && ReflectionUtils.hasClass("com.google.cloud.spark.bigquery.BigQueryRelationProvider")
         && ((SaveIntoDataSourceCommand) plan).dataSource() instanceof BigQueryRelationProvider;
   }
 

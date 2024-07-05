@@ -10,6 +10,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.utils.UUIDUtils;
+import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -151,4 +152,11 @@ public class OpenLineageContext {
    * file. All the configuration should be read from this object.
    */
   @NonNull @Getter final SparkOpenLineageConfig openLineageConfig;
+
+  /**
+   * Helper class that uses reflection to call methods of SparkOpenLineageExtensionVisitor
+   * instances. This class acts as a bridge, facilitating communication between openlineage-spark
+   * and the extension implementations provided by spark-extension-interfaces.
+   */
+  @Getter final SparkOpenLineageExtensionVisitorWrapper sparkExtensionVisitorWrapper;
 }
