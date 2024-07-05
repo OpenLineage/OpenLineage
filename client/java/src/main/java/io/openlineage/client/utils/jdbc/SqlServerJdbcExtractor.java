@@ -25,7 +25,7 @@ public class SqlServerJdbcExtractor implements JdbcExtractor {
 
   private static final Pattern URL =
       Pattern.compile(
-          "(?:\\w+)://(?<host>[\\w\\d\\.]+)?(?:\\\\)?(?<instance>[\\w]+)?(?::)?(?<port>\\d+)?(?<params>.*)");
+          "(?:\\w+)://(?<host>[\\w\\d\\.-]+)?(?:\\\\)?(?<instance>[\\w]+)?(?::)?(?<port>\\d+)?(?<params>.*)");
 
   @Override
   public boolean isDefinedAt(String jdbcUri) {
