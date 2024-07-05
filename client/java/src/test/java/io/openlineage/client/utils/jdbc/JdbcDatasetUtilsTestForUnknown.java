@@ -150,6 +150,15 @@ class JdbcDatasetUtilsTestForUnknown {
   }
 
   @Test
+  void testGetDatasetIdentifierWithUppercaseUrl() {
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "JDBC:UNKNOWN://TEST.HOST.COM/MYDB", "SCHEMA.TABLE1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "unknown://test.host.com")
+        .hasFieldOrPropertyWithValue("name", "MYDB.SCHEMA.TABLE1");
+  }
+
+  @Test
   void testGetDatasetIdentifierWithMultipleHosts() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(

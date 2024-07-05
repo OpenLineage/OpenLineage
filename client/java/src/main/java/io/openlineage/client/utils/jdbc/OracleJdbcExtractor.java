@@ -8,6 +8,7 @@ package io.openlineage.client.utils.jdbc;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
@@ -23,7 +24,7 @@ public class OracleJdbcExtractor implements JdbcExtractor {
 
   @Override
   public boolean isDefinedAt(String jdbcUri) {
-    return jdbcUri.startsWith("oracle");
+    return jdbcUri.toLowerCase(Locale.ROOT).startsWith(SCHEME);
   }
 
   @Override
@@ -40,7 +41,7 @@ public class OracleJdbcExtractor implements JdbcExtractor {
   private JdbcLocation extractUri(String uri, Properties properties) throws URISyntaxException {
     // convert 'tcp://'' protocol to 'oracle://'', convert ':sid' format to '/sid'
     String normalizedUri = uri.replaceFirst(PROTOCOL_PART, "");
-    normalizedUri = "oracle://" + fixSidFormat(normalizedUri);
+    normalizedUri = SCHEME + "://" + fixSidFormat(normalizedUri);
 
     return new OverridingJdbcExtractor(SCHEME, DEFAULT_PORT).extract(normalizedUri, properties);
   }

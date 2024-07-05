@@ -6,6 +6,7 @@
 package io.openlineage.client.utils.jdbc;
 
 import java.net.URISyntaxException;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,7 +28,7 @@ public class OverridingJdbcExtractor extends GenericJdbcExtractor implements Jdb
 
   @Override
   public boolean isDefinedAt(String jdbcUri) {
-    return jdbcUri.startsWith(overrideScheme);
+    return jdbcUri.toLowerCase(Locale.ROOT).startsWith(overrideScheme);
   }
 
   @Override

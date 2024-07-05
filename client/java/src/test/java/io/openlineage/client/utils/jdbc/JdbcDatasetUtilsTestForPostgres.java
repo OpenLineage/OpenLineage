@@ -82,6 +82,15 @@ class JdbcDatasetUtilsTestForPostgres {
   }
 
   @Test
+  void testGetDatasetIdentifierWithUppercaseUrl() {
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "JDBC:POSTGRESQL://TEST.HOST.COM/MYDB", "SCHEMA.TABLE1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "postgres://test.host.com:5432")
+        .hasFieldOrPropertyWithValue("name", "MYDB.SCHEMA.TABLE1");
+  }
+
+  @Test
   void testGetDatasetIdentifierWithMultipleHosts() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
