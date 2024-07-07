@@ -68,7 +68,7 @@ dependencies {
     implementation "io.micrometer:micrometer-core:${micrometerVersion}"
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly 'org.apache.kafka:kafka-clients:3.7.0'
+    compileOnly 'org.apache.kafka:kafka-clients:3.7.1'
     compileOnly 'com.amazonaws:amazon-kinesis-producer:0.15.10'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     compileOnly "io.micrometer:micrometer-registry-statsd:${micrometerVersion}"
