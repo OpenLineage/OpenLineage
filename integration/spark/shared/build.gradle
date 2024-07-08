@@ -44,6 +44,7 @@ dependencies {
     api("io.openlineage:openlineage-sql-java:${project.version}")
     api("io.micrometer:micrometer-core:${micrometerVersion}")
     api("io.openlineage:spark-extension-entrypoint:1.0.0")
+    api("io.openlineage:spark-extension-columnlevel:${project.version}")
 
     compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}")
@@ -98,6 +99,7 @@ dependencies {
     scala212Api("io.openlineage:openlineage-sql-java:${project.version}")
     scala212Api(("io.micrometer:micrometer-core:${micrometerVersion}"))
     scala212Api("io.openlineage:spark-extension-entrypoint:1.0.0")
+    scala212Api("io.openlineage:spark-extension-columnlevel:${project.version}")
 
     scala212CompileOnly("org.apache.spark:spark-hive_2.12:${sparkVersion}")
     scala212CompileOnly("org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}")
@@ -152,6 +154,7 @@ dependencies {
     scala213Api("io.openlineage:openlineage-sql-java:${project.version}")
     scala213Api(("io.micrometer:micrometer-core:${micrometerVersion}"))
     scala213Api("io.openlineage:spark-extension-entrypoint:1.0.0")
+    scala213Api("io.openlineage:spark-extension-columnlevel:${project.version}")
 
     scala213CompileOnly("org.apache.spark:spark-hive_2.13:${sparkVersion}")
     scala213CompileOnly("org.apache.spark:spark-sql-kafka-0-10_2.13:${sparkVersion}")

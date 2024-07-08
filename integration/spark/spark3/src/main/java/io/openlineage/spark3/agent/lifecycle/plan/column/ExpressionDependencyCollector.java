@@ -15,6 +15,10 @@ import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilde
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.extension.column.v1.ColumnLevelLineageNode;
+import io.openlineage.spark.extension.column.v1.ExpressionDependency;
+import io.openlineage.spark.extension.column.v1.ExpressionDependencyWithDelegate;
+import io.openlineage.spark.extension.column.v1.ExpressionDependencyWithIdentifier;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionDependencyVisitor;
@@ -109,7 +113,9 @@ public class ExpressionDependencyCollector {
     List<Expression> datasetDependencies = new LinkedList<>();
     Optional<TransformationInfo> datasetTransformation = Optional.empty();
 
-    if (node instanceof Project) {
+    if (node instanceof ColumnLevelLineageNode) {
+      extensionColumnLineage(context, (ColumnLevelLineageNode) node);
+    } else if (node instanceof Project) {
       expressions.addAll(
           ScalaConversionUtils.<NamedExpression>fromSeq(((Project) node).projectList()));
     } else if (node instanceof Generate) {
@@ -163,6 +169,37 @@ public class ExpressionDependencyCollector {
           context.getBuilder().addDatasetDependency(exprId);
           datasetDependencies.forEach(e -> traverseExpression(e, exprId, dt, context.getBuilder()));
         });
+  }
+
+  private static void extensionColumnLineage(
+      ColumnLevelLineageContext context, ColumnLevelLineageNode node) {
+    List<ExpressionDependency> deps =
+        node.getColumnLevelLineageDependencies(context.getEvent().getClass().getCanonicalName());
+
+    deps.stream()
+        .filter(e -> e instanceof ExpressionDependencyWithDelegate)
+        .map(e -> (ExpressionDependencyWithDelegate) e)
+        .filter(e -> e.getExpression() instanceof Expression)
+        .forEach(
+            e ->
+                traverseExpression(
+                    (Expression) e.getExpression(),
+                    ExprId.apply(e.getOutputExprId().getExprId()),
+                    context.getBuilder()));
+
+    deps.stream()
+        .filter(e -> e instanceof ExpressionDependencyWithIdentifier)
+        .map(e -> (ExpressionDependencyWithIdentifier) e)
+        .forEach(
+            d ->
+                d.getInputExprId().stream()
+                    .forEach(
+                        i ->
+                            context
+                                .getBuilder()
+                                .addDependency(
+                                    ExprId.apply(d.getOutputExprId().getExprId()),
+                                    ExprId.apply(i.getExprId()))));
   }
 
   private static void collectFromGenerate(ColumnLevelLineageContext context, Generate node) {

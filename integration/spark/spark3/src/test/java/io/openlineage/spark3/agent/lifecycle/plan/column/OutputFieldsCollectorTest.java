@@ -5,15 +5,24 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.extension.column.v1.ColumnLevelLineageNode;
+import io.openlineage.spark.extension.column.v1.OlExprId;
+import io.openlineage.spark.extension.column.v1.OutputDatasetField;
 import java.util.Arrays;
+import java.util.Collections;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
@@ -51,6 +60,7 @@ class OutputFieldsCollectorTest {
     when(clContext.getOlContext()).thenReturn(olContext);
     when(plan.output()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
     when(builder.hasOutputs()).thenReturn(true);
+    when(clContext.getEvent()).thenReturn(mock(SparkListenerEvent.class));
   }
 
   @Test
@@ -125,5 +135,20 @@ class OutputFieldsCollectorTest {
 
     Mockito.verify(builder, times(1)).addOutput(exprId1, "name1");
     Mockito.verify(builder, times(1)).addOutput(exprId2, "name2");
+  }
+
+  @Test
+  void testExtensionOutputDatasetField() {
+    LogicalPlan columnLineagePlanNode =
+        mock(LogicalPlan.class, withSettings().extraInterfaces(ColumnLevelLineageNode.class));
+
+    when(((ColumnLevelLineageNode) columnLineagePlanNode).getColumnLevelLineageOutputs(any()))
+        .thenReturn(
+            Collections.singletonList(new OutputDatasetField(new OlExprId(1L), "nameExtension1")));
+
+    OutputFieldsCollector.collect(clContext, columnLineagePlanNode);
+
+    Mockito.verify(builder, times(1))
+        .addOutput(refEq(ExprId.apply(1L), "jvmId"), eq("nameExtension1"));
   }
 }

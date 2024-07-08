@@ -16,6 +16,10 @@ import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.extension.column.v1.ColumnLevelLineageNode;
+import io.openlineage.spark.extension.column.v1.DatasetFieldLineage;
+import io.openlineage.spark.extension.column.v1.InputDatasetFieldFromDelegate;
+import io.openlineage.spark.extension.column.v1.InputDatasetFieldWithIdentifier;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.sql.SqlMeta;
 import java.net.URI;
@@ -31,6 +35,7 @@ import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
+import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
@@ -54,6 +59,9 @@ public class InputFieldsCollector {
     discoverInputsFromNode(context, plan);
     CustomCollectorsUtils.collectInputs(context, plan);
 
+    if (plan instanceof ColumnLevelLineageNode) {
+      extensionColumnLineage(context, (ColumnLevelLineageNode) plan);
+    }
     // hacky way to replace `plan instanceof UnaryNode` which fails for Spark 3.2.1
     // because of java.lang.IncompatibleClassChangeError: UnaryNode, but class was expected
     // probably related to single code base for different Spark versions
@@ -136,6 +144,32 @@ public class InputFieldsCollector {
       log.warn("Could not extract dataset identifier from {}", node.getClass().getCanonicalName());
     }
     return Collections.emptyList();
+  }
+
+  private static void extensionColumnLineage(
+      ColumnLevelLineageContext context, ColumnLevelLineageNode node) {
+    List<DatasetFieldLineage> inputs =
+        node.getColumnLevelLineageInputs(context.getEvent().getClass().getCanonicalName());
+
+    inputs.stream()
+        .filter(i -> i instanceof InputDatasetFieldWithIdentifier)
+        .map(i -> (InputDatasetFieldWithIdentifier) i)
+        .forEach(
+            i ->
+                context
+                    .getBuilder()
+                    .addInput(
+                        ExprId.apply(i.getExprId().getExprId()),
+                        new DatasetIdentifier(
+                            i.getDatasetIdentifier().getName(),
+                            i.getDatasetIdentifier().getNamespace()),
+                        i.getField()));
+
+    inputs.stream()
+        .filter(i -> i instanceof InputDatasetFieldFromDelegate)
+        .map(i -> (InputDatasetFieldFromDelegate) i)
+        .filter(i -> i.getDelegate() instanceof LogicalPlan)
+        .forEach(i -> discoverInputsFromNode(context, (LogicalPlan) i.getDelegate()));
   }
 
   private static List<DatasetIdentifier> extractDatasetIdentifier(

@@ -7,10 +7,13 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.extension.column.v1.ColumnLevelLineageNode;
+import io.openlineage.spark.extension.column.v1.OutputDatasetField;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
+import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
@@ -22,8 +25,12 @@ import org.apache.spark.sql.catalyst.plans.logical.Project;
 public class OutputFieldsCollector {
 
   public static void collect(ColumnLevelLineageContext context, LogicalPlan plan) {
-    getOutputExpressionsFromRoot(plan).stream()
-        .forEach(expr -> context.getBuilder().addOutput(expr.exprId(), expr.name()));
+    if (plan instanceof ColumnLevelLineageNode) {
+      extensionColumnLineage(context, (ColumnLevelLineageNode) plan);
+    } else {
+      getOutputExpressionsFromRoot(plan).stream()
+          .forEach(expr -> context.getBuilder().addOutput(expr.exprId(), expr.name()));
+    }
 
     CustomCollectorsUtils.collectOutputs(context, plan);
 
@@ -32,6 +39,20 @@ public class OutputFieldsCollector {
       ScalaConversionUtils.<LogicalPlan>fromSeq(plan.children()).stream()
           .forEach(childPlan -> collect(context, childPlan));
     }
+  }
+
+  private static void extensionColumnLineage(
+      ColumnLevelLineageContext context, ColumnLevelLineageNode node) {
+
+    node.getColumnLevelLineageOutputs(context.getEvent().getClass().getCanonicalName()).stream()
+        .filter(df -> df instanceof OutputDatasetField)
+        .forEach(
+            o -> {
+              OutputDatasetField of = (OutputDatasetField) o;
+              context
+                  .getBuilder()
+                  .addOutput(ExprId.apply(of.getExprId().getExprId()), of.getField());
+            });
   }
 
   static List<NamedExpression> getOutputExpressionsFromRoot(LogicalPlan plan) {
