@@ -6,6 +6,7 @@
 package io.openlineage.client.utils.jdbc;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -20,7 +21,9 @@ public class JdbcLocation {
   @Getter @Setter private Optional<String> database;
 
   public String toNamespace() {
-    String result = String.format("%s://%s", scheme, authority);
+    String result =
+        String.format(
+            "%s://%s", scheme.toLowerCase(Locale.ROOT), authority.toLowerCase(Locale.ROOT));
     if (instance.isPresent()) {
       result = String.format("%s/%s", result, instance.get());
     }

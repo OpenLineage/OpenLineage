@@ -119,6 +119,15 @@ class JdbcDatasetUtilsTestForMySql {
   }
 
   @Test
+  void testGetDatasetIdentifierWithUppercaseUrl() {
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "JDBC:MYSQL://TEST.HOST.COM/MYDB", "SCHEMA.TABLE1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "mysql://test.host.com:3306")
+        .hasFieldOrPropertyWithValue("name", "MYDB.SCHEMA.TABLE1");
+  }
+
+  @Test
   void testGetDatasetIdentifierWithMultipleHostsInSimpleFormat() {
     // failover
     assertThat(
