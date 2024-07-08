@@ -80,4 +80,13 @@ class JdbcDatasetUtilsTestForTeradata {
         .hasFieldOrPropertyWithValue("namespace", "teradata://hostname:1025")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
+
+  @Test
+  void testGetDatasetIdentifierWithUppercaseUrl() {
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "JDBC:TERADATA://TEST.HOST.COM/DATABASE=MYDB", "SCHEMA.TABLE1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "teradata://test.host.com:1025")
+        .hasFieldOrPropertyWithValue("name", "MYDB.SCHEMA.TABLE1");
+  }
 }

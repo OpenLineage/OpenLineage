@@ -152,6 +152,21 @@ class JdbcDatasetUtilsTestForOracle {
   }
 
   @Test
+  void testGetDatasetIdentifierWithUppercaseURL() {
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "JDBC:ORACLE:THIN:@//TEST.HOST.COM/SERVICENAME", "SCHEMA.TABLE1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://test.host.com:1521")
+        .hasFieldOrPropertyWithValue("name", "SERVICENAME.SCHEMA.TABLE1");
+
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "JDBC:ORACLE:THIN:@TEST.HOST.COM:SID", "SCHEMA.TABLE1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://test.host.com:1521")
+        .hasFieldOrPropertyWithValue("name", "SID.SCHEMA.TABLE1");
+  }
+
+  @Test
   void testGetDatasetIdentifierWithMultipleHostsInSimpleFormat() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
