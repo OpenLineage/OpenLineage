@@ -40,7 +40,7 @@ repositories {
 }
 
 ext {
-    isReleaseVersion = !version.endsWith('SNAPSHOT')
+    release = findProperty("release").asBoolean();
 }
 
 dependencies {
@@ -172,7 +172,7 @@ publishing {
 }
 
 signing {
-    required { isReleaseVersion }
+    required { release }
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
     useInMemoryPgpKeys(signingKey, signingPassword)

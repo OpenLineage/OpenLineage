@@ -637,10 +637,10 @@ jobs:
           ./gradlew --no-daemon --console=plain publishToMavenLocal
           cd -
 
-          ./gradlew --console=plain publishToMavenLocal --info
+          ./gradlew --console=plain publishToMavenLocal -Prelease=true --info
 
           # Publish *.jar
-          ./gradlew --no-daemon --console=plain publish --info
+          ./gradlew --no-daemon --console=plain publish -Prelease=true --info
       - persist_to_workspace:
           root: ~/.m2/repository/io/openlineage/
           paths:
