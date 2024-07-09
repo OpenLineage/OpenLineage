@@ -16,8 +16,8 @@ class JdbcDatasetUtilsTestForTeradata {
   void testGetDatasetIdentifierWithHost() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:teradata://test.host.com", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "teradata://test.host.com:1025")
+                "jdbc:teradata://test-host.com", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "teradata://test-host.com:1025")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 

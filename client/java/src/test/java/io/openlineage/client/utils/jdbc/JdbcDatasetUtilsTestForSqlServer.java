@@ -16,8 +16,8 @@ class JdbcDatasetUtilsTestForSqlServer {
   void testGetDatasetIdentifierWithHost() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:sqlserver://test.host.com", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "sqlserver://test.host.com")
+                "jdbc:sqlserver://test-host.com", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "sqlserver://test-host.com")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 

@@ -16,8 +16,8 @@ class JdbcDatasetUtilsTestForMySql {
   void testGetDatasetIdentifierWithHost() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:mysql://test.host.com", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "mysql://test.host.com:3306")
+                "jdbc:mysql://test-host.com", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "mysql://test-host.com:3306")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
