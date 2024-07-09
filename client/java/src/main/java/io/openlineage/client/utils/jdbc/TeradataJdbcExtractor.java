@@ -22,7 +22,7 @@ public class TeradataJdbcExtractor implements JdbcExtractor {
   private static final String DATABASE_PROPERTY = "DATABASE";
 
   private static final Pattern URL =
-      Pattern.compile("(?:\\w+)://(?<host>[\\w\\d\\.\\[\\]:]+)?/?(?<params>.*)");
+      Pattern.compile("(?:\\w+)://(?<host>[\\w\\d\\.\\[\\]:-]+)?/?(?<params>.*)");
 
   @Override
   public boolean isDefinedAt(String jdbcUri) {

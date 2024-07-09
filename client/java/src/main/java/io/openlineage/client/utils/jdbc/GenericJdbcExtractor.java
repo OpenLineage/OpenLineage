@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 public class GenericJdbcExtractor implements JdbcExtractor {
   private static Pattern URL_FORMAT =
       Pattern.compile(
-          "^(?<scheme>\\w+)://(?<authority>[\\[\\]\\w\\d.,:]+)/?(?<database>[\\w\\d.]+)?(?:\\?.*)?");
+          "^(?<scheme>\\w+)://(?<authority>[\\w\\d\\.\\[\\]:,-]+)/?(?<database>[\\w\\d.]+)?(?:\\?.*)?");
 
   @Override
   public boolean isDefinedAt(String jdbcUri) {

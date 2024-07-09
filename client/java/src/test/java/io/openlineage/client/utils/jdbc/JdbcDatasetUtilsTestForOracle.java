@@ -16,14 +16,14 @@ class JdbcDatasetUtilsTestForOracle {
   void testGetDatasetIdentifierWithHost() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:oracle:thin:@//test.host.com", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle://test.host.com:1521")
+                "jdbc:oracle:thin:@//test-host.com", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://test-host.com:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:oracle:thin:@test.host.com", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle://test.host.com:1521")
+                "jdbc:oracle:thin:@test-host.com", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://test-host.com:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
