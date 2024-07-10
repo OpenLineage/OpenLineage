@@ -47,6 +47,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private static final String SPARK_PROCESSING_TYPE_BATCH = "BATCH";
   private static final String SPARK_PROCESSING_TYPE_STREAMING = "STREAMING";
   private final long executionId;
+  private String jobName;
   private final OpenLineageContext olContext;
   private final EventEmitter eventEmitter;
   private final OpenLineageRunEventBuilder runEventBuilder;
@@ -81,30 +82,31 @@ class SparkSQLExecutionContext implements ExecutionContext {
     } else if (EventFilterUtils.isDisabled(olContext, startEvent)) {
       log.info(
           "OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionStart");
-      return;
+      // return;
     }
 
     olContext.setActiveJobId(activeJobId);
+    // We shall skip this START event, focusing on the first SparkListenerJobStart event to be the START, because of the presence of the job nurn
     // only one START event is expected, in case it was already sent with jobStart, we send running
-    EventType eventType = emittedOnJobStart ? RUNNING : START;
-    emittedOnSqlExecutionStart = true;
+    // EventType eventType = emittedOnJobStart ? RUNNING : START;
+    // emittedOnSqlExecutionStart = true;
 
-    RunEvent event =
-        runEventBuilder.buildRun(
-            OpenLineageRunEventContext.builder()
-                .applicationParentRunFacet(buildApplicationParentFacet())
-                .event(startEvent)
-                .runEventBuilder(
-                    openLineage
-                        .newRunEventBuilder()
-                        .eventTime(toZonedTime(startEvent.time()))
-                        .eventType(eventType))
-                .jobBuilder(buildJob())
-                .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
-                .build());
+    // RunEvent event =
+    //     runEventBuilder.buildRun(
+    //         OpenLineageRunEventContext.builder()
+    //             .applicationParentRunFacet(buildApplicationParentFacet())
+    //             .event(startEvent)
+    //             .runEventBuilder(
+    //                 openLineage
+    //                     .newRunEventBuilder()
+    //                     .eventTime(toZonedTime(startEvent.time()))
+    //                     .eventType(eventType))
+    //             .jobBuilder(buildJob())
+    //             .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
+    //             .build());
 
-    log.debug("Posting event for start {}: {}", executionId, event);
-    eventEmitter.emit(event);
+    // log.debug("Posting event for start {}: {}", executionId, event);
+    // eventEmitter.emit(event);
   }
 
   @Override
@@ -122,7 +124,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
     } else if (EventFilterUtils.isDisabled(olContext, endEvent)) {
       log.info(
           "OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionEnd");
-      return;
+      // return;
     }
 
     // only one COMPLETE event is expected, verify if jobEnd was not emitted
@@ -240,12 +242,13 @@ class SparkSQLExecutionContext implements ExecutionContext {
     } else if (EventFilterUtils.isDisabled(olContext, jobStart)) {
       log.info(
           "OpenLineage received Spark event that is configured to be skipped: SparkListenerJobStart");
-      return;
+      // return;
     }
 
     // only one START event is expected, in case it was already sent with sqlExecutionStart, we send
     // running
     EventType eventType = emittedOnSqlExecutionStart ? RUNNING : START;
+    emittedOnSqlExecutionStart = true;
     emittedOnJobStart = true;
 
     RunEvent event =
@@ -281,7 +284,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
     } else if (EventFilterUtils.isDisabled(olContext, jobEnd)) {
       log.info(
           "OpenLineage received Spark event that is configured to be skipped: SparkListenerJobEnd");
-      return;
+      // return;
     }
 
     // only one COMPLETE event is expected,

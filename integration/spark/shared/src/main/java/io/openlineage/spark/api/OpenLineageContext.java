@@ -131,6 +131,12 @@ public class OpenLineageContext {
    */
   @Getter @Setter String jobName;
 
+  /**
+   * Job nurn is collected during the Spark runs, and stored for creating a custom facet within
+   * the Run facets. It should help us to enhance the events further in the lineage pipeline.
+   */
+  @Getter @Setter String jobNurn;
+
   @Setter Integer activeJobId;
 
   public Optional<Integer> getActiveJobId() {
