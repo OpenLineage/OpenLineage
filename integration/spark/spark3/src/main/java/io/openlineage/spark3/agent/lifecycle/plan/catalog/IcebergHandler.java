@@ -171,7 +171,7 @@ public class IcebergHandler implements CatalogHandler {
         return Optional.ofNullable(sparkCatalog.icebergCatalog().loadTable(tableIdentifier));
       }
     } catch (NoSuchTableException | ClassCastException e) {
-      log.error("Failed to load table from catalog: {}", identifier, e);
+      log.error("Failed to load table from catalog: {}", identifier);
       return Optional.empty();
     }
   }

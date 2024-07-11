@@ -9,6 +9,8 @@
   *Upgrade CI workflows to run tests against latest Spark versions: 3.4.2 -> 3.4.3 and 3.5.0 -> 3.5.1.*
 * **Spark: add extraction of the masking property in column level lineage** [`#2789`](https://github.com/OpenLineage/OpenLineage/pull/2789) [@tnazarew](https://github.com/tnazarew)  
   *Add extraction of the masking property during collection of dependencies for ColumnLineageDatasetFacet creation*
+* **Spark: Support Iceberg 1.4 on Spark 3.5.1.** [`#2838`](https://github.com/OpenLineage/OpenLineage/pull/2838) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Include Iceberg support for Spark 3.5. Fix column level lineage facet for `UNION` queries.*
 
 ## [1.17.1](https://github.com/OpenLineage/OpenLineage/compare/1.16.0...1.17.1) - 2024-06-21
 ### Added

@@ -31,6 +31,7 @@ import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
+import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -58,6 +59,9 @@ public class InputFieldsCollector {
     // probably related to single code base for different Spark versions
     if ((plan.getClass()).isAssignableFrom(UnaryNode.class)) {
       collect(context, ((UnaryNode) plan).child());
+    } else if (plan instanceof CreateTableAsSelect
+        && (plan.children() == null || plan.children().isEmpty())) {
+      collect(context, ((CreateTableAsSelect) plan).query());
     } else if (plan.children() != null) {
       ScalaConversionUtils.<LogicalPlan>fromSeq(plan.children()).stream()
           .forEach(child -> collect(context, child));

@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.catalyst.expressions.Alias;
@@ -43,11 +45,14 @@ import org.apache.spark.sql.catalyst.expressions.XxHash64;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
+import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
+import org.apache.spark.sql.catalyst.plans.logical.Distinct;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.Join;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.Sort;
+import org.apache.spark.sql.catalyst.plans.logical.Union;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import scala.Option;
@@ -105,12 +110,23 @@ public class ExpressionDependencyCollector {
     if (node instanceof Project) {
       expressions.addAll(
           ScalaConversionUtils.<NamedExpression>fromSeq(((Project) node).projectList()));
+    } else if (node instanceof CreateTableAsSelect
+        && (node.children() == null || node.children().isEmpty())) {
+      collectFromNode(context, ((CreateTableAsSelect) node).query());
+    } else if (node instanceof Distinct) {
+      collectFromNode(context, ((Distinct) node).child());
     } else if (node instanceof Aggregate) {
-      datasetDependencies.addAll(
-          ScalaConversionUtils.<Expression>fromSeq(((Aggregate) node).groupingExpressions()));
-      datasetTransformation = Optional.of(TransformationInfo.indirect(GROUP_BY));
-      expressions.addAll(
-          ScalaConversionUtils.<NamedExpression>fromSeq(((Aggregate) node).aggregateExpressions()));
+      Aggregate aggregate = (Aggregate) node;
+
+      // don't add group by transformations if child is UNION and aggregate contains group by
+      // expressions for all aggregate expressions
+      if (!(aggregate.child() instanceof Union && doesGroupByAllAggregateExpressions(aggregate))) {
+        datasetDependencies.addAll(
+            ScalaConversionUtils.<Expression>fromSeq((aggregate).groupingExpressions()));
+        datasetTransformation = Optional.of(TransformationInfo.indirect(GROUP_BY));
+        expressions.addAll(
+            ScalaConversionUtils.<NamedExpression>fromSeq((aggregate).aggregateExpressions()));
+      }
     } else if (node instanceof Join) {
       Option<Expression> condition = ((Join) node).condition();
       if (condition.isDefined()) {
@@ -269,5 +285,29 @@ public class ExpressionDependencyCollector {
     traverseExpression(
         alias.child(), outputExprId,
         transformationInfo.merge(TransformationInfo.identity()), builder);
+  }
+
+  /**
+   * Method verifies if an aggregate node has the same aggregate expressions and group by
+   * expressions. This can be helpful when determining if an aggregate is used as distinct which
+   * should not produce group by column level lineage transformations.
+   *
+   * @param aggregate
+   * @return
+   */
+  private static boolean doesGroupByAllAggregateExpressions(Aggregate aggregate) {
+    Set<ExprId> aggregateExprIds =
+        ScalaConversionUtils.<NamedExpression>fromSeq(aggregate.aggregateExpressions()).stream()
+            .map(e -> e.exprId())
+            .collect(Collectors.toSet());
+
+    Set<ExprId> groupingExprIds =
+        ScalaConversionUtils.<Expression>fromSeq(aggregate.groupingExpressions()).stream()
+            .filter(e -> e instanceof AttributeReference)
+            .map(e -> (AttributeReference) e)
+            .map(e -> e.exprId())
+            .collect(Collectors.toSet());
+
+    return groupingExprIds.containsAll(aggregateExprIds);
   }
 }
