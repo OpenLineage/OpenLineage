@@ -24,8 +24,8 @@
     *Handles simple Oracle JDBC URLs, like `oracle:thin:@//host:port/serviceName` and `oracle:thin@host:port:sid`, and converts each to a dataset with namespace `oracle://host:port` and name `sid.schema.table` or `serviceName.schema.table`.*
 * **Spark: configurable test with Docker image provided** [`#2822`](https://github.com/OpenLineage/OpenLineage/pull/2822) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Extends the configurable integration test feature to enable getting the Docker image name as a name.*
-* **Spark: Iceberg support for Spark 3.5.1** [`#2838`](https://github.com/OpenLineage/OpenLineage/pull/2838) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Adds support for column lineage from `MERGE INTO` queries on Spark 3.5.*
+* **Spark: Support Iceberg 1.4 on Spark 3.5.1.** [`#2838`](https://github.com/OpenLineage/OpenLineage/pull/2838) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Include Iceberg support for Spark 3.5. Fix column level lineage facet for `UNION` queries.*
 * **Spec: add example for change in `#2756`** [`#2801`](https://github.com/OpenLineage/OpenLineage/pull/2801) [@Sheeri](https://github.com/Sheeri)  
     *Updates the `customLineage` facet test for the new syntax created in `#2756`.*
 

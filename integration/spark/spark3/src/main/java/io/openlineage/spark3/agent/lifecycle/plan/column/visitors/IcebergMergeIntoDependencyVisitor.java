@@ -50,6 +50,17 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
       if (MERGE_ROWS_CLASS_NAME.equals(nodeClass)) {
         Class mergeRows = Class.forName(MERGE_ROWS_CLASS_NAME);
 
+        boolean matchedOutputsMethodExists =
+            Arrays.asList(mergeRows.getMethods()).stream()
+                .map(m -> m.getName())
+                .filter(m -> MATCHED_OUTPUTS.equals(m))
+                .findAny()
+                .isPresent();
+
+        if (!matchedOutputsMethodExists) {
+          return;
+        }
+
         boolean isNewerImplementation =
             Optional.of((Seq<Seq<Object>>) mergeRows.getMethod(MATCHED_OUTPUTS).invoke(node))
                 .filter(seq -> seq.size() > 0)
