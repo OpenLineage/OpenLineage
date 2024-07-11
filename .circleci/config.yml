@@ -87,11 +87,10 @@ jobs:
 
             # Nightly build - add workflows to be included
             if [ "<< parameters.nightly-run >>" == "active" ]; then
+              # run only Spark within nightly build
               echo "$PWD/.circleci/workflows/openlineage-spark.yml" >> workflow_files.txt
-            fi
-
-            # If we are on the main branch, run all of the workflows
-            if [ "$CIRCLE_BRANCH" == "main" ]; then
+            elif [ "$CIRCLE_BRANCH" == "main" ]; then
+              # If we are on the main branch, run all of the workflows
               # if integration type is not all, we specify only a single integration type in workflow files
               if [ "<< pipeline.parameters.integration-type >>" != "*" ]; then
                 ls -d $PWD/.circleci/workflows/openlineage-integration-<< pipeline.parameters.integration-type >>.yml > workflow_files.txt
