@@ -10,12 +10,12 @@
     *New Spark extension interfaces without runtime dependency hell. Includes a test to verify the integration is working properly.*
 * **Spark: support latest versions 3.4.3 and 3.5.1.** [`#2743`](https://github.com/OpenLineage/OpenLineage/pull/2743) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Upgrades CI workflows to run tests against latest Spark versions: 3.4.2 -> 3.4.3 and 3.5.0 -> 3.5.1.*
-* **Spark: add extraction of the masking property in column-level lineage** [`#2789`](https://github.com/OpenLineage/OpenLineage/pull/2789) [@tnazarew](https://github.com/tnazarew)
+* **Spark: add extraction of the masking property in column-level lineage** [`#2789`](https://github.com/OpenLineage/OpenLineage/pull/2789) [@tnazarew](https://github.com/tnazarew)  
     *Adds extraction of the masking property during collection of dependencies for `ColumnLineageDatasetFacet` creation.*
 * **Spark: collect table name from `InsertIntoHadoopFsRelationCommand`** [`#2794`](https://github.com/OpenLineage/OpenLineage/pull/2794) [@dolfinus](https://github.com/dolfinus)  
-    *Collects table name for `INSERT INTO` command for tables created with `USING $fileFormat` syntax, like `USING orc`.*
+    *Collects a table name for `INSERT INTO` command for tables created with `USING $fileFormat` syntax, like `USING orc`.*
 * **Spark, Flink: add `PostgresJdbcExtractor`** [`#2806`](https://github.com/OpenLineage/OpenLineage/pull/2806) [@dolfinus](https://github.com/dolfinus)  
-    *Adds default `5432` port to Postgres namespaces.*
+    *Adds the default `5432` port to Postgres namespaces.*
 * **Spark, Flink: add `TeradataJdbcExtractor`** [`#2826`](https://github.com/OpenLineage/OpenLineage/pull/2826) [@dolfinus](https://github.com/dolfinus)  
     *Converts JDBC URLs like `jdbc:teradata/host/DBS_PORT=1024,DATABASE=somedb` to datasets with namespace `teradata://host:1024` and name `somedb.table`.*
 * **Spark, Flink: add `MySqlJdbcExtractor`** [`#2825`](https://github.com/OpenLineage/OpenLineage/pull/2825) [@dolfinus](https://github.com/dolfinus)  
@@ -29,7 +29,7 @@
 
 ### Changed
 * **Spark: fallback to `spark.sql.warehouse.dir` as table namespace** [`#2767`](https://github.com/OpenLineage/OpenLineage/pull/2767) [@dolfinus](https://github.com/dolfinus)  
-    *In cases when metastore is not used, falls back to `spark.sql.warehouse.dir` or `hive.metastore.warehouse.dir` as table namespace, instead of duplicating table's location.*
+    *In cases when a metastore is not used, falls back to `spark.sql.warehouse.dir` or `hive.metastore.warehouse.dir` as table namespace, instead of duplicating the table's location.*
 
 ### Fixed
 * **Java: handle dashes in hostname for `JdbcExtractors`** [`#2830`](https://github.com/OpenLineage/OpenLineage/pull/2830) [@dolfinus](https://github.com/dolfinus)  
@@ -45,7 +45,7 @@
 * **Spark: fix NPE and incorrect comment** [`#2827`](https://github.com/OpenLineage/OpenLineage/pull/2827) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Fixes an error caused by a recent upgrade of Spark versions that did not break existing tests.*
 * **Spark: convert scheme and authority to lowercase in `JdbcLocation`** [`#2831`](https://github.com/OpenLineage/OpenLineage/pull/2831) [@dolfinus](https://github.com/dolfinus)  
-    *Converts valid JDBC URL scheme and authority to lowercase, leaving intact instance/database name, as different databases have differe default case and case-sensitivity rules.*
+    *Converts valid JDBC URL scheme and authority to lowercase, leaving intact instance/database name, as different databases have different default case and case-sensitivity rules.*
 
 ## [1.17.1](https://github.com/OpenLineage/OpenLineage/compare/1.16.0...1.17.1) - 2024-06-21
 ### Added
