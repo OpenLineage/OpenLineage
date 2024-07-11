@@ -236,6 +236,12 @@ class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void start(SparkListenerJobStart jobStart) {
     log.debug("SparkListenerJobStart - executionId: {}", executionId);
+    try {
+      jobName = jobStart.properties().getProperty("spark.job.name");
+    } catch (RuntimeException e) {
+      log.info("spark.job.name property not found in the context");
+    }
+    olContext.setJobNurn(jobName);
     if (!olContext.getQueryExecution().isPresent()) {
       log.info(NO_EXECUTION_INFO, olContext);
       return;
