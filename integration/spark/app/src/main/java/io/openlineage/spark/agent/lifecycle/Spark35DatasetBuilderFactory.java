@@ -11,6 +11,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.DeltaUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -34,6 +35,7 @@ import io.openlineage.spark33.agent.lifecycle.plan.ReplaceIcebergDataDatasetBuil
 import io.openlineage.spark34.agent.lifecycle.plan.column.CreateReplaceInputDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.DropTableDatasetBuilder;
 import io.openlineage.spark35.agent.lifecycle.plan.CreateReplaceOutputDatasetBuilder;
+import io.openlineage.spark35.agent.lifecycle.plan.MergeRowsColumnLineageVisitor;
 import java.util.Collection;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -91,6 +93,16 @@ public class Spark35DatasetBuilderFactory extends Spark32DatasetBuilderFactory
     if (DeltaUtils.hasMergeIntoCommandClass()) {
       builder.add(new MergeIntoCommandOutputDatasetBuilder(context));
     }
+
+    return builder.build();
+  }
+
+  @Override
+  public Collection<ColumnLevelLineageVisitor> getColumnLevelLineageVisitors(
+      OpenLineageContext context) {
+    ImmutableList.Builder builder = ImmutableList.<ColumnLevelLineageVisitor>builder();
+    builder.add(new MergeRowsColumnLineageVisitor(context));
+    builder.addAll(super.getColumnLevelLineageVisitors(context));
 
     return builder.build();
   }

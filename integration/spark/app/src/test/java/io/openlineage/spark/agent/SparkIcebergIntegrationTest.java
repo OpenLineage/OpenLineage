@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableList;
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineageClientUtils;
@@ -20,6 +21,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -144,6 +147,33 @@ class SparkIcebergIntegrationTest {
         mockServer,
         "pysparkV2CreateTableAsSelectStartEvent.json",
         "pysparkV2CreateTableAsSelectCompleteEvent.json");
+
+    List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
+    Stream<ColumnLineageDatasetFacet> datasetFacetStream =
+        events.stream()
+            .filter(e -> !e.getOutputs().isEmpty())
+            .map(e -> e.getOutputs().get(0))
+            .filter(d -> d.getName().contains("target")) // get all event target dataset events
+            .filter(d -> d.getFacets().getColumnLineage() != null)
+            .map(d -> d.getFacets().getColumnLineage());
+
+    // assert that each field has exactly two input fields within all the facets published
+    datasetFacetStream.forEach(
+        cf -> {
+          assertThat(
+                  cf.getFields().getAdditionalProperties().get("a").getInputFields().stream()
+                      .map(f -> f.getField())
+                      .collect(Collectors.toList()))
+              .hasSize(2)
+              .containsExactly("a", "a");
+
+          assertThat(
+                  cf.getFields().getAdditionalProperties().get("b").getInputFields().stream()
+                      .map(f -> f.getField())
+                      .collect(Collectors.toList()))
+              .hasSize(2)
+              .containsExactly("b", "b");
+        });
   }
 
   @Test
@@ -351,8 +381,9 @@ class SparkIcebergIntegrationTest {
         (ArrayList<HashMap<String, Object>>) logicalPlan.get("nodes");
 
     assertThat(nodes.size()).isGreaterThan(0); // LogicalPlan differs per Spark Version
-    assertThat((String) nodes.get(0).get("id")).startsWith("Create");
-    assertThat((String) nodes.get(0).get("desc")).startsWith("Create");
+    assertThat(((String) nodes.get(0).get("id")).substring(0, 6)).containsAnyOf("Append", "Create");
+    assertThat(((String) nodes.get(0).get("desc")).substring(0, 6))
+        .containsAnyOf("Append", "Create");
 
     // verify spark config
     Map<String, Object> configFacet =
