@@ -191,7 +191,6 @@ impl DbTableMeta {
 
     pub fn new_default_dialect(name: String) -> Self {
         let mut quote = None;
-        println!("{:?}", name);
         let split = name
             .split('.')
             .map(|x| {
