@@ -21,8 +21,6 @@ idea {
 }
 
 javadoc {
-    // TODO: for some reason fails -> 3 errors to be fixed
-    failOnError = false
     options.tags = ["apiNote"]
 }
 

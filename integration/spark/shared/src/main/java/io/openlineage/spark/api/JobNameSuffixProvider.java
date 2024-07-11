@@ -15,8 +15,6 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
  * cases outputs are not present for START events while the job name has to be assigned for START.
  * This method allows providing job name suffix by dataset builders. This can be table name in most
  * cases which can be exposed at START even if output dataset will be produced for COMPLETE
- *
- * @return
  */
 public interface JobNameSuffixProvider<P extends LogicalPlan> {
 

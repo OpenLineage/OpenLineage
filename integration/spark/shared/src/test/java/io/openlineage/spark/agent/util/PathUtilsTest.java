@@ -25,7 +25,6 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.internal.SessionState;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import scala.Option;
@@ -170,7 +169,6 @@ class PathUtilsTest {
 
   @Test
   @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-west-2")
-  @Disabled
   void testFromCatalogTableWithGlue() throws URISyntaxException {
     hadoopConf.set(
         "hive.metastore.client.factory.class",
@@ -200,7 +198,6 @@ class PathUtilsTest {
 
   @Test
   @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-east-1")
-  @Disabled
   void testFromCatalogTableWithEMRGlue() throws URISyntaxException {
     hadoopConf.set(
         "hive.metastore.client.factory.class",
@@ -230,7 +227,6 @@ class PathUtilsTest {
 
   @Test
   @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-east-1")
-  @Disabled
   void testFromCatalogTableWithAthenaGlue() throws URISyntaxException {
     sparkConf.set(
         "hive.metastore.client.factory.class",

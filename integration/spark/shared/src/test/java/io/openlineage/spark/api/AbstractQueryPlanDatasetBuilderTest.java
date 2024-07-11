@@ -38,11 +38,9 @@ import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import scala.PartialFunction;
 
-@Disabled
 class AbstractQueryPlanDatasetBuilderTest {
 
   private static final String LOCAL = "local";

@@ -24,33 +24,14 @@ import org.apache.spark.scheduler.JobSucceeded$;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("PMD")
 class OutputStatisticsOutputDatasetFacetBuilderTest {
 
-  private static SparkContext sparkContext;
-
-  @BeforeAll
-  public static void setup() {
-    // TODO: rewrite this test without spark context
-    //    sparkContext =
-    //        SparkContext.getOrCreate(
-    //            new SparkConf()
-    //                .setAppName("OutputStatisticsOutputDatasetFacetBuilderTest")
-    //                .setMaster("local"));
-  }
-
-  @AfterAll
-  public static void tearDown() {
-    // sparkContext.stop();
-  }
+  private static SparkContext sparkContext = mock(SparkContext.class);
 
   @Test
-  @Disabled
   void testIsDefined() {
     OutputStatisticsOutputDatasetFacetBuilder builder =
         new OutputStatisticsOutputDatasetFacetBuilder(
@@ -66,7 +47,6 @@ class OutputStatisticsOutputDatasetFacetBuilderTest {
   }
 
   @Test
-  @Disabled
   void testBuild() {
     OpenLineageContext context =
         OpenLineageContext.builder()

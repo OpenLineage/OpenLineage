@@ -309,7 +309,6 @@ public class PlanUtils {
    *
    * @param pfn
    * @param x
-   * @param <T, D>
    * @return
    */
   public static <T, D> List<T> safeApply(PartialFunction<D, List<T>> pfn, D x) {
