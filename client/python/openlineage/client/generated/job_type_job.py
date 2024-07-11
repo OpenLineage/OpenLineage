@@ -13,11 +13,11 @@ class JobTypeJobFacet(JobFacet):
     """Job processing type like: BATCH or STREAMING"""
 
     integration: str
-    """OpenLineage integration type of this job: SPARK|DBT|AIRFLOW|FLINK"""
+    """OpenLineage integration type of this job: for example SPARK|DBT|AIRFLOW|FLINK"""
 
     jobType: str | None = attr.field(default=None)  # noqa: N815
-    """Run type like: QUERY|COMMAND|DAG|TASK|JOB|MODEL"""
+    """Run type, for example: QUERY|COMMAND|DAG|TASK|JOB|MODEL. This is an integration-specific field."""
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/2-0-2/JobTypeJobFacet.json#/$defs/JobTypeJobFacet"
+        return "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json#/$defs/JobTypeJobFacet"

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/2-0-2/JobTypeJobFacet.json",
+  "$id": "https://openlineage.io/spec/facets/2-0-3/JobTypeJobFacet.json",
   "$defs": {
     "JobTypeJobFacet": {
       "allOf": [
@@ -21,7 +21,7 @@
               "example": "SPARK"
             },
             "jobType": {
-              "description": "Run type, for example: QUERY|COMMAND|DAG|TASK|JOB|MODEL. This is integration-specific field.",
+              "description": "Run type, for example: QUERY|COMMAND|DAG|TASK|JOB|MODEL. This is an integration-specific field.",
               "type": "string",
               "example": "QUERY"
             }
