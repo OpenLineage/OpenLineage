@@ -6,34 +6,34 @@
 package io.openlineage.client.utils.jdbc;
 
 import java.net.URISyntaxException;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-@Slf4j
 public class SqlServerJdbcExtractor implements JdbcExtractor {
   // https://learn.microsoft.com/en-us/sql/connect/jdbc/building-the-connection-url?view=sql-server-ver16
 
   private static final String SCHEME = "sqlserver";
-  private static final String SERVICE_PROPERTY = "serverName";
-  private static final String PORT_PROPERTY = "portNumber";
-  private static final String INSTANCE_PROPERTY = "instanceName";
-  private static final String DATABASE_NAME_PROPERTY = "databaseName";
+  private static final String SERVICE_PROPERTY = "servername";
+  private static final String PORT_PROPERTY = "portnumber";
+  private static final String INSTANCE_PROPERTY = "instancename";
+  private static final String DATABASE_NAME_PROPERTY = "databasename";
   private static final String DATABASE_PROPERTY = "database";
 
   private static final Pattern URL =
       Pattern.compile(
-          "(?:\\w+)://(?<host>[\\w\\d\\.]+)?(?:\\\\)?(?<instance>[\\w]+)?(?::)?(?<port>\\d+)?(?<params>.*)");
+          "(?:\\w+)://(?<host>[\\w\\d\\.-]+)?(?:\\\\)?(?<instance>[\\w]+)?(?::)?(?<port>\\d+)?(?<params>.*)");
 
   @Override
   public boolean isDefinedAt(String jdbcUri) {
-    return jdbcUri.startsWith(SCHEME);
+    return jdbcUri.toLowerCase(Locale.ROOT).startsWith(SCHEME);
   }
 
   @Override
+  @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
   public JdbcLocation extract(String rawUri, Properties properties) throws URISyntaxException {
     Matcher matcher = URL.matcher(rawUri);
     if (!matcher.matches()) {
@@ -59,14 +59,21 @@ public class SqlServerJdbcExtractor implements JdbcExtractor {
 
     for (String urlParam : urlParams) {
       String[] parts = urlParam.split("=");
-      if (parts.length == 2 && finalProperties.getProperty(parts[0]) == null) {
-        finalProperties.setProperty(parts[0], parts[1]);
+      if (parts.length == 2) {
+        // property names are case-insensitive
+        String key = parts[0].toLowerCase(Locale.ROOT);
+        String value = parts[1];
+        finalProperties.setProperty(key, value);
       }
     }
 
     for (String key : properties.stringPropertyNames()) {
-      if (finalProperties.getProperty(key) == null) {
-        finalProperties.setProperty(key, properties.getProperty(key));
+      // properties have higher priority than in-url params.
+      // property names are case-insensitive
+      // https://learn.microsoft.com/en-us/sql/connect/jdbc/setting-the-connection-properties?view=sql-server-ver16#remarks
+      String normalizedKey = key.toLowerCase(Locale.ROOT);
+      if (finalProperties.getProperty(normalizedKey) == null) {
+        finalProperties.setProperty(normalizedKey, properties.getProperty(key));
       }
     }
 

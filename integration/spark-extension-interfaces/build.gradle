@@ -1,0 +1,252 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+    id 'com.diffplug.spotless' version '6.12.0'
+    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id "pmd"
+}
+
+ext {
+    junit5Version = '5.10.1'
+    assertjVersion = '3.25.3'
+    mockitoVersion = '4.11.0'
+    sparkVersion = '3.2.4'
+    jacksonVersion = '2.15.3'
+}
+
+final def mainSourceSet = sourceSets.main
+
+pmd {
+    consoleOutput = true
+    toolVersion = "6.46.0"
+    rulesMinimumPriority = 5
+    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
+    ruleSets = []
+    ignoreFailures = false
+}
+
+pmdMain {
+    dependsOn shadowJar
+    reports {
+        html.required = true
+    }
+}
+
+pmdTest {
+    dependsOn shadowJar
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+ext {
+    isReleaseVersion = !version.endsWith('SNAPSHOT')
+}
+
+dependencies {
+    implementation("io.openlineage:openlineage-java:${project.version}") {
+        exclude(group: 'io.micrometer')
+        exclude(group: 'org.yaml')
+        exclude(group: 'org.slf4j')
+        exclude(group: 'commons-logging')
+        exclude(group: 'commons-codec')
+    }
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation "org.apache.spark:spark-sql_2.12:${sparkVersion}"
+
+}
+
+configurations {
+    testImplementation.extendsFrom compileOnly
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java']
+        }
+    }
+    test {
+        java {
+            srcDirs = ['src/test/java']
+        }
+    }
+}
+
+compileJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+compileTestJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+task sourceJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+test {
+    useJUnitPlatform()
+}
+
+spotless {
+    def disallowWildcardImports = {
+        String text = it
+        def regex = ~/import .*\.\*;/
+        def m = regex.matcher(text)
+        if (m.find()) {
+            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
+        }
+    }
+    java {
+        googleJavaFormat()
+        removeUnusedImports()
+        custom 'disallowWildcardImports', disallowWildcardImports
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'io.openlineage'
+            artifactId = 'spark-extension-interfaces'
+
+            from components.java
+
+            artifact sourceJar
+            artifact javadocJar
+
+            pom {
+                name = 'spark-extension-interfaces'
+                description = 'OpenLineage Spark Java interfaces'
+                url = 'https://github.com/OpenLineage/OpenLineage'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'openlineage'
+                        name = 'OpenLineage Project'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/OpenLineage/OpenLineage.git'
+                    developerConnection = 'scm:git:ssh://github.com:OpenLineage/OpenLineage.git'
+                    url = 'https://github.com/OpenLineage/OpenLineage'
+                }
+            }
+
+            pom.withXml {
+                Node pomNode = asNode()
+                pomNode.remove(pomNode.get("dependencies"))
+            }
+        }
+    }
+
+    processResources {
+        filter ReplaceTokens, tokens: [
+                "version": project.property("version")
+        ]
+    }
+
+    repositories {
+        maven {
+            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+            credentials {
+                username = System.getenv('RELEASE_USERNAME')
+                password = System.getenv('RELEASE_PASSWORD')
+            }
+        }
+    }
+}
+
+signing {
+    required { isReleaseVersion }
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.mavenJava
+}
+
+archivesBaseName = "spark-extension-interfaces"
+
+shadowJar {
+    dependsOn test
+    dependsOn("createVersionProperties")
+
+    dependencies {
+        exclude 'org/slf4j/**'
+        exclude 'org/yaml/**'
+        exclude 'org/apache/**'
+        exclude 'org/LatencyUtils/**'
+        exclude 'org/HdrHistogram/**'
+        exclude 'io/micrometer/**'
+        exclude 'io/openlineage/client/OpenLineageYaml**'
+        exclude 'io/openlineage/server/**'
+        exclude 'io/openlineage/client/circuitBreaker/**'
+        exclude 'io/openlineage/client/metrics/**'
+        exclude 'io/openlineage/client/transports/**'
+    }
+
+    relocate('io.openlineage.client', 'io.openlineage.spark.shade.client')
+    relocate('com.fasterxml', 'io.openlineage.spark.shade.com.fasterxml')
+
+    archiveClassifier = ''
+    // avoid conflict with any client version of that lib
+    manifest {
+        attributes(
+                'Created-By': "Gradle ${gradle.gradleVersion}",
+                'Built-By': System.getProperty('user.name'),
+                'Build-Jdk': System.getProperty('java.version'),
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
+    }
+    zip64 true
+}
+
+tasks.register("createVersionProperties") {
+    group = "resources"
+    def processResourcesTask = tasks.named(mainSourceSet.processResourcesTaskName, ProcessResources.class)
+    dependsOn(processResourcesTask)
+    doLast {
+        def resourcesDir = processResourcesTask.get().getDestinationDir()
+        def destinationDir = resourcesDir.toPath().resolve("io/openlineage/spark/shade/extension/v1/lifecycle/plan")
+        destinationDir.toFile().mkdirs()
+        def destinationFile = destinationDir.resolve("version.properties").toFile()
+        destinationFile.withWriter { w ->
+            Properties p = new Properties()
+            p["version"] = project.version.toString()
+            p.store w, null
+        }
+    }
+}

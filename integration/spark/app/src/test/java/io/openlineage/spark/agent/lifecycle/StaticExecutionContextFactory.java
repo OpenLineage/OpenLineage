@@ -107,6 +107,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
             qe -> {
               SparkSession session = qe.sparkSession();
               SparkContext sparkContext = qe.sparkPlan().sparkContext();
+              SparkOpenLineageConfig config = new SparkOpenLineageConfig();
               OpenLineageContext olContext =
                   OpenLineageContext.builder()
                       .sparkSession(session)
@@ -115,7 +116,9 @@ public class StaticExecutionContextFactory extends ContextFactory {
                       .customEnvironmentVariables(Arrays.asList("TEST_VAR"))
                       .queryExecution(qe)
                       .meterRegistry(getMeterRegistry())
-                      .openLineageConfig(new SparkOpenLineageConfig())
+                      .openLineageConfig(config)
+                      .sparkExtensionVisitorWrapper(
+                          new SparkOpenLineageExtensionVisitorWrapper(config))
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory());

@@ -16,14 +16,14 @@ class JdbcDatasetUtilsTestForOracle {
   void testGetDatasetIdentifierWithHost() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:oracle:thin:@//test.host.com", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle://test.host.com:1521")
+                "jdbc:oracle:thin:@//test-host.com", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://test-host.com:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:oracle:thin:@test.host.com", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "oracle://test.host.com:1521")
+                "jdbc:oracle:thin:@test-host.com", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://test-host.com:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -149,6 +149,21 @@ class JdbcDatasetUtilsTestForOracle {
                 new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1521")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
+  }
+
+  @Test
+  void testGetDatasetIdentifierWithUppercaseURL() {
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "JDBC:ORACLE:THIN:@//TEST.HOST.COM/SERVICENAME", "SCHEMA.TABLE1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://test.host.com:1521")
+        .hasFieldOrPropertyWithValue("name", "SERVICENAME.SCHEMA.TABLE1");
+
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "JDBC:ORACLE:THIN:@TEST.HOST.COM:SID", "SCHEMA.TABLE1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://test.host.com:1521")
+        .hasFieldOrPropertyWithValue("name", "SID.SCHEMA.TABLE1");
   }
 
   @Test

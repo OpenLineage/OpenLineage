@@ -132,14 +132,14 @@ class SQLDWDatabricksVisitorTest {
 
   @ParameterizedTest
   @CsvSource({
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;databaseName=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net,sqlserver://MYTESTSERVER.database.windows.net,schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net:1433,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;portNumber=1433;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net:1433,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net\\someinstance;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net/someinstance,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;instanceName=someinstance;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net/someinstance,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://;serverName=MYTESTSERVER.database.windows.net,sqlserver://MYTESTSERVER.database.windows.net,schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;database=MYTESTDB,sqlserver://mytestserver.database.windows.net,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;databaseName=MYTESTDB,sqlserver://mytestserver.database.windows.net,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net,sqlserver://mytestserver.database.windows.net,schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB,sqlserver://mytestserver.database.windows.net:1433,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;portNumber=1433;database=MYTESTDB,sqlserver://mytestserver.database.windows.net:1433,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net\\someinstance;database=MYTESTDB,sqlserver://mytestserver.database.windows.net/someinstance,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;instanceName=someinstance;database=MYTESTDB,sqlserver://mytestserver.database.windows.net/someinstance,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://;serverName=MYTESTSERVER.database.windows.net,sqlserver://mytestserver.database.windows.net,schema.table1",
   })
   void testSQLDWRelation(String inputJdbcUrl, String expectedNamespace, String expectedName) {
     String inputName = "\"schema\".\"table1\"";
@@ -173,14 +173,14 @@ class SQLDWDatabricksVisitorTest {
 
   @ParameterizedTest
   @CsvSource({
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;databaseName=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net,sqlserver://MYTESTSERVER.database.windows.net,schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net:1433,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;portNumber=1433;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net:1433,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net\\someinstance;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net/someinstance,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;instanceName=someinstance;database=MYTESTDB,sqlserver://MYTESTSERVER.database.windows.net/someinstance,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://;serverName=MYTESTSERVER.database.windows.net,sqlserver://MYTESTSERVER.database.windows.net,schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;database=MYTESTDB,sqlserver://mytestserver.database.windows.net,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;databaseName=MYTESTDB,sqlserver://mytestserver.database.windows.net,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net,sqlserver://mytestserver.database.windows.net,schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB,sqlserver://mytestserver.database.windows.net:1433,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;portNumber=1433;database=MYTESTDB,sqlserver://mytestserver.database.windows.net:1433,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net\\someinstance;database=MYTESTDB,sqlserver://mytestserver.database.windows.net/someinstance,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;instanceName=someinstance;database=MYTESTDB,sqlserver://mytestserver.database.windows.net/someinstance,MYTESTDB.schema.table1",
+    "jdbc:sqlserver://;serverName=MYTESTSERVER.database.windows.net,sqlserver://mytestserver.database.windows.net,schema.table1",
   })
   void testSpark2SQLDWRelation(String inputJdbcUrl, String expectedNamespace, String expectedName) {
     String inputName = "\"schema\".\"table1\"";
@@ -218,7 +218,7 @@ class SQLDWDatabricksVisitorTest {
     String inputJdbcUrl =
         "jdbc:sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB";
     String expectedName = "MYTESTDB.COMPLEX";
-    String expectedNamespace = "sqlserver://MYTESTSERVER.database.windows.net:1433";
+    String expectedNamespace = "sqlserver://mytestserver.database.windows.net:1433";
 
     // Instantiate a MockSQLDWRelation
     LogicalRelation lr =

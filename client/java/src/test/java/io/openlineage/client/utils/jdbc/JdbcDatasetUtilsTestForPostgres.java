@@ -16,8 +16,8 @@ class JdbcDatasetUtilsTestForPostgres {
   void testGetDatasetIdentifierWithHost() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:postgresql://test.host.com", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "postgres://test.host.com:5432")
+                "jdbc:postgresql://test-host.com", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "postgres://test-host.com:5432")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -79,6 +79,15 @@ class JdbcDatasetUtilsTestForPostgres {
                 new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "postgres://hostname:5432")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
+  }
+
+  @Test
+  void testGetDatasetIdentifierWithUppercaseUrl() {
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "JDBC:POSTGRESQL://TEST.HOST.COM/MYDB", "SCHEMA.TABLE1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "postgres://test.host.com:5432")
+        .hasFieldOrPropertyWithValue("name", "MYDB.SCHEMA.TABLE1");
   }
 
   @Test

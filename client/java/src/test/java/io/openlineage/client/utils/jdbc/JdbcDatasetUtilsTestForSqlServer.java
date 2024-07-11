@@ -16,8 +16,8 @@ class JdbcDatasetUtilsTestForSqlServer {
   void testGetDatasetIdentifierWithHost() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:sqlserver://test.host.com", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "sqlserver://test.host.com")
+                "jdbc:sqlserver://test-host.com", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "sqlserver://test-host.com")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -134,14 +134,14 @@ class JdbcDatasetUtilsTestForSqlServer {
   void testGetDatasetIdentifierWithServerName() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:sqlserver://;serverName=someServer", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "sqlserver://someServer")
+                "jdbc:sqlserver://;serverName=someserver", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "sqlserver://someserver")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
 
     Properties props = new Properties();
-    props.setProperty("serverName", "someServer");
+    props.setProperty("serverName", "someserver");
     assertThat(JdbcDatasetUtils.getDatasetIdentifier("jdbc:sqlserver://", "schema.table1", props))
-        .hasFieldOrPropertyWithValue("namespace", "sqlserver://someServer")
+        .hasFieldOrPropertyWithValue("namespace", "sqlserver://someserver")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -173,5 +173,16 @@ class JdbcDatasetUtilsTestForSqlServer {
                 new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "sqlserver://hostname")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
+  }
+
+  @Test
+  void testGetDatasetIdentifierWithUppercaseUrl() {
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jDBC:SQLSERVER://TEST.HOST.COM\\MYINSTANCE;DATABASENAME=MYDB",
+                "SCHEMA.TABLE1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "sqlserver://test.host.com/MYINSTANCE")
+        .hasFieldOrPropertyWithValue("name", "MYDB.SCHEMA.TABLE1");
   }
 }

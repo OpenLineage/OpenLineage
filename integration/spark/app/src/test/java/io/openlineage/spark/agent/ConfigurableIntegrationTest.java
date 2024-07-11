@@ -5,16 +5,14 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.ConfigurableTestConfig.IVY_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_LOG4J2_PROPERTIES_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_LOG4J_PROPERTIES_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LOG4J2_PROPERTIES_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LOG4J_PROPERTIES_PATH;
-import static io.openlineage.spark.agent.SparkContainerProperties.SPARK_DOCKER_IMAGE;
-import static io.openlineage.spark.agent.SparkContainerUtils.SPARK_DOCKER_CONTAINER_WAIT_MESSAGE;
 import static io.openlineage.spark.agent.SparkContainerUtils.mountPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.openlineage.spark.agent.util.ConfigurableTestConfig;
 import io.openlineage.spark.agent.util.RunEventVerifier;
 import java.io.File;
 import java.io.FileWriter;
@@ -36,6 +34,8 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -44,7 +44,6 @@ import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.DockerImageName;
 
 /**
  * Contains generic & configurable integration test which can be triggered through CLI script to
@@ -64,12 +63,23 @@ class ConfigurableIntegrationTest {
 
   private ConfigurableTestConfig config;
 
+  @BeforeAll
+  @SneakyThrows
+  public static void beforeAll() {
+    File ivyDir = IVY_DIR.toFile();
+    // clear ivy dir in case other tests and containers used the location
+    if (ivyDir.exists()) {
+      FileUtils.deleteDirectory(ivyDir);
+    }
+  }
+
   @SneakyThrows
   @ParameterizedTest
   @MethodSource("provideTestDirs")
   void run(Path testDir) {
     config = ConfigurableTestConfig.load(testDir.toString(), System.getProperty("spark.conf.file"));
-    Path runDir = config.generateRunDir(testDir);
+    Path runDir = config.createDirs(testDir);
+
     OutputStreamWriter fileLogger = new FileWriter(runDir + "/output.log", true);
     fileLogger.write("Parsed configuration: " + config);
 
@@ -83,7 +93,6 @@ class ConfigurableIntegrationTest {
     }
 
     fileLogger.flush();
-
     if (testDir.endsWith(FAILING_TEST)) {
       // assure the test is failing
       assertThat(match).isFalse();
@@ -136,7 +145,7 @@ class ConfigurableIntegrationTest {
     List<String> command =
         new ArrayList<>(
             Arrays.asList(
-                "./bin/spark-submit",
+                config.getDocker().getSparkSubmit(),
                 "--master",
                 "local",
                 "--conf",
@@ -164,7 +173,7 @@ class ConfigurableIntegrationTest {
 
     output.write("command: " + String.join(" ", command));
     GenericContainer container =
-        new GenericContainer<>(DockerImageName.parse(SPARK_DOCKER_IMAGE))
+        new GenericContainer<>(config.loadSparkDockerImage())
             .withLogConsumer(
                 new Consumer<OutputFrame>() {
                   @Override
@@ -173,7 +182,7 @@ class ConfigurableIntegrationTest {
                     output.write(outputFrame.getUtf8String());
                   }
                 })
-            .waitingFor(Wait.forLogMessage(SPARK_DOCKER_CONTAINER_WAIT_MESSAGE, 1))
+            .waitingFor(Wait.forLogMessage(config.getDocker().getWaitForLogMessage(), 1))
             .withStartupTimeout(Duration.of(10, ChronoUnit.MINUTES))
             .withCommand(command.toArray(new String[] {}));
 

@@ -138,7 +138,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
               c ->
                   circuitBreaker.run(
                       () -> {
-                        activeJobId.ifPresent(id -> context.setActiveJobId(id));
+                        activeJobId.ifPresent(id -> c.setActiveJobId(id));
                         c.end(endEvent);
                         return null;
                       }));

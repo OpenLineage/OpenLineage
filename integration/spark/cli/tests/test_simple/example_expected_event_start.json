@@ -3,9 +3,7 @@
   "run": {
     "facets": {
       "parent": {
-        "run": {
-          "runId": "${json-unit.any-string}"
-        },
+        "run": { },
         "job": {
           "namespace": "default",
           "name": "cl_i_test_application"
@@ -39,7 +37,7 @@
   "inputs": [
     {
       "namespace": "file",
-      "name": "/opt/bitnami/spark/spark-warehouse/t1",
+      "name": "${json-unit.regex}.*/spark-warehouse/t1",
       "facets": {
         "schema": {
           "fields": [
@@ -56,7 +54,7 @@
         "symlinks": {
           "identifiers": [
             {
-              "namespace": "file:/opt/bitnami/spark/spark-warehouse",
+              "namespace": "${json-unit.regex}file:.*/spark-warehouse",
               "name": "default.t1",
               "type": "TABLE"
             }

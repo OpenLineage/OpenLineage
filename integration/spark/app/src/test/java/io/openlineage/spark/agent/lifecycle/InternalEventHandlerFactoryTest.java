@@ -32,12 +32,14 @@ class InternalEventHandlerFactoryTest {
     sparkContext =
         SparkContext.getOrCreate(
             new SparkConf().setAppName("InternalEventHandlerFactoryTest").setMaster("local"));
+    SparkOpenLineageConfig config = new SparkOpenLineageConfig();
     context =
         OpenLineageContext.builder()
             .sparkContext(sparkContext)
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .meterRegistry(new SimpleMeterRegistry())
-            .openLineageConfig(new SparkOpenLineageConfig())
+            .openLineageConfig(config)
+            .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .build();
   }
 

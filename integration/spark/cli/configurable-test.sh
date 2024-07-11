@@ -29,6 +29,8 @@ usage() {
   title "EXAMPLES:"
   echo "  $ ./integration/spark/cli/configurable-test.sh --spark ./integration/spark/cli/spark-conf.yml --test ./integration/spark/cli/tests "
   echo
+  echo "  $ ./integration/spark/cli/configurable-test.sh --spark ./integration/spark/cli/spark-conf-docker.yml --test ./integration/spark/cli/tests "
+  echo
   echo "  $ ./integration/spark/cli/configurable-test.sh --help"
   echo
   echo
@@ -101,10 +103,16 @@ fi
 # (4) Get OpenLineage version to compute image tag and container tag
 SCALA_BINARY_VERSION=$(grep "^scalaBinaryVersion:" "$SPARK_CONF_YML" | cut -d':' -f2 | xargs)
 SPARK_VERSION=$(grep "^sparkVersion:" "$SPARK_CONF_YML" | cut -d':' -f2 | xargs)
+if test -z "$SPARK_VERSION"
+then
+  SPARK_VERSION='3.3.4'
+fi
 OPENLINEAGE_VERSION=$(grep "^version=" "integration/spark/gradle.properties" | cut -d'=' -f2)
 DOCKER_IMAGE_TAG="openlineage-test:$OPENLINEAGE_VERSION"
 CONTAINER_NAME="openlineage-test-$OPENLINEAGE_VERSION"
 NETWORK_NAME=openlineage
+
+echo "Spark version is '$SPARK_VERSION'"
 
 # (5) Remove container if exists
 if [ "$(docker ps -a | grep $CONTAINER_NAME 2> /dev/null)" ]; then

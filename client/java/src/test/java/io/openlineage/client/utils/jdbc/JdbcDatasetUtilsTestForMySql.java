@@ -16,8 +16,8 @@ class JdbcDatasetUtilsTestForMySql {
   void testGetDatasetIdentifierWithHost() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:mysql://test.host.com", "schema.table1", new Properties()))
-        .hasFieldOrPropertyWithValue("namespace", "mysql://test.host.com:3306")
+                "jdbc:mysql://test-host.com", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "mysql://test-host.com:3306")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
   }
 
@@ -116,6 +116,15 @@ class JdbcDatasetUtilsTestForMySql {
                 "jdbc:mysql+srv://username:pwd@domain.com:3307", "schema.table1", new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "mysql://domain.com:3307")
         .hasFieldOrPropertyWithValue("name", "schema.table1");
+  }
+
+  @Test
+  void testGetDatasetIdentifierWithUppercaseUrl() {
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "JDBC:MYSQL://TEST.HOST.COM/MYDB", "SCHEMA.TABLE1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "mysql://test.host.com:3306")
+        .hasFieldOrPropertyWithValue("name", "MYDB.SCHEMA.TABLE1");
   }
 
   @Test

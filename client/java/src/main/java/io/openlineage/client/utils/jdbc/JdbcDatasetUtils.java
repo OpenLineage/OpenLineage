@@ -21,6 +21,7 @@ public class JdbcDatasetUtils {
     new OracleJdbcExtractor(),
     new MySqlJdbcExtractor(),
     new SqlServerJdbcExtractor(),
+    new TeradataJdbcExtractor(),
     new GenericJdbcExtractor()
   };
 
@@ -51,7 +52,7 @@ public class JdbcDatasetUtils {
   public static DatasetIdentifier getDatasetIdentifier(
       String jdbcUrl, List<String> parts, Properties properties) {
 
-    String uri = jdbcUrl.replaceAll("^jdbc:", "");
+    String uri = jdbcUrl.replaceAll("^(?i)jdbc:", "");
     try {
       JdbcExtractor extractor = getExtractor(uri);
       JdbcLocation location = extractor.extract(uri, properties);
