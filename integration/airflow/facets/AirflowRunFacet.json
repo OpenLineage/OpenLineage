@@ -127,6 +127,10 @@
         },
         "map_index": {
           "type": "integer"
+        },
+        "log_url": {
+          "type": "string",
+          "format": "uri"
         }
       },
       "additionalProperties": true,
