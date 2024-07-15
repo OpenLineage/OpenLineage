@@ -61,6 +61,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       Collections.synchronizedMap(new HashMap<>());
   private static final Map<Integer, ExecutionContext> rddExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
+  public static final String SPARK_VERSION_3 = "3";
   private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
   private static ContextFactory contextFactory;
   private static JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
@@ -174,7 +175,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
             .map(Integer.class::cast)
             .collect(Collectors.toSet());
 
-    if (sparkVersion.startsWith("3")) {
+    if (SPARK_VERSION_3.compareTo(sparkVersion) < 0) {
       jobMetrics.addJobStages(jobStart.jobId(), stages);
     }
 
@@ -226,7 +227,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           }
           return null;
         });
-    if (sparkVersion.startsWith("3")) {
+    if (SPARK_VERSION_3.compareTo(sparkVersion) < 0) {
       jobMetrics.cleanUp(jobEnd.jobId());
     }
   }

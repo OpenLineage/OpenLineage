@@ -8,10 +8,10 @@ package io.openlineage.spark.agent.util;
 import org.apache.spark.sql.SparkSession;
 
 public class SparkVersionUtils {
-  public static boolean isSpark3() {
+  public static boolean isSpark3OrHigher() {
     return SparkSessionUtils.activeSession()
         .map(SparkSession::version)
-        .filter(v -> v.startsWith("3"))
+        .filter(v -> "3".compareTo(v) < 0)
         .isPresent();
   }
 }

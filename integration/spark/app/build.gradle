@@ -18,6 +18,9 @@ plugins {
 
 ext {
     spark = project.findProperty('spark.version').toString()
+    if (spark.startsWith("4")) {
+        spark = spark + "-preview1"
+    }
     scala = project.findProperty('scala.binary.version').toString()
     activeRuntimeElementsConfiguration = "scala" + scala.replace(".", "") + "RuntimeElements"
 
@@ -176,8 +179,8 @@ def testSystemProperties = { String spark, String scala ->
             "mockserver.logLevel"                 : "ERROR",
             "resources.dir"                       : testResourcesDir.get().asFile.absolutePath,
             "scala.fixtures.jar.name"             : scalaFixturesJarName.toString(),
-            "spark.docker.image"                  : "quay.io/openlineage/spark:spark-${spark}-scala-${scala}",
-            "spark.home.dir"                      : "/opt/bitnami/spark",
+            "spark.docker.image"                  : spark.startsWith("4") ? "apache/spark:${spark}-scala${scala}-java17-python3-r-ubuntu" : "quay.io/openlineage/spark:spark-${spark}-scala-${scala}",
+            "spark.home.dir"                      : spark.startsWith("4") ? "/opt/spark" : "/opt/bitnami/spark",
             "spark.sql.warehouse.dir"             : sparkWarehouseDir.get().asFile.absolutePath,
             "spark.version"                       : spark,
             "scala.binary.version"                : scala,

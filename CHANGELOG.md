@@ -4,6 +4,8 @@
 ### Added
 * **Spark: compile & test Spark integration on Java 17.** [`#2828`](https://github.com/OpenLineage/OpenLineage/pull/2828) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Spark integration is always compiled with Java 17, while tests are running on both Java 8 and Java 17 according to the configuration.*
+* **Spark: Support preview release of Spark 4.0 .** [`#2854`](https://github.com/OpenLineage/OpenLineage/pull/2854) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Include Spark 4.0 preview release in the integration tests.*
 
 
 ### Fixed

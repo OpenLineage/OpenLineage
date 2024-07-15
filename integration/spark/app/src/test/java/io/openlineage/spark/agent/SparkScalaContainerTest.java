@@ -28,6 +28,7 @@ import io.openlineage.client.OpenLineageClientUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -140,7 +141,7 @@ class SparkScalaContainerTest {
 
   private List<String> constructSparkSubmitCommand(String className) {
     List<String> sparkSubmitCommand = new ArrayList<>();
-    sparkSubmitCommand.add("./bin/spark-submit");
+    sparkSubmitCommand.add(Paths.get(System.getProperty("spark.home.dir")) + "/bin/spark-submit");
     sparkSubmitCommand.add("--master");
     sparkSubmitCommand.add("local");
     sparkSubmitCommand.add("--class");

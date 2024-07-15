@@ -31,7 +31,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Tag("integration-test")
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
-@EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)")
+@EnabledIfSystemProperty(named = "spark.version", matches = "([34].*)")
 @Disabled(
     "This test is feature incomplete, and needs to be fixed. It doesn't actually test any OpenLineage code.")
 // FIXME: This test does not configure the OpenLineageSparkListener, and thus does not make any

@@ -35,7 +35,7 @@ import org.testcontainers.utility.DockerImageName;
 
 @Slf4j
 @Testcontainers
-@EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)")
+@EnabledIfSystemProperty(named = "spark.version", matches = "([34].*)")
 @Tag("integration-test")
 @Tag("iceberg")
 class ColumnLineageIntegrationTest {
