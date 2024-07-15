@@ -285,7 +285,7 @@ class DagRunInfo(InfoJsonEncodable):
 
 
 class TaskInstanceInfo(InfoJsonEncodable):
-    includes = ["duration", "try_number", "pool"]
+    includes = ["duration", "try_number", "pool", "log_url"]
     casts = {
         "map_index": lambda ti: ti.map_index if hasattr(ti, "map_index") and ti.map_index != -1 else None
     }
