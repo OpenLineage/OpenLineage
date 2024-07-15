@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.19.0...HEAD)
+### Added
+* **Spark: compile & test Spark integration on Java 17.** [`#2828`](https://github.com/OpenLineage/OpenLineage/pull/2828) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Spark integration is always compiled with Java 17, while tests are running on both Java 8 and Java 17 according to the configuration.*
+
 
 ## [1.19.0](https://github.com/OpenLineage/OpenLineage/compare/1.18.0...1.19.0) - 2024-07-22
 

@@ -5,7 +5,7 @@
   },
   "inputs": [{
     "namespace": "bigquery",
-    "name": "{PROJECT_ID}.{DATASET_ID}.{SPARK_VERSION}_{SCALA_VERSION}_source",
+    "name": "{PROJECT_ID}.{DATASET_ID}.{JAVA_VERSION}_{SPARK_VERSION}_{SCALA_VERSION}_source",
     "facets": {
       "schema": {
         "fields": [{
@@ -20,6 +20,6 @@
   }],
   "outputs": [{
     "namespace": "bigquery",
-    "name": "{PROJECT_ID}.{DATASET_ID}.{SPARK_VERSION}_{SCALA_VERSION}_target"
+    "name": "{PROJECT_ID}.{DATASET_ID}.{JAVA_VERSION}_{SPARK_VERSION}_{SCALA_VERSION}_target"
   }]
 }

@@ -19,8 +19,12 @@ import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.plugins.quality.PmdExtension
 import org.gradle.api.plugins.quality.PmdPlugin
 import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.compile.ForkOptions
+import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.*
+import java.io.File
 
 /**
  * A Gradle plugin that consolidates common configurations for Java projects.
@@ -63,6 +67,25 @@ class CommonConfigPlugin : Plugin<Project> {
 
         target.repositories.mavenCentral()
         target.repositories.mavenLocal()
+
+        if (target.hasProperty("java.compile.home")) {
+            // This is necessary as we want to compile classes on CI always with Java 17 while
+            // testing it on different Java versions to allow running different Spark versions.
+            target.tasks.withType<JavaCompile>().configureEach  {
+                // enable compilation in a separate daemon process
+                options.setFork(true)
+                options.forkOptions.javaHome = File(target.findProperty("java.compile.home").toString())
+            }
+        }
+
+        target.tasks.withType<JavaCompile>().configureEach  {
+            doFirst {
+                if (System.getenv().containsKey("CI") && !target.hasProperty("java.compile.home")) {
+                    // never run compile on CI without property being set
+                    throw RuntimeException("java.compile.home should be always set on CI env")
+                }
+            }
+        }
 
         target.tasks.withType<Test> {
             useJUnitPlatform()
