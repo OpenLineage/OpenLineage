@@ -187,8 +187,10 @@ public class ColumnLevelLineageBuilder {
   private List<OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields> facetInputFields(
       List<TransformedInput> inputFields, List<TransformedInput> datasetDependencyInputs) {
     Map<Input, List<TransformedInput>> combinedInputs = new HashMap<>();
-    inputFields.stream().forEach(e->combinedInputs.computeIfAbsent(e.getInput(), k -> new LinkedList<>()).add(e));
-    datasetDependencyInputs.stream().forEach(e->combinedInputs.computeIfAbsent(e.getInput(), k -> new LinkedList<>()).add(e));
+    inputFields.stream()
+        .forEach(e -> combinedInputs.computeIfAbsent(e.getInput(), k -> new LinkedList<>()).add(e));
+    datasetDependencyInputs.stream()
+        .forEach(e -> combinedInputs.computeIfAbsent(e.getInput(), k -> new LinkedList<>()).add(e));
 
     return combinedInputs.entrySet().stream()
         .map(

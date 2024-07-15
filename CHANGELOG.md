@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.18.0...HEAD)
 
+### Fixed
+* **Remove shaded dependency in `ColumnLevelLineageBuilder`** [`#2850`](https://github.com/OpenLineage/OpenLineage/pull/2850) [@tnazarew](https://github.com/tnazarew)  
+  *Remove shaded `Streams` dependency in `ColumnLevelLineageBuilder` causing `ClassNotFoundException`*
+
 ## [1.18.0](https://github.com/OpenLineage/OpenLineage/compare/1.17.1...1.18.0) - 2024-07-11
 ### Added
 * **Spark: configurable integration test** [`#2755`](https://github.com/OpenLineage/OpenLineage/pull/2755) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
