@@ -131,3 +131,89 @@ fluent-gem install fluent-plugin-out-http
 ```
 Once the external dependencies are installed, a single Ruby code file `parser_openlineage.rb` needs
 to be copied into the Fluentd plugins directory ([installing custom plugin](https://docs.fluentd.org/plugin-development#installing-custom-plugins)).
+
+## Workin with Prometheus
+
+The information above, provided you with valuable information on how to use this plugin (Yes, this is a plugin, you will still need the main Fluentd application to run it!), you may also want to check how Fluentd application itself is doing using Prometheus and for that, you may want to add the plugin: fluent-plugin-prometheus at https://github.com/fluent/fluent-plugin-prometheus and include the following setup in your prometheus.yml file:
+
+global:
+  scrape_interval: 10s # Set the scrape interval to every 10 seconds. Default is every 1 minute.
+
+#### A scrape configuration containing exactly one endpoint to scrape:
+#### Here it's Prometheus itself.
+scrape_configs:
+  - job_name: 'fluentd'
+    static_configs:
+      - targets: ['localhost:24231']
+
+You may also want to include the following additional parameters to your fluent.conf file:
+
+#### source
+<source>
+  @type forward
+  bind 0.0.0.0
+  port 24224
+</source>
+
+#### count the number of incoming records per tag
+<filter company.*>
+  @type prometheus
+  <metric>
+    name fluentd_input_status_num_records_total
+    type counter
+    desc The total number of incoming records
+    <labels>
+      tag ${tag}
+      hostname ${hostname}
+    </labels>
+  </metric>
+</filter>
+
+#### count the number of outgoing records per tag
+<match company.*>
+  @type copy
+
+  <store>
+    @type forward
+    <server>
+      name myserver1
+      host 192.168.1.3
+      port 24224
+      weight 60
+    </server>
+  </store>
+
+  <store>
+    @type prometheus
+    <metric>
+      name fluentd_output_status_num_records_total
+      type counter
+      desc The total number of outgoing records
+      <labels>
+        tag ${tag}
+        hostname ${hostname}
+      </labels>
+    </metric>
+  </store>
+
+</match>
+
+#### expose metrics in prometheus format
+
+<source>
+  @type prometheus
+  bind 0.0.0.0
+  port 24231
+  metrics_path /metrics
+</source>
+
+<source>
+  @type prometheus_output_monitor
+  interval 10
+  <labels>
+    hostname ${hostname}
+  </labels>
+</source>
+
+
+For any additional information, you can check out Fluentd official documentation on https://docs.fluentd.org/monitoring-fluentd/monitoring-prometheus#example-prometheus-queries
