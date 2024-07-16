@@ -243,6 +243,18 @@ class ColumnLineageWithTransformationTypesTest {
   }
 
   @Test
+  void simpleQueryExplode() {
+    createTable("t1", "a;string");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("a;string"),
+            "SELECT a FROM (SELECT explode(split(a, ' ')) AS a FROM t1)");
+
+    assertColumnDependsOnType(
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+  }
+
+  @Test
   void complexQueryCTEJoinsFilter() {
     createTable("t1", "a;int", "b;string");
     createTable("t2", "a;int", "c;int");
