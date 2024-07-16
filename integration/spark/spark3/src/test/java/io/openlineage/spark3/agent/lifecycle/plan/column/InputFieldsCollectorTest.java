@@ -85,7 +85,7 @@ class InputFieldsCollectorTest {
                 .toSeq());
 
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      when(PlanUtils3.getDatasetIdentifier(context.getOlContext(), relation))
+      when(PlanUtils3.getDatasetIdentifierExtended(context.getOlContext(), relation))
           .thenReturn(Optional.of(di));
       InputFieldsCollector.collect(context, plan);
     }
@@ -108,7 +108,7 @@ class InputFieldsCollectorTest {
                 .toSeq());
 
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      when(PlanUtils3.getDatasetIdentifier(context.getOlContext(), relation))
+      when(PlanUtils3.getDatasetIdentifierExtended(context.getOlContext(), relation))
           .thenReturn(Optional.of(di));
       InputFieldsCollector.collect(context, plan);
     }

@@ -115,44 +115,56 @@ public class PlanUtils3 {
       OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder) {
 
     OpenLineage openLineage = context.getOpenLineage();
+    Optional<DatasetIdentifier> di = getDatasetIdentifierExtended(context, relation);
+    return di.map(
+            identifier -> {
+              if (ExtensionDataSourceV2Utils.hasExtensionLineage(relation)) {
+                ExtensionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
+              } else {
+                TableCatalog tableCatalog = (TableCatalog) relation.catalog().get();
 
-    Optional<DatasetIdentifier> di;
-    // Get identifier for dataset, or return empty list
-    if (ExtesionDataSourceV2Utils.hasExtensionLineage(relation)) {
-      di = Optional.of(ExtesionDataSourceV2Utils.getDatasetIdentifier(relation));
-      ExtesionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
-    } else if (relation.identifier().isEmpty()) {
+                Map<String, String> tableProperties = relation.table().properties();
+                CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, tableProperties)
+                    .map(storageDatasetFacet -> datasetFacetsBuilder.storage(storageDatasetFacet));
+              }
+              datasetFacetsBuilder
+                  .schema(PlanUtils.schemaFacet(openLineage, relation.schema()))
+                  .dataSource(PlanUtils.datasourceFacet(openLineage, identifier.getNamespace()));
+
+              return Collections.singletonList(
+                  datasetFactory.getDataset(identifier, datasetFacetsBuilder));
+            })
+        .orElse(Collections.emptyList());
+  }
+
+  public static Optional<DatasetIdentifier> getDatasetIdentifierExtended(
+      OpenLineageContext context, DataSourceV2Relation relation) {
+    // Check if the dataset has extension lineage
+    if (ExtensionDataSourceV2Utils.hasExtensionLineage(relation)) {
+      return Optional.of(ExtensionDataSourceV2Utils.getDatasetIdentifier(relation));
+    }
+
+    // Check if the relation identifier is empty
+    if (relation.identifier().isEmpty()) {
       log.warn("Couldn't find identifier for dataset in plan {}", relation);
-      di = PlanUtils3.getDatasetIdentifier(context, relation);
-      if (!di.isPresent()) {
-        return Collections.emptyList();
-      }
-    } else {
-      Identifier identifier = relation.identifier().get();
-
-      // Get catalog for dataset, or return empty list
-      if (relation.catalog().isEmpty() || !(relation.catalog().get() instanceof TableCatalog)) {
-        log.warn("Couldn't find catalog for dataset in plan " + relation);
-        return Collections.emptyList();
-      }
-      TableCatalog tableCatalog = (TableCatalog) relation.catalog().get();
-
-      Map<String, String> tableProperties = relation.table().properties();
-      di = PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
-
-      CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, tableProperties)
-          .map(storageDatasetFacet -> datasetFacetsBuilder.storage(storageDatasetFacet));
+      return PlanUtils3.getDatasetIdentifier(context, relation);
     }
 
-    if (!di.isPresent()) {
-      return Collections.emptyList();
+    // Get the identifier from the relation
+    Identifier identifier = relation.identifier().get();
+
+    // Check if the catalog is present and is an instance of TableCatalog
+    if (relation.catalog().isEmpty() || !(relation.catalog().get() instanceof TableCatalog)) {
+      log.warn("Couldn't find catalog for dataset in plan {}", relation);
+      return Optional.empty();
     }
 
-    datasetFacetsBuilder
-        .schema(PlanUtils.schemaFacet(openLineage, relation.schema()))
-        .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
+    // Get the catalog and table properties
+    TableCatalog tableCatalog = (TableCatalog) relation.catalog().get();
+    Map<String, String> tableProperties = relation.table().properties();
 
-    return Collections.singletonList(datasetFactory.getDataset(di.get(), datasetFacetsBuilder));
+    // Get the dataset identifier
+    return PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
   }
 
   /**

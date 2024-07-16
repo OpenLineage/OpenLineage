@@ -167,7 +167,7 @@ public class InputFieldsCollector {
 
   private static List<DatasetIdentifier> extractDatasetIdentifier(
       ColumnLevelLineageContext context, DataSourceV2Relation relation) {
-    return PlanUtils3.getDatasetIdentifier(context.getOlContext(), relation)
+    return PlanUtils3.getDatasetIdentifierExtended(context.getOlContext(), relation)
         .map(Collections::singletonList)
         .orElse(Collections.emptyList());
   }
