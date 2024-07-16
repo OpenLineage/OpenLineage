@@ -22,12 +22,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.hadoop.shaded.com.google.common.collect.Streams;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.jetbrains.annotations.NotNull;
 
@@ -188,13 +186,13 @@ public class ColumnLevelLineageBuilder {
 
   private List<OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields> facetInputFields(
       List<TransformedInput> inputFields, List<TransformedInput> datasetDependencyInputs) {
+    Map<Input, List<TransformedInput>> combinedInputs = new HashMap<>();
+    inputFields.stream()
+        .forEach(e -> combinedInputs.computeIfAbsent(e.getInput(), k -> new LinkedList<>()).add(e));
+    datasetDependencyInputs.stream()
+        .forEach(e -> combinedInputs.computeIfAbsent(e.getInput(), k -> new LinkedList<>()).add(e));
 
-    Stream<TransformedInput> concat =
-        Streams.concat(inputFields.stream(), datasetDependencyInputs.stream());
-    Map<Input, List<TransformedInput>> collect =
-        concat.collect(Collectors.groupingBy(TransformedInput::getInput, Collectors.toList()));
-
-    return collect.entrySet().stream()
+    return combinedInputs.entrySet().stream()
         .map(
             field ->
                 new OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFieldsBuilder()
