@@ -3,8 +3,10 @@
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.18.0...HEAD)
 
 ### Fixed
-* **Remove shaded dependency in `ColumnLevelLineageBuilder`** [`#2850`](https://github.com/OpenLineage/OpenLineage/pull/2850) [@tnazarew](https://github.com/tnazarew)  
+* **Spark: Remove shaded dependency in `ColumnLevelLineageBuilder`** [`#2850`](https://github.com/OpenLineage/OpenLineage/pull/2850) [@tnazarew](https://github.com/tnazarew)  
   *Remove shaded `Streams` dependency in `ColumnLevelLineageBuilder` causing `ClassNotFoundException`*
+* **Spark: add handling for `Generate`** [`#2856`](https://github.com/OpenLineage/OpenLineage/pull/2856) [@tnazarew](https://github.com/tnazarew)  
+  *Add handling for `Generate` type nodes of logical plan (e.g. explode operation)*
 
 ## [1.18.0](https://github.com/OpenLineage/OpenLineage/compare/1.17.1...1.18.0) - 2024-07-11
 ### Added
