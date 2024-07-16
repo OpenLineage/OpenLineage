@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.catalyst.expressions.Alias;
+import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.CaseWhen;
 import org.apache.spark.sql.catalyst.expressions.Crc32;
@@ -48,6 +49,7 @@ import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.Distinct;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
+import org.apache.spark.sql.catalyst.plans.logical.Generate;
 import org.apache.spark.sql.catalyst.plans.logical.Join;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
@@ -110,6 +112,8 @@ public class ExpressionDependencyCollector {
     if (node instanceof Project) {
       expressions.addAll(
           ScalaConversionUtils.<NamedExpression>fromSeq(((Project) node).projectList()));
+    } else if (node instanceof Generate) {
+      collectFromGenerate(context, (Generate) node);
     } else if (node instanceof CreateTableAsSelect
         && (node.children() == null || node.children().isEmpty())) {
       collectFromNode(context, ((CreateTableAsSelect) node).query());
@@ -159,6 +163,24 @@ public class ExpressionDependencyCollector {
           context.getBuilder().addDatasetDependency(exprId);
           datasetDependencies.forEach(e -> traverseExpression(e, exprId, dt, context.getBuilder()));
         });
+  }
+
+  private static void collectFromGenerate(ColumnLevelLineageContext context, Generate node) {
+    List<Attribute> attributes = ScalaConversionUtils.<Attribute>fromSeq(node.generatorOutput());
+    // For some reason ((Generate) node).generator().children() gets "error: cannot find symbol"
+    // during compilation
+    // Casting Generator to Expression is hacky and ugly workaround
+    List<Expression> children =
+        ScalaConversionUtils.<Expression>fromSeq(((Expression) node.generator()).children());
+    attributes.forEach(
+        ne ->
+            children.forEach(
+                e ->
+                    traverseExpression(
+                        e,
+                        ne.exprId(),
+                        TransformationInfo.transformation(),
+                        context.getBuilder())));
   }
 
   public static void traverseExpression(

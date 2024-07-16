@@ -27,6 +27,7 @@ import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.BinaryExpression;
 import org.apache.spark.sql.catalyst.expressions.CaseWhen;
 import org.apache.spark.sql.catalyst.expressions.EqualTo;
+import org.apache.spark.sql.catalyst.expressions.Explode;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.expressions.GreaterThan;
@@ -37,12 +38,14 @@ import org.apache.spark.sql.catalyst.expressions.NullOrdering;
 import org.apache.spark.sql.catalyst.expressions.Sha1;
 import org.apache.spark.sql.catalyst.expressions.SortDirection;
 import org.apache.spark.sql.catalyst.expressions.SortOrder;
+import org.apache.spark.sql.catalyst.expressions.StringSplit;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
 import org.apache.spark.sql.catalyst.plans.JoinType;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
+import org.apache.spark.sql.catalyst.plans.logical.Generate;
 import org.apache.spark.sql.catalyst.plans.logical.Join;
 import org.apache.spark.sql.catalyst.plans.logical.JoinHint;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -317,6 +320,24 @@ class ExpressionDependencyCollectorTest {
             exprId5, exprId2, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
     verify(builder, times(1)).addDependency(exprId5, exprId3, TransformationInfo.identity());
     verify(builder, times(1)).addDependency(exprId5, exprId4, TransformationInfo.identity());
+  }
+
+  @Test
+  void testCollectFromGenerate() {
+    Explode explode = new Explode(new StringSplit(field(NAME1, exprId1), field(NAME2, exprId2)));
+    Generate generate =
+        new Generate(
+            explode,
+            ScalaConversionUtils.asScalaSeqEmpty(),
+            false,
+            ScalaConversionUtils.toScalaOption(""),
+            ScalaConversionUtils.fromList(Collections.singletonList(field(NAME3, exprId3))),
+            mock(LogicalPlan.class));
+    LogicalPlan plan = new CreateTableAsSelect(null, null, null, generate, null, null, false);
+    ExpressionDependencyCollector.collect(context, plan);
+
+    verify(builder, times(1)).addDependency(exprId3, exprId1, TransformationInfo.transformation());
+    verify(builder, times(1)).addDependency(exprId3, exprId2, TransformationInfo.transformation());
   }
 
   @Test
