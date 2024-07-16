@@ -1214,15 +1214,6 @@ workflows:
           context: release
           requires:
             - release-client-java
-      - release-integration-spark-extension-entrypoint:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          context: release
-          requires:
-            - release-client-java
       - release-integration-flink:
           filters:
             tags:
