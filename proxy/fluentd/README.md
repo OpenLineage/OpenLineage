@@ -216,4 +216,8 @@ You may also want to include the following additional parameters to your fluent.
 </source>
 
 
+<<<<<<< HEAD
 For any additional information, you can check out Fluentd official documentation on https://docs.fluentd.org/monitoring-fluentd/monitoring-prometheus#example-prometheus-queries
+=======
+For any additional information, you can check out Fluentd official documentation on https://docs.fluentd.org/monitoring-fluentd/monitoring-prometheus#example-prometheus-queries
+>>>>>>> c984151eeaab5e49f3e84cf4ab5aaaea1fb60302
