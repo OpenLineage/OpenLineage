@@ -132,15 +132,15 @@ fluent-gem install fluent-plugin-out-http
 Once the external dependencies are installed, a single Ruby code file `parser_openlineage.rb` needs
 to be copied into the Fluentd plugins directory ([installing custom plugin](https://docs.fluentd.org/plugin-development#installing-custom-plugins)).
 
-#### Workin with Prometheus
+## Workin with Prometheus
 
 The information above, provided you with valuable information on how to use this plugin (Yes, this is a plugin, you will still need the main Fluentd application to run it!), you may also want to check how Fluentd application itself is doing using Prometheus and for that, you may want to add the plugin: fluent-plugin-prometheus at https://github.com/fluent/fluent-plugin-prometheus and include the following setup in your prometheus.yml file:
 
 global:
   scrape_interval: 10s # Set the scrape interval to every 10 seconds. Default is every 1 minute.
 
-# A scrape configuration containing exactly one endpoint to scrape:
-# Here it's Prometheus itself.
+#### A scrape configuration containing exactly one endpoint to scrape:
+#### Here it's Prometheus itself.
 scrape_configs:
   - job_name: 'fluentd'
     static_configs:
@@ -148,14 +148,14 @@ scrape_configs:
 
 You may also want to include the following additional parameters to your fluent.conf file:
 
-# source
+#### source
 <source>
   @type forward
   bind 0.0.0.0
   port 24224
 </source>
 
-# count the number of incoming records per tag
+#### count the number of incoming records per tag
 <filter company.*>
   @type prometheus
   <metric>
@@ -169,7 +169,7 @@ You may also want to include the following additional parameters to your fluent.
   </metric>
 </filter>
 
-# count the number of outgoing records per tag
+#### count the number of outgoing records per tag
 <match company.*>
   @type copy
 
@@ -198,7 +198,7 @@ You may also want to include the following additional parameters to your fluent.
 
 </match>
 
-# expose metrics in prometheus format
+#### expose metrics in prometheus format
 
 <source>
   @type prometheus
