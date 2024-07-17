@@ -137,7 +137,6 @@ to be copied into the Fluentd plugins directory ([installing custom plugin](http
 
 The information above, provided you with valuable information on how to use this plugin (Yes, this is a plugin, you will still need the main Fluentd application to run it!), you may also want to check how Fluentd application itself is doing using Prometheus and for that, you may want to add the plugin: fluent-plugin-prometheus at https://github.com/fluent/fluent-plugin-prometheus and include the following setup in your prometheus.yml file:
 
-
 ```yml
 global:
   scrape_interval: 10s # Set the scrape interval to every 10 seconds. Default is every 1 minute.
@@ -148,7 +147,7 @@ scrape_configs:
   - job_name: 'fluentd'
     static_configs:
       - targets: ['localhost:24231']
-```
+````
 
 You may also want to include the following additional parameters to your fluent.conf file:
 
