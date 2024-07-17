@@ -6,7 +6,9 @@ import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.kotlin.dsl.getByType
 import org.slf4j.LoggerFactory
 import java.io.File
-
+import javassist.bytecode.ClassFile
+import java.io.DataInputStream
+import java.io.FileInputStream
 
 /**
  * A delegate class to implement jar verification logic. By design, the class methods shall be
@@ -29,6 +31,7 @@ class JarVerificationPluginDelegate(
 
         if (hasUnshadedPackages(identifiersFromJar)
             .or(areMissingClasses(identifiersFromSource, identifiersFromJar))
+            .or(hasCompiledClassesMajorVersionAboveAllowed())
         ) {
             throw GradleException("Jar verification task failed")
         }
@@ -58,6 +61,31 @@ class JarVerificationPluginDelegate(
                 p -> logger.error("[ERROR] Package '$p' should not be present in jar")
             }
             .isNotEmpty()
+    }
+
+    /**
+     * Verifies bytecode of all the classes from the Jar. It decodes .class files
+     * and extracts major class version property from them. It verifies if major Java version
+     * for all the classes is lower or equal to the one configuread as maximal allowed.
+     * For example, for Java 8 compiled classes should contain class major version equal to 52.
+     */
+    private fun hasCompiledClassesMajorVersionAboveAllowed(): Boolean {
+        return target
+            .zipTree(locateJar(target).toPath())
+            .files
+            .filter { it.extension == "class" }
+            .filter { !it.path.contains("META-INF") }
+            .filter { majorVersionOf(it.path) > extension.highestMajorClassVersionAllowed.get() }
+            .map { p ->
+                logger.error("[ERROR] Major class version for '${p.path}' " +
+                        "is '${majorVersionOf(p.path)}', which is above " +
+                        "'${extension.highestMajorClassVersionAllowed.get()}'")
+            }
+            .isNotEmpty()
+    }
+
+    private fun majorVersionOf(path: String): Int {
+        return ClassFile(DataInputStream(FileInputStream(File(path)))).majorVersion
     }
 
     /**
