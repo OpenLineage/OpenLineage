@@ -39,6 +39,7 @@ class JarVerificationPlugin : Plugin<Project> {
                     "io.micrometer.common",
                     "io.micrometer.observation"
                 ))
+                highestMajorClassVersionAllowed.set(52)
             }
     }
 

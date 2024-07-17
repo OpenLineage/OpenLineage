@@ -57,4 +57,9 @@ interface JarVerificationPluginExtension {
      * Exceptions to this rule can be defined in allowedUnshadedPackages
      */
     val assertJarDoesNotContainUnshadedClasses: Property<Boolean>
+
+    /**
+     * Highest major class version allowed within compiled classes.
+     */
+    val highestMajorClassVersionAllowed: Property<Int>
 }
