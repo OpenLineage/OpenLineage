@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.18.0...HEAD)
 
+### Added
+* **Spark: verify bytecode version of the built jar.** [`#2859`](https://github.com/OpenLineage/OpenLineage/pull/2859) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Extend `JarVerifier` plugin to assure all compiled classes have bytecode version of Java 8 or lower.*
+
 ### Fixed
 * **Spark: Remove shaded dependency in `ColumnLevelLineageBuilder`** [`#2850`](https://github.com/OpenLineage/OpenLineage/pull/2850) [@tnazarew](https://github.com/tnazarew)  
   *Remove shaded `Streams` dependency in `ColumnLevelLineageBuilder` causing `ClassNotFoundException`*
