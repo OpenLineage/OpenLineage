@@ -132,10 +132,13 @@ fluent-gem install fluent-plugin-out-http
 Once the external dependencies are installed, a single Ruby code file `parser_openlineage.rb` needs
 to be copied into the Fluentd plugins directory ([installing custom plugin](https://docs.fluentd.org/plugin-development#installing-custom-plugins)).
 
-## Workin with Prometheus
+## Fluentd proxy setup
+### Monitoring with Prometheus
 
 The information above, provided you with valuable information on how to use this plugin (Yes, this is a plugin, you will still need the main Fluentd application to run it!), you may also want to check how Fluentd application itself is doing using Prometheus and for that, you may want to add the plugin: fluent-plugin-prometheus at https://github.com/fluent/fluent-plugin-prometheus and include the following setup in your prometheus.yml file:
 
+
+```yml
 global:
   scrape_interval: 10s # Set the scrape interval to every 10 seconds. Default is every 1 minute.
 
@@ -145,9 +148,11 @@ scrape_configs:
   - job_name: 'fluentd'
     static_configs:
       - targets: ['localhost:24231']
+```
 
 You may also want to include the following additional parameters to your fluent.conf file:
 
+```xml
 #### source
 <source>
   @type forward
@@ -214,10 +219,6 @@ You may also want to include the following additional parameters to your fluent.
     hostname ${hostname}
   </labels>
 </source>
+```
 
-
-<<<<<<< HEAD
 For any additional information, you can check out Fluentd official documentation on https://docs.fluentd.org/monitoring-fluentd/monitoring-prometheus#example-prometheus-queries
-=======
-For any additional information, you can check out Fluentd official documentation on https://docs.fluentd.org/monitoring-fluentd/monitoring-prometheus#example-prometheus-queries
->>>>>>> c984151eeaab5e49f3e84cf4ab5aaaea1fb60302
