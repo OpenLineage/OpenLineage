@@ -23,8 +23,8 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
-import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -65,12 +65,13 @@ class AppendDataDatasetBuilderTest {
     OpenLineage.OutputDataset dataset = mock(OpenLineage.OutputDataset.class);
     when(appendData.table()).thenReturn(relation);
 
-    try (MockedStatic mockedPlanUtils3 = mockStatic(PlanUtils3.class)) {
+    try (MockedStatic mockedPlanUtils3 = mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
       try (MockedStatic mockedFacetUtils = mockStatic(DatasetVersionDatasetFacetUtils.class)) {
         when(DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
                 context, relation))
             .thenReturn(Optional.of("v2"));
-        when(PlanUtils3.fromDataSourceV2Relation(eq(factory), eq(context), eq(relation), any()))
+        when(DataSourceV2RelationDatasetExtractor.extract(
+                eq(factory), eq(context), eq(relation), any()))
             .thenReturn(Collections.singletonList(dataset));
 
         List<OpenLineage.OutputDataset> datasets =

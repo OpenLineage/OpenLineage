@@ -16,8 +16,8 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
-import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -66,10 +66,12 @@ class DataSourceV2RelationDatasetBuilderTest {
     when(openLineage.newDatasetFacetsBuilder()).thenReturn(datasetFacetsBuilder);
     when(context.getOpenLineage()).thenReturn(openLineage);
 
-    try (MockedStatic planUtils3MockedStatic = mockStatic(PlanUtils3.class)) {
+    try (MockedStatic planUtils3MockedStatic =
+        mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
       try (MockedStatic facetUtilsMockedStatic =
           mockStatic(DatasetVersionDatasetFacetUtils.class)) {
-        when(PlanUtils3.fromDataSourceV2Relation(factory, context, relation, datasetFacetsBuilder))
+        when(DataSourceV2RelationDatasetExtractor.extract(
+                factory, context, relation, datasetFacetsBuilder))
             .thenReturn(datasets);
 
         if (builder instanceof DataSourceV2RelationOutputDatasetBuilder) {
