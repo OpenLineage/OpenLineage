@@ -19,11 +19,15 @@ import static io.openlineage.spark.agent.SparkContainerUtils.mountFiles;
 import static io.openlineage.spark.agent.SparkContainerUtils.mountPath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockserver.model.HttpRequest.request;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClientUtils;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -38,6 +42,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.ClearType;
 import org.slf4j.Logger;
@@ -71,6 +76,8 @@ class SparkScalaContainerTest {
   private static GenericContainer<?> spark;
   private static MockServerClient mockServerClient;
   private static final Logger logger = LoggerFactory.getLogger(SparkContainerIntegrationTest.class);
+  private static final String SPARK_3_OR_ABOVE = "^[3-9].*";
+  private static final String SPARK_VERSION = "spark.version";
 
   @BeforeAll
   public static void setup() {
@@ -188,5 +195,128 @@ class SparkScalaContainerTest {
               assertThat(lastEvent.getInputs().stream().map(d -> d.getName()))
                   .contains("/tmp/scala-test/rdd_input1", "/tmp/scala-test/rdd_input2");
             });
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
+  void testKafka2KafkaStreamingProducesInputAndOutputDatasets() throws IOException {
+    final Network network = Network.newNetwork();
+    final String className = "io.openlineage.spark.streaming.Kafka2KafkaJob";
+    final DockerImageName kafkaDockerImageName = DockerImageName.parse("docker.io/bitnami/kafka:3");
+
+    GenericContainer zookeeperContainer =
+        new GenericContainer(DockerImageName.parse("docker.io/bitnami/zookeeper:3.7"))
+            .withEnv("ALLOW_ANONYMOUS_LOGIN", "yes")
+            .withEnv("ZOO_AUTOPURGE_INTERVAL", "1")
+            .withNetwork(network)
+            .withNetworkAliases("zookeeper")
+            .withExposedPorts(2181);
+
+    GenericContainer kafkaContainer =
+        new GenericContainer(kafkaDockerImageName)
+            .withEnv("KAFKA_CFG_ZOOKEEPER_CONNECT", "zookeeper:2181")
+            .withEnv(
+                "KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP", "CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT")
+            .withEnv("KAFKA_CFG_LISTENERS", "CLIENT://:9092,EXTERNAL://:9093")
+            .withEnv(
+                "KAFKA_CFG_ADVERTISED_LISTENERS",
+                "CLIENT://kafka.broker.zero:9092,EXTERNAL://localhost:9093")
+            .withEnv("KAFKA_CFG_INTER_BROKER_LISTENER_NAME", "CLIENT")
+            .withEnv("ALLOW_PLAINTEXT_LISTENER", "yes")
+            .withEnv("KAFKA_ZOOKEEPER_TLS_VERIFY_HOSTNAME", "false")
+            .withEnv("KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE", "true")
+            .withNetwork(network)
+            .withNetworkAliases("kafka.broker.zero")
+            .withExposedPorts(9092, 9093)
+            .dependsOn(zookeeperContainer);
+
+    GenericContainer kafkaInitContainer =
+        new GenericContainer(kafkaDockerImageName)
+            .withEnv("KAFKA_CFG_ZOOKEEPER_CONNECT", "zookeeper:2181")
+            .withNetwork(network)
+            .dependsOn(zookeeperContainer, kafkaContainer)
+            .withCommand(
+                "/bin/bash",
+                "-c",
+                "/opt/bitnami/kafka/bin/kafka-topics.sh --create --topic input-topic --bootstrap-server kafka.broker.zero:9092");
+
+    zookeeperContainer.start();
+    kafkaContainer.start();
+    kafkaInitContainer.start();
+
+    GenericContainer spark =
+        new GenericContainer<>(DockerImageName.parse(SPARK_DOCKER_IMAGE))
+            .dependsOn(kafkaContainer)
+            .waitingFor(Wait.forLogMessage(SPARK_DOCKER_CONTAINER_WAIT_MESSAGE, 1))
+            .withNetwork(network)
+            .withStartupTimeout(Duration.ofMinutes(2));
+
+    List<String> command = new ArrayList<>();
+    command.add("./bin/spark-submit");
+    command.add("--master");
+    command.add("local[*]");
+    command.add("--class");
+    command.add(className);
+    command.add("--packages");
+    command.add(System.getProperty("kafka.package.version"));
+
+    addSparkConfig(command, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
+    addSparkConfig(command, "spark.extraListeners=" + OpenLineageSparkListener.class.getName());
+    addSparkConfig(command, "spark.jars.ivy=/tmp/.ivy2/");
+    addSparkConfig(command, "spark.openlineage.debugFacet=enabled");
+    addSparkConfig(
+        command, "spark.openlineage.facets.disabled=[schema;spark_unknown;spark.logicalPlan]");
+    addSparkConfig(command, "spark.openlineage.transport.type=file");
+    addSparkConfig(command, "spark.openlineage.transport.location=/tmp/events.log");
+    addSparkConfig(command, "spark.sql.shuffle.partitions=1");
+    addSparkConfig(command, "spark.sql.warehouse.dir=/tmp/warehouse");
+    addSparkConfig(command, "spark.ui.enabled=false");
+    command.add(CONTAINER_FIXTURES_JAR_PATH.toString());
+
+    // mount the additional Jars
+    mountPath(spark, HOST_SCALA_FIXTURES_JAR_PATH, CONTAINER_FIXTURES_JAR_PATH);
+    mountFiles(spark, HOST_LIB_DIR, CONTAINER_SPARK_JARS_DIR);
+    mountFiles(spark, HOST_ADDITIONAL_JARS_DIR, CONTAINER_SPARK_JARS_DIR);
+    mountFiles(spark, HOST_ADDITIONAL_CONF_DIR, CONTAINER_SPARK_CONF_DIR);
+
+    final String commandStr = String.join(" ", command);
+    log.info("Command is {}", commandStr);
+
+    spark.withCommand(commandStr);
+
+    spark.start();
+
+    Awaitility.await().atMost(Duration.ofSeconds(60)).until(() -> !spark.isRunning());
+
+    kafkaInitContainer.stop();
+    kafkaContainer.stop();
+    zookeeperContainer.stop();
+
+    File temporaryFile = File.createTempFile("events", ".log");
+
+    spark.copyFileFromContainer("/tmp/events.log", temporaryFile.getPath());
+
+    temporaryFile.deleteOnExit();
+
+    List<RunEvent> events =
+        Files.readAllLines(temporaryFile.toPath()).stream()
+            .map(OpenLineageClientUtils::runEventFromJson)
+            .collect(Collectors.toList());
+
+    List<RunEvent> nonEmptyInputEvents =
+        events.stream().filter(e -> !e.getInputs().isEmpty()).collect(Collectors.toList());
+
+    assertEquals(3, nonEmptyInputEvents.size());
+
+    nonEmptyInputEvents.forEach(
+        event -> {
+          assertEquals(1, event.getInputs().size());
+          assertEquals("input-topic", event.getInputs().get(0).getName());
+          assertEquals("kafka://kafka.broker.zero:9092", event.getInputs().get(0).getNamespace());
+
+          assertEquals(1, event.getOutputs().size());
+          assertEquals("output-topic", event.getOutputs().get(0).getName());
+          assertEquals("kafka://kafka.broker.zero:9092", event.getOutputs().get(0).getNamespace());
+        });
   }
 }
