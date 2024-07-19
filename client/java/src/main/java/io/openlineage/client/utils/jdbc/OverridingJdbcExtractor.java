@@ -7,6 +7,7 @@ package io.openlineage.client.utils.jdbc;
 
 import java.net.URISyntaxException;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,9 +36,9 @@ public class OverridingJdbcExtractor extends GenericJdbcExtractor implements Jdb
   public JdbcLocation extract(String rawUri, Properties properties) throws URISyntaxException {
     JdbcLocation result = super.extract(rawUri, properties);
 
-    String authority = result.getAuthority();
-    if (defaultPort != null) {
-      authority = appendDefaultPort(authority);
+    Optional<String> authority = result.getAuthority();
+    if (authority.isPresent() && defaultPort != null) {
+      authority = authority.map(this::appendDefaultPort);
     }
 
     return new JdbcLocation(overrideScheme, authority, result.getInstance(), result.getDatabase());
