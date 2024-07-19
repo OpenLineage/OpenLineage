@@ -35,6 +35,7 @@ import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelec
 import io.openlineage.spark.agent.lifecycle.plan.SqlDWDatabricksVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SqlExecutionRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.WriteToDataSourceV2Visitor;
 import io.openlineage.spark.agent.util.BigQueryUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -121,6 +122,7 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     list.add(new TruncateTableCommandVisitor(context));
     list.add(new AlterTableSetLocationCommandVisitor(context));
     list.add(new AlterTableAddPartitionCommandVisitor(context));
+    list.add(new WriteToDataSourceV2Visitor(context));
     return list;
   }
 }
