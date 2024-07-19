@@ -23,8 +23,8 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
-import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -78,13 +78,13 @@ class ReplaceIcebergDataDatasetBuilderTest {
     when(openLineage.newDatasetFacetsBuilder()).thenReturn(datasetFacetsBuilder);
 
     when(plan.table()).thenReturn(table);
-    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+    try (MockedStatic mocked = mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
       try (MockedStatic mockedFacetUtils = mockStatic(DatasetVersionDatasetFacetUtils.class)) {
         when(DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
                 openLineageContext, table))
             .thenReturn(Optional.of("v2"));
 
-        when(PlanUtils3.fromDataSourceV2Relation(
+        when(DataSourceV2RelationDatasetExtractor.extract(
                 any(DatasetFactory.class),
                 eq(openLineageContext),
                 eq(table),

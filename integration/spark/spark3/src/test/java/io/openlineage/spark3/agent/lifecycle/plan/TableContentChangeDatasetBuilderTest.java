@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
-import io.openlineage.spark3.agent.utils.PlanUtils3;
+import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -137,7 +137,7 @@ class TableContentChangeDatasetBuilderTest {
   private void verify(
       LogicalPlan logicalPlan,
       OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
-    try (MockedStatic mockedPlanUtils3 = mockStatic(PlanUtils3.class)) {
+    try (MockedStatic mockedPlanUtils3 = mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
       try (MockedStatic mockedVersions = mockStatic(CatalogUtils3.class)) {
         OpenLineage.Dataset dataset = mock(OpenLineage.OutputDataset.class);
         OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
@@ -159,7 +159,7 @@ class TableContentChangeDatasetBuilderTest {
         when(openLineage.newDatasetVersionDatasetFacet("v2"))
             .thenReturn(datasetVersionDatasetFacet);
 
-        when(PlanUtils3.fromDataSourceV2Relation(
+        when(DataSourceV2RelationDatasetExtractor.extract(
                 any(), eq(openLineageContext), eq(dataSourceV2Relation), eq(datasetFacetsBuilder)))
             .thenReturn(Collections.singletonList(dataset));
         when(CatalogUtils3.getDatasetVersion(any(), any(), any(), any()))

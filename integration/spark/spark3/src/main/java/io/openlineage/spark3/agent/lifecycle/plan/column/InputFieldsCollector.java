@@ -16,7 +16,7 @@ import io.openlineage.spark.agent.util.JdbcSparkUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark3.agent.utils.PlanUtils3;
+import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.sql.SqlMeta;
 import java.net.URI;
 import java.util.ArrayList;
@@ -167,7 +167,8 @@ public class InputFieldsCollector {
 
   private static List<DatasetIdentifier> extractDatasetIdentifier(
       ColumnLevelLineageContext context, DataSourceV2Relation relation) {
-    return PlanUtils3.getDatasetIdentifier(context.getOlContext(), relation)
+    return DataSourceV2RelationDatasetExtractor.getDatasetIdentifierExtended(
+            context.getOlContext(), relation)
         .map(Collections::singletonList)
         .orElse(Collections.emptyList());
   }
