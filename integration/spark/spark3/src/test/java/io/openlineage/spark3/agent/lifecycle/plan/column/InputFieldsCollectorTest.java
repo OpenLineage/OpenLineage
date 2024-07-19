@@ -21,7 +21,7 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.utils.PlanUtils3;
+import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
@@ -84,8 +84,9 @@ class InputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      when(PlanUtils3.getDatasetIdentifier(context.getOlContext(), relation))
+    try (MockedStatic mocked = mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
+      when(DataSourceV2RelationDatasetExtractor.getDatasetIdentifierExtended(
+              context.getOlContext(), relation))
           .thenReturn(Optional.of(di));
       InputFieldsCollector.collect(context, plan);
     }
@@ -107,8 +108,9 @@ class InputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      when(PlanUtils3.getDatasetIdentifier(context.getOlContext(), relation))
+    try (MockedStatic mocked = mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
+      when(DataSourceV2RelationDatasetExtractor.getDatasetIdentifierExtended(
+              context.getOlContext(), relation))
           .thenReturn(Optional.of(di));
       InputFieldsCollector.collect(context, plan);
     }

@@ -9,8 +9,8 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
+import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
-import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -84,7 +84,7 @@ public class TableContentChangeDatasetBuilder
           context, datasetFacetsBuilder, returnTable);
     }
 
-    return PlanUtils3.fromDataSourceV2Relation(
+    return DataSourceV2RelationDatasetExtractor.extract(
         outputDataset(), context, returnTable, datasetFacetsBuilder);
   }
 

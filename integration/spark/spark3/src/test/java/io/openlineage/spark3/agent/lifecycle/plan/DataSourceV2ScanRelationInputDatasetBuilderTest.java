@@ -13,8 +13,8 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
-import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
@@ -49,10 +49,12 @@ class DataSourceV2ScanRelationInputDatasetBuilderTest {
     when(context.getOpenLineage()).thenReturn(openLineage);
     when(scanRelation.relation()).thenReturn(relation);
 
-    try (MockedStatic planUtils3MockedStatic = mockStatic(PlanUtils3.class)) {
+    try (MockedStatic planUtils3MockedStatic =
+        mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
       try (MockedStatic facetUtilsMockedStatic =
           mockStatic(DatasetVersionDatasetFacetUtils.class)) {
-        when(PlanUtils3.fromDataSourceV2Relation(factory, context, relation, datasetFacetsBuilder))
+        when(DataSourceV2RelationDatasetExtractor.extract(
+                factory, context, relation, datasetFacetsBuilder))
             .thenReturn(datasets);
 
         Assertions.assertEquals(datasets, builder.apply(scanRelation));

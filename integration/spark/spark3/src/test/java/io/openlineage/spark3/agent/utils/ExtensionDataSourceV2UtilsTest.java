@@ -26,7 +26,7 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ExtesionDataSourceV2UtilsTest {
+class ExtensionDataSourceV2UtilsTest {
   static final String DATASET_NAME = "some-dataset-name";
   static final String DATASET_NAMESPACE = "some-dataset-name";
 
@@ -52,20 +52,20 @@ class ExtesionDataSourceV2UtilsTest {
 
   @Test
   void testHasExtensionLineage() {
-    assertTrue(ExtesionDataSourceV2Utils.hasExtensionLineage(relation));
+    assertTrue(ExtensionDataSourceV2Utils.hasExtensionLineage(relation));
     properties.clear();
-    assertFalse(ExtesionDataSourceV2Utils.hasExtensionLineage(relation));
+    assertFalse(ExtensionDataSourceV2Utils.hasExtensionLineage(relation));
   }
 
   @Test
   void testHasExtensionLineageWhenPropertiesAreNull() {
     when(table.properties()).thenReturn(null);
-    assertFalse(ExtesionDataSourceV2Utils.hasExtensionLineage(relation));
+    assertFalse(ExtensionDataSourceV2Utils.hasExtensionLineage(relation));
   }
 
   @Test
   void testGetDatasetName() {
-    assertThat(ExtesionDataSourceV2Utils.getDatasetIdentifier(relation))
+    assertThat(ExtensionDataSourceV2Utils.getDatasetIdentifier(relation))
         .hasFieldOrPropertyWithValue("name", DATASET_NAME)
         .hasFieldOrPropertyWithValue("namespace", DATASET_NAMESPACE);
   }
@@ -82,7 +82,7 @@ class ExtesionDataSourceV2UtilsTest {
                     .build()));
     properties.put("openlineage.dataset.facets.schema", OpenLineageClientUtils.toJson(schema));
 
-    ExtesionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
+    ExtensionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
     OpenLineage.SchemaDatasetFacet schemaDatasetFacet =
         openLineage.newSchemaDatasetFacet(
             Arrays.asList(
@@ -121,7 +121,7 @@ class ExtesionDataSourceV2UtilsTest {
 
     properties.put("openlineage.dataset.facets.customFacet", facetJson);
 
-    ExtesionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
+    ExtensionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
 
     DatasetFacet datasetFacet =
         datasetFacetsBuilder.build().getAdditionalProperties().get("customFacet");
@@ -144,7 +144,7 @@ class ExtesionDataSourceV2UtilsTest {
 
     properties.put("openlineage.dataset.facets.customFacet", facetJson);
 
-    ExtesionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
+    ExtensionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
 
     DatasetFacet datasetFacet =
         datasetFacetsBuilder.build().getAdditionalProperties().get("customFacet");

@@ -32,7 +32,7 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 
 /** Utility class to load serialized facets json string into a dataset builder */
 @Slf4j
-class ExtesionDataSourceV2Utils {
+class ExtensionDataSourceV2Utils {
 
   public static final String OPENLINEAGE_DATASET_FACETS_PREFIX = "openlineage.dataset.facets.";
   private static Map<String, TypeReference> predefinedFacets;
