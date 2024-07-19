@@ -9,30 +9,23 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.io.File;
-import java.net.URI;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.catalyst.TableIdentifier;
+import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
+import org.apache.spark.sql.connector.catalog.V1Table;
 import org.apache.spark.sql.delta.catalog.DeltaCatalog;
 import org.apache.spark.sql.delta.catalog.DeltaTableV2;
-import scala.Option;
 
 @Slf4j
 public class DeltaHandler implements CatalogHandler {
-
   private final OpenLineageContext context;
-  private static final String DEFAULT_SEPARATOR = "/";
-  private static final String DEFAULT_SCHEME = "file";
 
   public DeltaHandler(OpenLineageContext context) {
     this.context = context;
@@ -64,61 +57,24 @@ public class DeltaHandler implements CatalogHandler {
       Map<String, String> properties) {
     DeltaCatalog catalog = (DeltaCatalog) tableCatalog;
 
-    Optional<String> location;
+    Table table = catalog.loadTable(identifier);
     if (catalog.isPathIdentifier(identifier)) {
-      location = Optional.of(identifier.name());
-    } else {
-      location = Optional.ofNullable(properties.get("location"));
+      // no information in metastore, only path
+      Path path = new Path(identifier.name());
+      return PathUtils.fromPath(path);
     }
 
-    // Delta uses spark2 catalog when location isn't specified.
-    Path path =
-        new Path(
-            location.orElseGet(
-                () -> {
-                  try {
-                    return Optional.ofNullable(
-                            catalog.loadTable(identifier).properties().get("location"))
-                        .orElseGet(() -> getDefaultTablePath(session, identifier));
-                  } catch (Exception e) {
-                    // loadTable failed
-                    return getDefaultTablePath(session, identifier);
-                  }
-                }));
-    URI uri = prepareUriFromPath(path);
-
-    DatasetIdentifier di = PathUtils.fromPath(path);
-
-    return di.withSymlink(
-        identifier.toString(),
-        StringUtils.substringBeforeLast(
-            uri.toString(), File.separator), // parent location from a name becomes a namespace
-        DatasetIdentifier.SymlinkType.TABLE);
-  }
-
-  @SneakyThrows
-  private static URI prepareUriFromPath(Path path) {
-    URI uri = path.toUri();
-
-    if (uri.getPath() != null
-        && uri.getPath().startsWith(DEFAULT_SEPARATOR)
-        && uri.getScheme() == null) {
-      uri = new URI(DEFAULT_SCHEME, null, uri.getPath(), null, null);
+    if (table instanceof DeltaTableV2) {
+      DeltaTableV2 deltaTable = (DeltaTableV2) table;
+      // catalogTable is Option, but it is empty only for path identifier
+      CatalogTable catalogTable = deltaTable.catalogTable().get();
+      return PathUtils.fromCatalogTable(catalogTable, session);
     }
 
-    return uri;
-  }
-
-  private String getDefaultTablePath(SparkSession session, Identifier identifier) {
-    return session
-        .sessionState()
-        .catalog()
-        .defaultTablePath(
-            TableIdentifier.apply(
-                identifier.name(),
-                Option.apply(
-                    Arrays.stream(identifier.namespace()).reduce((x, y) -> y).orElse(null))))
-        .toString();
+    // not a Delta table, fallback to SparkCatalog. See:
+    // https://github.com/delta-io/delta/blob/v3.2.0/spark/src/main/scala/org/apache/spark/sql/delta/catalog/DeltaCatalog.scala#L193-L199
+    V1Table v1Table = (V1Table) table;
+    return PathUtils.fromCatalogTable(v1Table.catalogTable(), session);
   }
 
   @Override
