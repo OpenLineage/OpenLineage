@@ -5,6 +5,8 @@
 ### Added
 * **Spark: verify bytecode version of the built jar.** [`#2859`](https://github.com/OpenLineage/OpenLineage/pull/2859) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Extend `JarVerifier` plugin to assure all compiled classes have bytecode version of Java 8 or lower.*
+* **Spark: add kafka streaming source support** [`#2851`](https://github.com/OpenLineage/OpenLineage/pull/2851) [@d-m-h](https://github.com/d-m-h) [@imbruced](https://github.com/Imbruced)  
+  *Add support for kafka streaming source to kafka streaming sink. Inputs and outputs are now included in lineage events.*
 
 ### Fixed
 * **Spark: Remove shaded dependency in `ColumnLevelLineageBuilder`** [`#2850`](https://github.com/OpenLineage/OpenLineage/pull/2850) [@tnazarew](https://github.com/tnazarew)  
