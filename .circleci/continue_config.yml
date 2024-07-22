@@ -254,18 +254,6 @@ jobs:
             - ./dist/*.tar.gz
             - ./dist/*.whl
 
-  publish-client-python-reference:
-    working_directory: ~/openlineage/client/python
-    docker:
-      - image: cimg/python:3.8
-    steps:
-      - *checkout_project_root
-      - add_ssh_keys:
-          fingerprints:
-            - "7d:bc:78:35:09:c9:25:04:63:f9:eb:4b:f1:f4:d1:91"
-      - run: pip install -U -e .[docs]
-      - run: cd docs && make html && python convert.py && ./release-api-reference.sh
-
   unit-test-integration-common:
     working_directory: ~/openlineage/integration/common
     docker:
@@ -1034,34 +1022,6 @@ jobs:
           key: v1-integration-flink-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.gradle
-
-  # REST
-  publish-javadoc:
-    working_directory: ~/openlineage/client/java
-    docker:
-      - image: cimg/openjdk:17.0
-    steps:
-      - *checkout_project_root
-      - when:
-          condition:
-            equal: [ inactive, << pipeline.parameters.nightly-run >> ]
-          steps:
-            - add_ssh_keys:
-                fingerprints:
-                  - "7d:bc:78:35:09:c9:25:04:63:f9:eb:4b:f1:f4:d1:91"
-            - run: ./gradlew --console=plain javadoc
-            - run: ./release-javadoc.sh
-
-  publish-spec:
-    working_directory: ~/openlineage
-    docker:
-      - image: cimg/base:2024.08
-    steps:
-      - *checkout_project_root
-      - add_ssh_keys:
-          fingerprints:
-            - "7d:bc:78:35:09:c9:25:04:63:f9:eb:4b:f1:f4:d1:91"
-      - run: spec/release.sh
 
   build-proxy-fluentd:
     working_directory: ~/openlineage/proxy/fluentd

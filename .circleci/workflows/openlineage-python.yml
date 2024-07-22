@@ -160,16 +160,6 @@ workflows:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           requires:
             - unit-tests-client-python
-      - publish-client-python-reference:
-          filters:
-            branches:
-              only: main
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-          context: release
-          requires:
-            - build-client-python
-            - unit-tests-client-python
       - build-integration-dbt:
           filters:
             branches:
@@ -196,7 +186,6 @@ workflows:
             - build-integration-common
             - integration-test-integration-airflow-failure
             - integration-test-integration-airflow
-            - publish-client-python-reference
             - build-integration-dbt
             - build-integration-dagster
       - release-python:

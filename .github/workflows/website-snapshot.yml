@@ -1,0 +1,98 @@
+name: Build & Deploy spec to Github Pages
+
+on:
+  push:
+    branches:
+      - main
+      - docs-deploy # testing phase only
+
+permissions:
+  id-token: write
+
+jobs:
+  site-deploy:
+    name: Build and Publish To openlineage-site repo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: 'source'
+      - uses: actions/checkout@v4
+        with:
+          repository: 'pawel-big-lebowski/openlineage-site'
+          path: 'target'
+          token:  ${{ secrets.ACTIONS_GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: source/website/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '17'
+      - uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: "5.38"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.8'
+      - name: Regenerate Javadoc to website
+        run: |
+          cd source/client/java
+          ./gradlew javadoc
+          mkdir -p ../../website/static/apidocs/javadoc
+          cp -r build/docs/javadoc ../../website/static/apidocs
+      - name: Regenerate python documentation
+        run: |
+          cd source/client/python
+          pip install -U -e .[docs]
+          cd docs && make html && python convert.py
+          cp -r converted/* ../../../website/docs/development/developing/python/api-reference
+      - name: Install dependencies
+        run:  |
+          cd source/website
+          yarn install --frozen-lockfile
+      - name: Generate openapi
+        run: |
+          SPEC_DIR="$(pwd)/source/website/static/spec"
+          APIDOC_DIR="$(pwd)/source/website/static/apidocs"
+          pushd $SPEC_DIR
+          LATEST_VERSION=$(find . -maxdepth 1 | grep -v 'facets' | grep '[0-9]*-[0-9]-[0-9]' | sort -Vr | head -1)
+          echo latest version is $LATEST_VERSION
+          rm -f ./OpenLineage.json 2>/dev/null
+          perl -i -pe"s/version: [[:alnum:]\.-]*/version: ${LATEST_VERSION:2}/g" ./OpenLineage.yml
+          echo Versions updated
+          mkdir "${LATEST_VERSION}/facets"
+          for i in $(ls -d ./facets/* | sort); do cp $i/*.json ${LATEST_VERSION}/facets; done;
+
+          echo "LATEST_VERSION=${LATEST_VERSION}" >> "$GITHUB_ENV"
+
+          pushd $LATEST_VERSION
+          ln -sf ../OpenLineage.yml .
+          popd
+      - name: Generate redoc
+        run: |
+          npm install @redocly/cli
+          npx redocly build-docs -o source/website/static/apidocs/openapi/index.html source/website/static/spec/$LATEST_VERSION/OpenLineage.yml --title "OpenLineage API Docs"
+      - name: Clean temp files
+        run: |
+          pushd source/website/static/spec/$LATEST_VERSION
+          rm -rf facets
+          rm OpenLineage.yml
+          popd
+      - name: Push target repo
+        run: |
+          rm -r target/* 
+          cp -r source/website/* target
+          cd target
+          git config user.name "GitHub Action Website Snapshot"
+          git config user.email "<>"
+          git add .
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "Refreshing website content from main repo.
+            
+            Source commit: 
+            https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
+            git push
+          fi
