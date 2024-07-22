@@ -49,10 +49,6 @@ jobs:
   determine_changed_modules:
     docker:
       - image: cimg/python:3.8
-    parameters:
-      nightly-run:
-        type: string
-        default: "inactive"
     steps:
       - checkout
       - run:
@@ -86,9 +82,10 @@ jobs:
             echo "$PWD/.circleci/workflows/openlineage-always.yml" >> workflow_files.txt
 
             # Nightly build - add workflows to be included
-            if [ "<< parameters.nightly-run >>" == "active" ]; then
+            if [ "<< pipeline.parameters.nightly-run >>" == "active" ]; then
               # run only Spark within nightly build
               echo "$PWD/.circleci/workflows/openlineage-spark.yml" >> workflow_files.txt
+              echo "$PWD/.circleci/workflows/openlineage-java.yml" >> workflow_files.txt
             elif [ "$CIRCLE_BRANCH" == "main" ]; then
               # If we are on the main branch, run all of the workflows
               # if integration type is not all, we specify only a single integration type in workflow files
