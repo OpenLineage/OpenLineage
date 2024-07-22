@@ -14,11 +14,10 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
+import io.openlineage.spark.agent.job.naming.ApplicationJobNameResolver;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.util.Locale;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
@@ -39,6 +38,8 @@ class SparkApplicationExecutionContext implements ExecutionContext {
   private final EventEmitter eventEmitter;
   private final OpenLineageRunEventBuilder runEventBuilder;
   private final OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
+  private final ApplicationJobNameResolver applicationJobNameResolver =
+      new ApplicationJobNameResolver(ApplicationJobNameResolver.buildProvidersList());
 
   public SparkApplicationExecutionContext(
       EventEmitter eventEmitter,
@@ -144,14 +145,10 @@ class SparkApplicationExecutionContext implements ExecutionContext {
   }
 
   private OpenLineage.JobBuilder getJobBuilder() {
-    String name =
-        eventEmitter
-            .getOverriddenAppName()
-            .orElse(olContext.getSparkContext().map(SparkContext::appName).orElse("unknown"));
     return openLineage
         .newJobBuilder()
         .namespace(eventEmitter.getJobNamespace())
-        .name(normalizeName(name));
+        .name(applicationJobNameResolver.getJobName(olContext));
   }
 
   private OpenLineage.JobFacetsBuilder getJobFacetsBuilder() {
@@ -164,10 +161,5 @@ class SparkApplicationExecutionContext implements ExecutionContext {
                 .processingType(SPARK_PROCESSING_TYPE)
                 .integration(SPARK_INTEGRATION)
                 .build());
-  }
-
-  // normalizes string, changes CamelCase to snake_case and replaces all non-alphanumerics with '_'
-  private static String normalizeName(String name) {
-    return name.replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT);
   }
 }
