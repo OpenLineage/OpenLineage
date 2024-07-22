@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import copy
-import datetime
 import logging
 import threading
 from concurrent.futures import Executor, ThreadPoolExecutor
@@ -22,6 +21,7 @@ from openlineage.airflow.utils import (
 )
 
 from airflow.listeners import hookimpl
+from airflow.utils import timezone
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -140,7 +140,7 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 
         task_metadata = extractor_manager.extract_metadata(dagrun, task, task_uuid=task_uuid)
 
-        ti_start_time = ti.start_date if ti.start_date else datetime.datetime.now()
+        ti_start_time = ti.start_date if ti.start_date else timezone.utcnow()
         start, end = get_dagrun_start_end(dagrun=dagrun, dag=dag)
 
         adapter.start_task(
@@ -221,7 +221,7 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
             dagrun, task, complete=True, task_instance=task_instance
         )
 
-        end_date = task_instance.end_date if task_instance.end_date else datetime.datetime.now()
+        end_date = task_instance.end_date if task_instance.end_date else timezone.utcnow()
 
         adapter.fail_task(
             run_id=task_uuid,
