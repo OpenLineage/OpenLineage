@@ -51,7 +51,7 @@ public class GenericJdbcExtractor implements JdbcExtractor {
             .map(db -> db.replaceFirst("/", ""))
             .filter(db -> !db.isEmpty());
 
-    return new JdbcLocation(scheme, authority, Optional.empty(), database);
+    return new JdbcLocation(scheme, Optional.of(authority), Optional.empty(), database);
   }
 
   private JdbcLocation extractMultipleHosts(String rawUri) throws URISyntaxException {
@@ -66,6 +66,7 @@ public class GenericJdbcExtractor implements JdbcExtractor {
     String scheme = matcher.group("scheme");
     String authority = matcher.group("authority");
     String database = matcher.group("database");
-    return new JdbcLocation(scheme, authority, Optional.empty(), Optional.ofNullable(database));
+    return new JdbcLocation(
+        scheme, Optional.ofNullable(authority), Optional.empty(), Optional.ofNullable(database));
   }
 }

@@ -56,8 +56,7 @@ public class TeradataJdbcExtractor implements JdbcExtractor {
     }
 
     String port = Optional.ofNullable(params.getProperty(PORT_PROPERTY)).orElse(DEFAULT_PORT);
-    String authority = host + ":" + port;
-
+    Optional<String> authority = Optional.of(host + ":" + port);
     Optional<String> database = Optional.ofNullable(params.getProperty(DATABASE_PROPERTY));
 
     return new JdbcLocation(SCHEME, authority, Optional.empty(), database);
