@@ -1,0 +1,23 @@
+name: Build & Deploy docs to Netlify GitHub Pages
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  generate_java_doc:
+    release-javadoc:
+    # Generates java doc for Java client, add it to the repo under website/static/javadoc
+    # TODO: generate javadoc for java client to be generated
+    #./gradlew --console=plain javadoc
+    # https://github.com/marketplace/actions/update-files-on-github
+  netlify_deploy:
+    name: 'Deploy to Netlify'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: jsmrcaga/action-netlify-deploy@v2.0.0
+        with:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_TOKEN_SECRET }}
+          NETLIFY_SITE_ID: 496a9c14-4c35-4918-943a-7fbe994edc03 # TODO: personal netlify site
+          NETLIFY_DEPLOY_TO_PROD: true # can be false for now
