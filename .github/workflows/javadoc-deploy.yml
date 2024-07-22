@@ -1,0 +1,58 @@
+name: Build & Deploy javadoc
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+    branches:
+      # testing only, not allowed to run on OpenLineage/OpenLineage repo
+      - test-docs-deploy
+
+jobs:
+  generate_javadoc:
+    if: |
+      (github.ref == 'refs/heads/test-docs-deploy' && github.repository != 'OpenLineage/OpenLineage' ) || 
+      (github.ref != 'refs/heads/test-docs-deploy' && github.repository == 'OpenLineage/OpenLineage')
+    name: "Generate Java docs"
+    env:
+      # hack from https://github.com/orgs/community/discussions/25725#discussioncomment-3248924
+      # to allow setting variable based on conditions
+      branch: ${{ fromJSON('["main", "test-docs-deploy"]')[(github.head_ref || github.ref_name) == 'test-docs-deploy'] }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '11'
+      - uses: actions/checkout@v4
+      - name: Generate new java doc
+        run: |
+          cd client/java
+          ./gradlew --console=plain javadoc
+      - name: Get git branch
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git fetch
+          git checkout ${{ env.branch }}
+      - name: Clear existing javadoc
+        run: rm -rf website/static/apidocs/javadoc
+      - name: Copy docs to website directory
+        run: cp -r client/java/build/docs/javadoc website/static/apidocs
+      - name: Commit javadoc
+        run: |
+          git add website/static/apidocs/javadoc/
+          git commit -m "[generated] reloading javadoc"
+          git push
+
+  netlify-deploy-changes:
+    uses: ./.github/workflows/netlify-deploy.yml
+    needs: generate_javadoc
+    with:
+      # hack from https://github.com/orgs/community/discussions/25725#discussioncomment-3248924
+      # to allow setting variable based on conditions
+      # shall be `main` or `test-docs-deploy` for testing
+      branch: ${{ fromJSON('["main", "test-docs-deploy"]')[(github.head_ref || github.ref_name) == 'test-docs-deploy'] }}
+    secrets:
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      NETLIFY_TOKEN_SECRET: ${{ secrets.NETLIFY_TOKEN_SECRET }}

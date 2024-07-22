@@ -1,0 +1,82 @@
+name: Build & Deploy spec to Netlify
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      # testing only, not allowed to run on OpenLineage/OpenLineage repo
+      - test-docs-deploy
+
+jobs:
+  generate_spec:
+    if: |
+      (github.ref == 'refs/heads/test-docs-deploy' && github.repository != 'OpenLineage/OpenLineage' ) || 
+      (github.event.pull_request.merged == true && github.repository == 'OpenLineage/OpenLineage')
+    name: 'Commit Spec definition'
+    runs-on: ubuntu-latest
+    env:
+      branch: ${{ github.head_ref || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Check changes
+        id: check-changes
+        run: |
+          if git diff --name-only --exit-code HEAD^ HEAD -- 'spec/*.json' 'spec/OpenLineage.yml' >> /dev/null; then
+            echo "no changes in spec detected, skipping publishing spec"
+            exit 0
+          fi
+          exit -1
+        continue-on-error: true
+      - name: Check & Commit spec changes
+        if: steps.check-changes.outcome == 'success'
+        run: |
+          # Copy changed spec JSON files to target location
+          git diff --name-only HEAD^ HEAD -- 'spec/*.json' | while read LINE; do
+            # ignore registry files
+            if [[ $LINE =~ "registry.json" ]]; then
+              continue
+            fi
+          
+            # extract target file name from $id field in spec files
+            URL=$(cat $LINE | jq -r '.["$id"]')
+          
+            # extract target location in website repo
+            LOC="website/static/${URL#*//*/}"
+            LOC_DIR="${LOC%/*}"
+          
+            # create dir if necessary, and copy files
+            echo "change detected in $LINE"
+            mkdir -p $LOC_DIR
+            cp $LINE $LOC
+          done
+      - name: Commit changes
+        if: steps.check-changes.outcome == 'success'
+        run: |    
+          # verify if there are any changes
+          if [[ $(git status --porcelain | wc -l) -gt 0 ]]; then
+              git config user.name github-actions
+              git config user.email github-actions@github.com
+              git fetch
+              git checkout ${{ env.branch }}
+              git add website/static/spec/*
+              git commit -m "[generated] adding spec changes"
+              git push
+            else
+              echo "nothing to commit"
+          fi
+
+  # TODO: openapi build, question should be committed ?
+  # step similar to this: https://github.com/OpenLineage/docs/blob/main/scripts/build-docs.sh
+
+  netlify-deploy-changes:
+    uses: ./.github/workflows/netlify-deploy.yml
+    needs: generate_spec
+    with:
+      branch: ${{ github.head_ref || github.ref_name }} # shall be `main` or `test-docs-deploy` for testing
+    secrets:
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      NETLIFY_TOKEN_SECRET: ${{ secrets.NETLIFY_TOKEN_SECRET }}

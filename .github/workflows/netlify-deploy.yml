@@ -1,0 +1,51 @@
+name: 'Reusable netlify deploy workflow'
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+    secrets:
+      NETLIFY_SITE_ID:
+        required: true
+      NETLIFY_TOKEN_SECRET:
+        required: true
+
+jobs:
+  netlify-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: website/package-lock.json
+      - name: Install Netlify
+        run: |
+          cd website
+          npm install netlify-cli@17.10.1 -g
+      - name: Install Dependencies
+        run: |
+          cd website
+          yarn
+      - name: Build project
+        run: |
+          cd website
+          yarn build
+      - name: Deploy to Netlify
+        id: netlify_deploy
+        run: |
+          cd website/build
+          netlify deploy \
+            --cwd . \
+            --dir . \
+            --site ${{ secrets.NETLIFY_SITE_ID }} \
+            --auth ${{ secrets.NETLIFY_TOKEN_SECRET }} \
+            --prod \
+            --open

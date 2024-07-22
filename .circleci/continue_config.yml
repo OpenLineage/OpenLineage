@@ -993,29 +993,6 @@ jobs:
       - run: mkdir -p target/wheels && cp target/wheels/* dist/
       - run: python -m twine upload --non-interactive --verbose --repository pypi dist/*
 
-  publish-javadoc:
-    working_directory: ~/openlineage/client/java
-    docker:
-      - image: cimg/openjdk:11.0
-    steps:
-      - *checkout_project_root
-      - add_ssh_keys:
-          fingerprints:
-            - "7d:bc:78:35:09:c9:25:04:63:f9:eb:4b:f1:f4:d1:91"
-      - run: ./gradlew --console=plain javadoc
-      - run: ./release-javadoc.sh
-
-  publish-spec:
-    working_directory: ~/openlineage
-    docker:
-      - image: cimg/base:2021.07
-    steps:
-      - *checkout_project_root
-      - add_ssh_keys:
-          fingerprints:
-            - "7d:bc:78:35:09:c9:25:04:63:f9:eb:4b:f1:f4:d1:91"
-      - run: spec/release.sh
-
   build-proxy-fluentd:
     working_directory: ~/openlineage/proxy/fluentd
     docker:
