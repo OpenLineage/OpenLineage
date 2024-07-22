@@ -100,6 +100,6 @@ public class SqlServerJdbcExtractor implements JdbcExtractor {
             .map(Optional::of)
             .orElseGet(() -> Optional.ofNullable(finalProperties.getProperty(DATABASE_PROPERTY)));
 
-    return new JdbcLocation(SCHEME, authority, instance, database);
+    return new JdbcLocation(SCHEME, Optional.of(authority), instance, database);
   }
 }

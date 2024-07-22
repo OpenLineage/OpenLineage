@@ -12,20 +12,22 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 
 @AllArgsConstructor
 public class JdbcLocation {
   @NonNull @Getter @Setter private String scheme;
-  @NonNull @Getter @Setter private String authority;
+  @Getter @Setter private Optional<String> authority;
   @Getter @Setter private Optional<String> instance;
   @Getter @Setter private Optional<String> database;
 
   public String toNamespace() {
-    String result =
-        String.format(
-            "%s://%s", scheme.toLowerCase(Locale.ROOT), authority.toLowerCase(Locale.ROOT));
+    String result = scheme.toLowerCase(Locale.ROOT) + ":";
+    if (authority.isPresent()) {
+      result = String.format("%s//%s", result, authority.get().toLowerCase(Locale.ROOT));
+    }
     if (instance.isPresent()) {
-      result = String.format("%s/%s", result, instance.get());
+      result = String.format("%s/%s", result, StringUtils.stripStart(instance.get(), "/"));
     }
     return result;
   }
