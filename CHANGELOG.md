@@ -19,7 +19,7 @@
 ### Fixed
 * **Airflow: replace datetime.now with airflow.utils.timezone.utcnow** [`#2865`](https://github.com/OpenLineage/OpenLineage/pull/2865) [@kacpermuda](https://github.com/kacpermuda)  
     *Fixes missing timezone information in task FAIL events.*
-* **Spark: Remove shaded dependency in `ColumnLevelLineageBuilder`** [`#2850`](https://github.com/OpenLineage/OpenLineage/pull/2850) [@tnazarew](https://github.com/tnazarew)  
+* **Spark: remove shaded dependency in `ColumnLevelLineageBuilder`** [`#2850`](https://github.com/OpenLineage/OpenLineage/pull/2850) [@tnazarew](https://github.com/tnazarew)  
     *Removes the shaded `Streams` dependency in `ColumnLevelLineageBuilder` causing a `ClassNotFoundException`.*
 * **Spark: make Delta dataset symlink consistent with non-Delta tables** [`#2863`](https://github.com/OpenLineage/OpenLineage/pull/2863) [@dolfinus](https://github.com/dolfinus)  
     *Makes dataset symlinks for Delta and non-Delta tables consistent.*
