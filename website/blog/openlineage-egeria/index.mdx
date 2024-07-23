@@ -1,0 +1,32 @@
+---
+title: OpenLineage Support in Egeria
+date: 2022-04-25
+authors: [Chessell]
+description: The Egeria project uses OpenLineage to enhance its production of holistic metadata about an organization's operations.
+---
+The Egeria project uses OpenLineage to enhance its production of holistic metadata about an organization's operations.
+
+<!--truncate-->
+
+## OpenLineage Support in Egeria 
+
+[Egeria](https://egeria-project.org) is a sister open source project to OpenLineage in the LF AI and Data Foundation. Egeria provides Open Metadata and Governance standard types and integration technology to exchange metadata between different technologies. It stitches together different standards to create a complete landscape of metadata about an organization’s digital operations.
+
+OpenLineage is very welcome to the Egeria team since it defines a standard for dynamic lineage capture.  This means Egeria can capture open lineage events to detect new assets and activity around them, link this new knowledge into the existing metadata and distribute it to the open metadata ecosystem.
+
+Egeria also executes governance processes for maintaining both metadata and the data sources it describes. Since it is running processes, it also makes sense that Egeria produces open lineage for its processes.
+
+The diagram below is a big animal picture showing the different features relating to open lineage that Egeria offers. With Egeria’s plug-and-play architecture you can pick and choose which pieces you need.
+
+![Egeria architecture](./open-lineage-blog.svg)
+
+The numbers on the diagram refer to the notes below.
+1. Egeria can capture open lineage events directly through HTTP or via the proxy backend.
+2. OpenLineage metadata is correlated and matched to existing metadata captured through a variety of mechanisms from direct metadata extraction from the hosting data platforms, to updates through dev ops pipelines to metadata discovery analytic tools.
+3. Egeria can publish OpenLineage events. These include the OpenLineage events it received (potentially augmented with additional facets), or events generated from its own governance processes. Published OpenLineage events can go to Egeria’s OpenLineage file-based log store for later processing or to any application that supports the OpenLineage API (Marquez, for example -- another project from LF AI and Data).
+4. The metadata extracted from OpenLineage events can be distributed to the open metadata ecosystem using standard approaches. This means it can be picked up by connected data science, governance and lineage tools.
+5. Governance processes linked to the open metadata ecosystem can use OpenLineage events to validate that their originating processes are operating as frequently and as accurately as expected.
+
+More information on Egeria’s open lineage support can be found [here](https://egeria-project.org/features/lineage-management/overview/#the-openlineage-standard).
+
+The Egeria community would like to thank the OpenLineage community for their great support while we created this integration. We look forward to continuing to work together as both our projects mature.

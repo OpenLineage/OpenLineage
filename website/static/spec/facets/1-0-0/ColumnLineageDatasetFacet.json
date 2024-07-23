@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/ColumnLineageDatasetFacet.json",
+  "$defs": {
+    "ColumnLineageDatasetFacet": {
+      "allOf": [{
+        "$ref": "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/DatasetFacet"
+      }, {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "description": "Column level lineage that maps output fields into input fields used to evaluate them.",
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "inputFields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "namespace": {
+                        "type": "string",
+                        "description": "The input dataset namespace"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "The input dataset name"
+                      },
+                      "field": {
+                        "type": "string",
+                        "description": "The input field"
+                      }
+                    },
+                    "required": [
+                      "namespace", "name", "field"
+                    ]
+                  }
+                }
+              },
+              "required": ["inputFields"]
+            }      
+          }    
+        },
+        "additionalProperties": true,
+        "required": [
+          "fields"
+        ]
+      }],
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "columnLineage": {
+      "$ref": "#/$defs/ColumnLineageDatasetFacet"
+    }
+  }
+}

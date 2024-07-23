@@ -1,0 +1,34 @@
+name: Build & Deploy spec to Netlify
+
+on:
+  push:
+    branches: # should be pull request
+      - migrate-docs
+      #- main # spec is released whenever pushed to main
+
+jobs:
+  generate_spec:
+    # if: github.event.pull_request.merged == true
+    name: 'Commit Spec definition'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check & Commit spec changes
+        run: ./.github/workflows/release_spec.sh
+
+  netlify_deploy:
+    # if: github.event.pull_request.merged == true
+    name: 'Deploy to Netlify'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jsmrcaga/action-netlify-deploy@v2.0.0
+        with:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_TOKEN_SECRET }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          NETLIFY_DEPLOY_MESSAGE: "Prod deploy v${{ github.ref }}"
+          NETLIFY_DEPLOY_TO_PROD: true
+          debug: true
+          install_command: "./.github/workflows/yarn_install.sh"
+          build_command: "./.github/workflows/yarn_build.sh"
+          build_directory: "website/build"

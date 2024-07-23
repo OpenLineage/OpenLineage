@@ -1,0 +1,46 @@
+---
+title: Why an Open Standard for Lineage Metadata?
+date: 2023-05-22
+authors: [Robinson]
+description: An open standard offers the best route to a universally adopted, persistent metadata specification.
+---
+
+We make much of the fact that OpenLineage is an *open* standard. It’s right there in our name. But it shouldn’t go without saying why an open standard for lineage metadata is preferable to a privately held one. The chief advantage of an open standard is precisely the fact that no one person or entity owns it. Hence, it offers the best avenue to a universally adopted, persistent specification.
+
+<!--truncate-->
+
+### Background
+
+It’s called OpenLineage for a reason – it’s an open-source [spec](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.md) for the collection of lineage metadata. This is a large part of its appeal. If you ask our users why they chose OpenLineage, they are likely to cite, in addition to its simplicity and desirable [integrations](https://github.com/OpenLineage/OpenLineage/tree/main/integration), the fact that it provides an open spec for lineage. (But please note that lineage metadata is not the only kind of metadata OpenLineage supports, event time and run state being two additional forms of metadata provided by the core spec, and [facets](https://github.com/OpenLineage/OpenLineage/tree/main/spec/facets) provide even more. OpenLineage is easily extensible and offers more than just lineage out of the box!)
+
+An open spec for lineage metadata will be more likely to succeed because it will foster collaboration and hasten wide adoption across the data ecosystem. Advantages of a collaborative, open approach include faster innovation, reduced duplication of effort, and better interoperability between systems. In fact, to our thinking, an open standard is the only way to approach the constantly moving target of 100% coverage of tooling in the fast-moving data space. We also believe that the pursuit of total coverage is worth the short-term challenges involved in getting buy-in across the industry.
+
+### Bluetooth: Evidence that Open Standards Work
+
+Ross Turk ([@rossturk](https://github.com/rossturk)), one of the early evangelists for OpenLineage, has often cited the example of Bluetooth, a spec, when making the case for OpenLineage. The example is a salutary one.
+
+According to [Bluetooth](https://www.bluetooth.com/2023-market-update/), 5.4 billion Bluetooth-equipped devices will ship this year. That’s a lot of headsets and waterproof speakers, among the many other things that use Bluetooth, but why did the standard become the dominant spec for short-range wireless connectivity? One possible explanation stands out: it started as an open standard.
+
+The Bluetooth standard has been in development since the late 1990s, [when Nokia, Ericsson and Intel began work on it](https://www.bluetooth.com/about-us/bluetooth-origin/). They knew that only an open standard would make wireless connectivity across devices and industries a reality, but they collaborated on the spec because [neither company was the leader of its market segment](https://en.wikipedia.org/wiki/Bluetooth). Unable to use market dominance to impose a standard, they joined forces instead. When the Bluetooth SIG (Special Interest Group) launched in 1998, it had five members: Ericsson, IBM, Toshiba, Nokia and Intel. Today, [membership stands at over 38,000 companies](https://www.bluetooth.com/about-us/).
+
+### OK, but What’s in It for Me?
+
+Playing devil’s advocate, it’s one thing to argue that companies straddling multiple industries and dealing with complex hardware-related challenges can benefit from open standards. It’s perhaps another to argue that companies in the data space can benefit from open standards – especially when the competition will, too.
+
+If one’s focus is only on short-term gains and losses, then this concern has some merit. A truly open standard is open to all, meaning partners and competitors alike reap the benefits. (Even in the short term, there are ways to differentiate, however.) If one takes a broader view, though, it becomes clear that lineage metadata is only truly valuable to anyone if it offers end-to-end and fully agnostic pipeline visibility. The best way to get total coverage that is reliable and persistent is to get the participation of the metadata producers themselves. 
+
+This reality means that, absent a dominant open standard, one’s own stakeholders – from internal engineering teams to customers to external partners – will feel the pain of incomplete coverage. This will have long-term implications for productivity, product quality, user experience and, ultimately, profitability. 
+
+Fair enough, but won’t a shared standard dilute member companies’ value propositions? Not if their products are adequately differentiated. Competition through differentiated products, combined with collaboration on a shared standard, is the solution.
+
+### What’s in It for the Ecosystem?
+
+The data ecosystem is evolving continuously, with new tools being added daily. Given this constant rate of change, a spec that is open – and, therefore, more likely to become technology-agnostic – offers the fastest route to comprehensive and up-to-date pipeline observability.
+
+The speed with which the ecosystem is evolving has meant that, ironically enough, some legacy systems, particularly in the Big Data space, have remained viable for many years. An open standard is better positioned not only to support new tools as they emerge but also to maintain support for legacy systems.
+
+In short, the way to ensure that a standard is tool-agnostic and resilient is to make it a community effort owned by all.     
+
+### How Can I Get Involved?
+
+Anyone can contribute to OpenLineage by forking the GitHub repository and opening a pull request. For more information about getting started as a contributor, read the [new contributor guide](https://github.com/OpenLineage/OpenLineage/blob/main/CONTRIBUTING.md). Prefer to get your feet wet first? Try our [quickstart guide](https://openlineage.io/getting-started).
