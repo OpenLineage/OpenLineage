@@ -63,7 +63,7 @@ module Fluent
       def enrich_oneOf_errors(json)
         errors = []
         @schema["oneOf"].each { |ref|
-          changed_schema = @schema
+          changed_schema = Marshal.load(Marshal.dump(@schema))
           changed_schema.delete("oneOf")
           changed_schema["$ref"] = ref["$ref"]
           validator = RustyJSONSchema.build(changed_schema)
