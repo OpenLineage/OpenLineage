@@ -1,0 +1,28 @@
+name: Test deployment
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-deploy:
+    name: Test deployment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: yarn
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Test build openapi docs
+        run: yarn run build:docs
+      - name: Test build website
+        run: yarn build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: docs-build
+          path: ./build
+    
