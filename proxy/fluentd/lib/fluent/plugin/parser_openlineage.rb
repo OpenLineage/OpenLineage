@@ -62,8 +62,8 @@ module Fluent
       # We try to find better reason for mismatch with each candidate.
       def enrich_oneOf_errors(json)
         errors = []
-        @schema["oneOf"].each { |ref|
-          changed_schema = @schema
+        @schema["oneOf"].each do |ref|
+          changed_schema = Marshal.load(Marshal.dump(@schema))
           changed_schema.delete("oneOf")
           changed_schema["$ref"] = ref["$ref"]
           validator = RustyJSONSchema.build(changed_schema)
@@ -71,8 +71,8 @@ module Fluent
           if !error.empty?
             errors.append("#{ref}: #{error.join(", ")}")
           end
-        }
-        return errors
+        end
+        errors
       end
 
       def load_schema()
