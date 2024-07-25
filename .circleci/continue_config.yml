@@ -3,6 +3,7 @@ version: 2.1
 orbs:
   gcp-cli: circleci/gcp-cli@2.2.0
   rust: circleci/rust@1.6.0
+  slack: circleci/slack@4.13.3
 
 checkout_project_root: &checkout_project_root
   # Override checkout path to project root (see: https://circleci.com/docs/2.0/configuration-reference/#checkout)
@@ -834,6 +835,22 @@ jobs:
                 paths:
                   - ~/.gradle
 
+  slack-notify:
+    docker:
+      - image: 'cimg/base:stable'
+    steps:
+      - *checkout_project_root
+      - when:
+          condition:
+            equal: [ active, << pipeline.parameters.nightly-run >> ]
+          steps:
+            - slack/notify:
+                event: pass
+                template: basic_success_1
+            - slack/notify:
+                event: fail
+                template: basic_fail_1
+
   integration-test-integration-flink:
     parameters:
       flink-version:
@@ -999,11 +1016,15 @@ jobs:
       - image: cimg/openjdk:11.0
     steps:
       - *checkout_project_root
-      - add_ssh_keys:
-          fingerprints:
-            - "7d:bc:78:35:09:c9:25:04:63:f9:eb:4b:f1:f4:d1:91"
-      - run: ./gradlew --console=plain javadoc
-      - run: ./release-javadoc.sh
+      - when:
+          condition:
+            equal: [ inactive, << pipeline.parameters.nightly-run >> ]
+          steps:
+            - add_ssh_keys:
+                fingerprints:
+                  - "7d:bc:78:35:09:c9:25:04:63:f9:eb:4b:f1:f4:d1:91"
+            - run: ./gradlew --console=plain javadoc
+            - run: ./release-javadoc.sh
 
   publish-spec:
     working_directory: ~/openlineage

@@ -52,8 +52,12 @@ workflows:
             - approval-integration-spark
       - configurable-integration-test-spark:
           context: integration-tests
-      - workflow_complete:
+      - slack-notify:
+          context: slack-secrets
           requires:
             - integration-test-integration-spark-scala-2_12
             - integration-test-integration-spark-scala-2_13
             - jar-verification-spark
+      - workflow_complete:
+          requires:
+            - slack-notify
