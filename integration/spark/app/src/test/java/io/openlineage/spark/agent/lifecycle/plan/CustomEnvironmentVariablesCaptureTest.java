@@ -10,6 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
+import io.openlineage.spark.agent.EventEmitter;
+import io.openlineage.spark.agent.EventEmitterProviderExtension;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.facets.EnvironmentFacet;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
@@ -37,8 +39,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-@ExtendWith(SparkAgentTestExtension.class)
 @Tag("custom_environment_variables_capture")
+@ExtendWith({EventEmitterProviderExtension.class, SparkAgentTestExtension.class})
 class CustomEnvironmentVariablesCaptureTest {
 
   @SuppressWarnings("PMD.AvoidAccessibilityAlteration")
@@ -56,9 +58,10 @@ class CustomEnvironmentVariablesCaptureTest {
   }
 
   @Test
-  void testCustomVariableCapture(@TempDir Path tempDir, SparkSession spark)
+  void testCustomVariableCapture(@TempDir Path tempDir, SparkSession spark, EventEmitter emitter)
       throws InterruptedException, TimeoutException {
-    CustomEnvironmentVariablesCaptureTest.setEnv("TEST_VAR", "test");
+    setEnv("TEST_VAR", "test");
+
     StructType tableSchema =
         new StructType(
             new StructField[] {
@@ -77,8 +80,7 @@ class CustomEnvironmentVariablesCaptureTest {
 
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(RunEvent.class);
 
-    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, Mockito.atLeast(2))
-        .emit(lineageEvent.capture());
+    Mockito.verify(emitter, Mockito.atLeast(2)).emit(lineageEvent.capture());
     List<RunEvent> events = lineageEvent.getAllValues();
     Optional<RunEvent> startEvent =
         events.stream()

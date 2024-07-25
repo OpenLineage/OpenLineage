@@ -9,6 +9,8 @@ import static org.mockito.Mockito.atMost;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.EventEmitter;
+import io.openlineage.spark.agent.EventEmitterProviderExtension;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -28,15 +30,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-@ExtendWith(SparkAgentTestExtension.class)
-@Tag("integration-test")
 @Slf4j
+@Tag("integration-test")
+@ExtendWith({EventEmitterProviderExtension.class, SparkAgentTestExtension.class})
 class SparkEventFilterTest {
-
   @Test
   @SneakyThrows
   @DisabledIfSystemProperty(named = "spark.version", matches = "(2.*|3.[0-2].*)")
-  void testCreateViewCommandEventGetsFiltered(SparkSession spark) {
+  void testCreateViewCommandEventGetsFiltered(SparkSession spark, EventEmitter eventEmitter) {
     Dataset<Row> dataset =
         spark.createDataFrame(
             ImmutableList.of(RowFactory.create(1L, "bat"), RowFactory.create(3L, "horse")),
@@ -57,6 +58,6 @@ class SparkEventFilterTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
 
-    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atMost(1)).emit(lineageEvent.capture());
+    Mockito.verify(eventEmitter, atMost(1)).emit(lineageEvent.capture());
   }
 }

@@ -9,6 +9,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.atLeast;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.EventEmitter;
+import io.openlineage.spark.agent.EventEmitterProviderExtension;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import java.util.Arrays;
@@ -26,9 +28,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import scala.collection.immutable.HashMap;
 
-@ExtendWith(SparkAgentTestExtension.class)
+@ExtendWith({EventEmitterProviderExtension.class, SparkAgentTestExtension.class})
 class LogicalRelationBuilderTest {
-
   StructType structTypeSchema =
       new StructType(
           new StructField[] {
@@ -37,7 +38,7 @@ class LogicalRelationBuilderTest {
           });
 
   @Test
-  void logicalRelationOnlyPlanHasNoOutput(SparkSession spark)
+  void logicalRelationOnlyPlanHasNoOutput(SparkSession spark, EventEmitter eventEmitter)
       throws InterruptedException, TimeoutException {
     spark
         .createDataFrame(Arrays.asList(new GenericRow(new Object[] {1, 2})), structTypeSchema)
@@ -50,14 +51,14 @@ class LogicalRelationBuilderTest {
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(1)).emit(lineageEvent.capture());
+    Mockito.verify(eventEmitter, atLeast(1)).emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
 
     assertThat(events.get(events.size() - 1).getOutputs()).isEmpty();
   }
 
   @Test
-  void logicalRelationPlanHasInputAndOutput(SparkSession spark)
+  void logicalRelationPlanHasInputAndOutput(SparkSession spark, EventEmitter eventEmitter)
       throws InterruptedException, TimeoutException {
     spark
         .createDataFrame(Arrays.asList(new GenericRow(new Object[] {1, 2})), structTypeSchema)
@@ -71,7 +72,7 @@ class LogicalRelationBuilderTest {
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(1)).emit(lineageEvent.capture());
+    Mockito.verify(eventEmitter, atLeast(1)).emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
 
     assertThat(
