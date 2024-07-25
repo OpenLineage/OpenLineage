@@ -2476,37 +2476,35 @@ extends java.lang.Object</pre>
 </dl>
 </li>
 </ul>
-<a id="newColumnLineageDatasetFacetFieldsAdditional(java.util.List,java.lang.String,java.lang.String)">
+<a id="newOwnershipDatasetFacetOwners(java.lang.String,java.lang.String)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
-<h4>newColumnLineageDatasetFacetFieldsAdditional</h4>
-<pre class="methodSignature">public&nbsp;<a href="OpenLineage.ColumnLineageDatasetFacetFieldsAdditional.html" title="class in io.openlineage.client">OpenLineage.ColumnLineageDatasetFacetFieldsAdditional</a>&nbsp;newColumnLineageDatasetFacetFieldsAdditional&#8203;(java.util.List&lt;<a href="OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields.html" title="class in io.openlineage.client">OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields</a>&gt;&nbsp;inputFields,
-                                                                                                          java.lang.String&nbsp;transformationDescription,
-                                                                                                          java.lang.String&nbsp;transformationType)</pre>
-<div class="block">Factory method for ColumnLineageDatasetFacetFieldsAdditional</div>
+<h4>newOwnershipDatasetFacetOwners</h4>
+<pre class="methodSignature">public&nbsp;<a href="OpenLineage.OwnershipDatasetFacetOwners.html" title="class in io.openlineage.client">OpenLineage.OwnershipDatasetFacetOwners</a>&nbsp;newOwnershipDatasetFacetOwners&#8203;(java.lang.String&nbsp;name,
+                                                                              java.lang.String&nbsp;type)</pre>
+<div class="block">Factory method for OwnershipDatasetFacetOwners</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>inputFields</code> - the inputFields</dd>
-<dd><code>transformationDescription</code> - a string representation of the transformation applied</dd>
-<dd><code>transformationType</code> - IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no original data available (like a hash of PII for example)</dd>
+<dd><code>name</code> - the identifier of the owner of the Dataset. It is recommended to define this as a URN. For example application:foo, user:jdoe, team:data</dd>
+<dd><code>type</code> - The type of ownership (optional)</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>ColumnLineageDatasetFacetFieldsAdditional</dd>
+<dd>OwnershipDatasetFacetOwners</dd>
 </dl>
 </li>
 </ul>
-<a id="newColumnLineageDatasetFacetFieldsAdditionalBuilder()">
+<a id="newOwnershipDatasetFacetOwnersBuilder()">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
-<h4>newColumnLineageDatasetFacetFieldsAdditionalBuilder</h4>
-<pre class="methodSignature">public&nbsp;<a href="OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalBuilder.html" title="class in io.openlineage.client">OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalBuilder</a>&nbsp;newColumnLineageDatasetFacetFieldsAdditionalBuilder()</pre>
-<div class="block">Creates a builder for ColumnLineageDatasetFacetFieldsAdditional</div>
+<h4>newOwnershipDatasetFacetOwnersBuilder</h4>
+<pre class="methodSignature">public&nbsp;<a href="OpenLineage.OwnershipDatasetFacetOwnersBuilder.html" title="class in io.openlineage.client">OpenLineage.OwnershipDatasetFacetOwnersBuilder</a>&nbsp;newOwnershipDatasetFacetOwnersBuilder()</pre>
+<div class="block">Creates a builder for OwnershipDatasetFacetOwners</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>a new builder for ColumnLineageDatasetFacetFieldsAdditional</dd>
+<dd>a new builder for OwnershipDatasetFacetOwners</dd>
 </dl>
 </li>
 </ul>
@@ -2544,35 +2542,37 @@ extends java.lang.Object</pre>
 </dl>
 </li>
 </ul>
-<a id="newOwnershipDatasetFacetOwners(java.lang.String,java.lang.String)">
+<a id="newColumnLineageDatasetFacetFieldsAdditional(java.util.List,java.lang.String,java.lang.String)">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
-<h4>newOwnershipDatasetFacetOwners</h4>
-<pre class="methodSignature">public&nbsp;<a href="OpenLineage.OwnershipDatasetFacetOwners.html" title="class in io.openlineage.client">OpenLineage.OwnershipDatasetFacetOwners</a>&nbsp;newOwnershipDatasetFacetOwners&#8203;(java.lang.String&nbsp;name,
-                                                                              java.lang.String&nbsp;type)</pre>
-<div class="block">Factory method for OwnershipDatasetFacetOwners</div>
+<h4>newColumnLineageDatasetFacetFieldsAdditional</h4>
+<pre class="methodSignature">public&nbsp;<a href="OpenLineage.ColumnLineageDatasetFacetFieldsAdditional.html" title="class in io.openlineage.client">OpenLineage.ColumnLineageDatasetFacetFieldsAdditional</a>&nbsp;newColumnLineageDatasetFacetFieldsAdditional&#8203;(java.util.List&lt;<a href="OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields.html" title="class in io.openlineage.client">OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields</a>&gt;&nbsp;inputFields,
+                                                                                                          java.lang.String&nbsp;transformationDescription,
+                                                                                                          java.lang.String&nbsp;transformationType)</pre>
+<div class="block">Factory method for ColumnLineageDatasetFacetFieldsAdditional</div>
 <dl>
 <dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>name</code> - the identifier of the owner of the Dataset. It is recommended to define this as a URN. For example application:foo, user:jdoe, team:data</dd>
-<dd><code>type</code> - The type of ownership (optional)</dd>
+<dd><code>inputFields</code> - the inputFields</dd>
+<dd><code>transformationDescription</code> - a string representation of the transformation applied</dd>
+<dd><code>transformationType</code> - IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no original data available (like a hash of PII for example)</dd>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>OwnershipDatasetFacetOwners</dd>
+<dd>ColumnLineageDatasetFacetFieldsAdditional</dd>
 </dl>
 </li>
 </ul>
-<a id="newOwnershipDatasetFacetOwnersBuilder()">
+<a id="newColumnLineageDatasetFacetFieldsAdditionalBuilder()">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
-<h4>newOwnershipDatasetFacetOwnersBuilder</h4>
-<pre class="methodSignature">public&nbsp;<a href="OpenLineage.OwnershipDatasetFacetOwnersBuilder.html" title="class in io.openlineage.client">OpenLineage.OwnershipDatasetFacetOwnersBuilder</a>&nbsp;newOwnershipDatasetFacetOwnersBuilder()</pre>
-<div class="block">Creates a builder for OwnershipDatasetFacetOwners</div>
+<h4>newColumnLineageDatasetFacetFieldsAdditionalBuilder</h4>
+<pre class="methodSignature">public&nbsp;<a href="OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalBuilder.html" title="class in io.openlineage.client">OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalBuilder</a>&nbsp;newColumnLineageDatasetFacetFieldsAdditionalBuilder()</pre>
+<div class="block">Creates a builder for ColumnLineageDatasetFacetFieldsAdditional</div>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
-<dd>a new builder for OwnershipDatasetFacetOwners</dd>
+<dd>a new builder for ColumnLineageDatasetFacetFieldsAdditional</dd>
 </dl>
 </li>
 </ul>
@@ -3314,36 +3314,6 @@ extends java.lang.Object</pre>
 </dl>
 </li>
 </ul>
-<a id="newColumnLineageDatasetFacet(io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields)">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>newColumnLineageDatasetFacet</h4>
-<pre class="methodSignature">public&nbsp;<a href="OpenLineage.ColumnLineageDatasetFacet.html" title="class in io.openlineage.client">OpenLineage.ColumnLineageDatasetFacet</a>&nbsp;newColumnLineageDatasetFacet&#8203;(<a href="OpenLineage.ColumnLineageDatasetFacetFields.html" title="class in io.openlineage.client">OpenLineage.ColumnLineageDatasetFacetFields</a>&nbsp;fields)</pre>
-<div class="block">Factory method for ColumnLineageDatasetFacet</div>
-<dl>
-<dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>fields</code> - Column level lineage that maps output fields into input fields used to evaluate them.</dd>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd>ColumnLineageDatasetFacet</dd>
-</dl>
-</li>
-</ul>
-<a id="newColumnLineageDatasetFacetBuilder()">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>newColumnLineageDatasetFacetBuilder</h4>
-<pre class="methodSignature">public&nbsp;<a href="OpenLineage.ColumnLineageDatasetFacetBuilder.html" title="class in io.openlineage.client">OpenLineage.ColumnLineageDatasetFacetBuilder</a>&nbsp;newColumnLineageDatasetFacetBuilder()</pre>
-<div class="block">Creates a builder for ColumnLineageDatasetFacet</div>
-<dl>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd>a new builder for ColumnLineageDatasetFacet</dd>
-</dl>
-</li>
-</ul>
 <a id="newDataQualityAssertionsDatasetFacet(java.util.List)">
 <!--   -->
 </a>
@@ -3371,6 +3341,36 @@ extends java.lang.Object</pre>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>a new builder for DataQualityAssertionsDatasetFacet</dd>
+</dl>
+</li>
+</ul>
+<a id="newColumnLineageDatasetFacet(io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>newColumnLineageDatasetFacet</h4>
+<pre class="methodSignature">public&nbsp;<a href="OpenLineage.ColumnLineageDatasetFacet.html" title="class in io.openlineage.client">OpenLineage.ColumnLineageDatasetFacet</a>&nbsp;newColumnLineageDatasetFacet&#8203;(<a href="OpenLineage.ColumnLineageDatasetFacetFields.html" title="class in io.openlineage.client">OpenLineage.ColumnLineageDatasetFacetFields</a>&nbsp;fields)</pre>
+<div class="block">Factory method for ColumnLineageDatasetFacet</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>fields</code> - Column level lineage that maps output fields into input fields used to evaluate them.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>ColumnLineageDatasetFacet</dd>
+</dl>
+</li>
+</ul>
+<a id="newColumnLineageDatasetFacetBuilder()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>newColumnLineageDatasetFacetBuilder</h4>
+<pre class="methodSignature">public&nbsp;<a href="OpenLineage.ColumnLineageDatasetFacetBuilder.html" title="class in io.openlineage.client">OpenLineage.ColumnLineageDatasetFacetBuilder</a>&nbsp;newColumnLineageDatasetFacetBuilder()</pre>
+<div class="block">Creates a builder for ColumnLineageDatasetFacet</div>
+<dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>a new builder for ColumnLineageDatasetFacet</dd>
 </dl>
 </li>
 </ul>
@@ -3604,6 +3604,36 @@ extends java.lang.Object</pre>
 </dl>
 </li>
 </ul>
+<a id="newParentRunFacetRun(java.util.UUID)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>newParentRunFacetRun</h4>
+<pre class="methodSignature">public&nbsp;<a href="OpenLineage.ParentRunFacetRun.html" title="class in io.openlineage.client">OpenLineage.ParentRunFacetRun</a>&nbsp;newParentRunFacetRun&#8203;(java.util.UUID&nbsp;runId)</pre>
+<div class="block">Factory method for ParentRunFacetRun</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>runId</code> - The globally unique ID of the run associated with the job.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>ParentRunFacetRun</dd>
+</dl>
+</li>
+</ul>
+<a id="newParentRunFacetRunBuilder()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>newParentRunFacetRunBuilder</h4>
+<pre class="methodSignature">public&nbsp;<a href="OpenLineage.ParentRunFacetRunBuilder.html" title="class in io.openlineage.client">OpenLineage.ParentRunFacetRunBuilder</a>&nbsp;newParentRunFacetRunBuilder()</pre>
+<div class="block">Creates a builder for ParentRunFacetRun</div>
+<dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>a new builder for ParentRunFacetRun</dd>
+</dl>
+</li>
+</ul>
 <a id="newColumnLineageDatasetFacetFieldsAdditionalInputFields(java.lang.String,java.lang.String,java.lang.String,java.util.List)">
 <!--   -->
 </a>
@@ -3637,36 +3667,6 @@ extends java.lang.Object</pre>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>a new builder for ColumnLineageDatasetFacetFieldsAdditionalInputFields</dd>
-</dl>
-</li>
-</ul>
-<a id="newParentRunFacetRun(java.util.UUID)">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>newParentRunFacetRun</h4>
-<pre class="methodSignature">public&nbsp;<a href="OpenLineage.ParentRunFacetRun.html" title="class in io.openlineage.client">OpenLineage.ParentRunFacetRun</a>&nbsp;newParentRunFacetRun&#8203;(java.util.UUID&nbsp;runId)</pre>
-<div class="block">Factory method for ParentRunFacetRun</div>
-<dl>
-<dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>runId</code> - The globally unique ID of the run associated with the job.</dd>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd>ParentRunFacetRun</dd>
-</dl>
-</li>
-</ul>
-<a id="newParentRunFacetRunBuilder()">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>newParentRunFacetRunBuilder</h4>
-<pre class="methodSignature">public&nbsp;<a href="OpenLineage.ParentRunFacetRunBuilder.html" title="class in io.openlineage.client">OpenLineage.ParentRunFacetRunBuilder</a>&nbsp;newParentRunFacetRunBuilder()</pre>
-<div class="block">Creates a builder for ParentRunFacetRun</div>
-<dl>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd>a new builder for ParentRunFacetRun</dd>
 </dl>
 </li>
 </ul>
@@ -3775,6 +3775,38 @@ extends java.lang.Object</pre>
 </dl>
 </li>
 </ul>
+<a id="newStorageDatasetFacet(java.lang.String,java.lang.String)">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>newStorageDatasetFacet</h4>
+<pre class="methodSignature">public&nbsp;<a href="OpenLineage.StorageDatasetFacet.html" title="class in io.openlineage.client">OpenLineage.StorageDatasetFacet</a>&nbsp;newStorageDatasetFacet&#8203;(java.lang.String&nbsp;storageLayer,
+                                                              java.lang.String&nbsp;fileFormat)</pre>
+<div class="block">Factory method for StorageDatasetFacet</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>storageLayer</code> - Storage layer provider with allowed values: iceberg, delta.</dd>
+<dd><code>fileFormat</code> - File format with allowed values: parquet, orc, avro, json, csv, text, xml.</dd>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>StorageDatasetFacet</dd>
+</dl>
+</li>
+</ul>
+<a id="newStorageDatasetFacetBuilder()">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>newStorageDatasetFacetBuilder</h4>
+<pre class="methodSignature">public&nbsp;<a href="OpenLineage.StorageDatasetFacetBuilder.html" title="class in io.openlineage.client">OpenLineage.StorageDatasetFacetBuilder</a>&nbsp;newStorageDatasetFacetBuilder()</pre>
+<div class="block">Creates a builder for StorageDatasetFacet</div>
+<dl>
+<dt><span class="returnLabel">Returns:</span></dt>
+<dd>a new builder for StorageDatasetFacet</dd>
+</dl>
+</li>
+</ul>
 <a id="newColumnLineageDatasetFacetFieldsAdditionalInputFieldsTransformations(java.lang.String,java.lang.String,java.lang.String,java.lang.Boolean)">
 <!--   -->
 </a>
@@ -3808,38 +3840,6 @@ extends java.lang.Object</pre>
 <dl>
 <dt><span class="returnLabel">Returns:</span></dt>
 <dd>a new builder for ColumnLineageDatasetFacetFieldsAdditionalInputFieldsTransformations</dd>
-</dl>
-</li>
-</ul>
-<a id="newStorageDatasetFacet(java.lang.String,java.lang.String)">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>newStorageDatasetFacet</h4>
-<pre class="methodSignature">public&nbsp;<a href="OpenLineage.StorageDatasetFacet.html" title="class in io.openlineage.client">OpenLineage.StorageDatasetFacet</a>&nbsp;newStorageDatasetFacet&#8203;(java.lang.String&nbsp;storageLayer,
-                                                              java.lang.String&nbsp;fileFormat)</pre>
-<div class="block">Factory method for StorageDatasetFacet</div>
-<dl>
-<dt><span class="paramLabel">Parameters:</span></dt>
-<dd><code>storageLayer</code> - Storage layer provider with allowed values: iceberg, delta.</dd>
-<dd><code>fileFormat</code> - File format with allowed values: parquet, orc, avro, json, csv, text, xml.</dd>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd>StorageDatasetFacet</dd>
-</dl>
-</li>
-</ul>
-<a id="newStorageDatasetFacetBuilder()">
-<!--   -->
-</a>
-<ul class="blockList">
-<li class="blockList">
-<h4>newStorageDatasetFacetBuilder</h4>
-<pre class="methodSignature">public&nbsp;<a href="OpenLineage.StorageDatasetFacetBuilder.html" title="class in io.openlineage.client">OpenLineage.StorageDatasetFacetBuilder</a>&nbsp;newStorageDatasetFacetBuilder()</pre>
-<div class="block">Creates a builder for StorageDatasetFacet</div>
-<dl>
-<dt><span class="returnLabel">Returns:</span></dt>
-<dd>a new builder for StorageDatasetFacet</dd>
 </dl>
 </li>
 </ul>
