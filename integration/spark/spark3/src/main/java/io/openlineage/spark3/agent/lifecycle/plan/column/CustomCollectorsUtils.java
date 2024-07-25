@@ -7,64 +7,45 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.column.CustomColumnLineageVisitor;
-import io.openlineage.spark.api.OpenLineageContext;
-import java.util.ServiceLoader;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 @Slf4j
 public class CustomCollectorsUtils {
 
-  private static Stream<ColumnLevelLineageVisitor> loadCollectors(OpenLineageContext context) {
-    ServiceLoader<CustomColumnLineageVisitor> loader =
-        ServiceLoader.load(CustomColumnLineageVisitor.class);
-
-    return Stream.concat(
-        StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(
-                    loader.iterator(), Spliterator.IMMUTABLE & Spliterator.DISTINCT),
-                false)
-            .map(
-                customVisitor ->
-                    new ColumnLevelLineageVisitor() {
-                      @Override
-                      public void collectInputs(
-                          ColumnLevelLineageContext context, LogicalPlan node) {
-                        customVisitor.collectInputs(node, context.getBuilder());
-                      }
-
-                      @Override
-                      public void collectOutputs(
-                          ColumnLevelLineageContext context, LogicalPlan node) {
-                        customVisitor.collectOutputs(node, context.getBuilder());
-                      }
-
-                      @Override
-                      public void collectExpressionDependencies(
-                          ColumnLevelLineageContext context, LogicalPlan node) {
-                        customVisitor.collectExpressionDependencies(node, context.getBuilder());
-                      }
-                    }),
-        context.getColumnLevelLineageVisitors().stream());
-  }
-
   static void collectInputs(ColumnLevelLineageContext context, LogicalPlan plan) {
-    CustomCollectorsUtils.loadCollectors(context.getOlContext())
-        .forEach(collector -> collector.collectInputs(context, plan));
+    getCollectors(context).forEach(collector -> collector.collectInputs(context, plan));
   }
 
   static void collectOutputs(ColumnLevelLineageContext context, LogicalPlan plan) {
-    CustomCollectorsUtils.loadCollectors(context.getOlContext())
-        .forEach(collector -> collector.collectOutputs(context, plan));
+    getCollectors(context).forEach(collector -> collector.collectOutputs(context, plan));
   }
 
   static void collectExpressionDependencies(ColumnLevelLineageContext context, LogicalPlan plan) {
-    CustomCollectorsUtils.loadCollectors(context.getOlContext())
+    getCollectors(context)
         .forEach(collector -> collector.collectExpressionDependencies(context, plan));
+  }
+
+  /**
+   * Gets the list of column-level lineage collectors from two sources.
+   *
+   * <p>The first source is the custom visitors provided by the user. These custom visitors are not
+   * expected to be widely used but are included to support legacy implementations.
+   *
+   * <p>The second source is the OpenLineage context, which contains a dynamically built list of
+   * visitors based on the Spark version and the libraries in use.
+   */
+  private static List<ColumnLevelLineageVisitor> getCollectors(ColumnLevelLineageContext context) {
+    return concatLists(
+        LegacyColumnLineageVisitorsLoader.getVisitors(),
+        context.getOlContext().getColumnLevelLineageVisitors());
+  }
+
+  private static List<ColumnLevelLineageVisitor> concatLists(
+      List<ColumnLevelLineageVisitor> list1, List<ColumnLevelLineageVisitor> list2) {
+    return Stream.concat(list1.stream(), list2.stream()).collect(Collectors.toList());
   }
 }
