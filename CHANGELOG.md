@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.19.0...HEAD)
 
+### Fixed
+* **Spark: fix issue with kafka source when saving with for each batch method** [`#2868`](https://github.com/OpenLineage/OpenLineage/pull/2868) [@imbruced](https://github.com/Imbruced)    
+    *Fixes issue when spark is in the streaming mode, then kafka input is in project plan which was filtered, hence input for kafka was not present in the event*    
+
 ## [1.19.0](https://github.com/OpenLineage/OpenLineage/compare/1.18.0...1.19.0) - 2024-07-22
 
 ### Added

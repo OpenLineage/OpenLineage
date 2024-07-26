@@ -10,6 +10,8 @@ import static org.apache.spark.sql.functions.expr;
 import static org.apache.spark.sql.functions.from_json;
 import static org.apache.spark.sql.functions.from_unixtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
@@ -32,7 +34,10 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
@@ -63,11 +68,11 @@ import org.apache.spark.sql.streaming.StreamingQueryException;
 import org.apache.spark.sql.streaming.Trigger;
 import org.apache.spark.sql.types.StructType;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 import org.testcontainers.utility.DockerImageName;
 
@@ -100,224 +105,457 @@ class SparkStreamingTest {
     }
   }
 
-  @Nested
-  class Kafka {
+  @Getter
+  static class KafkaTestContainer {
+    private final KafkaContainer kafka;
+    private final String sourceTopic;
+    private final String targetTopic;
+    private final String bootstrapServers;
 
-    @Test
-    @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
-    void testKafkaSourceToKafkaSink()
-        throws TimeoutException, StreamingQueryException, IOException {
-      KafkaContainer kafka =
-          new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.6.1"));
-      kafka.start();
+    public KafkaTestContainer(
+        KafkaContainer kafka, String sourceTopic, String targetTopic, String bootstrapServers) {
+      this.kafka = kafka;
+      this.sourceTopic = sourceTopic;
+      this.targetTopic = targetTopic;
+      this.bootstrapServers = bootstrapServers;
+    }
 
-      String bootstrapServers = kafka.getBootstrapServers();
-
-      createTopics(bootstrapServers, Arrays.asList("source-topic", "target-topic"));
-      populateTopic(bootstrapServers, "source-topic");
-
-      String userDirProperty = System.getProperty("user.dir");
-      Path userDirPath = Paths.get(userDirProperty);
-      UUID testUuid = UUID.randomUUID();
-      log.info("TestUuid is {}", testUuid);
-
-      Path derbySystemHome =
-          userDirPath.resolve("tmp").resolve("derby").resolve(testUuid.toString());
-      Path sparkSqlWarehouse =
-          userDirPath.resolve("tmp").resolve("spark-sql-warehouse").resolve(testUuid.toString());
-      Path checkpointsDir =
-          userDirPath.resolve("tmp").resolve("checkpoints").resolve(testUuid.toString());
-
-      int randomPort = new Random().nextInt(1000) + 10000;
-
-      OpenLineageEndpointHandler handler = new OpenLineageEndpointHandler();
-      HttpServer server = HttpServer.create(new InetSocketAddress(randomPort), 0);
-      server.createContext("/api/v1/lineage", handler);
-      server.setExecutor(null);
-      server.start();
-
-      SparkSession spark =
-          SparkSession.builder()
-              .appName("kafka-source-kafka-sink")
-              .master("local[*]")
-              .config("spark.extraListeners", OpenLineageSparkListener.class.getCanonicalName())
-              .config("spark.driver.host", "localhost")
-              .config("spark.driver.extraJavaOptions", "-Dderby.system.home=" + derbySystemHome)
-              .config("spark.sql.warehouse.dir", sparkSqlWarehouse.toString())
-              .config("spark.ui.enabled", false)
-              .config("spark.openlineage.transport.type", "http")
-              .config("spark.openlineage.transport.url", "http://localhost:" + randomPort)
-              .config("spark.openlineage.facets.disabled", "[spark_unknown;]")
-              .getOrCreate();
-
-      Dataset<Row> sourceStream =
-          spark
-              .readStream()
-              .format("kafka")
-              .option("subscribe", "source-topic")
-              .option("kafka.bootstrap.servers", bootstrapServers)
-              .option("startingOffsets", "earliest")
-              .load();
-
-      StructType schema = StructType.fromDDL("id STRING, epoch LONG");
-      StreamingQuery streamingQuery =
-          sourceStream
-              .selectExpr("CAST(value AS STRING) AS value")
-              .select(from_json(col("value"), schema).as("event"))
-              .select(col("event.id").as("id"), col("event.epoch").as("epoch"))
-              .select(col("id"), from_unixtime(col("epoch")).as("timestamp"))
-              .select(functions.struct(col("id"), col("timestamp")).as("converted_event"))
-              .select(
-                  expr("CAST('1' AS BINARY) AS key"),
-                  functions.to_json(col("converted_event")).as("value"))
-              .writeStream()
-              .format("kafka")
-              .option("topic", "target-topic")
-              .option("kafka.bootstrap.servers", bootstrapServers)
-              .option("checkpointLocation", checkpointsDir.toString())
-              .trigger(Trigger.ProcessingTime(Duration.ofSeconds(4).toMillis()))
-              .start();
-
-      streamingQuery.awaitTermination(Duration.ofSeconds(20).toMillis());
-
-      spark.stop();
-
+    public void stop() {
       kafka.stop();
+    }
 
+    public void close() {
       kafka.close();
+    }
 
-      Awaitility.await().atMost(Duration.ofSeconds(60)).until(() -> !kafka.isRunning());
-      Awaitility.await()
-          .atMost(Duration.ofSeconds(60))
-          .until(() -> spark.sparkContext().isStopped());
+    public boolean isRunning() {
+      return kafka.isRunning();
+    }
+  }
 
-      List<RunEvent> events =
-          handler.eventsContainer.stream()
-              .map(OpenLineageClientUtils::runEventFromJson)
+  @Getter
+  static class PostgreSQLTestContainer {
+    private final PostgreSQLContainer<?> postgres;
+
+    public PostgreSQLTestContainer(PostgreSQLContainer<?> postgres) {
+      this.postgres = postgres;
+    }
+
+    public void stop() {
+      postgres.stop();
+    }
+
+    public String getNamespace() {
+      return "postgres://" + postgres.getHost() + ":" + postgres.getMappedPort(5432).toString();
+    }
+  }
+
+  private static final OpenLineageEndpointHandler handler = new OpenLineageEndpointHandler();
+
+  @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
+  void testKafkaSourceToKafkaSink() throws TimeoutException, StreamingQueryException, IOException {
+    KafkaTestContainer kafkaContainer = setupKafkaContainer();
+
+    String bootstrapServers = kafkaContainer.getBootstrapServers();
+
+    UUID testUuid = UUID.randomUUID();
+    log.info("TestUuid is {}", testUuid);
+
+    HttpServer server = createHttpServer(handler);
+
+    SparkSession spark =
+        createSparkSession(server.getAddress().getPort(), "testKafkaSourceToKafkaSink");
+    spark.sparkContext().setLogLevel("ERROR");
+
+    String userDirProperty = System.getProperty("user.dir");
+    Path userDirPath = Paths.get(userDirProperty);
+
+    Path checkpointsDir =
+        userDirPath.resolve("tmp").resolve("checkpoints").resolve(testUuid.toString());
+
+    Dataset<Row> sourceStream =
+        readKafkaTopic(spark, kafkaContainer.sourceTopic, bootstrapServers)
+            .transform(this::processKafkaTopic);
+
+    StreamingQuery streamingQuery =
+        sourceStream
+            .writeStream()
+            .format("kafka")
+            .option("topic", kafkaContainer.targetTopic)
+            .option("kafka.bootstrap.servers", bootstrapServers)
+            .option("checkpointLocation", checkpointsDir.toString())
+            .trigger(Trigger.ProcessingTime(Duration.ofSeconds(4).toMillis()))
+            .start();
+
+    streamingQuery.awaitTermination(Duration.ofSeconds(20).toMillis());
+
+    spark.stop();
+
+    kafkaContainer.stop();
+
+    kafkaContainer.close();
+
+    Awaitility.await().atMost(Duration.ofSeconds(60)).until(() -> !kafkaContainer.isRunning());
+    Awaitility.await().atMost(Duration.ofSeconds(60)).until(() -> spark.sparkContext().isStopped());
+
+    List<RunEvent> events = handler.events.get("test_kafka_source_to_kafka_sink");
+
+    List<RunEvent> sqlEvents =
+        events.stream()
+            .filter(
+                x -> "STREAMING".equals(x.getJob().getFacets().getJobType().getProcessingType()))
+            .collect(Collectors.toList());
+
+    assertEquals(6, sqlEvents.size());
+
+    List<RunEvent> nonEmptyInputEvents =
+        events.stream().filter(x -> !x.getInputs().isEmpty()).collect(Collectors.toList());
+
+    assertEquals(6, nonEmptyInputEvents.size());
+
+    List<SchemaRecord> expectedInputSchema =
+        Arrays.asList(
+            new SchemaRecord("key", "binary"),
+            new SchemaRecord("value", "binary"),
+            new SchemaRecord("topic", "string"),
+            new SchemaRecord("partition", "integer"),
+            new SchemaRecord("offset", "long"),
+            new SchemaRecord("timestamp", "timestamp"),
+            new SchemaRecord("timestampType", "integer"));
+
+    List<SchemaRecord> expectedOutputSchema =
+        Arrays.asList(new SchemaRecord("key", "binary"), new SchemaRecord("value", "string"));
+
+    nonEmptyInputEvents.forEach(
+        event -> {
+          assertEquals(1, event.getInputs().size());
+          assertEquals(kafkaContainer.sourceTopic, event.getInputs().get(0).getName());
+          assertEquals("kafka://" + bootstrapServers, event.getInputs().get(0).getNamespace());
+
+          OpenLineage.SchemaDatasetFacet inputSchema =
+              event.getInputs().get(0).getFacets().getSchema();
+
+          List<SchemaRecord> inputSchemaFields = mapToSchemaRecord(inputSchema);
+
+          assertEquals(expectedInputSchema, inputSchemaFields);
+
+          assertEquals(1, event.getOutputs().size());
+          assertEquals(kafkaContainer.targetTopic, event.getOutputs().get(0).getName());
+          assertEquals("kafka://" + bootstrapServers, event.getOutputs().get(0).getNamespace());
+
+          OpenLineage.SchemaDatasetFacet outputSchema =
+              event.getOutputs().get(0).getFacets().getSchema();
+
+          List<SchemaRecord> outputSchemaFields = mapToSchemaRecord(outputSchema);
+
+          assertEquals(expectedOutputSchema, outputSchemaFields);
+        });
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
+  void testKafkaSourceToBatchSink() throws TimeoutException, StreamingQueryException, IOException {
+    KafkaTestContainer kafkaContainer = setupKafkaContainer();
+
+    String bootstrapServers = kafkaContainer.getBootstrapServers();
+
+    UUID testUuid = UUID.randomUUID();
+    log.info("TestUuid is {}", testUuid);
+
+    HttpServer server = createHttpServer(handler);
+
+    SparkSession spark =
+        createSparkSession(server.getAddress().getPort(), "testKafkaSourceToBatchSink");
+    spark.sparkContext().setLogLevel("ERROR");
+
+    Dataset<Row> sourceStream =
+        readKafkaTopic(spark, kafkaContainer.sourceTopic, bootstrapServers)
+            .transform(this::processKafkaTopic);
+
+    StreamingQuery streamingQuery =
+        sourceStream
+            .writeStream()
+            .foreachBatch(
+                (batch, batchId) -> {
+                  batch
+                      .selectExpr("CAST(key AS STRING) AS key", "CAST(value AS STRING) AS value")
+                      .write()
+                      .format("csv")
+                      .mode("append")
+                      .save("/tmp/batch_sink");
+                })
+            .start();
+
+    streamingQuery.awaitTermination(Duration.ofSeconds(20).toMillis());
+    List<RunEvent> events = handler.events.get("test_kafka_source_to_batch_sink");
+
+    assertEquals(7, events.size());
+
+    List<RunEvent> kafkaInputEvents =
+        events.stream().filter(x -> !x.getInputs().isEmpty()).collect(Collectors.toList());
+
+    assertEquals(2, kafkaInputEvents.size());
+
+    kafkaInputEvents.forEach(
+        event -> {
+          assertEquals(1, event.getInputs().size());
+          assertEquals(kafkaContainer.sourceTopic, event.getInputs().get(0).getName());
+          assertEquals("kafka://" + bootstrapServers, event.getInputs().get(0).getNamespace());
+        });
+
+    List<RunEvent> outputEvents =
+        events.stream().filter(x -> !x.getOutputs().isEmpty()).collect(Collectors.toList());
+
+    assertEquals(4, outputEvents.size());
+
+    outputEvents.forEach(
+        event -> {
+          assertEquals(1, event.getOutputs().size());
+          assertEquals("/tmp/batch_sink", event.getOutputs().get(0).getName());
+          assertEquals("file", event.getOutputs().get(0).getNamespace());
+        });
+
+    kafkaContainer.stop();
+    spark.stop();
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
+  void testKafkaSourceToJdbcBatchSink()
+      throws TimeoutException, StreamingQueryException, IOException {
+    KafkaTestContainer kafkaContainer = setupKafkaContainer();
+    PostgreSQLTestContainer postgresContainer = startPostgresContainer();
+
+    postgresContainer.postgres.getJdbcUrl();
+
+    String bootstrapServers = kafkaContainer.getBootstrapServers();
+
+    UUID testUuid = UUID.randomUUID();
+    log.info("TestUuid is {}", testUuid);
+
+    HttpServer server = createHttpServer(handler);
+
+    SparkSession spark =
+        createSparkSession(server.getAddress().getPort(), "testKafkaSourceToJdbcBatchSink");
+    spark.sparkContext().setLogLevel("ERROR");
+
+    Dataset<Row> sourceStream =
+        readKafkaTopic(spark, kafkaContainer.sourceTopic, bootstrapServers)
+            .transform(this::processKafkaTopic);
+
+    StreamingQuery streamingQuery =
+        sourceStream
+            .writeStream()
+            .foreachBatch(
+                (batch, batchId) -> {
+                  batch
+                      .write()
+                      .format("jdbc")
+                      .option("url", postgresContainer.getPostgres().getJdbcUrl())
+                      .option("driver", "org.postgresql.Driver")
+                      .option("dbtable", "public.test")
+                      .option("user", postgresContainer.getPostgres().getUsername())
+                      .option("password", postgresContainer.getPostgres().getPassword())
+                      .mode("append")
+                      .save();
+                })
+            .start();
+
+    streamingQuery.awaitTermination(Duration.ofSeconds(20).toMillis());
+
+    List<RunEvent> events = handler.events.get("test_kafka_source_to_jdbc_batch_sink");
+
+    assertTrue(events.size() > 1);
+
+    List<RunEvent> kafkaInputEvents =
+        events.stream().filter(x -> !x.getInputs().isEmpty()).collect(Collectors.toList());
+
+    assertEquals(2, kafkaInputEvents.size());
+
+    kafkaInputEvents.forEach(
+        event -> {
+          assertEquals(1, event.getInputs().size());
+          assertEquals(kafkaContainer.sourceTopic, event.getInputs().get(0).getName());
+          assertEquals("kafka://" + bootstrapServers, event.getInputs().get(0).getNamespace());
+        });
+
+    List<RunEvent> outputEvents =
+        events.stream().filter(x -> !x.getOutputs().isEmpty()).collect(Collectors.toList());
+
+    assertFalse(outputEvents.isEmpty());
+
+    outputEvents.forEach(
+        event -> {
+          assertEquals(1, event.getOutputs().size());
+          assertEquals("openlineage.public.test", event.getOutputs().get(0).getName());
+          assertEquals(postgresContainer.getNamespace(), event.getOutputs().get(0).getNamespace());
+        });
+
+    postgresContainer.stop();
+    kafkaContainer.stop();
+    spark.stop();
+  }
+
+  private static HttpServer createHttpServer(HttpHandler handler) throws IOException {
+    int randomPort = new Random().nextInt(1000) + 10000;
+
+    HttpServer server = HttpServer.create(new InetSocketAddress(randomPort), 0);
+    server.createContext("/api/v1/lineage", handler);
+    server.setExecutor(null);
+    server.start();
+
+    return server;
+  }
+
+  private Dataset<Row> processKafkaTopic(Dataset<Row> input) {
+    StructType schema = StructType.fromDDL("id STRING, epoch LONG");
+    return input
+        .selectExpr("CAST(value AS STRING) AS value")
+        .select(from_json(col("value"), schema).as("event"))
+        .select(col("event.id").as("id"), col("event.epoch").as("epoch"))
+        .select(col("id"), from_unixtime(col("epoch")).as("timestamp"))
+        .select(functions.struct(col("id"), col("timestamp")).as("converted_event"))
+        .select(
+            expr("CAST('1' AS BINARY) AS key"),
+            functions.to_json(col("converted_event")).as("value"));
+  }
+
+  private Dataset<Row> readKafkaTopic(SparkSession spark, String topic, String bootstrapServers) {
+    return spark
+        .readStream()
+        .format("kafka")
+        .option("subscribe", topic)
+        .option("kafka.bootstrap.servers", bootstrapServers)
+        .option("startingOffsets", "earliest")
+        .load();
+  }
+
+  private PostgreSQLTestContainer startPostgresContainer() {
+    PostgreSQLContainer<?> postgres =
+        new PostgreSQLContainer<>(DockerImageName.parse("postgres:13"))
+            .withDatabaseName("openlineage")
+            .withPassword("openlineage")
+            .withUsername("openlineage");
+
+    postgres.start();
+
+    return new PostgreSQLTestContainer(postgres);
+  }
+
+  private KafkaTestContainer setupKafkaContainer() {
+    KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.6.1"));
+    kafka.start();
+
+    int kafkaTopicPrefix = new Random().nextInt(1000);
+    String kafkaSourceTopic = "source-topic-" + kafkaTopicPrefix;
+    String kafkaTargetTopic = "target-topic-" + kafkaTopicPrefix;
+
+    String bootstrapServers = kafka.getBootstrapServers();
+
+    createTopics(bootstrapServers, Arrays.asList(kafkaSourceTopic, kafkaTargetTopic));
+    populateTopic(bootstrapServers, kafkaSourceTopic);
+
+    return new KafkaTestContainer(kafka, kafkaSourceTopic, kafkaTargetTopic, bootstrapServers);
+  }
+
+  private static SparkSession createSparkSession(Integer httpServerPort, String appName) {
+    String userDirProperty = System.getProperty("user.dir");
+    Path userDirPath = Paths.get(userDirProperty);
+    UUID testUuid = UUID.randomUUID();
+
+    Path derbySystemHome = userDirPath.resolve("tmp").resolve("derby").resolve(testUuid.toString());
+    Path sparkSqlWarehouse =
+        userDirPath.resolve("tmp").resolve("spark-sql-warehouse").resolve(testUuid.toString());
+
+    OpenLineageSparkListener.close();
+
+    return SparkSession.builder()
+        .appName(appName)
+        .master("local[*]")
+        .config("spark.extraListeners", OpenLineageSparkListener.class.getCanonicalName())
+        .config("spark.driver.host", "localhost")
+        .config("spark.driver.extraJavaOptions", "-Dderby.system.home=" + derbySystemHome)
+        .config("spark.sql.warehouse.dir", sparkSqlWarehouse.toString())
+        .config("spark.ui.enabled", false)
+        .config("spark.openlineage.transport.type", "http")
+        .config("spark.openlineage.transport.url", "http://localhost:" + httpServerPort)
+        .config("spark.openlineage.facets.disabled", "[spark_unknown;]")
+        .getOrCreate();
+  }
+
+  private List<SchemaRecord> mapToSchemaRecord(OpenLineage.SchemaDatasetFacet schema) {
+    return schema.getFields().stream()
+        .map(field -> new SchemaRecord(field.getName(), field.getType()))
+        .collect(Collectors.toList());
+  }
+
+  private void populateTopic(String bootstrapServers, String topic) {
+    Properties props = new Properties();
+    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+    props.put(
+        ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
+    props.put(
+        ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
+    props.put(ProducerConfig.LINGER_MS_CONFIG, "100");
+
+    ObjectMapper om = new ObjectMapper().findAndRegisterModules();
+    try (KafkaProducer<String, String> producer = new KafkaProducer<>(props)) {
+      List<Future<RecordMetadata>> futures =
+          IntStream.range(0, 100)
+              .mapToObj(
+                  ignored ->
+                      new InputMessage(
+                          UUID.randomUUID().toString(), Instant.now().getEpochSecond()))
+              .map(message -> serialize(om, message))
+              .map(json -> new ProducerRecord<String, String>(topic, json))
+              .map(
+                  x ->
+                      producer.send(
+                          x,
+                          (ignored, e) -> {
+                            if (e != null) {
+                              log.error("Failed to publish a message", e);
+                            }
+                          }))
               .collect(Collectors.toList());
 
-      List<RunEvent> sqlEvents =
-          events.stream()
-              .filter(
-                  x -> "STREAMING".equals(x.getJob().getFacets().getJobType().getProcessingType()))
+      for (Future<RecordMetadata> future : futures) {
+        future.get();
+      }
+    } catch (ExecutionException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @SneakyThrows
+  private String serialize(ObjectMapper mapper, InputMessage message) {
+    return mapper.writeValueAsString(message);
+  }
+
+  private void createTopics(String bootstrapServers, Collection<String> topics) {
+    try (AdminClient adminClient =
+        AdminClient.create(
+            ImmutableMap.of(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers))) {
+      List<NewTopic> newTopics =
+          topics.stream()
+              .distinct()
+              .map(topicName -> new NewTopic(topicName, 1, (short) 1))
               .collect(Collectors.toList());
 
-      assertEquals(6, sqlEvents.size());
-
-      List<RunEvent> nonEmptyInputEvents =
-          events.stream().filter(x -> !x.getInputs().isEmpty()).collect(Collectors.toList());
-
-      assertEquals(6, nonEmptyInputEvents.size());
-
-      List<SchemaRecord> expectedInputSchema =
-          Arrays.asList(
-              new SchemaRecord("key", "binary"),
-              new SchemaRecord("value", "binary"),
-              new SchemaRecord("topic", "string"),
-              new SchemaRecord("partition", "integer"),
-              new SchemaRecord("offset", "long"),
-              new SchemaRecord("timestamp", "timestamp"),
-              new SchemaRecord("timestampType", "integer"));
-
-      List<SchemaRecord> expectedOutputSchema =
-          Arrays.asList(new SchemaRecord("key", "binary"), new SchemaRecord("value", "string"));
-
-      nonEmptyInputEvents.forEach(
-          event -> {
-            assertEquals(1, event.getInputs().size());
-            assertEquals("source-topic", event.getInputs().get(0).getName());
-            assertEquals("kafka://" + bootstrapServers, event.getInputs().get(0).getNamespace());
-
-            OpenLineage.SchemaDatasetFacet inputSchema =
-                event.getInputs().get(0).getFacets().getSchema();
-
-            List<SchemaRecord> inputSchemaFields = mapToSchemaRecord(inputSchema);
-
-            assertEquals(expectedInputSchema, inputSchemaFields);
-
-            assertEquals(1, event.getOutputs().size());
-            assertEquals("target-topic", event.getOutputs().get(0).getName());
-            assertEquals("kafka://" + bootstrapServers, event.getOutputs().get(0).getNamespace());
-
-            OpenLineage.SchemaDatasetFacet outputSchema =
-                event.getOutputs().get(0).getFacets().getSchema();
-
-            List<SchemaRecord> outputSchemaFields = mapToSchemaRecord(outputSchema);
-
-            assertEquals(expectedOutputSchema, outputSchemaFields);
-          });
-    }
-
-    private List<SchemaRecord> mapToSchemaRecord(OpenLineage.SchemaDatasetFacet schema) {
-      return schema.getFields().stream()
-          .map(field -> new SchemaRecord(field.getName(), field.getType()))
-          .collect(Collectors.toList());
-    }
-
-    private void populateTopic(String bootstrapServers, String topic) {
-      Properties props = new Properties();
-      props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-      props.put(
-          ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
-      props.put(
-          ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
-      props.put(ProducerConfig.LINGER_MS_CONFIG, "100");
-
-      ObjectMapper om = new ObjectMapper().findAndRegisterModules();
-      try (KafkaProducer<String, String> producer = new KafkaProducer<>(props)) {
-        List<Future<RecordMetadata>> futures =
-            IntStream.range(0, 100)
-                .mapToObj(
-                    ignored ->
-                        new InputMessage(
-                            UUID.randomUUID().toString(), Instant.now().getEpochSecond()))
-                .map(message -> serialize(om, message))
-                .map(json -> new ProducerRecord<String, String>(topic, json))
-                .map(
-                    x ->
-                        producer.send(
-                            x,
-                            (ignored, e) -> {
-                              if (e != null) {
-                                log.error("Failed to publish a message", e);
-                              }
-                            }))
-                .collect(Collectors.toList());
-
-        for (Future<RecordMetadata> future : futures) {
-          future.get();
-        }
-      } catch (ExecutionException | InterruptedException e) {
-        throw new RuntimeException(e);
-      }
-    }
-
-    @SneakyThrows
-    private String serialize(ObjectMapper mapper, InputMessage message) {
-      return mapper.writeValueAsString(message);
-    }
-
-    private void createTopics(String bootstrapServers, Collection<String> topics) {
-      try (AdminClient adminClient =
-          AdminClient.create(
-              ImmutableMap.of(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers))) {
-        List<NewTopic> newTopics =
-            topics.stream()
-                .distinct()
-                .map(topicName -> new NewTopic(topicName, 1, (short) 1))
-                .collect(Collectors.toList());
-
-        CreateTopicsResult result = adminClient.createTopics(newTopics);
-        result.all().get();
-      } catch (ExecutionException | InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+      CreateTopicsResult result = adminClient.createTopics(newTopics);
+      result.all().get();
+    } catch (ExecutionException | InterruptedException e) {
+      throw new RuntimeException(e);
     }
   }
 }
 
+@Tag("integration-test")
 class OpenLineageEndpointHandler implements HttpHandler {
   List<String> eventsContainer = new ArrayList<>();
+
+  Map<String, List<RunEvent>> events = new HashMap<>();
 
   public OpenLineageEndpointHandler() {}
 
@@ -329,6 +567,23 @@ class OpenLineageEndpointHandler implements HttpHandler {
     String value = br.readLine();
 
     eventsContainer.add(value);
+
+    RunEvent runEvent = OpenLineageClientUtils.runEventFromJson(value);
+    String jobName = runEvent.getJob().getName();
+
+    Optional<String> jobNameShort = Arrays.stream(jobName.split("\\.")).findFirst();
+
+    if (!jobNameShort.isPresent()) {
+      return;
+    }
+
+    String jobNameShortString = jobNameShort.get();
+
+    if (!events.containsKey(jobNameShortString)) {
+      events.put(jobNameShortString, new ArrayList<>());
+    }
+
+    events.get(jobNameShortString).add(runEvent);
 
     exchange.sendResponseHeaders(200, 0);
     try (Writer writer =
