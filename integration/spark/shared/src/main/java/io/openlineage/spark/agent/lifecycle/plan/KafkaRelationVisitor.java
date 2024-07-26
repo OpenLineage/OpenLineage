@@ -5,8 +5,6 @@
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
-import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
@@ -14,17 +12,6 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.URI;
-import java.util.List;
-import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -36,6 +23,19 @@ import org.apache.spark.sql.types.StructType;
 import org.jetbrains.annotations.Nullable;
 import scala.collection.immutable.Map;
 import scala.collection.immutable.Map$;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.List;
+import java.util.Optional;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
 /**
  * {@link LogicalPlan} visitor that attempts to extract a {@link OpenLineage.Dataset} from a {@link
@@ -238,20 +238,7 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
                     .orElse(Stream.empty()))
             .collect(Collectors.toList());
 
-    String server =
-        servers
-            .map(
-                str -> {
-                  if (!str.matches("\\w+://.*")) {
-                    return "PLAINTEXT://" + str;
-                  } else {
-                    return str;
-                  }
-                })
-            .map(str -> URI.create(str.split(",")[0]))
-            .map(uri -> uri.getHost() + ":" + uri.getPort())
-            .orElse("");
-    String namespace = "kafka://" + server;
+    String namespace = KafkaBootstrapServerResolver.resolve(servers);
     return topics.stream()
         .map(topic -> datasetFactory.getDataset(topic, namespace, schema))
         .collect(Collectors.toList());
