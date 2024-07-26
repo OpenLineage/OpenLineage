@@ -62,9 +62,19 @@ class AirflowMappedTaskRunFacet(BaseFacet):
 
 
 @attr.s
+class AirflowDagRunFacet(BaseFacet):
+    """
+    Composite Airflow DAG run facet.
+    """
+
+    dag: Dict = attr.ib()
+    dagRun: Dict = attr.ib()
+
+
+@attr.s
 class AirflowRunFacet(BaseFacet):
     """
-    Composite Airflow run facet.
+    Composite Airflow Task run facet.
     """
 
     dag: Dict = attr.ib()

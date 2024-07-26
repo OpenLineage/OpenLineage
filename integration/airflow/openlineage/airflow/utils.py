@@ -12,6 +12,7 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import attr
 from openlineage.airflow.facets import (
+    AirflowDagRunFacet,
     AirflowMappedTaskRunFacet,
     AirflowRunArgsRunFacet,
     AirflowRunFacet,
@@ -343,6 +344,20 @@ class TaskGroupInfo(InfoJsonEncodable):
         "upstream_group_ids",
         "upstream_task_ids",
     ]
+
+
+def get_airflow_dag_run_facet(
+    dag_run: "DagRun",
+    dag: "DAG",
+):
+    return {
+        "airflowDagRun": attr.asdict(
+            AirflowDagRunFacet(
+                dag=DagInfo(dag),
+                dagRun=DagRunInfo(dag_run),
+            )
+        )
+    }
 
 
 def get_airflow_run_facet(

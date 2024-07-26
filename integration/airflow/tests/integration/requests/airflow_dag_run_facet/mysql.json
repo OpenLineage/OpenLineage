@@ -1,0 +1,26 @@
+[
+    {
+        "eventType": "START",
+        "job": {
+            "name": "mysql_orders_popular_day_of_week"
+        },
+        "run": {
+            "facets": {
+                "airflowDagRun": {
+                    "dag": {
+                        "dag_id": "mysql_orders_popular_day_of_week"
+                    },
+                    "dagRun": {
+                        "conf": {},
+                        "dag_id": "mysql_orders_popular_day_of_week",
+                        "run_type": "manual"
+                    }
+                },
+                "processing_engine": {
+                    "version": "{{ env_var('AIRFLOW_VERSION') }}",
+                    "name": "Airflow"
+                }
+            }
+        }
+    }
+]

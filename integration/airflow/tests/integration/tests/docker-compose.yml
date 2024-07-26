@@ -78,6 +78,8 @@ x-airflow-base: &airflow-base
       condition: service_healthy
     pure-ftpd:
       condition: service_started
+    backend:
+      condition: service_healthy
 
 services:
   integration:

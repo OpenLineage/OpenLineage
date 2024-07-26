@@ -444,6 +444,27 @@ def test_integration_ordered(dag_id, request_dir: str, skip_jobs: List[str], air
     [
         pytest.param(
             "mysql_orders_popular_day_of_week",
+            "requests/airflow_dag_run_facet/mysql.json",
+        )
+    ],
+)
+def test_airflow_dag_run_facet(dag_id, request_path, airflow_db_conn):
+    log.info(f"Checking dag {dag_id} for AirflowDagRunFacet")
+    result = wait_for_dag(dag_id, airflow_db_conn)
+    assert result is True
+
+    with open(request_path) as f:
+        expected_events = json.load(f)
+
+    actual_events = get_events()
+    assert check_matches(expected_events, actual_events) is True
+
+
+@pytest.mark.parametrize(
+    "dag_id, request_path",
+    [
+        pytest.param(
+            "mysql_orders_popular_day_of_week",
             "requests/airflow_run_facet/mysql.json",
         )
     ],

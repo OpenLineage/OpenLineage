@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 from openlineage.airflow.extractors import TaskMetadata
-from openlineage.airflow.utils import DagUtils, redact_with_exclusions
+from openlineage.airflow.utils import DagUtils, get_airflow_dag_run_facet, redact_with_exclusions
 from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions, set_producer
 from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
@@ -273,6 +273,7 @@ class OpenLineageAdapter:
                 ),
                 nominal_start_time=nominal_start_time,
                 nominal_end_time=nominal_end_time,
+                run_facets=get_airflow_dag_run_facet(dag_run, dag_run.dag),
             ),
             inputs=[],
             outputs=[],
