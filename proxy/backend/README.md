@@ -16,7 +16,7 @@ $ ./gradlew build
 
 The executable can be found under `build/libs/`.
 
-## Configuration
+## Configuration with Gradle
 
 To run the OpenLineage _proxy backend_, you will have to define `proxy.yml`. The configuration file is passed to the application and used to configure your proxy. Please copy [`proxy.example.yml`](proxy.example.yml):
 
@@ -36,6 +36,21 @@ By default, the OpenLineage proxy uses the following ports:
 ```bash
 $ ./gradlew runShadow
 ```
+
+## Configuration with Docker
+
+Configurations to run this project with Docker are available in the root folder and in the Docker directory.
+
+The docker-compose.yml file is pre-configured to run the following services:
+
+* OpenLineage Proxy Backend
+* Postgres Database
+* Marquez API
+* Marquez UI
+
+Communication between the services is done through the network `proxy`.
+
+You can definitely apply your own configurations to the `docker-compose.yml` file as it may be necessary.
 
 ----
 SPDX-License-Identifier: Apache-2.0\
