@@ -41,7 +41,7 @@ public class LogicalPlanRunFacetBuilder extends CustomFacetBuilder<Object, Logic
   }
 
   @Override
-  protected void build(Object event, BiConsumer<String, ? super LogicalPlanFacet> consumer) {
+  public void build(Object event, BiConsumer<String, ? super LogicalPlanFacet> consumer) {
     openLineageContext
         .getQueryExecution()
         .ifPresent(

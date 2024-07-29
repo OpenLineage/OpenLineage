@@ -66,7 +66,11 @@ class GoogleCloudIntegrationTest {
       String.format("spark_%s", SparkContainerProperties.SPARK_VERSION).replace(".", "_");
   private static final String SCALA_VERSION =
       String.format("scala_%s", SparkContainerProperties.SCALA_BINARY_VERSION).replace(".", "_");
-  private static final String VERSION_NAME = String.format("%s_%s", SPARK_VERSION, SCALA_VERSION);
+
+  private static final String JAVA_VERSION =
+      String.format("java_%s", System.getProperty("java.version").replace(".", "_"));
+  private static final String VERSION_NAME =
+      String.format("%s_%s_%s", JAVA_VERSION, SPARK_VERSION, SCALA_VERSION);
 
   private static SparkSession spark;
   private static ClientAndServer mockServer;
@@ -143,6 +147,7 @@ class GoogleCloudIntegrationTest {
     replacements.put("{PROJECT_ID}", PROJECT_ID);
     replacements.put("{DATASET_ID}", DATASET_ID);
     replacements.put("{BUCKET_NAME}", BUCKET_NAME);
+    replacements.put("{JAVA_VERSION}", JAVA_VERSION);
     replacements.put("{SPARK_VERSION}", SPARK_VERSION);
     replacements.put("{SCALA_VERSION}", SCALA_VERSION);
 
@@ -192,6 +197,7 @@ class GoogleCloudIntegrationTest {
     replacements.put("{PROJECT_ID}", PROJECT_ID);
     replacements.put("{DATASET_ID}", DATASET_ID);
     replacements.put("{BUCKET_NAME}", BUCKET_NAME);
+    replacements.put("{JAVA_VERSION}", JAVA_VERSION);
     replacements.put("{SPARK_VERSION}", SPARK_VERSION);
     replacements.put("{SCALA_VERSION}", SCALA_VERSION);
 

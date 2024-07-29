@@ -7,6 +7,7 @@ package io.openlineage.spark.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.openlineage.spark.agent.util.DerbyUtils;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.FileSystem;
@@ -48,6 +49,7 @@ class MetastoreHive2Test {
 
   @BeforeAll
   public static void setup() {
+    DerbyUtils.loadSystemProperty(MetastoreHive2Test.class.getName());
     metastoreContainer.start();
     spark =
         SparkSession.builder()
@@ -64,6 +66,7 @@ class MetastoreHive2Test {
 
   @AfterAll
   public static void tearDown() {
+    DerbyUtils.clearDerbyProperty();
     metastoreContainer.stop();
     MetastoreTestUtils.removeDatabaseFiles(database, fs);
     spark.close();

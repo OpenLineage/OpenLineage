@@ -7,7 +7,10 @@ workflows:
       - build-integration-spark-scala-2_12:
           matrix:
             parameters:
-              spark-version: [ '2.4.8', '3.2.4', '3.3.4', '3.4.3', '3.5.1' ]
+              env-variant: [
+                'java:8-spark:2.4.8', 'java:8-spark:3.2.4',
+                'java:8-spark:3.3.4', 'java:17-spark:3.3.4',
+                'java:8-spark:3.4.3', 'java:8-spark:3.5.1', 'java:17-spark:3.5.1' ]
           requires:
            - build-integration-sql-java
            - build-client-java
@@ -15,7 +18,9 @@ workflows:
       - build-integration-spark-scala-2_13:
           matrix:
             parameters:
-              spark-version: [ '3.2.4', '3.3.4', '3.4.3', '3.5.1' ]
+              env-variant: [
+                'java:8-spark:3.2.4', 'java:8-spark:3.3.4', 'java:17-spark:3.3.4',
+                'java:8-spark:3.4.3', 'java:8-spark:3.5.1', 'java:17-spark:3.5.1' ]
           requires:
            - build-integration-sql-java
            - build-client-java           
@@ -40,14 +45,19 @@ workflows:
           context: integration-tests
           matrix:
             parameters:
-              spark-version: [ '2.4.8', '3.2.4', '3.3.4', '3.4.3', '3.5.1' ]
+              env-variant: [
+                'java:8-spark:2.4.8', 'java:8-spark:3.2.4',
+                'java:8-spark:3.3.4', 'java:17-spark:3.3.4',
+                'java:8-spark:3.4.3', 'java:8-spark:3.5.1', 'java:17-spark:3.5.1' ]
           requires:
             - approval-integration-spark
       - integration-test-integration-spark-scala-2_13:
           context: integration-tests
           matrix:
             parameters:
-              spark-version: [ '3.2.4', '3.3.4', '3.4.3', '3.5.1' ]
+              env-variant: [
+                'java:8-spark:3.2.4', 'java:8-spark:3.3.4', 'java:17-spark:3.3.4',
+                'java:8-spark:3.4.3', 'java:8-spark:3.5.1', 'java:17-spark:3.5.1' ]
           requires:
             - approval-integration-spark
       - configurable-integration-test-spark:

@@ -20,6 +20,10 @@ idea {
     }
 }
 
+javadoc {
+    options.tags = ["apiNote"]
+}
+
 ext {
     assertjVersion = "3.25.1"
     awaitilityVersion = "4.2.0"

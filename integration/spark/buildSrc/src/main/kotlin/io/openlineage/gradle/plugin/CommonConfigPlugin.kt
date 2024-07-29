@@ -19,8 +19,12 @@ import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.plugins.quality.PmdExtension
 import org.gradle.api.plugins.quality.PmdPlugin
 import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.compile.ForkOptions
+import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.scala.ScalaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.*
+import java.io.File
 
 /**
  * A Gradle plugin that consolidates common configurations for Java projects.
@@ -64,11 +68,49 @@ class CommonConfigPlugin : Plugin<Project> {
         target.repositories.mavenCentral()
         target.repositories.mavenLocal()
 
+        if (target.hasProperty("java.compile.home")) {
+            // This is necessary as we want to compile classes on CI always with Java 17 while
+            // testing it on different Java versions to allow running different Spark versions.
+            target.tasks.withType<JavaCompile>().configureEach  {
+                // enable compilation in a separate daemon process
+                options.setFork(true)
+                options.forkOptions.javaHome = File(target.findProperty("java.compile.home").toString())
+            }
+        }
+
+        target.tasks.withType<JavaCompile>().configureEach  {
+            doFirst {
+                if (System.getenv().containsKey("CI") && !target.hasProperty("java.compile.home")) {
+                    // never run compile on CI without property being set
+                    throw RuntimeException("java.compile.home should be always set on CI env")
+                }
+            }
+        }
+
         target.tasks.withType<Test> {
             useJUnitPlatform()
             testLogging {
                 events("passed", "skipped", "failed")
                 showStandardStreams = true
+            }
+
+            if (JavaVersion.current() >= JavaVersion.VERSION_17) {
+                jvmArgs(
+                    "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                    "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
+                    "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+                    "--add-opens=java.base/java.io=ALL-UNNAMED",
+                    "--add-opens=java.base/java.net=ALL-UNNAMED",
+                    "--add-opens=java.base/java.nio=ALL-UNNAMED",
+                    "--add-opens=java.base/java.util=ALL-UNNAMED",
+                    "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED",
+                    "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED",
+                    "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+                    "--add-opens=java.base/sun.nio.cs=ALL-UNNAMED",
+                    "--add-opens=java.base/sun.security.action=ALL-UNNAMED",
+                    "--add-opens=java.base/sun.util.calendar=ALL-UNNAMED",
+                    "--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+                )
             }
         }
     }
@@ -114,6 +156,11 @@ class CommonConfigPlugin : Plugin<Project> {
                 googleJavaFormat()
                 removeUnusedImports()
                 custom("disallowWildcardImports", disallowWildcardImports)
+            }
+
+            // disable spotless tasks for Java 8
+            if (JavaVersion.current() == JavaVersion.VERSION_1_8) {
+                isEnforceCheck = false
             }
         }
     }
