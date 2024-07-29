@@ -5,10 +5,10 @@
   },
   "inputs": [{
     "namespace": "bigquery",
-    "name": "{PROJECT_ID}.{DATASET_ID}.{SPARK_VERSION}_{SCALA_VERSION}_source_query_test"
+    "name": "{PROJECT_ID}.{DATASET_ID}.{JAVA_VERSION}_{SPARK_VERSION}_{SCALA_VERSION}_source_query_test"
   }],
   "outputs": [{
     "namespace": "bigquery",
-    "name": "{PROJECT_ID}.{DATASET_ID}.{SPARK_VERSION}_{SCALA_VERSION}_target_query_test"
+    "name": "{PROJECT_ID}.{DATASET_ID}.{JAVA_VERSION}_{SPARK_VERSION}_{SCALA_VERSION}_target_query_test"
   }]
 }

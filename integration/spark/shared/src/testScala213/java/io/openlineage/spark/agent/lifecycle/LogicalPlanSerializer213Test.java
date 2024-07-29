@@ -15,6 +15,8 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.io.IOException;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalog;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
@@ -68,6 +70,7 @@ class LogicalPlanSerializer213Test {
         };
     final ObjectMapper mapper = new ObjectMapper();
     try {
+      Logger.getLogger(logicalPlanSerializer.getClass()).setLevel(Level.ERROR);
       mapper.readTree(logicalPlanSerializer.serialize(notSerializablePlan));
     } catch (IOException e) {
       fail();

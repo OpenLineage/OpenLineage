@@ -20,6 +20,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
+import io.openlineage.spark.agent.util.DerbyUtils;
 import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -48,14 +49,16 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 @Slf4j
 @EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)")
 class ColumnLineageWithTransformationTypesTest {
+
   private static final String FILE = "file";
 
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
-  private static final String T1_EXPECTED_NAME = "column_non_v2/t1";
-  private static final String T2_EXPECTED_NAME = "column_non_v2/t2";
-  private static final String T3_EXPECTED_NAME = "column_non_v2/t3";
+  private static final String T1_EXPECTED_NAME = "column_transformation/t1";
+  private static final String T2_EXPECTED_NAME = "column_transformation/t2";
+  private static final String T3_EXPECTED_NAME = "column_transformation/t3";
+  public static final String DATA_PATH = "/tmp/column_transformation";
   SparkSession spark;
   OpenLineageContext context;
   SparkListenerEvent event = mock(SparkListenerSQLExecutionEnd.class);
@@ -66,12 +69,14 @@ class ColumnLineageWithTransformationTypesTest {
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
+    DerbyUtils.loadSystemProperty(ColumnLineageWithTransformationTypesTest.class.getName());
     SparkSession$.MODULE$.cleanupAnyExistingSession();
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
+    DerbyUtils.clearDerbyProperty();
     SparkSession$.MODULE$.cleanupAnyExistingSession();
   }
 
@@ -100,8 +105,7 @@ class ColumnLineageWithTransformationTypesTest {
             .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .build();
 
-    FileSystem.get(spark.sparkContext().hadoopConfiguration())
-        .delete(new Path("/tmp/column_non_v2/"), true);
+    FileSystem.get(spark.sparkContext().hadoopConfiguration()).delete(new Path(DATA_PATH), true);
 
     spark.sql("DROP TABLE IF EXISTS t1");
     spark.sql("DROP TABLE IF EXISTS t2");
@@ -332,9 +336,10 @@ class ColumnLineageWithTransformationTypesTest {
   private void createTable(String table, String... fields) {
     spark.sql(
         String.format(
-            "CREATE TABLE %s (%s) LOCATION '/tmp/column_non_v2/%s'",
+            "CREATE TABLE %s (%s) LOCATION '%s/%s'",
             table,
             Arrays.stream(fields).map(e -> e.replace(";", " ")).collect(Collectors.joining(", ")),
+            DATA_PATH,
             table));
     spark.sql(
         String.format(

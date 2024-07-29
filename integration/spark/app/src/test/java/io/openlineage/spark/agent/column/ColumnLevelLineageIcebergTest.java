@@ -21,6 +21,7 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.DatasetBuilderFactoryProvider;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
+import io.openlineage.spark.agent.util.DerbyUtils;
 import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -89,12 +90,14 @@ class ColumnLevelLineageIcebergTest {
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
+    DerbyUtils.loadSystemProperty(ColumnLevelLineageIcebergTest.class.getName());
     SparkSession$.MODULE$.cleanupAnyExistingSession();
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
+    DerbyUtils.clearDerbyProperty();
     SparkSession$.MODULE$.cleanupAnyExistingSession();
   }
 

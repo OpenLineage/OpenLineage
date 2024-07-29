@@ -1,20 +1,20 @@
 version: "3.3"
 services:
-  proxy:
-    build:
-      context: ../../..
-      dockerfile: proxy/fluentd/docker/Dockerfile
-    container_name: openlineage-fluentd
-    volumes:
-      - ./conf:/fluentd/etc/
-      - ../lib/fluent/plugin/:/fluentd/openlineage-parser/
-    ports:
-      - "9880:9880"
-    environment:
-      - MARQUEZ_HTTP_ENDPOINT=http://marquez-api:5000/api/v1/lineage
-    entrypoint: ["/bin/entrypoint.sh", "-p", "/fluentd/openlineage-parser"]
-    depends_on:
-      - api
+  # proxy:
+  #   build:
+  #     context: ../../..
+  #     dockerfile: proxy/fluentd/docker/Dockerfile
+  #   container_name: openlineage-fluentd
+  #   volumes:
+  #     - ./conf:/fluentd/etc/
+  #     - ../lib/fluent/plugin/:/fluentd/openlineage-parser/
+  #   ports:
+  #     - "9880:9880"
+  #   environment:
+  #     - MARQUEZ_HTTP_ENDPOINT=http://marquez-api:5000/api/v1/lineage
+  #   entrypoint: ["/bin/entrypoint.sh", "-p", "/fluentd/openlineage-parser"]
+  #   depends_on:
+  #     - api
   
   api:
     image: marquezproject/marquez

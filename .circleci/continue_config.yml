@@ -163,7 +163,7 @@ jobs:
   release-integration-spark:
     working_directory: ~/openlineage/integration/spark
     docker:
-      - image: cimg/openjdk:8.0
+      - image: cimg/openjdk:17.0
     steps:
       - *checkout_project_root
       - run:
@@ -193,20 +193,33 @@ jobs:
 
   build-integration-spark-scala-2_12:
     parameters:
-      spark-version:
+      env-variant:
         type: string
     working_directory: ~/openlineage/integration/spark
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2404:current
     resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
-      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
       - *checkout_project_root
       - run:
           name: Generate cache key
           command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - run:
+          name: Spark & Java version Variable
+          command: |
+            SPARK=`echo << parameters.env-variant >> | cut -d ':' -f 3`
+            JAVA_VERSION_NUMBER=`echo << parameters.env-variant >> | cut -d ':' -f 2 | cut -d "-" -f 1`
+            echo spark=$SPARK java=$JAVA_VERSION_NUMBER
+
+            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
+            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
+            
+            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
+            echo 'export SPARK_VERSION_VAR='${SPARK} >> "$BASH_ENV"
+            echo 'export JAVA_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
+            echo 'export JAVAC_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
       - restore_cache:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
@@ -214,15 +227,16 @@ jobs:
       - attach_workspace:
           at: ~/.m2/repository/io/openlineage/
       - run: |
-          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-          sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-      - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.12
+          echo "Setting default Java to ${JAVA_BIN}"
+          sudo update-alternatives --set java ${JAVA_BIN}
+          sudo update-alternatives --set javac ${JAVAC_BIN}
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
       - run:
           when: on_fail
           command: cat build/test-results/test/TEST-*.xml
-      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.12
-      - run: ./gradlew --no-daemon --console=plain --info check -x test -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.12
-      - run: ./gradlew --console=plain javadoc -Pscala.binary.version=2.12
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
+      - run: ./gradlew --no-daemon --console=plain --info check -x test -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
+      - run: ./gradlew --console=plain javadoc -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
       - store_test_results:
           path: build/test-results/test
       - store_artifacts:
@@ -238,20 +252,33 @@ jobs:
 
   build-integration-spark-scala-2_13:
     parameters:
-      spark-version:
+      env-variant:
         type: string
     working_directory: ~/openlineage/integration/spark
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2404:current
     resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
-      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
       - *checkout_project_root
       - run:
           name: Generate cache key
           command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - run:
+          name: Spark & Java version Variable
+          command: |
+            SPARK=`echo << parameters.env-variant >> | cut -d ':' -f 3`
+            JAVA_VERSION_NUMBER=`echo << parameters.env-variant >> | cut -d ':' -f 2 | cut -d "-" -f 1`
+            echo spark=$SPARK java=$JAVA_VERSION_NUMBER
+
+            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
+            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
+
+            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
+            echo 'export SPARK_VERSION_VAR='${SPARK} >> "$BASH_ENV"
+            echo 'export JAVA_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
+            echo 'export JAVAC_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
       - restore_cache:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
@@ -259,15 +286,16 @@ jobs:
       - attach_workspace:
           at: ~/.m2/repository/io/openlineage/
       - run: |
-          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-          sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-      - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.13
+          echo "Setting default Java to ${JAVA_BIN}"
+          sudo update-alternatives --set java ${JAVA_BIN}
+          sudo update-alternatives --set javac ${JAVAC_BIN}
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
       - run:
           when: on_fail
           command: cat build/test-results/test/TEST-*.xml
-      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.13
-      - run: ./gradlew --no-daemon --console=plain --info check -x test -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.13
-      - run: ./gradlew --console=plain javadoc -Pscala.binary.version=2.13
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
+      - run: ./gradlew --no-daemon --console=plain --info check -x test -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
+      - run: ./gradlew --console=plain javadoc -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
       - store_test_results:
           path: build/test-results/test
       - store_artifacts:
@@ -284,11 +312,10 @@ jobs:
   jar-verification-spark:
     working_directory: ~/openlineage/integration/spark
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2404:current
     resource_class: medium
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
-      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
       - *checkout_project_root
       - run:
@@ -301,10 +328,10 @@ jobs:
       - attach_workspace:
           at: ~/.m2/repository/io/openlineage/
       - run: |
-          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-          sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-      - run: ./gradlew --no-daemon --console=plain clean clean jarVerification -Pscala.binary.version=2.12
-      - run: ./gradlew --no-daemon --console=plain clean clean jarVerification -Pscala.binary.version=2.13
+          sudo update-alternatives --set java /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+          sudo update-alternatives --set javac /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
+      - run: ./gradlew --no-daemon --console=plain clean clean jarVerification -Pscala.binary.version=2.12 -Pjava.compile.home=/usr/lib/jvm/java-17-openjdk-amd64
+      - run: ./gradlew --no-daemon --console=plain clean clean jarVerification -Pscala.binary.version=2.13 -Pjava.compile.home=/usr/lib/jvm/java-17-openjdk-amd64
 
   release-integration-flink:
     working_directory: ~/openlineage/integration/flink
@@ -687,15 +714,14 @@ jobs:
 
   integration-test-integration-spark-scala-2_12:
     parameters:
-      spark-version:
+      env-variant:
         type: string
     working_directory: ~/openlineage/integration/spark
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2404:current
     resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
-      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
       - *checkout_project_root
       - gcp-cli/install
@@ -703,6 +729,20 @@ jobs:
       - run:
           name: Generate cache key
           command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - run:
+          name: Spark & Java version Variable
+          command: |
+            SPARK=`echo << parameters.env-variant >> | cut -d ':' -f 3`
+            JAVA_VERSION_NUMBER=`echo << parameters.env-variant >> | cut -d ':' -f 2 | cut -d "-" -f 1`
+            echo spark=$SPARK java=$JAVA_VERSION_NUMBER
+
+            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
+            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
+
+            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
+            echo 'export SPARK_VERSION_VAR='${SPARK} >> "$BASH_ENV"
+            echo 'export JAVA_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
+            echo 'export JAVAC_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
       - run: mkdir -p app/build/gcloud && echo $GCLOUD_SERVICE_KEY > app/build/gcloud/gcloud-service-key.json && chmod 644 app/build/gcloud/gcloud-service-key.json
       - restore_cache:
           keys:
@@ -711,10 +751,11 @@ jobs:
       - attach_workspace:
           at: ~/.m2/repository/io/openlineage/
       - run: |
-          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-          sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.12
-      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.12
+          echo "Setting default Java to ${JAVA_BIN}"
+          sudo update-alternatives --set java ${JAVA_BIN}
+          sudo update-alternatives --set javac ${JAVAC_BIN}
+      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
       - store_test_results:
           path: app/build/test-results/integrationTest
       - store_artifacts:
@@ -727,15 +768,14 @@ jobs:
 
   integration-test-integration-spark-scala-2_13:
     parameters:
-      spark-version:
+      env-variant:
         type: string
     working_directory: ~/openlineage/integration/spark
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2404:current
     resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
-      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
       - *checkout_project_root
       - gcp-cli/install
@@ -743,6 +783,20 @@ jobs:
       - run:
           name: Generate cache key
           command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - run:
+          name: Spark & Java version Variable
+          command: |
+            SPARK=`echo << parameters.env-variant >> | cut -d ':' -f 3`
+            JAVA_VERSION_NUMBER=`echo << parameters.env-variant >> | cut -d ':' -f 2 | cut -d "-" -f 1`
+            echo spark=$SPARK java=$JAVA_VERSION_NUMBER
+
+            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
+            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
+
+            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
+            echo 'export SPARK_VERSION_VAR='${SPARK} >> "$BASH_ENV"
+            echo 'export JAVA_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
+            echo 'export JAVAC_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
       - run: mkdir -p app/build/gcloud && echo $GCLOUD_SERVICE_KEY > app/build/gcloud/gcloud-service-key.json && chmod 644 app/build/gcloud/gcloud-service-key.json
       - restore_cache:
           keys:
@@ -751,10 +805,11 @@ jobs:
       - attach_workspace:
           at: ~/.m2/repository/io/openlineage/
       - run: |
-          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-          sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=<< parameters.spark-version >> -Pscala.binary.version=2.13
-      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.13
+          echo "Setting default Java to ${JAVA_BIN}"
+          sudo update-alternatives --set java ${JAVA_BIN}
+          sudo update-alternatives --set javac ${JAVAC_BIN}
+      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
       - store_test_results:
           path: app/build/test-results/integrationTest
       - store_artifacts:
