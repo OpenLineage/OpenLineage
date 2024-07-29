@@ -14,6 +14,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
+import io.openlineage.spark.agent.util.DerbyUtils;
 import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -60,12 +61,14 @@ class ColumnLevelLineageHiveTest {
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
+    DerbyUtils.loadSystemProperty(ColumnLevelLineageHiveTest.class.getName());
     SparkSession$.MODULE$.cleanupAnyExistingSession();
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
+    DerbyUtils.clearDerbyProperty();
     SparkSession$.MODULE$.cleanupAnyExistingSession();
   }
 

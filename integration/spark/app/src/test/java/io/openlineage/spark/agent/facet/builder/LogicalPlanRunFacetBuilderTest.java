@@ -3,15 +3,17 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.facets.builder;
+package io.openlineage.spark.agent.facet.builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -90,12 +92,11 @@ class LogicalPlanRunFacetBuilderTest {
                 .openLineageConfig(openLineageConfig)
                 .meterRegistry(new SimpleMeterRegistry())
                 .build());
-    assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionStart(1L, "", "", "", null, 1L)))
-        .isTrue();
+    assertThat(builder.isDefinedAt(mock(SparkListenerSQLExecutionStart.class))).isTrue();
 
-    assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionEnd(1L, 1L))).isTrue();
+    assertThat(builder.isDefinedAt(mock(SparkListenerSQLExecutionEnd.class))).isTrue();
 
-    assertThat(builder.isDefinedAt(new SparkListenerJobEnd(1, 1L, JobSucceeded$.MODULE$))).isTrue();
+    assertThat(builder.isDefinedAt(mock(SparkListenerJobEnd.class))).isTrue();
 
     assertThat(
             builder.isDefinedAt(
@@ -137,10 +138,9 @@ class LogicalPlanRunFacetBuilderTest {
                 .meterRegistry(new SimpleMeterRegistry())
                 .openLineageConfig(new SparkOpenLineageConfig())
                 .build());
-    assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionStart(1L, "", "", "", null, 1L)))
-        .isFalse();
+    assertThat(builder.isDefinedAt(mock(SparkListenerSQLExecutionStart.class))).isFalse();
 
-    assertThat(builder.isDefinedAt(new SparkListenerSQLExecutionEnd(1L, 1L))).isFalse();
+    assertThat(builder.isDefinedAt(mock(SparkListenerSQLExecutionEnd.class))).isFalse();
 
     assertThat(builder.isDefinedAt(new SparkListenerJobEnd(1, 1L, JobSucceeded$.MODULE$)))
         .isFalse();
@@ -164,7 +164,7 @@ class LogicalPlanRunFacetBuilderTest {
                 .openLineageConfig(new SparkOpenLineageConfig())
                 .build());
     Map<String, RunFacet> facetMap = new HashMap<>();
-    builder.build(new SparkListenerSQLExecutionEnd(1L, 1L), facetMap::put);
+    builder.build(mock(SparkListenerSQLExecutionEnd.class), facetMap::put);
     assertThat(facetMap)
         .hasEntrySatisfying(
             "spark.logicalPlan",

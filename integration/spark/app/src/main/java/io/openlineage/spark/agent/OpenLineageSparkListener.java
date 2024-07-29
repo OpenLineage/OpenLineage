@@ -84,7 +84,11 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
    */
   private Optional<Integer> activeJobId = Optional.empty();
 
-  /** called by the tests */
+  /**
+   * called by the tests
+   *
+   * @param contextFactory context factory
+   */
   public static void init(ContextFactory contextFactory) {
     OpenLineageSparkListener.contextFactory = contextFactory;
     meterRegistry = contextFactory.getMeterRegistry();
