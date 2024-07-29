@@ -9,6 +9,10 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.FieldUtils;
@@ -20,11 +24,6 @@ import org.apache.spark.sql.execution.streaming.sources.MicroBatchWrite;
 import org.apache.spark.sql.types.StructType;
 import org.jetbrains.annotations.NotNull;
 import scala.Option;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 public final class WriteToDataSourceV2Visitor
@@ -84,8 +83,7 @@ public final class WriteToDataSourceV2Visitor
     if (topicOpt.isPresent() && bootstrapServersOpt.isPresent()) {
       String topic = topicOpt.get();
 
-      OutputDataset dataset =
-          outputDataset().getDataset(topic, namespace, schemaOpt);
+      OutputDataset dataset = outputDataset().getDataset(topic, namespace, schemaOpt);
       return Collections.singletonList(dataset);
     } else {
       String topicPresent =
