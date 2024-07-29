@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.execution.command.AlterTableAddPartitionCommand;
 import org.junit.jupiter.api.AfterAll;
@@ -24,10 +25,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import scala.Option;
 import scala.Tuple2;
 import scala.collection.immutable.Map;
 
+@EnabledIfSystemProperty(named = "spark.version", matches = "([34].*)")
 class AlterTableAddPartitionCommandVisitorTest {
 
   private static final String TABLE_5 = "table5";
@@ -50,6 +53,8 @@ class AlterTableAddPartitionCommandVisitorTest {
   @BeforeAll
   @SneakyThrows
   static void beforeAll() {
+    SparkSession$.MODULE$.cleanupAnyExistingSession();
+
     Path derbyHomeBase = Paths.get(System.getProperty("derby.system.home.base"));
     System.setProperty(
         "derby.system.home",

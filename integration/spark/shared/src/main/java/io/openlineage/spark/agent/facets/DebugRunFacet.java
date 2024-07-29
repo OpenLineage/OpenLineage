@@ -78,10 +78,13 @@ public class DebugRunFacet extends OpenLineage.DefaultRunFacet {
   }
 
   /**
-   * Information extracted from {@link
-   * https://commons.apache.org/proper/commons-lang/apidocs/org/apache/commons/lang3/SystemUtils.html}(SystemUtils)
-   * and from the {@link
-   * https://spark.apache.org/docs/3.5.0/api/java/org/apache/spark/sql/SparkSession.html}(SparkSession).
+   * Information extracted from
+   *
+   * @see <a
+   *     href="https://commons.apache.org/proper/commons-lang/apidocs/org/apache/commons/lang3/SystemUtils.html">SystemUtils</a>
+   *     and from the
+   * @see <a
+   *     href="https://spark.apache.org/docs/3.5.0/api/java/org/apache/spark/sql/SparkSession.html">SparkSession</a>.
    */
   @Value
   @Builder
