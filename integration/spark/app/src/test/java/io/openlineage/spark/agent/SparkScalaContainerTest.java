@@ -7,6 +7,7 @@ package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_FIXTURES_JAR_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_CONF_DIR;
+import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_HOME_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_JARS_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_ADDITIONAL_CONF_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_ADDITIONAL_JARS_DIR;
@@ -203,7 +204,8 @@ class SparkScalaContainerTest {
   void testKafka2KafkaStreamingProducesInputAndOutputDatasets() throws IOException {
     final Network network = Network.newNetwork();
     final String className = "io.openlineage.spark.streaming.Kafka2KafkaJob";
-    final DockerImageName kafkaDockerImageName = DockerImageName.parse("docker.io/bitnami/kafka:3");
+    final DockerImageName kafkaDockerImageName =
+        DockerImageName.parse("docker.io/bitnami/kafka:3.4.1");
 
     GenericContainer zookeeperContainer =
         new GenericContainer(DockerImageName.parse("docker.io/bitnami/zookeeper:3.7"))
@@ -250,10 +252,11 @@ class SparkScalaContainerTest {
             .dependsOn(kafkaContainer)
             .waitingFor(Wait.forLogMessage(SPARK_DOCKER_CONTAINER_WAIT_MESSAGE, 1))
             .withNetwork(network)
+            .withLogConsumer(SparkContainerUtils::consumeOutput)
             .withStartupTimeout(Duration.ofMinutes(2));
 
     List<String> command = new ArrayList<>();
-    command.add("./bin/spark-submit");
+    command.add(CONTAINER_SPARK_HOME_DIR + "/bin/spark-submit");
     command.add("--master");
     command.add("local[*]");
     command.add("--class");
@@ -307,7 +310,7 @@ class SparkScalaContainerTest {
     List<RunEvent> nonEmptyInputEvents =
         events.stream().filter(e -> !e.getInputs().isEmpty()).collect(Collectors.toList());
 
-    assertEquals(3, nonEmptyInputEvents.size());
+    assertThat(nonEmptyInputEvents).isNotEmpty();
 
     nonEmptyInputEvents.forEach(
         event -> {

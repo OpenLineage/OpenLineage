@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.List;
@@ -48,18 +49,28 @@ public class StreamingDataSourceV2RelationVisitor
     return result;
   }
 
-  private StreamStrategy selectStrategy(StreamingDataSourceV2Relation relation) {
+  public StreamStrategy selectStrategy(StreamingDataSourceV2Relation relation) {
     StreamStrategy streamStrategy;
     Class<?> streamClass = relation.stream().getClass();
     String streamClassName = streamClass.getCanonicalName();
     if (KAFKA_MICRO_BATCH_STREAM_CLASS_NAME.equals(streamClassName)) {
-      streamStrategy = new KafkaMicroBatchStreamStrategy(inputDataset(), relation);
+      streamStrategy =
+          new KafkaMicroBatchStreamStrategy(
+              inputDataset(),
+              relation.schema(),
+              relation.stream(),
+              ScalaConversionUtils.asJavaOptional(relation.startOffset()));
     } else {
       log.warn(
           "The {} has been selected because no rules have matched for the stream class of {}",
           NoOpStreamStrategy.class,
           streamClassName);
-      streamStrategy = new NoOpStreamStrategy(inputDataset(), relation);
+      streamStrategy =
+          new NoOpStreamStrategy(
+              inputDataset(),
+              relation.schema(),
+              relation.stream(),
+              ScalaConversionUtils.asJavaOptional(relation.startOffset()));
     }
 
     log.info("Selected this strategy: {}", streamStrategy.getClass().getSimpleName());

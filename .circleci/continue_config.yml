@@ -218,6 +218,7 @@ jobs:
             
             echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
             echo 'export SPARK_VERSION_VAR='${SPARK} >> "$BASH_ENV"
+            echo 'export JAVA_VERSION_NUMBER='${JAVA_VERSION_NUMBER} >> "$BASH_ENV"
             echo 'export JAVA_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
             echo 'export JAVAC_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
       - restore_cache:
@@ -236,7 +237,7 @@ jobs:
           command: cat build/test-results/test/TEST-*.xml
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
       - run: ./gradlew --no-daemon --console=plain --info check -x test -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
-      - run: ./gradlew --console=plain javadoc -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
+      - run: if [ ${JAVA_VERSION_NUMBER} -eq "17" ]; then ./gradlew --console=plain javadoc -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}; fi
       - store_test_results:
           path: build/test-results/test
       - store_artifacts:
@@ -277,6 +278,7 @@ jobs:
 
             echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
             echo 'export SPARK_VERSION_VAR='${SPARK} >> "$BASH_ENV"
+            echo 'export JAVA_VERSION_NUMBER='${JAVA_VERSION_NUMBER} >> "$BASH_ENV"
             echo 'export JAVA_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
             echo 'export JAVAC_BIN='$([ "$JAVA_VERSION_NUMBER" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
       - restore_cache:
@@ -295,7 +297,7 @@ jobs:
           command: cat build/test-results/test/TEST-*.xml
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
       - run: ./gradlew --no-daemon --console=plain --info check -x test -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
-      - run: ./gradlew --console=plain javadoc -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
+      - run: if [ ${JAVA_VERSION_NUMBER} -eq "17" ]; then ./gradlew --console=plain javadoc -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}; fi
       - store_test_results:
           path: build/test-results/test
       - store_artifacts:

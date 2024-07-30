@@ -6,7 +6,6 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.InputDataset;
-import io.openlineage.client.dataset.namespace.resolver.HostListNamespaceResolverConfig;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import java.util.ArrayList;
@@ -21,20 +20,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.spark.sql.connector.read.streaming.Offset;
-import org.apache.spark.sql.execution.datasources.v2.StreamingDataSourceV2Relation;
-import scala.Option;
+import org.apache.spark.sql.connector.read.streaming.SparkDataStream;
+import org.apache.spark.sql.types.StructType;
 
 @Slf4j
-final class KafkaMicroBatchStreamStrategy extends StreamStrategy {
+public final class KafkaMicroBatchStreamStrategy extends StreamStrategy {
   private static final String KAFKA_SOURCE_OFFSET_CLASS_NAME =
       "org.apache.spark.sql.kafka010.KafkaSourceOffset";
 
   public KafkaMicroBatchStreamStrategy(
       DatasetFactory<InputDataset> inputDatasetDatasetFactory,
-      StreamingDataSourceV2Relation relation) {
-    super(inputDatasetDatasetFactory, relation);
-
-    new HostListNamespaceResolverConfig();
+      StructType schema,
+      SparkDataStream stream,
+      Optional<Offset> offsetOption) {
+    super(inputDatasetDatasetFactory, schema, stream, offsetOption);
   }
 
   @Override
@@ -52,14 +51,12 @@ final class KafkaMicroBatchStreamStrategy extends StreamStrategy {
   }
 
   private Optional<String> getBootstrapServers() {
-    Optional<Map<String, Object>> executorKafkaParams =
-        tryReadField(relation.stream(), "executorKafkaParams");
+    Optional<Map<String, Object>> executorKafkaParams = tryReadField(stream, "executorKafkaParams");
     return executorKafkaParams.map(m -> (String) m.get("bootstrap.servers"));
   }
 
   private Set<String> getTopics() {
-    Option<Offset> offsetOption = relation.startOffset();
-    if (offsetOption.isDefined()) {
+    if (offsetOption.isPresent()) {
       Offset offset = offsetOption.get();
       Class<?> offetClass = offset.getClass();
       String offsetClassName = offetClass.getCanonicalName();
@@ -86,7 +83,7 @@ final class KafkaMicroBatchStreamStrategy extends StreamStrategy {
 
     List<InputDataset> datasets = new ArrayList<>();
     for (String topic : topics) {
-      InputDataset dataset = datasetFactory.getDataset(topic, namespace, relation.schema());
+      InputDataset dataset = datasetFactory.getDataset(topic, namespace, schema);
       datasets.add(dataset);
     }
     return datasets;

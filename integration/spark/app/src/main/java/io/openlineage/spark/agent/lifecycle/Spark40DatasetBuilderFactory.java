@@ -36,6 +36,7 @@ import io.openlineage.spark34.agent.lifecycle.plan.column.CreateReplaceInputData
 import io.openlineage.spark34.agent.lifecycle.plan.column.DropTableDatasetBuilder;
 import io.openlineage.spark35.agent.lifecycle.plan.CreateReplaceOutputDatasetBuilder;
 import io.openlineage.spark35.agent.lifecycle.plan.MergeRowsColumnLineageVisitor;
+import io.openlineage.spark40.agent.lifecycle.plan.StreamingDataSourceV2ScanRelationDatasetBuilder;
 import java.util.Collection;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +60,7 @@ public class Spark40DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new CreateReplaceInputDatasetBuilder(context))
             .add(new SparkExtensionV1InputDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeInputDatasetBuilder(context))
+            .add(new StreamingDataSourceV2ScanRelationDatasetBuilder(context))
             .add(new DataSourceV2RelationInputDatasetBuilder(context, datasetFactory));
 
     if (DeltaUtils.hasMergeIntoCommandClass()) {
