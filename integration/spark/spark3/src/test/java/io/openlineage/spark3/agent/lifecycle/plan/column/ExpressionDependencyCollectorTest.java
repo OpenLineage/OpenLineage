@@ -5,21 +5,28 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.extension.column.v1.ColumnLevelLineageNode;
+import io.openlineage.spark.extension.column.v1.ExpressionDependencyWithDelegate;
+import io.openlineage.spark.extension.column.v1.ExpressionDependencyWithIdentifier;
+import io.openlineage.spark.extension.column.v1.OlExprId;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.atomic.LongAccumulator;
 import java.util.stream.Collectors;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.expressions.Add;
 import org.apache.spark.sql.catalyst.expressions.Alias;
 import org.apache.spark.sql.catalyst.expressions.And;
@@ -83,6 +90,7 @@ class ExpressionDependencyCollectorTest {
   void setup() {
     when(context.getBuilder()).thenReturn(builder);
     when(context.getOlContext()).thenReturn(mock(OpenLineageContext.class));
+    when(context.getEvent()).thenReturn(mock(SparkListenerEvent.class));
     exprIdAccumulator.reset();
   }
 
@@ -439,6 +447,51 @@ class ExpressionDependencyCollectorTest {
         .addDependency(rootAliasExprId, exprId1, TransformationInfo.aggregation());
     verify(builder, times(1))
         .addDependency(rootAliasExprId, exprId2, TransformationInfo.aggregation());
+  }
+
+  @Test
+  void testExtensionColumnLevelLineageWithIdentifier() {
+    LogicalPlan columnLineagePlanNode =
+        mock(LogicalPlan.class, withSettings().extraInterfaces(ColumnLevelLineageNode.class));
+
+    OlExprId outputExprId = new OlExprId(1L);
+    OlExprId inputExprId1 = new OlExprId(2L);
+    OlExprId inputExprId2 = new OlExprId(3L);
+
+    when(((ColumnLevelLineageNode) columnLineagePlanNode).getColumnLevelLineageDependencies(any()))
+        .thenReturn(
+            Collections.singletonList(
+                new ExpressionDependencyWithIdentifier(
+                    outputExprId, Arrays.asList(inputExprId1, inputExprId2))));
+
+    ExpressionDependencyCollector.collectFromNode(context, columnLineagePlanNode);
+
+    verify(builder, times(1)).addDependency(ExprId.apply(1L), ExprId.apply(2L));
+    verify(builder, times(1)).addDependency(ExprId.apply(1L), ExprId.apply(3L));
+  }
+
+  @Test
+  void testExtensionColumnLevelLineageWithDelegate() {
+    LogicalPlan columnLineagePlanNode =
+        mock(LogicalPlan.class, withSettings().extraInterfaces(ColumnLevelLineageNode.class));
+
+    when(((ColumnLevelLineageNode) columnLineagePlanNode).getColumnLevelLineageDependencies(any()))
+        .thenReturn(
+            Collections.singletonList(
+                new ExpressionDependencyWithDelegate(
+                    new OlExprId(1L),
+                    new AttributeReference(
+                        "name1",
+                        IntegerType$.MODULE$,
+                        false,
+                        Metadata$.MODULE$.empty(),
+                        ExprId.apply(2L),
+                        null))));
+
+    ExpressionDependencyCollector.collectFromNode(context, columnLineagePlanNode);
+
+    verify(builder, times(1))
+        .addDependency(ExprId.apply(1L), ExprId.apply(2L), TransformationInfo.identity());
   }
 
   private static Seq<NamedExpression> getNamedExpressionSeq(NamedExpression... expressions) {

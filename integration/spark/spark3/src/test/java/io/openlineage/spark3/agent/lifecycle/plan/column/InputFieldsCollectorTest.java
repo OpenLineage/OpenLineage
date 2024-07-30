@@ -6,12 +6,15 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.Rdds;
@@ -21,6 +24,10 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.extension.column.v1.ColumnLevelLineageNode;
+import io.openlineage.spark.extension.column.v1.InputDatasetFieldFromDelegate;
+import io.openlineage.spark.extension.column.v1.InputDatasetFieldWithIdentifier;
+import io.openlineage.spark.extension.column.v1.OlExprId;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import java.net.URI;
 import java.util.Arrays;
@@ -30,6 +37,7 @@ import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
@@ -68,6 +76,7 @@ class InputFieldsCollectorTest {
   void setup() {
     when(context.getBuilder()).thenReturn(builder);
     when(context.getOlContext()).thenReturn(mock(OpenLineageContext.class));
+    when(context.getEvent()).thenReturn(mock(SparkListenerEvent.class));
     when(attributeReference.exprId()).thenReturn(exprId);
     when(attributeReference.name()).thenReturn(SOME_NAME);
   }
@@ -263,6 +272,56 @@ class InputFieldsCollectorTest {
             exprId,
             new DatasetIdentifier("/path", "abfss://tmp@storage.dfs.core.windows.net"),
             SOME_NAME);
+  }
+
+  @Test
+  void testExtensionInputDatasetFieldWithIdentifier() {
+    LogicalPlan columnLineagePlanNode =
+        mock(LogicalPlan.class, withSettings().extraInterfaces(ColumnLevelLineageNode.class));
+
+    when(((ColumnLevelLineageNode) columnLineagePlanNode).getColumnLevelLineageInputs(any()))
+        .thenReturn(
+            Collections.singletonList(
+                new InputDatasetFieldWithIdentifier(
+                    new io.openlineage.spark.extension.column.v1.DatasetIdentifier(
+                        "name", "namespace"),
+                    SOME_NAME,
+                    new OlExprId(1L))));
+
+    InputFieldsCollector.collect(context, columnLineagePlanNode);
+
+    verify(builder, times(1))
+        .addInput(
+            refEq(ExprId.apply(1L), "jvmId"),
+            eq(new DatasetIdentifier("name", "namespace")),
+            eq(SOME_NAME));
+  }
+
+  @Test
+  void testExtensionInputDatasetFieldFromDelegate() {
+    LogicalPlan columnLineagePlanNode =
+        mock(LogicalPlan.class, withSettings().extraInterfaces(ColumnLevelLineageNode.class));
+    DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
+
+    when(((ColumnLevelLineageNode) columnLineagePlanNode).getColumnLevelLineageInputs(any()))
+        .thenReturn(
+            Collections.singletonList(new InputDatasetFieldFromDelegate(relation, SOME_NAME)));
+
+    when(relation.output())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+                    Arrays.asList(attributeReference))
+                .asScala()
+                .toSeq());
+
+    try (MockedStatic mocked = mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
+      when(DataSourceV2RelationDatasetExtractor.getDatasetIdentifierExtended(
+              context.getOlContext(), relation))
+          .thenReturn(Optional.of(di));
+      InputFieldsCollector.collect(context, columnLineagePlanNode);
+    }
+
+    verify(builder, times(1)).addInput(any(ExprId.class), eq(di), eq(SOME_NAME));
   }
 
   private LogicalPlan createPlanWithGrandChild(LogicalPlan grandChild) {
