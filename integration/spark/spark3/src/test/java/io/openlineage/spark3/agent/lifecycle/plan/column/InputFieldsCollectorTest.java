@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.Rdds;
+import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.PathUtils;
@@ -30,6 +31,7 @@ import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
@@ -45,6 +47,7 @@ import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
+import org.apache.spark.sql.sources.BaseRelation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -58,7 +61,10 @@ class InputFieldsCollectorTest {
   private static final String SOME_NAME = "some-name";
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
   ColumnLevelLineageContext context = mock(ColumnLevelLineageContext.class);
-
+  OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
+  SparkOpenLineageExtensionVisitorWrapper wrapper =
+      mock(SparkOpenLineageExtensionVisitorWrapper.class);
+  SparkListenerEvent event = mock(SparkListenerEvent.class);
   NamedExpression expression = mock(NamedExpression.class);
   ExprId exprId = mock(ExprId.class);
   DatasetIdentifier di = mock(DatasetIdentifier.class);
@@ -67,9 +73,11 @@ class InputFieldsCollectorTest {
   @BeforeEach
   void setup() {
     when(context.getBuilder()).thenReturn(builder);
-    when(context.getOlContext()).thenReturn(mock(OpenLineageContext.class));
+    when(context.getOlContext()).thenReturn(openLineageContext);
+    when(context.getEvent()).thenReturn(event);
     when(attributeReference.exprId()).thenReturn(exprId);
     when(attributeReference.name()).thenReturn(SOME_NAME);
+    when(openLineageContext.getSparkExtensionVisitorWrapper()).thenReturn(wrapper);
   }
 
   @Test
@@ -263,6 +271,27 @@ class InputFieldsCollectorTest {
             exprId,
             new DatasetIdentifier("/path", "abfss://tmp@storage.dfs.core.windows.net"),
             SOME_NAME);
+  }
+
+  @Test
+  void collectWhenGrandChildNodeIsLineageRelation() {
+    LogicalRelation plan = mock(LogicalRelation.class);
+    BaseRelation grandChild = mock(BaseRelation.class);
+    when(plan.relation()).thenReturn(grandChild);
+    when(plan.catalogTable()).thenReturn(Option.empty());
+
+    when(wrapper.isDefinedAt(grandChild)).thenReturn(true);
+    when(wrapper.getLineageDatasetIdentifier(grandChild, event.getClass().getName()))
+        .thenReturn(di);
+    when(plan.output())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+                    Arrays.asList(attributeReference))
+                .asScala()
+                .toSeq());
+    InputFieldsCollector.collect(context, plan);
+
+    verify(builder, times(1)).addInput(exprId, di, SOME_NAME);
   }
 
   private LogicalPlan createPlanWithGrandChild(LogicalPlan grandChild) {
