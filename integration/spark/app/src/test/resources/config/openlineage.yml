@@ -5,10 +5,15 @@ transport:
   auth:
     type: api_key
     apiKey: random_token
-debugFacet: enabled
 jobName:
   appendDatasetName: false
 facets:
   disabled: [aDisabledFacet]
+  debug:
+    enabled: true
+  unknownEntry:
+    enabled: true
+  logicalPlan:
+    enabled: true
 incorrectEntry:
   shouldNotFail: true

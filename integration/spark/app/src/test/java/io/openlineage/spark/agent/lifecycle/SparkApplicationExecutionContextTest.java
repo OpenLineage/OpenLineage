@@ -43,11 +43,7 @@ class SparkApplicationExecutionContextTest {
   private final OpenLineageContext olContext = mock(OpenLineageContext.class);
   private final OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
   private final EventEmitter eventEmitter = mock(EventEmitter.class);
-  private final SparkApplicationExecutionContext context =
-      new SparkApplicationExecutionContext(
-          eventEmitter,
-          olContext,
-          new OpenLineageRunEventBuilder(olContext, mock(OpenLineageEventHandlerFactory.class)));
+  private SparkApplicationExecutionContext context;
 
   @AfterEach
   void reset() {
@@ -62,6 +58,13 @@ class SparkApplicationExecutionContextTest {
     when(olContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
     when(olContext.getApplicationUuid())
         .thenReturn(UUID.fromString("993426b3-1ca7-44af-8473-8e58c757ebd1"));
+    when(olContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
+
+    context =
+        new SparkApplicationExecutionContext(
+            eventEmitter,
+            olContext,
+            new OpenLineageRunEventBuilder(olContext, mock(OpenLineageEventHandlerFactory.class)));
 
     when(eventEmitter.getOverriddenAppName()).thenReturn(Optional.of("app-name"));
     when(eventEmitter.getApplicationRunId())

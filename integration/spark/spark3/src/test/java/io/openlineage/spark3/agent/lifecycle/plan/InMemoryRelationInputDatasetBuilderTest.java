@@ -15,6 +15,7 @@ import static scala.collection.JavaConverters.collectionAsScalaIterableConverter
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,7 +47,7 @@ class InMemoryRelationInputDatasetBuilderTest {
   CacheManager cacheManager = mock(CacheManager.class);
   CachedData cachedData = mock(CachedData.class);
   LogicalPlan logicalPlan = mock(LogicalPlan.class);
-  InMemoryRelationInputDatasetBuilder builder = new InMemoryRelationInputDatasetBuilder(context);
+  InMemoryRelationInputDatasetBuilder builder;
 
   InMemoryRelation inMemoryRelation = mock(InMemoryRelation.class);
   InMemoryRelation inMemoryRelationFromCacheManager = mock(InMemoryRelation.class);
@@ -62,6 +63,7 @@ class InMemoryRelationInputDatasetBuilderTest {
     when(context.getInputDatasetBuilders()).thenReturn(Collections.emptyList());
     when(context.getInputDatasetQueryPlanVisitors()).thenReturn(Collections.emptyList());
     when(context.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
 
     when(sparkSession.sharedState()).thenReturn(sharedState);
     when(sharedState.cacheManager()).thenReturn(cacheManager);
@@ -80,6 +82,8 @@ class InMemoryRelationInputDatasetBuilderTest {
 
     when(cacheBuilder1.cachedName()).thenReturn(CACHED_NAME);
     when(cacheBuilder2.cachedName()).thenReturn(CACHED_NAME);
+
+    builder = new InMemoryRelationInputDatasetBuilder(context);
   }
 
   @SneakyThrows

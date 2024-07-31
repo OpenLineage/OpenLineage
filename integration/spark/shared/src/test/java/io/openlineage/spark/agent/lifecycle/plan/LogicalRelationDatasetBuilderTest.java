@@ -64,9 +64,7 @@ class LogicalRelationDatasetBuilderTest {
 
   SparkSession session = mock(SparkSession.class);
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
-  LogicalRelationDatasetBuilder builder =
-      new LogicalRelationDatasetBuilder(
-          openLineageContext, DatasetFactory.output(openLineageContext), false);
+  LogicalRelationDatasetBuilder builder;
 
   SparkOpenLineageExtensionVisitorWrapper visitorWrapper =
       mock(SparkOpenLineageExtensionVisitorWrapper.class);
@@ -76,7 +74,12 @@ class LogicalRelationDatasetBuilderTest {
     when(session.sparkContext()).thenReturn(mock(SparkContext.class));
     when(openLineageContext.getOpenLineage())
         .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    when(openLineageContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
     when(openLineageContext.getSparkExtensionVisitorWrapper()).thenReturn(visitorWrapper);
+
+    builder =
+        new LogicalRelationDatasetBuilder(
+            openLineageContext, DatasetFactory.output(openLineageContext), false);
   }
 
   @ParameterizedTest

@@ -49,12 +49,7 @@ class SparkSQLExecutionContextTest {
   private final OpenLineageContext olContext = mock(OpenLineageContext.class);
   private final OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
   private final EventEmitter eventEmitter = mock(EventEmitter.class);
-  private final SparkSQLExecutionContext context =
-      new SparkSQLExecutionContext(
-          executionId,
-          eventEmitter,
-          olContext,
-          new OpenLineageRunEventBuilder(olContext, mock(OpenLineageEventHandlerFactory.class)));
+  private SparkSQLExecutionContext context;
   private final QueryExecution queryExecution = mock(QueryExecution.class, RETURNS_DEEP_STUBS);
 
   @AfterEach
@@ -72,6 +67,13 @@ class SparkSQLExecutionContextTest {
     when(olContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
     when(olContext.getRunUuid())
         .thenReturn(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b"));
+    when(olContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
+    context =
+        new SparkSQLExecutionContext(
+            executionId,
+            eventEmitter,
+            olContext,
+            new OpenLineageRunEventBuilder(olContext, mock(OpenLineageEventHandlerFactory.class)));
 
     when(eventEmitter.getOverriddenAppName()).thenReturn(Optional.of("test-rdd"));
     when(queryExecution.executedPlan().nodeName()).thenReturn("some-node-name");

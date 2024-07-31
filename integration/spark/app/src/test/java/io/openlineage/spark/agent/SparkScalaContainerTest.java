@@ -152,7 +152,7 @@ class SparkScalaContainerTest {
     addSparkConfig(
         sparkSubmitCommand,
         "spark.openlineage.transport.url=http://openlineageclient:1080/api/v1/namespaces/scala-test");
-    addSparkConfig(sparkSubmitCommand, "spark.openlineage.debugFacet=enabled");
+    addSparkConfig(sparkSubmitCommand, "spark.openlineage.facets.debug.enabled=true");
     addSparkConfig(
         sparkSubmitCommand, "spark.extraListeners=" + OpenLineageSparkListener.class.getName());
     addSparkConfig(sparkSubmitCommand, "spark.sql.warehouse.dir=/tmp/warehouse");
@@ -267,9 +267,8 @@ class SparkScalaContainerTest {
     addSparkConfig(command, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
     addSparkConfig(command, "spark.extraListeners=" + OpenLineageSparkListener.class.getName());
     addSparkConfig(command, "spark.jars.ivy=/tmp/.ivy2/");
-    addSparkConfig(command, "spark.openlineage.debugFacet=enabled");
-    addSparkConfig(
-        command, "spark.openlineage.facets.disabled=[schema;spark_unknown;spark.logicalPlan]");
+    addSparkConfig(command, "spark.openlineage.facets.debug.enabled=true");
+    addSparkConfig(command, "spark.openlineage.facets.disabled=[schema]");
     addSparkConfig(command, "spark.openlineage.transport.type=file");
     addSparkConfig(command, "spark.openlineage.transport.location=/tmp/events.log");
     addSparkConfig(command, "spark.sql.shuffle.partitions=1");

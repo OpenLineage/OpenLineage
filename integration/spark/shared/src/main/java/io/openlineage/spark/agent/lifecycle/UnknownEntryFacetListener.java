@@ -10,6 +10,7 @@ import static java.util.Optional.ofNullable;
 import com.google.common.annotations.VisibleForTesting;
 import io.openlineage.spark.agent.facets.LogicalPlanFacet;
 import io.openlineage.spark.agent.facets.UnknownEntryFacet;
+import io.openlineage.spark.agent.facets.UnknownEntryFacetConfig;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -42,15 +43,17 @@ public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
   private final Map<LogicalPlan, Object> visitedNodes = new IdentityHashMap<>();
   private final LogicalPlanSerializer planSerializer = new LogicalPlanSerializer();
 
-  private static final UnknownEntryFacetListener INSTANCE = new UnknownEntryFacetListener();
+  private final UnknownEntryFacetConfig facetConfig;
 
-  public static UnknownEntryFacetListener getInstance() {
-    return INSTANCE;
+  public UnknownEntryFacetListener(UnknownEntryFacetConfig facetConfig) {
+    this.facetConfig = facetConfig;
   }
 
   @Override
   public void accept(LogicalPlan logicalPlan) {
-    visitedNodes.put(logicalPlan, null);
+    if (facetConfig.isEnabled()) {
+      visitedNodes.put(logicalPlan, null);
+    }
   }
 
   public void clear() {
@@ -63,10 +66,12 @@ public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
   }
 
   public Optional<UnknownEntryFacet> build(LogicalPlan root) {
-    try {
-      return buildFacet(root);
-    } catch (Exception exception) {
-      log.warn("Failed to serialize unknown entry facet: %s", exception);
+    if (facetConfig.isEnabled()) {
+      try {
+        return buildFacet(root);
+      } catch (Exception exception) {
+        log.warn("Failed to serialize unknown entry facet: %s", exception);
+      }
     }
     return Optional.empty();
   }

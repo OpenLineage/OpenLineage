@@ -88,8 +88,7 @@ class SparkIcebergIntegrationTest {
             .config(
                 "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/iceberg-namespace")
-            .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
-            .config("spark.openlineage.debugFacet", "enabled")
+            .config("spark.openlineage.facets.debug.enabled", "true")
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .config("spark.sql.catalog.spark_catalog", "org.apache.iceberg.spark.SparkCatalog")
             .config("spark.sql.catalog.spark_catalog.type", "hadoop")

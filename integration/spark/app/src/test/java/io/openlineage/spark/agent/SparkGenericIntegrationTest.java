@@ -13,7 +13,6 @@ import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.OpenLineage.RunEvent;
-import io.openlineage.spark.agent.lifecycle.UnknownEntryFacetListener;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -79,8 +78,7 @@ class SparkGenericIntegrationTest {
             .config(
                 "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/lineage")
-            .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
-            .config("spark.openlineage.debugFacet", "enabled")
+            .config("spark.openlineage.facets.debug.enabled", "true")
             .config("spark.openlineage.namespace", "generic-namespace")
             .config("spark.openlineage.parentJobName", "parent-job")
             .config("spark.openlineage.parentRunId", "bd9c2467-3ed7-4fdc-85c2-41ebf5c73b40")
@@ -108,9 +106,6 @@ class SparkGenericIntegrationTest {
         "applicationLevelCompleteApplication.json");
 
     List<OpenLineage.RunEvent> events = getEventsEmitted(mockServer);
-
-    // test UnknownEntryFacetListener clears its static list of visited nodes
-    assertThat(UnknownEntryFacetListener.getInstance().getVisitedNodesSize()).isEqualTo(0);
 
     // same runId for Spark application events, and parentRunId for Spark job events
     assertThat(

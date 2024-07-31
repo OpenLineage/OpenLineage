@@ -21,6 +21,7 @@ import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrap
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -45,7 +46,7 @@ class SaveIntoDataSourceCommandVisitorTest {
 
   SaveIntoDataSourceCommand command = mock(SaveIntoDataSourceCommand.class);
   OpenLineageContext context = mock(OpenLineageContext.class);
-  SaveIntoDataSourceCommandVisitor visitor = new SaveIntoDataSourceCommandVisitor(context);
+  SaveIntoDataSourceCommandVisitor visitor;
   DatasetFactory datasetFactory = mock(DatasetFactory.class);
   OpenLineage.OutputDataset dataset = mock(OpenLineage.OutputDataset.class);
   SparkSession sparkSession = mock(SparkSession.class);
@@ -61,8 +62,10 @@ class SaveIntoDataSourceCommandVisitorTest {
     when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
     when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
     when(context.getSparkExtensionVisitorWrapper()).thenReturn(wrapper);
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
     when(sparkSession.sqlContext()).thenReturn(sqlContext);
     when(command.options()).thenReturn(options);
+    visitor = new SaveIntoDataSourceCommandVisitor(context);
   }
 
   @Test

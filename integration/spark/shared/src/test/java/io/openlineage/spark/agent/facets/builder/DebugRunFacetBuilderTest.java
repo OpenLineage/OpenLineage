@@ -30,13 +30,13 @@ class DebugRunFacetBuilderTest {
 
   @Test
   void testIsDefinedAtWhenDebugEnabled() {
-    config.setDebugFacet("enabled");
+    config.getFacetsConfig().getDebug().setEnabled(true);
     assertThat(builder.isDefinedAt(mock(Object.class))).isTrue();
   }
 
   @Test
   void testIsDefinedAtWhenDebugDisabled() {
-    config.setDebugFacet("disabled");
+    config.getFacetsConfig().getDebug().setEnabled(false);
     assertThat(builder.isDefinedAt(mock(Object.class))).isFalse();
   }
 }

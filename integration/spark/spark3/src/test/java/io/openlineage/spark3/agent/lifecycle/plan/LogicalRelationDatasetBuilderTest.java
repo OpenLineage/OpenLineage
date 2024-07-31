@@ -20,6 +20,7 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.Arrays;
 import java.util.List;
@@ -51,9 +52,7 @@ class LogicalRelationDatasetBuilderTest {
   private static final String SOME_VERSION = "version_1";
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   SparkSession session = mock(SparkSession.class);
-  LogicalRelationDatasetBuilder visitor =
-      new LogicalRelationDatasetBuilder(
-          openLineageContext, DatasetFactory.output(openLineageContext), false);
+  LogicalRelationDatasetBuilder visitor;
   OpenLineage.DatasetVersionDatasetFacet facet = mock(OpenLineage.DatasetVersionDatasetFacet.class);
   OpenLineage openLineage = mock(OpenLineage.class);
   LogicalRelation logicalRelation = mock(LogicalRelation.class);
@@ -71,8 +70,12 @@ class LogicalRelationDatasetBuilderTest {
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
     when(openLineageContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
     when(openLineageContext.getSparkExtensionVisitorWrapper()).thenReturn(visitorWrapper);
+    when(openLineageContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
     when(facet.getDatasetVersion()).thenReturn(SOME_VERSION);
     when(session.sessionState()).thenReturn(sessionState);
+    visitor =
+        new LogicalRelationDatasetBuilder(
+            openLineageContext, DatasetFactory.output(openLineageContext), false);
   }
 
   @Test

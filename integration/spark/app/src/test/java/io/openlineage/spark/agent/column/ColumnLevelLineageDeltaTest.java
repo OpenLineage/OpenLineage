@@ -79,7 +79,6 @@ class ColumnLevelLineageDeltaTest {
             .config("spark.sql.warehouse.dir", "file:/tmp/delta/")
             .config("spark.driver.extraJavaOptions", "-Dderby.system.home=/tmp/delta/derby")
             .config("spark.openlineage.transport.type", "http")
-            .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
             .config("spark.extraListeners", LastQueryExecutionSparkEventListener.class.getName())
             .config("spark.jars.ivy", "/tmp/.ivy2/")
             .config(

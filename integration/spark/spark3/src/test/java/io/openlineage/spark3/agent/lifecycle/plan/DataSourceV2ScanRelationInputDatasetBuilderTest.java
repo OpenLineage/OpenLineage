@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.List;
@@ -20,6 +21,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
@@ -28,8 +30,13 @@ class DataSourceV2ScanRelationInputDatasetBuilderTest {
   OpenLineage openLineage = mock(OpenLineage.class);
   OpenLineageContext context = mock(OpenLineageContext.class);
   DatasetFactory factory = mock(DatasetFactory.class);
-  DataSourceV2ScanRelationInputDatasetBuilder builder =
-      new DataSourceV2ScanRelationInputDatasetBuilder(context, factory);
+  DataSourceV2ScanRelationInputDatasetBuilder builder;
+
+  @BeforeEach
+  void setUp() {
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
+    builder = new DataSourceV2ScanRelationInputDatasetBuilder(context, factory);
+  }
 
   @Test
   void testIsDefinedAt() {

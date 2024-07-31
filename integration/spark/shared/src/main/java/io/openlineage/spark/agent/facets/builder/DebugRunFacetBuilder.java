@@ -8,8 +8,6 @@ package io.openlineage.spark.agent.facets.builder;
 import io.openlineage.spark.agent.facets.DebugRunFacet;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import org.apache.spark.scheduler.SparkListenerEvent;
 
@@ -22,22 +20,24 @@ public class DebugRunFacetBuilder extends CustomFacetBuilder<Object, DebugRunFac
   private final DebugRunFacetBuilderDelegate delegate;
   private final OpenLineageContext openLineageContext;
 
-  public DebugRunFacetBuilder(OpenLineageContext openLineageContext1) {
-    this.openLineageContext = openLineageContext1;
+  public DebugRunFacetBuilder(OpenLineageContext openLineageContext) {
     this.delegate = new DebugRunFacetBuilderDelegate(openLineageContext);
+    this.openLineageContext = openLineageContext;
   }
 
   @Override
   public boolean isDefinedAt(Object x) {
-    return Optional.of(openLineageContext.getOpenLineageConfig())
-        .map(config -> config.getDebugFacet())
-        .filter(Objects::nonNull)
-        .map(s -> "enabled".equalsIgnoreCase(s))
-        .orElse(false);
+    return isEnabled();
   }
 
   @Override
   protected void build(Object event, BiConsumer<String, ? super DebugRunFacet> consumer) {
-    consumer.accept("debug", delegate.buildFacet());
+    if (isEnabled()) {
+      consumer.accept("debug", delegate.buildFacet());
+    }
+  }
+
+  private boolean isEnabled() {
+    return openLineageContext.getOpenLineageConfig().getFacetsConfig().getDebug().isEnabled();
   }
 }

@@ -174,7 +174,6 @@ class ColumnLineageIntegrationTest {
         .config(
             "spark.openlineage.transport.url",
             "http://localhost:" + MOCKSERVER_PORT + "/api/v1/lineage")
-        .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
         .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
         .config("spark.sql.catalog.spark_catalog", "org.apache.iceberg.spark.SparkCatalog")
         .config("spark.sql.catalog.spark_catalog.type", "hadoop")

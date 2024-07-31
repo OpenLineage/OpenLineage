@@ -385,7 +385,7 @@ class SparkContainerIntegrationTest {
         openLineageClientMockContainer,
         "testEmitMetrics",
         Collections.emptyList(),
-        Collections.singletonList("spark.openlineage.debugFacet=true"),
+        Collections.singletonList("spark.openlineage.facets.debug.enabled=true"),
         "spark_emit_metrics.py");
     verifyEvents(mockServerClient, "pysparkMetricsEnd.json");
   }

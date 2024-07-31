@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import java.util.Collections;
@@ -59,6 +60,7 @@ class TableContentChangeDatasetBuilderTest {
   public void setUp() {
     openLineage = mock(OpenLineage.class);
     when(openLineageContext.getOpenLineage()).thenReturn(openLineage);
+    when(openLineageContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
     builder = new TableContentChangeDatasetBuilder(openLineageContext);
   }
 

@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.lifecycle;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.spark.agent.facets.UnknownEntryFacet;
+import io.openlineage.spark.agent.facets.UnknownEntryFacetConfig;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Collections;
 import java.util.Optional;
@@ -26,7 +27,8 @@ class UnknownEntryFacetListenerTest {
 
   @Test
   void testBuildUnknownFacet() {
-    UnknownEntryFacetListener underTest = new UnknownEntryFacetListener();
+    UnknownEntryFacetListener underTest =
+        new UnknownEntryFacetListener(new UnknownEntryFacetConfig(true));
 
     NamedExpression reference =
         new AttributeReference(
@@ -79,7 +81,8 @@ class UnknownEntryFacetListenerTest {
 
   @Test
   void testReturnNullIfProcessedUnknownFacet() {
-    UnknownEntryFacetListener underTest = new UnknownEntryFacetListener();
+    UnknownEntryFacetListener underTest =
+        new UnknownEntryFacetListener(new UnknownEntryFacetConfig(true));
 
     NamedExpression reference =
         new AttributeReference(

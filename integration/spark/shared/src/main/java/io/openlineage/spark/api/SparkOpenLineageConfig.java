@@ -6,10 +6,10 @@
 package io.openlineage.spark.api;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.dataset.DatasetConfig;
-import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,19 +26,20 @@ import lombok.ToString;
 public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageConfig> {
 
   public static final String DEFAULT_NAMESPACE = "default";
-  public static final String[] DEFAULT_DISABLED_FACETS =
-      new String[] {"spark_unknown", "spark.logicalPlan"};
-  public static final String DEFAULT_DEBUG_FACET = "disabled";
+  public static final String[] DEFAULT_DISABLED_FACETS = new String[] {};
 
   @Setter @NonNull private String namespace;
   @Setter @Getter private String parentJobName;
   @Setter @Getter private String parentJobNamespace;
   @Setter @Getter private String parentRunId;
   @Setter @Getter private String overriddenAppName;
-  @Setter @NonNull private String debugFacet;
   @Setter @Getter private String testExtensionProvider;
   @Setter private JobNameConfig jobName;
   @Setter private JobConfig job;
+
+  @JsonProperty("facets")
+  @Setter
+  protected SparkFacetsConfig facetsConfig;
 
   public SparkOpenLineageConfig(
       String namespace,
@@ -46,31 +47,32 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       String parentJobNamespace,
       String parentRunId,
       String overriddenAppName,
-      String debugFacet,
       String testExtensionProvider,
       JobNameConfig jobName,
       JobConfig job,
       TransportConfig transportConfig,
-      FacetsConfig facetsConfig,
+      SparkFacetsConfig facets,
       DatasetConfig datasetConfig,
       CircuitBreakerConfig circuitBreaker,
       Map<String, Object> metricsConfig) {
-    super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig);
+    super(transportConfig, facets, datasetConfig, circuitBreaker, metricsConfig);
     this.namespace = namespace;
     this.parentJobName = parentJobName;
     this.parentJobNamespace = parentJobNamespace;
     this.parentRunId = parentRunId;
     this.overriddenAppName = overriddenAppName;
-    this.debugFacet = debugFacet;
     this.testExtensionProvider = testExtensionProvider;
     this.jobName = jobName;
     this.job = job;
+    this.facetsConfig = facets;
   }
 
   @Override
-  public FacetsConfig getFacetsConfig() {
+  public SparkFacetsConfig getFacetsConfig() {
     if (facetsConfig == null) {
-      facetsConfig = new FacetsConfig();
+      // the configuration creates the default values in the getters, when they are accessed for the
+      // first time
+      facetsConfig = new SparkFacetsConfig(null, null, null);
     }
     if (facetsConfig.getDisabledFacets() == null) {
       facetsConfig.setDisabledFacets(DEFAULT_DISABLED_FACETS);
@@ -90,13 +92,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       namespace = DEFAULT_NAMESPACE;
     }
     return namespace;
-  }
-
-  public String getDebugFacet() {
-    if (debugFacet == null) {
-      debugFacet = DEFAULT_DEBUG_FACET;
-    }
-    return debugFacet;
   }
 
   @Getter
@@ -127,7 +122,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(parentJobNamespace, other.parentJobNamespace),
         mergePropertyWith(parentRunId, other.parentRunId),
         mergePropertyWith(overriddenAppName, other.overriddenAppName),
-        mergeWithDefaultValue(debugFacet, other.debugFacet, DEFAULT_DEBUG_FACET),
         mergePropertyWith(testExtensionProvider, other.testExtensionProvider),
         mergePropertyWith(jobName, other.jobName),
         mergePropertyWith(job, other.job),

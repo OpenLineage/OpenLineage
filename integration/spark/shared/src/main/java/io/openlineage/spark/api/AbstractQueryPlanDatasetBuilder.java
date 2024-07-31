@@ -8,7 +8,6 @@ package io.openlineage.spark.api;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.spark.agent.lifecycle.UnknownEntryFacetListener;
-import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.lang.reflect.ParameterizedType;
@@ -41,14 +40,16 @@ import scala.PartialFunction;
 public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, D extends Dataset>
     extends AbstractGenericArgPartialFunction<T, D> {
   protected final OpenLineageContext context;
-  private final UnknownEntryFacetListener unknownEntryFacetListener =
-      UnknownEntryFacetListener.getInstance();
+  private final UnknownEntryFacetListener unknownEntryFacetListener;
 
   protected final boolean searchDependencies;
 
   public AbstractQueryPlanDatasetBuilder(OpenLineageContext context, boolean searchDependencies) {
     this.context = context;
     this.searchDependencies = searchDependencies;
+    this.unknownEntryFacetListener =
+        new UnknownEntryFacetListener(
+            context.getOpenLineageConfig().getFacetsConfig().getUnknownEntry());
   }
 
   protected DatasetFactory<OpenLineage.OutputDataset> outputDataset() {
@@ -91,9 +92,7 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
 
       @Override
       public List<D> apply(LogicalPlan x) {
-        if (!FacetUtils.isFacetDisabled(context, "spark_unknown")) {
-          unknownEntryFacetListener.accept(x);
-        }
+        unknownEntryFacetListener.accept(x);
         return builder.apply(event, (P) x);
       }
 

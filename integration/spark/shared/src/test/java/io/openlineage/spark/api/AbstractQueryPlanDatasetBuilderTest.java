@@ -132,6 +132,7 @@ class AbstractQueryPlanDatasetBuilderTest {
   void testApplyWhenExceptionIsThrown() {
     OpenLineageContext context = mock(OpenLineageContext.class);
     when(context.getQueryExecution()).thenReturn(Optional.of(mock(QueryExecution.class)));
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
     Logger.getLogger(PlanUtils.class).setLevel(Level.ERROR);
     AbstractQueryPlanDatasetBuilder<SparkListenerJobEnd, LocalRelation, InputDataset> builder =
         new AbstractQueryPlanDatasetBuilder<SparkListenerJobEnd, LocalRelation, InputDataset>(

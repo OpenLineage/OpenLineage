@@ -7,7 +7,9 @@ package io.openlineage.spark.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineageClientUtils;
@@ -18,6 +20,7 @@ import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.KafkaConfig;
 import io.openlineage.client.transports.KinesisConfig;
+import io.openlineage.spark.api.SparkFacetsConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
 import java.util.Map;
@@ -44,8 +47,11 @@ class ArgumentParserTest {
   @Test
   void testDefaults() {
     config = ArgumentParser.parse(new SparkConf());
-    assertThat(config.getFacetsConfig().getDisabledFacets()).hasSize(2);
+    assertThat(config.getFacetsConfig().getDisabledFacets()).hasSize(0);
     assertThat(config.getTransportConfig()).isInstanceOf(ConsoleConfig.class);
+    assertThat(config.getFacetsConfig().getDebug().isEnabled()).isFalse();
+    assertThat(config.getFacetsConfig().getLogicalPlan().isEnabled()).isFalse();
+    assertThat(config.getFacetsConfig().getUnknownEntry().isEnabled()).isFalse();
   }
 
   @Test
@@ -76,7 +82,10 @@ class ArgumentParserTest {
             .set(ArgumentParser.SPARK_CONF_PARENT_JOB_NAMESPACE, JOB_NAMESPACE)
             .set(ArgumentParser.SPARK_CONF_PARENT_JOB_NAME, JOB_NAME)
             .set(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, RUN_ID)
-            .set(ArgumentParser.SPARK_CONF_APP_NAME, APP_NAME);
+            .set(ArgumentParser.SPARK_CONF_APP_NAME, APP_NAME)
+            .set("spark.openlineage.facets.debug.enabled", "true")
+            .set("spark.openlineage.facets.unknownEntry.enabled", "true")
+            .set("spark.openlineage.facets.logicalPlan.enabled", "true");
 
     config = ArgumentParser.parse(sparkConf);
     assertEquals(JOB_NAMESPACE, config.getParentJobNamespace());
@@ -84,6 +93,9 @@ class ArgumentParserTest {
     assertEquals(JOB_NAME, config.getParentJobName());
     assertEquals(RUN_ID, config.getParentRunId());
     assertEquals(APP_NAME, config.getOverriddenAppName());
+    assertTrue(config.getFacetsConfig().getDebug().isEnabled());
+    assertTrue(config.getFacetsConfig().getUnknownEntry().isEnabled());
+    assertTrue(config.getFacetsConfig().getLogicalPlan().isEnabled());
   }
 
   @Test
@@ -171,6 +183,15 @@ class ArgumentParserTest {
     SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
     assertThat(config.getFacetsConfig().getDisabledFacets()).containsExactly("a", "b");
 
+    // test single value
+    sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "c");
+    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDisabledFacets())
+        .containsExactly("c");
+
+    sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "[d]");
+    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDisabledFacets())
+        .containsExactly("d");
+
     // test empty value
     sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "");
     assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDisabledFacets()).hasSize(0);
@@ -180,7 +201,7 @@ class ArgumentParserTest {
     assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDisabledFacets()).hasSize(0);
 
     assertThat(ArgumentParser.parse(new SparkConf()).getFacetsConfig().getDisabledFacets())
-        .hasSize(2);
+        .hasSize(0);
   }
 
   @Test
@@ -196,9 +217,12 @@ class ArgumentParserTest {
     HttpConfig httpConfig = (HttpConfig) config.getTransportConfig();
     assertThat(httpConfig.getUrl().toString()).isEqualTo("http://localhost:1010");
     assertThat(httpConfig.getAuth().getToken()).isEqualTo("Bearer random_token");
-    assertThat(config.getDebugFacet()).isEqualTo("enabled");
+    SparkFacetsConfig facetsConfig = config.getFacetsConfig();
+    assertTrue(facetsConfig.getDebug().isEnabled());
+    assertTrue(facetsConfig.getUnknownEntry().isEnabled());
+    assertTrue(facetsConfig.getLogicalPlan().isEnabled());
     assertThat(config.getJobName().getAppendDatasetName()).isFalse();
-    assertThat(config.getFacetsConfig().getDisabledFacets()[0]).isEqualTo("aDisabledFacet");
+    assertThat(facetsConfig.getDisabledFacets()[0]).isEqualTo("aDisabledFacet");
   }
 
   @Test
@@ -206,7 +230,10 @@ class ArgumentParserTest {
     SparkConf sparkConf =
         new SparkConf()
             .set("spark.openlineage.transport.type", "http")
-            .set("spark.openlineage.transport.url", URL);
+            .set("spark.openlineage.transport.url", URL)
+            .set("spark.openlineage.facets.debug.enabled", "false")
+            .set("spark.openlineage.facets.unknownEntry.enabled", "false")
+            .set("spark.openlineage.facets.logicalPlan.enabled", "false");
 
     String propertyBefore = System.getProperty("user.dir");
     System.setProperty("user.dir", Resources.getResource("config").getPath());
@@ -223,6 +250,11 @@ class ArgumentParserTest {
 
     // API config from yaml file
     assertThat(httpConfig.getAuth().getToken()).isEqualTo("Bearer random_token");
+
+    // Facets
+    assertFalse(config.getFacetsConfig().getDebug().isEnabled());
+    assertFalse(config.getFacetsConfig().getUnknownEntry().isEnabled());
+    assertFalse(config.getFacetsConfig().getLogicalPlan().isEnabled());
   }
 
   @Test

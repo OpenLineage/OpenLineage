@@ -11,7 +11,6 @@ import static org.mockito.Mockito.mock;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunFacet;
-import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -81,8 +80,7 @@ class LogicalPlanRunFacetBuilderTest {
   @Test
   void testIsDefined() {
     SparkOpenLineageConfig openLineageConfig = new SparkOpenLineageConfig();
-    openLineageConfig.setFacetsConfig(new FacetsConfig());
-    openLineageConfig.getFacetsConfig().setDisabledFacets(new String[] {});
+    openLineageConfig.getFacetsConfig().getLogicalPlan().setEnabled(true);
     LogicalPlanRunFacetBuilder builder =
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()
@@ -107,15 +105,15 @@ class LogicalPlanRunFacetBuilderTest {
 
   @Test
   void testIsDefinedWhenFacetDisabled() {
-    SparkOpenLineageConfig config = new SparkOpenLineageConfig();
-    config.getFacetsConfig().setDisabledFacets(new String[] {"spark.logicalPlan"});
+    SparkOpenLineageConfig openLineageConfig = new SparkOpenLineageConfig();
+    openLineageConfig.getFacetsConfig().getLogicalPlan().setEnabled(false);
     LogicalPlanRunFacetBuilder builder =
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .queryExecution(queryExecution)
-                .openLineageConfig(config)
+                .openLineageConfig(openLineageConfig)
                 .meterRegistry(new SimpleMeterRegistry())
                 .build());
 
@@ -124,19 +122,19 @@ class LogicalPlanRunFacetBuilderTest {
                 new SparkListenerJobStart(
                     1, 1L, ScalaConversionUtils.asScalaSeqEmpty(), new Properties())))
         .isFalse();
-
-    sparkContext.conf().remove("spark.openlineage.facets.disabled");
   }
 
   @Test
   void testIsNotDefinedWithoutQueryExecution() {
+    SparkOpenLineageConfig openLineageConfig = new SparkOpenLineageConfig();
+    openLineageConfig.getFacetsConfig().getLogicalPlan().setEnabled(true);
     LogicalPlanRunFacetBuilder builder =
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .meterRegistry(new SimpleMeterRegistry())
-                .openLineageConfig(new SparkOpenLineageConfig())
+                .openLineageConfig(openLineageConfig)
                 .build());
     assertThat(builder.isDefinedAt(mock(SparkListenerSQLExecutionStart.class))).isFalse();
 

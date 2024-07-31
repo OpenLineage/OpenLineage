@@ -23,8 +23,6 @@ import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
-import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
-import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.RemovePathPatternUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -41,7 +39,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.rdd.RDD;
@@ -110,7 +107,6 @@ import scala.PartialFunction;
  * both the Dataset and the Facet in the same builder.
  */
 @Slf4j
-@AllArgsConstructor
 class OpenLineageRunEventBuilder {
 
   @NonNull private final OpenLineageContext openLineageContext;
@@ -142,26 +138,26 @@ class OpenLineageRunEventBuilder {
 
   @NonNull private final Collection<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders;
   @NonNull private final Collection<CustomFacetBuilder<?, ? extends JobFacet>> jobFacetBuilders;
-  @NonNull private final Collection<ColumnLevelLineageVisitor> columnLineageVisitors;
+  @NonNull private final UnknownEntryFacetListener unknownEntryFacetListener;
 
-  private final UnknownEntryFacetListener unknownEntryFacetListener =
-      UnknownEntryFacetListener.getInstance();
   private final Map<Integer, ActiveJob> jobMap = new HashMap<>();
   private final Map<Integer, Stage> stageMap = new HashMap<>();
 
   OpenLineageRunEventBuilder(OpenLineageContext context, OpenLineageEventHandlerFactory factory) {
-    this(
-        context,
-        factory.createInputDatasetBuilder(context),
-        factory.createInputDatasetQueryPlanVisitors(context),
-        factory.createOutputDatasetBuilder(context),
-        factory.createOutputDatasetQueryPlanVisitors(context),
-        factory.createDatasetFacetBuilders(context),
-        factory.createInputDatasetFacetBuilders(context),
-        factory.createOutputDatasetFacetBuilders(context),
-        factory.createRunFacetBuilders(context),
-        factory.createJobFacetBuilders(context),
-        factory.createColumnLevelLineageVisitors(context));
+    this.openLineageContext = context;
+    this.inputDatasetBuilders = factory.createInputDatasetBuilder(context);
+    this.inputDatasetQueryPlanVisitors = factory.createInputDatasetQueryPlanVisitors(context);
+    this.outputDatasetBuilders = factory.createOutputDatasetBuilder(context);
+    this.outputDatasetQueryPlanVisitors = factory.createOutputDatasetQueryPlanVisitors(context);
+    this.datasetFacetBuilders = factory.createDatasetFacetBuilders(context);
+    this.inputDatasetFacetBuilders = factory.createInputDatasetFacetBuilders(context);
+    this.outputDatasetFacetBuilders = factory.createOutputDatasetFacetBuilders(context);
+    this.runFacetBuilders = factory.createRunFacetBuilders(context);
+    this.jobFacetBuilders = factory.createJobFacetBuilders(context);
+
+    this.unknownEntryFacetListener =
+        new UnknownEntryFacetListener(
+            openLineageContext.getOpenLineageConfig().getFacetsConfig().getUnknownEntry());
   }
 
   /**
@@ -196,7 +192,6 @@ class OpenLineageRunEventBuilder {
     List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);
     openLineageContext
         .getQueryExecution()
-        .filter(qe -> !FacetUtils.isFacetDisabled(openLineageContext, "spark_unknown"))
         .flatMap(
             qe ->
                 openLineageContext
@@ -298,10 +293,7 @@ class OpenLineageRunEventBuilder {
                             .andThen(
                                 toScalaFn(
                                     ds -> {
-                                      if (!FacetUtils.isFacetDisabled(
-                                          openLineageContext, "spark_unknown")) {
-                                        unknownEntryFacetListener.accept(node);
-                                      }
+                                      unknownEntryFacetListener.accept(node);
                                       return ds;
                                     }))
                             .applyOrElse(node, toScalaFn(n -> Collections.emptyList()))));

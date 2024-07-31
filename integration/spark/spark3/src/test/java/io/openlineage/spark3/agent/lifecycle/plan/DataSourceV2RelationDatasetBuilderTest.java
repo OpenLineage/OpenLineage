@@ -16,6 +16,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.List;
@@ -24,6 +25,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -34,6 +36,11 @@ class DataSourceV2RelationDatasetBuilderTest {
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   DatasetFactory factory = mock(DatasetFactory.class);
+
+  @BeforeEach
+  void setup() {
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
+  }
 
   @Test
   void testDataSourceV2RelationInputDatasetBuilderIsDefinedAtLogicalPlan() {
@@ -94,6 +101,7 @@ class DataSourceV2RelationDatasetBuilderTest {
 
   private static Stream<Arguments> provideBuilders() {
     OpenLineageContext context = mock(OpenLineageContext.class);
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
     DatasetFactory factory = mock(DatasetFactory.class);
     OpenLineage openLineage = mock(OpenLineage.class);
 
