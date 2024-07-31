@@ -16,7 +16,6 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.Spliterator;
@@ -238,20 +237,7 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
                     .orElse(Stream.empty()))
             .collect(Collectors.toList());
 
-    String server =
-        servers
-            .map(
-                str -> {
-                  if (!str.matches("\\w+://.*")) {
-                    return "PLAINTEXT://" + str;
-                  } else {
-                    return str;
-                  }
-                })
-            .map(str -> URI.create(str.split(",")[0]))
-            .map(uri -> uri.getHost() + ":" + uri.getPort())
-            .orElse("");
-    String namespace = "kafka://" + server;
+    String namespace = KafkaBootstrapServerResolver.resolve(servers);
     return topics.stream()
         .map(topic -> datasetFactory.getDataset(topic, namespace, schema))
         .collect(Collectors.toList());

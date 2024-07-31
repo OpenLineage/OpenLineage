@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.dataset.namespace.resolver.HostListNamespaceResolverConfig;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import java.util.ArrayList;
@@ -32,19 +33,22 @@ final class KafkaMicroBatchStreamStrategy extends StreamStrategy {
       DatasetFactory<InputDataset> inputDatasetDatasetFactory,
       StreamingDataSourceV2Relation relation) {
     super(inputDatasetDatasetFactory, relation);
+
+    new HostListNamespaceResolverConfig();
   }
 
   @Override
   public List<InputDataset> getInputDatasets() {
     Optional<String> bootstrapServersOpt = getBootstrapServers();
     Set<String> topics = getTopics();
-    if (bootstrapServersOpt.isPresent() && !topics.isEmpty()) {
-      return generateInputDatasets(bootstrapServersOpt.get(), topics);
-    } else {
+
+    if (!bootstrapServersOpt.isPresent() || topics.isEmpty()) {
       log.warn(
           "Could not generate an input dataset because bootstrapServers need to be present and at least one topic must exist");
       return Collections.emptyList();
     }
+
+    return generateInputDatasets(bootstrapServersOpt, topics);
   }
 
   private Optional<String> getBootstrapServers() {
@@ -77,9 +81,9 @@ final class KafkaMicroBatchStreamStrategy extends StreamStrategy {
   }
 
   private List<InputDataset> generateInputDatasets(
-      String bootstrapServersConfig, Collection<String> topics) {
-    String[] bootstrapServers = bootstrapServersConfig.split(",");
-    String namespace = "kafka://" + bootstrapServers[0];
+      Optional<String> bootstrapServers, Collection<String> topics) {
+    String namespace = KafkaBootstrapServerResolver.resolve(bootstrapServers);
+
     List<InputDataset> datasets = new ArrayList<>();
     for (String topic : topics) {
       InputDataset dataset = datasetFactory.getDataset(topic, namespace, relation.schema());
