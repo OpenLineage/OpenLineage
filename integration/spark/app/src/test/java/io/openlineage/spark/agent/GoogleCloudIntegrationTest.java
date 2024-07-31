@@ -230,8 +230,13 @@ class GoogleCloudIntegrationTest {
   void testRddWriteToBucket() throws IOException {
     String sparkVersion = String.format("spark-%s", SparkContainerProperties.SPARK_VERSION);
     String scalaVersion = String.format("scala-%s", SparkContainerProperties.SCALA_BINARY_VERSION);
+    String javaVersion = String.format("java-%s", JAVA_VERSION);
     URI baseUri =
-        BUCKET_URI.resolve("rdd-test/").resolve(sparkVersion + "/").resolve(scalaVersion + "/");
+        BUCKET_URI
+            .resolve("rdd-test/")
+            .resolve(sparkVersion + "/")
+            .resolve(scalaVersion + "/")
+            .resolve(javaVersion + "/");
 
     log.info("This path will be used for this test: {}", baseUri);
 
