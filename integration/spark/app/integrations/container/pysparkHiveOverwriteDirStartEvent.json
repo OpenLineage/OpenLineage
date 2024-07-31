@@ -2,22 +2,6 @@
 	"eventType": "START",
 	"run": {
 		"facets": {
-			"spark_unknown": {
-				"inputs": [{
-					"description": {},
-					"inputAttributes": [],
-					"outputAttributes": [{
-						"name": "col1",
-						"type": "integer",
-						"metadata": {}
-					}, {
-						"name": "col2",
-						"type": "string",
-						"metadata": {}
-					}]
-				}]
-			},
-			"spark.logicalPlan": {},
 			"processing_engine": {
         "version": "${json-unit.any-string}",
         "name": "spark",
