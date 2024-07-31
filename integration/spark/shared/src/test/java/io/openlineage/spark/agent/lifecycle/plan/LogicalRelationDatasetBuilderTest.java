@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -46,6 +47,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.internal.SessionState;
+import org.apache.spark.sql.sources.BaseRelation;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -209,5 +211,28 @@ class LogicalRelationDatasetBuilderTest {
       OpenLineage.Dataset ds = datasets.get(0);
       assertEquals("/tmp/path.csv", ds.getName());
     }
+  }
+
+  @Test
+  void testApplyForExtensionLineageRelation() {
+    BaseRelation baseRelation = mock(BaseRelation.class);
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    SparkContext sparkContext = mock(SparkContext.class);
+    SessionState sessionState = mock(SessionState.class);
+    SparkListenerEvent sparkListenerEvent = mock(SparkListenerEvent.class);
+
+    when(logicalRelation.relation()).thenReturn(baseRelation);
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
+    when(visitorWrapper.isDefinedAt(baseRelation)).thenReturn(true);
+    when(visitorWrapper.getLineageDatasetIdentifier(
+            baseRelation, sparkListenerEvent.getClass().getName()))
+        .thenReturn(new DatasetIdentifier("someName", "someNamespace"));
+    when(session.sessionState()).thenReturn(sessionState);
+
+    List<OpenLineage.Dataset> datasets = builder.apply(sparkListenerEvent, logicalRelation);
+    OpenLineage.Dataset dataset = datasets.get(0);
+    assertEquals(dataset.getName(), "someName");
+    assertEquals(dataset.getNamespace(), "someNamespace");
   }
 }

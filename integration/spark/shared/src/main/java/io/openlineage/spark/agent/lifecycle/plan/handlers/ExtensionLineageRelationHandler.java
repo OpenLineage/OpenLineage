@@ -24,14 +24,14 @@ public class ExtensionLineageRelationHandler<D extends Dataset> {
   }
 
   public List<D> handleRelation(SparkListenerEvent event, LogicalRelation x) {
-    if (!context.getSparkExtensionVisitorWrapper().isDefinedAt(x)) {
+    if (!context.getSparkExtensionVisitorWrapper().isDefinedAt(x.relation())) {
       return Collections.emptyList();
     }
 
     DatasetIdentifier di =
         context
             .getSparkExtensionVisitorWrapper()
-            .getLineageDatasetIdentifier(x, event.getClass().getName());
+            .getLineageDatasetIdentifier(x.relation(), event.getClass().getName());
 
     if (x.schema() != null) {
       return Collections.singletonList(datasetFactory.getDataset(di, x.schema()));
