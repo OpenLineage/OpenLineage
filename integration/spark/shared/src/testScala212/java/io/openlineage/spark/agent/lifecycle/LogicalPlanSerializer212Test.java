@@ -5,11 +5,13 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.io.IOException;
@@ -32,6 +34,8 @@ import scala.collection.Seq;
 import scala.collection.immutable.HashMap;
 
 class LogicalPlanSerializer212Test {
+  public static final Class<?> MISSING_NODE_CLASS =
+      LogicalPlanSerializer.shadedJacksonClass(".databind.node.MissingNode");
   private final LogicalPlanSerializer logicalPlanSerializer = new LogicalPlanSerializer();
 
   @Test
@@ -72,7 +76,10 @@ class LogicalPlanSerializer212Test {
     final ObjectMapper mapper = new ObjectMapper();
     try {
       Logger.getLogger(logicalPlanSerializer.getClass()).setLevel(Level.ERROR);
-      mapper.readTree(logicalPlanSerializer.serialize(notSerializablePlan));
+      String serialize = logicalPlanSerializer.serialize(notSerializablePlan);
+      JsonNode jsonNode = mapper.readTree(serialize);
+      assertThat(jsonNode).isNotInstanceOf(MISSING_NODE_CLASS);
+      assertThat(serialize).isEqualTo("\"<failed-to-serialize-logical-plan>\"");
     } catch (IOException e) {
       fail();
     }
