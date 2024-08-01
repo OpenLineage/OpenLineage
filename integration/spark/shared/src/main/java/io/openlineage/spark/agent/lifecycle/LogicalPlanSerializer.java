@@ -16,6 +16,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Map;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.Partition;
@@ -57,9 +58,7 @@ class LogicalPlanSerializer {
        * non-shaded MixInResolver and its methods will call shaded LogicalPlanMixinResolver methods.
        * This allows merging together non-shaded and shaded Jackson classes.
        */
-      Class clazz =
-          Class.forName(
-              UNSHADED_JACKSON_PACKAGE + ".databind.introspect.ClassIntrospector$MixInResolver");
+      Class clazz = shadedJacksonClass(".databind.introspect.ClassIntrospector$MixInResolver");
 
       Object resolver =
           Proxy.newProxyInstance(
@@ -77,7 +76,7 @@ class LogicalPlanSerializer {
       MethodUtils.invokeMethod(
           objectMapper,
           "registerModule",
-          Class.forName(UNSHADED_JACKSON_PACKAGE + ".module.scala.DefaultScalaModule$")
+          shadedJacksonClass(".module.scala.DefaultScalaModule$")
               .getDeclaredField("MODULE$")
               .get(null));
 
@@ -89,9 +88,7 @@ class LogicalPlanSerializer {
 
   private Object getObjectMapper() {
     try {
-      return Class.forName(UNSHADED_JACKSON_PACKAGE + ".databind.ObjectMapper")
-          .getConstructor()
-          .newInstance();
+      return shadedJacksonClass(".databind.ObjectMapper").getConstructor().newInstance();
     } catch (Exception e) {
       log.warn("Couldn't instantiate ObjectMapper", e);
 
@@ -105,7 +102,7 @@ class LogicalPlanSerializer {
       return (String) MethodUtils.invokeMethod(objectMapper, "writeValueAsString", x);
     } catch (Exception e) {
       log.warn("Unable to writeValueAsString", e);
-      return "";
+      return "\"<failed-to-serialize-logical-plan>\"";
     }
   }
 
@@ -114,7 +111,7 @@ class LogicalPlanSerializer {
       return (String) MethodUtils.invokeMethod(objectMapper, "writeValueAsString", x);
     } catch (Exception e) {
       log.warn("Unable to writeValueAsString", e);
-      return "";
+      return "\"<failed-to-serialize-logical-plan>\"";
     }
   }
 
@@ -137,14 +134,16 @@ class LogicalPlanSerializer {
   public static class IgnoredType {}
 
   /**
-   * 'canonicalized' field is ignored due to recursive call and {@link StackOverflowError} 'child'
-   * and 'containsChild' fields ignored cause we don't need them for the root node in {@link
-   * LogicalPlan} and leaf nodes don't have child nodes in {@link LogicalPlan}
+   * 'canonicalized' and 'preCanonicalized' fields are ignored due to recursive call and {@link
+   * StackOverflowError} .'child' and 'containsChild' fields ignored because we don't need them for
+   * the root node in {@link LogicalPlan} and leaf nodes don't have child nodes in {@link
+   * LogicalPlan}
    */
   @JsonIgnoreProperties({
     "child",
     "containsChild",
     "canonicalized",
+    "preCanonicalized",
     "constraints",
     "data",
     "deltaLog",
@@ -209,5 +208,16 @@ class LogicalPlanSerializer {
     public ClassIntrospector.MixInResolver copy() {
       return this;
     }
+  }
+
+  /**
+   * Returns the class from unshaded jackson
+   *
+   * @param classSuffix the suffix after "com.fasterxml.jackson". Should include dot at the
+   *     beginning
+   */
+  @SneakyThrows
+  static Class<?> shadedJacksonClass(String classSuffix) {
+    return Class.forName(UNSHADED_JACKSON_PACKAGE + classSuffix);
   }
 }

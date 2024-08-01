@@ -7,6 +7,7 @@ package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_LOG4J2_PROPERTIES_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_LOG4J_PROPERTIES_PATH;
+import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_HOME_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_JARS_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_ADDITIONAL_JARS_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_DEPENDENCIES_DIR;
@@ -64,7 +65,6 @@ public class SparkContainerUtils {
             .withPassword("password")
             .withDatabaseName("test")
             .withExposedPorts(5432);
-
     final Path basePath = Paths.get("src/test/resources/metastore_psql/").toAbsolutePath();
     mountPath(
         container,
@@ -214,8 +214,8 @@ public class SparkContainerUtils {
         sparkConf,
         "spark.openlineage.dataset.namespaceResolvers.kafka-cluster-prod.hosts=[kafka-host;kafka-host-other]");
 
-    List<String> sparkSubmit =
-        new ArrayList(Arrays.asList("./bin/spark-submit", "--master", "local"));
+    String sparkSubmitPath = CONTAINER_SPARK_HOME_DIR + "/bin/spark-submit";
+    List<String> sparkSubmit = new ArrayList(Arrays.asList(sparkSubmitPath, "--master", "local"));
     sparkSubmit.addAll(sparkConf);
     sparkSubmit.addAll(
         Arrays.asList(

@@ -18,6 +18,9 @@ plugins {
 
 ext {
     spark = project.findProperty('spark.version').toString()
+    if (spark.startsWith("4")) {
+        spark = spark + "-preview1"
+    }
     scala = project.findProperty('scala.binary.version').toString()
     activeRuntimeElementsConfiguration = "scala" + scala.replace(".", "") + "RuntimeElements"
 
@@ -87,6 +90,7 @@ dependencies {
     implementation(project(path: ":spark33", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
+    implementation(project(path: ":spark40", configuration: "scala213RuntimeElements"))
     implementation("org.apache.httpcomponents.client5:httpclient5:5.3")
 
     compileOnly("org.apache.spark:spark-core_${scala}:${spark}")
@@ -176,8 +180,8 @@ def testSystemProperties = { String spark, String scala ->
             "mockserver.logLevel"                 : "ERROR",
             "resources.dir"                       : testResourcesDir.get().asFile.absolutePath,
             "scala.fixtures.jar.name"             : scalaFixturesJarName.toString(),
-            "spark.docker.image"                  : "quay.io/openlineage/spark:spark-${spark}-scala-${scala}",
-            "spark.home.dir"                      : "/opt/bitnami/spark",
+            "spark.docker.image"                  : spark.startsWith("4") ? "apache/spark:${spark}-scala${scala}-java17-python3-r-ubuntu" : "quay.io/openlineage/spark:spark-${spark}-scala-${scala}",
+            "spark.home.dir"                      : spark.startsWith("4") ? "/opt/spark" : "/opt/bitnami/spark",
             "spark.sql.warehouse.dir"             : sparkWarehouseDir.get().asFile.absolutePath,
             "spark.version"                       : spark,
             "scala.binary.version"                : scala,
@@ -228,6 +232,7 @@ tasks.named("shadowJar", ShadowJar.class) {
         exclude(project(path: ":spark33", configuration: activeRuntimeElementsConfiguration))
         exclude(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
         exclude(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
+        exclude(project(path: ":spark40", configuration: "scala213RuntimeElements"))
     }
 
     dependencies {

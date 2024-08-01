@@ -15,7 +15,7 @@ RUN ./gradlew --no-daemon shadowJar
 FROM eclipse-temurin:11
 WORKDIR /usr/src/app
 COPY --from=build /usr/src/app/build/libs/openlineage-proxy-*.jar /usr/src/app
-COPY proxy.dev.yml proxy.dev.yml
+COPY proxy.yml proxy.yml
 COPY docker/entrypoint.sh entrypoint.sh
 EXPOSE 6000 6001
 ENTRYPOINT ["/usr/src/app/entrypoint.sh"]

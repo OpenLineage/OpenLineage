@@ -57,6 +57,7 @@ import scala.PartialFunction;
  */
 class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
 
+  public static final String SPARK_VERSION_3 = "3";
   private final List<OpenLineageEventHandlerFactory> eventHandlerFactories;
   private final List<VisitorFactory> visitorFactory;
 
@@ -182,7 +183,7 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                 generate(
                     eventHandlerFactories,
                     factory -> factory.createOutputDatasetFacetBuilders(context)));
-    if (context.getSparkVersion().startsWith("3")) {
+    if (SPARK_VERSION_3.compareTo(context.getSparkVersion()) < 0) {
       builder.add(new OutputStatisticsOutputDatasetFacetBuilder(context));
     }
     return builder.build();

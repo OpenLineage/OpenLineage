@@ -46,6 +46,8 @@ import org.mockserver.integration.ClientAndServer;
 @Tag("google-cloud")
 @Slf4j
 @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
+// TODO: Please note the test remains disabled for Spark 4.0 for now (no applicable connector
+// version available)
 class GoogleCloudIntegrationTest {
   private static final String PROJECT_ID =
       Optional.ofNullable(System.getenv("GCLOUD_PROJECT_ID")).orElse("openlineage-ci");
@@ -230,8 +232,13 @@ class GoogleCloudIntegrationTest {
   void testRddWriteToBucket() throws IOException {
     String sparkVersion = String.format("spark-%s", SparkContainerProperties.SPARK_VERSION);
     String scalaVersion = String.format("scala-%s", SparkContainerProperties.SCALA_BINARY_VERSION);
+    String javaVersion = String.format("java-%s", JAVA_VERSION);
     URI baseUri =
-        BUCKET_URI.resolve("rdd-test/").resolve(sparkVersion + "/").resolve(scalaVersion + "/");
+        BUCKET_URI
+            .resolve("rdd-test/")
+            .resolve(sparkVersion + "/")
+            .resolve(scalaVersion + "/")
+            .resolve(javaVersion + "/");
 
     log.info("This path will be used for this test: {}", baseUri);
 

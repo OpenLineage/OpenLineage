@@ -47,7 +47,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 @Slf4j
-@EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)")
+@EnabledIfSystemProperty(named = "spark.version", matches = "([34].*)")
 class ColumnLineageWithTransformationTypesTest {
 
   private static final String FILE = "file";
