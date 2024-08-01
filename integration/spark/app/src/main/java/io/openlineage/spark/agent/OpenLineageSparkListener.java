@@ -21,6 +21,7 @@ import io.openlineage.client.utils.RuntimeUtils;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.agent.util.SparkVersionUtils;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -61,7 +62,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       Collections.synchronizedMap(new HashMap<>());
   private static final Map<Integer, ExecutionContext> rddExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
-  public static final String SPARK_VERSION_3 = "3";
   private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
   private static ContextFactory contextFactory;
   private static JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
@@ -175,7 +175,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
             .map(Integer.class::cast)
             .collect(Collectors.toSet());
 
-    if (SPARK_VERSION_3.compareTo(sparkVersion) < 0) {
+    if (SparkVersionUtils.isSpark3OrHigher(sparkVersion)) {
       jobMetrics.addJobStages(jobStart.jobId(), stages);
     }
 
@@ -227,7 +227,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           }
           return null;
         });
-    if (SPARK_VERSION_3.compareTo(sparkVersion) < 0) {
+    if (SparkVersionUtils.isSpark3OrHigher(sparkVersion)) {
       jobMetrics.cleanUp(jobEnd.jobId());
     }
   }

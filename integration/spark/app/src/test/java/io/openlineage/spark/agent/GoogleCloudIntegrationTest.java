@@ -58,8 +58,8 @@ class GoogleCloudIntegrationTest {
   private static final String NAMESPACE = "google-cloud-namespace";
   private static final int MOCKSERVER_PORT = 3000;
   private static final String LOCAL_IP = "127.0.0.1";
-  private static final String GREATER_THAN_SPARK2 = "(3.*)";
-  private static final String GREATER_THAN_SPARK3_3 = "(3\\.[3-9].*)";
+  private static final String SPARK_3 = "(3.*)";
+  private static final String SPARK_3_3 = "(3\\.[3-9].*)";
   private static final String SPARK_VERSION_PROPERTY = "spark.version";
   private static final String CREDENTIALS_FILE = "build/gcloud/gcloud-service-key.json";
 
@@ -130,7 +130,7 @@ class GoogleCloudIntegrationTest {
   @Test
   @EnabledIfSystemProperty(
       named = SPARK_VERSION_PROPERTY,
-      matches = GREATER_THAN_SPARK3_3) // Spark version >= 3.*
+      matches = SPARK_3_3) // Spark version >= 3.*
   void testReadAndWriteFromBigquery() {
     String source_table = String.format("%s.%s.%s_source", PROJECT_ID, DATASET_ID, VERSION_NAME);
     String target_table = String.format("%s.%s.%s_target", PROJECT_ID, DATASET_ID, VERSION_NAME);
@@ -169,7 +169,7 @@ class GoogleCloudIntegrationTest {
   @Test
   @EnabledIfSystemProperty(
       named = SPARK_VERSION_PROPERTY,
-      matches = GREATER_THAN_SPARK3_3) // Spark version == 3.*
+      matches = SPARK_3_3) // Spark version == 3.*
   void testReadAndWriteFromBigqueryUsingQuery() {
     String source_table =
         String.format("%s.%s.%s_source_query_test", PROJECT_ID, DATASET_ID, VERSION_NAME);
@@ -228,7 +228,7 @@ class GoogleCloudIntegrationTest {
   @Test
   @EnabledIfSystemProperty(
       named = SPARK_VERSION_PROPERTY,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
+      matches = SPARK_3) // Spark version >= 3.*
   void testRddWriteToBucket() throws IOException {
     String sparkVersion = String.format("spark-%s", SparkContainerProperties.SPARK_VERSION);
     String scalaVersion = String.format("scala-%s", SparkContainerProperties.SCALA_BINARY_VERSION);
