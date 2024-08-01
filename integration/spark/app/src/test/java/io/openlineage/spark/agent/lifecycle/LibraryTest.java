@@ -5,12 +5,10 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
-import static io.openlineage.spark.agent.SparkAgentTestExtension.EVENT_EMITTER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -19,60 +17,44 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.spark.agent.EventEmitter;
+import io.openlineage.spark.agent.EventEmitterProviderExtension;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.beanutils.BeanUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
 @Slf4j
 @ExtendWith(SparkAgentTestExtension.class)
 class LibraryTest {
+  public static EventEmitter emitter = mock(EventEmitter.class);
 
-  @BeforeEach
-  public void beforeEach() throws Exception {
-    Mockito.reset(EVENT_EMITTER);
-    when(EVENT_EMITTER.getJobNamespace()).thenReturn("ns_name");
-    when(EVENT_EMITTER.getParentJobName()).thenReturn(Optional.of("parent_name"));
-    when(EVENT_EMITTER.getParentJobNamespace()).thenReturn(Optional.of("parent_namespace"));
-    when(EVENT_EMITTER.getParentRunId())
-        .thenReturn(Optional.of(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b")));
-    when(EVENT_EMITTER.getApplicationRunId())
-        .thenReturn(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
-    when(EVENT_EMITTER.getApplicationJobName()).thenReturn("test_rdd");
-    Mockito.doAnswer(
-            (arg) -> {
-              LoggerFactory.getLogger(getClass())
-                  .info(
-                      "Emit called with args {}",
-                      Arrays.stream(arg.getArguments())
-                          .map(this::describe)
-                          .collect(Collectors.toList()));
-              return null;
-            })
-        .when(EVENT_EMITTER)
-        .emit(any(RunEvent.class));
+  @BeforeAll
+  public static void beforeAll() {
+    // create EventEmitter before starting the SparkSession, to capture
+    // SparkListenerApplicationStart event
+    EventEmitterProviderExtension.setup(emitter);
+  }
+
+  @AfterAll
+  public static void afterAll() {
+    EventEmitterProviderExtension.stop();
   }
 
   @Test
@@ -92,7 +74,7 @@ class LibraryTest {
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(EVENT_EMITTER, times(4)).emit(lineageEvent.capture());
+    Mockito.verify(emitter, times(4)).emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     assertEquals(4, events.size());
 
@@ -170,29 +152,12 @@ class LibraryTest {
     verifySerialization(events);
   }
 
-  Map<String, Object> stripSchemaURL(Map<String, Object> map) {
-    List<String> toRemove = new ArrayList<>();
-    for (String key : map.keySet()) {
-      if (key.endsWith("schemaURL")) {
-        toRemove.add(key);
-      } else {
-        Object value = map.get(key);
-        if (value instanceof Map) {
-          stripSchemaURL((Map<String, Object>) value);
-        }
-      }
-    }
-    for (String key : toRemove) {
-      map.remove(key);
-    }
-    return map;
-  }
-
   @Test
   void testRDDName(SparkSession spark) {
     JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
     JavaRDD<Integer> numbers =
-        sc.parallelize(IntStream.range(1, 100).mapToObj(Integer::new).collect(Collectors.toList()));
+        sc.parallelize(
+            IntStream.range(1, 100).mapToObj(Integer::valueOf).collect(Collectors.toList()));
     numbers.setName("numbers");
     JavaRDD<String> transformed =
         numbers.filter(n -> n > 10 && n < 90).map(i -> i * i).map(String::valueOf);
@@ -206,15 +171,6 @@ class LibraryTest {
       assertNotNull(
           "Event can serialize",
           OpenLineageClientUtils.newObjectMapper().writeValueAsString(event));
-    }
-  }
-
-  private Map describe(Object arg) {
-    try {
-      return BeanUtils.describe(arg);
-    } catch (Exception e) {
-      LoggerFactory.getLogger(getClass()).error("Unable to describe event {}", arg, e);
-      return new HashMap();
     }
   }
 }
