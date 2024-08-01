@@ -11,7 +11,7 @@ object KinesisReadJob {
 
   def main(args: Array[String]): Unit = {
     val spark = SparkSession.builder()
-      .appName("io.openlineage.spark.streaming.PubSubReadJob")
+      .appName("io.openlineage.spark.streaming.KinesisReadJob")
       .getOrCreate()
     runJob(spark)
   }

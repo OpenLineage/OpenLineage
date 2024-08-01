@@ -63,11 +63,9 @@ public class StreamingDataSourceV2RelationVisitor
               relation.schema(),
               relation.stream(),
               ScalaConversionUtils.asJavaOptional(relation.startOffset()));
-    }
-    else if (KINESIS_MICRO_BATCH_STREAM_CLASS_NAME.equals(streamClassName)) {
-        streamStrategy = new KinesisMicroBatchStreamStrategy(inputDataset(), relation);
-    }
-    else {
+    } else if (KINESIS_MICRO_BATCH_STREAM_CLASS_NAME.equals(streamClassName)) {
+      streamStrategy = new KinesisMicroBatchStreamStrategy(inputDataset(), relation);
+    } else {
       log.warn(
           "The {} has been selected because no rules have matched for the stream class of {}",
           NoOpStreamStrategy.class,

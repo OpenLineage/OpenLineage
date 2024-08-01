@@ -8,13 +8,6 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.spark.sql.connector.read.streaming.Offset;
-import org.apache.spark.sql.execution.datasources.v2.StreamingDataSourceV2Relation;
-import scala.Option;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

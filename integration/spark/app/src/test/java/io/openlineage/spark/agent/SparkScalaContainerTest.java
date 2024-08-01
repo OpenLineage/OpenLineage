@@ -5,9 +5,39 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_FIXTURES_JAR_PATH;
+import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_CONF_DIR;
+import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_HOME_DIR;
+import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_JARS_DIR;
+import static io.openlineage.spark.agent.SparkContainerProperties.HOST_ADDITIONAL_CONF_DIR;
+import static io.openlineage.spark.agent.SparkContainerProperties.HOST_ADDITIONAL_JARS_DIR;
+import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LIB_DIR;
+import static io.openlineage.spark.agent.SparkContainerProperties.HOST_SCALA_FIXTURES_JAR_PATH;
+import static io.openlineage.spark.agent.SparkContainerProperties.SPARK_DOCKER_IMAGE;
+import static io.openlineage.spark.agent.SparkContainerUtils.SPARK_DOCKER_CONTAINER_WAIT_MESSAGE;
+import static io.openlineage.spark.agent.SparkContainerUtils.addSparkConfig;
+import static io.openlineage.spark.agent.SparkContainerUtils.mountFiles;
+import static io.openlineage.spark.agent.SparkContainerUtils.mountPath;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockserver.model.HttpRequest.request;
+import static org.testcontainers.containers.Network.newNetwork;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClientUtils;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.awaitility.Awaitility;
@@ -28,62 +58,6 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_FIXTURES_JAR_PATH;
-import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_CONF_DIR;
-import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_JARS_DIR;
-import static io.openlineage.spark.agent.SparkContainerProperties.HOST_ADDITIONAL_CONF_DIR;
-import static io.openlineage.spark.agent.SparkContainerProperties.HOST_ADDITIONAL_JARS_DIR;
-import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LIB_DIR;
-import static io.openlineage.spark.agent.SparkContainerProperties.HOST_SCALA_FIXTURES_JAR_PATH;
-import static io.openlineage.spark.agent.SparkContainerProperties.SPARK_DOCKER_IMAGE;
-import static io.openlineage.spark.agent.SparkContainerUtils.SPARK_DOCKER_CONTAINER_WAIT_MESSAGE;
-import static io.openlineage.spark.agent.SparkContainerUtils.addSparkConfig;
-import static io.openlineage.spark.agent.SparkContainerUtils.mountFiles;
-import static io.openlineage.spark.agent.SparkContainerUtils.mountPath;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockserver.model.HttpRequest.request;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_FIXTURES_JAR_PATH;
-import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_CONF_DIR;
-import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_JARS_DIR;
-import static io.openlineage.spark.agent.SparkContainerProperties.HOST_ADDITIONAL_CONF_DIR;
-import static io.openlineage.spark.agent.SparkContainerProperties.HOST_ADDITIONAL_JARS_DIR;
-import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LIB_DIR;
-import static io.openlineage.spark.agent.SparkContainerProperties.HOST_SCALA_FIXTURES_JAR_PATH;
-import static io.openlineage.spark.agent.SparkContainerProperties.SPARK_DOCKER_IMAGE;
-import static io.openlineage.spark.agent.SparkContainerUtils.SPARK_DOCKER_CONTAINER_WAIT_MESSAGE;
-import static io.openlineage.spark.agent.SparkContainerUtils.addSparkConfig;
-import static io.openlineage.spark.agent.SparkContainerUtils.mountFiles;
-import static io.openlineage.spark.agent.SparkContainerUtils.mountPath;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockserver.model.HttpRequest.request;
-import static org.testcontainers.containers.Network.newNetwork;
 
 /**
  * This class runs integration test for a Spark job written in scala. Having a Scala job allows us
