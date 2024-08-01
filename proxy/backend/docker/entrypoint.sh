@@ -8,7 +8,7 @@
 set -e
 
 if [[ -z "${OPENLINEAGE_PROXY_CONFIG}" ]]; then
-  OPENLINEAGE_PROXY_CONFIG='proxy.dev.yml'
+  OPENLINEAGE_PROXY_CONFIG='proxy.yml'
   echo "WARNING 'OPENLINEAGE_PROXY_CONFIG' not set, using development configuration."
 fi
 
