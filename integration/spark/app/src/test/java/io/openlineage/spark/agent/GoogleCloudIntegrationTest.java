@@ -46,6 +46,8 @@ import org.mockserver.integration.ClientAndServer;
 @Tag("google-cloud")
 @Slf4j
 @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
+// TODO: Please note the test remains disabled for Spark 4.0 for now (no applicable connector
+// version available)
 class GoogleCloudIntegrationTest {
   private static final String PROJECT_ID =
       Optional.ofNullable(System.getenv("GCLOUD_PROJECT_ID")).orElse("openlineage-ci");

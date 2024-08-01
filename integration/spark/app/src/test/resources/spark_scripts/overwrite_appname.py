@@ -14,4 +14,4 @@ spark.sql("CREATE TABLE IF NOT EXISTS test (key INT, value STRING) USING hive")
 spark.sql("CREATE TABLE IF NOT EXISTS target (key INT, value STRING) USING hive")
 spark.sql("INSERT INTO test VALUES (1, 'a'), (2, 'b'), (3, 'c')")
 
-spark.sql("INSERT INTO target SELECT * from test WHERE value > 1")
+spark.sql("INSERT INTO target SELECT * from test WHERE key > 1")

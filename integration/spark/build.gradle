@@ -29,6 +29,7 @@ dependencies {
     implementation(project(path: ":spark33", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
+    implementation(project(path: ":spark40", configuration: "scala213RuntimeElements"))
     implementation(project(path: ":snowflake"))
 }
 

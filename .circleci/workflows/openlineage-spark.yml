@@ -20,7 +20,8 @@ workflows:
             parameters:
               env-variant: [
                 'java:8-spark:3.2.4', 'java:8-spark:3.3.4', 'java:17-spark:3.3.4',
-                'java:8-spark:3.4.3', 'java:8-spark:3.5.1', 'java:17-spark:3.5.1' ]
+                'java:8-spark:3.4.3', 'java:8-spark:3.5.1', 'java:17-spark:3.5.1',
+                'java:17-spark:4.0.0']
           requires:
            - build-integration-sql-java
            - build-client-java           
@@ -57,7 +58,8 @@ workflows:
             parameters:
               env-variant: [
                 'java:8-spark:3.2.4', 'java:8-spark:3.3.4', 'java:17-spark:3.3.4',
-                'java:8-spark:3.4.3', 'java:8-spark:3.5.1', 'java:17-spark:3.5.1' ]
+                'java:8-spark:3.4.3', 'java:8-spark:3.5.1', 'java:17-spark:3.5.1',
+                'java:17-spark:4.0.0']
           requires:
             - approval-integration-spark
       - configurable-integration-test-spark:

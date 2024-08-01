@@ -21,6 +21,7 @@ import io.openlineage.client.utils.RuntimeUtils;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.agent.util.SparkVersionUtils;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -174,7 +175,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
             .map(Integer.class::cast)
             .collect(Collectors.toSet());
 
-    if (sparkVersion.startsWith("3")) {
+    if (SparkVersionUtils.isSpark3OrHigher(sparkVersion)) {
       jobMetrics.addJobStages(jobStart.jobId(), stages);
     }
 
@@ -226,7 +227,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           }
           return null;
         });
-    if (sparkVersion.startsWith("3")) {
+    if (SparkVersionUtils.isSpark3OrHigher(sparkVersion)) {
       jobMetrics.cleanUp(jobEnd.jobId());
     }
   }
