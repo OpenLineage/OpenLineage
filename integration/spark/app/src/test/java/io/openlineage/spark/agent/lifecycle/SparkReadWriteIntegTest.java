@@ -116,7 +116,7 @@ class SparkReadWriteIntegTest {
   private static final String NAME = "name";
   private static final String AGE = "age";
   private static final String FILE_URI_PREFIX = "file://";
-  private static final String SPARK_3 = "(3.*)";
+  private static final String GREATER_THAN_SPARK2 = "([34].*)";
   private static final String SPARK_VERSION = "spark.version";
 
   private final KafkaContainer kafkaContainer =
@@ -142,7 +142,10 @@ class SparkReadWriteIntegTest {
     }
   }
 
+  // TODO: Please note the test remains disabled for Spark 4.0 for now (no applicable connector
+  // version available)
   @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "(3.*)")
   void testBigQueryReadWriteToFile(@TempDir Path writeDir, SparkSession spark)
       throws InterruptedException, TimeoutException {
     TableId tableId = TableId.of("testproject", "dataset", "MyTable");
@@ -230,13 +233,15 @@ class SparkReadWriteIntegTest {
         .isEqualTo(schemaDatasetFacet);
 
     assertNotNull(output.getFacets().getAdditionalProperties());
-    if (SparkVersionUtils.isSpark3()) {
+    if (SparkVersionUtils.isSpark3OrHigher()) {
       assertThat(output.getOutputFacets().getOutputStatistics()).isNotNull();
     }
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
+  @EnabledIfSystemProperty(
+      named = SPARK_VERSION,
+      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testReadFromFileWriteToJdbc(@TempDir Path writeDir, SparkSession spark)
       throws InterruptedException, TimeoutException, IOException {
     Path testFile = writeTestDataToFile(writeDir);
@@ -287,7 +292,7 @@ class SparkReadWriteIntegTest {
         .satisfies(
             d -> {
               // Spark rowCount metrics currently only working in Spark 3.x
-              if (SparkVersionUtils.isSpark3()) {
+              if (SparkVersionUtils.isSpark3OrHigher()) {
                 assertThat(d.getOutputFacets().getOutputStatistics())
                     .isNotNull()
                     .hasFieldOrPropertyWithValue("rowCount", 2L);
@@ -463,7 +468,9 @@ class SparkReadWriteIntegTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
+  @EnabledIfSystemProperty(
+      named = SPARK_VERSION,
+      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testCreateDataSourceTableAsSelect(@TempDir Path tmpDir, SparkSession spark)
       throws InterruptedException, TimeoutException, IOException {
     Path testFile = writeTestDataToFile(tmpDir);
@@ -606,7 +613,7 @@ class SparkReadWriteIntegTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)") // Spark version >= 3.*
+  @EnabledIfSystemProperty(named = "spark.version", matches = "([34].*)") // Spark version >= 3.*
   void testCacheReadFromFileWriteToParquet(@TempDir Path writeDir, SparkSession spark)
       throws InterruptedException, TimeoutException, IOException {
     Path testFile = writeTestDataToFile(writeDir);
@@ -642,6 +649,7 @@ class SparkReadWriteIntegTest {
             .isNotEmpty()
             .filteredOn(e -> !e.getOutputs().isEmpty())
             .isNotEmpty()
+            // TODO: this is also failing bcz of outputStatistics missing
             .filteredOn(
                 e ->
                     e.getOutputs().stream()
@@ -664,7 +672,7 @@ class SparkReadWriteIntegTest {
         .satisfies(
             d -> {
               // Spark rowCount metrics currently only working in Spark 3.x
-              if (SparkVersionUtils.isSpark3()) {
+              if (SparkVersionUtils.isSpark3OrHigher()) {
                 assertThat(d.getOutputFacets().getOutputStatistics())
                     .isNotNull()
                     .hasFieldOrPropertyWithValue("rowCount", 2L);
@@ -703,7 +711,9 @@ class SparkReadWriteIntegTest {
 
   @Test
   @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
+  @EnabledIfSystemProperty(
+      named = SPARK_VERSION,
+      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testExternalRDDWithS3Bucket(SparkSession spark)
       throws InterruptedException, TimeoutException, IOException, URISyntaxException {
     spark.conf().set("fs.s3a.secret.key", System.getenv("S3_SECRET_KEY"));

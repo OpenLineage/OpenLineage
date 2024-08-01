@@ -16,7 +16,7 @@ import org.apache.commons.lang3.reflect.MethodUtils;
  * object without directly depending on the Kafka library.
  */
 @Slf4j
-final class TopicPartitionProxy {
+public final class TopicPartitionProxy {
   private static final String EXPECTED_CLASS_NAME = "org.apache.kafka.common.TopicPartition";
   private final Object topicPartition;
 

@@ -81,7 +81,9 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     return x instanceof LogicalRelation
         && (((LogicalRelation) x).relation() instanceof HadoopFsRelation
             || ((LogicalRelation) x).relation() instanceof JDBCRelation
-            || context.getSparkExtensionVisitorWrapper().isDefinedAt(x)
+            || context
+                .getSparkExtensionVisitorWrapper()
+                .isDefinedAt(((LogicalRelation) x).relation())
             || ((LogicalRelation) x).catalogTable().isDefined());
   }
 
@@ -102,7 +104,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
   @Override
   public List<D> apply(SparkListenerEvent event, LogicalRelation logRel) {
-    if (context.getSparkExtensionVisitorWrapper().isDefinedAt(logRel)) {
+    if (context.getSparkExtensionVisitorWrapper().isDefinedAt(logRel.relation())) {
       return new ExtensionLineageRelationHandler<>(context, datasetFactory)
           .handleRelation(event, logRel);
     } else if (logRel.catalogTable() != null && logRel.catalogTable().isDefined()) {

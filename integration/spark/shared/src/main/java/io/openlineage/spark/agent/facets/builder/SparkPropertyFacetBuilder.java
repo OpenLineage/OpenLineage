@@ -73,7 +73,9 @@ public class SparkPropertyFacetBuilder
     try {
       SparkSession session = SparkSession.active();
       allowedProperties.forEach(item -> m.putIfAbsent(item, session.conf().get(item)));
-    } catch (RuntimeException e) {
+    } catch (Exception e) {
+      // need to catch exception so that org.apache.spark.SparkException for Spark 4.0 is caught
+      // which is not thrown for other Spark versions
       log.info(
           "Cannot add SparkPropertyFacet: Spark session is in a wrong status or a key in capturedProperties does not exist in run-time config");
     }

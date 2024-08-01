@@ -78,12 +78,12 @@ public final class WriteToDataSourceV2Visitor
     StructType schemaOpt = proxy.getSchema();
 
     Optional<String> bootstrapServersOpt = proxy.getBootstrapServers();
+    String namespace = KafkaBootstrapServerResolver.resolve(bootstrapServersOpt);
+
     if (topicOpt.isPresent() && bootstrapServersOpt.isPresent()) {
       String topic = topicOpt.get();
-      String bootstrapServers = bootstrapServersOpt.get();
 
-      OutputDataset dataset =
-          outputDataset().getDataset(topic, "kafka://" + bootstrapServers, schemaOpt);
+      OutputDataset dataset = outputDataset().getDataset(topic, namespace, schemaOpt);
       return Collections.singletonList(dataset);
     } else {
       String topicPresent =
