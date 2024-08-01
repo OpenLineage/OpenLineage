@@ -28,8 +28,8 @@ proxy:
   streams:
     - type: Console
 
-##### NOTE #####
-# IF YOU ARE RUNNNING THE DOCKER-COMPOSE-FILE, COMMENT OUT THE ABOVE CONFIGURATION AND UNCOMMENT THE BELOW CONFIGURATION
+##### Please read the message below #####
+# if you are running the docker-compose file, comment out the above configuration and uncomment the below configuration
 
 # server:
 #   applicationConnectors:
