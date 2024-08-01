@@ -362,9 +362,7 @@ class ExpressionDependencyCollectorTest {
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, window, null, null, false);
     ExpressionDependencyCollector.collect(context, plan);
 
-    verify(builder, times(0))
-            .addDependency(
-                    exprId3, exprId1, TransformationInfo.transformation());
+    verify(builder, times(0)).addDependency(exprId3, exprId1, TransformationInfo.transformation());
     verify(builder, times(1))
         .addDependency(
             exprId3, exprId1, TransformationInfo.indirect(TransformationInfo.Subtypes.WINDOW));
