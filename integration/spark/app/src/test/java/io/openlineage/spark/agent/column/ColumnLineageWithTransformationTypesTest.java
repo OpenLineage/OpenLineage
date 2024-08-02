@@ -264,7 +264,7 @@ class ColumnLineageWithTransformationTypesTest {
     OpenLineage.ColumnLineageDatasetFacet facet =
         getFacetForQuery(
             getSchemaFacet("a;string", "rank;int"),
-            "SELECT a, RANK() OVER (PARTITION BY b ORDER BY c) FROM t1;");
+            "SELECT a, RANK() OVER (PARTITION BY b ORDER BY c) as rank FROM t1;");
 
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
