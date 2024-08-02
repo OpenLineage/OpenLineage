@@ -8,8 +8,8 @@ repositories {
     mavenCentral()
 }
 
-val downloadTaskVersion: String = "5.5.0"
-val lombokPluginVersion: String = "8.4"
+val downloadTaskVersion: String = "5.6.0"
+val lombokPluginVersion: String = "8.6"
 val shadowPluginVersion: String = "8.1.1"
 val spotlessVersion: String = "6.13.0"
 
