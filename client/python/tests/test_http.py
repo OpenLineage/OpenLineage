@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import gzip
+import os
 from typing import TYPE_CHECKING
 
 from openlineage.client import OpenLineageClient
@@ -54,6 +55,42 @@ def test_http_loads_minimal_config() -> None:
     assert config.session is None
     assert config.adapter is None
     assert config.compression is None
+
+
+def test_client_with_http_transport_from_env_emits(mocker: MockerFixture) -> None:
+    post = mocker.patch("requests.Session.post")
+    mocker.patch.dict(
+        os.environ,
+        {
+            "OPENLINEAGE_URL": "http://backend:5000",
+            "OPENLINEAGE_API_KEY": "API_KEY",
+            "OPENLINEAGE_HTTP_HEADERS": "header1=val1,header2=val2",
+        },
+    )
+
+    client = OpenLineageClient()
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime=datetime.datetime.now().isoformat(),
+        run=Run(runId=str(generate_new_uuid())),
+        job=Job(namespace="http", name="test"),
+        producer="prod",
+        schemaURL="schema",
+    )
+
+    client.emit(event)
+    post.assert_called_once_with(
+        url="http://backend:5000/api/v1/lineage",
+        data=Serde.to_json(event),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": "Bearer API_KEY",
+            "header1": "val1",
+            "header2": "val2",
+        },
+        timeout=5.0,
+        verify=True,
+    )
 
 
 def test_client_with_http_transport_emits(mocker: MockerFixture) -> None:

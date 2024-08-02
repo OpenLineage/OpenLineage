@@ -228,6 +228,13 @@ class OpenLineageClient:
         if endpoint is not None:
             config.endpoint = endpoint
 
+        headers_str = os.environ.get("OPENLINEAGE_HTTP_HEADERS")
+        if headers_str is not None:
+            for val in headers_str.split(","):
+                if "=" in val:
+                    key, value = val.split("=")
+                    config.headers[key] = value
+
         return HttpTransport(config)
 
     @staticmethod
