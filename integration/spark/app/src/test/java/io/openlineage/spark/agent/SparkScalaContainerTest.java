@@ -5,9 +5,6 @@
 
 package io.openlineage.spark.agent;
 
-import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineage.RunEvent;
-import io.openlineage.client.OpenLineageClientUtils;
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_FIXTURES_JAR_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_CONF_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_HOME_DIR;
@@ -22,6 +19,16 @@ import static io.openlineage.spark.agent.SparkContainerUtils.SPARK_DOCKER_CONTAI
 import static io.openlineage.spark.agent.SparkContainerUtils.addSparkConfig;
 import static io.openlineage.spark.agent.SparkContainerUtils.mountFiles;
 import static io.openlineage.spark.agent.SparkContainerUtils.mountPath;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockserver.model.HttpRequest.request;
+import static org.testcontainers.containers.Network.newNetwork;
+
+import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineageClientUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,26 +41,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import static org.assertj.core.api.Assertions.assertThat;
 import org.awaitility.Awaitility;
-import static org.awaitility.Awaitility.await;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.ClearType;
-import static org.mockserver.model.HttpRequest.request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
-import static org.testcontainers.containers.Network.newNetwork;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
