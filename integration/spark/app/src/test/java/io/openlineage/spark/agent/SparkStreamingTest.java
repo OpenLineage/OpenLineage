@@ -495,6 +495,8 @@ class SparkStreamingTest {
 
           assertEquals(expectedSchema, outputSchemaFields);
         });
+
+    spark.stop();
   }
 
   private static HttpServer createHttpServer(HttpHandler handler) throws IOException {
