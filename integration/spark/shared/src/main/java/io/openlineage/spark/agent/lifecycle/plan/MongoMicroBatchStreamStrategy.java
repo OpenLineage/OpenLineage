@@ -19,12 +19,12 @@ public class MongoMicroBatchStreamStrategy extends StreamStrategy {
   public MongoMicroBatchStreamStrategy(
       DatasetFactory<OpenLineage.InputDataset> inputDatasetDatasetFactory,
       StreamingDataSourceV2Relation relation) {
-    super(inputDatasetDatasetFactory, relation);
+    super(inputDatasetDatasetFactory, relation.schema(), relation.stream(), Optional.empty());
   }
 
   @Override
-  List<OpenLineage.InputDataset> getInputDatasets() {
-    Optional<Object> readConfig = tryReadField(relation.stream(), "readConfig");
+  public List<OpenLineage.InputDataset> getInputDatasets() {
+    Optional<Object> readConfig = tryReadField(stream, "readConfig");
 
     if (!readConfig.isPresent()) {
       return new ArrayList<>();
@@ -39,7 +39,7 @@ public class MongoMicroBatchStreamStrategy extends StreamStrategy {
               String collectionName = option.get("spark.mongodb.collection");
 
               return datasetFactory.getDataset(
-                  collectionName, connectionURL + "/" + databaseName, relation.schema());
+                  collectionName, connectionURL + "/" + databaseName, schema);
             });
 
     return dataset.map(Arrays::asList).orElseGet(ArrayList::new);
