@@ -230,7 +230,7 @@ class OpenLineageClient:
 
         headers_str = os.environ.get("OPENLINEAGE_HTTP_HEADERS")
         if headers_str is not None:
-            for val in headers_str.split(","):
+            for val in headers_str.split(";"):
                 if "=" in val:
                     key, value = val.split("=")
                     config.headers[key] = value

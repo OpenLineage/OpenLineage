@@ -64,7 +64,7 @@ def test_client_with_http_transport_from_env_emits(mocker: MockerFixture) -> Non
         {
             "OPENLINEAGE_URL": "http://backend:5000",
             "OPENLINEAGE_API_KEY": "API_KEY",
-            "OPENLINEAGE_HTTP_HEADERS": "header1=val1,header2=val2",
+            "OPENLINEAGE_HTTP_HEADERS": "header1=val1;header2=val2",
         },
     )
 
