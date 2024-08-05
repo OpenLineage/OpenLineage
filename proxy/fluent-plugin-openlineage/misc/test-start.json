@@ -1,0 +1,73 @@
+{
+  "eventType": "START",
+  "eventTime": "2019-05-09T19:49:24.201361Z",
+  "run": {
+    "runId": "d46e465b-d358-4d32-83d4-df660ff614dd"
+  },
+  "job": {
+    "namespace": "my-namespace",
+    "name": "my-job"
+  },
+  "inputs": [
+    {
+      "namespace": "my-namespace",
+      "name": "my-input",
+      "facets": {
+        "schema": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
+          "fields": [
+            {
+              "name": "a",
+              "type": "INTEGER"
+            },
+            {
+              "name": "b",
+              "type": "TIMESTAMP"
+            },
+            {
+              "name": "c",
+              "type": "INTEGER"
+            },
+            {
+              "name": "d",
+              "type": "INTEGER"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "my-namespace",
+      "name": "my-output",
+      "facets": {
+        "schema": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
+          "fields": [
+            {
+              "name": "a",
+              "type": "INTEGER"
+            },
+            {
+              "name": "b",
+              "type": "TIMESTAMP"
+            },
+            {
+              "name": "c",
+              "type": "INTEGER"
+            },
+            {
+              "name": "d",
+              "type": "INTEGER"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+  "schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/RunEvent"
+}
