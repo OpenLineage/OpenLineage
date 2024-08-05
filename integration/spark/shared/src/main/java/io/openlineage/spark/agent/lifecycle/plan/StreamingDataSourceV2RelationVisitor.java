@@ -68,7 +68,7 @@ public class StreamingDataSourceV2RelationVisitor
       streamStrategy = new KinesisMicroBatchStreamStrategy(inputDataset(), relation);
     }
     else if (MONGO_MICRO_BATCH_STREAM_CLASS_NAME.equals(streamClassName)) {
-        streamStrategy = new MongoMicroBatchStreamStrategy(inputDataset(), relation);
+      streamStrategy = new MongoMicroBatchStreamStrategy(inputDataset(), relation);
     }
     else {
       log.warn(
