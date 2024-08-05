@@ -88,6 +88,9 @@ class RddExecutionContext implements ExecutionContext {
   public void end(SparkListenerStageCompleted stageCompleted) {}
 
   @Override
+  public void sqlQuery(String query) {}
+
+  @Override
   public void start(SparkListenerApplicationStart applicationStart) {}
 
   @Override

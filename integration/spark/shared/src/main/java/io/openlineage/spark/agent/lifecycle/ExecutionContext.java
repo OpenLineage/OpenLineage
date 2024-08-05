@@ -44,6 +44,8 @@ public interface ExecutionContext {
 
   void end(SparkListenerStageCompleted stageCompleted);
 
+  void sqlQuery(String query);
+
   default Optional<Integer> getActiveJobId() {
     return Optional.empty();
   }

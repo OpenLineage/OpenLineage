@@ -215,6 +215,9 @@ class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   @Override
+  public void sqlQuery(String query) {}
+
+  @Override
   public Optional<Integer> getActiveJobId() {
     return Optional.ofNullable(activeJobId);
   }

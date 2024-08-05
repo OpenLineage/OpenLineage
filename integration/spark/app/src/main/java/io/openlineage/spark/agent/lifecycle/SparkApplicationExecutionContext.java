@@ -131,6 +131,28 @@ class SparkApplicationExecutionContext implements ExecutionContext {
     eventEmitter.emit(event);
   }
 
+  @Override
+  public void sqlQuery(String query) {
+    OpenLineage.RunFacets runFacets =
+        openLineage
+            .newRunFacetsBuilder()
+            .externalQuery(
+                openLineage.newExternalQueryRunFacetBuilder().put("query", query).build())
+            .build();
+
+    OpenLineage.Run run =
+        openLineage.newRunBuilder().facets(runFacets).runId(olContext.getApplicationUuid()).build();
+
+    RunEvent event =
+        openLineage
+            .newRunEventBuilder()
+            .job(getJobBuilder().facets(getJobFacetsBuilder().build()).build())
+            .run(run)
+            .build();
+
+    eventEmitter.emit(event);
+  }
+
   private OpenLineage.ParentRunFacet buildApplicationParentFacet() {
     if (eventEmitter.getParentRunId().isPresent()
         && eventEmitter.getParentJobName().isPresent()
