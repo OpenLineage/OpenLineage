@@ -21,6 +21,9 @@ public class StreamingDataSourceV2RelationVisitor
   private static final String KAFKA_MICRO_BATCH_STREAM_CLASS_NAME =
       "org.apache.spark.sql.kafka010.KafkaMicroBatchStream";
 
+  private static final String KINESIS_MICRO_BATCH_STREAM_CLASS_NAME =
+      "org.apache.spark.sql.connector.kinesis.KinesisV2MicrobatchStream";
+
   public StreamingDataSourceV2RelationVisitor(@NonNull OpenLineageContext context) {
     super(context);
   }
@@ -60,6 +63,8 @@ public class StreamingDataSourceV2RelationVisitor
               relation.schema(),
               relation.stream(),
               ScalaConversionUtils.asJavaOptional(relation.startOffset()));
+    } else if (KINESIS_MICRO_BATCH_STREAM_CLASS_NAME.equals(streamClassName)) {
+      streamStrategy = new KinesisMicroBatchStreamStrategy(inputDataset(), relation);
     } else {
       log.warn(
           "The {} has been selected because no rules have matched for the stream class of {}",

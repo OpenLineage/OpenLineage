@@ -444,6 +444,61 @@ class SparkStreamingTest {
     kafkaContainer.stop();
   }
 
+  @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
+  void readFromCsvFilesInAStreamingMode()
+      throws IOException, TimeoutException, StreamingQueryException {
+    HttpServer server = createHttpServer(handler);
+
+    SparkSession spark =
+        createSparkSession(server.getAddress().getPort(), "testReadFromCsvFilesInAStreamingMode");
+
+    spark.sparkContext().setLogLevel("INFO");
+
+    spark
+        .readStream()
+        .format("csv")
+        .schema("name STRING, date DATE, location STRING")
+        .load("src/test/resources/streaming/csvinput")
+        .writeStream()
+        .format("console")
+        .start()
+        .awaitTermination(Duration.ofSeconds(10).toMillis());
+
+    List<RunEvent> events = handler.events.get("test_read_from_csv_files_in_a_streaming_mode");
+
+    List<RunEvent> csvInputEventsUsingStreaming =
+        events.stream().filter(x -> !x.getInputs().isEmpty()).collect(Collectors.toList());
+
+    assertFalse(csvInputEventsUsingStreaming.isEmpty());
+
+    List<SchemaRecord> expectedSchema =
+        Arrays.asList(
+            new SchemaRecord("name", "string"),
+            new SchemaRecord("date", "date"),
+            new SchemaRecord("location", "string"));
+
+    csvInputEventsUsingStreaming.forEach(
+        event -> {
+          assertEquals(1, event.getInputs().size());
+          assertTrue(
+              event
+                  .getInputs()
+                  .get(0)
+                  .getName()
+                  .endsWith("src/test/resources/streaming/csvinput/csv0.csv"));
+          assertEquals("file", event.getInputs().get(0).getNamespace());
+
+          OpenLineage.SchemaDatasetFacet schema = event.getInputs().get(0).getFacets().getSchema();
+
+          List<SchemaRecord> outputSchemaFields = mapToSchemaRecord(schema);
+
+          assertEquals(expectedSchema, outputSchemaFields);
+        });
+
+    spark.stop();
+  }
+
   private static HttpServer createHttpServer(HttpHandler handler) throws IOException {
     int randomPort = new Random().nextInt(1000) + 10000;
 
