@@ -154,7 +154,8 @@ public class SparkAgentTestExtension
         .config("spark.driver.bindAddress", LOCAL_IP)
         .config("spark.sql.warehouse.dir", warehouseDir)
         .config("spark.openlineage.facets.custom_environment_variables", "[TEST_VAR;]")
-        .config("spark.openlineage.facets.disabled", "[spark_unknown;]")
+        .config("spark.openlineage.facets.spark.logicalPlan.disabled", "false")
+        .config("spark.openlineage.facets.debug.disabled", "false")
         .config("spark.ui.enabled", false)
         .getOrCreate();
   }

@@ -28,6 +28,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -87,6 +88,7 @@ public final class OpenLineageClientUtils {
     if (disableFacets == null) {
       return;
     }
+    log.info("Disabled facets: {}", Arrays.toString(disableFacets));
     SimpleFilterProvider simpleFilterProvider =
         new SimpleFilterProvider()
             .addFilter(

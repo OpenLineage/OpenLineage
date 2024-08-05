@@ -6,13 +6,16 @@
 package io.openlineage.spark.api;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.dataset.DatasetConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -24,11 +27,10 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageConfig> {
+  public static List<String> DISABLED_BY_DEFAULT =
+      ImmutableList.of("spark_unknown", "spark.logicalPlan", "debug");
 
   public static final String DEFAULT_NAMESPACE = "default";
-  public static final String[] DEFAULT_DISABLED_FACETS =
-      new String[] {"spark_unknown", "spark.logicalPlan"};
-  public static final String DEFAULT_DEBUG_FACET = "disabled";
 
   @Setter @NonNull private String namespace;
   @Setter @Getter private String parentJobName;
@@ -46,7 +48,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       String parentJobNamespace,
       String parentRunId,
       String overriddenAppName,
-      String debugFacet,
       String testExtensionProvider,
       JobNameConfig jobName,
       JobConfig job,
@@ -61,7 +62,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.parentJobNamespace = parentJobNamespace;
     this.parentRunId = parentRunId;
     this.overriddenAppName = overriddenAppName;
-    this.debugFacet = debugFacet;
     this.testExtensionProvider = testExtensionProvider;
     this.jobName = jobName;
     this.job = job;
@@ -72,9 +72,18 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     if (facetsConfig == null) {
       facetsConfig = new FacetsConfig();
     }
-    if (facetsConfig.getDisabledFacets() == null) {
-      facetsConfig.setDisabledFacets(DEFAULT_DISABLED_FACETS);
+    if (facetsConfig.getDeprecatedDisabledFacets() == null) {
+      facetsConfig.setDeprecatedDisabledFacets(new String[] {});
     }
+    if (facetsConfig.getDisabledFacets() == null) {
+      facetsConfig.setDisabledFacets(new HashMap<>());
+    } else {
+      Map<String, Boolean> DISABLED_BY_DEFAULT_MAP =
+          DISABLED_BY_DEFAULT.stream().collect(Collectors.toMap(facet -> facet, facet -> true));
+      facetsConfig.setDisabledFacets(
+          mergePropertyWith(DISABLED_BY_DEFAULT_MAP, facetsConfig.getDisabledFacets()));
+    }
+
     return facetsConfig;
   }
 
@@ -90,13 +99,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       namespace = DEFAULT_NAMESPACE;
     }
     return namespace;
-  }
-
-  public String getDebugFacet() {
-    if (debugFacet == null) {
-      debugFacet = DEFAULT_DEBUG_FACET;
-    }
-    return debugFacet;
   }
 
   @Getter
@@ -127,7 +129,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(parentJobNamespace, other.parentJobNamespace),
         mergePropertyWith(parentRunId, other.parentRunId),
         mergePropertyWith(overriddenAppName, other.overriddenAppName),
-        mergeWithDefaultValue(debugFacet, other.debugFacet, DEFAULT_DEBUG_FACET),
         mergePropertyWith(testExtensionProvider, other.testExtensionProvider),
         mergePropertyWith(jobName, other.jobName),
         mergePropertyWith(job, other.job),

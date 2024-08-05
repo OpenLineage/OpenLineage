@@ -363,8 +363,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         MicrometerProvider.addMeterRegistryFromConfig(openLineageConfig.getMetricsConfig());
     String disabledFacets;
     if (openLineageConfig.getFacetsConfig() != null
-        && openLineageConfig.getFacetsConfig().getDisabledFacets() != null) {
-      disabledFacets = String.join(";", openLineageConfig.getFacetsConfig().getDisabledFacets());
+        && openLineageConfig.getFacetsConfig().getDeprecatedDisabledFacets() != null) {
+      disabledFacets =
+          String.join(";", openLineageConfig.getFacetsConfig().getDeprecatedDisabledFacets());
     } else {
       disabledFacets = "";
     }

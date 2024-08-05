@@ -92,7 +92,6 @@ class SparkDeltaIntegrationTest {
             .config(
                 "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/delta-namespace")
-            .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
             .config(
                 "spark.openlineage.facets.custom_environment_variables",
                 "[" + getAvailableEnvVariable() + ";]")

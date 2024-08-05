@@ -111,8 +111,6 @@ class GoogleCloudIntegrationTest {
             .config(
                 "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/lineage")
-            .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
-            .config("spark.openlineage.debugFacet", "disabled")
             .config("spark.openlineage.namespace", NAMESPACE)
             .config("parentProject", PROJECT_ID)
             .config("credentialsFile", CREDENTIALS_FILE)

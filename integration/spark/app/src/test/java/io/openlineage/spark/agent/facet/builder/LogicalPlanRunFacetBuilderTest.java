@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.facet.builder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.collect.ImmutableMap;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunFacet;
@@ -82,7 +83,9 @@ class LogicalPlanRunFacetBuilderTest {
   void testIsDefined() {
     SparkOpenLineageConfig openLineageConfig = new SparkOpenLineageConfig();
     openLineageConfig.setFacetsConfig(new FacetsConfig());
-    openLineageConfig.getFacetsConfig().setDisabledFacets(new String[] {});
+    openLineageConfig
+        .getFacetsConfig()
+        .setDisabledFacets(ImmutableMap.of("spark.logicalPlan", false));
     LogicalPlanRunFacetBuilder builder =
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()
@@ -108,7 +111,7 @@ class LogicalPlanRunFacetBuilderTest {
   @Test
   void testIsDefinedWhenFacetDisabled() {
     SparkOpenLineageConfig config = new SparkOpenLineageConfig();
-    config.getFacetsConfig().setDisabledFacets(new String[] {"spark.logicalPlan"});
+    config.getFacetsConfig().setDisabledFacets(ImmutableMap.of("spark.logicalPlan", true));
     LogicalPlanRunFacetBuilder builder =
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()
@@ -124,8 +127,6 @@ class LogicalPlanRunFacetBuilderTest {
                 new SparkListenerJobStart(
                     1, 1L, ScalaConversionUtils.asScalaSeqEmpty(), new Properties())))
         .isFalse();
-
-    sparkContext.conf().remove("spark.openlineage.facets.disabled");
   }
 
   @Test
