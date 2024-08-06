@@ -87,6 +87,8 @@ class HttpConfig(Config):
     session: Session | None = attr.ib(default=None)
     # not set by TransportFactory
     adapter: HTTPAdapter | None = attr.ib(default=None)
+    # extra http headers to use
+    headers: dict[str, str] = attr.ib(default={})
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> HttpConfig:
@@ -150,6 +152,8 @@ class HttpTransport(Transport):
             self.session.headers["Content-Type"] = "application/json"
             auth_headers = self._auth_headers(config.auth)
             self.session.headers.update(auth_headers)
+            if len(config.headers) > 0:
+                self.session.headers.update(config.headers)
         self.timeout = config.timeout
         self.verify = config.verify
         self.compression = config.compression
@@ -179,6 +183,7 @@ class HttpTransport(Transport):
         else:
             headers["Content-Type"] = "application/json"
             headers.update(self._auth_headers(self.config.auth))
+            headers.update(self.config.headers)
             with Session() as session:
                 resp = session.post(
                     url=urljoin(self.url, self.endpoint),

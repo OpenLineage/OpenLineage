@@ -6,7 +6,8 @@
   *Spark integration is always compiled with Java 17, while tests are running on both Java 8 and Java 17 according to the configuration.*
 * **Spark: Support preview release of Spark 4.0 .** [`#2854`](https://github.com/OpenLineage/OpenLineage/pull/2854) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Include Spark 4.0 preview release in the integration tests.*
-
+* **Python client**: support custom http headers for http transport [`#2910`](https://github.com/OpenLineage/OpenLineage/pull/2910) [@kr-igor](https://github.com/kr-igor)
+`OPENLINEAGE_HTTP_HEADERS` environment variable can be used to set custom headers.
 
 ### Fixed
 * **Spark: fix issue with kafka source when saving with for each batch method** [`#2868`](https://github.com/OpenLineage/OpenLineage/pull/2868) [@imbruced](https://github.com/Imbruced)    
