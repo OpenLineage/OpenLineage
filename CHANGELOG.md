@@ -6,7 +6,8 @@
   *Spark integration is always compiled with Java 17, while tests are running on both Java 8 and Java 17 according to the configuration.*
 * **Spark: Support preview release of Spark 4.0 .** [`#2854`](https://github.com/OpenLineage/OpenLineage/pull/2854) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Include Spark 4.0 preview release in the integration tests.*
-
+* **Spark: add handling for `Window`** [`#2901`](https://github.com/OpenLineage/OpenLineage/pull/2901) [@tnazarew](https://github.com/tnazarew)  
+  *Adds handling for `Window`-type nodes of a logical plan.*
 
 ### Fixed
 * **Spark: fix issue with kafka source when saving with for each batch method** [`#2868`](https://github.com/OpenLineage/OpenLineage/pull/2868) [@imbruced](https://github.com/Imbruced)    
