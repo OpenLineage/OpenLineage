@@ -91,11 +91,11 @@ OpenLineage
 			  Producer: 
 				  Producer root doc URL: https://…
 				  Produced facets:
-					  { facets: [ {“URI}”, “{URI}”, … ]}
+					  { produced_facets: [ {“URI}”, “{URI}”, … ]}
 			  Consumer: 
 				  Consumer root doc URL: https://…
 				  Consumed facets:
-					  { facets: [ “{URI}”, “{URI}”, … ]}
+					  { consumed_facets: [ “{URI}”, “{URI}”, … ]}
 		  /facets/       <- where custom facet schemas are stored
       /facets/examples/{FacetName}/{number}.json       <- where facet examples are stored
 ```
@@ -127,7 +127,7 @@ core/
 		producer: {
 			root_doc_URL: "https://openlineage.io/spec/facets/",
 			sample_URL: "https://github.com/OpenLineage/OpenLineage/tree/main/spec/tests/",
-			facets: [
+			produced_facets: [
 				"ColumnLineageDatasetFacet.json": {
 					"owner": "core"
 				},
@@ -145,7 +145,7 @@ egeria/
 		producer: {    
 			root_doc_URL: … ,
 			sample_URL: … , 
-			facets: [
+			produced_facets: [
 				"ColumnLineageDatasetFacet.json": {
 					"owner": "core"
 				},
@@ -156,7 +156,7 @@ egeria/
 		},
 		consumer: {
 			root_doc_URL: …
-			facets: [ 
+			consumed_facets: [ 
 				"NewCustomFacet.json": {
 					"owner": "egeria"
 				}

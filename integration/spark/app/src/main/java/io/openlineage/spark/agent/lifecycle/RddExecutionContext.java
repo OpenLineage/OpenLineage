@@ -14,8 +14,8 @@ import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.ErrorFacet;
-import io.openlineage.spark.agent.facets.builder.GCPJobFacetBuilder;
-import io.openlineage.spark.agent.facets.builder.GCPRunFacetBuilder;
+import io.openlineage.spark.agent.facets.builder.GcpJobFacetBuilder;
+import io.openlineage.spark.agent.facets.builder.GcpRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkJobDetailsFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilderDelegate;
 import io.openlineage.spark.agent.facets.builder.SparkPropertyFacetBuilder;
@@ -280,7 +280,7 @@ class RddExecutionContext implements ExecutionContext {
 
     addProcessingEventFacet(runFacetsBuilder);
     addSparkPropertyFacet(runFacetsBuilder, event);
-    addGCPRunFacet(runFacetsBuilder, event);
+    addGcpRunFacet(runFacetsBuilder, event);
     addSparkJobDetailsFacet(runFacetsBuilder, event);
 
     return runFacetsBuilder.build();
@@ -299,11 +299,11 @@ class RddExecutionContext implements ExecutionContext {
     b0.put("spark_properties", new SparkPropertyFacetBuilder().buildFacet(event));
   }
 
-  private void addGCPRunFacet(OpenLineage.RunFacetsBuilder b0, SparkListenerEvent event) {
+  private void addGcpRunFacet(OpenLineage.RunFacetsBuilder b0, SparkListenerEvent event) {
     if (!GCPUtils.isDataprocRuntime()) return;
     sparkContextOption.ifPresent(
         context -> {
-          GCPRunFacetBuilder b1 = new GCPRunFacetBuilder(context);
+          GcpRunFacetBuilder b1 = new GcpRunFacetBuilder(context);
           b1.accept(event, b0::put);
         });
   }
@@ -321,15 +321,15 @@ class RddExecutionContext implements ExecutionContext {
 
   protected OpenLineage.JobFacets buildJobFacets(SparkListenerEvent sparkListenerEvent) {
     OpenLineage.JobFacetsBuilder jobFacetsBuilder = openLineage.newJobFacetsBuilder();
-    addGCPJobFacets(jobFacetsBuilder, sparkListenerEvent);
+    addGcpJobFacets(jobFacetsBuilder, sparkListenerEvent);
     return jobFacetsBuilder.build();
   }
 
-  private void addGCPJobFacets(OpenLineage.JobFacetsBuilder b0, SparkListenerEvent event) {
+  private void addGcpJobFacets(OpenLineage.JobFacetsBuilder b0, SparkListenerEvent event) {
     if (!GCPUtils.isDataprocRuntime()) return;
     sparkContextOption.ifPresent(
         context -> {
-          GCPJobFacetBuilder b1 = new GCPJobFacetBuilder(context);
+          GcpJobFacetBuilder b1 = new GcpJobFacetBuilder(context);
           b1.accept(event, b0::put);
         });
   }

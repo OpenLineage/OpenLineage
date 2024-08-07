@@ -13,23 +13,17 @@ import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class GCPCommonJobFacet implements OpenLineage.JobFacet {
+public class GcpDataprocRunFacet implements OpenLineage.RunFacet {
 
   private final URI _producer;
   private final URI _schemaURL;
-  private final Boolean _deleted;
   @JsonAnySetter private final Map<String, Object> additionalProperties;
 
-  public GCPCommonJobFacet(Map<String, Object> properties) {
-    this(properties, null);
-  }
-
-  public GCPCommonJobFacet(Map<String, Object> properties, Boolean _deleted) {
+  public GcpDataprocRunFacet(Map<String, Object> properties) {
     this._producer = Versions.OPEN_LINEAGE_PRODUCER_URI;
     this._schemaURL =
         URI.create(
-            "https://openlineage.io/spec/facets/1-0-0/GcpCommonJobFacet.json#/$defs/GcpCommonJobFacet");
-    this._deleted = _deleted;
+            "https://openlineage.io/spec/facets/1-0-0/GcpDataprocRunFacet.json#/$defs/GcpDataprocRunFacet");
     this.additionalProperties = new LinkedHashMap<>(properties);
   }
 
@@ -41,11 +35,6 @@ public class GCPCommonJobFacet implements OpenLineage.JobFacet {
   @Override
   public URI get_schemaURL() {
     return this._schemaURL;
-  }
-
-  @Override
-  public Boolean get_deleted() {
-    return this._deleted;
   }
 
   @JsonAnyGetter
