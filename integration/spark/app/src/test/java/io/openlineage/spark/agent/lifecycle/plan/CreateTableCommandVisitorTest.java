@@ -15,6 +15,7 @@ import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.lifecycle.CatalogTableTestUtils;
 import java.net.URI;
 import java.util.List;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
@@ -38,6 +39,7 @@ class CreateTableCommandVisitorTest {
   public void setup() {
     SparkContext sparkContext = mock(SparkContext.class);
     when(sparkContext.getConf()).thenReturn(new SparkConf());
+    when(sparkContext.hadoopConfiguration()).thenReturn(new Configuration());
     when(session.sparkContext()).thenReturn(sparkContext);
     command = new CreateTableCommand(CatalogTableTestUtils.getCatalogTable(table), true);
     visitor = new CreateTableCommandVisitor(SparkAgentTestExtension.newContext(session));
