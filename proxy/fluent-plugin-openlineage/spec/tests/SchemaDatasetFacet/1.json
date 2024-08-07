@@ -1,0 +1,92 @@
+{
+  "schema": {
+    "fields": [
+      {
+        "name": "user_id",
+        "type": "int64"
+      },
+      {
+        "name": "counterparty_id",
+        "type": "int64"
+      },
+      {
+        "name": "currency",
+        "type": "object"
+      },
+      {
+        "name": "amount",
+        "type": "int64"
+      },
+      {
+        "name": "phones",
+        "type": "array",
+        "description": "List of phone numbers",
+        "fields": [
+          {
+            "name": "_element",
+            "type": "string",
+            "description": "Phone number"
+          }
+        ]
+      },
+      {
+        "name": "addresses",
+        "type": "struct",
+        "description": "Has customer completed activation process",
+        "fields": [
+          {
+            "name": "type",
+            "type": "string",
+            "description": "Address type, g.e. home, work, etc."
+          },
+          {
+            "name": "country",
+            "type": "string",
+            "description": "Country name"
+          },
+          {
+            "name": "zip",
+            "type": "string",
+            "description": "Zip code"
+          },
+          {
+            "name": "state",
+            "type": "string",
+            "description": "State name"
+          },
+          {
+            "name": "street",
+            "type": "string",
+            "description": "Street name"
+          }
+        ]
+      },
+      {
+        "name": "custom_properties",
+        "type": "map",
+        "fields": [
+          {
+            "name": "key",
+            "type": "string"
+          },
+          {
+            "name": "value",
+            "type": "union",
+            "fields": [
+              {
+                "name": "_0",
+                "type": "string"
+              },
+              {
+                "name": "_1",
+                "type": "int64"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/SchemaDatasetFacet.json"
+  }
+}
