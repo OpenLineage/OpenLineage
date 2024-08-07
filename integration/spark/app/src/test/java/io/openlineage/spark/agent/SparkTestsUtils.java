@@ -70,7 +70,7 @@ public class SparkTestsUtils {
         .config("spark.openlineage.facets.disabled", "[spark_unknown;]")
         .config("spark.openlineage.dataset.namespaceResolvers.prod-cluster.type", "hostList")
         .config("spark.openlineage.dataset.namespaceResolvers.prod-cluster.hosts", "[localhost]")
-        .withExtensions(new Spark3SQLExtensionsFactoryProvider())
+        .config("spark.sql.extensions", Spark3SQLExtensionsFactoryProvider.class.getCanonicalName())
         .getOrCreate();
   }
 
@@ -92,8 +92,11 @@ public class SparkTestsUtils {
             .config(
                 "spark.sql.catalog.spark_catalog",
                 "org.apache.spark.sql.delta.catalog.DeltaCatalog")
-            .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-            .withExtensions(new Spark3SQLExtensionsFactoryProvider())
+            .config(
+                "spark.sql.extensions",
+                String.format(
+                    "io.delta.sql.DeltaSparkSessionExtension,%s",
+                    Spark3SQLExtensionsFactoryProvider.class.getCanonicalName()))
             .getOrCreate();
 
     return spark;
@@ -117,7 +120,9 @@ public class SparkTestsUtils {
         .config("spark.sql.catalog.spark_catalog.warehouse", "/tmp/iceberg")
         .config(
             "spark.sql.extensions",
-            "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
+            String.format(
+                "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions,%s",
+                Spark3SQLExtensionsFactoryProvider.class.getCanonicalName()))
         .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
         .withExtensions(new Spark3SQLExtensionsFactoryProvider())
         .getOrCreate();

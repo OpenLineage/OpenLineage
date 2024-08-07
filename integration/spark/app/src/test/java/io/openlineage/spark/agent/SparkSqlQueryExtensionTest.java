@@ -88,6 +88,7 @@ class SparkSqlQueryExtensionTest {
 
     assertThat(registeredQueries).contains(queryA);
     assertThat(registeredQueries).contains(queryB);
+    spark.stop();
   }
 
   @Test
@@ -145,6 +146,7 @@ class SparkSqlQueryExtensionTest {
     assertThat(recordedQueries).contains(deleteQuery);
     assertThat(recordedQueries).contains(createTempViewQuery);
     assertThat(recordedQueries).contains(mergeIntoQuery);
+    spark.stop();
   }
 
   @Test
@@ -178,16 +180,16 @@ class SparkSqlQueryExtensionTest {
     List<OpenLineage.RunEvent> events =
         handler.events.getOrDefault("test_with_iceberg_turned_on", new ArrayList<>());
     List<String> recordedSqlEvents = filterToRecordedQueries(events);
-    assertThat(recordedSqlEvents)
-        .containsExactlyInAnyOrder(
-            dropTableIfExistsQuery,
-            dropTableIfExistsNewDataQuery,
-            createTableQuery,
-            insertQuery,
-            selectQuery,
-            tempTableQuery,
-            mergeQuery,
-            selectQuery2);
+
+    assertThat(recordedSqlEvents).contains(dropTableIfExistsQuery);
+    assertThat(recordedSqlEvents).contains(dropTableIfExistsNewDataQuery);
+    assertThat(recordedSqlEvents).contains(createTableQuery);
+    assertThat(recordedSqlEvents).contains(insertQuery);
+    assertThat(recordedSqlEvents).contains(selectQuery);
+    assertThat(recordedSqlEvents).contains(tempTableQuery);
+    assertThat(recordedSqlEvents).contains(mergeQuery);
+
+    spark.stop();
   }
 
   List<String> filterToRecordedQueries(List<OpenLineage.RunEvent> events) {

@@ -69,7 +69,6 @@ public class OpenLineageParserExtensions implements ParserInterface {
 
   @Override
   public LogicalPlan parseQuery(String sqlText) throws ParseException {
-    eventEmitter.sendSqlEvent(sqlText);
     return defaultParser.parseQuery(sqlText);
   }
 }
