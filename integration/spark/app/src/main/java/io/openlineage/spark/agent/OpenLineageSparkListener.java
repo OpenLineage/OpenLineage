@@ -392,4 +392,27 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     String isDisabled = Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED");
     return Boolean.parseBoolean(isDisabled);
   }
+
+  public static void sendSqlEvent(String sqlQuery) {
+    circuitBreaker.run(
+        () -> {
+          Integer attempts = 0;
+          while (attempts < 3) {
+            try {
+              ExecutionContext context = getSparkApplicationExecutionContext();
+              context.sqlQuery(sqlQuery);
+              break;
+            } catch (Exception e) {
+              log.error("Failed to send SQL event, retrying", e);
+              Thread.sleep(getWaitTimeExp(attempts++));
+            }
+          }
+
+          return null;
+        });
+  }
+
+  private static long getWaitTimeExp(int attempts) {
+    return (long) (Math.pow(2, attempts) * 1000);
+  }
 }
