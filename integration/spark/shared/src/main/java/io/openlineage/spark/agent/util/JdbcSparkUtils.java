@@ -39,6 +39,18 @@ public class JdbcSparkUtils {
     String jdbcUrl = relation.jdbcOptions().url();
     Properties jdbcProperties = relation.jdbcOptions().asConnectionProperties();
 
+    if (meta.columnLineage().isEmpty() && meta.inTables().size() > 1) {
+      return meta.inTables().stream()
+          .map(
+              dbtm -> {
+                DatasetIdentifier di =
+                    JdbcDatasetUtils.getDatasetIdentifier(
+                        jdbcUrl, dbtm.qualifiedName(), jdbcProperties);
+                return datasetFactory.getDataset(di.getName(), di.getNamespace(), new StructType());
+              })
+          .collect(Collectors.toList());
+    }
+
     if (meta.columnLineage().isEmpty()) {
       DatasetIdentifier di =
           JdbcDatasetUtils.getDatasetIdentifier(
@@ -46,6 +58,7 @@ public class JdbcSparkUtils {
       return Collections.singletonList(
           datasetFactory.getDataset(di.getName(), di.getNamespace(), schema));
     }
+
     return meta.inTables().stream()
         .map(
             dbtm -> {
