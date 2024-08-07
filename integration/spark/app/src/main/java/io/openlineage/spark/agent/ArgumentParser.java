@@ -131,7 +131,7 @@ public class ArgumentParser {
                 Stream.of(s.split(disabledFacetsSeparator))
                     .filter(StringUtils::isNotBlank)
                     .toArray(String[]::new))
-        .ifPresent(a -> config.getFacetsConfig().setDisabledFacets(a));
+        .ifPresent(a -> config.getFacetsConfig().setDeprecatedDisabledFacets(a));
   }
 
   /**

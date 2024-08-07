@@ -45,7 +45,7 @@ public final class Clients {
     OpenLineageClient.Builder builder = OpenLineageClient.builder();
 
     if (openLineageConfig.getFacetsConfig() != null) {
-      builder.disableFacets(openLineageConfig.getFacetsConfig().getDisabledFacets());
+      builder.disableFacets(openLineageConfig.getFacetsConfig().getEffectiveDisabledFacets());
     }
 
     Optional.ofNullable(openLineageConfig.getCircuitBreaker())

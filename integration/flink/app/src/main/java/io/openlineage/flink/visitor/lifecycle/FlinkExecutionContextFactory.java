@@ -71,8 +71,8 @@ public class FlinkExecutionContextFactory {
     MeterRegistry meterRegistry =
         MicrometerProvider.addMeterRegistryFromConfig(config.getMetricsConfig());
     String disabledFacets;
-    if (config.getFacetsConfig() != null && config.getFacetsConfig().getDisabledFacets() != null) {
-      disabledFacets = String.join(";", config.getFacetsConfig().getDisabledFacets());
+    if (config.getFacetsConfig() != null) {
+      disabledFacets = String.join(";", config.getFacetsConfig().getEffectiveDisabledFacets());
     } else {
       disabledFacets = "";
     }

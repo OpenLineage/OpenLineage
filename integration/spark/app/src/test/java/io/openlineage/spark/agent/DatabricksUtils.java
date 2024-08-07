@@ -174,7 +174,7 @@ public class DatabricksUtils {
   @SneakyThrows
   private static String createCluster(WorkspaceClient workspace) {
     HashMap<String, String> sparkConf = new HashMap<String, String>();
-    sparkConf.put("spark.openlineage.debugFacet", "enabled");
+    sparkConf.put("spark.openlineage.facets.debug.disabled", "false");
     sparkConf.put("spark.openlineage.transport.type", "file");
     sparkConf.put("spark.openlineage.transport.location", "/tmp/events.log");
     sparkConf.put("spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener");

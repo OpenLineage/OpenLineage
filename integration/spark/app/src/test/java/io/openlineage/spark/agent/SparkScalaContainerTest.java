@@ -168,7 +168,9 @@ class SparkScalaContainerTest {
     addSparkConfig(
         sparkSubmitCommand, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
     addSparkConfig(sparkSubmitCommand, "spark.jars.ivy=/tmp/.ivy2/");
-    addSparkConfig(sparkSubmitCommand, "spark.openlineage.facets.disabled=");
+    addSparkConfig(sparkSubmitCommand, "spark.openlineage.facets.spark.logicalPlan.disabled=false");
+    addSparkConfig(sparkSubmitCommand, "spark.openlineage.facets.spark_unknown.disabled=false");
+    addSparkConfig(sparkSubmitCommand, "spark.openlineage.facets.debug.disabled=false");
     addSparkConfig(sparkSubmitCommand, "spark.ui.enabled=false");
     // Last, but not least, we add the path to the JAR
     sparkSubmitCommand.add(CONTAINER_FIXTURES_JAR_PATH.toString());
@@ -276,8 +278,7 @@ class SparkScalaContainerTest {
     addSparkConfig(command, "spark.extraListeners=" + OpenLineageSparkListener.class.getName());
     addSparkConfig(command, "spark.jars.ivy=/tmp/.ivy2/");
     addSparkConfig(command, "spark.openlineage.debugFacet=enabled");
-    addSparkConfig(
-        command, "spark.openlineage.facets.disabled=[schema;spark_unknown;spark.logicalPlan]");
+    addSparkConfig(command, "spark.openlineage.facets.schema.disabled=true");
     addSparkConfig(command, "spark.openlineage.transport.type=file");
     addSparkConfig(command, "spark.openlineage.transport.location=/tmp/events.log");
     addSparkConfig(command, "spark.sql.shuffle.partitions=1");
@@ -420,8 +421,8 @@ class SparkScalaContainerTest {
     addSparkConfig(command, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
     addSparkConfig(command, "spark.extraListeners=" + OpenLineageSparkListener.class.getName());
     addSparkConfig(command, "spark.jars.ivy=/tmp/.ivy2/");
-    addSparkConfig(command, "spark.openlineage.debugFacet=enabled");
-    addSparkConfig(command, "spark.openlineage.facets.disabled=[spark_unknown]");
+    addSparkConfig(command, "spark.openlineage.facets.debug.disabled=false");
+    addSparkConfig(command, "spark.openlineage.facets.spark.logicalPlan.disabled=false");
     addSparkConfig(command, "spark.openlineage.transport.type=file");
     addSparkConfig(command, "spark.openlineage.transport.location=/tmp/events.log");
     addSparkConfig(command, "spark.sql.shuffle.partitions=1");

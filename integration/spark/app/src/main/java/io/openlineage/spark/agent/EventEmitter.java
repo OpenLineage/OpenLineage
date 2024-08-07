@@ -46,11 +46,10 @@ public class EventEmitter {
                     Arrays.asList(config.getFacetsConfig().getCustomEnvironmentVariables()))
                 : Optional.empty()
             : Optional.empty();
-    String[] disabledFacets = config.getFacetsConfig().getDisabledFacets();
     this.client =
         OpenLineageClient.builder()
             .transport(new TransportFactory(config.getTransportConfig()).build())
-            .disableFacets(disabledFacets)
+            .disableFacets(config.getFacetsConfig().getEffectiveDisabledFacets())
             .build();
     this.applicationJobName = applicationJobName;
     this.applicationRunId = UUIDUtils.generateNewUUID();

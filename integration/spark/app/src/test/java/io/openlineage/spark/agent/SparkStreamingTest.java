@@ -582,7 +582,7 @@ class SparkStreamingTest {
         .config("spark.ui.enabled", false)
         .config("spark.openlineage.transport.type", "http")
         .config("spark.openlineage.transport.url", "http://localhost:" + httpServerPort)
-        .config("spark.openlineage.facets.disabled", "[spark_unknown;]")
+        .config("spark.openlineage.facets.spark_unknown.disabled", "true")
         .config("spark.openlineage.dataset.namespaceResolvers.prod-cluster.type", "hostList")
         .config("spark.openlineage.dataset.namespaceResolvers.prod-cluster.hosts", "[localhost]")
         .getOrCreate();

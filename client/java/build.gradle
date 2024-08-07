@@ -49,6 +49,7 @@ ext {
     mockitoVersion = '5.2.0'
     micrometerVersion = '1.13.0'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
+    guavaVersion = '33.2.1-jre'
 }
 
 configurations {
@@ -84,6 +85,7 @@ dependencies {
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
     testImplementation "io.micrometer:micrometer-registry-statsd:${micrometerVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    testImplementation "com.google.guava:guava:${guavaVersion}"
 }
 
 configurations {
