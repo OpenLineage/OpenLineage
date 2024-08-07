@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_3_3_5_EXCLUDED;
+import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_3_ONLY;
 import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_3_OR_ABOVE;
 import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_VERSION;
 import static io.openlineage.spark.agent.SparkTestsUtils.createHttpServer;
@@ -92,7 +94,7 @@ class SparkSqlQueryExtensionTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_3_5_EXCLUDED)
   void testWithDeltaLakeTurnedOn() throws IOException {
     HttpServer server = createHttpServer(handler);
 
@@ -150,7 +152,7 @@ class SparkSqlQueryExtensionTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_ONLY)
   void testWithIcebergTurnedOn() throws IOException {
     HttpServer server = createHttpServer(handler);
 

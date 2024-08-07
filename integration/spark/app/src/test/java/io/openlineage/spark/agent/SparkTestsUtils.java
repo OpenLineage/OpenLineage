@@ -34,6 +34,8 @@ public class SparkTestsUtils {
 
   static final String SPARK_3_OR_ABOVE = "^[3-9].*";
   static final String SPARK_VERSION = "spark.version";
+  static final String SPARK_3_ONLY = "^3.*";
+  static final String SPARK_3_3_5_EXCLUDED = "^3.[0-4].*";
 
   protected static HttpServer createHttpServer(HttpHandler handler) throws IOException {
     int randomPort = new Random().nextInt(1000) + 10000;

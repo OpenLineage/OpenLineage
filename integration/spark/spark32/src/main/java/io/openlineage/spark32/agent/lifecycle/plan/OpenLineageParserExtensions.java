@@ -54,7 +54,7 @@ public class OpenLineageParserExtensions implements ParserInterface {
 
   @Override
   public Seq<String> parseMultipartIdentifier(String sqlText) throws ParseException {
-    return (Seq<String>) defaultParser.parseMultipartIdentifier(sqlText);
+    return defaultParser.parseMultipartIdentifier(sqlText).toList().toSeq();
   }
 
   @Override
