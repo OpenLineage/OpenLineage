@@ -5,10 +5,11 @@
 
 package io.openlineage.spark.agent;
 
-import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_3_3_AND_ABOVE;
-import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_VERSION;
-import static io.openlineage.spark.agent.SparkTestsUtils.createHttpServer;
-import static io.openlineage.spark.agent.SparkTestsUtils.createSparkSession;
+import static io.openlineage.spark.agent.SparkTestUtils.OpenLineageEndpointHandler;
+import static io.openlineage.spark.agent.SparkTestUtils.SPARK_3_3_AND_ABOVE;
+import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
+import static io.openlineage.spark.agent.SparkTestUtils.createHttpServer;
+import static io.openlineage.spark.agent.SparkTestUtils.createSparkSession;
 import static org.apache.spark.sql.functions.expr;
 import static org.apache.spark.sql.types.DataTypes.StringType;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,8 +39,7 @@ class SparkSqlQueryRecordingTest {
 
   private final String DeltaLakeLocation = "/tmp/delta-table/";
 
-  private static final SparkTestsUtils.OpenLineageEndpointHandler handler =
-      new SparkTestsUtils.OpenLineageEndpointHandler();
+  private static final OpenLineageEndpointHandler handler = new OpenLineageEndpointHandler();
 
   @AfterEach
   void tearDown() throws IOException {

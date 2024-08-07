@@ -40,11 +40,20 @@ public class JdbcSparkUtils {
     Properties jdbcProperties = relation.jdbcOptions().asConnectionProperties();
 
     if (meta.columnLineage().isEmpty()) {
-      DatasetIdentifier di =
-          JdbcDatasetUtils.getDatasetIdentifier(
-              jdbcUrl, meta.inTables().get(0).qualifiedName(), jdbcProperties);
-      return Collections.singletonList(
-          datasetFactory.getDataset(di.getName(), di.getNamespace(), schema));
+      int numberOfTables = meta.inTables().size();
+
+      return meta.inTables().stream()
+          .map(
+              dbtm -> {
+                DatasetIdentifier di =
+                    JdbcDatasetUtils.getDatasetIdentifier(
+                        jdbcUrl, dbtm.qualifiedName(), jdbcProperties);
+                return datasetFactory.getDataset(
+                    di.getName(),
+                    di.getNamespace(),
+                    numberOfTables == 1 ? schema : new StructType());
+              })
+          .collect(Collectors.toList());
     }
     return meta.inTables().stream()
         .map(
