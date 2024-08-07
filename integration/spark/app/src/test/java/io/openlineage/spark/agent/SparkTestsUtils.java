@@ -10,7 +10,7 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientUtils;
-import io.openlineage.spark.agent.lifecycle.Spark3SQLExtensionsFactoryProvider;
+import io.openlineage.spark.agent.lifecycle.OpenLineageSparkSQLExtensions;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -70,7 +70,7 @@ public class SparkTestsUtils {
         .config("spark.openlineage.facets.disabled", "[spark_unknown;]")
         .config("spark.openlineage.dataset.namespaceResolvers.prod-cluster.type", "hostList")
         .config("spark.openlineage.dataset.namespaceResolvers.prod-cluster.hosts", "[localhost]")
-        .config("spark.sql.extensions", Spark3SQLExtensionsFactoryProvider.class.getCanonicalName())
+        .config("spark.sql.extensions", OpenLineageSparkSQLExtensions.class.getCanonicalName())
         .getOrCreate();
   }
 
@@ -96,7 +96,7 @@ public class SparkTestsUtils {
                 "spark.sql.extensions",
                 String.format(
                     "io.delta.sql.DeltaSparkSessionExtension,%s",
-                    Spark3SQLExtensionsFactoryProvider.class.getCanonicalName()))
+                    OpenLineageSparkSQLExtensions.class.getCanonicalName()))
             .getOrCreate();
 
     return spark;
@@ -122,9 +122,9 @@ public class SparkTestsUtils {
             "spark.sql.extensions",
             String.format(
                 "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions,%s",
-                Spark3SQLExtensionsFactoryProvider.class.getCanonicalName()))
+                OpenLineageSparkSQLExtensions.class.getCanonicalName()))
         .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
-        .withExtensions(new Spark3SQLExtensionsFactoryProvider())
+        .withExtensions(new OpenLineageSparkSQLExtensions())
         .getOrCreate();
   }
 

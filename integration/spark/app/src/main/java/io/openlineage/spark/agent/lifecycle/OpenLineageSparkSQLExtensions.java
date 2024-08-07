@@ -10,8 +10,7 @@ import org.apache.spark.sql.SparkSessionExtensions;
 import scala.Function1;
 import scala.runtime.BoxedUnit;
 
-public class Spark3SQLExtensionsFactoryProvider
-    implements Function1<SparkSessionExtensions, BoxedUnit> {
+public class OpenLineageSparkSQLExtensions implements Function1<SparkSessionExtensions, BoxedUnit> {
 
   static String SPARK_2_PARSER_PROVIDER =
       "io.openlineage.spark2.agent.lifecycle.plan.OpenLineageParserExtensionsProvider";
