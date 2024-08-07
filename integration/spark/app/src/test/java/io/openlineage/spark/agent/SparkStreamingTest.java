@@ -5,13 +5,22 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_3_OR_ABOVE;
+import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_VERSION;
+import static org.apache.spark.sql.functions.col;
+import static org.apache.spark.sql.functions.expr;
+import static org.apache.spark.sql.functions.from_json;
+import static org.apache.spark.sql.functions.from_unixtime;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
-import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_3_OR_ABOVE;
-import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_VERSION;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
@@ -47,19 +56,11 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
-import static org.apache.spark.sql.functions.col;
-import static org.apache.spark.sql.functions.expr;
-import static org.apache.spark.sql.functions.from_json;
-import static org.apache.spark.sql.functions.from_unixtime;
 import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.streaming.StreamingQueryException;
 import org.apache.spark.sql.streaming.Trigger;
 import org.apache.spark.sql.types.StructType;
-import static org.assertj.core.api.Assertions.assertThat;
 import org.awaitility.Awaitility;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
