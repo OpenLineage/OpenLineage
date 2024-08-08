@@ -20,7 +20,6 @@ import org.apache.spark.sql.execution.datasources.FilePartition;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.sql.execution.datasources.PartitionedFile;
 import org.junit.jupiter.api.Test;
-import scala.Tuple2;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
@@ -43,27 +42,6 @@ class RddPathUtilsTest {
 
     assertThat(rddPaths).hasSize(1);
     assertThat(rddPaths.get(0).toString()).isEqualTo("/some-path");
-  }
-
-  @Test
-  void testFindRDDPathsForParallelCollectionRDD() throws IllegalAccessException {
-    ParallelCollectionRDD parallelCollectionRDD = mock(ParallelCollectionRDD.class);
-    Seq<Tuple2<String, Integer>> data =
-        JavaConverters.asScalaIteratorConverter(
-                Arrays.asList(
-                        new Tuple2<>("/some-path1/data-file-325342.snappy.parquet", 345),
-                        new Tuple2<>("/some-path2/data-file-654342.snappy.parquet", 345))
-                    .iterator())
-            .asScala()
-            .toSeq();
-
-    FieldUtils.writeDeclaredField(parallelCollectionRDD, "data", data, true);
-
-    List rddPaths = PlanUtils.findRDDPaths(Collections.singletonList(parallelCollectionRDD));
-
-    assertThat(rddPaths).hasSize(2);
-    assertThat(rddPaths.get(0).toString()).isEqualTo("/some-path1");
-    assertThat(rddPaths.get(1).toString()).isEqualTo("/some-path2");
   }
 
   @Test

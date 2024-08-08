@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sun.net.httpserver.HttpServer;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.SparkTestUtils.OpenLineageEndpointHandler;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
