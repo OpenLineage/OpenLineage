@@ -5,6 +5,10 @@
 
 package io.openlineage.spark.agent.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -15,10 +19,7 @@ import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.execution.datasources.FilePartition;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.sql.execution.datasources.PartitionedFile;
-import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
