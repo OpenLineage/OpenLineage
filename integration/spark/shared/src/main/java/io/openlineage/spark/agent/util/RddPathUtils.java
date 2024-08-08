@@ -31,8 +31,8 @@ public class RddPathUtils {
     return Stream.<RddPathExtractor>of(
             new HadoopRDDExtractor(),
             new FileScanRDDExtractor(),
-            new MapPartitionsRDDExtractor(),
-            new ParallelCollectionRDDExtractor())
+            new MapPartitionsRDDExtractor()
+          )
         .filter(e -> e.isDefinedAt(rdd))
         .findFirst()
         .orElse(new UnknownRDDExtractor())
