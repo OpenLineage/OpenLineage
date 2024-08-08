@@ -19,11 +19,13 @@ import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.KafkaConfig;
 import io.openlineage.client.transports.KinesisConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Map;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import org.junit.jupiter.api.Test;
 
 class ArgumentParserTest {
@@ -41,6 +43,18 @@ class ArgumentParserTest {
   private SparkOpenLineageConfig config;
   private static final String TEST_TOKEN = "TOKEN";
 
+  private static final String NS_NAME_VE = "ns_name_ve";
+  private static final String JOB_NAMESPACE_VE = "job_namespace_ve";
+  private static final String JOB_NAME_VE = "job_name_ve";
+  private static final String URL_VE = "http://localhost:5001";
+  private static final String RUN_ID_VE = "ea445b5c-22eb-457a-8007-01c7c52b6e55";
+  private static final String APP_NAME_VE = "test_ve";
+  private static final String DISABLED_FACETS_VE = "[facetve1;facetve2]";
+  private static final String ENDPOINT_VE = "api/v1/lineage";
+  private static final String AUTH_TYPE_VE = "api_key";
+  private static final String API_KEY_VE = "random_token_ve";
+  private static final String TEST_TOKEN_VE = "TOKEN_VE";
+
   @Test
   void testDefaults() {
     config = ArgumentParser.parse(new SparkConf());
@@ -49,6 +63,7 @@ class ArgumentParserTest {
   }
 
   @Test
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__TYPE", value = "http")
   void testTransportTypes() {
     config =
         ArgumentParser.parse(
@@ -61,11 +76,13 @@ class ArgumentParserTest {
     SparkOpenLineageConfig configKinesis =
         ArgumentParser.parse(
             new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "kinesis"));
+    SparkOpenLineageConfig configEnv = ArgumentParser.parse(new SparkConf());
 
     assertThat(config.getTransportConfig()).isInstanceOf(ConsoleConfig.class);
     assertThat(configHttp.getTransportConfig()).isInstanceOf(HttpConfig.class);
     assertThat(configKafka.getTransportConfig()).isInstanceOf(KafkaConfig.class);
     assertThat(configKinesis.getTransportConfig()).isInstanceOf(KinesisConfig.class);
+    assertThat(configEnv.getTransportConfig()).isInstanceOf(HttpConfig.class);
   }
 
   @Test
@@ -79,11 +96,28 @@ class ArgumentParserTest {
             .set(ArgumentParser.SPARK_CONF_APP_NAME, APP_NAME);
 
     config = ArgumentParser.parse(sparkConf);
+
     assertEquals(JOB_NAMESPACE, config.getParentJobNamespace());
     assertEquals(NS_NAME, config.getNamespace());
     assertEquals(JOB_NAME, config.getParentJobName());
     assertEquals(RUN_ID, config.getParentRunId());
     assertEquals(APP_NAME, config.getOverriddenAppName());
+  }
+
+  @Test
+  @SetEnvironmentVariable(key = "OPENLINEAGE_NAMESPACE", value = NS_NAME_VE)
+  @SetEnvironmentVariable(key = "OPENLINEAGE_PARENT_JOB_NAMESPACE", value = JOB_NAMESPACE_VE)
+  @SetEnvironmentVariable(key = "OPENLINEAGE_PARENT_JOB_NAME", value = JOB_NAME_VE)
+  @SetEnvironmentVariable(key = "OPENLINEAGE_PARENT_RUN_ID", value = RUN_ID_VE)
+  @SetEnvironmentVariable(key = "OPENLINEAGE_APP_NAME", value = APP_NAME_VE)
+  void testLoadingVarEnvConfig() {
+    config = ArgumentParser.parse(new SparkConf());
+
+    assertEquals(JOB_NAMESPACE_VE, config.getParentJobNamespace());
+    assertEquals(NS_NAME_VE, config.getNamespace());
+    assertEquals(JOB_NAME_VE, config.getParentJobName());
+    assertEquals(RUN_ID_VE, config.getParentRunId());
+    assertEquals(APP_NAME_VE, config.getOverriddenAppName());
   }
 
   @Test
@@ -117,6 +151,33 @@ class ArgumentParserTest {
   }
 
   @Test
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__TYPE", value = "http")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__URL", value = URL_VE)
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__ENDPOINT", value = ENDPOINT_VE)
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__AUTH__TYPE", value = AUTH_TYPE_VE)
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__AUTH__API_KEY", value = API_KEY)
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__TIMEOUT", value = "5001")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_FACETS__DISABLED", value = DISABLED_FACETS_VE)
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__URL_PARAMS__TEST3", value = "test3")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__URL_PARAMS__TEST4", value = "test4")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__HEADERS__TEST_HEADER3", value = "test3")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__HEADERS__TEST_HEADER4", value = "test4")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__COMPRESSION", value = "gzip")
+  void testVarEnvConfToHttpConfig() {
+    SparkOpenLineageConfig config = ArgumentParser.parse(new SparkConf());
+    HttpConfig transportConfig = (HttpConfig) config.getTransportConfig();
+    assertEquals(URL_VE, transportConfig.getUrl().toString());
+    assertEquals(ENDPOINT_VE, transportConfig.getEndpoint());
+    assert (transportConfig.getAuth() != null);
+    assert (transportConfig.getAuth() instanceof ApiKeyTokenProvider);
+    assertEquals("Bearer random_token", transportConfig.getAuth().getToken());
+    assertEquals(5001, transportConfig.getTimeout());
+    assertEquals("test3", transportConfig.getHeaders().get("testHeader3"));
+    assertEquals("test4", transportConfig.getHeaders().get("testHeader4"));
+    assertEquals(HttpConfig.Compression.GZIP, transportConfig.getCompression());
+  }
+
+  @Test
   void testConfToKafkaConfig() {
     SparkConf sparkConf =
         new SparkConf()
@@ -132,6 +193,22 @@ class ArgumentParserTest {
     assertEquals("test1", transportConfig.getProperties().get("test1"));
     assertEquals("test2", transportConfig.getProperties().get("test2"));
   }
+
+  @Test
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__TYPE", value = "kafka")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__TOPIC_NAME", value = "test_ve")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__MESSAGE_KEY", value = "explicit-key")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__PROPERTIES__TEST3", value = "test3")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__PROPERTIES__TEST4", value = "test4")
+  void testVarEnvConfToKafkaConfig() {
+    SparkOpenLineageConfig config = ArgumentParser.parse(new SparkConf());
+    KafkaConfig transportConfig = (KafkaConfig) config.getTransportConfig();
+    assertEquals("test_ve", transportConfig.getTopicName());
+    assertEquals("explicit-key", transportConfig.getMessageKey());
+    assertEquals("test3", transportConfig.getProperties().get("test3"));
+    assertEquals("test4", transportConfig.getProperties().get("test4"));
+  }
+
 
   @Test
   void testConfToKinesisConfig() {
@@ -153,6 +230,23 @@ class ArgumentParserTest {
   }
 
   @Test
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__TYPE", value = "kinesis")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__STREAM_NAME", value = "test_ve")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__REGION", value = "test_ve")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__ROLE_ARN", value = "test_ve")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__PROPERTIES__TEST3", value = "test3")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__PROPERTIES__TEST4", value = "test4")
+  void testVarEnvConfToKinesisConfig() {
+    SparkOpenLineageConfig config = ArgumentParser.parse(new SparkConf());
+    KinesisConfig transportConfig = (KinesisConfig) config.getTransportConfig();
+    assertEquals("test_ve", transportConfig.getStreamName());
+    assertEquals("test_ve", transportConfig.getRegion());
+    assertEquals("test_ve", transportConfig.getRoleArn());
+    assertEquals("test3", transportConfig.getProperties().get("test3"));
+    assertEquals("test4", transportConfig.getProperties().get("test4"));
+  }
+
+  @Test
   void testCircuitBreakerConfig() {
     SparkConf sparkConf =
         new SparkConf()
@@ -160,6 +254,16 @@ class ArgumentParserTest {
             .set("spark.openlineage.circuitBreaker.valuesReturned", "false,true");
 
     SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+    assertThat(config.getCircuitBreaker()).isInstanceOf(StaticCircuitBreakerConfig.class);
+    assertThat(((StaticCircuitBreakerConfig) config.getCircuitBreaker()).getValuesReturned())
+        .isEqualTo("false,true");
+  }
+
+  @Test
+  @SetEnvironmentVariable(key = "OPENLINEAGE_CIRCUIT_BREAKER__TYPE", value = "static")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_CIRCUIT_BREAKER__VALUES_RETURNED", value = "false,true")
+  void testVarEnvCircuitBreakerConfig() {
+    SparkOpenLineageConfig config = ArgumentParser.parse(new SparkConf());
     assertThat(config.getCircuitBreaker()).isInstanceOf(StaticCircuitBreakerConfig.class);
     assertThat(((StaticCircuitBreakerConfig) config.getCircuitBreaker()).getValuesReturned())
         .isEqualTo("false,true");
@@ -181,6 +285,27 @@ class ArgumentParserTest {
 
     assertThat(ArgumentParser.parse(new SparkConf()).getFacetsConfig().getDisabledFacets())
         .hasSize(2);
+  }
+
+  @Test
+  @SetEnvironmentVariable(key = "OPENLINEAGE_FACETS__DISABLED", value = "[a_ve;b_ve]")
+  void testDisabledFacetsFromVarEnv() {
+    SparkOpenLineageConfig config = ArgumentParser.parse(new SparkConf());
+    assertThat(config.getFacetsConfig().getDisabledFacets()).containsExactly("a_ve", "b_ve");
+  }
+
+  @Test
+  @SetEnvironmentVariable(key = "OPENLINEAGE_FACETS__DISABLED", value = "")
+  void TestDisabledEmptyFacetsFromVarEnv() {
+    SparkOpenLineageConfig config = ArgumentParser.parse(new SparkConf());
+    assertThat(config.getFacetsConfig().getDisabledFacets()).hasSize(0);
+  }
+
+  @Test
+  @SetEnvironmentVariable(key = "OPENLINEAGE_FACETS__DISABLED", value = "[]")
+  void TestDisabledEmptyListFacetsFromVarEnv() {
+    SparkOpenLineageConfig config = ArgumentParser.parse(new SparkConf());
+    assertThat(config.getFacetsConfig().getDisabledFacets()).hasSize(0);
   }
 
   @Test
@@ -223,6 +348,31 @@ class ArgumentParserTest {
 
     // API config from yaml file
     assertThat(httpConfig.getAuth().getToken()).isEqualTo("Bearer random_token");
+  }
+
+  @Test
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__TYPE", value = "http")
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__URL", value = URL_VE)
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__ENDPOINT", value = ENDPOINT_VE)
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__AUTH__TYPE", value = AUTH_TYPE_VE)
+  @SetEnvironmentVariable(key = "OPENLINEAGE_TRANSPORT__AUTH__API_KEY", value = API_KEY_VE)
+  void testSparkConfOverwritesVarEnvBasedConfig() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.transport.type", "http")
+            .set("spark.openlineage.transport.url", URL);
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+
+    assertThat(config.getTransportConfig()).isInstanceOf(HttpConfig.class);
+
+    HttpConfig httpConfig = (HttpConfig) config.getTransportConfig();
+
+    // URL overwritten by SparkConf
+    assertThat(httpConfig.getUrl().toString()).isEqualTo(URL);
+
+    // API config from var env
+    assertThat(httpConfig.getAuth().getToken()).isEqualTo("Bearer random_token_ve");
   }
 
   @Test

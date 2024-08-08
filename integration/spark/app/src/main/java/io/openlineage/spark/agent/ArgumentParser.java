@@ -26,6 +26,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.Map;
+import java.util.HashMap; 
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -37,26 +39,40 @@ import scala.Tuple2;
 public class ArgumentParser {
 
   public static final String SPARK_CONF_NAMESPACE = "spark.openlineage.namespace";
+
   public static final String SPARK_CONF_PARENT_JOB_NAMESPACE =
       "spark.openlineage.parentJobNamespace";
+  
   public static final String SPARK_CONF_PARENT_JOB_NAME = "spark.openlineage.parentJobName";
+
   public static final String SPARK_CONF_PARENT_RUN_ID = "spark.openlineage.parentRunId";
+
   public static final String SPARK_CONF_APP_NAME = "spark.openlineage.appName";
+
   public static final String ARRAY_PREFIX_CHAR = "[";
   public static final String ARRAY_SUFFIX_CHAR = "]";
   public static final String DISABLED_FACETS_SEPARATOR = ";";
+
   public static final String SPARK_CONF_TRANSPORT_TYPE = "spark.openlineage.transport.type";
+
   public static final String SPARK_CONF_HTTP_URL = "spark.openlineage.transport.url";
+
   public static final String SPARK_CONF_JOB_NAME_APPEND_DATASET_NAME =
       "spark.openlineage.jobName.appendDatasetName";
+
   public static final String SPARK_CONF_JOB_NAME_REPLACE_DOT_WITH_UNDERSCORE =
       "spark.openlineage.jobName.replaceDotWithUnderscore";
+  
   private static final String SPARK_CONF_FACETS_DISABLED = "spark.openlineage.facets.disabled";
 
   private static final String SPARK_CONF_DEBUG_FACET = "spark.openlineage.debugFacet";
 
   private static final String SPARK_TEST_EXTENSION_PROVIDER =
       "spark.openlineage.testExtensionProvider";
+  
+  private static final String VAR_ENV_OPENLINEAGE_APP_NAME = "OPENLINEAGE_APP_NAME";
+
+  private static final String VAR_ENV_OPENLINEAGE_FACETS_DISABLED = "OPENLINEAGE_FACETS__DISABLED";
 
   public static final Set<String> PROPERTIES_PREFIXES =
       new HashSet<>(
@@ -72,11 +88,21 @@ public class ArgumentParser {
       findSparkConfigKey(conf, SPARK_CONF_HTTP_URL)
           .ifPresent(url -> UrlParser.parseUrl(url).forEach(conf::set));
     }
+
+    // TRY READING CONFIG FROM ENV VAR
+    Optional <SparkOpenLineageConfig> configFromEnvVar = extractOpenLineageConfFromEnvVar();
+
     SparkOpenLineageConfig configFromSparkConf = extractOpenLineageConfFromSparkConf(conf);
 
     SparkOpenLineageConfig targetConfig;
-    if (configFromFile.isPresent()) {
+    if (configFromFile.isPresent() && configFromEnvVar.isPresent()) {
+      targetConfig = configFromFile.get().mergeWith(configFromEnvVar.get()).mergeWith(configFromSparkConf);
+    }
+    else if (configFromFile.isPresent()) {
       targetConfig = configFromFile.get().mergeWith(configFromSparkConf);
+    }
+    else if (configFromEnvVar.isPresent()) {
+      targetConfig = configFromEnvVar.get().mergeWith(configFromSparkConf);
     } else {
       targetConfig = configFromSparkConf;
     }
@@ -85,7 +111,7 @@ public class ArgumentParser {
     if (targetConfig.getTransportConfig() == null) {
       targetConfig.setTransportConfig(new ConsoleConfig());
     }
-
+    
     extractSparkSpecificConfigEntriesFromSparkConf(conf, targetConfig);
     return targetConfig;
   }
@@ -134,6 +160,83 @@ public class ArgumentParser {
         .ifPresent(a -> config.getFacetsConfig().setDisabledFacets(a));
   }
 
+  private static Optional<SparkOpenLineageConfig> extractOpenLineageConfFromEnvVar() {
+      Map<String, String> envVars = System.getenv();
+      ObjectMapper objectMapper = new ObjectMapper();
+      ObjectNode objectNode = objectMapper.createObjectNode();
+
+      for (Map.Entry<String, String> entry : envVars.entrySet()) {
+          String envKey = entry.getKey();
+          String value = entry.getValue();
+
+          if (envKey.startsWith("OPENLINEAGE_")) {
+              if (VAR_ENV_OPENLINEAGE_APP_NAME.equals(envKey)) {
+                  objectNode.put("overriddenAppName", value);
+              } else {
+                  String keyPath = convertEnvKeyToConfKey(envKey);
+                  List<String> pathKeys = getJsonPath(keyPath);
+                  ObjectNode nodePointer = objectNode;
+
+                  for (int i = 0; i < pathKeys.size() - 1; i++) {
+                      String node = pathKeys.get(i);
+                      if (nodePointer.get(node) == null) {
+                          nodePointer.putObject(node);
+                      }
+                      nodePointer = (ObjectNode) nodePointer.get(node);
+                  }
+
+                  String leaf = pathKeys.get(pathKeys.size() - 1);
+                  if (isArrayType(value) || "OPENLINEAGE_FACETS__DISABLED".equals(envKey)) {
+                      ArrayNode arrayNode = nodePointer.putArray(leaf);
+                      String valueWithoutBrackets = isArrayType(value) ? value.substring(1, value.length() - 1) : value;
+                      Arrays.stream(valueWithoutBrackets.split(DISABLED_FACETS_SEPARATOR))
+                          .filter(StringUtils::isNotBlank)
+                          .forEach(arrayNode::add);
+                  } else {
+                      nodePointer.put(leaf, value);
+                  }
+              }
+          }
+      }
+
+      try {
+          return Optional.of(OpenLineageClientUtils.loadOpenLineageConfigYaml(
+              new ByteArrayInputStream(objectMapper.writeValueAsBytes(objectNode)),
+              new TypeReference<SparkOpenLineageConfig>() {}));
+      } catch (IOException e) {
+          log.warn("Failed to parse OpenLineage configuration from environment variables", e);
+          return Optional.empty();
+      }
+  }
+
+  private static String convertEnvKeyToConfKey(String envKey) {
+      // Remove "OPENLINEAGE_" prefix
+      String withoutPrefix = envKey.substring("OPENLINEAGE_".length());
+      
+      // Split by double underscores
+      String[] mainParts = withoutPrefix.split("__");
+      
+      StringBuilder result = new StringBuilder();
+      
+      for (int i = 0; i < mainParts.length; i++) {
+          if (i > 0) {
+              result.append(".");
+          }
+          
+          // Process each main part
+          String[] subParts = mainParts[i].split("_");
+          for (int j = 0; j < subParts.length; j++) {
+              String part = subParts[j].toLowerCase();
+              if (j > 0) {
+                  // CamelCase for parts split by single underscore
+                  part = Character.toUpperCase(part.charAt(0)) + part.substring(1);
+              }
+              result.append(part);
+          }
+      }
+      return result.toString();
+  }
+
   /**
    * Method iterates through SparkConf entries prefixed with `spark.openlineage` and rearranges them
    * into Jackson ObjectNode object, which is then loaded within {@link OpenLineageClientUtils} to
@@ -173,6 +276,7 @@ public class ArgumentParser {
         }
       }
     }
+
     try {
       return OpenLineageClientUtils.loadOpenLineageConfigYaml(
           new ByteArrayInputStream(objectMapper.writeValueAsBytes(objectNode)),
