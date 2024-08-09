@@ -43,7 +43,7 @@ fn test_simple_cte() {
 #[test]
 fn test_complex_cte() {
     let output = test_sql(
-        """create table final_tbl
+        "create table final_tbl
         AS (
             with stage_1 as
             (
@@ -67,7 +67,7 @@ fn test_complex_cte() {
             from stage_2 tl
             join tbl2 s_acc on s_acc.x= tl.col_2
             left join tbl3 s_coa_acc on s_coa_acc.y= tl.col_2
-        )""",
+        )",
     )
     .unwrap();
     assert_eq!(
