@@ -43,9 +43,7 @@ fn test_simple_cte() {
 #[test]
 fn test_complex_cte() {
     let output = test_sql(
-        "create table final_tbl
-        AS (
-            with stage_1 as
+        "with stage_1 as
             (
                    SELECT col_1, col_2, col_3, col_4 FROM source_tbl
                    WHERE date_time >= current_date - (5 * interval '1 days')
@@ -66,8 +64,7 @@ fn test_complex_cte() {
             tl.col_3, tl.col_4
             from stage_2 tl
             join tbl2 s_acc on s_acc.x= tl.col_2
-            left join tbl3 s_coa_acc on s_coa_acc.y= tl.col_2
-        )",
+            left join tbl3 s_coa_acc on s_coa_acc.y= tl.col_2",
     )
     .unwrap();
     assert_eq!(
