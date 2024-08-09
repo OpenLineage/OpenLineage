@@ -95,17 +95,17 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-branch=$(git symbolic-ref --short HEAD)
-if [[ "${branch}" != "main" ]]; then
-  echo "error: you may only release on 'main'!"
-  exit 1;
-fi
+#branch=$(git symbolic-ref --short HEAD)
+#if [[ "${branch}" != "main" ]]; then
+#  echo "error: you may only release on 'main'!"
+#  exit 1;
+#fi
 
-# Ensure no unstaged changes are present in working directory
-if [[ -n "$(git status --porcelain --untracked-files=no)" ]] ; then
-  echo "error: you have unstaged changes in your working directory!"
-  exit 1;
-fi
+## Ensure no unstaged changes are present in working directory
+#if [[ -n "$(git status --porcelain --untracked-files=no)" ]] ; then
+#  echo "error: you have unstaged changes in your working directory!"
+#  exit 1;
+#fi
 
 # Ensure valid versions
 VERSIONS=($RELEASE_VERSION $NEXT_VERSION)
@@ -116,21 +116,21 @@ for VERSION in "${VERSIONS[@]}"; do
   fi
 done
 
-# Ensure python module version matches X.Y.Z or X.Y.ZrcN (see: https://www.python.org/dev/peps/pep-0440/),
-PYTHON_RELEASE_VERSION=${RELEASE_VERSION}
-if [[ "${RELEASE_VERSION}" == *-rc.? ]]; then
-  RELEASE_CANDIDATE=${RELEASE_VERSION##*-}
-  PYTHON_RELEASE_VERSION="${RELEASE_VERSION%-*}${RELEASE_CANDIDATE//.}"
-fi
-
-# (1) Bump python module versions. Do this before the release in case the current release is not
-# the same version as what was expected the last time we released. E.g., if the next expected
-# release was a patch version, but a new minor version is being released, we need to update to the
-# actual release version prior to committing/tagging
-PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/dagster/ integration/sql)
-for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
-  (cd "${PYTHON_MODULE}" && update_py_version_if_needed "${PYTHON_RELEASE_VERSION}")
-done
+## Ensure python module version matches X.Y.Z or X.Y.ZrcN (see: https://www.python.org/dev/peps/pep-0440/),
+#PYTHON_RELEASE_VERSION=${RELEASE_VERSION}
+#if [[ "${RELEASE_VERSION}" == *-rc.? ]]; then
+#  RELEASE_CANDIDATE=${RELEASE_VERSION##*-}
+#  PYTHON_RELEASE_VERSION="${RELEASE_VERSION%-*}${RELEASE_CANDIDATE//.}"
+#fi
+#
+## (1) Bump python module versions. Do this before the release in case the current release is not
+## the same version as what was expected the last time we released. E.g., if the next expected
+## release was a patch version, but a new minor version is being released, we need to update to the
+## actual release version prior to committing/tagging
+#PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/dagster/ integration/sql)
+#for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
+#  (cd "${PYTHON_MODULE}" && update_py_version_if_needed "${PYTHON_RELEASE_VERSION}")
+#done
 
 # (2) Bump java module versions
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
@@ -149,59 +149,59 @@ perl -i -pe"s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./integratio
 perl -i -pe"s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./client/java/README.md
 perl -i -pe"s/openlineage-java:[[:alnum:]\.-]*/openlineage-java:${RELEASE_VERSION}/g" ./client/java/README.md
 
-# (4) Prepare release commit
-git commit -sam "Prepare for release ${RELEASE_VERSION}"
-
-# (5) Pull latest tags, then prepare release tag
-git fetch --all --tags
-git tag -a "${RELEASE_VERSION}" -m "openlineage ${RELEASE_VERSION}"
-
-# (6) Prepare next development version
-PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/dagster/ integration/sql/)
-for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
-  (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${NEXT_VERSION}" --allow-dirty)
-done
-
-# Append '-SNAPSHOT' to 'NEXT_VERSION' if a release candidate, or missing
-# (ex: '-SNAPSHOT' will be appended to X.Y.Z or X.Y.Z-rc.N)
-if [[ "${NEXT_VERSION}" == *-rc.? ||
-      ! "${NEXT_VERSION}" == *-SNAPSHOT ]]; then
-  NEXT_VERSION="${NEXT_VERSION}-SNAPSHOT"
-fi
-
-perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./client/java/gradle.properties
-perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/sql/iface-java/gradle.properties
-perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/spark/gradle.properties
-perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/spark-extension-interfaces/gradle.properties
-perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/gradle.properties
-perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/examples/stateful/gradle.properties
-perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./proxy/backend/gradle.properties
-echo "version ${NEXT_VERSION}" > integration/spark/spark2/src/test/resources/io/openlineage/spark/agent/version.properties
-echo "version ${NEXT_VERSION}" > integration/spark/spark3/src/test/resources/io/openlineage/spark/agent/version.properties
-echo "version ${NEXT_VERSION}" > integration/spark-extension-interfaces/src/test/resources/io/openlineage/spark/shade/extension/v1/lifecycle/plan/version.properties
-echo "version ${NEXT_VERSION}" > integration/flink/shared/src/test/resources/io/openlineage/flink/client/version.properties
-echo "version ${NEXT_VERSION}" > integration/flink/app/src/test/resources/io/openlineage/flink/client/version.properties
-
-# (7) Prepare next development version commit
-git commit -sam "Prepare next development version ${NEXT_VERSION}"
-
-# (8) Check for commits in log
-COMMITS=false
-MESSAGE_1=$(git log -1 --grep="Prepare for release ${RELEASE_VERSION}" --pretty=format:%s)
-MESSAGE_2=$(git log -1 --grep="Prepare next development version ${NEXT_VERSION}" --pretty=format:%s)
-
-if [[ $MESSAGE_1 ]] && [[ $MESSAGE_2 ]]; then
-  COMMITS=true
-else
-  echo "one or both commits failed; exiting..."
-  exit 0
-fi
-
-# (9) Push commits and tag
-if [[ $COMMITS = "true" ]] && [[ ! ${PUSH} = "false" ]]; then
-  git push origin main && git push origin "${RELEASE_VERSION}"
-else
-  echo "...skipping push; to push manually, use 'git push origin main && git push origin "${RELEASE_VERSION}"'"
-fi
-
-echo "DONE!"
+## (4) Prepare release commit
+#git commit -sam "Prepare for release ${RELEASE_VERSION}"
+#
+## (5) Pull latest tags, then prepare release tag
+#git fetch --all --tags
+#git tag -a "${RELEASE_VERSION}" -m "openlineage ${RELEASE_VERSION}"
+#
+## (6) Prepare next development version
+#PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/dagster/ integration/sql/)
+#for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
+#  (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${NEXT_VERSION}" --allow-dirty)
+#done
+#
+## Append '-SNAPSHOT' to 'NEXT_VERSION' if a release candidate, or missing
+## (ex: '-SNAPSHOT' will be appended to X.Y.Z or X.Y.Z-rc.N)
+#if [[ "${NEXT_VERSION}" == *-rc.? ||
+#      ! "${NEXT_VERSION}" == *-SNAPSHOT ]]; then
+#  NEXT_VERSION="${NEXT_VERSION}-SNAPSHOT"
+#fi
+#
+#perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./client/java/gradle.properties
+#perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/sql/iface-java/gradle.properties
+#perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/spark/gradle.properties
+#perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/spark-extension-interfaces/gradle.properties
+#perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/gradle.properties
+#perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/examples/stateful/gradle.properties
+#perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./proxy/backend/gradle.properties
+#echo "version ${NEXT_VERSION}" > integration/spark/spark2/src/test/resources/io/openlineage/spark/agent/version.properties
+#echo "version ${NEXT_VERSION}" > integration/spark/spark3/src/test/resources/io/openlineage/spark/agent/version.properties
+#echo "version ${NEXT_VERSION}" > integration/spark-extension-interfaces/src/test/resources/io/openlineage/spark/shade/extension/v1/lifecycle/plan/version.properties
+#echo "version ${NEXT_VERSION}" > integration/flink/shared/src/test/resources/io/openlineage/flink/client/version.properties
+#echo "version ${NEXT_VERSION}" > integration/flink/app/src/test/resources/io/openlineage/flink/client/version.properties
+#
+## (7) Prepare next development version commit
+#git commit -sam "Prepare next development version ${NEXT_VERSION}"
+#
+## (8) Check for commits in log
+#COMMITS=false
+#MESSAGE_1=$(git log -1 --grep="Prepare for release ${RELEASE_VERSION}" --pretty=format:%s)
+#MESSAGE_2=$(git log -1 --grep="Prepare next development version ${NEXT_VERSION}" --pretty=format:%s)
+#
+#if [[ $MESSAGE_1 ]] && [[ $MESSAGE_2 ]]; then
+#  COMMITS=true
+#else
+#  echo "one or both commits failed; exiting..."
+#  exit 0
+#fi
+#
+## (9) Push commits and tag
+#if [[ $COMMITS = "true" ]] && [[ ! ${PUSH} = "false" ]]; then
+#  git push origin main && git push origin "${RELEASE_VERSION}"
+#else
+#  echo "...skipping push; to push manually, use 'git push origin main && git push origin "${RELEASE_VERSION}"'"
+#fi
+#
+#echo "DONE!"

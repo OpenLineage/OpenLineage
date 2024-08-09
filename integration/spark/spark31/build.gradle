@@ -18,6 +18,7 @@ ext {
     assertjVersion = "3.25.1"
     junit5Version = "5.10.1"
     mockitoVersion = "4.11.0"
+    micrometerVersion = "1.13.2"
     sparkVersion = project.findProperty("spark31.spark.version")
 }
 
@@ -26,6 +27,7 @@ dependencies {
     implementation(project(path: ":spark3", configuration: "scala212RuntimeElements"))
 
     compileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
+    compileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     testFixturesApi(project(path: ":shared", configuration: "scala212RuntimeElements"))
     testFixturesApi("org.apache.spark:spark-sql_2.12:${sparkVersion}")
@@ -34,12 +36,14 @@ dependencies {
     testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
     testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
+    testFixturesApi("io.micrometer:micrometer-core:${micrometerVersion}")
 
     // Scala 2.12 - we need this, because of convention. Its just duplication from the above for this specific module
     scala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
     scala212Implementation(project(path: ":spark3", configuration: "scala212RuntimeElements"))
 
     scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
+    scala212CompileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     testScala212Implementation(project(path: ":shared"))
     testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
@@ -48,4 +52,5 @@ dependencies {
     testScala212Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala212Implementation("org.mockito:mockito-core:${mockitoVersion}")
     testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
+    testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
 }
