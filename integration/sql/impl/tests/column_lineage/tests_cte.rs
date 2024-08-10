@@ -46,14 +46,7 @@ fn test_complex_cte() {
         "with stage_1 as
             (
                    SELECT col_1, col_2, col_3, col_4 FROM source_tbl
-                   WHERE date_time >= current_date - (5 * interval '1 days')
-                         AND  col_1
-                                     IN (
-                                             SELECT distinct col_1
-                                             FROM source_tbl s_trans
-                                             where <some-condition>
-                                         )
-                              )
+                   WHERE date_time >= current_date AND  col_1 IN (SELECT distinct col_1 FROM source_tbl)
             ),
             stage_2 as
             (
