@@ -69,18 +69,8 @@ fn test_complex_cte() {
                     name: "col_1".to_string()
                 },
                 lineage: vec![ColumnMeta {
-                    origin: Some(table("source_tbl")),
+                    origin: Some(table("stage_1")),
                     name: "col_1".to_string()
-                }]
-            },
-            ColumnLineage {
-                descendant: ColumnMeta {
-                    origin: None,
-                    name: "col_2".to_string()
-                },
-                lineage: vec![ColumnMeta {
-                    origin: Some(table("source_tbl")),
-                    name: "col_2".to_string()
                 }]
             },
             ColumnLineage {
@@ -89,7 +79,7 @@ fn test_complex_cte() {
                     name: "col_3".to_string()
                 },
                 lineage: vec![ColumnMeta {
-                    origin: Some(table("source_tbl")),
+                    origin: Some(table("stage_1")),
                     name: "col_3".to_string()
                 }]
             },
@@ -99,7 +89,7 @@ fn test_complex_cte() {
                     name: "col_4".to_string()
                 },
                 lineage: vec![ColumnMeta {
-                    origin: Some(table("source_tbl")),
+                    origin: Some(table("stage_1")),
                     name: "col_4".to_string()
                 }]
             },
@@ -126,3 +116,23 @@ fn test_complex_cte() {
         ]
     );
 }
+
+
+
+/*
+[ColumnLineage { descendant: ColumnMeta { origin: None, name: "col_1" },
+lineage: [ColumnMeta { origin: Some(DbTableMeta
+{ database: None, schema: None, name: "stage_1",
+quote_style: Some(QuoteStyle { database: None, schema: None, name: None }),
+provided_namespace: false, provided_field_schema: false }), name: "col_1" }] },
+ColumnLineage { descendant: ColumnMeta { origin: None, name: "col_3" },
+lineage: [ColumnMeta { origin: Some(DbTableMeta { database: None, schema: None, name: "stage_1", quote_style: Some(QuoteStyle
+{ database: None, schema: None, name: None }), provided_namespace: false, provided_field_schema: false }), name: "col_3" }] },
+ColumnLineage { descendant: ColumnMeta { origin: None, name: "col_4" }, lineage: [ColumnMeta { origin: Some(DbTableMeta { database: None, schema: None, name: "stage_1", quote_style: Some(QuoteStyle { database: None, schema: None, name: None }), provided_namespace: false, provided_field_schema: false }), name: "col_4" }] },
+ColumnLineage { descendant: ColumnMeta { origin: None, name: "x" }, lineage: [ColumnMeta { origin: Some(DbTableMeta { database: None, schema: None, name: "tbl2", quote_style: Some(QuoteStyle { database: None, schema: None, name: None }), provided_namespace: false, provided_field_schema: false }), name: "x" }] },
+ColumnLineage { descendant: ColumnMeta { origin: None, name: "y" }, lineage: [ColumnMeta { origin: Some(DbTableMeta { database: None, schema: None, name: "tbl3", quote_style: Some(QuoteStyle { database: None, schema: None, name: None }), provided_namespace: false, provided_field_schema: false }), name: "y" }] }]
+
+[ColumnLineage { descendant: ColumnMeta { origin: None, name: "col_1" },
+lineage: [ColumnMeta { origin: Some(DbTableMeta
+{ database: None, schema: None, name: "source_tbl", quote_style: Some(QuoteStyle { database: None, schema: None, name: None }), provided_namespace: false, provided_field_schema: false }), name: "col_1" }] }, ColumnLineage { descendant: ColumnMeta { origin: None, name: "col_2" }, lineage: [ColumnMeta { origin: Some(DbTableMeta { database: None, schema: None, name: "source_tbl", quote_style: Some(QuoteStyle { database: None, schema: None, name: None }), provided_namespace: false, provided_field_schema: false }), name: "col_2" }] }, ColumnLineage { descendant: ColumnMeta { origin: None, name: "col_3" }, lineage: [ColumnMeta { origin: Some(DbTableMeta { database: None, schema: None, name: "source_tbl", quote_style: Some(QuoteStyle { database: None, schema: None, name: None }), provided_namespace: false, provided_field_schema: false }), name: "col_3" }] }, ColumnLineage { descendant: ColumnMeta { origin: None, name: "col_4" }, lineage: [ColumnMeta { origin: Some(DbTableMeta { database: None, schema: None, name: "source_tbl", quote_style: Some(QuoteStyle { database: None, schema: None, name: None }), provided_namespace: false, provided_field_schema: false }), name: "col_4" }] }, ColumnLineage { descendant: ColumnMeta { origin: None, name: "x" }, lineage: [ColumnMeta { origin: Some(DbTableMeta { database: None, schema: None, name: "tbl2", quote_style: Some(QuoteStyle { database: None, schema: None, name: None }), provided_namespace: false, provided_field_schema: false }), name: "x" }] }, ColumnLineage { descendant: ColumnMeta { origin: None, name: "y" }, lineage: [ColumnMeta { origin: Some(DbTableMeta { database: None, schema: None, name: "tbl3", quote_style: Some(QuoteStyle { database: None, schema: None, name: None }), provided_namespace: false, provided_field_schema: false }), name: "y" }] }]
+*/
