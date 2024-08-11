@@ -132,23 +132,25 @@ task sourceJar(type: Jar) {
 
 javadoc {
     dependsOn delombok
-    failOnError = false
+    failOnError = true
 
-//     def capturedOutput = []
-//     def listener = { capturedOutput << it } as StandardOutputListener
-//     doFirst {
-//         logging.addStandardErrorListener(listener)
-//         logging.addStandardOutputListener(listener)
-//     }
-//     doLast {
-//         logging.removeStandardOutputListener(listener)
-//         logging.removeStandardErrorListener(listener)
-//         capturedOutput.each { e ->
-//             if(e.toString() =~ " warning: ") {
-//                 throw new GradleException("You have some javadoc warnings, please fix them!");
-//             }
-//         }
-//     }
+    options.addBooleanOption("Xdoclint:-missing", true)
+
+    def capturedOutput = []
+    def listener = { capturedOutput << it } as StandardOutputListener
+    doFirst {
+        logging.addStandardErrorListener(listener)
+        logging.addStandardOutputListener(listener)
+    }
+    doLast {
+        logging.removeStandardOutputListener(listener)
+        logging.removeStandardErrorListener(listener)
+        capturedOutput.each { e ->
+            if(e.toString() =~ " warning: ") {
+                throw new GradleException("You have some javadoc warnings, please fix them!");
+            }
+        }
+    }
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
