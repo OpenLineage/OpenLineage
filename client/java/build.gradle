@@ -18,7 +18,7 @@ plugins {
     id "org.openapi.generator" version "6.6.0"
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
-    id "io.freefair.lombok" version "8.6"
+    id "io.freefair.lombok" version "8.7.1"
 }
 
 pmd {
