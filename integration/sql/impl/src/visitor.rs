@@ -34,6 +34,7 @@ impl Visit for With {
                     context.default_database().clone(),
                 );
                 context.collect_with_table(f, table);
+                context.adjust_cte_dependencies(cte.alias.name.clone().value);
             }
         }
         Ok(())
@@ -70,6 +71,19 @@ impl Visit for TableFactor {
                     context.add_table_alias(table, vec![alias.name.clone()]);
                 }
                 context.add_input(effective_name.clone().0);
+
+                if !context.is_main() {
+                    context.add_table_dependency(effective_name.clone().0);
+                }
+
+                if context.is_main() && !context.has_alias(effective_name.to_string()) {
+                    context.add_input(effective_name.clone().0);
+                }
+
+                if context.is_main() && context.has_alias(effective_name.to_string()) {
+                    context.mark_table_as_used(effective_name.clone().0);
+                }
+
                 Ok(())
             }
             TableFactor::Pivot { table, alias, .. } => {
@@ -531,6 +545,11 @@ impl Visit for SetExpr {
 impl Visit for Query {
     fn visit(&self, context: &mut Context) -> Result<()> {
         context.push_frame();
+        if self.with.is_some() {
+            context.bump_cte_level();
+            context.unset_frame_to_main_body();
+        }
+
         match &self.with {
             Some(with) => with.visit(context)?,
             None => (),
@@ -540,8 +559,19 @@ impl Visit for Query {
         context.collect_aliases(&with_frame);
 
         context.push_frame();
+        if self.with.is_some() {
+            context.set_frame_to_main_body();
+        }
+
         self.body.visit(context)?;
+
+        if self.with.is_some() {
+            context.unset_frame_to_main_body();
+        }
+
+        // context.unset_frame_to_main_body();
         let frame = context.pop_frame().unwrap();
+
         context.collect(frame);
 
         // Resolve CTEs
@@ -753,7 +783,26 @@ impl Visit for Statement {
         }
 
         let frame = context.pop_frame().unwrap();
+        let cte_deps = frame.cte_dependencies.clone();
+        let deps = frame.dependencies.clone();
         context.collect(frame);
+
+        if cte_deps.is_empty() {
+            for table in deps {
+                context.inputs.insert(table.clone());
+            }
+            return Ok(());
+        }
+
+        for (_key, value) in cte_deps {
+            if !value.is_used {
+                continue;
+            }
+
+            for table in value.deps {
+                context.inputs.insert(table.clone());
+            }
+        }
 
         Ok(())
     }

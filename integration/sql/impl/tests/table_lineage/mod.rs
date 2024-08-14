@@ -1,7 +1,7 @@
 // Copyright 2018-2024 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
-
 mod test_use;
+pub mod test_alias_resolving;
 pub mod tests_alter;
 pub mod tests_copy;
 pub mod tests_create;
