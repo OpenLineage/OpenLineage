@@ -32,10 +32,13 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcRelationProvider;
 import org.apache.spark.sql.sources.CreatableRelationProvider;
 import org.apache.spark.sql.sources.RelationProvider;
-import org.apache.spark.sql.types.IntegerType$;
-import org.apache.spark.sql.types.StringType$;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.Metadata;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -53,6 +56,14 @@ class SaveIntoDataSourceCommandVisitorTest {
 
   SparkOpenLineageExtensionVisitorWrapper wrapper =
       mock(SparkOpenLineageExtensionVisitorWrapper.class);
+
+  SparkListenerEvent event = mock(SparkListenerEvent.class);
+
+  StructType schema =
+      new StructType()
+          .add(new StructField("key", DataTypes.IntegerType, false, Metadata.empty()))
+          .add(new StructField("value", DataTypes.StringType, false, Metadata.empty()));
+
   Map<String, String> options =
       ScalaConversionUtils.fromJavaMap(Collections.singletonMap("path", "some-path"));
 
@@ -68,11 +79,11 @@ class SaveIntoDataSourceCommandVisitorTest {
   @Test
   void testSchemaExtractedFromLocalRelation() {
     Attribute attr1 = mock(Attribute.class);
-    when(attr1.dataType()).thenReturn(StringType$.MODULE$);
+    when(attr1.dataType()).thenReturn(DataTypes.StringType);
     when(attr1.name()).thenReturn("a");
 
     Attribute attr2 = mock(Attribute.class);
-    when(attr2.dataType()).thenReturn(IntegerType$.MODULE$);
+    when(attr2.dataType()).thenReturn(DataTypes.IntegerType);
     when(attr2.name()).thenReturn("b");
 
     DeltaDataSource deltaDataSource = mock(DeltaDataSource.class);
@@ -142,6 +153,27 @@ class SaveIntoDataSourceCommandVisitorTest {
                     Collections.singletonMap("kustotable", "some-table")));
 
     assertThat(visitor.jobNameSuffix(command)).isPresent().get().isEqualTo("some-table");
+  }
+
+  @Test
+  void testJdbcRelationProviderAsDatasource() {
+    SaveIntoDataSourceCommand command = mock(SaveIntoDataSourceCommand.class);
+    when(command.schema()).thenReturn(schema);
+    java.util.Map<String, String> options = new java.util.HashMap<>();
+    options.put("dbtable", "public.test_table");
+    options.put("url", "postgres://127.0.0.1/some_db");
+    when(command.options()).thenReturn(ScalaConversionUtils.fromJavaMap(options));
+    JdbcRelationProvider provider = mock(JdbcRelationProvider.class);
+    when(command.dataSource()).thenReturn(provider);
+
+    List<OpenLineage.OutputDataset> result = visitor.apply(event, command);
+    assertEquals(result.size(), 1);
+    assertEquals("key", result.get(0).getFacets().getSchema().getFields().get(0).getName());
+    assertEquals("integer", result.get(0).getFacets().getSchema().getFields().get(0).getType());
+    assertEquals("value", result.get(0).getFacets().getSchema().getFields().get(1).getName());
+    assertEquals("string", result.get(0).getFacets().getSchema().getFields().get(1).getType());
+    assertEquals("postgres://127.0.0.1:5432", result.get(0).getNamespace());
+    assertEquals("some_db.public.test_table", result.get(0).getName());
   }
 
   abstract class DeltaDataSource implements CreatableRelationProvider {}
