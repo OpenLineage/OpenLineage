@@ -18,6 +18,7 @@ import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.MapPartitionsRDD;
 import org.apache.spark.rdd.ParallelCollectionRDD;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.sql.execution.datasources.FilePartition;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import scala.Tuple2;
 import scala.collection.immutable.Seq;
@@ -89,7 +90,7 @@ public class RddPathUtils {
     @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
     public Stream<Path> extract(FileScanRDD rdd) {
       return ScalaConversionUtils.fromSeq(rdd.filePartitions()).stream()
-          .flatMap(fp -> Arrays.stream(fp.files()))
+          .flatMap((FilePartition fp) -> Arrays.stream(fp.files()))
           .map(
               f -> {
                 if ("3.4".compareTo(package$.MODULE$.SPARK_VERSION()) <= 0) {

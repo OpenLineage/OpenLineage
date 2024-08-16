@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.circuitBreaker.StaticCircuitBreakerConfig;
@@ -42,9 +43,13 @@ class ArgumentParserTest {
   private static final String TEST_TOKEN = "TOKEN";
 
   @Test
+  @SuppressWarnings({"deprecation"})
   void testDefaults() {
     config = ArgumentParser.parse(new SparkConf());
-    assertThat(config.getFacetsConfig().getDisabledFacets()).hasSize(2);
+    assertThat(config.getFacetsConfig().getDeprecatedDisabledFacets()).isEmpty();
+    assertThat(config.getFacetsConfig().getDisabledFacets())
+        .containsAllEntriesOf(
+            ImmutableMap.of("spark_unknown", true, "spark.logicalPlan", true, "debug", true));
     assertThat(config.getTransportConfig()).isInstanceOf(ConsoleConfig.class);
   }
 
@@ -87,6 +92,7 @@ class ArgumentParserTest {
   }
 
   @Test
+  @SuppressWarnings("ConstantConditions")
   void testConfToHttpConfig() {
     SparkConf sparkConf =
         new SparkConf()
@@ -166,24 +172,52 @@ class ArgumentParserTest {
   }
 
   @Test
-  void testDisabledFacetsFromSparkConf() {
+  @SuppressWarnings("deprecation")
+  void testDeprecatedDisabledFacetsFromSparkConf() {
     SparkConf sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "[a;b]");
     SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
-    assertThat(config.getFacetsConfig().getDisabledFacets()).containsExactly("a", "b");
+    String[] disabledFacets = config.getFacetsConfig().getDeprecatedDisabledFacets();
+    assertThat(disabledFacets).containsExactly("a", "b");
 
     // test empty value
     sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "");
-    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDisabledFacets()).hasSize(0);
+    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDeprecatedDisabledFacets())
+        .hasSize(0);
 
     // test empty list
     sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "[]");
-    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDisabledFacets()).hasSize(0);
+    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDeprecatedDisabledFacets())
+        .hasSize(0);
 
-    assertThat(ArgumentParser.parse(new SparkConf()).getFacetsConfig().getDisabledFacets())
-        .hasSize(2);
+    assertThat(
+            ArgumentParser.parse(new SparkConf()).getFacetsConfig().getDeprecatedDisabledFacets())
+        .hasSize(0);
   }
 
   @Test
+  @SuppressWarnings("deprecation")
+  void testDisabledFacetsFromSparkConf() {
+    SparkConf sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "[a;b]");
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+    assertThat(config.getFacetsConfig().getDeprecatedDisabledFacets()).containsExactly("a", "b");
+
+    // test empty value
+    sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "");
+    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDeprecatedDisabledFacets())
+        .hasSize(0);
+
+    // test empty list
+    sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "[]");
+    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDeprecatedDisabledFacets())
+        .hasSize(0);
+
+    assertThat(
+            ArgumentParser.parse(new SparkConf()).getFacetsConfig().getDeprecatedDisabledFacets())
+        .hasSize(0);
+  }
+
+  @Test
+  @SuppressWarnings({"deprecation", "UnstableApiUsage", "ConstantConditions"})
   void testConfigReadFromYamlFile() {
     String propertyBefore = System.getProperty("user.dir");
     System.setProperty("user.dir", Resources.getResource("config").getPath());
@@ -196,12 +230,16 @@ class ArgumentParserTest {
     HttpConfig httpConfig = (HttpConfig) config.getTransportConfig();
     assertThat(httpConfig.getUrl().toString()).isEqualTo("http://localhost:1010");
     assertThat(httpConfig.getAuth().getToken()).isEqualTo("Bearer random_token");
-    assertThat(config.getDebugFacet()).isEqualTo("enabled");
     assertThat(config.getJobName().getAppendDatasetName()).isFalse();
-    assertThat(config.getFacetsConfig().getDisabledFacets()[0]).isEqualTo("aDisabledFacet");
+    assertThat(config.getFacetsConfig().getDeprecatedDisabledFacets()[0])
+        .isEqualTo("aDisabledFacet");
+    assertThat(config.getFacetsConfig().getDisabledFacets())
+        .containsAllEntriesOf(
+            ImmutableMap.of("spark_unknown", false, "spark.logicalPlan", true, "debug", true));
   }
 
   @Test
+  @SuppressWarnings({"UnstableApiUsage", "ConstantConditions"})
   void testSparkConfOverwritesFileBasedConfig() {
     SparkConf sparkConf =
         new SparkConf()

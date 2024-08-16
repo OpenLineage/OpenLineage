@@ -21,6 +21,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.Partition;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
@@ -62,6 +63,7 @@ class OptimizedCreateHiveTableAsSelectCommandVisitorTest {
     SparkConf conf = new SparkConf();
     conf.set("spark.sql.warehouse.dir", "s3://bucket/warehouse/location");
     when(sparkContext.getConf()).thenReturn(conf);
+    when(sparkContext.hadoopConfiguration()).thenReturn(new Configuration());
     when(session.sparkContext()).thenReturn(sparkContext);
   }
 

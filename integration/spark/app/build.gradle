@@ -176,6 +176,7 @@ def testSystemProperties = { String spark, String scala ->
             "junit.platform.output.capture.stderr": "true",
             "junit.platform.output.capture.stdout": "true",
             "kafka.package.version"               : "org.apache.spark:spark-sql-kafka-0-10_${scala}:${spark}",
+            "mongo.package.version"               : "org.mongodb.spark:mongo-spark-connector_${scala}:10.3.0",
             "lib.dir"                             : libsShadowDir.get().asFile.absolutePath,
             "mockserver.logLevel"                 : "ERROR",
             "resources.dir"                       : testResourcesDir.get().asFile.absolutePath,

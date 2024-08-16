@@ -14,6 +14,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.agent.util.DatasetFacetsUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -27,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -36,6 +38,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcRelationProvider;
 import org.apache.spark.sql.sources.BaseRelation;
 import org.apache.spark.sql.sources.RelationProvider;
 import org.apache.spark.sql.sources.SchemaRelationProvider;
@@ -141,6 +144,19 @@ public class SaveIntoDataSourceCommandVisitor
         return Collections.singletonList(
             outputDataset().getDataset(PathUtils.fromURI(uri), schema, lifecycleStateChange));
       }
+    }
+
+    if (command
+        .dataSource()
+        .getClass()
+        .getCanonicalName()
+        .equals(JdbcRelationProvider.class.getCanonicalName())) {
+      String tableName = command.options().get("dbtable").get();
+      String url = command.options().get("url").get();
+      DatasetIdentifier identifier =
+          JdbcDatasetUtils.getDatasetIdentifier(url, tableName, new Properties());
+      return Collections.singletonList(
+          outputDataset().getDataset(identifier, schema, lifecycleStateChange));
     }
 
     SQLContext sqlContext = context.getSparkSession().get().sqlContext();

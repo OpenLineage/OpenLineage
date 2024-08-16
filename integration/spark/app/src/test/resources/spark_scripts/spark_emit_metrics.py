@@ -11,7 +11,7 @@ spark = (
     SparkSession.builder.master("local")
     .appName("Open Lineage Integration Emit Metrics")
     .config("spark.sql.warehouse.dir", "file:/tmp/emit_test/")
-    .config("spark.openlineage.debugFacet", "enabled")
+    .config("spark.openlineage.facets.debug.disabled", "false")
     .enableHiveSupport()
     .getOrCreate()
 )

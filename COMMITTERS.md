@@ -33,6 +33,8 @@ The current OpenLineage committers are:
 | Damien Hawes       | |
 | Kacper Muda        | |
 | Zhenqiu Huang      | |
+| Jens Pfau          | |
+| Sheeri Cabral      | |
 To understand how to become an OpenLineage committer,
 read the [OpenLineage Governance Guide](GOVERNANCE.md).
 
