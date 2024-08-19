@@ -1,0 +1,59 @@
+package facets
+
+{{ $facets := .facets -}}
+{{ range $index, $kind := .facetKinds }}
+type {{ $kind }}s struct {
+{{- range $index, $facet := $facets }}
+{{- if eq $facet.Kind $kind }}
+        {{ $facet.Name }} *{{ $facet.Name }} {{ $facet.Tag }}
+{{- else -}}
+{{ end -}}
+{{ end }}
+}
+{{ end }}
+
+{{- $facets := .facets -}}
+{{- range $index, $kind := .facetKinds -}}
+{{- range $index, $facet := $facets }}
+{{- if eq $facet.Kind $kind }}
+var _ {{ $kind }} = (*{{$facet.Name}})(nil)
+
+func (f *{{ $facet.Name }}) Apply(facets **{{ $facet.Kind }}s) {
+        if *facets == nil {
+                *facets = &{{ $facet.Kind }}s{}
+        }
+	(*facets).{{ $facet.Name }} = f
+}
+{{ else -}}
+{{- end -}}
+{{- end }}
+{{ end }}
+
+{{ range $index, $facet := .facets }}
+func New{{ $facet.Name }}(
+{{- range $index, $field := $facet.Fields }}
+        {{ $field.ParamName }} {{ $field.Typ }},
+{{- end }}
+) *{{ $facet.Name }} {
+        return &{{ $facet.Name }}{
+                Producer: "{{ .Producer }}",
+                SchemaURL: "{{ $facet.SchemaURL }}",
+                {{- range $index, $field := $facet.Fields }}
+                {{ $field.Name }}: {{ $field.ParamName }},
+                {{- end }}
+        }
+}
+
+
+{{- range $index, $field := $facet.OptionalFields }}
+func (x *{{ $facet.Name }}) With{{ $field.Name }}({{ $field.ParamName }} {{ $field.Typ}}) *{{ $facet.Name }} {
+        {{ if $field.IsRefType -}} x.{{ $field.Name }} = {{ $field.ParamName }}
+        {{- else -}} x.{{ $field.Name }} = &{{ $field.ParamName }}
+        {{- end }}
+
+        return x
+}
+{{- end }}
+
+{{ end }}
+
