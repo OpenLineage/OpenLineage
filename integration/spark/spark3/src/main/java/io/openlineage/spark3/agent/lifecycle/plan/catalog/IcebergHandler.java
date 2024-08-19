@@ -27,6 +27,7 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.spark.SparkCatalog;
 import org.apache.iceberg.spark.SparkSessionCatalog;
 import org.apache.iceberg.spark.source.SparkTable;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
 import org.apache.spark.sql.connector.catalog.Identifier;
@@ -91,6 +92,8 @@ public class IcebergHandler implements CatalogHandler {
       symlink = getRestIdentifier(catalogConf.get(CatalogProperties.URI), tableName);
     } else if ("nessie".equals(catalogType)) {
       symlink = getNessieIdentifier(catalogConf.get(CatalogProperties.URI), tableName);
+    } else if ("glue".equals(catalogType)) {
+      symlink = getGlueIdentifier(tableName, session);
     } else {
       symlink = FilesystemDatasetUtils.fromLocationAndName(warehouseLocation.toUri(), tableName);
     }
@@ -133,6 +136,14 @@ public class IcebergHandler implements CatalogHandler {
   private DatasetIdentifier getNessieIdentifier(@Nullable String confUri, String table) {
     String uri = new URI(confUri).toString();
     return new DatasetIdentifier(table, uri);
+  }
+
+  @SneakyThrows
+  private DatasetIdentifier getGlueIdentifier(String table, SparkSession sparkSession) {
+    SparkContext sparkContext = sparkSession.sparkContext();
+    String arn =
+        PathUtils.getGlueArn(sparkContext.getConf(), sparkContext.hadoopConfiguration()).get();
+    return new DatasetIdentifier(table, arn);
   }
 
   @SneakyThrows
