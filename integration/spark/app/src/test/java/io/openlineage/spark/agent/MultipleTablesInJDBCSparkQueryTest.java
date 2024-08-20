@@ -249,7 +249,7 @@ class MultipleTablesInJDBCSparkQueryTest {
     return new PostgreSQLTestContainer(postgres);
   }
 
-  String loadResourceFileAsString(String fileName) throws IOException {
+  String loadResourceFileAsString(String fileName) {
     InputStream inputStream = getClass().getResourceAsStream(fileName);
     BufferedReader reader =
         new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
