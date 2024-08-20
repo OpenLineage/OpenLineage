@@ -415,7 +415,7 @@ jobs:
           if [ -n "$CIRCLE_TAG" ]; then
             python -m twine upload --non-interactive --verbose --repository pypi dist/*
           else
-            python -m twine upload --non-interactive --verbose --repository testpypi dist/*
+            python -m twine check dist/*
           fi
 
   # JAVA
@@ -1177,9 +1177,11 @@ jobs:
       image: ubuntu-2404:current
     steps:
       - *checkout_project_root
-      - run: ./docker/login.sh
-      - run: ./docker/build-and-push-proxy.sh $CIRCLE_TAG
-
+      - run: |
+          ./docker/login.sh
+          if [ -n "$CIRCLE_TAG" ]; then
+            ./docker/build-and-push-proxy.sh $CIRCLE_TAG
+          fi
   run-pre-commit:
     # this job run pre-commit for Python client only
     # add dependency to other files when pre-commit runs related checks
