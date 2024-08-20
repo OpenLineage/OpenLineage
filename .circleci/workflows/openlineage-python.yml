@@ -1,0 +1,164 @@
+workflows:
+  openlineage-integration-airflow:
+    when:
+      matches:
+        pattern: '^pull\/[0-9]+$'
+        value: << pipeline.git.branch >>
+    jobs:
+      - build-integration-sql-python:
+          name: "build-integration-sql-python-x86"
+          image: "quay.io/pypa/manylinux2014_x86_64"
+          resource_class: "medium"
+          run_tests: true
+      - build-integration-sql-python:
+          name: "build-integration-sql-python-arm"
+          image: "quay.io/pypa/manylinux2014_aarch64"
+          resource_class: "arm.medium"
+          run_tests: true
+      - build-integration-sql-python-macos
+      - unit-test-integration-common:
+          requires:
+            - build-integration-sql-python-x86
+            - build-integration-sql-python-arm
+            - build-integration-sql-python-macos
+      - build-integration-common:
+          filters:
+            branches:
+              only: main
+          build_tag: ".dev<< pipeline.number >>"
+          requires:
+            - unit-test-integration-common
+      - unit-test-integration-airflow:
+          matrix:
+              parameters:
+                airflow-version: [
+                  'airflow-2.3.4',
+                  'airflow-2.4.3',
+                  'airflow-2.5.2',
+                  'airflow-2.6.1'
+                ]
+                install_parser: [ true ]
+          requires:
+            - build-integration-sql-python-x86
+            - build-integration-sql-python-arm
+            - build-integration-sql-python-macos
+      - approval-integration-airflow:
+          type: approval
+          requires:
+            - unit-test-integration-airflow
+            - unit-test-integration-common
+            - unit-tests-client-python
+            - build-integration-sql-python-x86
+            - build-integration-sql-python-arm
+            - build-integration-sql-python-macos
+      - integration-test-integration-airflow:
+          matrix:
+            parameters:
+              airflow-image: [
+                'apache/airflow:2.3.4-python3.8',
+                'apache/airflow:2.4.3-python3.8',
+                'apache/airflow:2.5.2-python3.8',
+                'apache/airflow:2.6.1-python3.8'
+              ]
+          context: integration-tests
+          requires:
+            - approval-integration-airflow
+      - integration-test-integration-airflow-failure:
+          matrix:
+            parameters:
+              failure-type: [
+                'timeout',
+                'error',
+                'network-partition'
+              ]
+          context: integration-tests
+          requires:
+            - approval-integration-airflow
+      - build-integration-airflow:
+          filters:
+            branches:
+              only: main
+          build_tag: ".dev<< pipeline.number >>"
+          requires:
+            - integration-test-integration-airflow
+      - unit-test-client-python:
+          name: "CPython 3.8"
+          tox_env: py38
+          py_env: "3.8"
+      - unit-test-client-python:
+          name: "CPython 3.9"
+          tox_env: py39
+          py_env: "3.9"
+      - unit-test-client-python:
+          name: "CPython 3.10"
+          tox_env: py310
+          py_env: "3.10"
+      - unit-test-client-python:
+          name: "CPython 3.11"
+          tox_env: py311
+          py_env: "3.11"
+      - unit-test-client-python:
+          name: "type checker"
+          tox_env: type
+          py_env: "3.11"
+      - unit-tests-client-python:
+          requires:
+            - "CPython 3.8"
+            - "CPython 3.9"
+            - "CPython 3.10"
+            - "CPython 3.11"
+            - "type checker"
+      - build-client-python:
+          filters:
+            branches:
+              only: main
+          build_tag: ".dev<< pipeline.number >>"
+          requires:
+            - unit-tests-client-python
+      - publish-client-python-reference:
+          filters:
+            branches:
+              only: main
+          context: release
+          requires:
+            - build-client-python
+            - unit-tests-client-python
+      - build-integration-dbt:
+          filters:
+            branches:
+              only: main
+          build_tag: ".dev<< pipeline.number >>"
+      - unit-test-integration-dagster:
+          requires:
+            - unit-tests-client-python
+      - build-integration-dagster:
+          filters:
+            branches:
+              only: main
+          build_tag: ".dev<< pipeline.number >>"
+          requires:
+            - unit-test-integration-dagster
+      - workflow_complete:
+          requires:
+            - build-integration-airflow
+            - integration-test-integration-airflow-failure
+            - integration-test-integration-airflow
+            - publish-client-python-reference
+            - build-integration-dbt
+            - build-integration-dagster
+      - release-python:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              only: main
+          context: release
+          requires:
+            - build-client-python
+            - build-integration-common
+            - build-integration-airflow
+            - build-integration-dbt
+            - build-integration-dagster
+            - build-integration-sql-python-x86
+            - build-integration-sql-python-arm
+            - build-integration-sql-python-macos
