@@ -60,6 +60,7 @@ jobs:
       - run:
           name: Check changes and merge workflows.
           command: |
+            set -x
             # Based on the changed files (or if we are on the main branch), generate a yaml file with
             # a list of workflow files. Use those files to build a workflow with a union of all tasks
 
@@ -129,7 +130,7 @@ jobs:
             #
             # This configuration is piped into yq along with the continue_config.yml file and the
             # union of the two files is output to complete_config.yml
-            yq eval-all '.workflows[].jobs |= map(select(.[].requires == null) |= .[].requires = ["always_run"])
+            yq eval-all '.workflows[].jobs |= map(select(.[].requires == null and (. | keys | .[0] != "always_run")) |= .[].requires = ["always_run"])
                 | .workflows | . as $wf ireduce({}; . * $wf) |
                 (map(.jobs[] | select(has("workflow_complete") | not)) | . as $item ireduce ([]; (. *+ $item) ))
                 + [(map(.jobs[] | select(has("workflow_complete"))) | .[] as $item ireduce ({}; . *+ $item))] | {"workflows": {"build": {"jobs": .}}}' $FILES | \
@@ -156,7 +157,7 @@ jobs:
                       for approval in approvals:
                           approval_name = next(iter(approval))
                           approval_upstreams = approval[approval_name].get('requires')
-                          approval_downstream = list(filter(lambda x: isinstance(x, dict) and approval_name in list(x.values())[0].get('requires'), jobs))
+                          approval_downstream = list(filter(lambda x: isinstance(x, dict) and hasattr(list(x.values())[0], 'requires') and approval_name in list(x.values())[0].get('requires'), jobs))
                           # replace approval with its upstream jobs
                           for job in approval_downstream:
                               requires = next(iter(job.values()))['requires']
