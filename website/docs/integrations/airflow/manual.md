@@ -18,7 +18,7 @@ This feature is only supported with Airflow versions greater than 2.1.0)
 Airflow allows operators to track lineage by specifying the input and outputs of the operators via inlets and outlets. OpenLineage tries to find the input and output datasets of the Airflow job via provided extractors or custom extractors. As fallback, if it fails to find any input or output datasets, then OpenLineage defaults to inlets and outlets of Airflow jobs. 
 
 
-OpenLineage supports automated lineage extraction only for selective operators. For other operators and custom-defined ones, users need to write their own custome extractors (by implementing `extract` / `extract_on_complete` method) for Airflow operators that indicate the input and output dataset of the corresponding task. 
+OpenLineage supports automated lineage extraction only for selective operators. For other operators and custom-defined ones, users need to write their own custom extractors (by implementing `extract` / `extract_on_complete` method) for Airflow operators that indicate the input and output dataset of the corresponding task. 
 This can be circumvented by specifying the input and output datasets using operator's inlets and outlets. OpenLineage will default to use inlets and outlets as input/output datasets if it cannot find any successful extraction from the extractors. 
 
 While specifying the DAG, inlets and outlets can be provided as lists of Tables for every operator. 

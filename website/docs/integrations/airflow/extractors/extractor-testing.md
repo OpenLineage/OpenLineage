@@ -76,7 +76,7 @@ def test_extract_e2e(self, mock_client, mock_hook):
     )
 		# Assert the uri is None (as it already exists in dataSource).
     assert task_meta.outputs[0].facets["dataSource"].uri is None
-		# Assert the schema fields match the numnber of fields of the table created by the operator query.
+		# Assert the schema fields match the number of fields of the table created by the operator query.
     assert len(task_meta.outputs[0].facets["schema"].fields) == 3
 		# Assert the output statistics match the results of the operator query.
     assert (

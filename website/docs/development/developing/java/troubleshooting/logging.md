@@ -152,7 +152,7 @@ public class OpenLineageClientTest
                             .build())
                     .build());
 
-        // run state udpate which encapsulates all - with START event in this case
+        // run state update which encapsulates all - with START event in this case
         RunEvent runStateUpdate =
         ol.newRunEventBuilder()
             .eventType(eventType)

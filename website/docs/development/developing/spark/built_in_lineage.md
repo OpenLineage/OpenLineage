@@ -155,7 +155,7 @@ to implement `io.openlineage.spark.builtin.scala.v1.LineageRelation` interface.
 
 An extension can contain implementation of `org.apache.spark.sql.sources.RelationProvider` 
 which again does not use any custom nodes within the logical plan, but provides classes to 
-create relations. To support this scenarion, `io.openlineage.spark.builtin.scala.v1.LineageDatasetProvider`
+create relations. To support this scenario, `io.openlineage.spark.builtin.scala.v1.LineageDatasetProvider`
 can be implemented. 
 
 ### When extension uses Spark DataSource v2 API

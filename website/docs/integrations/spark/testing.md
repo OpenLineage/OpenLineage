@@ -88,7 +88,7 @@ where:
 
 ### Tests definition directories
 
- * Specified test directory should contain one ore more directories and each of the subdirectories contains separate test definition. 
+ * Specified test directory should contain one or more directories and each of the subdirectories contains separate test definition. 
  * Each test directory should contain a single `.sql` or `.py` pySpark code file containing a job definition. For `.sql` file each line of the file is decorated with `spark.sql()` and transformed into pySpark script. 
 For pySpark scripts, a user should instantiate SparkSession with OpenLineage parameters configured properly. Please refer to existing tests for usage examples. 
  * Each test directory should contain on or more event definition file with `.json` extensions defining an expected content of any of the events emitted by the job run. 

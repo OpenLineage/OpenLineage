@@ -40,7 +40,7 @@ and datastructures containing necessary information:
   * outputs - map pointing from output field name to its `ExprId`
   * exprDependencies - map pointing from `ExprId` to set of its `Dependency` objects containing `ExprId` and information about type of the dependency.
   * datasetDependencies - list of `ExprId` representing pseudo-expressions representing operations like `filter`, `join` etc.
-  * externalExpressionMappings - map poiting from `ColumnMeta` object to `ExprId` used for dependencies extracted by `sql-parser`
+  * externalExpressionMappings - map pointing from `ColumnMeta` object to `ExprId` used for dependencies extracted by `sql-parser`
 
 
 * Class `ColumnLevelLineageBuilder` is used when traversing logical plans to store all the information required to produce column-level lineage.

@@ -321,7 +321,7 @@ But, team `B` is not sure what might have caused the DAG failure as no recent co
 
 ![](./docs/astro-lineage-view-dataset.png)
 
-Team `B` soon realizes that the schema has changed recently for the `counts` table! To fix the DAG, team `B` updates the `t2` task that calcuates the count total to use the new column name:
+Team `B` soon realizes that the schema has changed recently for the `counts` table! To fix the DAG, team `B` updates the `t2` task that calculates the count total to use the new column name:
 
 ```diff
 query2 = PostgresOperator(

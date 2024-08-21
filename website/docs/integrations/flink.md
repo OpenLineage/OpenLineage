@@ -28,7 +28,7 @@ successful finish of job, or job failure. Implementations of this interface are 
 
 When OpenLineage listener receives information that job was submitted, it extracts `Transformations` from job's 
 `ExecutionEnvironment`. The `Transformations` represent logical operations in the dataflow graph; they are composed
-of both Flink's build-in operators, but also user-provided `Sources`, `Sinks` and functions. To get the lineage,
+of both Flink's built-in operators, but also user-provided `Sources`, `Sinks` and functions. To get the lineage,
 OpenLineage integration processes dataflow graph. Currently, OpenLineage is interested only in information contained 
 in `Sources` and `Sinks`, as they are the places where Flink interacts with external systems. 
 

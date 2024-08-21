@@ -4,7 +4,7 @@ sidebar_position: 1
 ---
 
 There are four Python OpenLineage packages that you can install locally when setting up a development environment.<br />
-Two of them: [openlineage-integration-common](https://pypi.org/project/openlineage-integration-common/) and [openlineage-airflow](https://pypi.org/project/openlineage-airflow/) have dependecy on [openlineage-python](https://pypi.org/project/openlineage-python/) client and [openlineage-sql](https://pypi.org/project/openlineage-sql/).
+Two of them: [openlineage-integration-common](https://pypi.org/project/openlineage-integration-common/) and [openlineage-airflow](https://pypi.org/project/openlineage-airflow/) have dependency on [openlineage-python](https://pypi.org/project/openlineage-python/) client and [openlineage-sql](https://pypi.org/project/openlineage-sql/).
 
 Typically, you first need to build `openlineage-sql` locally (see [README](https://github.com/OpenLineage/OpenLineage/blob/main/integration/sql/README.md)). After each release you have to repeat this step in order to bump local version of the package.
 

@@ -25,7 +25,7 @@ Custom facets can be promoted to the standard by including them in the spec.
 #### Custom Facet Naming
 
 The naming of custom facets should follow the pattern `{prefix}{name}{entity}Facet` PascalCased.  
-The prefix must be a distinct identifier named after the project defining it to avoid colision with standard facets defined in the [OpenLineage.json](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json) spec.
+The prefix must be a distinct identifier named after the project defining it to avoid collision with standard facets defined in the [OpenLineage.json](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json) spec.
 The entity is the core entity for which the facet is attached.
 
 When attached to the core entity, the key should follow the pattern `{prefix}_{name}`, where both prefix and name follow snakeCase pattern. 
@@ -68,7 +68,7 @@ An example of a valid name is `BigQueryStatisticsJobFacet` and its key `bigQuery
 
 #### Input Dataset Facets
 
-- **dataQualityMetrics**: Captures dataset-level and column-level data quality metrics when scanning a dataset whith a DataQuality library (row count, byte size, null count, distinct count, average, min, max, quantiles).
+- **dataQualityMetrics**: Captures dataset-level and column-level data quality metrics when scanning a dataset with a DataQuality library (row count, byte size, null count, distinct count, average, min, max, quantiles).
 
 - **dataQualityAssertions**: Captures the result of running data tests on a dataset or its columns.
 
