@@ -2,14 +2,23 @@ workflows:
   openlineage-spark:
     jobs:
       - build-integration-spark-extension-interfaces:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           context: << pipeline.parameters.build-context >>
           requires:
             - build-client-java
       - build-integration-spark-extension-entrypoint:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           context: << pipeline.parameters.build-context >>
           requires:
             - build-client-java
       - test-integration-spark:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           matrix:
             parameters:
               env-variant: [
@@ -34,6 +43,9 @@ workflows:
             - build-integration-spark-extension-interfaces
             - build-integration-spark-extension-entrypoint
       - build-integration-spark:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           context: << pipeline.parameters.build-context >>
           matrix:
             alias: build-integration-spark-scala-2_12
@@ -45,6 +57,9 @@ workflows:
            - build-integration-spark-extension-interfaces
            - build-integration-spark-extension-entrypoint
       - build-integration-spark:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           context: << pipeline.parameters.build-context >>
           matrix:
             alias: build-integration-spark-scala-2_13
@@ -56,15 +71,24 @@ workflows:
             - build-integration-spark-extension-interfaces
             - build-integration-spark-extension-entrypoint
       - approval-integration-spark:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           type: approval
           requires:
             - build-integration-spark-scala-2_12
             - build-integration-spark-scala-2_13
       - jar-verification-spark:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           requires:
             - build-integration-spark-scala-2_12
             - build-integration-spark-scala-2_13
       - integration-test-databricks-integration-spark:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           context: integration-tests
           matrix:
             parameters:
@@ -72,6 +96,9 @@ workflows:
           requires:
             - approval-integration-spark
       - integration-test-integration-spark:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           context: integration-tests
           matrix:
             parameters:
@@ -94,13 +121,22 @@ workflows:
           requires:
             - approval-integration-spark
       - configurable-integration-test-spark:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           context: integration-tests
       - slack-notify:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           context: slack-secrets
           requires:
             - integration-test-integration-spark
             - jar-verification-spark
       - workflow_complete:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           requires:
             - slack-notify
       - release-integration-spark:
