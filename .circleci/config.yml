@@ -129,10 +129,14 @@ jobs:
             #
             # This configuration is piped into yq along with the continue_config.yml file and the
             # union of the two files is output to complete_config.yml
-            yq eval-all '.workflows[].jobs |= map(select(.[].requires == null) |= .[].requires = ["always_run"])
-                | .workflows | . as $wf ireduce({}; . * $wf) |
-                (map(.jobs[] | select(has("workflow_complete") | not)) | . as $item ireduce ([]; (. *+ $item) ))
-                + [(map(.jobs[] | select(has("workflow_complete"))) | .[] as $item ireduce ({}; . *+ $item))] | {"workflows": {"build": {"jobs": .}}}' $FILES | \
+            yq eval-all '.workflows | . as $wf ireduce({}; . * $wf) | to_entries |
+                .[] |= (
+                  with(select(.key == "openlineage-always"); .) |
+                  with(select(.key != "openlineage-always"); .value.jobs |= map(select(.[].requires == null) |= .[].requires = ["always_run"]))
+                  ) | from_entries |
+                ((map(.jobs[] | select(has("workflow_complete") | not)) | . as $item ireduce ([]; (. *+ $item) ))
+                + [(map(.jobs[] | select(has("workflow_complete"))) | .[] as $item ireduce ({}; . *+ $item))])' $FILES | \
+            yq eval-all '{"workflows": {"build": {"jobs": .}}}' - | \
             yq eval-all '. as $wf ireduce({}; . * $wf)' .circleci/continue_config.yml - > complete_config.yml
             cat complete_config.yml  # to reproduce generated workflow
       - unless:
@@ -156,7 +160,7 @@ jobs:
                       for approval in approvals:
                           approval_name = next(iter(approval))
                           approval_upstreams = approval[approval_name].get('requires')
-                          approval_downstream = list(filter(lambda x: isinstance(x, dict) and approval_name in list(x.values())[0].get('requires'), jobs))
+                          approval_downstream = list(filter(lambda x: isinstance(x, dict) and approval_name in list(x.values())[0].get('requires', ''), jobs))
                           # replace approval with its upstream jobs
                           for job in approval_downstream:
                               requires = next(iter(job.values()))['requires']
