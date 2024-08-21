@@ -5,6 +5,17 @@ orbs:
   rust: circleci/rust@1.6.0
   slack: circleci/slack@4.13.3
 
+parameters:
+  build-context:
+    default: "pr"
+    type: string
+  databricks-test:
+    type: string
+    default: "disabled"
+  nightly-run:
+    type: string
+    default: "inactive"
+
 checkout_project_root: &checkout_project_root
   # Override checkout path to project root (see: https://circleci.com/docs/2.0/configuration-reference/#checkout)
   checkout:
@@ -82,13 +93,6 @@ commands:
             - run: pip install target/wheels/*manylinux_2_17_x86_64*.whl
       - run: (cd ~/openlineage/integration/common && pip install . --user)
 
-parameters:
-  databricks-test:
-    type: string
-    default: "disabled"
-  nightly-run:
-    type: string
-    default: "inactive"
 
 jobs:
 

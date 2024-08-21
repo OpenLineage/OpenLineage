@@ -2,7 +2,7 @@ workflows:
   openlineage-java:
     jobs:
       - build-client-java:
-          context: release
+          context: << pipeline.parameters.build-context >>
       - compile-integration-sql-java-linux:
           matrix:
             alias: compile-integration-sql-java-linux-x86
@@ -21,7 +21,7 @@ workflows:
               resource_class: [ "arm.medium" ]
       - compile-integration-sql-java-macos
       - build-integration-sql-java:
-          context: release
+          context: << pipeline.parameters.build-context >>
           requires:
             - compile-integration-sql-java-linux-arm
             - compile-integration-sql-java-linux-x86
