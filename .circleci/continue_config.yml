@@ -42,6 +42,29 @@ commands:
           export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
 
           ./gradlew --console=plain publish --info
+  set_java_17:
+    description: Set Java to Java 17
+    steps:
+      - run:
+          name: Java version Variable
+          command: |
+            JAVA=17
+
+            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
+            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
+            
+            JAVA_BIN="$JAVA17_HOME/bin/java"
+            JAVAC_BIN="$JAVA17_HOME/bin/javac"
+            echo 'export JAVA8_HOME=/usr/lib/jvm/java-8-openjdk-amd64' >> "$BASH_ENV"
+            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
+            echo 'export JAVA_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
+            echo 'export JAVAC_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
+            echo "${JAVA}"
+            echo "${JAVA_BIN}"
+            echo "${JAVAC_BIN}"
+            echo "Setting default Java to ${JAVA_BIN}"
+            sudo update-alternatives --set java ${JAVA_BIN}
+            sudo update-alternatives --set javac ${JAVAC_BIN}
 
 
   install_integration_common:
@@ -527,19 +550,7 @@ jobs:
       - run:
           name: Generate cache key
           command: ./../../.circleci/checksum.sh /tmp/checksum.txt
-      - run:
-          name: Java version Variable
-          command: |
-            JAVA=17
-
-            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
-            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
-
-            JAVA_BIN=$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java")
-            JAVAC_BIN=$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac")
-            echo "Setting default Java to ${JAVA_BIN}"
-            sudo update-alternatives --set java ${JAVA_BIN}
-            sudo update-alternatives --set javac ${JAVAC_BIN}
+      - set_java_17
       - restore_cache:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
@@ -872,6 +883,7 @@ jobs:
             - restore_cache:
                 keys:
                   - v1-configurable-integration-test
+            - set_java_17
             - run: ./integration/spark/cli/configurable-test.sh --spark ./integration/spark/cli/spark-conf.yml --test ./integration/spark/cli/tests
             - run: ./integration/spark/cli/configurable-test.sh --spark ./integration/spark/cli/spark-conf-docker.yml --test ./integration/spark/cli/tests
             - store_artifacts:
@@ -898,25 +910,9 @@ jobs:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-integration-spark-{{ .Branch }}
-      - run:
-          name: Java version Variable
-          command: |
-            JAVA=17
-
-            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
-            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
-
-            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
-            echo 'export JAVA_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
-            echo 'export JAVAC_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
-            echo "${JAVA}"
-            echo "${JAVA_BIN}"
-            echo "${JAVAC_BIN}"
+      - set_java_17
       - attach_workspace:
           at: ~/
-      - run: |
-          sudo update-alternatives --set java ${JAVA_BIN}
-          sudo update-alternatives --set javac ${JAVAC_BIN}
       - run: ./gradlew --no-daemon --console=plain clean jarVerification -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
       - run: ./gradlew --no-daemon --console=plain clean jarVerification -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
 
@@ -979,23 +975,7 @@ jobs:
             - v1-integration-flink-{{ .Branch }}
       - attach_workspace:
           at: ~/
-      - run:
-          name: Java version Variable
-          command: |
-            JAVA=17
-
-            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
-            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
-            JAVA_BIN=$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java")
-            JAVAC_BIN=$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac")
-
-            echo "${JAVA}"
-            echo "${JAVA_BIN}"
-            echo "${JAVAC_BIN}"
-            echo "Setting default Java to ${JAVA_BIN}"
-
-            sudo update-alternatives --set java ${JAVA_BIN}
-            sudo update-alternatives --set javac ${JAVAC_BIN}
+      - set_java_17
       - run: chmod -R 777 data/iceberg/db
       - run: ./gradlew --console=plain examples:stateful:build -Pflink.version=<< parameters.flink-version >>
       - run: ./gradlew --no-daemon --console=plain integrationTest --i -Pflink.version=<< parameters.flink-version >>
