@@ -152,7 +152,7 @@ public class PathUtils {
   }
 
   @SneakyThrows
-  private static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
+  public static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
     Optional<String> clientFactory =
         SparkConfUtils.findHadoopConfigKey(hadoopConf, "hive.metastore.client.factory.class");
     // Fetch from spark config if set.

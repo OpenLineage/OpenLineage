@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_3_OR_ABOVE;
+import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_VERSION;
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.expr;
 import static org.apache.spark.sql.functions.from_json;
@@ -15,19 +17,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
-import io.openlineage.client.OpenLineageClientUtils;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -35,10 +30,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
@@ -80,8 +72,6 @@ import org.testcontainers.utility.DockerImageName;
 @Slf4j
 @Tag("integration-test")
 class SparkStreamingTest {
-  private static final String SPARK_3_OR_ABOVE = "^[3-9].*";
-  private static final String SPARK_VERSION = "spark.version";
 
   @Getter
   static class InputMessage {
@@ -151,7 +141,8 @@ class SparkStreamingTest {
     }
   }
 
-  private static final OpenLineageEndpointHandler handler = new OpenLineageEndpointHandler();
+  private static final SparkTestsUtils.OpenLineageEndpointHandler handler =
+      new SparkTestsUtils.OpenLineageEndpointHandler();
 
   @Test
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
@@ -652,51 +643,5 @@ class SparkStreamingTest {
     } catch (ExecutionException | InterruptedException e) {
       throw new RuntimeException(e);
     }
-  }
-}
-
-@Tag("integration-test")
-class OpenLineageEndpointHandler implements HttpHandler {
-  List<String> eventsContainer = new ArrayList<>();
-
-  Map<String, List<RunEvent>> events = new HashMap<>();
-
-  public OpenLineageEndpointHandler() {}
-
-  @Override
-  public void handle(HttpExchange exchange) throws IOException {
-    InputStreamReader isr =
-        new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
-    BufferedReader br = new BufferedReader(isr);
-    String value = br.readLine();
-
-    eventsContainer.add(value);
-
-    RunEvent runEvent = OpenLineageClientUtils.runEventFromJson(value);
-    String jobName = runEvent.getJob().getName();
-
-    Optional<String> jobNameShort = Arrays.stream(jobName.split("\\.")).findFirst();
-
-    if (!jobNameShort.isPresent()) {
-      return;
-    }
-
-    String jobNameShortString = jobNameShort.get();
-
-    if (!events.containsKey(jobNameShortString)) {
-      events.put(jobNameShortString, new ArrayList<>());
-    }
-
-    events.get(jobNameShortString).add(runEvent);
-
-    exchange.sendResponseHeaders(200, 0);
-    try (Writer writer =
-        new OutputStreamWriter(exchange.getResponseBody(), StandardCharsets.UTF_8)) {
-      writer.write("{}");
-    }
-  }
-
-  public List<String> getEvents() {
-    return eventsContainer;
   }
 }

@@ -5,7 +5,7 @@ setup: true
 # the continuation orb is required to continue a pipeline based on
 # the path of an updated fileset
 orbs:
-  continuation: circleci/continuation@0.2.0
+  continuation: circleci/continuation@1.0.0
 
 # optional parameter when triggering to
 # only run a particular type of integration
@@ -86,6 +86,9 @@ jobs:
               # run only Spark within nightly build
               echo "$PWD/.circleci/workflows/openlineage-spark.yml" >> workflow_files.txt
               echo "$PWD/.circleci/workflows/openlineage-java.yml" >> workflow_files.txt
+            elif [ -n "$CIRCLE_TAG" ]; then
+              # If we are on tag, run all of the workflows
+              ls -d $PWD/.circleci/workflows/* > workflow_files.txt
             elif [ "$CIRCLE_BRANCH" == "main" ]; then
               # If we are on the main branch, run all of the workflows
               # if integration type is not all, we specify only a single integration type in workflow files
@@ -104,11 +107,11 @@ jobs:
               check_change integration/spark/ openlineage-java.yml openlineage-spark.yml
               check_change integration/spark-extension-interfaces/ openlineage-java.yml openlineage-spark.yml
               check_change integration/flink/ openlineage-java.yml openlineage-flink.yml
-              check_change client/python/ openlineage-integration-python.yml openlineage-integration-dbt.yml openlineage-integration-dagster.yml openlineage-integration-airflow.yml
-              check_change integration/common/ openlineage-integration-python.yml openlineage-integration-airflow.yml openlineage-integration-dbt.yml
-              check_change integration/airflow/ openlineage-integration-python.yml openlineage-integration-airflow.yml
-              check_change integration/dagster/ openlineage-integration-python.yml openlineage-integration-dagster.yml
-              check_change integration/dbt/ openlineage-integration-python.yml openlineage-integration-dbt.yml openlineage-integration-airflow.yml
+              check_change client/python/ openlineage-python.yml
+              check_change integration/common/ openlineage-python.yml
+              check_change integration/airflow/ openlineage-python.yml
+              check_change integration/dagster/ openlineage-python.yml
+              check_change integration/dbt/ openlineage-python.yml
               check_change proxy/backend/ openlineage-proxy-backend.yml
               check_change proxy/fluentd/ openlineage-proxy-fluentd.yml
             fi
@@ -126,54 +129,66 @@ jobs:
             #
             # This configuration is piped into yq along with the continue_config.yml file and the
             # union of the two files is output to complete_config.yml
-
             yq eval-all '.workflows[].jobs |= map(select(.[].requires == null) |= .[].requires = ["always_run"])
                 | .workflows | . as $wf ireduce({}; . * $wf) |
                 (map(.jobs[] | select(has("workflow_complete") | not)) | . as $item ireduce ([]; (. *+ $item) ))
                 + [(map(.jobs[] | select(has("workflow_complete"))) | .[] as $item ireduce ({}; . *+ $item))] | {"workflows": {"build": {"jobs": .}}}' $FILES | \
             yq eval-all '. as $wf ireduce({}; . * $wf)' .circleci/continue_config.yml - > complete_config.yml
+            cat complete_config.yml  # to reproduce generated workflow
       - unless:
           condition:
             matches:
               pattern: '^pull\/[0-9]+$'
               value: << pipeline.git.branch >>
           steps:
-          - run:
-              name: Remove approval steps if not pull from forks.
-              command: |
-                pip install pyyaml==6.0.1
-                python -c  "import yaml
-                d = yaml.safe_load(open('complete_config.yml'))
-                for workflow_name, workflow_definition in d['workflows'].items():
-                    jobs = workflow_definition.get('jobs') if isinstance(workflow_definition, dict) else None
-                    if not jobs: continue
-
-                    # find all approvals
-                    approvals = list(filter(lambda x: isinstance(x, dict) and list(x.values())[0].get('type') == 'approval', jobs))
-                    for approval in approvals:
-                        approval_name = next(iter(approval))
-                        approval_upstreams = approval[approval_name].get('requires')
-                        approval_downstream = list(filter(lambda x: isinstance(x, dict) and approval_name in list(x.values())[0].get('requires'), jobs))
-                        # replace approval with its upstream jobs
-                        for job in approval_downstream:
-                            requires = next(iter(job.values()))['requires']
-                            requires.remove(approval_name)
-                            requires.extend(approval_upstreams)
-                        jobs.remove(approval)
-                with open('complete_config.yml', 'w') as f:
-                    f.write(yaml.dump(d, sort_keys=False))"
-
-      - continuation/continue:
-          configuration_path: complete_config.yml
+            - run:
+                name: Remove approval steps if not pull from forks.
+                command: |
+                  pip install pyyaml==6.0.1
+                  python -c  "import yaml
+                  d = yaml.safe_load(open('complete_config.yml'))
+                  for workflow_name, workflow_definition in d['workflows'].items():
+                      jobs = workflow_definition.get('jobs') if isinstance(workflow_definition, dict) else None
+                      if not jobs: continue
+                  
+                      # find all approvals
+                      approvals = list(filter(lambda x: isinstance(x, dict) and list(x.values())[0].get('type') == 'approval', jobs))
+                      for approval in approvals:
+                          approval_name = next(iter(approval))
+                          approval_upstreams = approval[approval_name].get('requires')
+                          approval_downstream = list(filter(lambda x: isinstance(x, dict) and approval_name in list(x.values())[0].get('requires'), jobs))
+                          # replace approval with its upstream jobs
+                          for job in approval_downstream:
+                              requires = next(iter(job.values()))['requires']
+                              requires.remove(approval_name)
+                              requires.extend(approval_upstreams)
+                          jobs.remove(approval)
+                  with open('complete_config.yml', 'w') as f:
+                      f.write(yaml.dump(d, sort_keys=False))"
+      - when:
+          condition:
+            or:
+              - equal: [ 'main',  << pipeline.git.branch >> ]
+              - << pipeline.git.tag >>
+          steps:
+            - continuation/continue:
+                configuration_path: complete_config.yml
+                parameters: '{ "build-context": "release" }'
+      - when:
+          condition:
+            not:
+              or:
+                - equal: [ 'main',  << pipeline.git.branch >> ]
+                - << pipeline.git.tag >>
+          steps:
+            - continuation/continue:
+                configuration_path: complete_config.yml
+                parameters: '{ "build-context": "pr" }'
 
 workflows:
   schedule_workflow:
     jobs:
-      - determine_changed_modules
-      - continuation/continue:
+      - determine_changed_modules:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          configuration_path: .circleci/continue_config.yml

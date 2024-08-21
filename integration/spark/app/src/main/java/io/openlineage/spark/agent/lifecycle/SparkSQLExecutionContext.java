@@ -19,11 +19,14 @@ import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.JobNameBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.ActiveJob;
@@ -34,6 +37,7 @@ import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
 import org.apache.spark.scheduler.SparkListenerStageSubmitted;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
@@ -58,6 +62,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private boolean emittedOnJobEnd = false;
   private Integer activeJobId;
   private AtomicBoolean finished = new AtomicBoolean(false);
+
+  private SparkSQLQueryParser sqlRecorder = new SparkSQLQueryParser();
 
   public SparkSQLExecutionContext(
       long executionId,
@@ -360,6 +366,61 @@ class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   private OpenLineage.JobFacetsBuilder getJobFacetsBuilder(QueryExecution queryExecution) {
-    return openLineage.newJobFacetsBuilder().jobType(getJobTypeJobFacet(queryExecution));
+
+    OpenLineage.JobFacetsBuilder builder =
+        openLineage.newJobFacetsBuilder().jobType(getJobTypeJobFacet(queryExecution));
+
+    Optional<OpenLineage.SQLJobFacet> sqlFacets = resolveSQLFacets(queryExecution);
+
+    sqlFacets.ifPresent(builder::sql);
+
+    return builder;
+  }
+
+  Optional<OpenLineage.SQLJobFacet> resolveSQLFacets(QueryExecution queryExecution) {
+    LogicalPlan logicalPlan = queryExecution.logical();
+
+    String query = null;
+
+    Stack<LogicalPlan> stack = new Stack<>();
+
+    if (logicalPlan != null) {
+      stack.add(logicalPlan);
+    }
+
+    boolean found = false;
+
+    while (!stack.isEmpty() && !found) {
+      int stackLength = stack.size();
+
+      while (stackLength > 0) {
+        LogicalPlan currentLogicalPlan = stack.pop();
+
+        if (currentLogicalPlan == null) {
+          continue;
+        }
+
+        Optional<String> parsedQuery = sqlRecorder.parse(currentLogicalPlan);
+
+        if (currentLogicalPlan.origin() != null && parsedQuery.isPresent()) {
+          query = parsedQuery.get();
+          found = true;
+          break;
+        }
+
+        List<LogicalPlan> javaChildren =
+            ScalaConversionUtils.fromSeq(currentLogicalPlan.children());
+
+        stack.addAll(javaChildren);
+
+        stackLength--;
+      }
+    }
+
+    if (query == null) {
+      return Optional.empty();
+    }
+
+    return Optional.of(openLineage.newSQLJobFacetBuilder().query(query).build());
   }
 }

@@ -273,6 +273,14 @@ openlineage.client.generated.symlinks\_dataset module
    :undoc-members:
    :show-inheritance:
 
+openlineage.client.transport.composite module
+----------------------------------------
+
+.. automodule:: openlineage.client.transport.composite
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 openlineage.client.transport.console module
 -------------------------------------------
 
