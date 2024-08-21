@@ -23,7 +23,7 @@ from openlineage.common.provider.dbt import (
 from openlineage.common.utils import parse_multiple_args, parse_single_arg
 from tqdm import tqdm
 
-__version__ = "1.21.0"
+__version__ = "1.20.2"
 
 
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
