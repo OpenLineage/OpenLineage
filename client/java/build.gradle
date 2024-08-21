@@ -73,6 +73,9 @@ dependencies {
     compileOnly 'com.amazonaws:amazon-kinesis-producer:0.15.10'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     compileOnly "io.micrometer:micrometer-registry-statsd:${micrometerVersion}"
+    compileOnly 'software.amazon.awssdk:auth:2.26.12'
+    compileOnly 'software.amazon.awssdk:datazone:2.26.12'
+    compileOnly 'software.amazon.awssdk:apache-client:2.26.12'
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     codeGenerator project(':generator')

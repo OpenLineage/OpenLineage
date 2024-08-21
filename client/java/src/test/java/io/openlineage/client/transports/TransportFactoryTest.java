@@ -46,4 +46,13 @@ class TransportFactoryTest {
 
     assertThat(transportFactory.build()).isInstanceOf(KafkaTransport.class);
   }
+
+  @Test
+  void createAmazoneDataZoneTransport() {
+    AmazonDataZoneConfig config = new AmazonDataZoneConfig();
+    config.setDomainId("dzd_a1b2c3d4e5f6g7");
+    TransportFactory transportFactory = new TransportFactory(config);
+
+    assertThat(transportFactory.build()).isInstanceOf(AmazonDataZoneTransport.class);
+  }
 }
