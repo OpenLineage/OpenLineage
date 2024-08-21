@@ -9,7 +9,7 @@ workflows:
             - build-integration-sql-java
             - build-client-java
       - build-integration-flink:
-          context: release
+          context: << pipeline.parameters.build-context >>
           requires:
             - build-integration-sql-java
             - build-client-java

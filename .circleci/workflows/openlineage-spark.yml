@@ -2,11 +2,11 @@ workflows:
   openlineage-spark:
     jobs:
       - build-integration-spark-extension-interfaces:
-          context: release
+          context: << pipeline.parameters.build-context >>
           requires:
             - build-client-java
       - build-integration-spark-extension-entrypoint:
-          context: release
+          context: << pipeline.parameters.build-context >>
           requires:
             - build-client-java
       - test-integration-spark:
@@ -34,7 +34,7 @@ workflows:
             - build-integration-spark-extension-interfaces
             - build-integration-spark-extension-entrypoint
       - build-integration-spark:
-          context: release
+          context: << pipeline.parameters.build-context >>
           matrix:
             alias: build-integration-spark-scala-2_12
             parameters:
@@ -45,7 +45,7 @@ workflows:
            - build-integration-spark-extension-interfaces
            - build-integration-spark-extension-entrypoint
       - build-integration-spark:
-          context: release
+          context: << pipeline.parameters.build-context >>
           matrix:
             alias: build-integration-spark-scala-2_13
             parameters:
