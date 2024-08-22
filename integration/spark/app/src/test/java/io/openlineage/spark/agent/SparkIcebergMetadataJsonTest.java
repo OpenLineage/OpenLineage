@@ -77,7 +77,8 @@ class SparkIcebergMetadataJsonTest {
   private static final Network network = newNetwork();
 
   // On MacOS, this typically needs to be "host.docker.internal"
-  private static final String HOST_NAME = System.getenv("CI") == null ? "host.docker.internal" : "localhost";
+  private static final String HOST_NAME =
+      System.getenv("CI") == null ? "host.docker.internal" : "localhost";
 
   private static final String SHARED_VOLUME_NAME = "spark-data";
   private static final Volume SHARED_VOLUME = new Volume("/tmp");
