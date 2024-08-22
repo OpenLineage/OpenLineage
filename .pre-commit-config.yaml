@@ -68,7 +68,7 @@ repos:
         types: [text]
         args:
           - --ignore-words=spelling_wordlist.txt
-          - --skip=*.js,*.svg,*.xml,*/**/test/*,*/**/tests/*
+          - --skip=*.css,*.js,*.svg,*.xml,*/**/test/*,*/**/tests/*,*/yarn.lock,**/openapi/*.html,*/package-lock.json,*/spec/*
   - repo: local
     hooks:
       - id: check_schemas

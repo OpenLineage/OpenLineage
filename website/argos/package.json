@@ -1,0 +1,17 @@
+{
+  "name": "argos",
+  "version": "0.0.0",
+  "description": "Workspace for visual difference detection",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "screenshot": "playwright test",
+    "upload": "npx @argos-ci/cli upload ./screenshots"
+  },
+  "devDependencies": {
+    "@argos-ci/cli": "^0.6.0",
+    "@argos-ci/playwright": "^0.0.7",
+    "@playwright/test": "^1.38.1",
+    "cheerio": "^1.0.0-rc.12"
+  }
+}
