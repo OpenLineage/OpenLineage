@@ -8,6 +8,7 @@ package io.openlineage.spark.agent;
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_FIXTURES_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_FIXTURES_JAR_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_JARS_DIR;
+import static io.openlineage.spark.agent.SparkContainerProperties.HOST_ADDITIONAL_JARS_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LIB_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_SCALA_FIXTURES_JAR_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.SPARK_DOCKER_IMAGE;
@@ -19,7 +20,11 @@ import static org.testcontainers.containers.Network.newNetwork;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.google.common.base.CaseFormat;
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.model.AccessMode;
+import com.github.dockerjava.api.model.Bind;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.Volume;
 import io.openlineage.server.OpenLineage;
 import io.openlineage.server.OpenLineage.RunEvent;
 import io.openlineage.server.OpenLineage.RunEvent.EventType;
@@ -31,7 +36,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -40,8 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -53,11 +55,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
-import org.testcontainers.containers.BindMode;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 
 /**
  * These tests differ from the {@link SparkIcebergIntegrationTest} in that the tests directly read
@@ -70,17 +73,11 @@ import org.testcontainers.utility.DockerImageName;
 @Tag("integration-test")
 @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
 class SparkIcebergMetadataJsonTest {
+
   private static final Network network = newNetwork();
-  private static final String NORMALIZED_CLASS_NAME =
-      CaseFormat.UPPER_CAMEL.to(
-          CaseFormat.LOWER_UNDERSCORE, SparkIcebergMetadataJsonTest.class.getSimpleName());
 
-  private static final boolean IS_CI = System.getenv("CI") != null;
-  private static final String TEST_OUT_DIR = System.getProperty("test.output.dir");
-
-  private static final Path HOST_TEST_OUTPUT_DIR = Paths.get(IS_CI ? "/tmp" : TEST_OUT_DIR);
-  private static final Path HOST_TEST_CLASS_OUTPUT_DIR =
-      HOST_TEST_OUTPUT_DIR.resolve(NORMALIZED_CLASS_NAME).toAbsolutePath();
+  private static final String SHARED_VOLUME_NAME = "spark-data";
+  private static final Volume SHARED_VOLUME = new Volume("/tmp");
 
   private static final Path CONTAINER_TMP_DIR = Paths.get("/tmp");
   private static final Path CONTAINER_BASE_WAREHOUSE_DIR = CONTAINER_TMP_DIR.resolve("warehouse");
@@ -104,8 +101,8 @@ class SparkIcebergMetadataJsonTest {
   private StatefulHttpServer server;
 
   @BeforeAll
-  static void setup() throws IOException {
-    clearTestOutputDir();
+  static void setup() {
+    createDockerVolumes();
     createSeedDataset();
   }
 
@@ -124,17 +121,19 @@ class SparkIcebergMetadataJsonTest {
   @AfterAll
   static void tearDown() {
     network.close();
+    deleteDockerVolumes();
   }
 
-  static void clearTestOutputDir() throws IOException {
-    if (Files.exists(HOST_TEST_CLASS_OUTPUT_DIR)) {
-      try (Stream<Path> stream = Files.walk(HOST_TEST_CLASS_OUTPUT_DIR)) {
-        List<Path> paths = stream.sorted(Comparator.reverseOrder()).collect(Collectors.toList());
-        for (Path path : paths) {
-          Files.deleteIfExists(path);
-        }
-      }
-    }
+  static void createDockerVolumes() {
+    DockerClient client = DockerClientFactory.instance().client();
+    log.info("Creating docker volume: {}", SHARED_VOLUME_NAME);
+    client.createVolumeCmd().withName(SHARED_VOLUME_NAME).exec();
+  }
+
+  static void deleteDockerVolumes() {
+    DockerClient client = DockerClientFactory.instance().client();
+    log.info("Deleting docker volume: {}", SHARED_VOLUME_NAME);
+    client.removeVolumeCmd(SHARED_VOLUME_NAME).exec();
   }
 
   static void createSeedDataset() {
@@ -153,24 +152,35 @@ class SparkIcebergMetadataJsonTest {
     props.put("spark.sql.defaultCatalog", "public");
     props.put("spark.driver.extraJavaOptions", LOG4J_SYSTEM_PROPERTY);
 
-    List<String> command =
+    List<String> commandParts =
         constructSparkSubmitCommand(
             "io.openlineage.spark.iceberg.CreateSeedDataJob", props, Collections.emptyList());
 
-    GenericContainer<?> container =
-        createSparkContainer(
-            command,
-            c -> {
-              c.withFileSystemBind(
-                  HOST_TEST_CLASS_OUTPUT_DIR.toString(),
-                  CONTAINER_TMP_DIR.toString(),
-                  BindMode.READ_WRITE);
-              c.withStartupTimeout(Duration.ofMinutes(1L));
-            });
+    GenericContainer<?> container = createSparkContainer(commandParts);
     container.start();
-    container.stop();
     container.close();
     log.info("Creating seed dataset complete");
+  }
+
+  static void copyFileToContainer(
+      GenericContainer<?> container, Path hostPath, Path containerPath) {
+    log.info("Copying {} to {}", hostPath, containerPath);
+    Assertions.assertThat(hostPath).isRegularFile();
+    container.withCopyFileToContainer(
+        MountableFile.forHostPath(hostPath), containerPath.toString());
+  }
+
+  static void copyFilesToContainer(
+      GenericContainer<?> container, Path hostDirectory, Path containerDirectory)
+      throws IOException {
+    try (Stream<Path> files = Files.list(hostDirectory)) {
+      Iterator<Path> iterator = files.iterator();
+      while (iterator.hasNext()) {
+        Path hostPath = iterator.next();
+        Path containerPath = containerDirectory.resolve(hostPath.getFileName().toString());
+        copyFileToContainer(container, hostPath, containerPath);
+      }
+    }
   }
 
   @Test
@@ -209,18 +219,8 @@ class SparkIcebergMetadataJsonTest {
                     .resolve("openlineage_public/person/metadata/v1.metadata.json")
                     .toString()));
 
-    GenericContainer<?> container =
-        createSparkContainer(
-            command,
-            c -> {
-              c.withFileSystemBind(
-                  HOST_TEST_CLASS_OUTPUT_DIR.toString(),
-                  CONTAINER_TMP_DIR.toString(),
-                  BindMode.READ_WRITE);
-              c.withStartupTimeout(Duration.ofSeconds(30));
-            });
+    GenericContainer<?> container = createSparkContainer(command);
     container.start();
-    container.stop();
     container.close();
 
     List<String> events = server.events();
@@ -282,18 +282,8 @@ class SparkIcebergMetadataJsonTest {
                     .resolve("openlineage_public/person/metadata/v1.metadata.json")
                     .toString()));
 
-    GenericContainer<?> container =
-        createSparkContainer(
-            command,
-            c -> {
-              c.withFileSystemBind(
-                  HOST_TEST_CLASS_OUTPUT_DIR.toString(),
-                  CONTAINER_TMP_DIR.toString(),
-                  BindMode.READ_WRITE);
-              c.withStartupTimeout(Duration.ofSeconds(30));
-            });
+    GenericContainer<?> container = createSparkContainer(command);
     container.start();
-    container.stop();
     container.close();
 
     List<String> events = server.events();
@@ -323,8 +313,7 @@ class SparkIcebergMetadataJsonTest {
   }
 
   @SneakyThrows
-  private static GenericContainer<?> createSparkContainer(
-      List<String> submitCommand, Consumer<GenericContainer<?>> customizer) {
+  private static GenericContainer<?> createSparkContainer(List<String> submitCommand) {
     String command = String.join(" ", submitCommand);
     log.info("Container will be started with command: {}", command);
 
@@ -334,48 +323,18 @@ class SparkIcebergMetadataJsonTest {
             .withNetworkAliases("spark")
             .withLogConsumer(SparkContainerUtils::consumeOutput)
             .waitingFor(Wait.forLogMessage(SPARK_DOCKER_CONTAINER_WAIT_MESSAGE, 1))
-            .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES))
-            .withCommand(command);
+            .withStartupTimeout(Duration.ofSeconds(30L))
+            .withCommand(command)
+            .withCreateContainerCmdModifier(
+                createContainerCmd ->
+                    createContainerCmd.withHostConfig(
+                        HostConfig.newHostConfig()
+                            .withBinds(
+                                new Bind(SHARED_VOLUME_NAME, SHARED_VOLUME, AccessMode.rw))));
 
-    // mount the additional Jars
-    log.info("Mount: {} to {}", HOST_SCALA_FIXTURES_JAR_PATH, CONTAINER_FIXTURES_JAR_PATH);
-    container.withFileSystemBind(
-        HOST_SCALA_FIXTURES_JAR_PATH.toString(),
-        CONTAINER_FIXTURES_JAR_PATH.toString(),
-        BindMode.READ_ONLY);
-
-    {
-      try (Stream<Path> files = Files.list(HOST_LIB_DIR)) {
-        Iterator<Path> iterator = files.iterator();
-        while (iterator.hasNext()) {
-          Path filePath = iterator.next();
-          Path hostPath = filePath.toAbsolutePath();
-          Path fileName = hostPath.getFileName();
-          Path containerPath = CONTAINER_SPARK_JARS_DIR.resolve(fileName);
-          log.info("Mount: {} to {}", hostPath, containerPath);
-          container.withFileSystemBind(
-              hostPath.toString(), containerPath.toString(), BindMode.READ_ONLY);
-        }
-      }
-    }
-    {
-      Path additionalJarsDir = Paths.get(System.getProperty("additional.jars.dir"));
-      try (Stream<Path> files = Files.list(additionalJarsDir)) {
-        Iterator<Path> iterator = files.iterator();
-        while (iterator.hasNext()) {
-          Path filePath = iterator.next();
-          Path hostPath = filePath.toAbsolutePath();
-          Path fileName = hostPath.getFileName();
-          Path containerPath = CONTAINER_SPARK_JARS_DIR.resolve(fileName);
-          log.info("Mount: {} to {}", hostPath, containerPath);
-          container.withFileSystemBind(
-              hostPath.toString(), containerPath.toString(), BindMode.READ_ONLY);
-        }
-      }
-    }
-
-    customizer.accept(container);
-
+    copyFileToContainer(container, HOST_SCALA_FIXTURES_JAR_PATH, CONTAINER_FIXTURES_JAR_PATH);
+    copyFilesToContainer(container, HOST_LIB_DIR, CONTAINER_SPARK_JARS_DIR);
+    copyFilesToContainer(container, HOST_ADDITIONAL_JARS_DIR, CONTAINER_SPARK_JARS_DIR);
     return container;
   }
 
