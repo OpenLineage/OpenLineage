@@ -1,14 +1,15 @@
 #!/bin/bash
 
-set -e
+set +e
 
 PMD_RELEASE="https://github.com/pmd/pmd/releases/download/pmd_releases%2F6.46.0/pmd-bin-6.46.0.zip"
 
-cd /opt/.pmd_cache
+mkdir -p ./.pmd_cache
+cd ./.pmd_cache
 
 # check if there is a pmd folder
-if [ ! -d "pmd" ]; then
-  wget -nc -O pmd.zip "$PMD_RELEASE" > /dev/null 2>&1 \
+if [[ ! -d "./pmd" ]]; then
+  curl -fsSL -o pmd.zip "$PMD_RELEASE" > /dev/null 2>&1 \
     && unzip pmd.zip > /dev/null 2>&1 \
     && rm pmd.zip > /dev/null 2>&1 \
     && mv pmd-bin* pmd > /dev/null 2>&1 \
@@ -25,12 +26,12 @@ done
 
 # add default ruleset if not specified
 if [[ ! $pc_args == *"-R "* ]]; then
-  pc_args="$pc_args -R /src/client/java/pmd-openlineage.xml"
+  pc_args="$pc_args -R ../client/java/pmd-openlineage.xml"
 fi
 
 # populate list of files to analyse
 files=""
-prefix="/src/"
+prefix="../"
 for arg in "${@:idx}"; do
   files="$files $prefix$arg"
 done

@@ -24,6 +24,12 @@ checkout_project_root: &checkout_project_root
 install_python_client: &install_python_client
   run: (cd ~/openlineage/client/python && pip install . --user)
 
+param_build_tag: &param_build_tag
+  parameters:
+    build_tag:
+      default: ""
+      type: string
+
 commands:
   publish_shadow_jar_local:
     description: "Build shadow JAR and publish to maven local repo"
@@ -245,6 +251,10 @@ jobs:
     working_directory: ~/openlineage/client/python
     docker:
       - image: cimg/python:3.8
+    parameters:
+      build_tag:
+        default: ""
+        type: string
     steps:
       - *checkout_project_root
       - run: python -m pip install build
@@ -285,9 +295,10 @@ jobs:
     working_directory: ~/openlineage/integration/dbt
     docker:
       - image: cimg/python:3.8
+    <<: *param_build_tag
     steps:
       - *checkout_project_root
-      - run: python setup.py sdist bdist_wheel
+      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -298,9 +309,10 @@ jobs:
     working_directory: ~/openlineage/integration/common
     docker:
       - image: cimg/python:3.8
+    <<: *param_build_tag
     steps:
       - *checkout_project_root
-      - run: python setup.py sdist bdist_wheel
+      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -332,12 +344,13 @@ jobs:
     working_directory: ~/openlineage/integration/airflow
     docker:
       - image: cimg/python:3.8
+    <<: *param_build_tag
     steps:
       - *checkout_project_root
       - *install_python_client
       - install_integration_common:
           install_parser: true
-      - run: python setup.py sdist bdist_wheel
+      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -404,10 +417,11 @@ jobs:
     working_directory: ~/openlineage/integration/dagster
     docker:
       - image: cimg/python:3.8
+    <<: *param_build_tag
     steps:
       - *checkout_project_root
       - *install_python_client
-      - run: python setup.py sdist bdist_wheel
+      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -1157,32 +1171,78 @@ jobs:
     # add dependency to other files when pre-commit runs related checks
     working_directory: ~/openlineage
     docker:
-      - image: cimg/python:3.8
+      - image: cimg/openjdk:17.0.10
     steps:
       - *checkout_project_root
       - restore_cache:
+          name: Restore pre-commit cache
           keys:
-          - v1.2-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
+          - v1.3-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
+      - restore_cache:
+          name: Restore pyenv cache
+          keys:
+          - python-3.8-{{ checksum ".circleci/workflows/openlineage-always.yml" }}
+          - python-3.8-
+      - restore_cache:
+          name: Restore pmd cache
+          keys:
+          - v1-pmd-{{ checksum ".pre_commit/run-pmd.sh" }}
+          - v1-pmd-
 
       - run:
-          name: Install Dependencies
+          name: Install Python3.8
           command: |
+            if [ ! -d "$HOME/.pyenv" ]; then
+              sudo apt-get update
+              sudo apt-get install -y make build-essential libssl-dev zlib1g-dev \
+              libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
+              libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev \
+              liblzma-dev
+              curl https://pyenv.run | bash
+              export PATH="$HOME/.pyenv/bin:$PATH"
+              eval "$(pyenv init --path)"
+              eval "$(pyenv init -)"
+              eval "$(pyenv virtualenv-init -)"
+              pyenv install -s 3.8.17
+              pyenv global 3.8.17
+            fi
+
+      - run:
+          name: Install Python3.8 Dependencies
+          command: |
+            export PATH="$HOME/.pyenv/bin:$PATH"
+            eval "$(pyenv init --path)"
+            eval "$(pyenv init -)"
+            eval "$(pyenv virtualenv-init -)"
             python3.8 -m venv venv
             . venv/bin/activate
             pip3 install pre-commit
             # Install the hooks now so that they'll be cached
             pre-commit install-hooks
+
       - save_cache:
           paths:
             - ~/.cache/pre-commit
-          key: v1.2-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
+          key: v1.3-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
+          name: Save pre-commit cache
+      - save_cache:
+          paths:
+            - ~/.pyenv
+          key: python-3.8-{{ checksum ".circleci/workflows/openlineage-always.yml" }}
+          name: Save pyenv cache
 
       - run:
           name: Run pre-commit
           command: |
             . venv/bin/activate
-            SKIP= && [ -n "${CI}" ] && export SKIP="pmd"
+            # SKIP= && [ -n "${CI}" ] && export SKIP="pmd"
             pre-commit run --show-diff-on-failure --all-files
+
+      - save_cache:
+          paths:
+            - ./.pmd_cache
+          key: v1-pmd-{{ checksum ".pre_commit/run-pmd.sh" }}
+          name: Save pmd cache
 
   always_run:
     machine:

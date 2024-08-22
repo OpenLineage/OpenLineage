@@ -159,9 +159,10 @@ cython_debug/
 *.settings/
 
 gcloud-service-key.json
-
+build-cache/
 *.java_version
 *.java-version
+
 *.DS_Store
 __pycache__
 /.tox
