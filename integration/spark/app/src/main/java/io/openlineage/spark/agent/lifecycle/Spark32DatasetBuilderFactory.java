@@ -21,7 +21,8 @@ import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateReplaceDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationOutputDatasetBuilder;
-import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationOnEndInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationOnStartInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.InMemoryRelationInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandEdgeInputDatasetBuilder;
@@ -56,7 +57,8 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new LogicalRelationDatasetBuilder(context, datasetFactory, true))
             .add(new InMemoryRelationInputDatasetBuilder(context))
             .add(new CommandPlanVisitor(context))
-            .add(new DataSourceV2ScanRelationInputDatasetBuilder(context, datasetFactory))
+            .add(new DataSourceV2ScanRelationOnStartInputDatasetBuilder(context, datasetFactory))
+            .add(new DataSourceV2ScanRelationOnEndInputDatasetBuilder(context, datasetFactory))
             .add(new SubqueryAliasInputDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeInputDatasetBuilder(context))
             .add(new DataSourceV2RelationInputDatasetBuilder(context, datasetFactory));

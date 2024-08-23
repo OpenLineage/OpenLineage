@@ -18,6 +18,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URI;
 import java.util.List;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
@@ -46,6 +47,7 @@ class CreateDataSourceTableCommandVisitorTest {
     SparkConf conf = new SparkConf();
     conf.set("spark.sql.warehouse.dir", "s3://bucket/warehouse/location");
     when(sparkContext.getConf()).thenReturn(conf);
+    when(sparkContext.hadoopConfiguration()).thenReturn(new Configuration());
     when(session.sparkContext()).thenReturn(sparkContext);
   }
 

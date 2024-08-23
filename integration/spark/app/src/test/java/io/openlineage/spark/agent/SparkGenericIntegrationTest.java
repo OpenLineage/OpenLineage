@@ -79,8 +79,7 @@ class SparkGenericIntegrationTest {
             .config(
                 "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/lineage")
-            .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
-            .config("spark.openlineage.debugFacet", "enabled")
+            .config("spark.openlineage.facets.debug.disabled", "false")
             .config("spark.openlineage.namespace", "generic-namespace")
             .config("spark.openlineage.parentJobName", "parent-job")
             .config("spark.openlineage.parentRunId", "bd9c2467-3ed7-4fdc-85c2-41ebf5c73b40")

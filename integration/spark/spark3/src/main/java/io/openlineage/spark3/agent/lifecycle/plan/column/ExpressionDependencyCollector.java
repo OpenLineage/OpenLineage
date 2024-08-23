@@ -10,6 +10,7 @@ import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInf
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.GROUP_BY;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.JOIN;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.SORT;
+import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.WINDOW;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
@@ -39,9 +40,12 @@ import org.apache.spark.sql.catalyst.expressions.If;
 import org.apache.spark.sql.catalyst.expressions.Md5;
 import org.apache.spark.sql.catalyst.expressions.Murmur3Hash;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
+import org.apache.spark.sql.catalyst.expressions.RankLike;
+import org.apache.spark.sql.catalyst.expressions.RowNumberLike;
 import org.apache.spark.sql.catalyst.expressions.Sha1;
 import org.apache.spark.sql.catalyst.expressions.Sha2;
 import org.apache.spark.sql.catalyst.expressions.SortOrder;
+import org.apache.spark.sql.catalyst.expressions.WindowExpression;
 import org.apache.spark.sql.catalyst.expressions.XxHash64;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
@@ -55,6 +59,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.Sort;
 import org.apache.spark.sql.catalyst.plans.logical.Union;
+import org.apache.spark.sql.catalyst.plans.logical.Window;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import scala.Option;
@@ -143,6 +148,9 @@ public class ExpressionDependencyCollector {
     } else if (node instanceof Sort) {
       datasetDependencies.addAll(ScalaConversionUtils.<SortOrder>fromSeq(((Sort) node).order()));
       datasetTransformation = Optional.of(TransformationInfo.indirect(SORT));
+    } else if (node instanceof Window) {
+      expressions.addAll(
+          ScalaConversionUtils.<NamedExpression>fromSeq(((Window) node).windowExpressions()));
     } else if (node instanceof LogicalRelation) {
       if (((LogicalRelation) node).relation() instanceof JDBCRelation) {
         JdbcColumnLineageCollector.extractExpressionsFromJDBC(context, node);
@@ -207,6 +215,8 @@ public class ExpressionDependencyCollector {
       handleExpression((If) expr, outputExprId, transformationInfo, builder);
     } else if (expr instanceof AggregateExpression) {
       handleExpression((AggregateExpression) expr, outputExprId, transformationInfo, builder);
+    } else if (expr instanceof WindowExpression) {
+      handleExpression((WindowExpression) expr, outputExprId, transformationInfo, builder);
     } else if (expr != null && expr.children() != null) {
       handleGenericExpression(expr, outputExprId, transformationInfo, builder);
     }
@@ -296,6 +306,32 @@ public class ExpressionDependencyCollector {
     if (cw.elseValue().isDefined()) {
       traverseExpression(cw.elseValue().get(), outputExprId, transformationInfo, builder);
     }
+  }
+
+  private static void handleExpression(
+      WindowExpression expr,
+      ExprId outputExprId,
+      TransformationInfo transformationInfo,
+      ColumnLevelLineageBuilder builder) {
+    Expression expression = expr.windowFunction();
+    // in case of e.g. RANK() OVER (... ORDER BY X) we can get X as child of Rank
+    // even though value of rank is only indirectly dependent of X
+    // so in case of RankLike and RowNumberLike we omit possible children
+    if (!(expression instanceof RankLike || expression instanceof RowNumberLike)) {
+      traverseExpression(
+          expr.windowFunction(),
+          outputExprId,
+          transformationInfo.merge(TransformationInfo.transformation()),
+          builder);
+    }
+    ScalaConversionUtils.<Expression>fromSeq(expr.windowSpec().children())
+        .forEach(
+            child ->
+                traverseExpression(
+                    child,
+                    outputExprId,
+                    transformationInfo.merge(TransformationInfo.indirect(WINDOW)),
+                    builder));
   }
 
   private static void handleExpression(

@@ -35,7 +35,8 @@ public class TransformationInfo {
     SORT,
     GROUP_BY,
     JOIN,
-    FILTER
+    FILTER,
+    WINDOW
   }
 
   @Getter @Setter private Types type;

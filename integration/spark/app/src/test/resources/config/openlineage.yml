@@ -5,10 +5,17 @@ transport:
   auth:
     type: api_key
     apiKey: random_token
-debugFacet: enabled
 jobName:
   appendDatasetName: false
 facets:
-  disabled: [aDisabledFacet]
+  disabled: [ aDisabledFacet ]
+  spark:
+    logicalPlan:
+      disabled: true
+  spark_unknown:
+    disabled: false
+# The debug facet is disabled implicitly
+#  debug:
+#    disabled: true
 incorrectEntry:
   shouldNotFail: true

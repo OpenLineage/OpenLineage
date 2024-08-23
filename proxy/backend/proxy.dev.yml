@@ -27,3 +27,26 @@ proxy:
   source: openLineageProxyBackend
   streams:
     - type: Console
+
+##### Please read the message below #####
+# if you are running the docker-compose file, comment out the above configuration and uncomment the below configuration
+
+# server:
+#   applicationConnectors:
+#     - type: http
+#       port: ${OPENLINEAGE_PROXY_PORT:-6000}
+#   adminConnectors:
+#     - type: http
+#       port: ${OPENLINEAGE_PROXY_ADMIN_PORT:-6001}
+
+# logging:
+#   level: ${LOG_LEVEL:-INFO}
+#   loggers:
+#     "io.dropwizard": INFO
+#   appenders:
+#     - type: console
+
+# proxy:
+#   streams:
+#     - type: Http
+#       url: http://marquez-api:5000/api/v1/lineage

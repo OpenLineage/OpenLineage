@@ -1,0 +1,57 @@
+---
+title: OpenLineage 1.0, Featuring Static Lineage, is Coming Soon
+date: 2023-07-18
+authors: [Robinson]
+description: The release of OpenLineage 1.0 will add static lineage support.
+---
+The first major release of OpenLineage, 1.0, will add static lineage support.
+
+<!--truncate-->
+
+### Static, AKA "Design," Lineage is Coming Soon 
+
+OpenLineage 1.0, which is expected early in August, will add support for static lineage to the project.
+
+An initiative to add the provision of static lineage, sometimes also called "design" or "design-time" lineage, to OpenLineage came out of conversations with community members at Collibra, Manta and Marquez.
+
+Data catalogs like those offered by Collibra and Manta will benefit from static lineage support, but so will other users. In one way, this addition represents an exciting new chapter in the history of the project. In another, it represents a return to our roots. Before OpenLineage focused on operational lineage, it supported a form of static lineage.
+
+#### What is Static Lineage?
+
+OpenLineage has traditionally supported only operational, or "runtime," lineage -- metadata emitted when jobs run. In other words, OpenLineage has been engineered to capture information as transformations of datasets are happening, enabling precise descriptions of those transformations.
+
+As part of this process, OpenLineage has nonetheless also captured some static metadata -- specifically, information about jobs (such as the current version of the code) and datasets (such as the schema).
+
+What was called for was a way to collect such static metadata outside of the run context. 
+
+#### What Use Cases are Served by Static Lineage?
+
+Use cases include:
+
+- bootstrapping of a lineage graph with prospective runs for auditing
+- capturing dataset ownership changes 
+- consuming facets from external systems
+- creating dataset symlinks more easily
+
+#### Implementation Details 
+
+In order to add static lineage to the spec, two new event types were proposed: `DatasetEvent` and `JobEvent`.
+
+These new events will add facets at a point in time that will apply to an entity until a new version of the same facet is produced. 
+
+The first step in implementing static lineage was completed with the release of [OpenLineage 0.29.2](https://github.com/OpenLineage/OpenLineage/releases/tag/0.29.2), which included two types in the spec for "runless" metadata: a `DatasetEvent` and `JobEvent` (along with support for the new types in the Python client).
+
+The next steps will include changing the event lifecycle (from running to complete, failed, or aborted) to handle events of the new types, and adding facet deletion to handle the case in which a user adds and deletes a dataset in the same request.
+
+Adding support for static lineage in Marquez is also ongoing, and we are excited about the progress there. [Marquez 0.37.0](https://github.com/MarquezProject/marquez/releases/tag/0.37.0) includes support in the API for decoding static events via a new [`EventTypeResolver`](https://github.com/MarquezProject/marquez/pull/2495).
+
+
+#### More Information 
+
+For more details including the code changes, see:
+
+- the [static lineage proposal](https://github.com/OpenLineage/OpenLineage/blob/main/proposals/1837/static_lineage.md) by Julien Le Dem, Maciej Obuchowski, Benji Lampel and Ross Turk 
+- the initial [pull request](https://github.com/OpenLineage/OpenLineage/pull/1880) by Paweł Leszczyński
+
+
+

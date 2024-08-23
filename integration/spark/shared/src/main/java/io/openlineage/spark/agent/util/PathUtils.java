@@ -59,7 +59,7 @@ public class PathUtils {
     Configuration hadoopConf = sparkContext.hadoopConfiguration();
 
     Optional<URI> metastoreUri = getMetastoreUri(sparkContext);
-    Optional<String> glueArn = getGlueArn(catalogTable, sparkConf, hadoopConf);
+    Optional<String> glueArn = getGlueArn(sparkConf, hadoopConf);
 
     if (glueArn.isPresent()) {
       // Even if glue catalog is used, it will have a hive metastore URI
@@ -152,12 +152,7 @@ public class PathUtils {
   }
 
   @SneakyThrows
-  private static Optional<String> getGlueArn(
-      CatalogTable catalogTable, SparkConf sparkConf, Configuration hadoopConf) {
-    if (!catalogTable.provider().isDefined() || !"hive".equals(catalogTable.provider().get())) {
-      return Optional.empty();
-    }
-
+  public static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
     Optional<String> clientFactory =
         SparkConfUtils.findHadoopConfigKey(hadoopConf, "hive.metastore.client.factory.class");
     // Fetch from spark config if set.

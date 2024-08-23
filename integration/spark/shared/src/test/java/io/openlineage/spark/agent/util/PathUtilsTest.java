@@ -196,6 +196,59 @@ class PathUtilsTest {
         .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
   }
 
+  /**
+   * There used to be a bug where the implementation accepted only "hive" as the "provider" for the
+   * data catalog table. The "provider" is actually a format of the table stored in a catalog. The
+   * value "hive" means Hive SerDe in this context. Hive SerDe is not the actual format, but a
+   * wrapper for other formats like Parquet, CSV, etc. The value "hive" appears in "provider" field
+   * in many applications, giving the impression that it is the catalog metastore being used or evan
+   * a catalog implementation. In reality, this field may have other values such as "parquet", when
+   * the files are stored without any intermediaries (like Hive SerDe).
+   *
+   * <p>Example Python code:
+   *
+   * <pre>
+   * (
+   * input_table_df.write
+   *     .mode("overwrite")
+   *     .format("parquet")
+   *     .option("path", "s3://bucket/warehouse/mytable")
+   *     .saveAsTable("warehouse.mytable")
+   * )
+   * </pre>
+   *
+   * The test is almost identical to {@link #testFromCatalogTableWithGlue}. The only difference is
+   * the catalog table provider
+   */
+  @Test
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-west-2")
+  void testAnyProviderAllowedWithGlue() throws URISyntaxException {
+    hadoopConf.set(
+        "hive.metastore.client.factory.class",
+        "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
+    sparkConf.set("spark.sql.catalogImplementation", "hive");
+    sparkConf.set("spark.glue.accountId", "123456789");
+
+    when(catalogTable.provider()).thenReturn(Option.apply("parquet"));
+    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(catalogTable.identifier()).thenReturn(tableIdentifier);
+    when(tableIdentifier.database()).thenReturn(Option.apply("database"));
+    when(tableIdentifier.table()).thenReturn("mytable");
+    when(catalogStorageFormat.locationUri())
+        .thenReturn(Option.apply(new URI("s3://bucket/warehouse/mytable")));
+
+    DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(catalogTable, sparkSession);
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("name", "warehouse/mytable")
+        .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+    assertThat(datasetIdentifier.getSymlinks().get(0))
+        .hasFieldOrPropertyWithValue("name", "table/database/mytable")
+        .hasFieldOrPropertyWithValue("namespace", "arn:aws:glue:us-west-2:123456789")
+        .hasFieldOrPropertyWithValue("type", SymlinkType.TABLE);
+  }
+
   @Test
   @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-east-1")
   void testFromCatalogTableWithEMRGlue() throws URISyntaxException {

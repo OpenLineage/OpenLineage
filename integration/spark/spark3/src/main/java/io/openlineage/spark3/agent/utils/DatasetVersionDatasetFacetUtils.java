@@ -21,7 +21,8 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 
 @Slf4j
-public class DatasetVersionDatasetFacetUtils {
+public final class DatasetVersionDatasetFacetUtils {
+  private DatasetVersionDatasetFacetUtils() {}
 
   private static final String DELTA = "delta";
 
@@ -31,13 +32,13 @@ public class DatasetVersionDatasetFacetUtils {
   public static Optional<String> extractVersionFromDataSourceV2Relation(
       OpenLineageContext context, DataSourceV2Relation table) {
     if (table.identifier().isEmpty()) {
-      log.warn("Couldn't find identifier for dataset in plan " + table);
+      log.warn("Couldn't find identifier for dataset in plan {}", table);
       return Optional.empty();
     }
     Identifier identifier = table.identifier().get();
 
     if (table.catalog().isEmpty() || !(table.catalog().get() instanceof TableCatalog)) {
-      log.warn("Couldn't find catalog for dataset in plan " + table);
+      log.warn("Couldn't find catalog for dataset in plan {}", table);
       return Optional.empty();
     }
     TableCatalog tableCatalog = (TableCatalog) table.catalog().get();

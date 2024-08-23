@@ -1,8 +1,15 @@
 workflows:
   openlineage-java:
     jobs:
-      - build-client-java
+      - build-client-java:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+          context: << pipeline.parameters.build-context >>
       - compile-integration-sql-java-linux:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           matrix:
             alias: compile-integration-sql-java-linux-x86
             parameters:
@@ -11,6 +18,9 @@ workflows:
               ]
               resource_class: [ "medium" ]
       - compile-integration-sql-java-linux:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           matrix:
             alias: compile-integration-sql-java-linux-arm
             parameters:
@@ -18,8 +28,15 @@ workflows:
                 "quay.io/pypa/manylinux2014_aarch64",
               ]
               resource_class: [ "arm.medium" ]
-      - compile-integration-sql-java-macos
+      - compile-integration-sql-java-macos:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
       - build-integration-sql-java:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+          context: << pipeline.parameters.build-context >>
           requires:
             - compile-integration-sql-java-linux-arm
             - compile-integration-sql-java-linux-x86
@@ -29,6 +46,30 @@ workflows:
             branches:
               only: main
           context: release
+      - release-client-java:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              only: main
+          context: release
+          requires:
+            - build-integration-sql-java
+            - build-client-java
+      - release-integration-sql-java:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              only: main
+          context: release
+          requires:
+            - build-integration-sql-java
       - workflow_complete:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           requires:
             - publish-javadoc
+            - release-client-java
+            - release-integration-sql-java

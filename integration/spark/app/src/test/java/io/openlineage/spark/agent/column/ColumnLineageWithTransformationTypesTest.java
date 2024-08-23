@@ -12,6 +12,7 @@ import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInf
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.GROUP_BY;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.JOIN;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.SORT;
+import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.WINDOW;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -143,7 +144,6 @@ class ColumnLineageWithTransformationTypesTest {
     createTable("t1", "a;int");
     OpenLineage.ColumnLineageDatasetFacet facet =
         getFacetForQuery(getSchemaFacet("a;int"), "SELECT count(a) AS a FROM t1");
-
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.aggregation(true));
   }
@@ -256,6 +256,38 @@ class ColumnLineageWithTransformationTypesTest {
 
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+  }
+
+  @Test
+  void simpleQueryRank() {
+    createTable("t1", "a;string", "b;string", "c;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("a;string", "rank;int"),
+            "SELECT a, RANK() OVER (PARTITION BY b ORDER BY c) as rank FROM t1;");
+
+    assertColumnDependsOnType(
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+    assertColumnDependsOnType(
+        facet, "rank", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(WINDOW));
+    assertColumnDependsOnType(
+        facet, "rank", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(WINDOW));
+  }
+
+  @Test
+  void simpleQueryWindowedAggregate() {
+    createTable("t1", "a;int", "b;string", "c;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("s;int"),
+            "SELECT sum(a) OVER (PARTITION BY b ORDER BY c) AS s FROM t1;");
+
+    assertColumnDependsOnType(
+        facet, "s", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.aggregation());
+    assertColumnDependsOnType(
+        facet, "s", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(WINDOW));
+    assertColumnDependsOnType(
+        facet, "s", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(WINDOW));
   }
 
   @Test
