@@ -1,6 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.20.5...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.20.4...HEAD)
+* **Spark: Lineage for Iceberg datasets that are present outside of Spark's catalog is now present** [`#2937`](https://github.com/OpenLineage/OpenLineage/pull/2937) [@d-m-h](https://github.com/d-m-h)
+    *Previously, reading Iceberg datasets outside the configured Spark catalog prevented the datasets from being present in the `inputs` property of the `RunEvent`.* 
 
 ## [1.20.5](https://github.com/OpenLineage/OpenLineage/compare/1.19.0...1.20.5) - 2024-08-23
 

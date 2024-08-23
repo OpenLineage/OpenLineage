@@ -42,8 +42,7 @@ import org.testcontainers.utility.DockerImageName;
 
 @Slf4j
 public class SparkContainerUtils {
-  public static final String SPARK_DOCKER_CONTAINER_WAIT_MESSAGE =
-      ".*ShutdownHookManager - Shutdown hook called.*";
+  public static final String SPARK_DOCKER_CONTAINER_WAIT_MESSAGE = ".*Shutdown hook called.*";
 
   public static final DockerImageName MOCKSERVER_IMAGE =
       DockerImageName.parse("mockserver/mockserver")

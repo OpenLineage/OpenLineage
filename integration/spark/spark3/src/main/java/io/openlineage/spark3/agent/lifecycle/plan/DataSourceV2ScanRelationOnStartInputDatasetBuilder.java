@@ -6,42 +6,55 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.api.AbstractQueryPlanInputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.List;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 
 @Slf4j
-public class DataSourceV2ScanRelationInputDatasetBuilder
+public final class DataSourceV2ScanRelationOnStartInputDatasetBuilder
     extends AbstractQueryPlanInputDatasetBuilder<DataSourceV2ScanRelation> {
+  private final DatasetFactory<InputDataset> factory;
 
-  private final DatasetFactory<OpenLineage.InputDataset> factory;
-
-  public DataSourceV2ScanRelationInputDatasetBuilder(
-      OpenLineageContext context, DatasetFactory<OpenLineage.InputDataset> factory) {
+  public DataSourceV2ScanRelationOnStartInputDatasetBuilder(
+      OpenLineageContext context, DatasetFactory<InputDataset> factory) {
     super(context, true);
-    this.factory = factory;
+    this.factory = Objects.requireNonNull(factory, "parameter: factory");
   }
 
   @Override
-  public boolean isDefinedAtLogicalPlan(LogicalPlan logicalPlan) {
-    return logicalPlan instanceof DataSourceV2ScanRelation;
+  public boolean isDefinedAt(SparkListenerEvent event) {
+    return event instanceof SparkListenerSQLExecutionStart;
   }
 
   @Override
-  public List<OpenLineage.InputDataset> apply(DataSourceV2ScanRelation scanRelation) {
-    DataSourceV2Relation relation = (scanRelation).relation();
+  public boolean isDefinedAtLogicalPlan(LogicalPlan plan) {
+    return plan instanceof DataSourceV2ScanRelation;
+  }
+
+  @Override
+  public List<InputDataset> apply(DataSourceV2ScanRelation plan) {
+    DataSourceV2Relation relation = plan.relation();
     OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
         context.getOpenLineage().newDatasetFacetsBuilder();
 
     DatasetVersionDatasetFacetUtils.includeDatasetVersion(context, datasetFacetsBuilder, relation);
     return DataSourceV2RelationDatasetExtractor.extract(
         factory, context, relation, datasetFacetsBuilder);
+  }
+
+  @Override
+  public String toString() {
+    return this.getClass().getSimpleName();
   }
 }

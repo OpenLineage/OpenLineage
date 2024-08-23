@@ -21,6 +21,7 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.spark.agent.util.OpenLineageHttpHandler;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
@@ -141,8 +142,7 @@ class SparkStreamingTest {
     }
   }
 
-  private static final SparkTestsUtils.OpenLineageEndpointHandler handler =
-      new SparkTestsUtils.OpenLineageEndpointHandler();
+  private static final OpenLineageHttpHandler handler = new OpenLineageHttpHandler();
 
   @Test
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
@@ -192,7 +192,7 @@ class SparkStreamingTest {
     Awaitility.await().atMost(Duration.ofSeconds(60)).until(() -> spark.sparkContext().isStopped());
 
     List<RunEvent> events =
-        handler.events.getOrDefault("test_kafka_source_to_kafka_sink", new ArrayList<>());
+        handler.getEventsMap().getOrDefault("test_kafka_source_to_kafka_sink", new ArrayList<>());
 
     List<RunEvent> sqlEvents =
         events.stream()
@@ -281,7 +281,7 @@ class SparkStreamingTest {
             .start();
 
     streamingQuery.awaitTermination(Duration.ofSeconds(20).toMillis());
-    List<RunEvent> events = handler.events.get("test_kafka_source_to_batch_sink");
+    List<RunEvent> events = handler.getEventsMap().get("test_kafka_source_to_batch_sink");
 
     assertThat(events).isNotEmpty();
 
@@ -357,7 +357,7 @@ class SparkStreamingTest {
 
     streamingQuery.awaitTermination(Duration.ofSeconds(20).toMillis());
 
-    List<RunEvent> events = handler.events.get("test_kafka_source_to_jdbc_batch_sink");
+    List<RunEvent> events = handler.getEventsMap().get("test_kafka_source_to_jdbc_batch_sink");
 
     assertTrue(events.size() > 1);
 
@@ -418,7 +418,9 @@ class SparkStreamingTest {
         .awaitTermination(Duration.ofSeconds(10).toMillis());
 
     List<RunEvent> events =
-        handler.events.getOrDefault("test_kafka_cluster_resolve_namespace", new ArrayList<>());
+        handler
+            .getEventsMap()
+            .getOrDefault("test_kafka_cluster_resolve_namespace", new ArrayList<>());
 
     assertTrue(events.stream().anyMatch(x -> !x.getInputs().isEmpty()));
 
@@ -456,7 +458,8 @@ class SparkStreamingTest {
         .start()
         .awaitTermination(Duration.ofSeconds(10).toMillis());
 
-    List<RunEvent> events = handler.events.get("test_read_from_csv_files_in_a_streaming_mode");
+    List<RunEvent> events =
+        handler.getEventsMap().get("test_read_from_csv_files_in_a_streaming_mode");
 
     List<RunEvent> csvInputEventsUsingStreaming =
         events.stream().filter(x -> !x.getInputs().isEmpty()).collect(Collectors.toList());

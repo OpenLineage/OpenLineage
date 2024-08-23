@@ -50,8 +50,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.ClearType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MockServerContainer;
@@ -81,7 +79,6 @@ class SparkScalaContainerTest {
 
   private static GenericContainer<?> spark;
   private static MockServerClient mockServerClient;
-  private static final Logger logger = LoggerFactory.getLogger(SparkContainerIntegrationTest.class);
   private static final String SPARK_3_OR_ABOVE = "^[3-9].*";
   private static final String SPARK_3_ONLY = "^3.*";
   private static final String SCALA_2_12 = "^2.12.*";
@@ -109,7 +106,7 @@ class SparkScalaContainerTest {
     try {
       if (spark != null) spark.stop();
     } catch (Exception e) {
-      logger.error("Unable to shut down pyspark container", e);
+      log.error("Unable to shut down pyspark container", e);
     }
   }
 
@@ -118,7 +115,7 @@ class SparkScalaContainerTest {
     try {
       openLineageClientMockContainer.stop();
     } catch (Exception e) {
-      logger.error("Unable to shut down openlineage client container", e);
+      log.error("Unable to shut down openlineage client container", e);
     }
     network.close();
   }
