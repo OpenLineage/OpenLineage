@@ -74,15 +74,10 @@ import org.testcontainers.utility.MountableFile;
 @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
 class SparkIcebergMetadataJsonTest {
 
-  private static final Network network = newNetwork();
-
-  // On MacOS, this typically needs to be "host.docker.internal"
-  private static final String HOST_NAME =
-      System.getenv("CI") == null ? "host.docker.internal" : "localhost";
-
+  private static final Network NETWORK = newNetwork();
+  private static final String HOST_NAME = "localhost";
   private static final String SHARED_VOLUME_NAME = "spark-data";
   private static final Volume SHARED_VOLUME = new Volume("/tmp");
-
   private static final Path CONTAINER_TMP_DIR = Paths.get("/tmp");
   private static final Path CONTAINER_BASE_WAREHOUSE_DIR = CONTAINER_TMP_DIR.resolve("warehouse");
   private static final Path CONTAINER_SPARK_WAREHOUSE_DIR =
@@ -91,7 +86,6 @@ class SparkIcebergMetadataJsonTest {
       CONTAINER_BASE_WAREHOUSE_DIR.resolve("public");
   private static final Path CONTAINER_WORKSPACE_WAREHOUSE_DIR =
       CONTAINER_BASE_WAREHOUSE_DIR.resolve("workspace");
-
   private static final Path CONTAINER_LOG4J_PATH =
       CONTAINER_FIXTURES_DIR.resolve("log4j.properties");
   private static final String LOG4J_SYSTEM_PROPERTY =
@@ -124,7 +118,7 @@ class SparkIcebergMetadataJsonTest {
 
   @AfterAll
   static void tearDown() {
-    network.close();
+    NETWORK.close();
     deleteDockerVolumes();
   }
 
@@ -323,7 +317,7 @@ class SparkIcebergMetadataJsonTest {
 
     GenericContainer<?> container =
         new GenericContainer<>(DockerImageName.parse(SPARK_DOCKER_IMAGE))
-            .withNetwork(network)
+            .withNetwork(NETWORK)
             .withNetworkAliases("spark")
             .withLogConsumer(SparkContainerUtils::consumeOutput)
             .waitingFor(Wait.forLogMessage(SPARK_DOCKER_CONTAINER_WAIT_MESSAGE, 1))
