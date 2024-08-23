@@ -69,7 +69,7 @@ import org.testcontainers.utility.MountableFile;
  */
 @Slf4j
 @Tag("integration-test")
-@EnabledIfSystemProperty(named = SPARK_VERSION, matches = "^3.[3-5].*")
+@EnabledIfSystemProperty(named = SPARK_VERSION, matches = "^3\\.[2-5]\\.\\d*")
 class SparkIcebergMetadataJsonTest {
 
   private static final Network NETWORK = newNetwork();
@@ -166,8 +166,27 @@ class SparkIcebergMetadataJsonTest {
   }
 
   @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "^3\\.5\\.\\d*")
+  void readIcebergMetadataJsonOutsideConfiguredCatalogSpark35() {
+    executeReadIcebergMetadataJsonOutsideConfiguredCatalog("append_data");
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "^3\\.[2-4]\\.\\d*")
   void readIcebergMetadataJsonOutsideConfiguredCatalog() {
-    final String testName = "read_iceberg_metadata_json_without_a_configured_iceberg_catalog";
+    executeReadIcebergMetadataJsonOutsideConfiguredCatalog("atomic_create_table_as_select");
+  }
+
+  private void executeReadIcebergMetadataJsonOutsideConfiguredCatalog(
+      final String commandToFilterOn) {
+    // This test is a "problem child"
+    // The behaviour between Spark [3.2.w, 3.3.x, 3.4.y] follows one path, namely:
+    // Iceberg will issue an "atomic_create_table_as_select" command for this
+    // However, when Spark is 3.5.z, it first issues an "append_data" command, followed by the
+    // "atomic_create_table_as_select" command. The problem is that in 3.5.z, the input table
+    // is the table being written to, and according to the Iceberg catalog, it doesn't exist.
+    // Fun times.
+    final String testName = "read_iceberg_metadata_json_outside_configured_catalog";
     final String eventsJsonPath = String.format("/tmp/lineage/%s.ndjson", testName);
     Map<String, String> props = new TreeMap<>(Comparator.naturalOrder());
     props.put("spark.app.name", testName);
@@ -176,9 +195,19 @@ class SparkIcebergMetadataJsonTest {
     props.put("spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener");
     props.put("spark.openlineage.transport.type", "file");
     props.put("spark.openlineage.transport.location", eventsJsonPath);
+    props.put("spark.openlineage.facets.columnLineage.disabled", "true");
+    props.put("spark.openlineage.facets.dataSource.disabled", "true");
+    props.put("spark.openlineage.facets.environment-properties.disabled", "true");
+    props.put("spark.openlineage.facets.lifecycleStateChange.disabled", "true");
+    props.put("spark.openlineage.facets.parent.disabled", "true");
+    props.put("spark.openlineage.facets.processing_engine.disabled", "true");
+    props.put("spark.openlineage.facets.schema.disabled", "true");
     props.put("spark.openlineage.facets.spark.logicalPlan.disabled", "true");
+    props.put("spark.openlineage.facets.spark_properties.disabled", "true");
     props.put("spark.openlineage.facets.spark_unknown.disabled", "true");
-    props.put("spark.openlineage.facets.debug.disabled", "true");
+    props.put("spark.openlineage.facets.storage.disabled", "true");
+    props.put("spark.openlineage.facets.symlinks.disabled", "true");
+    props.put("spark.openlineage.facets.version.disabled", "true");
     props.put("spark.sql.catalog.spark_catalog", "org.apache.iceberg.spark.SparkSessionCatalog");
     props.put("spark.sql.catalog.spark_catalog.type", "hive");
     props.put("spark.sql.catalog.workspace", "org.apache.iceberg.spark.SparkCatalog");
@@ -217,7 +246,7 @@ class SparkIcebergMetadataJsonTest {
     RunEvent runEvent =
         events.stream()
             .map(this::tryDeserialise)
-            .filter(e -> e.getJob().getName().contains("append_data"))
+            .filter(e -> e.getJob().getName().contains(commandToFilterOn))
             .filter(e -> e.getEventType().equals(EventType.COMPLETE))
             .findFirst()
             .orElseThrow(() -> new RuntimeException("Couldn't find COMPLETE event"));
@@ -253,9 +282,19 @@ class SparkIcebergMetadataJsonTest {
     props.put("spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener");
     props.put("spark.openlineage.transport.type", "file");
     props.put("spark.openlineage.transport.location", eventsJsonPath);
+    props.put("spark.openlineage.facets.columnLineage.disabled", "true");
+    props.put("spark.openlineage.facets.dataSource.disabled", "true");
+    props.put("spark.openlineage.facets.environment-properties.disabled", "true");
+    props.put("spark.openlineage.facets.lifecycleStateChange.disabled", "true");
+    props.put("spark.openlineage.facets.parent.disabled", "true");
+    props.put("spark.openlineage.facets.processing_engine.disabled", "true");
+    props.put("spark.openlineage.facets.schema.disabled", "true");
     props.put("spark.openlineage.facets.spark.logicalPlan.disabled", "true");
+    props.put("spark.openlineage.facets.spark_properties.disabled", "true");
     props.put("spark.openlineage.facets.spark_unknown.disabled", "true");
-    props.put("spark.openlineage.facets.debug.disabled", "true");
+    props.put("spark.openlineage.facets.storage.disabled", "true");
+    props.put("spark.openlineage.facets.symlinks.disabled", "true");
+    props.put("spark.openlineage.facets.version.disabled", "true");
     props.put("spark.sql.shuffle.partitions", "1");
     props.put("spark.sql.warehouse.dir", CONTAINER_SPARK_WAREHOUSE_DIR.toString());
     props.put("spark.ui.enabled", "false");
@@ -314,8 +353,11 @@ class SparkIcebergMetadataJsonTest {
     String command = String.join(" ", submitCommand);
     log.info("Container will be started with command: {}", command);
 
+    DockerImageName dockerImageName = DockerImageName.parse(SPARK_DOCKER_IMAGE);
+    log.info("Docker Image Name: {}", dockerImageName);
+
     GenericContainer<?> container =
-        new GenericContainer<>(DockerImageName.parse(SPARK_DOCKER_IMAGE))
+        new GenericContainer<>(dockerImageName)
             .withNetwork(NETWORK)
             .withNetworkAliases("spark")
             .withLogConsumer(SparkContainerUtils::consumeOutput)
