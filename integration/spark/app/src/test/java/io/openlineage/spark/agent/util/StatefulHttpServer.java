@@ -9,10 +9,10 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 
 public final class StatefulHttpServer implements Closeable {
   private final HttpServer server;
@@ -39,7 +39,7 @@ public final class StatefulHttpServer implements Closeable {
 
   public static StatefulHttpServer create(String path, OpenLineageHttpHandler handler)
       throws IOException {
-    SecureRandom random = new SecureRandom();
+    Random random = new Random();
     int port = random.nextInt(1024, 65535);
     return create(port, path, handler);
   }
