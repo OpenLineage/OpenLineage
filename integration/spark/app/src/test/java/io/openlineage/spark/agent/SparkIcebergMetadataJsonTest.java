@@ -13,7 +13,6 @@ import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LIB_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_SCALA_FIXTURES_JAR_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.SPARK_DOCKER_IMAGE;
 import static io.openlineage.spark.agent.SparkContainerUtils.SPARK_DOCKER_CONTAINER_WAIT_MESSAGE;
-import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_3_OR_ABOVE;
 import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_VERSION;
 import static org.testcontainers.containers.Network.newNetwork;
 
@@ -70,7 +69,7 @@ import org.testcontainers.utility.MountableFile;
  */
 @Slf4j
 @Tag("integration-test")
-@EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
+@EnabledIfSystemProperty(named = SPARK_VERSION, matches = "^3.[3-5].*")
 class SparkIcebergMetadataJsonTest {
 
   private static final Network NETWORK = newNetwork();
@@ -216,7 +215,7 @@ class SparkIcebergMetadataJsonTest {
     RunEvent runEvent =
         events.stream()
             .map(this::tryDeserialise)
-            .filter(e -> e.getJob().getName().contains("atomic_create_table_as_select"))
+            .filter(e -> e.getJob().getName().contains("append_data"))
             .filter(e -> e.getEventType().equals(EventType.COMPLETE))
             .findFirst()
             .orElseThrow(() -> new RuntimeException("Couldn't find COMPLETE event"));
