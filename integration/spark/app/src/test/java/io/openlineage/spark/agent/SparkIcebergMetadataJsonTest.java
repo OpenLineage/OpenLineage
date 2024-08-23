@@ -28,9 +28,9 @@ import com.github.dockerjava.api.model.Volume;
 import io.openlineage.server.OpenLineage;
 import io.openlineage.server.OpenLineage.RunEvent;
 import io.openlineage.server.OpenLineage.RunEvent.EventType;
-import io.openlineage.spark.agent.util.OpenLineageHttpHandler;
-import io.openlineage.spark.agent.util.StatefulHttpServer;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,14 +44,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -75,7 +74,6 @@ import org.testcontainers.utility.MountableFile;
 class SparkIcebergMetadataJsonTest {
 
   private static final Network NETWORK = newNetwork();
-  private static final String HOST_NAME = "localhost";
   private static final String SHARED_VOLUME_NAME = "spark-data";
   private static final Volume SHARED_VOLUME = new Volume("/tmp");
   private static final Path CONTAINER_TMP_DIR = Paths.get("/tmp");
@@ -96,24 +94,11 @@ class SparkIcebergMetadataJsonTest {
           .findAndRegisterModules()
           .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   private static final ObjectReader reader = mapper.readerFor(OpenLineage.RunEvent.class);
-  private StatefulHttpServer server;
 
   @BeforeAll
   static void setup() {
     createDockerVolumes();
     createSeedDataset();
-  }
-
-  @BeforeEach
-  void beforeEach() throws IOException {
-    server = StatefulHttpServer.create("/api/lineage", new OpenLineageHttpHandler());
-    server.start();
-  }
-
-  @AfterEach
-  void afterEach() throws IOException {
-    server.close();
-    server = null; // NOPMD
   }
 
   @AfterAll
@@ -183,17 +168,15 @@ class SparkIcebergMetadataJsonTest {
 
   @Test
   void readIcebergMetadataJsonOutsideConfiguredCatalog() {
-    final String testName = "read_iceberg_metadata_json_outside_configured_catalog";
+    final String testName = "read_iceberg_metadata_json_without_a_configured_iceberg_catalog";
+    final String eventsJsonPath = String.format("/tmp/lineage/%s.ndjson", testName);
     Map<String, String> props = new TreeMap<>(Comparator.naturalOrder());
     props.put("spark.app.name", testName);
     props.put("spark.app.master", "local[*]");
     props.put("spark.driver.extraJavaOptions", LOG4J_SYSTEM_PROPERTY);
     props.put("spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener");
-    props.put("spark.openlineage.transport.type", "http");
-    props.put(
-        "spark.openlineage.transport.url",
-        String.format("http://%s:%d", HOST_NAME, server.getPort()));
-    props.put("spark.openlineage.transport.endpoint", "/api/lineage");
+    props.put("spark.openlineage.transport.type", "file");
+    props.put("spark.openlineage.transport.location", eventsJsonPath);
     props.put("spark.openlineage.facets.spark.logicalPlan.disabled", "true");
     props.put("spark.openlineage.facets.spark_unknown.disabled", "true");
     props.put("spark.openlineage.facets.debug.disabled", "true");
@@ -219,9 +202,16 @@ class SparkIcebergMetadataJsonTest {
 
     GenericContainer<?> container = createSparkContainer(command);
     container.start();
+    List<String> events =
+        container.copyFileFromContainer(
+            eventsJsonPath,
+            inputStream -> {
+              try (BufferedReader bufferedReader =
+                  new BufferedReader(new InputStreamReader(inputStream))) {
+                return bufferedReader.lines().collect(Collectors.toList());
+              }
+            });
     container.close();
-
-    List<String> events = server.events();
 
     RunEvent runEvent =
         events.stream()
@@ -254,16 +244,14 @@ class SparkIcebergMetadataJsonTest {
   @Test
   void readIcebergMetadataJsonWithoutAConfiguredIcebergCatalog() {
     final String testName = "read_iceberg_metadata_json_without_a_configured_iceberg_catalog";
+    final String eventsJsonPath = String.format("/tmp/lineage/%s.ndjson", testName);
     Map<String, String> props = new TreeMap<>(Comparator.naturalOrder());
     props.put("spark.app.name", testName);
     props.put("spark.app.master", "local[*]");
     props.put("spark.driver.extraJavaOptions", LOG4J_SYSTEM_PROPERTY);
     props.put("spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener");
-    props.put("spark.openlineage.transport.type", "http");
-    props.put(
-        "spark.openlineage.transport.url",
-        String.format("http://host.docker.internal:%d", server.getPort()));
-    props.put("spark.openlineage.transport.endpoint", "/api/lineage");
+    props.put("spark.openlineage.transport.type", "file");
+    props.put("spark.openlineage.transport.location", eventsJsonPath);
     props.put("spark.openlineage.facets.spark.logicalPlan.disabled", "true");
     props.put("spark.openlineage.facets.spark_unknown.disabled", "true");
     props.put("spark.openlineage.facets.debug.disabled", "true");
@@ -282,9 +270,17 @@ class SparkIcebergMetadataJsonTest {
 
     GenericContainer<?> container = createSparkContainer(command);
     container.start();
+    List<String> events =
+        container.copyFileFromContainer(
+            eventsJsonPath,
+            inputStream -> {
+              try (BufferedReader bufferedReader =
+                  new BufferedReader(new InputStreamReader(inputStream))) {
+                return bufferedReader.lines().collect(Collectors.toList());
+              }
+            });
     container.close();
 
-    List<String> events = server.events();
     RunEvent runEvent =
         events.stream()
             .map(this::tryDeserialise)
