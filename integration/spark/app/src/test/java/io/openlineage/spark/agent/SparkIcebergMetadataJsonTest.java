@@ -212,7 +212,7 @@ class SparkIcebergMetadataJsonTest {
             });
     container.close();
 
-    events.forEach(json -> log.info("readIcebergMetadataJsonOutsideConfiguredCatalog: {}", json));
+    events.forEach(json -> log.info("{}: {}", testName, json));
 
     RunEvent runEvent =
         events.stream()
@@ -282,7 +282,7 @@ class SparkIcebergMetadataJsonTest {
             });
     container.close();
 
-    events.forEach(json -> log.info("readIcebergMetadataJsonWithoutAConfiguredIcebergCatalog: {}", json));
+    events.forEach(json -> log.info("{}: {}", testName, json));
 
     RunEvent runEvent =
         events.stream()
