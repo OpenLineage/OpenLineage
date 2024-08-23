@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.20.4...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.20.5...HEAD)
 
-## [1.20.4](https://github.com/OpenLineage/OpenLineage/compare/1.19.0...1.20.4) - 2024-08-22
+## [1.20.5](https://github.com/OpenLineage/OpenLineage/compare/1.19.0...1.20.5) - 2024-08-23
 
 ### Added
 * **Python: add `CompositeTransport`** [`#2925`](https://github.com/OpenLineage/OpenLineage/pull/2925) [@JDarDagran](https://github.com/JDarDagran)  
