@@ -516,8 +516,8 @@ jobs:
           export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
 
           # Publish *.jar
-          ./gradlew --no-daemon --console=plain clean publish -Pscala.binary.version=2.12 -Pjava.compile.home=/usr/local/jdk-17.0.11
-          ./gradlew --no-daemon --console=plain clean publish -Pscala.binary.version=2.13 -Pjava.compile.home=/usr/local/jdk-17.0.11
+          ./gradlew --no-daemon --console=plain clean publish --info -Pscala.binary.version=2.12 -Pjava.compile.home=/usr/local/jdk-17.0.11
+          ./gradlew --no-daemon --console=plain clean publish --info -Pscala.binary.version=2.13 -Pjava.compile.home=/usr/local/jdk-17.0.11
       - store_artifacts:
           path: ./build/libs
           destination: spark-client-artifacts
