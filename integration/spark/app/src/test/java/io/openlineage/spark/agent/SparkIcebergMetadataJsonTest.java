@@ -167,12 +167,14 @@ class SparkIcebergMetadataJsonTest {
 
   @Test
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "^3\\.5\\.\\d*")
+  @SuppressWarnings("PMD") // assertions are handled in the nested method
   void readIcebergMetadataJsonOutsideConfiguredCatalogSpark35() {
     executeReadIcebergMetadataJsonOutsideConfiguredCatalog("append_data");
   }
 
   @Test
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "^3\\.[2-4]\\.\\d*")
+  @SuppressWarnings("PMD") // assertions are handled in the nested method
   void readIcebergMetadataJsonOutsideConfiguredCatalog() {
     executeReadIcebergMetadataJsonOutsideConfiguredCatalog("atomic_create_table_as_select");
   }
