@@ -11,6 +11,7 @@ ext {
     snowflakeVersion = '2.13.0'
     mockitoVersion = '4.11.0'
     lombokVersion = '1.18.30'
+    micrometerVersion = '1.13.2'
 
     snowflakeLookup = [
             '2.4.8': '2.9.3',
@@ -49,6 +50,7 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:${junit5Version}"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.junit.jupiter:junit-jupiter-params")
+    testImplementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testImplementation("org.assertj:assertj-core:${assertjVersion}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation("org.mockito:mockito-inline:${mockitoVersion}")

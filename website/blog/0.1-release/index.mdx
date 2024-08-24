@@ -1,0 +1,33 @@
+---
+title: Introducing OpenLineage 0.1.0
+date: 2021-09-03
+authors: [Le Dem]
+description: We are pleased to announce the initial release of OpenLineage. This release includes the core specification, data model, clients, and integrations with common data tools.
+---
+We are pleased to announce the initial release of OpenLineage. This release includes the core specification, data model, clients, and integrations with common data tools.
+
+<!--truncate-->
+
+We are pleased to announce the initial release of OpenLineage. This is the culmination of a broad community effort, and establishes a common framework for data lineage collection and analysis.
+
+We want to thank [all the contributors](https://github.com/OpenLineage/OpenLineage/graphs/contributors) as well all the projects and companies involved in the design (in alphabetical order): [Airflow](https://airflow.apache.org), [Astronomer](https://www.astronomer.io), [Datakin](https://datakin.com), [Data Mesh](https://datameshlearning.com), [dbt](https://www.getdbt.com), [Egeria](https://egeria.odpi.org), [GetInData](https://getindata.com), [Great Expectations](https://greatexpectations.io), [Iceberg](https://iceberg.apache.org) (and others that I am probably forgetting).
+
+This release includes:
+* The initial 1-0-0 release of the [OpenLineage specification](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.md)
+* A core lineage model of Jobs, Runs and Datasets
+  * Core facets
+  * Data Quality Metrics and statistics
+  * Dataset schema
+  * Source code location
+  * SQL
+* Clients that send OpenLineage events to an HTTP backend
+  * Java
+  * Python
+* [Integrations](https://github.com/OpenLineage/OpenLineage/tree/main/integration) that collect lineage metadata as OpenLineage events
+  * Apache Airflow with support for BigQuery, Great Expectations, Postgres, Redshift, Snowflake
+  * Apache Spark
+  * dbt
+
+This is only the beginning. We invite everyone interested to [consult and contribute to the roadmap](https://github.com/OpenLineage/OpenLineage/projects). The roadmap currently contains, among other things: adding support for [Kafka](https://github.com/OpenLineage/OpenLineage/issues/152), [BI dashboards](https://github.com/OpenLineage/OpenLineage/issues/207), and [column level lineage](https://github.com/OpenLineage/OpenLineage/issues/148)...but you can influence it by participating!
+
+Follow the [repo](https://github.com/OpenLineage/OpenLineage) to stay updated. And, as always, you can [join the conversation](http://bit.ly/OpenLineageSlack) on Slack.

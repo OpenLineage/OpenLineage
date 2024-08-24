@@ -6,3 +6,10 @@
 rootProject.name = 'openlineage-java'
 
 include('generator')
+
+buildCache {
+    local {
+        directory = new File(rootDir, 'build-cache')
+    }
+}
+

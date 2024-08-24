@@ -47,7 +47,7 @@ ext {
     junit5Version = '5.10.3'
     lombokVersion = '1.18.34'
     mockitoVersion = '5.2.0'
-    micrometerVersion = '1.13.0'
+    micrometerVersion = '1.13.2'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
     guavaVersion = '33.2.1-jre'
 }
@@ -115,6 +115,7 @@ task generateCode(type: JavaExec) {
     def rootUrl = "file:$rootDir/../../spec/".toString()
     args rootUrl + "OpenLineage.json"
     args rootUrl
+    outputs.files("src/main/java/server", "src/main/java/client/OpenLineage.java")
 }
 
 openApiGenerate {
@@ -132,6 +133,8 @@ task sourceJar(type: Jar) {
 javadoc {
     dependsOn delombok
     failOnError = true
+
+    options.addBooleanOption("Xdoclint:-missing", true)
 
     def capturedOutput = []
     def listener = { capturedOutput << it } as StandardOutputListener
@@ -155,6 +158,8 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
+delombok.dependsOn tasks.generateCode
+sourceJar.dependsOn tasks.generateCode
 compileJava.dependsOn tasks.generateCode
 
 test {
@@ -205,7 +210,9 @@ publishing {
 
     repositories {
         maven {
-            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+            def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+            def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
             credentials {
                 username = System.getenv('RELEASE_USERNAME')
                 password = System.getenv('RELEASE_PASSWORD')
@@ -248,11 +255,13 @@ spotless {
     }
 }
 
+spotlessJava.dependsOn generateCode
+
 def reportsDir = "${buildDir}/reports";
 def coverageDir = "${reportsDir}/coverage";
 
 jacoco {
-    toolVersion = '0.8.5'
+    toolVersion = '0.8.12'
     reportsDir = file(coverageDir)
 }
 

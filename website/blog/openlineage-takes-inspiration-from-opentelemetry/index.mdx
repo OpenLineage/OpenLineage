@@ -1,0 +1,92 @@
+---
+title: How OpenLineage takes inspiration from OpenTelemetry
+date: 2021-06-20
+authors: [Le Dem]
+description: The data world and the service world have many similarities but also a few crucial differences. 
+---
+The data world and the service world have many similarities but also a few crucial differences. 
+
+<!--truncate-->
+
+## Data vs Services
+
+The data world and the service world have many similarities but also a few crucial differences. 
+Let’s start by drawing the similarities:
+- The contract for services is the API, in the data world the contract is the dataset schema. 
+- Properly tracked Data lineage is as powerful as distributed request tracing for services.
+- Data Quality checks are the data pipelines equivalent of services’ circuit breakers.
+- The Data catalog is data’s service discovery
+- Data quality metrics are similar to service metrics and both can define SLOs.
+
+|      | **Data** | **Services** |
+|:-----|:---------|:-------------|
+| **Contract** | Dataset schema | Service API |
+| **Tracking Dependencies** | Data lineage | Distributed traces |
+| **Preventing cascading failures** | Data Quality checks | Circuit breakers |
+| **Discovery** | Data catalog | Service Discovery |
+| **SLOs** | Freshness, data quality | Availability, latency |
+
+## Observability in the Services world
+
+In many ways, observability is a lot more mature in the services world than it is in the data world.
+Service telemetry data is usually described as traces, metrics and logs that allow us to observe how services behave and interact with each other. Recognizing how telemetry data is connected across service layers is key to understanding and mitigating complex distributed failures in today’s environments.
+OpenTelemetry is the standard that allows collection of telemetry data in a uniform, vendor-agnostic way across services and databases. For example, it enables the understanding of dependencies between microservices, facilitating investigation into how a single failure might impact services several layers removed.
+The creation of OpenTelemetry removed the need for every monitoring, tracing analysis and log indexing platform to create unique integrations to collect that information from the environment.
+
+## Observability in the Data world
+
+The data world is organized in a slightly different manner. Services strive for high availability  and expose a contract to be requested from. Data pipelines consume datasets and produce datasets. They could be executed as batch processes or using streaming engines but their fundamental contract is to consume data from given inputs and produce data to given outputs. The contract is now the schema of the dataset and an expectation of a rate of update. 
+
+In this world observability cares about a few things:
+- **Is the data being delivered?** We might be happy with data being delivered at an hourly or daily rate but we want to know if the job responsible for this is failing and won’t be updating it at all. As a consequence all the datasets depending on this will also not be updated. Correlated SLA misses likes this must be identified to avoid many teams investigating the same problem independently.
+- **Is the data being delivered on time?** Batch processing for example is relatively forgiving and can still deliver outputs according to a time SLA even when it failed and had to retry or was slower than usual because of disruptions in its environment. However critical data will need to be delivered according to pre-defined SLA. We want to be able to understand where in the data pipeline dependencies, a bottleneck caused a delay and resolve the issue.
+- **Is the data correct?** Now the worst thing that can happen is not a data pipeline failing. This case is relatively easy to recover from. Once the issue is fixed and the pipeline restarted, it will typically catch up and get back to normal operation after the delay induced by the failure. The worst case scenario for a data engineer or data scientist, is the pipeline carrying through and producing bad data. This usually propagates to downstream consumers and all over the place. Recovering requires understanding that the data is incorrect (usually using a data quality library like Great Expectations or Deequ), identifying the upstream dataset where the problem originated, identifying the downstream datasets where the problem propagated, and restating all those datasets to the correct result.
+- **Auditing what happened:** Another common need whether it’s for compliance or governance reasons is being able to know if specific sensitive datasets are used according to a defined set of rules. This can be used to protect user privacy, comply with financial regulation, or ensure that key metrics are derived from trusted data sources.
+
+The key common element in all those use cases is understanding dependencies through **data lineage**, just like services care about understanding dependencies through service traces.
+
+## Differences Between the Data world and the service world
+
+If the data world has exactly the same needs for observability than the service world, there are key differences between the two that create the need for a different API to instrument data pipelines.
+
+### Overall dependency structure:
+
+- **Services** dependencies can vary at the request level. Different requests to the same service may trigger very different downstream requests to other services. Service logic may create very different dependency patterns depending on input, timing and context. Services depend on other services that can be persistent or stateless.
+- **Data** pipelines tend to be expressed in terms of a transformation from a defined set of input datasets to one or several output datasets. Their input/output structure tends to be a lot more stable and not vary much from record to record in the dataset. It’s effectively a bigraph: jobs consume datasets and datasets are produced by jobs.
+
+### Push vs Pull:
+
+ - **Services** send or push requests to downstream services. Whether it’s synchronous or asynchronous, they can add a traceid to their request that will be propagated downstream. An upstream request spawns one or more downstream requests in a tree structure.
+- **Data** pipelines pull data from the datasets they consume from. They aggregate and join datasets together. The structure of dependencies is typically a Directed Acyclic Graph at the dataset level instead of a tree at the request level. This means that the granularity of updates does not match one to one in a lot of cases. The frequency of updates can be different from one pipeline to the next and does not neatly align with a trace flowing down the dependencies.
+
+### Granularity of data updates
+
+- **Services** treat one request at a time and tend to optimize for latency of the request being processed.
+- **Data** pipelines consume entire datasets and tend to prioritize throughput over latency. The result output can be combining many records from various inputs. When a service request spawns multiple requests downstream a data pipeline tends to do the opposite at the record level while producing multiple derived datasets.
+
+## Parallels between OpenLineage and [OpenTelemetry](https://opentelemetry.io/docs/concepts/what-is-opentelemetry/)
+
+### An API first
+
+Like OpenTelemetry is an API to collect traces, logs and metrics, OpenLineage is first an API to collect lineage. It is agnostic to the backend collecting the data and aspires to be integrated in every data processing engine.
+Data lineage is the equivalent of traces for services. It keeps track of dependencies between datasets and data pipelines and how they change over time. 
+
+### Broad language support
+
+Like OpenTelemetry, OpenLineage has broad language support through the definition of its API in the standard JSONSchema representation. It also has dedicated clients to simplify using its semantics in the languages most commonly used for data processing (Java and Python).
+
+### Backend agnostic
+
+Like OpenTelemetry, OpenLineage allows the implementation of multiple backends to consume lineage events for a variety of use cases. For example Marquez is an Open Source reference implementation that keeps track of all the changes in your environment and will help you understand what happened if something goes wrong.
+Other metadata projects like Egeria, DataHub, Atlas or Amundsen can also benefit from OpenLineage. Egeria in particular is committed to support OpenLineage as a Metadata bus.
+Like OpenTelemetry, anybody can consume and leverage OpenLineage events.
+
+### Integrates with popular frameworks and libraries
+
+Like OpenTelemetry, OpenLineage aspires to be integrated in every data processing tool in the ecosystem. It also provides integration with popular tools that are not integrated yet. For example today you can cover Apache Spark, BigQuery, Snowflake, Redshift, Apache Airflow and others.
+
+### OpenLineage specific capabilities
+
+In addition to those, OpenLineage is extensible to cover various aspects of metadata that are specific to the data world. OpenLineage defines a notion of facet that lets attach well defined pieces of metadata to the OpenLineage entities (Jobs, Runs and Datasets). Facets can be either part of the core spec or be defined as custom facets by third parties. This flexible mechanism lets define independent specs for dataset schema, query profiles or data quality metrics for example. But this is a topic for another post.
+
+

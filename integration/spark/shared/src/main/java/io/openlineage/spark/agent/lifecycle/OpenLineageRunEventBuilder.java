@@ -187,7 +187,7 @@ class OpenLineageRunEventBuilder {
     OpenLineage openLineage = openLineageContext.getOpenLineage();
     List<Object> nodes = context.loadNodes(stageMap, jobMap);
     UUID runId = context.getOverwriteRunId().orElse(openLineageContext.getRunUuid());
-    RunFacetsBuilder runFacetsBuilder = openLineage.newRunFacetsBuilder();
+    RunFacetsBuilder runFacetsBuilder = constructRunFacetsBuilder(context, openLineage);
 
     runFacetsBuilder.parent(context.getApplicationParentRunFacet());
     OpenLineage.JobFacets jobFacets =
@@ -217,6 +217,16 @@ class OpenLineageRunEventBuilder {
             RemovePathPatternUtils.removeOutputsPathPattern(openLineageContext, outputDatasets));
 
     return context.getRunEventBuilder().build();
+  }
+
+  RunFacetsBuilder constructRunFacetsBuilder(
+      OpenLineageRunEventContext context, OpenLineage openLineage) {
+    RunFacetsBuilder facetBuilder = context.getRunFacetsBuilder();
+    if (facetBuilder == null) {
+      return openLineage.newRunFacetsBuilder();
+    }
+
+    return facetBuilder;
   }
 
   private List<InputDataset> buildInputDatasets(List<Object> nodes) {

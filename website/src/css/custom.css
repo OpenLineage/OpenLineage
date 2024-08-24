@@ -1,0 +1,657 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+@import "tailwindcss/base";
+@import "tailwindcss/utilities";
+@import "tailwindcss/components";
+
+@import url('https://fonts.googleapis.com/css2?family=Didact+Gothic&display=swap');
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-h1-font-size: 3rem;
+  --ifm-h2-font-size: 3rem;
+    --ifm-h3-font-size: 1.5rem;
+    --ifm-h4-font-size: 1.25rem;
+  --ifm-color-primary: #b6420b;
+  --ifm-color-primary-dark: #7f2e08;
+  --ifm-color-primary-darker: #6d2807;
+  --ifm-color-primary-darkest: #491a04;
+  --ifm-color-primary-light: #c8490c;
+  --ifm-color-primary-lighter: #d14c0d;
+  --ifm-color-primary-lightest: #ed560e;
+  --deckgo-highlight-code-carbon-toolbar-display: none;
+  --deckgo-highlight-code-carbon-overflow: scroll;
+  --deckgo-highlight-code-scroll: scroll;
+  --deckgo-highlight-code-width: max-content;
+  --deckgo-highlight-code-carbon-margin: 30px 20px;
+  --ifm-font-family-base: 'Didact Gothic';
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #74a4bc;
+  --ifm-color-primary-dark: #5f97b2;
+  --ifm-color-primary-darker: #5590ad;
+  --ifm-color-primary-darkest: #457790;
+  --ifm-color-primary-light: #89b1c6;
+  --ifm-color-primary-lighter: #93b8cb;
+  --ifm-color-primary-lightest: #b2ccda;
+}
+
+body {
+  font-family: "Didact Gothic", sans-serif;
+  font-size: 18px;
+  background-color: white;
+  width: 100%;
+}
+
+p {
+  line-height: 165%;
+}
+
+svg {
+  display: inline-block;
+}
+
+a {
+  color: rgb(116, 164, 188);
+}
+
+.boxed {
+  @apply max-w-screen-lg w-full mx-auto px-4;
+}
+
+.bg-bg {
+  background-color: white;
+}
+
+.bg-bgalt {
+  background-color: rgb(255, 255, 255);
+}
+
+@screen lg {
+  .boxed {
+      @apply max-w-screen-md;
+  }
+}
+
+@screen xl {
+  .boxed {
+      @apply max-w-screen-lg;
+  }
+}
+
+.large-container {
+  max-width: 2100px;
+}
+
+.navbar__title {
+  margin-left: -0.45rem;
+  font-weight: normal;
+}
+
+.navbar__item svg {
+  display: inline-block !important;
+  vertical-align: baseline;
+}
+
+a.navbar__brand:hover {
+  color: var(--ifm-navbar-link-color);
+  text-decoration: none;
+}
+
+.nav .nav-links li{
+  @apply relative inline-block mx-2;
+}
+
+.nav .nav-links li a{
+  @apply inline-block p-1 relative z-10;
+}
+
+.nav .nav-links li:before{
+  content: "";
+  @apply absolute w-0 h-0 rounded-full bg-primary left-0 right-0 bottom-0 top-0 m-auto opacity-25;
+  transition: width .25s, height .25s;
+}
+
+.nav .nav-links li.active a ,.nav .nav-links li:hover a {
+  color: #f26522;
+}
+
+.nav .nav-links .theme-switcher:before{
+  display: none;
+}
+
+.nav .line {
+  width: 0;
+  transition: width 0.50s;
+}
+
+code .token-line {
+  font-size: 14px;
+}
+
+.nav.scrolled .line{
+  @apply w-full;
+}
+
+.title h1{
+  @apply text-color-1;
+}
+
+.btn {
+  @apply h-12 px-6 outline-none inline-flex relative overflow-hidden items-center;
+}
+
+.btn.disabled {
+  @apply opacity-50;
+}
+
+.btn span {
+  @apply relative z-10;
+}
+
+.btn:before{
+  content: "";
+  @apply absolute w-full h-full top-0;
+  left: 100%;
+  transition: left 0.25s;
+  transition-timing-function: cubic-bezier(1, 2.13, 1, -0.1);
+  z-index: 1;
+}
+
+.btn .icon-right {
+  @apply ml-3;
+}
+
+.btn .icon-left {
+  @apply mr-3;
+}
+
+.btn:focus {
+  @apply outline-none;
+}
+
+.btn-primary {
+  @apply bg-primary my-4;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  color: #fff;
+  text-decoration: none;
+}
+
+.btn-primary:before {
+  @apply bg-secondary;
+}
+
+.btn-primary:hover:before,.btn-primary:focus:before {
+  left: 0;
+}
+
+.integration-item .image {
+  clip-path: polygon(0 0, 0% 0, 0% 100%, 0% 100%);
+  transition: clip-path 0.50s;
+  transition-timing-function: ease-in-out;
+  z-index: 3;
+  transform: translateY(0);
+}
+
+.integration-item.even .image {
+  clip-path: polygon(100% 0, 100% 0, 100% 99%, 100% 100%);
+}
+
+.integration-item.begin-animation .image{
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+}
+
+.integration-item .to-up {
+  transform: translate(0, 50px);
+  transition: transform 0.25s;
+}
+
+.integration-item .to-up:nth-child(2){
+  transition-delay: 0.2s;
+}
+
+.integration-item.begin-animation .to-up {
+  transform: translate(0, 0px);
+}
+
+.footer {
+  position: absolute;
+  width: 100%;
+  left: 0;
+  right: 0;
+}
+
+.footer-links li{
+  @apply mx-3;
+}
+
+.footer-links li a {
+  text-decoration: none;
+}
+
+.animated-link-parent a {
+  @apply inline-block relative;
+}
+
+.animated-link-parent a:after {
+  content: "";
+  transition-property: width;
+  @apply absolute bg-gradient-primary duration-300 w-0 left-0 bottom-0;
+  height: 2px;
+}
+
+.animated-link-parent a:hover:after,.animated-link-parent a:focus:after,.animated-link-parent a:active:after {
+  @apply w-full;
+}
+
+#post-content p {
+  @apply my-3;
+}
+
+#post-content h1, h2, h3, h4, h5, h6 {
+  @apply text-color-2 my-8;
+}
+
+#post-content h1 {
+  @apply text-5xl;
+}
+
+#post-content h2 {
+  @apply text-4xl;
+}
+
+#post-content h3 {
+  @apply text-3xl;
+}
+
+#post-content h4 {
+  @apply text-2xl;
+}
+
+#post-content h5 {
+  @apply text-xl;
+}
+
+#post-content h5 {
+  @apply text-lg;
+}
+
+#post-content hr {
+  @apply my-4 border-medium;
+}
+
+#post-content ul {
+  list-style: disc;
+}
+
+#post-content ol {
+  list-style: decimal;
+}
+
+#post-content ul, #post-content ol {
+  @apply ml-4;
+}
+
+#post-content ul ul, #post-content ol ol {
+  @apply ml-3;
+}
+
+#post-content li {
+  @apply my-2;
+  margin-left: 1.5rem;
+}
+
+#post-content table {
+  @apply w-full my-6;
+}
+
+#post-content table tr {
+  border-bottom: 2px solid #eee;
+  @apply border-medium;
+}
+
+.theme-dark #post-content table tr  {
+  border-bottom: 2px solid #444;
+}
+
+#post-content table tr td, #post-content table tr th {
+  @apply p-2 py-3 text-left;
+}
+
+#post-content blockquote{
+  @apply border-l-4 border-primary p-3;
+  padding: 0rem 0.75rem;
+  margin: 1.5rem 0;
+}
+
+#post-content iframe {
+  max-width: 100%;
+}
+
+.input.focused {
+  @apply px-4;
+}
+
+.theme-dark .input.focused {
+  background: theme("themes.dark.medium");
+}
+
+.theme-dark .blog-item .focused{
+  background: theme("themes.dark.medium");
+}
+
+.spin {
+  animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+  0%{
+      transform: rotate(0deg);
+  }
+  100%{
+      transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  html {
+      font-size: 15px;
+  }
+}
+
+#post-content a {
+  @apply text-color-2 my-4;
+}
+
+#post-content pre {
+  padding: 1rem;
+  margin: 1rem;
+}
+
+.int-title {
+  color: #fff !important;
+}
+
+.integration-list {
+  width: 90%;
+  margin: auto;
+  margin-top: 30px;
+  background-color: #fff;
+}
+
+.integration-list td {
+  border: 3px solid #f8f8f8;
+  vertical-align: top;
+  padding: 8px 13px;
+}
+
+.integration-list th {
+  padding: 10px;
+  border: 3px solid #f8f8f8;
+}
+
+.int-desc {
+  width: 50%;
+}
+
+.table-of-contents {
+  padding: 10px 0;
+  margin: 10px 0px 10px 20px;
+  float: right;
+  background-color: #fff;
+}
+
+.table-of-contents ol {
+  counter-reset: tocnum;
+  padding-left: 10px;
+  margin-left: 0;
+  list-style: none;
+}
+
+.table-of-contents ol li {
+  counter-increment: tocnum;
+  line-height: 100%;
+  padding-left: 0;
+  padding-right: 10px;
+  margin-left: 10px;
+
+}
+
+.table-of-contents ol li:before {
+  content: counters(tocnum, '.') '. ';
+  font-weight: bold;
+}
+
+.theme-doc-markdown ol {
+  list-style-type: decimal;
+  margin: 0 0 var(--ifm-list-margin);
+  padding-left: var(--ifm-list-left-padding);
+}
+
+.theme-doc-markdown ul {
+  list-style-type: disc;
+  margin: 0 0 var(--ifm-list-margin);
+  padding-left: var(--ifm-list-left-padding);
+}
+
+.theme-doc-markdown h1 {
+  font-size: var(--ifm-h1-font-size);
+}
+
+.theme-doc-markdown h2 {
+  font-size: var(--ifm-h2-font-size);
+}
+
+.theme-doc-markdown h3 {
+  font-size: var(--ifm-h3-font-size);
+}
+
+.theme-doc-markdown h4 {
+  font-size: var(--ifm-h4-font-size);
+}
+code {
+  background-color: #dedede;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+img[src*="#full-width"] {
+  width: 100%;
+}
+
+html.docs-doc-page body {
+  background-color: white;
+}
+
+.pagination {
+  display: block;
+}
+
+.pagination a {
+  text-decoration: none;
+}
+
+.pagination a:hover {
+  color: initial;
+}
+
+.pagination a.bg-gradient-primary:hover {
+  color: white;
+}
+
+img[src*="#banner"] {
+  width: 100%;
+  height: 30px;
+  overflow: hidden;
+  object-fit: cover;
+  object-position: 25% 25%;
+}
+
+.eco-grid-div {
+  width: 100%;
+}
+
+.survey-btn-container {
+  display: flex;
+  align-items: center;
+}
+
+.survey-btn-div {
+  margin: auto;
+}
+
+.survey-btn {
+  color: white;
+  padding: 15px 32px;
+  font-size: 24px;
+  background-color: #3e3e3e;
+  border-radius: 12px;
+}
+
+.commtable-col {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.bd-sidebar-secondary {
+  height: 100%;
+  width: 20%;
+  position: fixed;
+  z-index: 1;
+  top: var(--ifm-navbar-height);
+  right: 0;
+  overflow-x: hidden;
+}
+.bd-sidebar-secondary a {
+  padding: 6px 4px 6px 8px;
+  text-decoration: none;
+  color: theme("colors.color-2");
+  display: block;
+}
+.bd-sidebar-secondary a:hover {
+  color: var(--ifm-color-primary-lightest);
+}
+.bd-sidebar-secondary code {
+  background: none;
+  border: none;
+  color: theme("colors.color-2");
+}
+.bd-sidebar-secondary code:hover {
+  color: var(--ifm-color-primary-lightest);
+}
+.bd-sidebar-secondary ul {
+  margin: 0;
+  padding-left: 0.5rem;
+}
+.bd-sidebar-secondary .nav.visible, .bd-sidebar-secondary .bd-toc .nav > .active > ul, .bd-sidebar-secondary .list-caption .nav.visible, .bd-sidebar-secondary .list-caption > .active > ul, .bd-sidebar-secondary .toc-entry {
+  display: block;
+}
+.bd-sidebar-secondary li .toc-h4 {
+  display: none;
+}
+dl.py {
+  margin-bottom: calc(var(--ifm-spacing-vertical) * 2);
+  font-size: 18px;
+  border: 0.5px solid theme("colors.color-2");
+  border-radius: 5px;
+}
+dl.py code {
+  border: none;
+  background: none;
+}
+dl.py p {
+  margin-bottom: 0;
+}
+dl.py dl {
+  margin-bottom: var(--ifm-spacing-vertical);
+}
+dl.py em.sig-param > span:first-child {
+  font-weight: bold;
+}
+dl.py > dd:not(:empty) {
+  padding-bottom: var(--ifm-spacing-vertical);
+}
+dl.py dt.sig {
+  box-sizing: border-box;
+  font-size: 1.2rem;
+  padding: var(--ifm-spacing-vertical);
+  border-radius: 5px;
+  font-family: var(--ifm-font-family-monospace);
+  background-color: theme("colors.color-2");
+}
+dl.py > dd:not(:empty) {
+  padding-top: calc(var(--ifm-spacing-vertical) / 2);
+  margin-top: 0;
+  margin-left: var(--ifm-spacing-horizontal);
+  margin-right: var(--ifm-spacing-horizontal);
+}
+dl.py em.property {
+  color: var(--ifm-color-primary-lighter);
+  font-weight: bold;
+}
+dl.py span.sig-name {
+  color: rgb(31, 111, 138);
+  font-weight: bold;
+}
+dl.py dt a {
+  color: rgb(59, 139, 165);
+}
+dl.py em.property {
+  color: theme("colors.secondary");
+}
+dl.py em.sig-param span.default_value {
+  color: theme("colors.color-default");
+}
+dl.py span.sig-return span.sig-return-typehint {
+  color: theme("colors.color-1");
+}
+dl.py span.sig-return span.sig-return-typehint pre {
+  color: theme("colors.color-2");
+}
+dl.py dl.field-list {
+  padding-top: calc(var(--ifm-spacing-vertical) / 2);
+  display: grid;
+  grid-template-columns: fit-content(50%) auto;
+}
+dl.py dl.field-list:not(:first-child) {
+  border-top: 1px solid theme("colors.color-2");
+}
+dl.py dl.field-list dt {
+  margin-right: 0.5em;
+}
+dl.py dl.field-list dd {
+  font-family: var(--ifm-font-family-base);
+}
+dl.py dl.field-list dt, dl.py dl.field-list dd {
+  margin-left: 0;
+  padding-left: 0;
+}
+dl.py dl.field-list dt:not(:first-of-type), dl.py dl.field-list dd:not(:first-of-type) {
+  border-top: 1px solid theme("colors.color-2");
+  padding-top: var(--ifm-spacing-vertical);
+}
+dl.py dl.field-list dt:not(:last-of-type), dl.py dl.field-list dd:not(:last-of-type) {
+  padding-bottom: var(--ifm-spacing-vertical);
+}
+dl.py dl.field-list dt ul, dl.py dl.field-list dd ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+dl.py dl.field-list dt ul li p, dl.py dl.field-list dd ul li p {
+  margin: 0;
+  padding: 0;
+}
