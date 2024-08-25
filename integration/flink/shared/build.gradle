@@ -104,7 +104,7 @@ dependencies {
     compileOnly "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     compileOnly "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:${versions.iceberg}"
     compileOnly "org.apache.flink:flink-connector-jdbc:${versions.jdbc}"
-    compileOnly "com.google.protobuf:protobuf-java:3.25.3"
+    compileOnly "com.google.protobuf:protobuf-java:4.27.3"
 
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
@@ -139,7 +139,7 @@ dependencies {
     testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
-    testImplementation "com.google.protobuf:protobuf-java:3.25.3"
+    testImplementation "com.google.protobuf:protobuf-java:4.27.3"
 
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }

@@ -87,7 +87,7 @@ dependencies {
     implementation "org.apache.avro:avro"
 
     implementation "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:${versions.iceberg}"
-    implementation "com.google.protobuf:protobuf-java:3.25.3"
+    implementation "com.google.protobuf:protobuf-java:4.27.3"
 }
 
 assemble {
