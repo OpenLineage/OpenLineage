@@ -576,7 +576,7 @@ List<Dependency> additionalJars(String spark, String scala) {
                     dependencies.create("org.apache.hadoop:hadoop-mapreduce-client-core:2.10.2", {
                         exclude(group: "org.slf4j")
                     }),
-                    dependencies.create("org.apache.hadoop:hadoop-mapreduce-client-common:2.10.2", {
+                    dependencies.create("org.apache.hadoop:hadoop-mapreduce-client-common:3.4.0", {
                         exclude(group: "org.slf4j")
                     }),
                     // Yes, believe it or not, the Spark binaries without hadoop exclude hive
