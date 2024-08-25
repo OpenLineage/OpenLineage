@@ -133,7 +133,7 @@ dependencies {
     }
     testImplementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testImplementation("io.micrometer:micrometer-registry-statsd:${micrometerVersion}")
-    testImplementation('net.javacrumbs.json-unit:json-unit-assertj:2.38.0')
+    testImplementation('net.javacrumbs.json-unit:json-unit-assertj:3.4.1')
     testImplementation('net.javacrumbs.json-unit:json-unit-core:2.38.0')
 
     testRuntimeOnly("org.slf4j:slf4j-api:1.7.36")
