@@ -115,7 +115,7 @@ dependencies {
     testImplementation("org.testcontainers:mockserver")
     testImplementation("org.testcontainers:kafka")
     testImplementation("commons-beanutils:commons-beanutils:1.9.4")
-    testImplementation("org.awaitility:awaitility:4.2.0")
+    testImplementation("org.awaitility:awaitility:4.2.2")
     testImplementation("org.assertj:assertj-core:${assertjVersion}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
