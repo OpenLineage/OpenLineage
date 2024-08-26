@@ -1,0 +1,124 @@
+{
+  "producer": "https://github.com/OpenLineage/OpenLineage/tree/1.21.0-SNAPSHOT/integration/spark",
+  "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+  "eventType": "COMPLETE",
+  "inputs": [],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/delta/events",
+      "facets": {
+        "dataSource": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.21.0-SNAPSHOT/integration/spark",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+          "name": "file",
+          "uri": "file"
+        },
+        "version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.21.0-SNAPSHOT/integration/spark",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasetVersionDatasetFacet.json#/$defs/DatasetVersionDatasetFacet",
+          "datasetVersion": "2"
+        },
+        "schema": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.21.0-SNAPSHOT/integration/spark",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+          "fields": [
+            {
+              "name": "event_id",
+              "type": "long"
+            },
+            {
+              "name": "last_updated_at",
+              "type": "long"
+            }
+          ]
+        },
+        "columnLineage": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.21.0-SNAPSHOT/integration/spark",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ColumnLineageDatasetFacet.json#/$defs/ColumnLineageDatasetFacet",
+          "fields": {
+            "event_id": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/tmp/delta/events",
+                  "field": "event_id",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/delta/updates",
+                  "field": "event_id",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/delta/updates2",
+                  "field": "event_id",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "last_updated_at": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/tmp/delta/updates2",
+                  "field": "updated_at",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "symlinks": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.21.0-SNAPSHOT/integration/spark",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SymlinksDatasetFacet.json#/$defs/SymlinksDatasetFacet",
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/delta",
+              "name": "default.events",
+              "type": "TABLE"
+            }
+          ]
+        }
+      },
+      "outputFacets": {
+        "outputStatistics": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.21.0-SNAPSHOT/integration/spark",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-2/OutputStatisticsOutputDatasetFacet.json#/$defs/OutputStatisticsOutputDatasetFacet",
+          "rowCount": 0,
+          "size": 0
+        }
+      }
+    }
+  ]
+}
