@@ -6,8 +6,8 @@ use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
-    AlterTableOperation, Expr, FromTable, Function, FunctionArg, FunctionArgExpr, Ident,
-    ListAggOnOverflow, Query, Select, SelectItem, SetExpr, Statement, Table, TableFactor,
+    AlterTableOperation, Expr, FromTable, Function, FunctionArg, FunctionArgExpr,
+    FunctionArguments, Ident, Query, Select, SelectItem, SetExpr, Statement, Table, TableFactor,
     WindowSpec, WindowType, With,
 };
 
@@ -107,7 +107,7 @@ impl Visit for TableFactor {
 impl Visit for Expr {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match self {
-            Expr::Subquery(query) | Expr::ArraySubquery(query) => {
+            Expr::Subquery(query) => {
                 query.visit(context)?;
             }
             Expr::InSubquery {
@@ -236,13 +236,17 @@ impl Visit for Expr {
                 expr.visit(context)?;
                 pattern.visit(context)?;
             }
-            Expr::Cast { expr, .. } | Expr::TryCast { expr, .. } | Expr::SafeCast { expr, .. } => {
+            Expr::Cast { expr, .. } => {
                 expr.visit(context)?;
             }
             Expr::AtTimeZone { timestamp, .. } => {
                 timestamp.visit(context)?;
             }
-            Expr::Extract { field: _, expr } => {
+            Expr::Extract {
+                field: _,
+                syntax: _,
+                expr,
+            } => {
                 expr.visit(context)?;
             }
             Expr::Position { expr, r#in } => {
@@ -296,7 +300,7 @@ impl Visit for Expr {
             Expr::MapAccess { column, keys } => {
                 column.visit(context)?;
                 for key in keys {
-                    key.visit(context)?;
+                    key.key.visit(context)?;
                 }
             }
             Expr::Exists { subquery, .. } => {
@@ -314,39 +318,13 @@ impl Visit for Expr {
                     expr.visit(context)?;
                 }
             }
-            Expr::ArrayIndex { obj, indexes } => {
-                obj.visit(context)?;
-                for index in indexes {
-                    index.visit(context)?;
-                }
-            }
-            Expr::ListAgg(list) => {
-                list.expr.visit(context)?;
-                if let Some(e) = &list.separator {
-                    e.visit(context)?;
-                }
-                if let Some(ListAggOnOverflow::Truncate {
-                    filler: Some(e), ..
-                }) = &list.on_overflow
-                {
-                    e.visit(context)?;
-                }
-                for order_by in &list.within_group {
-                    order_by.expr.visit(context)?;
-                }
-            }
             Expr::Array(array) => {
                 for e in &array.elem {
                     e.visit(context)?;
                 }
             }
-            Expr::JsonAccess {
-                left,
-                operator: _,
-                right,
-            } => {
-                left.visit(context)?;
-                right.visit(context)?;
+            Expr::JsonAccess { value, path: _ } => {
+                value.visit(context)?;
             }
             Expr::CompositeAccess { expr, .. } => {
                 expr.visit(context)?;
@@ -369,10 +347,15 @@ impl Visit for Expr {
 
 impl Visit for Function {
     fn visit(&self, context: &mut Context) -> Result<()> {
-        for arg in &self.args {
-            arg.visit(context)?;
+        match &self.args {
+            FunctionArguments::None => {}
+            FunctionArguments::Subquery(_) => {}
+            FunctionArguments::List(arguments) => {
+                for arg in &arguments.args {
+                    arg.visit(context)?;
+                }
+            }
         }
-
         if let Some(spec) = &self.over {
             spec.visit(context)?;
         }
@@ -549,37 +532,29 @@ impl Visit for Statement {
         context.push_frame();
         match self {
             Statement::Query(query) => query.visit(context)?,
-            Statement::Insert {
-                table_name, source, ..
-            } => {
-                if let Some(src) = source {
+            Statement::Insert(insert) => {
+                if let Some(src) = &insert.source {
                     src.visit(context)?;
                 }
-                context.add_output(table_name.clone().0);
+                context.add_output(insert.table_name.clone().0);
             }
             Statement::Merge { table, source, .. } => {
                 let table_name = get_table_name_from_table_factor(table)?;
                 context.add_output(table_name);
                 source.visit(context)?;
             }
-            Statement::CreateTable {
-                name,
-                query,
-                like,
-                clone,
-                ..
-            } => {
-                if let Some(query) = query {
+            Statement::CreateTable(ct) => {
+                if let Some(query) = &ct.query {
                     query.visit(context)?;
                 }
-                if let Some(like_table) = like {
+                if let Some(like_table) = &ct.like {
                     context.add_input(like_table.clone().0);
                 }
-                if let Some(clone) = clone {
+                if let Some(clone) = &ct.clone {
                     context.add_input(clone.clone().0);
                 }
 
-                context.add_output(name.clone().0);
+                context.add_output(ct.name.clone().0);
             }
             Statement::CreateView { name, query, .. } => {
                 query.visit(context)?;
@@ -623,6 +598,7 @@ impl Visit for Statement {
                 only: _,
                 operations,
                 location: _,
+                on_cluster: _,
             } => {
                 for operation in operations {
                     match operation {
@@ -642,14 +618,8 @@ impl Visit for Statement {
                     }
                 }
             }
-            Statement::Delete {
-                tables: _,
-                from,
-                using,
-                selection,
-                ..
-            } => {
-                match from {
+            Statement::Delete(delete) => {
+                match &delete.from {
                     FromTable::WithFromKeyword(tables) | FromTable::WithoutKeyword(tables) => {
                         for table in tables {
                             let output = get_table_name_from_table_factor(&table.relation)?;
@@ -662,7 +632,7 @@ impl Visit for Statement {
                     }
                 }
 
-                if let Some(using) = using {
+                if let Some(using) = &delete.using {
                     for table in using {
                         table.relation.visit(context)?;
                         for join in &table.joins {
@@ -671,7 +641,7 @@ impl Visit for Statement {
                     }
                 }
 
-                if let Some(expr) = selection {
+                if let Some(expr) = &delete.selection {
                     expr.visit(context)?;
                 }
             }
