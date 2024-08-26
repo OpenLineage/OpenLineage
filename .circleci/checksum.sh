@@ -9,7 +9,7 @@ touch $RESULT_FILE
 
 # For dependabot PRs, skip checksum generation to reuse the same cache and reduce storage usage.
 if [[ $BRANCH_NAME == dependabot* ]]; then
-  echo "CONSTANT_STRING" >> $RESULT_FILE
+  echo "DEPENDABOT" >> $RESULT_FILE
   exit 0
 fi
 
