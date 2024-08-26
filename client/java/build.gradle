@@ -19,6 +19,7 @@ plugins {
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
     id "io.freefair.lombok" version "8.7.1"
+    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
 
 pmd {
@@ -207,16 +208,13 @@ publishing {
                 "version": project.property("version")
         ]
     }
+}
 
+nexusPublishing {
     repositories {
-        maven {
-            def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
-            def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
-            credentials {
-                username = System.getenv('RELEASE_USERNAME')
-                password = System.getenv('RELEASE_PASSWORD')
-            }
+        sonatype {
+            username = System.getenv('RELEASE_USERNAME')
+            password = System.getenv('RELEASE_PASSWORD')
         }
     }
 }
