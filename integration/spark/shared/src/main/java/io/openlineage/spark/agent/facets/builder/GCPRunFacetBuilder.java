@@ -6,7 +6,7 @@
 package io.openlineage.spark.agent.facets.builder;
 
 import io.openlineage.client.OpenLineage.RunFacet;
-import io.openlineage.spark.agent.facets.GCPDataprocRunFacet;
+import io.openlineage.spark.agent.facets.GcpDataprocRunFacet;
 import io.openlineage.spark.agent.util.GCPUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -20,17 +20,17 @@ import org.apache.spark.scheduler.SparkListenerEvent;
  * {@link CustomFacetBuilder} responsible for generating GCP-specific run facets when using
  * OpenLineage on Google Cloud Platform (GCP).
  */
-public class GCPRunFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, RunFacet> {
+public class GcpRunFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, RunFacet> {
 
   private final SparkContext sparkContext;
   private final Optional<OpenLineageContext> maybeOLContext;
 
-  public GCPRunFacetBuilder(OpenLineageContext openLineageContext) {
+  public GcpRunFacetBuilder(OpenLineageContext openLineageContext) {
     this.sparkContext = openLineageContext.getSparkContext().get();
     this.maybeOLContext = Optional.of(openLineageContext);
   }
 
-  public GCPRunFacetBuilder(SparkContext sparkContext) {
+  public GcpRunFacetBuilder(SparkContext sparkContext) {
     this.sparkContext = sparkContext;
     this.maybeOLContext = Optional.empty();
   }
@@ -38,7 +38,7 @@ public class GCPRunFacetBuilder extends CustomFacetBuilder<SparkListenerEvent, R
   @Override
   protected void build(SparkListenerEvent event, BiConsumer<String, ? super RunFacet> consumer) {
     if (GCPUtils.isDataprocRuntime())
-      consumer.accept("gcp_dataproc", new GCPDataprocRunFacet(getDataprocAttributes()));
+      consumer.accept("gcp_dataproc_spark", new GcpDataprocRunFacet(getDataprocAttributes()));
   }
 
   private Map<String, Object> getDataprocAttributes() {

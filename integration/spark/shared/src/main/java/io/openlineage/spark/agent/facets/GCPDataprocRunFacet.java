@@ -13,13 +13,13 @@ import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class GCPDataprocRunFacet implements OpenLineage.RunFacet {
+public class GcpDataprocRunFacet implements OpenLineage.RunFacet {
 
   private final URI _producer;
   private final URI _schemaURL;
   @JsonAnySetter private final Map<String, Object> additionalProperties;
 
-  public GCPDataprocRunFacet(Map<String, Object> properties) {
+  public GcpDataprocRunFacet(Map<String, Object> properties) {
     this._producer = Versions.OPEN_LINEAGE_PRODUCER_URI;
     this._schemaURL =
         URI.create(
