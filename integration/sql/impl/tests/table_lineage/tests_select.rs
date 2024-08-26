@@ -175,3 +175,16 @@ fn select_window_function() {
         }
     )
 }
+
+#[test]
+fn select_bq_array_function() {
+    assert_eq!(
+        test_sql("SELECT l.LOCATION[offset(0)] AS my_city FROM my_bq_dataset.my_table_2 AS l")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: vec![table("my_bq_dataset.my_table_2")],
+            out_tables: vec![],
+        }
+    )
+}
