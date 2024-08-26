@@ -12,29 +12,30 @@ Jobs and Datasets have their own namespaces, job namespaces being derived from s
 
 A dataset, or `table`, is organized according to a producer, namespace, database and (optionally) schema.
 
-| Data Store | Type | Namespace | Name |
-|:-----------|:-----------|:---------------------|:-----------------|
-| Athena | Warehouse | awsathena://athena.{region_name}.amazonaws.com | {catalog}.{database}.{table} |
-| Azure Cosmos DB | Warehouse | azurecosmos://{host}/dbs/{database} | colls/{table} |
-| Azure Data Explorer | Warehouse | azurekusto://{host}.kusto.windows.net | {database}/{table} |
-| Azure Synapse | Warehouse | sqlserver://{host}:{port} | {schema}.{table} |
-| BigQuery | Warehouse | bigquery:// | {project id}.{dataset name}.{table name} |
-| Cassandra | Warehouse | cassandra://{host}:{port} | {keyspace}.{table} |
-| MySQL | Warehouse | mysql://{host}:{port} | {database}.{table} |
-| Oracle | Warehouse | oracle://{host}:{port} | {serviceName}.{schema}.{table} or {sid}.{schema}.{table} |
-| Postgres | Warehouse | postgres://{host}:{port} | {database}.{schema}.{table} |
-| Teradata | Warehouse | teradata://{host}:{port} | {database}.{table} |
-| Redshift | Warehouse | redshift://{cluster_identifier}.{region_name}:{port} | {database}.{schema}.{table} |
-| Snowflake | Warehouse | snowflake://{organization name}-{account name} | {database}.{schema}.{table} |
-| Trino | Warehouse | trino://{host}:{port} | {catalog}.{schema}.{table} |
-| ABFSS (Azure Data Lake Gen2) | Data lake | abfss://{container name}@{service name} | {path} |
-| DBFS (Databricks File System) | Distributed file system | hdfs://{workspace name} | {path} |
-| GCS | Blob storage | gs://{bucket name} | {object key} |
-| HDFS | Distributed file system | hdfs://{namenode host}:{namenode port} | {path} |
-| Kafka | distributed event streaming platform | kafka://{bootstrap server host}:{port} | {topic} |
-| Local file system | File system | file://{host} | {path} |
-| S3 | Blob Storage | s3://{bucket name} | {object key} |
-| WASBS (Azure Blob Storage) | Blob Storage | wasbs://{container name}@{service name} | {object key} |
+| Data Store                    | Type                                 | Namespace                                                    | Name                                                     |
+|:------------------------------|:-------------------------------------|:-------------------------------------------------------------|:---------------------------------------------------------|
+| Athena                        | Warehouse                            | awsathena://athena.{region_name}.amazonaws.com               | {catalog}.{database}.{table}                             |
+| AWS Glue                      | Data catalog                         | arn:aws:glue:{region}:{account id}                           | table/{database name}/{table name}                       |
+| Azure Cosmos DB               | Warehouse                            | azurecosmos://{host}/dbs/{database}                          | colls/{table}                                            |
+| Azure Data Explorer           | Warehouse                            | azurekusto://{host}.kusto.windows.net                        | {database}/{table}                                       |
+| Azure Synapse                 | Warehouse                            | sqlserver://{host}:{port}                                    | {schema}.{table}                                         |
+| BigQuery                      | Warehouse                            | bigquery://                                                  | {project id}.{dataset name}.{table name}                 |
+| Cassandra                     | Warehouse                            | cassandra://{host}:{port}                                    | {keyspace}.{table}                                       |
+| MySQL                         | Warehouse                            | mysql://{host}:{port}                                        | {database}.{table}                                       |
+| Oracle                        | Warehouse                            | oracle://{host}:{port}                                       | {serviceName}.{schema}.{table} or {sid}.{schema}.{table} |
+| Postgres                      | Warehouse                            | postgres://{host}:{port}                                     | {database}.{schema}.{table}                              |
+| Teradata                      | Warehouse                            | teradata://{host}:{port}                                     | {database}.{table}                                       |
+| Redshift                      | Warehouse                            | redshift://{cluster_identifier}.{region_name}:{port}         | {database}.{schema}.{table}                              |
+| Snowflake                     | Warehouse                            | snowflake://{organization name}-{account name}               | {database}.{schema}.{table}                              |
+| Trino                         | Warehouse                            | trino://{host}:{port}                                        | {catalog}.{schema}.{table}                               |
+| ABFSS (Azure Data Lake Gen2)  | Data lake                            | abfss://{container name}@{service name}.dfs.core.windows.net | {path}                                                   |
+| DBFS (Databricks File System) | Distributed file system              | hdfs://{workspace name}                                      | {path}                                                   |
+| GCS                           | Blob storage                         | gs://{bucket name}                                           | {object key}                                             |
+| HDFS                          | Distributed file system              | hdfs://{namenode host}:{namenode port}                       | {path}                                                   |
+| Kafka                         | distributed event streaming platform | kafka://{bootstrap server host}:{port}                       | {topic}                                                  |
+| Local file system             | File system                          | file://{host}                                                | {path}                                                   |
+| S3                            | Blob Storage                         | s3://{bucket name}                                           | {object key}                                             |
+| WASBS (Azure Blob Storage)    | Blob Storage                         | wasbs://{container name}@{service name}.dfs.core.windows.net | {object key}                                             |
 
 ## Job Naming
 
@@ -42,12 +43,11 @@ A `Job` is a recurring data transformation with inputs and outputs. Each executi
 A `Run` event identifies the `Job` it instances by providing the job’s unique identifier.
 The `Job` identifier is composed of a `Namespace` and `Name`. The job namespace is usually set in OpenLineage client config. The job name is unique within its namespace.
 
-
-| Job type | Name | Example |
-| :------- | :------ | :------ |
-| Airflow task | {dag_id}.{task_id} | orders_etl.count_orders |
-| Spark job | {appName}.{command}.{table} | my_awesome_app.execute_insert_into_hive_table.mydb_mytable |
-| SQL | {schema}.{table} | gx.validate_datasets |
+| Job type     | Name                        | Example                                                    |
+|:-------------|:----------------------------|:-----------------------------------------------------------|
+| Airflow task | {dag_id}.{task_id}          | orders_etl.count_orders                                    |
+| Spark job    | {appName}.{command}.{table} | my_awesome_app.execute_insert_into_hive_table.mydb_mytable |
+| SQL          | {schema}.{table}            | gx.validate_datasets                                       |
 
 ## Run Naming
 
