@@ -1,10 +1,17 @@
 #!/bin/bash
 RESULT_FILE=$1
+BRANCH_NAME=$2
 
 if [ -f $RESULT_FILE ]; then
   rm $RESULT_FILE
 fi
 touch $RESULT_FILE
+
+# For dependabot PRs, skip checksum generation to reuse the same cache and reduce storage usage.
+if [[ $BRANCH_NAME == dependabot* ]]; then
+  echo "CONSTANT_STRING" >> $RESULT_FILE
+  exit 0
+fi
 
 checksum_file() {
   echo `openssl md5 $1 | awk '{print $2}'`

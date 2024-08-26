@@ -209,7 +209,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - restore_cache:
           keys:
             - v1-release-client-java-{{ checksum "/tmp/checksum.txt" }}
@@ -443,7 +443,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - restore_cache:
           keys:
             - v1-client-java-{{ checksum "/tmp/checksum.txt" }}
@@ -480,7 +480,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - attach_workspace:
           at: ~/
       - publish_shadow_jar
@@ -500,7 +500,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - restore_cache:
           keys:
             - v1-release-client-java-{{ checksum "/tmp/checksum.txt" }}
@@ -536,7 +536,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - set_java_17
       - restore_cache:
           keys:
@@ -579,7 +579,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - attach_workspace:
           at: ~/
       - run:
@@ -637,7 +637,7 @@ jobs:
       - gcp-cli/initialize
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - run:
           name: Spark & Java version Variable
           command: |
@@ -689,7 +689,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - attach_workspace:
           at: ~/
       - restore_cache:
@@ -728,7 +728,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - attach_workspace:
           at: ~/
       - restore_cache:
@@ -755,7 +755,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - attach_workspace:
           at: ~/
       - publish_shadow_jar
@@ -775,7 +775,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - attach_workspace:
           at: ~/
       - run: |
@@ -814,7 +814,7 @@ jobs:
           steps:
             - run:
                 name: Generate cache key
-                command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+                command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
             - restore_cache:
                 keys:
                   - v1-integration-spark-{{ checksum "/tmp/checksum.txt" }}
@@ -886,7 +886,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - restore_cache:
           keys:
             - v1-integration-spark-{{ checksum "/tmp/checksum.txt" }}
@@ -922,7 +922,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - restore_cache:
           keys:
             - v1-release-client-java-{{ checksum "/tmp/checksum.txt" }}
@@ -947,7 +947,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - restore_cache:
           keys:
             - v1-integration-flink-{{ checksum "/tmp/checksum.txt" }}
@@ -982,7 +982,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - restore_cache:
           keys:
             - v1-integration-flink-{{ checksum "/tmp/checksum.txt" }}
@@ -1013,7 +1013,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - restore_cache:
           keys:
             - v1-integration-flink-{{ checksum "/tmp/checksum.txt" }}
@@ -1080,7 +1080,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - restore_cache:
           keys:
             - v1-proxy-{{ checksum "/tmp/checksum.txt" }}
