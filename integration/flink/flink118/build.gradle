@@ -55,7 +55,7 @@ dependencies {
     testImplementation "org.apache.flink:flink-connector-base:$flinkVersion"
     testImplementation "org.apache.flink:flink-connector-jdbc:${jdbcVersion}"
     testImplementation "org.apache.flink:flink-table-common:$flinkVersion"
-    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation platform('org.junit:junit-bom:5.11.0')
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
     testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.2.0'
