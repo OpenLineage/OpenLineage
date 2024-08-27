@@ -64,7 +64,9 @@ workflows:
               only: main
           context: release
           requires:
-            - build-integration-sql-java
+            - compile-integration-sql-java-linux-arm
+            - compile-integration-sql-java-linux-x86
+            - compile-integration-sql-java-macos
       - workflow_complete:
           filters:
             tags:
