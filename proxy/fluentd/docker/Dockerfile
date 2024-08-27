@@ -5,7 +5,7 @@ USER root
 
 RUN buildDeps="sudo make gcc g++ libc-dev" \
  && apt-get update \
- && apt-get install -y --no-install-recommends "$buildDeps" \
+ && apt-get install -y --no-install-recommends $buildDeps \
  && apt-get install -y ruby-full \
  && apt-get install -y git \
  && gem install ffi -v '1.15.5' --source 'https://rubygems.org/' \
@@ -16,11 +16,11 @@ RUN buildDeps="sudo make gcc g++ libc-dev" \
  && SUDO_FORCE_REMOVE=yes \
     apt-get purge -y --auto-remove \
                   -o APT::AutoRemove::RecommendsImportant=false \
-                  "$buildDeps" \
+                  $buildDeps \
  && rm -rf /var/lib/apt/lists/* \
  && rm -rf /tmp/* /var/tmp/* /usr/lib/ruby/gems/*/cache/*.gem
 
 COPY proxy/fluentd/docker/entrypoint.sh /bin/entrypoint.sh
-COPY proxy/fluentd/spec/ /etc/spec
+COPY /spec /etc/spec
 
 USER fluent
