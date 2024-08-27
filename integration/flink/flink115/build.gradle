@@ -60,7 +60,7 @@ dependencies {
     testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
     testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.2.0'
     testImplementation 'com.github.tomakehurst:wiremock:3.0.1'
-    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.23.0'
+    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.23.1'
 
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
