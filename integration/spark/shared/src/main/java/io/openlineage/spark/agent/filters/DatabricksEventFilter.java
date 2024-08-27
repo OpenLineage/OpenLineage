@@ -41,7 +41,7 @@ public class DatabricksEventFilter implements EventFilter {
     return isSerializeFromObject() || isWriteIntoDeltaCommand() || isDisabledDatabricksPlan(event);
   }
 
-  public boolean isDisabledDatabricksPlan(SparkListenerEvent event) {
+  public boolean isDisabledDatabricksPlan(SparkListenerEvent ignoredEvent) {
     if (!DatabricksUtils.isRunOnDatabricksPlatform(context)
         || !context.getQueryExecution().isPresent()) {
       return false;
@@ -58,9 +58,7 @@ public class DatabricksEventFilter implements EventFilter {
 
     return excludedNodes.stream()
         .map(n -> n.replace("_", ""))
-        .filter(n -> n.equalsIgnoreCase(nodeName))
-        .findAny()
-        .isPresent();
+        .anyMatch(n -> n.equalsIgnoreCase(nodeName));
   }
 
   private boolean isSerializeFromObject() {
