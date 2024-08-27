@@ -5,6 +5,7 @@ name: Datadog Software Composition Analysis
 jobs:
   software-composition-analysis:
     runs-on: ubuntu-latest
+    if: github.repository == 'OpenLineage/OpenLineage'
     name: Datadog SBOM Generation and Upload
     steps:
       - name: Checkout
