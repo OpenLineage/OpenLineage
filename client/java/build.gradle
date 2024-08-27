@@ -19,6 +19,7 @@ plugins {
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
     id "io.freefair.lombok" version "8.7.1"
+    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
 
 pmd {
@@ -64,7 +65,7 @@ dependencies {
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
     implementation 'org.apache.httpcomponents:httpclient:4.5.14'
-    implementation 'commons-logging:commons-logging:1.3.3'
+    implementation 'commons-logging:commons-logging:1.3.4'
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation "io.micrometer:micrometer-core:${micrometerVersion}"
 
@@ -207,16 +208,13 @@ publishing {
                 "version": project.property("version")
         ]
     }
+}
 
+nexusPublishing {
     repositories {
-        maven {
-            def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
-            def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
-            credentials {
-                username = System.getenv('RELEASE_USERNAME')
-                password = System.getenv('RELEASE_PASSWORD')
-            }
+        sonatype {
+            username = System.getenv('RELEASE_USERNAME')
+            password = System.getenv('RELEASE_PASSWORD')
         }
     }
 }

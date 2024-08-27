@@ -5,6 +5,7 @@ name: Datadog Static Analysis
 jobs:
   static-analysis:
     runs-on: ubuntu-latest
+    if: github.repository == 'OpenLineage/OpenLineage' && github.actor != 'dependabot[bot]'
     name: Datadog Static Analyzer
     steps:
       - name: Checkout

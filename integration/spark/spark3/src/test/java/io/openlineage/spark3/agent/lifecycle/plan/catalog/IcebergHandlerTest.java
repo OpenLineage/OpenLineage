@@ -209,7 +209,7 @@ class IcebergHandlerTest {
     assertThat(datasetIdentifier.getSymlinks())
         .singleElement()
         .hasFieldOrPropertyWithValue("namespace", "arn:aws:glue:us-west-2:1122334455")
-        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("name", "table/database/table")
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
 

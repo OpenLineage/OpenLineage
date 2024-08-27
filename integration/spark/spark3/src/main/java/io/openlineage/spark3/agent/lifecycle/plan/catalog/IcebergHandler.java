@@ -5,6 +5,8 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
+import static io.openlineage.spark.agent.util.PathUtils.GLUE_TABLE_PREFIX;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
@@ -221,7 +223,7 @@ public class IcebergHandler implements CatalogHandler {
     SparkContext sparkContext = sparkSession.sparkContext();
     String arn =
         PathUtils.getGlueArn(sparkContext.getConf(), sparkContext.hadoopConfiguration()).get();
-    return new DatasetIdentifier(table, arn);
+    return new DatasetIdentifier(GLUE_TABLE_PREFIX + table.replace(".", "/"), arn);
   }
 
   @SneakyThrows

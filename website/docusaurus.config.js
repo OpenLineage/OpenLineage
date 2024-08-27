@@ -26,7 +26,7 @@ const linksSocial = [
 const config = {
   title: 'OpenLineage',
   tagline: 'OpenLineage',
-  url: 'https://openlineage.io',
+  url: 'https://openlineage.github.io',
   baseUrl: '/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'throw',
