@@ -6,8 +6,6 @@ mod dialect;
 mod lineage;
 mod visitor;
 
-use std::collections::HashSet;
-
 use context::Context;
 pub use dialect::*;
 pub use lineage::*;
@@ -22,10 +20,9 @@ pub fn parse_multiple_statements(
     dialect: &dyn CanonicalDialect,
     default_schema: Option<String>,
 ) -> Result<SqlMeta> {
-    let mut inputs: HashSet<DbTableMeta> = HashSet::new();
-    let mut outputs: HashSet<DbTableMeta> = HashSet::new();
     let mut column_lineage: Vec<ColumnLineage> = vec![];
     let mut errors: Vec<ExtractionError> = vec![];
+    let mut context = Context::new(dialect, default_schema.clone(), None);
 
     for (index, statement) in sql.iter().enumerate() {
         let ast = Parser::parse_sql(dialect.as_base(), statement);
@@ -53,7 +50,6 @@ pub fn parse_multiple_statements(
         }
 
         for stmt in ast {
-            let mut context = Context::new(dialect, default_schema.clone());
             stmt.visit(&mut context)?;
             column_lineage.extend(context.mut_columns().drain().map(|(descendant, lineage)| {
                 ColumnLineage {
@@ -61,13 +57,11 @@ pub fn parse_multiple_statements(
                     lineage: Vec::from_iter(lineage),
                 }
             }));
-            inputs.extend(context.inputs);
-            outputs.extend(context.outputs);
         }
     }
     Ok(SqlMeta::new(
-        inputs.into_iter().collect(),
-        outputs.into_iter().collect(),
+        context.inputs.into_iter().collect(),
+        context.outputs.into_iter().collect(),
         column_lineage,
         errors,
     ))
