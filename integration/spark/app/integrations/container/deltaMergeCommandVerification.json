@@ -9,19 +9,13 @@
       "name": "/tmp/delta/events",
       "facets": {
         "dataSource": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.21.0-SNAPSHOT/integration/spark",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
           "name": "file",
           "uri": "file"
         },
         "version": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.21.0-SNAPSHOT/integration/spark",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasetVersionDatasetFacet.json#/$defs/DatasetVersionDatasetFacet",
           "datasetVersion": "2"
         },
         "schema": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.21.0-SNAPSHOT/integration/spark",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
           "fields": [
             {
               "name": "event_id",
@@ -34,8 +28,6 @@
           ]
         },
         "columnLineage": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.21.0-SNAPSHOT/integration/spark",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ColumnLineageDatasetFacet.json#/$defs/ColumnLineageDatasetFacet",
           "fields": {
             "event_id": {
               "inputFields": [
@@ -100,8 +92,6 @@
           }
         },
         "symlinks": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.21.0-SNAPSHOT/integration/spark",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SymlinksDatasetFacet.json#/$defs/SymlinksDatasetFacet",
           "identifiers": [
             {
               "namespace": "file:/tmp/delta",
@@ -113,8 +103,6 @@
       },
       "outputFacets": {
         "outputStatistics": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.21.0-SNAPSHOT/integration/spark",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-2/OutputStatisticsOutputDatasetFacet.json#/$defs/OutputStatisticsOutputDatasetFacet",
           "rowCount": 0,
           "size": 0
         }
