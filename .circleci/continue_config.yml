@@ -1169,6 +1169,19 @@ jobs:
             SKIP= && [ -n "${CI}" ] && export SKIP="pmd"
             pre-commit run --show-diff-on-failure --all-files
 
+  build-website:
+    # Build Openlineage website to make sure npm packages match
+    working_directory: ~/openlineage/website
+    docker:
+      - image: cimg/node:22.7.0
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Install Dependencies
+          command: |
+            yarn install --frozen-lockfile
+            yarn build
+
   always_run:
     machine:
       image: ubuntu-2404:current
