@@ -1,7 +1,19 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.20.4...HEAD)
-* **Spark: Lineage for Iceberg datasets that are present outside of Spark's catalog is now present** [`#2937`](https://github.com/OpenLineage/OpenLineage/pull/2937) [@d-m-h](https://github.com/d-m-h)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.20.6...HEAD)
+
+## [1.20.6](https://github.com/OpenLineage/OpenLineage/compare/1.20.5...1.20.6) - 2024-08-27
+
+### Fixed
+* **Airflow: update SQL integration code to work with latest sqlparser-rs main** [`#2983`](https://github.com/OpenLineage/OpenLineage/pull/2983) [@kacpermuda](https://github.com/kacpermuda)  
+    *Adjusts the SQL integration after our sqlparser-rs fork has been updated to the latest main.*
+* **Spark: fix issue with column lineage when using delta merge into command** [`#2986`](https://github.com/OpenLineage/OpenLineage/pull/2986) [@Imbruced](https://github.com/Imbruced)  
+    *A view instance of a node is now included when gathering data sources for input columns.*
+* **Spark: minor Spark filters refactor** [`#2990`](https://github.com/OpenLineage/OpenLineage/pull/2990) [@arturowczarek](https://github.com/arturowczarek)  
+    *Fixes a number of minor issues.*
+* **Spark: Iceberg tables in AWS Glue have slashes instead of dots in symlinks** [`#2984`](https://github.com/OpenLineage/OpenLineage/pull/2984) [@arturowczarek](https://github.com/arturowczarek)  
+    *They should use slashes and the prefix `table/`.*
+* **Spark: lineage for Iceberg datasets that are present outside of Spark's catalog is now present** [`#2937`](https://github.com/OpenLineage/OpenLineage/pull/2937) [@d-m-h](https://github.com/d-m-h)
     *Previously, reading Iceberg datasets outside the configured Spark catalog prevented the datasets from being present in the `inputs` property of the `RunEvent`.* 
 
 ## [1.20.5](https://github.com/OpenLineage/OpenLineage/compare/1.19.0...1.20.5) - 2024-08-23
