@@ -7,56 +7,44 @@ package io.openlineage.spark.agent.filters;
 
 import io.openlineage.spark.agent.util.SparkSessionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.QueryExecution;
 
 public class EventFilterUtils {
 
   /**
    * Method that verifies based on OpenLineageContext and SparkListenerEvent if OpenLineage event
    * has to be sent.
-   *
-   * @param context
-   * @param event
-   * @return
    */
   public static boolean isDisabled(OpenLineageContext context, SparkListenerEvent event) {
-    return Arrays.asList(
+    return Stream.of(
             new DeltaEventFilter(context),
             new DatabricksEventFilter(context),
             new SparkNodesFilter(context),
             new CreateViewFilter(context),
             new AdaptivePlanEventFilter(context))
-        .stream()
-        .filter(filter -> filter.isDisabled(event.getClass().cast(event)))
-        .findAny()
-        .isPresent();
+        .anyMatch(filter -> filter.isDisabled(event.getClass().cast(event)));
   }
 
   static Optional<LogicalPlan> getLogicalPlan(OpenLineageContext context) {
-    return context
-        .getQueryExecution()
-        .filter(queryExecution -> queryExecution != null)
-        .map(queryExecution -> queryExecution.optimizedPlan())
-        .filter(plan -> plan != null);
+    return context.getQueryExecution().map(QueryExecution::optimizedPlan);
   }
 
   /**
    * Verifies if `spark.sql.extensions` is set in Spark configuration and checks if it is a delta
    * extension.
-   *
-   * @return
    */
   static boolean isDeltaPlan() {
     return SparkSessionUtils.activeSession()
         .map(SparkSession::sparkContext)
         .map(SparkContext::conf)
         .map(conf -> conf.get("spark.sql.extensions", ""))
-        .filter(extension -> "io.delta.sql.DeltaSparkSessionExtension".equals(extension))
+        .filter("io.delta.sql.DeltaSparkSessionExtension"::equals)
         .isPresent();
   }
 }
