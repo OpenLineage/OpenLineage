@@ -1,6 +1,4 @@
 {
-  "producer": "https://github.com/OpenLineage/OpenLineage/tree/1.21.0-SNAPSHOT/integration/spark",
-  "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
   "eventType": "COMPLETE",
   "inputs": [],
   "outputs": [
