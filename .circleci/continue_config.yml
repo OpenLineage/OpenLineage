@@ -207,14 +207,11 @@ jobs:
       - image: cimg/openjdk:17.0
     steps:
       - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
-      - restore_cache:
-          keys:
-            - v1-release-client-java-{{ checksum "/tmp/checksum.txt" }}
       - attach_workspace:
-          at: ../
+          at: ~/
+      # TODO: When moving to GH Actions, this should reuse jar build in
+      # build-integration-sql-java rather than rebuild it.
+      - run: bash script/build.sh
       - publish_shadow_jar
 
   # PYTHON
