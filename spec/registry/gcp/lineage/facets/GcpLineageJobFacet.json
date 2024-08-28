@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-0/GcpCommonJobFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/GcpLineageJobFacet.json",
   "$defs": {
-    "GcpCommonJobFacet": {
+    "GcpLineageJobFacet": {
       "allOf": [
         {
           "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/JobFacet"
@@ -36,8 +36,8 @@
   },
   "type": "object",
   "properties": {
-    "gcp_common": {
-      "$ref": "#/$defs/GcpCommonJobFacet"
+    "gcp_lineage": {
+      "$ref": "#/$defs/GcpLineageJobFacet"
     }
   }
 }
