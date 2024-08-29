@@ -28,7 +28,7 @@ export default function Main(): JSX.Element {
 
 const Wall = ({ twoColumnWall = false, capitalizeTitleOnHome = false }) => {
   const wall = useRef(null)
-  const titleImage = '/img/background.svg';
+  const titleImage = 'img/background.svg';
   const [state, changeState] = useState({
     loaded: false,
     supportsBlend: false,
@@ -151,7 +151,7 @@ const About = () => {
           OpenLineage is an open platform for collection and analysis of data lineage. It tracks metadata about datasets, jobs, and runs, giving users the information required to identify the root cause of complex issues and understand the impact of changes. OpenLineage contains an open standard for lineage data collection, a metadata repository reference implementation (Marquez), libraries for common languages, and integrations with data pipeline tools.
         </p>
         <img
-          src="/img/ol-stack.svg"
+          src="img/ol-stack.svg"
           alt=""
           {...spanAttrs}
           className="h-full w-4/5 max-w-none lg:h-auto lg:w-4/5 py-3 pt-6 mb-6"
@@ -257,7 +257,7 @@ const Deploy = () => {
                 Simple
             </h3>
             <img 
-              src="/img/simple-deployments.png"
+              src="img/simple-deployments.png"
               alt="wireframes of simple deployments"
               {...spanAttrs}
               className="h-full w-4/5 max-w-none lg:h-auto lg:w-4/5 py-3 pt-6 mb-6"
@@ -266,7 +266,7 @@ const Deploy = () => {
                 Complex
             </h3>
             <img 
-              src="/img/complex-deployments.png"
+              src="img/complex-deployments.png"
               alt="wireframe of a complex deployment"
               {...spanAttrs}
               className="h-full w-4/5 max-w-none lg:h-auto lg:w-4/5 py-3 pt-6 mb-6"

@@ -75,6 +75,13 @@ class GetChanges:
             if "Thanks for opening your" in comment.body:
                 self.new_contributors[pull.user.login] = pull.user.url
 
+    def check_new_contributors_only(self):
+        for pull in self.pulls:
+            comments = pull.get_issue_comments()
+            for comment in comments:
+                if "Thanks for opening your" in comment.body:
+                    self.new_contributors[pull.user.login] = pull.user.url
+
     def print_new_contributors(self):
         if self.new_contributors:
             print("New contributors:")
@@ -123,11 +130,17 @@ class GetChanges:
     default="../OpenLineage/CHANGELOG.md",
     help="path to changelog",
 )
+@click.option(
+    "--contributors",
+    is_flag=True,
+    help="get new contributors only",
+)
 def main(
     github_token: str,
     previous: str,
     current: str,
     path: str,
+    contributors: bool,
 ):
     c = GetChanges(
         github_token=github_token,
@@ -135,12 +148,18 @@ def main(
         current=current,
         path=path,
     )
-    c.get_pulls()
-    c.describe_changes()
-    c.write_title()
-    c.update_changelog()
-    c.print_new_contributors()
-    print("...done!")
+    if contributors:
+        c.get_pulls()
+        c.check_new_contributors_only()
+        c.print_new_contributors()
+        print("...done!")
+    else:
+        c.get_pulls()
+        c.describe_changes()
+        c.write_title()
+        c.update_changelog()
+        c.print_new_contributors()
+        print("...done!")
 
 
 if __name__ == "__main__":
