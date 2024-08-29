@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.21.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.21.1...HEAD)
 
-## [1.21.0](https://github.com/OpenLineage/OpenLineage/compare/1.20.5...1.21.0) - 2024-08-29
+## [1.21.1](https://github.com/OpenLineage/OpenLineage/compare/1.20.5...1.21.1) - 2024-08-29
 
 ### Added
 * **Spec: add GCP Dataproc facet** [`#2987`](https://github.com/OpenLineage/OpenLineage/pull/2987) [@tnazarew](https://github.com/tnazarew)  
