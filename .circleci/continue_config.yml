@@ -207,14 +207,11 @@ jobs:
       - image: cimg/openjdk:17.0
     steps:
       - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
-      - restore_cache:
-          keys:
-            - v1-release-client-java-{{ checksum "/tmp/checksum.txt" }}
       - attach_workspace:
-          at: ../
+          at: ~/
+      # TODO: When moving to GH Actions, this should reuse jar build in
+      # build-integration-sql-java rather than rebuild it.
+      - run: bash script/build.sh
       - publish_shadow_jar
 
   # PYTHON
@@ -253,18 +250,6 @@ jobs:
           paths:
             - ./dist/*.tar.gz
             - ./dist/*.whl
-
-  publish-client-python-reference:
-    working_directory: ~/openlineage/client/python
-    docker:
-      - image: cimg/python:3.8
-    steps:
-      - *checkout_project_root
-      - add_ssh_keys:
-          fingerprints:
-            - "7d:bc:78:35:09:c9:25:04:63:f9:eb:4b:f1:f4:d1:91"
-      - run: pip install -U -e .[docs]
-      - run: cd docs && make html && python convert.py && ./release-api-reference.sh
 
   unit-test-integration-common:
     working_directory: ~/openlineage/integration/common
@@ -818,25 +803,14 @@ jobs:
             - restore_cache:
                 keys:
                   - v1-integration-spark-{{ checksum "/tmp/checksum.txt" }}
-            - run:
-                name: Java version Variable
-                command: |
-                  JAVA=8
-                  JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
-
-                  echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
-                  echo 'export JAVA_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
-                  echo 'export JAVAC_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
-                  echo "${JAVA}"
-                  echo "${JAVA_BIN}"
-                  echo "${JAVAC_BIN}"
             - attach_workspace:
                 at: ~/
+            - set_java_17
             - run: |
                 sudo update-alternatives --set java ${JAVA_BIN}
                 sudo update-alternatives --set javac ${JAVAC_BIN}
-            - run: ./gradlew --console=plain shadowJar -x test
-            - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test   -Pspark.version=<< parameters.spark-version >> -PdatabricksHost=$DATABRICKS_HOST -PdatabricksToken=$DATABRICKS_TOKEN
+            - run: ./gradlew --console=plain shadowJar -x test -Pjava.compile.home=${JAVA17_HOME}
+            - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test   -Pspark.version=<< parameters.spark-version >> -PdatabricksHost=$DATABRICKS_HOST -PdatabricksToken=$DATABRICKS_TOKEN -Pjava.compile.home=${JAVA17_HOME}
             - store_test_results:
                 path: app/build/test-results/databricksIntegrationTest
             - store_artifacts:
@@ -1035,34 +1009,6 @@ jobs:
           paths:
             - ~/.gradle
 
-  # REST
-  publish-javadoc:
-    working_directory: ~/openlineage/client/java
-    docker:
-      - image: cimg/openjdk:17.0
-    steps:
-      - *checkout_project_root
-      - when:
-          condition:
-            equal: [ inactive, << pipeline.parameters.nightly-run >> ]
-          steps:
-            - add_ssh_keys:
-                fingerprints:
-                  - "7d:bc:78:35:09:c9:25:04:63:f9:eb:4b:f1:f4:d1:91"
-            - run: ./gradlew --console=plain javadoc
-            - run: ./release-javadoc.sh
-
-  publish-spec:
-    working_directory: ~/openlineage
-    docker:
-      - image: cimg/base:2024.08
-    steps:
-      - *checkout_project_root
-      - add_ssh_keys:
-          fingerprints:
-            - "7d:bc:78:35:09:c9:25:04:63:f9:eb:4b:f1:f4:d1:91"
-      - run: spec/release.sh
-
   build-proxy-fluentd:
     working_directory: ~/openlineage/proxy/fluentd
     docker:
@@ -1174,6 +1120,7 @@ jobs:
     working_directory: ~/openlineage/website
     docker:
       - image: cimg/node:22.7.0
+    resource_class: large
     steps:
       - *checkout_project_root
       - run:

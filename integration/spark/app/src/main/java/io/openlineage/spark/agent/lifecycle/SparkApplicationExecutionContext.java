@@ -14,8 +14,8 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
-import io.openlineage.spark.agent.job.naming.ApplicationJobNameResolver;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.naming.JobNameBuilder;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.ActiveJob;
@@ -38,8 +38,6 @@ class SparkApplicationExecutionContext implements ExecutionContext {
   private final EventEmitter eventEmitter;
   private final OpenLineageRunEventBuilder runEventBuilder;
   private final OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
-  private final ApplicationJobNameResolver applicationJobNameResolver =
-      new ApplicationJobNameResolver(ApplicationJobNameResolver.buildProvidersList());
 
   public SparkApplicationExecutionContext(
       EventEmitter eventEmitter,
@@ -148,7 +146,7 @@ class SparkApplicationExecutionContext implements ExecutionContext {
     return openLineage
         .newJobBuilder()
         .namespace(eventEmitter.getJobNamespace())
-        .name(applicationJobNameResolver.getJobName(olContext));
+        .name(JobNameBuilder.build(olContext));
   }
 
   private OpenLineage.JobFacetsBuilder getJobFacetsBuilder() {

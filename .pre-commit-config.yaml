@@ -107,3 +107,8 @@ repos:
         files: ^client/java/src/.*\.java$
         exclude: ".*test.*"
         require_serial: true
+      - id: spec-changes
+        name: Verify spec changes committed to website
+        language: script
+        files: ^spec/
+        entry: .pre_commit/run-spec-snapshot.sh
