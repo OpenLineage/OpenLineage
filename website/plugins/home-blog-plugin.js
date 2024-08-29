@@ -38,6 +38,29 @@ async function blogPluginExtended(...pluginArgs) {
         },
       });
 
+      // serve main page from / and /openlineage-site
+      data.actions.addRoute({
+        path: "/openlineage-site",
+        exact: true,
+
+        // The component to use for the "Home" page route
+        component: "@site/src/pages/home.tsx",
+
+        // These are the props that will be passed to our "Home" page component
+        modules: {
+          recentPosts: recentPosts.map((post) => ({
+            content: {
+              __import: true,
+              // The markdown file for the blog post will be loaded by webpack
+              path: post.metadata.source,
+              query: {
+                truncated: true,
+              },
+            },
+          })),
+        },
+      });
+
       // Call the default overridden `contentLoaded` implementation
       return blogPluginInstance.contentLoaded(data);
     },
