@@ -803,25 +803,14 @@ jobs:
             - restore_cache:
                 keys:
                   - v1-integration-spark-{{ checksum "/tmp/checksum.txt" }}
-            - run:
-                name: Java version Variable
-                command: |
-                  JAVA=8
-                  JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
-
-                  echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
-                  echo 'export JAVA_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
-                  echo 'export JAVAC_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
-                  echo "${JAVA}"
-                  echo "${JAVA_BIN}"
-                  echo "${JAVAC_BIN}"
             - attach_workspace:
                 at: ~/
+            - set_java_17
             - run: |
                 sudo update-alternatives --set java ${JAVA_BIN}
                 sudo update-alternatives --set javac ${JAVAC_BIN}
-            - run: ./gradlew --console=plain shadowJar -x test
-            - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test   -Pspark.version=<< parameters.spark-version >> -PdatabricksHost=$DATABRICKS_HOST -PdatabricksToken=$DATABRICKS_TOKEN
+            - run: ./gradlew --console=plain shadowJar -x test -Pjava.compile.home=${JAVA17_HOME}
+            - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test   -Pspark.version=<< parameters.spark-version >> -PdatabricksHost=$DATABRICKS_HOST -PdatabricksToken=$DATABRICKS_TOKEN -Pjava.compile.home=${JAVA17_HOME}
             - store_test_results:
                 path: app/build/test-results/databricksIntegrationTest
             - store_artifacts:
