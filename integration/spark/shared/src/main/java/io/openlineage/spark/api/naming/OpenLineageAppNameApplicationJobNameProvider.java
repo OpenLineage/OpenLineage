@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.job.naming;
+package io.openlineage.spark.api.naming;
 
 import io.openlineage.spark.api.OpenLineageContext;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
  * providing job name has the highest priority and should take precedence over any other method.
  */
 @Slf4j
-public class OpenLineageAppNameApplicationJobNameProvider implements ApplicationJobNameProvider {
+class OpenLineageAppNameApplicationJobNameProvider implements ApplicationJobNameProvider {
   @Override
   public boolean isDefinedAt(OpenLineageContext openLineageContext) {
     boolean appNameIsOverridden =

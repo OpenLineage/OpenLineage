@@ -2,7 +2,7 @@
 /* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
-package io.openlineage.spark.agent.job.naming;
+package io.openlineage.spark.api.naming;
 
 import static io.openlineage.spark.agent.lifecycle.ExecutionContext.CAMEL_TO_SNAKE_CASE;
 
@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @AllArgsConstructor
 @Slf4j
-public class ApplicationJobNameResolver {
+class ApplicationJobNameResolver {
   private final List<ApplicationJobNameProvider> applicationJobNameProviders;
 
   /**

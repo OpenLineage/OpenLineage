@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.job.naming;
+package io.openlineage.spark.api.naming;
 
 import io.openlineage.spark.api.OpenLineageContext;
 
@@ -12,7 +12,7 @@ import io.openlineage.spark.api.OpenLineageContext;
  * depends on the environment the application is deployed in, the properties passed to the app, etc.
  * This interface defines the contract for each provider.
  */
-public interface ApplicationJobNameProvider {
+interface ApplicationJobNameProvider {
 
   /** Determines if this provider can provide a job name for the given OpenLineageContext. */
   boolean isDefinedAt(OpenLineageContext openLineageContext);

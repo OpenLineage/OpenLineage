@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.api;
+package io.openlineage.spark.api.naming;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -18,6 +18,9 @@ import static org.mockito.Mockito.withSettings;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.DatabricksUtils;
+import io.openlineage.spark.api.JobNameSuffixProvider;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Collections;
 import java.util.Optional;
 import org.apache.spark.SparkConf;
@@ -47,7 +50,7 @@ class JobNameBuilderTest {
     when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
     when(context.getSparkContext()).thenReturn(Optional.of(sparkContext));
     when(context.getOpenLineageConfig()).thenReturn(config);
-    when(sparkContext.conf()).thenReturn(sparkConf);
+    when(sparkContext.getConf()).thenReturn(sparkConf);
 
     config.getJobName().setAppendDatasetName(true);
 
@@ -80,22 +83,30 @@ class JobNameBuilderTest {
   void testBuildNormalizesName() {
     config.setOverriddenAppName("SomeOverriddenName");
     assertThat(JobNameBuilder.build(context)).isEqualTo("some_overridden_name");
+
+    // TODO this should be fixed:
+
+    // config.setOverriddenAppName("OLT-58");
+    // assertThat(JobNameBuilder.build(context)).isEqualTo("olt_58");
+    // actual is "ol_t_58"
+
+    // config.setOverriddenAppName("Some job (Like from James)");
+    // assertThat(JobNameBuilder.build(context)).isEqualTo("some_job_like_from_james");
+    // actual is "some_job (_like_from_james)"
   }
 
   @Test
   void testSparkNodeNameIsAddedToJobName() {
     when(context.getQueryExecution().get().executedPlan().nodeName())
         .thenReturn("execute_CreateTable");
-    when(context.getQueryExecution().get().executedPlan().sparkContext().appName())
-        .thenReturn("spark_app");
+    when(sparkContext.appName()).thenReturn("spark_app");
     assertThat(JobNameBuilder.build(context)).isEqualTo("spark_app.execute_create_table");
   }
 
   @Test
   void testBuildIsNotRunWhenContextHasJobNameSet() {
     when(context.getQueryExecution().get().executedPlan().nodeName()).thenReturn("some_node");
-    when(context.getQueryExecution().get().executedPlan().sparkContext().appName())
-        .thenReturn("spark_app");
+    when(sparkContext.appName()).thenReturn("spark_app");
     assertThat(JobNameBuilder.build(context)).isEqualTo("spark_app.some_node");
 
     verify(context, times(1)).setJobName("spark_app.some_node");
@@ -112,8 +123,7 @@ class JobNameBuilderTest {
 
     when(context.getQueryExecution().get().executedPlan().nodeName())
         .thenReturn("append_data_exec_v1");
-    when(context.getQueryExecution().get().executedPlan().sparkContext().appName())
-        .thenReturn("databricks_shell");
+    when(sparkContext.appName()).thenReturn("databricks_shell");
     when(context.getOutputDatasetBuilders()).thenReturn(Collections.singletonList(datasetBuilder));
     assertThat(JobNameBuilder.build(context))
         .isEqualTo("databricks_shell.append_data_exec_v1.air_companies_db_air_companies");
@@ -127,8 +137,7 @@ class JobNameBuilderTest {
 
     when(context.getQueryExecution().get().executedPlan().nodeName())
         .thenReturn("append_data_exec_v1");
-    when(context.getQueryExecution().get().executedPlan().sparkContext().appName())
-        .thenReturn("databricks_shell");
+    when(sparkContext.appName()).thenReturn("databricks_shell");
     when(context.getOutputDatasetBuilders()).thenReturn(Collections.singletonList(datasetBuilder));
     assertThat(JobNameBuilder.build(context)).isEqualTo("databricks_shell.append_data_exec_v1");
   }
@@ -141,8 +150,7 @@ class JobNameBuilderTest {
 
     when(context.getQueryExecution().get().executedPlan().nodeName())
         .thenReturn("append_data.exec_v1");
-    when(context.getQueryExecution().get().executedPlan().sparkContext().appName())
-        .thenReturn("databricks_shell");
+    when(sparkContext.appName()).thenReturn("databricks_shell");
     when(context.getOutputDatasetBuilders()).thenReturn(Collections.singletonList(datasetBuilder));
     assertThat(JobNameBuilder.build(context))
         .isEqualTo("databricks_shell.append_data_exec_v1.air_companies_db_air_companies");

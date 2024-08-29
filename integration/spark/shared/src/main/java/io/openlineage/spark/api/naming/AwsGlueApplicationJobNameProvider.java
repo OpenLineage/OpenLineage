@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.job.naming;
+package io.openlineage.spark.api.naming;
 
 import io.openlineage.spark.api.OpenLineageContext;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import org.apache.spark.SparkContext;
  * the value of job name is used.
  */
 @Slf4j
-public class AwsGlueApplicationJobNameProvider implements ApplicationJobNameProvider {
+class AwsGlueApplicationJobNameProvider implements ApplicationJobNameProvider {
 
   /** Glue version - "2.0" or "3.0" or "4.0". */
   private static final String VERSION_PROPERTY = "spark.glue.GLUE_VERSION";
