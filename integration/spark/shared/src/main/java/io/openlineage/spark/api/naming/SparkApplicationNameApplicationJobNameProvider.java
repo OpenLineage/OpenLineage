@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.job.naming;
+package io.openlineage.spark.api.naming;
 
 import io.openlineage.spark.api.OpenLineageContext;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +14,7 @@ import org.apache.spark.SparkContext;
  * fallback strategy (default value) if even this method fails.
  */
 @Slf4j
-public class SparkApplicationNameApplicationJobNameProvider implements ApplicationJobNameProvider {
+class SparkApplicationNameApplicationJobNameProvider implements ApplicationJobNameProvider {
   /** The job name used if none of the providers returns any value */
   private static final String DEFAULT_JOB_NAME = "unknown";
 

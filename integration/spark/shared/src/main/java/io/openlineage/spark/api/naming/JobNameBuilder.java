@@ -3,12 +3,15 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.api;
+package io.openlineage.spark.api.naming;
 
 import static io.openlineage.spark.agent.lifecycle.ExecutionContext.CAMEL_TO_SNAKE_CASE;
 import static io.openlineage.spark.agent.util.DatabricksUtils.prettifyDatabricksJobName;
 
 import io.openlineage.spark.agent.util.DatabricksUtils;
+import io.openlineage.spark.api.JobNameSuffixProvider;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig.JobNameConfig;
 import java.util.List;
 import java.util.Locale;
@@ -24,21 +27,17 @@ import org.apache.spark.sql.execution.WholeStageCodegenExec;
 public class JobNameBuilder {
   private static final String JOB_NAME_PARTS_SEPARATOR = ".";
   private static final String INNER_SEPARATOR = "_";
+  private static final ApplicationJobNameResolver applicationJobNameResolver =
+      new ApplicationJobNameResolver(ApplicationJobNameResolver.buildProvidersList());
 
   public static String build(OpenLineageContext context) {
     if (context.getJobName() != null) {
       return context.getJobName();
     }
 
-    Optional<SparkContext> sparkContext =
-        context.getQueryExecution().map(qe -> qe.executedPlan()).map(SparkPlan::sparkContext);
-    Optional<SparkConf> sparkConf = sparkContext.map(SparkContext::getConf);
-
-    final StringBuilder jobNameBuilder = new StringBuilder();
-    jobNameBuilder.append(
-        normalizeName(
-            Optional.ofNullable(context.getOpenLineageConfig().getOverriddenAppName())
-                .orElse(sparkContext.map(SparkContext::appName).orElse(""))));
+    Optional<SparkConf> sparkConf = context.getSparkContext().map(SparkContext::getConf);
+    StringBuilder jobNameBuilder =
+        new StringBuilder(applicationJobNameResolver.getJobName(context));
 
     sparkNodeName(context)
         .ifPresent(
@@ -73,7 +72,7 @@ public class JobNameBuilder {
   }
 
   private static String replaceDots(OpenLineageContext context, String jobName) {
-    return Optional.ofNullable(context.getOpenLineageConfig())
+    return Optional.of(context.getOpenLineageConfig())
         .map(SparkOpenLineageConfig::getJobName)
         .map(JobNameConfig::getReplaceDotWithUnderscore)
         .filter(Boolean::booleanValue)
@@ -98,7 +97,7 @@ public class JobNameBuilder {
 
     return suffixProviderList.stream()
         .map(p -> p.jobNameSuffix(context))
-        .filter(s -> s.isPresent())
+        .filter(Optional::isPresent)
         .map(s -> (String) s.get())
         .findFirst();
   }
