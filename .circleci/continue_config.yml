@@ -1131,6 +1131,7 @@ jobs:
     working_directory: ~/openlineage/website
     docker:
       - image: cimg/node:22.7.0
+    resource_class: large
     steps:
       - *checkout_project_root
       - run:

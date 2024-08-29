@@ -27,7 +27,7 @@ const config = {
   title: 'OpenLineage',
   tagline: 'OpenLineage',
   url: 'https://pawel-big-lebowski.github.io', // TODO: replace with openlineage.io in the next step
-  baseUrl: '/openlineage-site', // TODO: replace with / in the next step
+  baseUrl: '/openlineage-site', // TODO: replace with "/" in the next step
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'throw',
   favicon: 'img/favicon.ico',
