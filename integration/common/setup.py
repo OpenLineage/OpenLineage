@@ -36,7 +36,7 @@ extras_require = {
     "dbt": ["dbt-core>=0.20.0", "pyyaml>=5.3.1"],
     "great_expectations": [
         "great_expectations>=0.13.26,<0.15.35",
-        "sqlalchemy>=1.3.24,<2.0.0",
+        "sqlalchemy>=1.3.24,<3.0.0",
     ],
     "redshift": ["boto3>=1.15.0"],
     "tests": [
