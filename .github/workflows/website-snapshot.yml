@@ -83,9 +83,10 @@ jobs:
           popd
       - name: Push target repo
         run: |
-          rm -r target/* 
-          cp -r source/website/* target
           cd target
+          # remove all files and directories except those starting with version
+          find . ! -name 'version*' -exec rm -rf {} \;
+          cp -r ../source/website/* ./
           git config user.name "GitHub Action Website Snapshot"
           git config user.email "<>"
           git add .
