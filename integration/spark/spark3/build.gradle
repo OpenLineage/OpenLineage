@@ -21,16 +21,16 @@ idea {
 }
 
 ext {
-    assertjVersion = "3.25.1"
-    bigqueryVersion = "0.35.1"
+    assertjVersion = "3.26.3"
+    bigqueryVersion = "0.40.0"
     databricksVersion = "0.1.4"
-    deltaVersion = "1.1.0"
+    deltaVersion = "2.4.0"
     icebergVersion = "1.4.3"
     jacksonVersion = "2.15.3"
-    junit5Version = "5.10.1"
+    junit5Version = "5.11.0"
     lombokVersion = "1.18.30"
     mockitoVersion = "4.11.0"
-    micrometerVersion = "1.13.2"
+    micrometerVersion = "1.13.3"
 
     sparkVersion = project.findProperty("spark3.spark.version")
     scalaBinaryVersion = project.findProperty("scala.binary.version")
@@ -66,7 +66,7 @@ dependencies {
     testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
     testFixturesApi("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
-    testFixturesApi("org.junit-pioneer:junit-pioneer:1.9.1")
+    testFixturesApi("org.junit-pioneer:junit-pioneer:2.2.0")
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
     testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
     testFixturesApi("io.micrometer:micrometer-core:${micrometerVersion}")
@@ -101,7 +101,7 @@ dependencies {
     testScala212Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala212Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testScala212Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
-    testScala212Implementation("org.junit-pioneer:junit-pioneer:1.9.1")
+    testScala212Implementation("org.junit-pioneer:junit-pioneer:2.2.0")
     testScala212Implementation("org.mockito:mockito-core:${mockitoVersion}")
     testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
 
@@ -135,7 +135,7 @@ dependencies {
     testScala213Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala213Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testScala213Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
-    testScala213Implementation("org.junit-pioneer:junit-pioneer:1.9.1")
+    testScala213Implementation("org.junit-pioneer:junit-pioneer:2.2.0")
     testScala213Implementation("org.mockito:mockito-core:${mockitoVersion}")
     testScala213Implementation("org.mockito:mockito-inline:${mockitoVersion}")
 }
