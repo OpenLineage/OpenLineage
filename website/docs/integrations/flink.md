@@ -37,7 +37,7 @@ whether the job runs properly.
 
 ## Limitations
 
-Currently OpenLineage's Flink integration is limited to getting information from jobs running in Application Mode.
+Currently, OpenLineage's Flink integration is limited to getting information from jobs running in Application Mode.
 
 OpenLineage integration extracts lineage only from following `Sources` and `Sinks`:
 
@@ -76,10 +76,10 @@ In your job, you need to set up `OpenLineageFlinkJobListener`.
 
 For example:
 ```java
-    JobListener listener = JobListener listener = OpenLineageFlinkJobListener.builder()
-        .executionEnvironment(streamExecutionEnvironment)
-        .build();
-    streamExecutionEnvironment.registerJobListener(listener);
+JobListener listener = OpenLineageFlinkJobListener.builder()
+    .executionEnvironment(streamExecutionEnvironment)
+    .build();
+streamExecutionEnvironment.registerJobListener(listener);
 ```
 
 Also, OpenLineage needs certain parameters to be set in `flink-conf.yaml`:
@@ -114,17 +114,15 @@ and allows all the configuration features present there to be used. The configur
  * `openlineage.yml` file with a environment property `OPENLINEAGE_CONFIG` being set and pointing to configuration file. File structure and allowed options are described [here](https://github.com/OpenLineage/OpenLineage/tree/main/client/java#configuration).
  * Standard Flink configuration with the parameters defined below.
 
-### Flink Configuration parameters 
+### Flink Configuration parameters
 
 The following parameters can be specified:
 
-| Parameter                                | Definition                                                                                                                                                                          | Example                           |
-------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------
-| openlineage.transport.type         | The transport type used for event emit, default type is `console`                                                                                                                   | http                              |
-| openlineage.facets.disabled        | List of facets to disable, enclosed in `[]` (required from 0.21.x) and separated by `;`                                                                                             | \[some_facet1;some_facet1\] |
-| openlineage.job.owners.<ownership-type\>     | Specifies ownership of the job. Multiple entries with different types are allowed. Config key name and value are used to create job ownership type and name (available since 1.13). | openlineage.job.owners.team="Some Team" |
-
-
+| Parameter                                | Definition                                                                                                                                                                          | Example                                 |
+|------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------|
+| openlineage.transport.type               | The transport type used for event emit, default type is `console`                                                                                                                   | http                                    |
+| openlineage.facets.disabled              | List of facets to disable, enclosed in `[]` (required from 0.21.x) and separated by `;`, default is `[spark_unknown;spark.logicalPlan;]` (currently must contain `;`)               | \[some_facet1;some_facet1\]             |
+| openlineage.job.owners.<ownership-type\> | Specifies ownership of the job. Multiple entries with different types are allowed. Config key name and value are used to create job ownership type and name (available since 1.13). | openlineage.job.owners.team="Some Team" |
 
 ## Transports
 
