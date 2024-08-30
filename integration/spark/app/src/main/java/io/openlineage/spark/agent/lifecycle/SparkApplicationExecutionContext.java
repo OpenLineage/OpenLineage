@@ -12,7 +12,6 @@ import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.EventEmitter;
-import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.naming.JobNameBuilder;
@@ -37,7 +36,6 @@ class SparkApplicationExecutionContext implements ExecutionContext {
   private final OpenLineageContext olContext;
   private final EventEmitter eventEmitter;
   private final OpenLineageRunEventBuilder runEventBuilder;
-  private final OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
 
   public SparkApplicationExecutionContext(
       EventEmitter eventEmitter,
@@ -85,7 +83,8 @@ class SparkApplicationExecutionContext implements ExecutionContext {
             OpenLineageRunEventContext.builder()
                 .applicationParentRunFacet(buildApplicationParentFacet())
                 .runEventBuilder(
-                    openLineage
+                    olContext
+                        .getOpenLineage()
                         .newRunEventBuilder()
                         .eventTime(toZonedTime(applicationStart.time()))
                         .eventType(START))
@@ -115,7 +114,8 @@ class SparkApplicationExecutionContext implements ExecutionContext {
             OpenLineageRunEventContext.builder()
                 .applicationParentRunFacet(buildApplicationParentFacet())
                 .runEventBuilder(
-                    openLineage
+                    olContext
+                        .getOpenLineage()
                         .newRunEventBuilder()
                         .eventTime(toZonedTime(applicationEnd.time()))
                         .eventType(COMPLETE))
@@ -143,17 +143,20 @@ class SparkApplicationExecutionContext implements ExecutionContext {
   }
 
   private OpenLineage.JobBuilder getJobBuilder() {
-    return openLineage
+    return olContext
+        .getOpenLineage()
         .newJobBuilder()
         .namespace(eventEmitter.getJobNamespace())
         .name(JobNameBuilder.build(olContext));
   }
 
   private OpenLineage.JobFacetsBuilder getJobFacetsBuilder() {
-    return openLineage
+    return olContext
+        .getOpenLineage()
         .newJobFacetsBuilder()
         .jobType(
-            openLineage
+            olContext
+                .getOpenLineage()
                 .newJobTypeJobFacetBuilder()
                 .jobType(SPARK_JOB_TYPE)
                 .processingType(SPARK_PROCESSING_TYPE)
