@@ -569,9 +569,7 @@ impl Visit for Query {
             context.unset_frame_to_main_body();
         }
 
-        // context.unset_frame_to_main_body();
         let frame = context.pop_frame().unwrap();
-
         context.collect(frame);
 
         // Resolve CTEs
@@ -785,24 +783,8 @@ impl Visit for Statement {
         let frame = context.pop_frame().unwrap();
         let cte_deps = frame.cte_dependencies.clone();
         let deps = frame.dependencies.clone();
+        context.collect_inputs(cte_deps, deps);
         context.collect(frame);
-
-        if cte_deps.is_empty() {
-            for table in deps {
-                context.inputs.insert(table.clone());
-            }
-            return Ok(());
-        }
-
-        for (_key, value) in cte_deps {
-            if !value.is_used {
-                continue;
-            }
-
-            for table in value.deps {
-                context.inputs.insert(table.clone());
-            }
-        }
 
         Ok(())
     }

@@ -367,6 +367,29 @@ impl<'a> Context<'a> {
         }
     }
 
+    pub fn collect_inputs(
+        &mut self,
+        cte_deps: HashMap<String, CteDependency>,
+        deps: HashSet<DbTableMeta>,
+    ) {
+        if cte_deps.is_empty() {
+            for table in deps {
+                self.inputs.insert(table.clone());
+            }
+            return;
+        }
+
+        for (_key, value) in cte_deps {
+            if !value.is_used {
+                continue;
+            }
+
+            for table in value.deps {
+                self.inputs.insert(table.clone());
+            }
+        }
+    }
+
     pub fn bump_cte_level(&mut self) {
         if let Some(frame) = self.frames.last_mut() {
             frame.cte_level += 1;
