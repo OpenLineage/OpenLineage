@@ -15,10 +15,10 @@ scalaVariants {
 }
 
 ext {
-    assertjVersion = "3.25.1"
-    junit5Version = "5.10.1"
+    assertjVersion = "3.26.3"
+    junit5Version = "5.11.0"
     mockitoVersion = "4.11.0"
-    micrometerVersion = "1.13.2"
+    micrometerVersion = "1.13.3"
     sparkVersion = project.findProperty("spark31.spark.version")
 }
 
