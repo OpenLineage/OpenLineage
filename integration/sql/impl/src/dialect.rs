@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use sqlparser::dialect::{
-    AnsiDialect, BigQueryDialect, Dialect, GenericDialect, HiveDialect, MsSqlDialect, MySqlDialect,
-    PostgreSqlDialect, RedshiftSqlDialect, SQLiteDialect, SnowflakeDialect,
+    AnsiDialect, BigQueryDialect, DatabricksDialect, Dialect, GenericDialect, HiveDialect,
+    MsSqlDialect, MySqlDialect, PostgreSqlDialect, RedshiftSqlDialect, SQLiteDialect,
+    SnowflakeDialect,
 };
 
 pub trait CanonicalDialect: Dialect {
@@ -32,6 +33,7 @@ impl<T: Dialect> CanonicalDialect for T {
 pub fn get_dialect(name: &str) -> &'static dyn CanonicalDialect {
     match name {
         "bigquery" => &BigQueryDialect,
+        "databricks" => &DatabricksDialect,
         "snowflake" => &SnowflakeDialect,
         "postgres" => &PostgreSqlDialect {},
         "postgresql" => &PostgreSqlDialect {},

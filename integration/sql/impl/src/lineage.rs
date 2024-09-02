@@ -102,11 +102,13 @@ impl DbTableMeta {
         identifiers: Vec<Ident>,
         dialect: &dyn CanonicalDialect,
         default_schema: Option<String>,
+        default_database: Option<String>,
     ) -> Self {
         DbTableMeta::new_with_namespace_and_schema(
             identifiers,
             dialect,
             default_schema,
+            default_database,
             true,
             true,
             true,
@@ -117,6 +119,7 @@ impl DbTableMeta {
         identifiers: Vec<Ident>,
         dialect: &dyn CanonicalDialect,
         default_schema: Option<String>,
+        default_database: Option<String>,
         provided_namespace: bool,
         provided_field_schema: bool,
         with_split_name: bool,
@@ -158,7 +161,8 @@ impl DbTableMeta {
         DbTableMeta {
             database: reversed
                 .get(2)
-                .map(|ident| ident.value.as_str().to_string()),
+                .map(|ident| ident.value.as_str().to_string())
+                .or(default_database),
             schema: reversed
                 .get(1)
                 .map(|ident| ident.value.as_str().to_string())
@@ -212,7 +216,7 @@ impl DbTableMeta {
                 }
             })
             .collect::<Vec<_>>();
-        Self::new(split, &SnowflakeDialect, None)
+        Self::new(split, &SnowflakeDialect, None, None)
     }
 
     pub fn new_default_dialect_with_namespace_and_schema(
@@ -223,6 +227,7 @@ impl DbTableMeta {
         Self::new_with_namespace_and_schema(
             vec![Ident::new(name)],
             &SnowflakeDialect,
+            None,
             None,
             provided_namespace,
             provided_field_schema,
