@@ -3,7 +3,6 @@
 
 mod alias_table;
 
-use std::cmp::min;
 use std::collections::{HashMap, HashSet};
 
 use crate::dialect::CanonicalDialect;
@@ -29,14 +28,12 @@ pub struct ContextFrame {
     pub dependencies: HashSet<DbTableMeta>,
     pub cte_dependencies: HashMap<String, CteDependency>,
     pub is_main_body: bool,
-    pub cte_level: u32,
 }
 
 #[derive(Debug, Clone)]
 pub struct CteDependency {
     pub is_used: bool,
     pub deps: HashSet<DbTableMeta>,
-    pub cte_level: u32,
 }
 
 impl ContextFrame {
@@ -49,7 +46,6 @@ impl ContextFrame {
             dependencies: HashSet::new(),
             cte_dependencies: HashMap::new(),
             is_main_body: true,
-            cte_level: 0,
         }
     }
 }
@@ -212,7 +208,6 @@ impl<'a> Context<'a> {
             frame.table.clone_from(&recent.table);
             frame.column.clone_from(&recent.column);
             frame.is_main_body.clone_from(&recent.is_main_body);
-            frame.cte_level = recent.cte_level;
         }
         self.frames.push(frame);
     }
@@ -355,7 +350,6 @@ impl<'a> Context<'a> {
         frame.column_ancestry = result;
         frame.dependencies.extend(old.dependencies);
         frame.is_main_body = old.is_main_body;
-        frame.cte_level = min(frame.cte_level, old.cte_level);
     }
 
     pub fn collect(&mut self, mut old: ContextFrame) {
@@ -363,7 +357,6 @@ impl<'a> Context<'a> {
             frame.column_ancestry.extend(old.column_ancestry.drain());
             frame.dependencies.extend(old.dependencies);
             frame.is_main_body = old.is_main_body;
-            frame.cte_level = min(frame.cte_level, old.cte_level);
         }
     }
 
@@ -390,12 +383,6 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn bump_cte_level(&mut self) {
-        if let Some(frame) = self.frames.last_mut() {
-            frame.cte_level += 1;
-        }
-    }
-
     pub fn collect_with_table(&mut self, mut old: ContextFrame, from_table: DbTableMeta) {
         if let Some(frame) = self.frames.last_mut() {
             let old_ancestry = old
@@ -410,7 +397,6 @@ impl<'a> Context<'a> {
             frame.dependencies.extend(old.dependencies);
             frame.cte_dependencies.extend(old.cte_dependencies);
             frame.is_main_body = old.is_main_body;
-            frame.cte_level = min(frame.cte_level, old.cte_level);
         }
     }
 
@@ -418,9 +404,8 @@ impl<'a> Context<'a> {
         if let Some(frame) = self.frames.last_mut() {
             let deps_in_one_level_below: Vec<CteDependency> = frame
                 .cte_dependencies
-                .iter()
-                .filter(|(_k, v)| v.cte_level == frame.cte_level + 1)
-                .map(|(_k, v)| v.clone())
+                .values()
+                .cloned()
                 .collect::<Vec<CteDependency>>();
 
             if deps_in_one_level_below.is_empty() {
@@ -443,7 +428,6 @@ impl<'a> Context<'a> {
                 CteDependency {
                     is_used: false,
                     deps: resolved_dependencies,
-                    cte_level: frame.cte_level,
                 },
             );
 
@@ -452,7 +436,6 @@ impl<'a> Context<'a> {
     }
 
     pub fn adjust_cte_dependencies(&mut self, cte_name: String) {
-        self.collect_lower_nested_dependencies(cte_name.clone());
         // filter upper level deps
         let size = self.frames.iter().clone().len();
 
@@ -481,7 +464,6 @@ impl<'a> Context<'a> {
                 CteDependency {
                     is_used: false,
                     deps: resolved_dependencies,
-                    cte_level: frame.cte_level,
                 },
             );
             frame.dependencies = HashSet::new();
@@ -493,7 +475,6 @@ impl<'a> Context<'a> {
             frame.is_main_body = old.is_main_body;
             frame.dependencies.extend(old.dependencies.clone());
             frame.cte_dependencies.extend(old.cte_dependencies.clone());
-            frame.cte_level = min(frame.cte_level, old.cte_level);
 
             for (alias, t) in old.aliases.tables() {
                 frame.aliases.add_table_alias(t.clone(), alias.clone());

@@ -18,24 +18,31 @@ pub trait Visit {
 
 impl Visit for With {
     fn visit(&self, context: &mut Context) -> Result<()> {
-        for cte in &self.cte_tables {
+        let size = self.cte_tables.len();
+        for i in 0..size {
             context.add_table_alias(
                 DbTableMeta::new_default_dialect("".to_string()),
-                vec![cte.alias.name.clone()],
+                vec![self.cte_tables[i].alias.name.clone()],
             );
             context.push_frame();
-            cte.query.visit(context)?;
+            self.cte_tables[i].query.visit(context)?;
             let frame = context.pop_frame();
             if let Some(f) = frame {
                 let table = DbTableMeta::new(
-                    vec![cte.alias.name.clone()],
+                    vec![self.cte_tables[i].alias.name.clone()],
                     context.dialect(),
                     context.default_schema().clone(),
                     context.default_database().clone(),
                 );
                 context.collect_with_table(f, table);
-                context.adjust_cte_dependencies(cte.alias.name.clone().value);
             }
+
+            if i == 0 {
+                context
+                    .collect_lower_nested_dependencies(self.cte_tables[i].alias.name.clone().value);
+            }
+
+            context.adjust_cte_dependencies(self.cte_tables[i].alias.name.clone().value);
         }
         Ok(())
     }
@@ -546,7 +553,6 @@ impl Visit for Query {
     fn visit(&self, context: &mut Context) -> Result<()> {
         context.push_frame();
         if self.with.is_some() {
-            context.bump_cte_level();
             context.unset_frame_to_main_body();
         }
 
