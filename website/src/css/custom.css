@@ -655,3 +655,28 @@ dl.py dl.field-list dt ul li p, dl.py dl.field-list dd ul li p {
   margin: 0;
   padding: 0;
 }
+
+/*
+ *  Styling Sidebar's Version dropdown
+ */
+nav .dropdown--hoverable {
+  display: none;
+}
+
+aside div div:has(nav.menu) {
+  padding-top: 0 !important;
+}
+aside .custom-sidebarVersion {
+  margin-top: var(--ifm-navbar-height);
+  padding: 0.5rem 0 0 0.5rem;
+}
+
+aside .custom-sidebarVersion p {
+  margin-bottom: 0;
+  font-size: var(--fbc-font-size: 13px;);
+  padding: var(--ifm-menu-link-padding-vertical) var(--ifm-menu-link-padding-horizontal);
+}
+
+aside .navbar__item {
+  padding: 0;
+}

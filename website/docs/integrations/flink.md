@@ -126,13 +126,13 @@ The following parameters can be specified:
 
 ## Transports
 
-import Transports from '../client/java/partials/java_transport.md';
+import Transports from '@site/docs/client/java/partials/java_transport.md';
 
 <Transports/>
 
 ## Circuit Breakers
 
-import CircuitBreakers from '../client/java/partials/java_circuit_breaker.md';
+import CircuitBreakers from '@site/docs/client/java/partials/java_circuit_breaker.md';
 
 <CircuitBreakers/>
 

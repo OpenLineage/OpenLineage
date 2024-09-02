@@ -3,6 +3,6 @@ sidebar_position: 2
 title: Transport
 ---
 
-import Transports from '../../../client/java/partials/java_transport.md';
+import Transports from '@site/docs/client/java/partials/java_transport.md';
 
 <Transports/>
