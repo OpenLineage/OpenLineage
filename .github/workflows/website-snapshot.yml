@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - docs-deploy # testing phase only
 
 permissions:
   id-token: write
@@ -19,7 +18,7 @@ jobs:
           path: 'source'
       - uses: actions/checkout@v4
         with:
-          repository: 'pawel-big-lebowski/openlineage-site'
+          repository: 'Openlineage/openlineage-site'
           path: 'target'
           token:  ${{ secrets.ACTIONS_GITHUB_TOKEN }}
       - uses: actions/setup-node@v4
@@ -85,7 +84,7 @@ jobs:
         run: |
           cd target
           # remove all files and directories except those starting with version
-          find . ! -name 'version*' -exec rm -rf {} \;
+          find . ! -name '.*' -and ! -name 'version*' -depth -maxdepth 1 -exec rm -rf {} \;
           cp -r ../source/website/* ./
           git config user.name "GitHub Action Website Snapshot"
           git config user.email "<>"
