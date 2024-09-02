@@ -46,7 +46,7 @@ commands:
           export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
           export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
 
-          ./gradlew --console=plain publishToSonatype closeSonatypeStagingRepository --info
+          ./gradlew --console=plain publishToSonatype closeAndReleaseSonatypeStagingRepository --info
   set_java_version:
     parameters:
       java_version:
@@ -499,8 +499,8 @@ jobs:
           export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
 
           # Publish *.jar
-          ./gradlew --no-daemon --console=plain clean publish --info -Pscala.binary.version=2.12 -Pjava.compile.home=/usr/local/jdk-17.0.11
-          ./gradlew --no-daemon --console=plain clean publish --info -Pscala.binary.version=2.13 -Pjava.compile.home=/usr/local/jdk-17.0.11
+          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository --info -Pscala.binary.version=2.12 -Pjava.compile.home=/usr/local/jdk-17.0.11
+          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository --info -Pscala.binary.version=2.13 -Pjava.compile.home=/usr/local/jdk-17.0.11
       - store_artifacts:
           path: ./build/libs
           destination: spark-client-artifacts
@@ -770,7 +770,7 @@ jobs:
           export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
           export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
 
-          ./gradlew --console=plain publish --info
+          ./gradlew --console=plain publishToSonatype closeAndReleaseSonatypeStagingRepository --info
       - store_artifacts:
           path: ./build/libs
           destination: spark-extension-entrypoint-artifacts
