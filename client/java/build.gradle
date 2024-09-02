@@ -18,7 +18,7 @@ plugins {
     id "org.openapi.generator" version "6.6.0"
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
-    id "io.freefair.lombok" version "8.7.1"
+    id "io.freefair.lombok" version "8.10"
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
 
@@ -165,6 +165,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 delombok.dependsOn tasks.generateCode
 sourceJar.dependsOn tasks.generateCode
 compileJava.dependsOn tasks.generateCode
+sourceSets.main.java.srcDirs tasks.generateCode
 
 test {
     useJUnitPlatform()
