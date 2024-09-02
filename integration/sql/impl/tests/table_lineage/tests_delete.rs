@@ -51,3 +51,32 @@ fn delete_from_using() {
         }
     );
 }
+
+#[test]
+fn delete_identifier_function() {
+    let test_cases = vec![
+        ("target", vec![table("target")]),
+        ("$target", vec![]),
+        (":target", vec![]),
+        ("?", vec![]),
+        (":myschema || '.' || :mytab", vec![]),
+    ];
+
+    let dialects = vec!["snowflake", "databricks", "mssql"];
+
+    for (out_table_id, out_tables) in &test_cases {
+        for dialect in &dialects {
+            let sql = format!("DELETE FROM identifier({}) WHERE x = 1;", out_table_id,);
+            assert_eq!(
+                test_sql_dialect(&sql, dialect).unwrap().table_lineage,
+                TableLineage {
+                    in_tables: vec![],
+                    out_tables: out_tables.clone(),
+                },
+                "Failed for dialect: {} with SQL: {}",
+                dialect,
+                sql
+            );
+        }
+    }
+}
