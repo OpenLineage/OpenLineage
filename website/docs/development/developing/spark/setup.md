@@ -5,11 +5,10 @@ title: Build
 
 # Build
 
-## Java 8
+## Java 17
 
-Testing requires a Java 8 JVM to test the Scala Spark components.
-
-`export JAVA_HOME=` '/usr/libexec/java_home -v 1.8'
+Testing requires a Java 17 JVM to test the Scala Spark components.
+Use your favourite tool (sdkman, `/usr/libexec/java_home`) to set `JAVA_HOME` and `PATH` environmental variables properly.
 
 ## Preparation
 
