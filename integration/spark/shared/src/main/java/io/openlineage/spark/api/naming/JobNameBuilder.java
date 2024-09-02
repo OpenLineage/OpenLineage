@@ -71,6 +71,11 @@ public class JobNameBuilder {
     return jobName;
   }
 
+  public static String build(OpenLineageContext context, String rddSuffix) {
+    return normalizeName(
+        applicationJobNameResolver.getJobName(context) + JOB_NAME_PARTS_SEPARATOR + rddSuffix);
+  }
+
   private static String replaceDots(OpenLineageContext context, String jobName) {
     return Optional.of(context.getOpenLineageConfig())
         .map(SparkOpenLineageConfig::getJobName)
