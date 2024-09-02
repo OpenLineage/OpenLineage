@@ -12,6 +12,7 @@ jobs:
   site-deploy:
     name: Build and Publish To openlineage-site repo
     runs-on: ubuntu-latest
+    environment: openlineage-site-push
     steps:
       - uses: actions/checkout@v4
         with:
