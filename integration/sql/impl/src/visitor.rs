@@ -8,9 +8,9 @@ use anyhow::{anyhow, Result};
 use sqlparser::ast::{
     AlterTableOperation, Expr, FromTable, Function, FunctionArg, FunctionArgExpr,
     FunctionArguments, Ident, ObjectName, Query, Select, SelectItem, SetExpr, Statement, Table,
-    TableFactor, Use, WindowSpec, WindowType, With,
+    TableFactor, TableFunctionArgs, Use, WindowSpec, WindowType, With,
 };
-use sqlparser::dialect::DatabricksDialect;
+use sqlparser::dialect::{DatabricksDialect, MsSqlDialect, SnowflakeDialect};
 
 pub trait Visit {
     fn visit(&self, context: &mut Context) -> Result<()>;
@@ -43,9 +43,25 @@ impl Visit for With {
 impl Visit for TableFactor {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match self {
-            TableFactor::Table { name, alias, .. } => {
+            TableFactor::Table {
+                name, alias, args, ..
+            } => {
+                // Check if table name is provided using IDENTIFIER function,
+                // use it if found and valid, otherwise keep the current name
+                let effective_name =
+                    if is_identifier_function_used_to_provide_table_name(name, args, context) {
+                        if let Some(table_name) = get_table_name_from_identifier_function(args) {
+                            table_name
+                        } else {
+                            // Exit if table provided using identifier func but couldn't parse it
+                            return Ok(());
+                        }
+                    } else {
+                        name.clone()
+                    };
+
                 let table = DbTableMeta::new(
-                    name.clone().0,
+                    effective_name.clone().0,
                     context.dialect(),
                     context.default_schema().clone(),
                     context.default_database().clone(),
@@ -53,23 +69,24 @@ impl Visit for TableFactor {
                 if let Some(alias) = alias {
                     context.add_table_alias(table, vec![alias.name.clone()]);
                 }
-                context.add_input(name.clone().0);
+                context.add_input(effective_name.clone().0);
                 Ok(())
             }
             TableFactor::Pivot { table, alias, .. } => {
-                let ident = get_table_name_from_table_factor(table)?;
-                if let Some(pivot_alias) = alias {
-                    context.add_table_alias(
-                        DbTableMeta::new(
-                            ident.clone(),
-                            context.dialect(),
-                            context.default_schema().clone(),
-                            context.default_database().clone(),
-                        ),
-                        vec![pivot_alias.clone().name],
-                    );
+                if let Some(ident) = get_table_name_from_table_factor(table, &*context) {
+                    if let Some(pivot_alias) = alias {
+                        context.add_table_alias(
+                            DbTableMeta::new(
+                                ident.clone(),
+                                context.dialect(),
+                                context.default_schema().clone(),
+                                context.default_database().clone(),
+                            ),
+                            vec![pivot_alias.clone().name],
+                        );
+                    }
+                    context.add_input(ident);
                 }
-                context.add_input(ident);
                 Ok(())
             }
             TableFactor::Derived {
@@ -546,8 +563,9 @@ impl Visit for Statement {
                 context.add_output(insert.table_name.clone().0);
             }
             Statement::Merge { table, source, .. } => {
-                let table_name = get_table_name_from_table_factor(table)?;
-                context.add_output(table_name);
+                if let Some(table_name) = get_table_name_from_table_factor(table, &*context) {
+                    context.add_output(table_name);
+                }
                 source.visit(context)?;
             }
             Statement::CreateTable(ct) => {
@@ -586,8 +604,9 @@ impl Visit for Statement {
                 selection,
                 ..
             } => {
-                let name = get_table_name_from_table_factor(&table.relation)?;
-                context.add_output(name);
+                if let Some(name) = get_table_name_from_table_factor(&table.relation, &*context) {
+                    context.add_output(name);
+                }
 
                 if let Some(src) = from {
                     src.relation.visit(context)?;
@@ -629,11 +648,17 @@ impl Visit for Statement {
                 match &delete.from {
                     FromTable::WithFromKeyword(tables) | FromTable::WithoutKeyword(tables) => {
                         for table in tables {
-                            let output = get_table_name_from_table_factor(&table.relation)?;
-                            context.add_output(output);
+                            if let Some(output) =
+                                get_table_name_from_table_factor(&table.relation, &*context)
+                            {
+                                context.add_output(output);
+                            }
                             for join in &table.joins {
-                                let join_output = get_table_name_from_table_factor(&join.relation)?;
-                                context.add_output(join_output);
+                                if let Some(join_output) =
+                                    get_table_name_from_table_factor(&join.relation, &*context)
+                                {
+                                    context.add_output(join_output);
+                                }
                             }
                         }
                     }
@@ -745,13 +770,41 @@ impl Visit for Table {
 
 // --- Utils ---
 
-fn get_table_name_from_table_factor(table: &TableFactor) -> Result<Vec<Ident>> {
-    if let TableFactor::Table { name, .. } = table {
-        Ok(name.clone().0)
+fn get_table_name_from_table_factor(table: &TableFactor, context: &Context) -> Option<Vec<Ident>> {
+    if let TableFactor::Table { name, args, .. } = table {
+        if is_identifier_function_used_to_provide_table_name(name, args, context) {
+            get_table_name_from_identifier_function(args).map(|table_name| table_name.clone().0)
+        } else {
+            Some(name.clone().0)
+        }
     } else {
-        Err(anyhow!(
-            "Name can be got only from simple table, got {table}"
-        ))
+        None
+    }
+}
+
+fn is_identifier_function_used_to_provide_table_name(
+    name: &ObjectName,
+    args: &Option<TableFunctionArgs>,
+    context: &Context,
+) -> bool {
+    (context.dialect().as_base().is::<DatabricksDialect>()
+        || context.dialect().as_base().is::<SnowflakeDialect>()
+        || context.dialect().as_base().is::<MsSqlDialect>())
+        && name.0.first().unwrap().value.to_lowercase() == "identifier"
+        && args.is_some()
+}
+
+fn get_table_name_from_identifier_function(args: &Option<TableFunctionArgs>) -> Option<ObjectName> {
+    let args = args.as_ref()?; // Return None if there are no args
+    if args.args.len() != 1 {
+        return None; // Return None if the length is not 1, we do not support it yet
+    }
+
+    match &args.args[0] {
+        FunctionArg::Unnamed(FunctionArgExpr::Expr(Expr::Identifier(ident))) => {
+            Some(ObjectName(vec![ident.clone()]))
+        }
+        _ => None,
     }
 }
 
