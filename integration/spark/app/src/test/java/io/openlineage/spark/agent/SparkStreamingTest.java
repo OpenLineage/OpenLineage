@@ -5,7 +5,6 @@
 
 package io.openlineage.spark.agent;
 
-import static io.openlineage.spark.agent.SparkTestUtils.OpenLineageEndpointHandler;
 import static io.openlineage.spark.agent.SparkTestUtils.SPARK_3_OR_ABOVE;
 import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
 import static io.openlineage.spark.agent.SparkTestUtils.SchemaRecord;
