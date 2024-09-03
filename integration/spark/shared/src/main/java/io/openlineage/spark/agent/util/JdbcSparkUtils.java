@@ -48,10 +48,12 @@ public class JdbcSparkUtils {
                 DatasetIdentifier di =
                     JdbcDatasetUtils.getDatasetIdentifier(
                         jdbcUrl, dbtm.qualifiedName(), jdbcProperties);
-                return datasetFactory.getDataset(
-                    di.getName(),
-                    di.getNamespace(),
-                    numberOfTables == 1 ? schema : new StructType());
+
+                if (numberOfTables > 1) {
+                  datasetFactory.getDataset(di.getName(), di.getNamespace());
+                }
+
+                return datasetFactory.getDataset(di.getName(), di.getNamespace(), schema);
               })
           .collect(Collectors.toList());
     }
