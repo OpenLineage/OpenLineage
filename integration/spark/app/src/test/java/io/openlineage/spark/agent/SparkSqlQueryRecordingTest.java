@@ -5,7 +5,6 @@
 
 package io.openlineage.spark.agent;
 
-import static io.openlineage.spark.agent.SparkTestUtils.OpenLineageEndpointHandler;
 import static io.openlineage.spark.agent.SparkTestUtils.SPARK_3_3_AND_ABOVE;
 import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
 import static io.openlineage.spark.agent.SparkTestUtils.createHttpServer;
