@@ -75,7 +75,32 @@ commands:
             echo "Setting default Java to ${JAVA_BIN}"
             sudo update-alternatives --set java ${JAVA_BIN}
             sudo update-alternatives --set javac ${JAVAC_BIN}
-
+  set_java_spark_scala_version:
+    parameters:
+      env-variant:
+        type: string
+    description: "Set Java, Spark and Scala versions"
+    steps:
+      - run: |
+          set -eux
+          JAVA=$(echo << parameters.env-variant >> | cut -d '-' -f 1 | cut -d ':' -f 2)
+          SPARK=$(echo << parameters.env-variant >> | cut -d '-' -f 2 | cut -d ':' -f 2)
+          SCALA=$(echo << parameters.env-variant >> | cut -d '-' -f 3 | cut -d ':' -f 2)
+          echo spark=$SPARK java=$JAVA scala=$SCALA
+          JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
+          JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
+          JAVA_BIN=$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java")
+          JAVAC_BIN=$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac")
+            
+          echo 'export JAVA17_HOME="/usr/lib/jvm/java-17-openjdk-amd64"' >> "$BASH_ENV"
+          echo "export SPARK=\"${SPARK}\"" >> "$BASH_ENV"
+          echo "export JAVA=\"${JAVA}\"" >> "$BASH_ENV"
+          echo "export JAVA_BIN=\"${JAVA_BIN}\"" >> "$BASH_ENV"
+          echo "export JAVAC_BIN=\"${JAVAC_BIN}\"" >> "$BASH_ENV"
+          echo "export SCALA=\"${SCALA}\"" >> "$BASH_ENV"
+          echo "Setting default Java to ${JAVA_BIN}"
+          sudo update-alternatives --set java ${JAVA_BIN}
+          sudo update-alternatives --set javac ${JAVAC_BIN}
   store_submodule_tests:
     parameters:
       submodule:
@@ -620,24 +645,8 @@ jobs:
           command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - attach_workspace:
           at: ~/
-      - run:
-          name: Spark & Java version Variable
-          command: |
-            JAVA=$(echo << parameters.env-variant >> | cut -d '-' -f 1 | cut -d ':' -f 2)
-            SPARK=$(echo << parameters.env-variant >> | cut -d '-' -f 2 | cut -d ':' -f 2)
-            SCALA=$(echo << parameters.env-variant >> | cut -d '-' -f 3 | cut -d ':' -f 2)
-            echo spark=$SPARK java=$JAVA scala=$SCALA
-            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
-            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
-
-            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
-            echo 'export SPARK='${SPARK} >> "$BASH_ENV"
-            echo 'export JAVA_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
-            echo 'export JAVAC_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
-            echo 'export SCALA='${SCALA} >> "$BASH_ENV"
-            echo "${JAVA}"
-            echo "${JAVA_BIN}"
-            echo "${JAVAC_BIN}"
+      - set_java_spark_scala_version:
+            env-variant: << parameters.env-variant >>
       - restore_cache:
           keys:
             - v1-integration-spark-{{ checksum "/tmp/checksum.txt" }}
@@ -689,33 +698,15 @@ jobs:
       - run:
           name: Generate cache key
           command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
-      - run:
-          name: Spark & Java version Variable
-          command: |
-            JAVA=$(echo << parameters.env-variant >> | cut -d '-' -f 1 | cut -d ':' -f 2)
-            SPARK=$(echo << parameters.env-variant >> | cut -d '-' -f 2 | cut -d ':' -f 2)
-            SCALA=$(echo << parameters.env-variant >> | cut -d '-' -f 3 | cut -d ':' -f 2)
-            echo spark=$SPARK java=$JAVA scala=$SCALA
-            JAVA8_HOME='/usr/lib/jvm/java-8-openjdk-amd64'
-            JAVA17_HOME='/usr/lib/jvm/java-17-openjdk-amd64'
-
-            echo 'export JAVA17_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> "$BASH_ENV"
-            echo 'export SPARK_VERSION_VAR='${SPARK} >> "$BASH_ENV"
-            echo 'export SCALA='${SCALA} >> "$BASH_ENV"
-            echo 'export JAVA_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/java" || echo "$JAVA8_HOME/jre/bin/java") >> "$BASH_ENV"
-            echo 'export JAVAC_BIN='$([ "$JAVA" = "17" ] && echo "$JAVA17_HOME/bin/javac" || echo "$JAVA8_HOME/bin/javac") >> "$BASH_ENV"
-            echo $JAVA_BIN
+      - set_java_spark_scala_version:
+            env-variant: << parameters.env-variant >>
       - run: mkdir -p app/build/gcloud && echo $GCLOUD_SERVICE_KEY > app/build/gcloud/gcloud-service-key.json && chmod 644 app/build/gcloud/gcloud-service-key.json
       - restore_cache:
           keys:
             - v1-integration-spark-{{ checksum "/tmp/checksum.txt" }}
       - attach_workspace:
           at: ~/
-      - run: |
-          echo "Setting default Java to ${JAVA_BIN}"
-          sudo update-alternatives --set java ${JAVA_BIN}
-          sudo update-alternatives --set javac ${JAVAC_BIN}
-      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=${SPARK_VERSION_VAR} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
+      - run: ./gradlew --no-daemon --console=plain integrationTest -x test -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
       - store_test_results:
           path: app/build/test-results/integrationTest
@@ -846,7 +837,7 @@ jobs:
 
   integration-test-databricks-integration-spark:
     parameters:
-      spark-version:
+      env-variant:
         type: string
     working_directory: ~/openlineage/integration/spark
     machine:
@@ -871,12 +862,10 @@ jobs:
                   - v1-integration-spark-{{ checksum "/tmp/checksum.txt" }}
             - attach_workspace:
                 at: ~/
-            - set_java_version
-            - run: |
-                sudo update-alternatives --set java ${JAVA_BIN}
-                sudo update-alternatives --set javac ${JAVAC_BIN}
+            - set_java_spark_scala_version:
+                  env-variant: << parameters.env-variant >>
             - run: ./gradlew --console=plain shadowJar -x test -Pjava.compile.home=${JAVA17_HOME}
-            - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test -Pspark.version=<< parameters.spark-version >> -Dopenlineage.tests.databricks.host=$DATABRICKS_HOST -Dopenlineage.tests.databricks.token=$DATABRICKS_TOKEN -Pjava.compile.home=${JAVA17_HOME}
+            - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test   -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}  -PdatabricksHost=${DATABRICKS_HOST} -PdatabricksToken=${DATABRICKS_TOKEN}
             - store_test_results:
                 path: app/build/test-results/databricksIntegrationTest
             - store_artifacts:
