@@ -21,6 +21,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SparkSession;
@@ -153,6 +154,15 @@ class MultipleTablesInJDBCSparkQueryTest {
               assertThat(inputs).hasSize(2);
               List<String> names =
                   inputs.stream().map(OpenLineage.Dataset::getName).collect(Collectors.toList());
+
+              List<OpenLineage.SchemaDatasetFacet> schemas =
+                  inputs.stream()
+                      .map(OpenLineage.Dataset::getFacets)
+                      .map(OpenLineage.DatasetFacets::getSchema)
+                      .filter(Objects::nonNull)
+                      .collect(Collectors.toList());
+
+              assertThat(schemas.isEmpty()).isTrue();
 
               assertThat(names)
                   .containsExactlyInAnyOrder("openlineage.books", "openlineage.authors");
