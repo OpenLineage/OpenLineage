@@ -61,7 +61,7 @@ fn update_identifier_function() {
     let test_cases = vec![
         (
             "target",
-            "source",
+            "'source'",
             vec![table("source")],
             vec![table("target")],
         ),

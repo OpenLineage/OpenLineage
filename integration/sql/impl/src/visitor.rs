@@ -8,7 +8,7 @@ use anyhow::{anyhow, Result};
 use sqlparser::ast::{
     AlterTableOperation, Expr, FromTable, Function, FunctionArg, FunctionArgExpr,
     FunctionArguments, Ident, ObjectName, Query, Select, SelectItem, SetExpr, Statement, Table,
-    TableFactor, TableFunctionArgs, Use, WindowSpec, WindowType, With,
+    TableFactor, TableFunctionArgs, Use, Value, WindowSpec, WindowType, With,
 };
 use sqlparser::dialect::{DatabricksDialect, MsSqlDialect, SnowflakeDialect};
 
@@ -801,9 +801,13 @@ fn get_table_name_from_identifier_function(args: &Option<TableFunctionArgs>) -> 
     }
 
     match &args.args[0] {
-        FunctionArg::Unnamed(FunctionArgExpr::Expr(Expr::Identifier(ident))) => {
-            Some(ObjectName(vec![ident.clone()]))
-        }
+        FunctionArg::Unnamed(FunctionArgExpr::Expr(expr)) => match expr {
+            Expr::Identifier(ident) => Some(ObjectName(vec![ident.clone()])),
+            Expr::Value(Value::SingleQuotedString(ident)) => {
+                Some(ObjectName(vec![Ident::new(ident.to_string())]))
+            }
+            _ => None,
+        },
         _ => None,
     }
 }

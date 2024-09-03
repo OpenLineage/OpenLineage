@@ -193,6 +193,7 @@ fn select_bq_array_function() {
 fn select_identifier_function() {
     let test_cases = vec![
         ("target", vec![table("target")]),
+        ("'target'", vec![table("target")]),
         ("$target", vec![]),
         (":target", vec![]),
         ("?", vec![]),
