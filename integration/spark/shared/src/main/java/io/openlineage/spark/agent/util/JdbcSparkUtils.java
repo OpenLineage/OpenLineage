@@ -50,7 +50,7 @@ public class JdbcSparkUtils {
                         jdbcUrl, dbtm.qualifiedName(), jdbcProperties);
 
                 if (numberOfTables > 1) {
-                  datasetFactory.getDataset(di.getName(), di.getNamespace());
+                  return datasetFactory.getDataset(di.getName(), di.getNamespace());
                 }
 
                 return datasetFactory.getDataset(di.getName(), di.getNamespace(), schema);
