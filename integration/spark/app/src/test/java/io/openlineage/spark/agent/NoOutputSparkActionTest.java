@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 
 @Slf4j
 @Tag("integration-test")
-class InvokingSparkActionTest {
+class NoOutputSparkActionTest {
   private static final SparkTestUtils.OpenLineageEndpointHandler handler =
       new SparkTestUtils.OpenLineageEndpointHandler();
 
