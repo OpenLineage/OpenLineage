@@ -5,8 +5,12 @@
 
 package io.openlineage.spark.agent;
 
-import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_3_OR_ABOVE;
-import static io.openlineage.spark.agent.SparkTestsUtils.SPARK_VERSION;
+import static io.openlineage.spark.agent.SparkTestUtils.SPARK_3_OR_ABOVE;
+import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
+import static io.openlineage.spark.agent.SparkTestUtils.SchemaRecord;
+import static io.openlineage.spark.agent.SparkTestUtils.createHttpServer;
+import static io.openlineage.spark.agent.SparkTestUtils.createSparkSession;
+import static io.openlineage.spark.agent.SparkTestUtils.mapToSchemaRecord;
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.expr;
 import static org.apache.spark.sql.functions.from_json;
@@ -17,13 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.util.OpenLineageHttpHandler;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -40,7 +42,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -82,18 +83,6 @@ class SparkStreamingTest {
     public InputMessage(String id, long epoch) {
       this.id = id;
       this.epoch = epoch;
-    }
-  }
-
-  @Getter
-  @EqualsAndHashCode
-  static class SchemaRecord {
-    private final String name;
-    private final String type;
-
-    public SchemaRecord(String name, String type) {
-      this.name = name;
-      this.type = type;
     }
   }
 
@@ -493,17 +482,6 @@ class SparkStreamingTest {
     spark.stop();
   }
 
-  private static HttpServer createHttpServer(HttpHandler handler) throws IOException {
-    int randomPort = new Random().nextInt(1000) + 10000;
-
-    HttpServer server = HttpServer.create(new InetSocketAddress(randomPort), 0);
-    server.createContext("/api/v1/lineage", handler);
-    server.setExecutor(null);
-    server.start();
-
-    return server;
-  }
-
   private Dataset<Row> processKafkaTopic(Dataset<Row> input) {
     StructType schema = StructType.fromDDL("id STRING, epoch LONG");
     return input
@@ -553,39 +531,6 @@ class SparkStreamingTest {
     populateTopic(bootstrapServers, kafkaSourceTopic);
 
     return new KafkaTestContainer(kafka, kafkaSourceTopic, kafkaTargetTopic, bootstrapServers);
-  }
-
-  private static SparkSession createSparkSession(Integer httpServerPort, String appName) {
-    String userDirProperty = System.getProperty("user.dir");
-    Path userDirPath = Paths.get(userDirProperty);
-    UUID testUuid = UUID.randomUUID();
-
-    Path derbySystemHome = userDirPath.resolve("tmp").resolve("derby").resolve(testUuid.toString());
-    Path sparkSqlWarehouse =
-        userDirPath.resolve("tmp").resolve("spark-sql-warehouse").resolve(testUuid.toString());
-
-    OpenLineageSparkListener.close();
-
-    return SparkSession.builder()
-        .appName(appName)
-        .master("local[*]")
-        .config("spark.extraListeners", OpenLineageSparkListener.class.getCanonicalName())
-        .config("spark.driver.host", "localhost")
-        .config("spark.driver.extraJavaOptions", "-Dderby.system.home=" + derbySystemHome)
-        .config("spark.sql.warehouse.dir", sparkSqlWarehouse.toString())
-        .config("spark.ui.enabled", false)
-        .config("spark.openlineage.transport.type", "http")
-        .config("spark.openlineage.transport.url", "http://localhost:" + httpServerPort)
-        .config("spark.openlineage.facets.spark_unknown.disabled", "true")
-        .config("spark.openlineage.dataset.namespaceResolvers.prod-cluster.type", "hostList")
-        .config("spark.openlineage.dataset.namespaceResolvers.prod-cluster.hosts", "[localhost]")
-        .getOrCreate();
-  }
-
-  private List<SchemaRecord> mapToSchemaRecord(OpenLineage.SchemaDatasetFacet schema) {
-    return schema.getFields().stream()
-        .map(field -> new SchemaRecord(field.getName(), field.getType()))
-        .collect(Collectors.toList());
   }
 
   private void populateTopic(String bootstrapServers, String topic) {

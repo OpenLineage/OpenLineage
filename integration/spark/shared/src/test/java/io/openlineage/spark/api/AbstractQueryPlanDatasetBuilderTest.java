@@ -191,15 +191,12 @@ class AbstractQueryPlanDatasetBuilderTest {
                     }))
             .queryExecution();
 
-    OpenLineageContext context =
-        OpenLineageContext.builder()
-            .sparkContext(
-                SparkContext.getOrCreate(new SparkConf().setAppName("test").setMaster(LOCAL)))
-            .openLineage(openLineage)
-            .queryExecution(queryExecution)
-            .meterRegistry(new SimpleMeterRegistry())
-            .openLineageConfig(new SparkOpenLineageConfig())
-            .build();
-    return context;
+    return OpenLineageContext.builder()
+        .sparkContext(SparkContext.getOrCreate(new SparkConf().setAppName("test").setMaster(LOCAL)))
+        .openLineage(openLineage)
+        .queryExecution(queryExecution)
+        .meterRegistry(new SimpleMeterRegistry())
+        .openLineageConfig(new SparkOpenLineageConfig())
+        .build();
   }
 }

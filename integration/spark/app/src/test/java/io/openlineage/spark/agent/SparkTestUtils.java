@@ -21,21 +21,55 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.apache.spark.sql.SparkSession;
+import org.junit.jupiter.api.Tag;
+import org.testcontainers.containers.PostgreSQLContainer;
 
-public class SparkTestsUtils {
-
+public class SparkTestUtils {
   static final String SPARK_3_OR_ABOVE = "^[3-9].*";
   static final String SPARK_VERSION = "spark.version";
   static final String SPARK_3_3_AND_ABOVE = "^3.[3-5].*|^[4-9].*";
 
-  protected static HttpServer createHttpServer(HttpHandler handler) throws IOException {
+  @Getter
+  @EqualsAndHashCode
+  static class SchemaRecord {
+    private final String name;
+    private final String type;
+
+    public SchemaRecord(String name, String type) {
+      this.name = name;
+      this.type = type;
+    }
+  }
+
+  @Getter
+  public static class PostgreSQLTestContainer {
+    final PostgreSQLContainer<?> postgres;
+
+    public PostgreSQLTestContainer(PostgreSQLContainer<?> postgres) {
+      this.postgres = postgres;
+    }
+
+    public void stop() {
+      postgres.stop();
+    }
+
+    public String getNamespace() {
+      return "postgres://" + postgres.getHost() + ":" + postgres.getMappedPort(5432).toString();
+    }
+  }
+
+  public static HttpServer createHttpServer(HttpHandler handler) throws IOException {
     int randomPort = new Random().nextInt(1000) + 10000;
 
     HttpServer server = HttpServer.create(new InetSocketAddress(randomPort), 0);
@@ -46,7 +80,7 @@ public class SparkTestsUtils {
     return server;
   }
 
-  protected static SparkSession createSparkSession(Integer httpServerPort, String appName) {
+  static SparkSession createSparkSession(Integer httpServerPort, String appName) {
     String userDirProperty = System.getProperty("user.dir");
     Path userDirPath = Paths.get(userDirProperty);
     UUID testUuid = UUID.randomUUID();
@@ -67,14 +101,29 @@ public class SparkTestsUtils {
         .config("spark.ui.enabled", false)
         .config("spark.openlineage.transport.type", "http")
         .config("spark.openlineage.transport.url", "http://localhost:" + httpServerPort)
+        .config("spark.openlineage.facets.spark_unknown.disabled", "true")
+        .config("spark.openlineage.dataset.namespaceResolvers.prod-cluster.type", "hostList")
+        .config("spark.openlineage.dataset.namespaceResolvers.prod-cluster.hosts", "[localhost]")
         .getOrCreate();
   }
 
-  static class OpenLineageEndpointHandler implements HttpHandler {
+  static List<SchemaRecord> mapToSchemaRecord(OpenLineage.SchemaDatasetFacet schema) {
+    return schema.getFields().stream()
+        .map(field -> new SchemaRecord(field.getName(), field.getType()))
+        .collect(Collectors.toList());
+  }
 
-    public Map<String, List<OpenLineage.RunEvent>> events = new HashMap<>();
+  @Tag("integration-test")
+  static class OpenLineageEndpointHandler implements HttpHandler {
+    List<String> eventsContainer = new ArrayList<>();
+
+    Map<String, List<OpenLineage.RunEvent>> events = new HashMap<>();
 
     public OpenLineageEndpointHandler() {}
+
+    List<OpenLineage.RunEvent> getEvents(String jobName) {
+      return events.getOrDefault(jobName, Collections.emptyList());
+    }
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -82,6 +131,8 @@ public class SparkTestsUtils {
           new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
       BufferedReader br = new BufferedReader(isr);
       String value = br.readLine();
+
+      eventsContainer.add(value);
 
       OpenLineage.RunEvent runEvent = OpenLineageClientUtils.runEventFromJson(value);
       String jobName = runEvent.getJob().getName();

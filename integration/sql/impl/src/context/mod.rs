@@ -62,7 +62,10 @@ pub struct Context<'a> {
     // Some databases allow to specify default schema. When schema for table is not referenced,
     // we're using this default as it.
     default_schema: Option<String>,
-    // Dialect used in this statements.
+    // Some databases allow to specify default database. When database for table is not referenced,
+    // we're using this default as it.
+    default_database: Option<String>,
+    // Dialect used in these statements.
     dialect: &'a dyn CanonicalDialect,
     // Used to generate unique names for unaliased columns created from compound expressions
     column_id: u32,
@@ -76,17 +79,23 @@ impl<'a> Context<'a> {
             outputs: HashSet::new(),
             frames: vec![ContextFrame::new()],
             default_schema: None,
+            default_database: None,
             dialect: &SnowflakeDialect,
             column_id: 0,
         }
     }
 
-    pub fn new(dialect: &dyn CanonicalDialect, default_schema: Option<String>) -> Context {
+    pub fn new(
+        dialect: &dyn CanonicalDialect,
+        default_schema: Option<String>,
+        default_database: Option<String>,
+    ) -> Context {
         Context {
             inputs: HashSet::new(),
             outputs: HashSet::new(),
             frames: vec![ContextFrame::new()],
             default_schema,
+            default_database,
             dialect,
             column_id: 0,
         }
@@ -95,7 +104,12 @@ impl<'a> Context<'a> {
     // --- Table Lineage ---
 
     pub fn add_input(&mut self, table: Vec<Ident>) {
-        let name = DbTableMeta::new(table, self.dialect, self.default_schema.clone());
+        let name = DbTableMeta::new(
+            table,
+            self.dialect,
+            self.default_schema.clone(),
+            self.default_database.clone(),
+        );
         if !self.is_table_alias(&name) {
             self.inputs.insert(name);
         }
@@ -111,6 +125,7 @@ impl<'a> Context<'a> {
             table,
             self.dialect,
             self.default_schema.clone(),
+            self.default_database.clone(),
             provided_namespace,
             provided_field_schema,
             false,
@@ -121,7 +136,12 @@ impl<'a> Context<'a> {
     }
 
     pub fn add_output(&mut self, output: Vec<Ident>) {
-        let name = DbTableMeta::new(output, self.dialect, self.default_schema.clone());
+        let name = DbTableMeta::new(
+            output,
+            self.dialect,
+            self.default_schema.clone(),
+            self.default_database.clone(),
+        );
         if !self.is_table_alias(&name) {
             self.outputs.insert(name);
         }
@@ -137,6 +157,7 @@ impl<'a> Context<'a> {
             output,
             self.dialect,
             self.default_schema.clone(),
+            self.default_database.clone(),
             provided_namespace,
             provided_field_schema,
             false,
@@ -184,7 +205,12 @@ impl<'a> Context<'a> {
 
     pub fn add_table_alias(&mut self, table: DbTableMeta, alias: Vec<Ident>) {
         if let Some(frame) = self.frames.last_mut() {
-            let alias = DbTableMeta::new(alias, self.dialect, self.default_schema.clone());
+            let alias = DbTableMeta::new(
+                alias,
+                self.dialect,
+                self.default_schema.clone(),
+                self.default_database.clone(),
+            );
             frame.aliases.add_table_alias(table, alias);
         }
     }
@@ -205,6 +231,18 @@ impl<'a> Context<'a> {
         let name = self.next_unnamed_column();
         if let Some(frame) = self.frames.last_mut() {
             frame.column.replace(ColumnMeta::new(name, None));
+        }
+    }
+
+    pub fn set_default_database(&mut self, database: Option<String>) {
+        if let Some(db) = database {
+            self.default_database = Some(db);
+        }
+    }
+
+    pub fn set_default_schema(&mut self, schema: Option<String>) {
+        if let Some(sch) = schema {
+            self.default_schema = Some(sch);
         }
     }
 
@@ -311,6 +349,10 @@ impl<'a> Context<'a> {
 
     pub fn default_schema(&self) -> &Option<String> {
         &self.default_schema
+    }
+
+    pub fn default_database(&self) -> &Option<String> {
+        &self.default_database
     }
 
     // --- Utils ---

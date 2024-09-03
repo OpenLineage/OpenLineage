@@ -2,13 +2,37 @@
 
 set -e
 
+source "$(dirname "${BASH_SOURCE[0]}")/set-java-version.sh"
+JAVA_VERSION=${JAVA_VERSION:-17}
+RULESET_FILE=${RULESET_FILE:-client/java/pmd-openlineage.xml}
+
+# Parse command-line arguments
+for arg in "$@"; do
+  case $arg in
+    --java-version)
+      JAVA_VERSION=$2
+      shift 2
+      ;;
+    --ruleset-file)
+      RULESET_FILE=$2
+      shift
+      ;;
+  esac
+done
+
+echo "Using Java version: $JAVA_VERSION"
+
+source "$(dirname "${BASH_SOURCE[0]}")/set-java-version.sh"
+set_java_version "$JAVA_VERSION"
+
 PMD_RELEASE="https://github.com/pmd/pmd/releases/download/pmd_releases%2F6.46.0/pmd-bin-6.46.0.zip"
 
-cd /opt/.pmd_cache
+mkdir -p ./.pmd_cache
+cd ./.pmd_cache
 
 # check if there is a pmd folder
 if [ ! -d "pmd" ]; then
-  wget -nc -O pmd.zip "$PMD_RELEASE" > /dev/null 2>&1 \
+  curl -fsSL -o pmd.zip "$PMD_RELEASE" > /dev/null 2>&1 \
     && unzip pmd.zip > /dev/null 2>&1 \
     && rm pmd.zip > /dev/null 2>&1 \
     && mv pmd-bin* pmd > /dev/null 2>&1 \
@@ -25,12 +49,12 @@ done
 
 # add default ruleset if not specified
 if [[ ! $pc_args == *"-R "* ]]; then
-  pc_args="$pc_args -R /src/client/java/pmd-openlineage.xml"
+  pc_args="$pc_args -R ../${RULESET_FILE}"
 fi
 
 # populate list of files to analyse
 files=""
-prefix="/src/"
+prefix="../"
 for arg in "${@:idx}"; do
   files="$files $prefix$arg"
 done

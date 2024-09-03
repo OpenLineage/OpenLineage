@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - docs-deploy # testing phase only
+      - docs-env
 
 permissions:
   id-token: write
@@ -13,13 +13,14 @@ jobs:
   site-deploy:
     name: Build and Publish To openlineage-site repo
     runs-on: ubuntu-latest
+    environment: openlineage-site-push
     steps:
       - uses: actions/checkout@v4
         with:
           path: 'source'
       - uses: actions/checkout@v4
         with:
-          repository: 'pawel-big-lebowski/openlineage-site'
+          repository: 'Openlineage/openlineage-site'
           path: 'target'
           token:  ${{ secrets.ACTIONS_GITHUB_TOKEN }}
       - uses: actions/setup-node@v4
@@ -83,9 +84,10 @@ jobs:
           popd
       - name: Push target repo
         run: |
-          rm -r target/* 
-          cp -r source/website/* target
           cd target
+          # remove all files and directories except those starting with version
+          find . ! -name '.*' -and ! -name 'version*' -depth -maxdepth 1 -exec rm -rf {} \;
+          cp -r ../source/website/* ./
           git config user.name "GitHub Action Website Snapshot"
           git config user.email "<>"
           git add .

@@ -12,7 +12,6 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
-import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.builder.GcpJobFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.GcpRunFacetBuilder;
@@ -24,6 +23,8 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.util.StreamingContextUtils;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.naming.JobNameBuilder;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -33,7 +34,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -45,8 +45,6 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.parquet.Strings;
 import org.apache.spark.Dependency;
-import org.apache.spark.SparkContext;
-import org.apache.spark.SparkContext$;
 import org.apache.spark.internal.io.HadoopMapRedWriteConfigUtil;
 import org.apache.spark.internal.io.HadoopMapReduceWriteConfigUtil;
 import org.apache.spark.rdd.HadoopRDD;
@@ -56,7 +54,6 @@ import org.apache.spark.scheduler.*;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.apache.spark.util.SerializableJobConf;
-import scala.Option;
 import scala.collection.Seq;
 
 @Slf4j
@@ -66,19 +63,15 @@ class RddExecutionContext implements ExecutionContext {
   private static final String SPARK_JOB_TYPE = "RDD_JOB";
 
   private final EventEmitter eventEmitter;
-  private final Optional<SparkContext> sparkContextOption;
   private final UUID runId = UUIDUtils.generateNewUUID();
+  private final OpenLineageContext olContext;
   private List<URI> inputs = Collections.emptyList();
   private List<URI> outputs = Collections.emptyList();
   private String jobSuffix;
-  private OpenLineage openLineage;
 
-  public RddExecutionContext(EventEmitter eventEmitter) {
+  public RddExecutionContext(OpenLineageContext olContext, EventEmitter eventEmitter) {
     this.eventEmitter = eventEmitter;
-    this.openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
-    Option<SparkContext> activeSessionOption = SparkContext$.MODULE$.getActive();
-    sparkContextOption =
-        activeSessionOption.isDefined() ? Optional.of(activeSessionOption.get()) : Optional.empty();
+    this.olContext = olContext;
   }
 
   @Override
@@ -215,26 +208,21 @@ class RddExecutionContext implements ExecutionContext {
       return;
     }
     OpenLineage.RunEvent event =
-        openLineage
+        olContext
+            .getOpenLineage()
             .newRunEventBuilder()
             .eventTime(toZonedTime(jobStart.time()))
             .eventType(OpenLineage.RunEvent.EventType.START)
             .inputs(buildInputs(inputs))
             .outputs(buildOutputs(outputs))
             .run(
-                openLineage
+                olContext
+                    .getOpenLineage()
                     .newRunBuilder()
                     .runId(runId)
                     .facets(buildRunFacets(null, jobStart))
                     .build())
-            .job(buildJob(jobStart.jobId(), jobStart))
-            .run(
-                openLineage
-                    .newRunBuilder()
-                    .runId(runId)
-                    .facets(buildRunFacets(null, jobStart))
-                    .build())
-            .job(buildJob(jobStart.jobId(), jobStart))
+            .job(buildJob(jobStart.jobId()))
             .build();
     log.debug("Posting event for start {}: {}", jobStart, event);
     eventEmitter.emit(event);
@@ -253,26 +241,29 @@ class RddExecutionContext implements ExecutionContext {
       return;
     }
     OpenLineage.RunEvent event =
-        openLineage
+        olContext
+            .getOpenLineage()
             .newRunEventBuilder()
             .eventTime(toZonedTime(jobEnd.time()))
             .eventType(getEventType(jobEnd.jobResult()))
             .inputs(buildInputs(inputs))
             .outputs(buildOutputs(outputs))
             .run(
-                openLineage
+                olContext
+                    .getOpenLineage()
                     .newRunBuilder()
                     .runId(runId)
                     .facets(buildRunFacets(buildJobErrorFacet(jobEnd.jobResult()), jobEnd))
                     .build())
-            .job(buildJob(jobEnd.jobId(), jobEnd))
+            .job(buildJob(jobEnd.jobId()))
             .build();
     log.debug("Posting event for end {}: {}", jobEnd, event);
     eventEmitter.emit(event);
   }
 
   protected OpenLineage.RunFacets buildRunFacets(ErrorFacet jobError, SparkListenerEvent event) {
-    OpenLineage.RunFacetsBuilder runFacetsBuilder = openLineage.newRunFacetsBuilder();
+    OpenLineage.RunFacetsBuilder runFacetsBuilder =
+        olContext.getOpenLineage().newRunFacetsBuilder();
     runFacetsBuilder.parent(buildApplicationParentFacet());
     if (jobError != null) {
       runFacetsBuilder.put("spark.exception", jobError);
@@ -287,12 +278,16 @@ class RddExecutionContext implements ExecutionContext {
   }
 
   private void addProcessingEventFacet(OpenLineage.RunFacetsBuilder b0) {
-    sparkContextOption.ifPresent(
-        context -> {
-          OpenLineage.ProcessingEngineRunFacet facet =
-              new SparkProcessingEngineRunFacetBuilderDelegate(openLineage, context).buildFacet();
-          b0.processing_engine(facet);
-        });
+    olContext
+        .getSparkContext()
+        .ifPresent(
+            context -> {
+              OpenLineage.ProcessingEngineRunFacet facet =
+                  new SparkProcessingEngineRunFacetBuilderDelegate(
+                          olContext.getOpenLineage(), context)
+                      .buildFacet();
+              b0.processing_engine(facet);
+            });
   }
 
   private void addSparkPropertyFacet(OpenLineage.RunFacetsBuilder b0, SparkListenerEvent event) {
@@ -301,11 +296,13 @@ class RddExecutionContext implements ExecutionContext {
 
   private void addGcpRunFacet(OpenLineage.RunFacetsBuilder b0, SparkListenerEvent event) {
     if (!GCPUtils.isDataprocRuntime()) return;
-    sparkContextOption.ifPresent(
-        context -> {
-          GcpRunFacetBuilder b1 = new GcpRunFacetBuilder(context);
-          b1.accept(event, b0::put);
-        });
+    olContext
+        .getSparkContext()
+        .ifPresent(
+            context -> {
+              GcpRunFacetBuilder b1 = new GcpRunFacetBuilder(context);
+              b1.accept(event, b0::put);
+            });
   }
 
   private void addSparkJobDetailsFacet(OpenLineage.RunFacetsBuilder b0, SparkListenerEvent event) {
@@ -320,18 +317,21 @@ class RddExecutionContext implements ExecutionContext {
   }
 
   protected OpenLineage.JobFacets buildJobFacets(SparkListenerEvent sparkListenerEvent) {
-    OpenLineage.JobFacetsBuilder jobFacetsBuilder = openLineage.newJobFacetsBuilder();
+    OpenLineage.JobFacetsBuilder jobFacetsBuilder =
+        olContext.getOpenLineage().newJobFacetsBuilder();
     addGcpJobFacets(jobFacetsBuilder, sparkListenerEvent);
     return jobFacetsBuilder.build();
   }
 
   private void addGcpJobFacets(OpenLineage.JobFacetsBuilder b0, SparkListenerEvent event) {
     if (!GCPUtils.isDataprocRuntime()) return;
-    sparkContextOption.ifPresent(
-        context -> {
-          GcpJobFacetBuilder b1 = new GcpJobFacetBuilder(context);
-          b1.accept(event, b0::put);
-        });
+    olContext
+        .getSparkContext()
+        .ifPresent(
+            context -> {
+              GcpJobFacetBuilder b1 = new GcpJobFacetBuilder(context);
+              b1.accept(event, b0::put);
+            });
   }
 
   protected ErrorFacet buildJobErrorFacet(JobResult jobResult) {
@@ -341,27 +341,24 @@ class RddExecutionContext implements ExecutionContext {
     return null;
   }
 
-  protected OpenLineage.Job buildJob(int jobId, SparkListenerEvent jobEvent) {
+  protected OpenLineage.Job buildJob(int jobId) {
     String suffix = jobSuffix;
     if (jobSuffix == null) {
       suffix = String.valueOf(jobId);
     }
 
-    String name =
-        eventEmitter
-            .getOverriddenAppName()
-            .orElse(sparkContextOption.map(SparkContext::appName).orElse("unknown"));
-    String jobName = name + "." + suffix;
-
-    return openLineage
+    return olContext
+        .getOpenLineage()
         .newJobBuilder()
         .namespace(eventEmitter.getJobNamespace())
-        .name(jobName.replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT))
+        .name(JobNameBuilder.build(olContext, suffix))
         .facets(
-            openLineage
+            olContext
+                .getOpenLineage()
                 .newJobFacetsBuilder()
                 .jobType(
-                    openLineage
+                    olContext
+                        .getOpenLineage()
                         .newJobTypeJobFacetBuilder()
                         .jobType(SPARK_JOB_TYPE)
                         .processingType(
@@ -380,7 +377,8 @@ class RddExecutionContext implements ExecutionContext {
 
   protected OpenLineage.InputDataset buildInputDataset(URI uri) {
     DatasetIdentifier di = PathUtils.fromURI(uri);
-    return openLineage
+    return olContext
+        .getOpenLineage()
         .newInputDatasetBuilder()
         .name(di.getName())
         .namespace(di.getNamespace())
@@ -389,7 +387,8 @@ class RddExecutionContext implements ExecutionContext {
 
   protected OpenLineage.OutputDataset buildOutputDataset(URI uri) {
     DatasetIdentifier di = PathUtils.fromURI(uri);
-    return openLineage
+    return olContext
+        .getOpenLineage()
         .newOutputDatasetBuilder()
         .name(di.getName())
         .namespace(di.getNamespace())

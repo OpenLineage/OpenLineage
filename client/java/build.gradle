@@ -16,9 +16,9 @@ plugins {
     // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
     id 'com.diffplug.spotless' version '6.13.0'
     id "org.openapi.generator" version "6.6.0"
-    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "com.github.johnrengelman.shadow" version "8.1.1"
     id "pmd"
-    id "io.freefair.lombok" version "8.7.1"
+    id "io.freefair.lombok" version "8.10"
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
 
@@ -48,12 +48,12 @@ repositories {
 ext {
     assertjVersion = '3.26.3'
     jacksonVersion = "2.15.3"
-    junit5Version = '5.10.3'
+    junit5Version = '5.11.0'
     lombokVersion = '1.18.34'
     mockitoVersion = '5.2.0'
-    micrometerVersion = '1.13.2'
+    micrometerVersion = '1.13.3'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
-    guavaVersion = '33.2.1-jre'
+    guavaVersion = '33.3.0-jre'
 }
 
 configurations {
@@ -74,7 +74,7 @@ dependencies {
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     compileOnly 'org.apache.kafka:kafka-clients:3.8.0'
-    compileOnly 'com.amazonaws:amazon-kinesis-producer:0.15.10'
+    compileOnly 'com.amazonaws:amazon-kinesis-producer:0.15.11'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     compileOnly "io.micrometer:micrometer-registry-statsd:${micrometerVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -165,6 +165,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 delombok.dependsOn tasks.generateCode
 sourceJar.dependsOn tasks.generateCode
 compileJava.dependsOn tasks.generateCode
+sourceSets.main.java.srcDirs tasks.generateCode
 
 test {
     useJUnitPlatform()

@@ -188,3 +188,33 @@ fn select_bq_array_function() {
         }
     )
 }
+
+#[test]
+fn select_identifier_function() {
+    let test_cases = vec![
+        ("target", vec![table("target")]),
+        ("'target'", vec![table("target")]),
+        ("$target", vec![]),
+        (":target", vec![]),
+        ("?", vec![]),
+        (":myschema || '.' || :mytab", vec![]),
+    ];
+
+    let dialects = vec!["snowflake", "databricks", "mssql"];
+
+    for (in_table_id, in_tables) in &test_cases {
+        for dialect in &dialects {
+            let sql = format!("SELECT col1 FROM identifier({}) WHERE x = 1;", in_table_id);
+            assert_eq!(
+                test_sql_dialect(&sql, dialect).unwrap().table_lineage,
+                TableLineage {
+                    in_tables: in_tables.clone(),
+                    out_tables: vec![],
+                },
+                "Failed for dialect: {} with SQL: {}",
+                dialect,
+                sql
+            );
+        }
+    }
+}
