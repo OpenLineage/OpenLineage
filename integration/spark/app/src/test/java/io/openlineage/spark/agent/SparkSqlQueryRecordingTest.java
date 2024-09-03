@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.SparkTestUtils.OpenLineageEndpointHandler;
 import static io.openlineage.spark.agent.SparkTestUtils.SPARK_3_3_AND_ABOVE;
 import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
 import static io.openlineage.spark.agent.SparkTestUtils.createHttpServer;
@@ -15,7 +16,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sun.net.httpserver.HttpServer;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.SparkTestUtils.OpenLineageEndpointHandler;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
