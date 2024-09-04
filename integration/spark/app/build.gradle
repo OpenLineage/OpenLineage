@@ -12,7 +12,7 @@ plugins {
     id("io.freefair.lombok")
     id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
-    id "com.adarshr.test-logger" version "3.2.0"
+    id "com.adarshr.test-logger" version "4.0.0"
     id "org.gradle.test-retry" version "1.5.10"
 }
 
@@ -107,7 +107,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation("org.postgresql:postgresql:${postgresqlVersion}")
-    testImplementation('org.hamcrest:hamcrest-library:2.2')
+    testImplementation('org.hamcrest:hamcrest-library:3.0')
     testImplementation('org.xerial:sqlite-jdbc:3.45.0.0')
     testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
     testImplementation("org.testcontainers:junit-jupiter")
