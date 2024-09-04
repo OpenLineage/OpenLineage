@@ -14,28 +14,10 @@ Use your favourite tool (sdkman, `/usr/libexec/java_home`) to set `JAVA_HOME` an
 
 The integration depends on four libraries that are build locally `openlineage-java`, `spark-extension-interfaces`, `spark-extension-entrypoint` and `openlineage-sql-java`,
 so before any testing or building of a package you need to publish the appropriate artifacts to local maven repository.
-To build the packages you need to execute.
-
-To install `openlineage-java` in local maven repo run:
-```sh
-cd ../../client/java/ && ./gradlew publishToMavenLocal
-```
-
-For `spark-extension-interfaces` run:
-```sh
-cd ../../integration/spark-extension-interfaces && ./gradlew publishToMavenLocal
-```
-
-For `spark-extension-entrypoint` run:
-```sh
-cd ../../integration/spark-extension-entrypoint && ./gradlew publishToMavenLocal
-```
-
-For `openlineage-sql-java` run:
+To build the packages you need to execute:
 
 ```sh
-../../integration/sql/iface-java/ && ./script/compile.sh
-../../integration/sql/iface-java/ && ./script/build.sh
+./buildDependencies.sh
 ```
 
 ## Testing
