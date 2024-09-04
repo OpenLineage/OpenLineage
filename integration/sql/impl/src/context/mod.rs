@@ -245,7 +245,12 @@ impl<'a> Context<'a> {
     }
 
     pub fn add_table_dependency(&mut self, table: Vec<Ident>) {
-        let name = DbTableMeta::new(table, self.dialect, self.default_schema.clone());
+        let name = DbTableMeta::new(
+            table,
+            self.dialect,
+            self.default_schema.clone(),
+            self.default_database.clone(),
+        );
 
         if let Some(frame) = self.frames.last_mut() {
             frame.dependencies.extend(vec![name]);
@@ -263,7 +268,12 @@ impl<'a> Context<'a> {
     }
 
     pub fn mark_table_as_used(&mut self, table: Vec<Ident>) {
-        let name = DbTableMeta::new(table, self.dialect, self.default_schema.clone());
+        let name = DbTableMeta::new(
+            table,
+            self.dialect,
+            self.default_schema.clone(),
+            self.default_database.clone(),
+        );
 
         for frame in self.frames.iter_mut().rev() {
             if frame.cte_dependencies.contains_key(&name.qualified_name()) {

@@ -77,7 +77,6 @@ impl Visit for TableFactor {
                 if let Some(alias) = alias {
                     context.add_table_alias(table, vec![alias.name.clone()]);
                 }
-                context.add_input(effective_name.clone().0);
 
                 if !context.is_main() {
                     context.add_table_dependency(effective_name.clone().0);
