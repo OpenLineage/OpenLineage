@@ -1071,7 +1071,7 @@ jobs:
           ./gradlew --info --console=plain publishToMavenLocal
 
           # Publish *.jar
-          ./gradlew --info --console=plain publish
+          ./gradlew --info --console=plain publishToSonatype closeAndReleaseSonatypeStagingRepository
 
   release-docker-proxy-backend:
     working_directory: ~/openlineage/proxy/backend
