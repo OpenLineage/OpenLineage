@@ -43,6 +43,11 @@ def test_set_producer_from_argument():
     assert facet._producer == "http://another.producer"  # noqa: SLF001
 
 
+def test_optional_attributed_not_validated():
+    """Don't pass optional value with validator."""
+    nominal_time_run.NominalTimeRunFacet(nominalStartTime="2020-12-17T03:00:00.001Z")
+
+
 def test_custom_facet() -> None:
     session = mock.MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
