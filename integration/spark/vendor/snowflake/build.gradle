@@ -23,7 +23,7 @@ ext {
 
     sparkProp = project.findProperty('spark.version').toString()
     // because snowflake doesn't have a 3.5.0 connector yet
-    spark = (sparkProp == "3.5.1" || sparkProp.toString().startsWith("4")) ? "3.4.3" : sparkProp
+    spark = (sparkProp == "3.5.2" || sparkProp.toString().startsWith("4")) ? "3.4.3" : sparkProp
 
     series = spark.substring(0, 3)
     scala = project.findProperty('scala.binary.version').toString()
