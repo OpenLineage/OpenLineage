@@ -20,7 +20,7 @@ dependencies {
     implementation("io.freefair.gradle:lombok-plugin:${lombokPluginVersion}")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.2")
     implementation("org.javassist:javassist:3.30.2-GA")
 }
 
