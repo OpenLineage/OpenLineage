@@ -84,15 +84,11 @@ class JobNameBuilderTest {
     config.setOverriddenAppName("SomeOverriddenName");
     assertThat(JobNameBuilder.build(context)).isEqualTo("some_overridden_name");
 
-    // TODO this should be fixed:
+    config.setOverriddenAppName("OLT-58");
+    assertThat(JobNameBuilder.build(context)).isEqualTo("olt_58");
 
-    // config.setOverriddenAppName("OLT-58");
-    // assertThat(JobNameBuilder.build(context)).isEqualTo("olt_58");
-    // actual is "ol_t_58"
-
-    // config.setOverriddenAppName("Some job (Like from James)");
-    // assertThat(JobNameBuilder.build(context)).isEqualTo("some_job_like_from_james");
-    // actual is "some_job (_like_from_james)"
+    config.setOverriddenAppName("Some job (Like from James)");
+    assertThat(JobNameBuilder.build(context)).isEqualTo("some_job_like_from_james");
   }
 
   @Test

@@ -4,12 +4,9 @@
 */
 package io.openlineage.spark.api.naming;
 
-import static io.openlineage.spark.agent.lifecycle.ExecutionContext.CAMEL_TO_SNAKE_CASE;
-
 import com.google.common.collect.ImmutableList;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.List;
-import java.util.Locale;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -59,7 +56,7 @@ class ApplicationJobNameResolver {
    * non-alphanumeric characters with underscores ('_').
    */
   private static String normalizeName(String name) {
-    String normalizedName = name.replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT);
+    String normalizedName = NameNormalizer.normalize(name);
     log.debug("The application name [{}] has been normalized to [{}]", name, normalizedName);
     return normalizedName;
   }

@@ -2,7 +2,7 @@
   "eventType": "COMPLETE",
   "job": {
     "namespace": "testPysparkSQLHadoopFSTest",
-    "name": "open_lineage_integration_hadoop_f_s_relation.execute_insert_into_hadoop_fs_relation_command.warehouse_target"
+    "name": "open_lineage_integration_hadoop_fs_relation.execute_insert_into_hadoop_fs_relation_command.warehouse_target"
   },
   "inputs": [
     {
