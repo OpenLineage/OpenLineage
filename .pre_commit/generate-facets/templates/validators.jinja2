@@ -1,9 +1,13 @@
 {#- validators logic -#}
-{%- macro validator(name, type) -%}
+{%- macro validator(name, type, required) -%}
 {#- try to parse datetime #}
     {%- if 'date-time' in type %}
     @{{ name }}.validator
     def {{ name | lower }}_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        {% if not required %}
+        if value is None:
+            return
+        {% endif -%}
         from dateutil import parser
         parser.isoparse(value)
         if "t" not in value.lower():
@@ -14,12 +18,20 @@
     {%- elif 'uri' in type %}
     @{{ name }}.validator
     def {{ name | lower }}_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        {% if not required %}
+        if value is None:
+            return
+        {% endif -%}
         from urllib.parse import urlparse
         urlparse(value)
     {%- elif 'uuid' in type %}
 {#- check uuid format #}
     @{{ name }}.validator
     def {{ name | lower }}_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        {% if not required %}
+        if value is None:
+            return
+        {% endif -%}
         from uuid import UUID
         UUID(value)
     {%- endif -%}
