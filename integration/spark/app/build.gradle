@@ -136,7 +136,7 @@ dependencies {
     testImplementation('net.javacrumbs.json-unit:json-unit-assertj:2.38.0')
     testImplementation('net.javacrumbs.json-unit:json-unit-core:2.38.0')
 
-    testRuntimeOnly("org.slf4j:slf4j-api:1.7.36")
+    testRuntimeOnly("org.slf4j:slf4j-api:2.0.16")
     testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.22.1"))
     testRuntimeOnly("org.apache.logging.log4j:log4j-api")
     testRuntimeOnly("org.apache.logging.log4j:log4j-core")
@@ -570,12 +570,15 @@ List<Dependency> additionalJars(String spark, String scala) {
             "2.4.8": [
                     dependencies.create("org.slf4j:slf4j-api:1.7.16"),
                     dependencies.create("org.slf4j:slf4j-log4j12:1.7.16"),
+                    // 2.10.2 is the latest stable for Spark 2
                     dependencies.create("org.apache.hadoop:hadoop-common:2.10.2", {
                         exclude(group: "org.slf4j")
                     }),
+                    // 2.10.2 is the latest stable for Spark 2
                     dependencies.create("org.apache.hadoop:hadoop-mapreduce-client-core:2.10.2", {
                         exclude(group: "org.slf4j")
                     }),
+                    // 2.10.2 is the latest stable for Spark 2
                     dependencies.create("org.apache.hadoop:hadoop-mapreduce-client-common:2.10.2", {
                         exclude(group: "org.slf4j")
                     }),
