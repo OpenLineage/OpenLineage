@@ -9,7 +9,7 @@
     *Adjusts our Context so that it can use the new support for this statement in the parser and pass it to a number of queries.*
 * **Spark: add script to build Spark dependencies** [`#3044`](https://github.com/OpenLineage/OpenLineage/pull/3044) [@arturowczarek](https://github.com/arturowczarek)  
     *Adds a script to rebuild dependencies automatically following releases.*
-* **Website: versionable docs** [`#3007`](https://github.com/OpenLineage/OpenLineage/pull/3007) [`#3023`](https://github.com/OpenLineage/OpenLineage/pull/3023) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+* **Website: versionable docs** [`#3007`](https://github.com/OpenLineage/OpenLineage/pull/3007) [`#3023`](https://github.com/OpenLineage/OpenLineage/pull/3023) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Adds a GitHub action that creates a new Docusaurus version on a tag push, verifiable using the openlineage-site repo. Implements a monorepo approach in a new `website` directory.*
 
 ### Fixed
