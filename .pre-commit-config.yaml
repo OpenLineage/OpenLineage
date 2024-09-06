@@ -110,7 +110,7 @@ repos:
         language: script
         entry: .pre_commit/run-pmd.sh --java-version 17 --ruleset-file client/java/pmd-openlineage.xml
         files: ^client/java/src/.*\.java$
-        exclude: ".*test.*"
+        # exclude: ".*test.*"
         require_serial: true
       - id: pmd-flink
         name: pmd-flink
@@ -125,7 +125,7 @@ repos:
         description: "Runs the PMD static code analyzer - Spark."
         language: script
         entry: .pre_commit/run-pmd.sh --java-version 17 --ruleset-file integration/spark/pmd-openlineage.xml
-        files: ^integration/flink/.*\.java$
+        files: ^integration/spark/.*\.java$
         exclude: ".*test.*"
         require_serial: true
       - id: spotless-client-java

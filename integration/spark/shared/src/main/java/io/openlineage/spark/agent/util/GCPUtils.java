@@ -76,6 +76,7 @@ public class GCPUtils {
     return (sparkDistClasspath != null && sparkDistClasspath.contains(DATAPROC_CLASSPATH));
   }
 
+  @SuppressWarnings("PMD.SwitchStmtsShouldHaveDefault")
   public static Map<String, Object> getDataprocRunFacetMap(SparkContext context) {
     Map<String, Object> dataprocProperties = new HashMap<>();
     ResourceType resource = identifyResource(context);
@@ -181,6 +182,7 @@ public class GCPUtils {
     return fetchGCPMetadata(CLUSTER_UUID_ENDPOINT, context);
   }
 
+  @SuppressWarnings("PMD.SwitchStmtsShouldHaveDefault")
   private static Map<String, Object> createDataprocOriginMap(SparkContext context) {
     Map<String, Object> originProperties = new HashMap<>();
     String nameFormat = "";
