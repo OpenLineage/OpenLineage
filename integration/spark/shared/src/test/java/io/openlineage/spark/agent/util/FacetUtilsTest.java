@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 
 class FacetUtilsTest {
   public static final String SPARK_LOGICAL_PLAN_FACET_NAME = "spark.logicalPlan";
-  public static final String SPARK_UNKNOWN_FACET_NAME = "spark_unknown";
+  public static final String SPARK_UNKNOWN_FACET_NAME = "sparkUnknown";
   public static final String DEBUG_FACET_NAME = "debug";
 
   @Test
@@ -30,7 +30,7 @@ class FacetUtilsTest {
 
     // facetA - set with old mechanism
     // spark.logicalPlan - set with old mechanism but overwritten with new mechanism
-    // spark_unknown - set with new mechanism only
+    // sparkUnknown - set with new mechanism only
     facetsConfig.setDeprecatedDisabledFacets(
         new String[] {"facetA", SPARK_LOGICAL_PLAN_FACET_NAME});
     facetsConfig.setDisabledFacets(

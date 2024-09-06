@@ -10,7 +10,7 @@
           "name": "job_name"
         }
       },
-      "spark_unknown": {
+      "sparkUnknown": {
         "output": {
           "description": {
             "@class": "org.apache.spark.sql.catalyst.plans.logical.Aggregate",

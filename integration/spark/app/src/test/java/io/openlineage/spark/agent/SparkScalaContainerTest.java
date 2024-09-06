@@ -168,7 +168,7 @@ class SparkScalaContainerTest {
         sparkSubmitCommand, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
     addSparkConfig(sparkSubmitCommand, "spark.jars.ivy=/tmp/.ivy2/");
     addSparkConfig(sparkSubmitCommand, "spark.openlineage.facets.spark.logicalPlan.disabled=false");
-    addSparkConfig(sparkSubmitCommand, "spark.openlineage.facets.spark_unknown.disabled=false");
+    addSparkConfig(sparkSubmitCommand, "spark.openlineage.facets.sparkUnknown.disabled=false");
     addSparkConfig(sparkSubmitCommand, "spark.openlineage.facets.debug.disabled=false");
     addSparkConfig(sparkSubmitCommand, "spark.ui.enabled=false");
     // Last, but not least, we add the path to the JAR
@@ -511,7 +511,7 @@ class SparkScalaContainerTest {
     addSparkConfig(command, "spark.extraListeners=" + OpenLineageSparkListener.class.getName());
     addSparkConfig(command, "spark.jars.ivy=/tmp/.ivy2/");
     addSparkConfig(command, "spark.openlineage.debugFacet=enabled");
-    addSparkConfig(command, "spark.openlineage.facets.disabled=[spark_unknown]");
+    addSparkConfig(command, "spark.openlineage.facets.disabled=[sparkUnknown]");
     addSparkConfig(command, "spark.openlineage.transport.type=file");
     addSparkConfig(command, "spark.openlineage.transport.location=/tmp/events.log");
     addSparkConfig(command, "spark.sql.shuffle.partitions=1");

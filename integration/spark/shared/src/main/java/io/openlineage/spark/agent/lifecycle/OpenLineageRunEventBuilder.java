@@ -196,14 +196,14 @@ class OpenLineageRunEventBuilder {
     List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);
     openLineageContext
         .getQueryExecution()
-        .filter(qe -> !FacetUtils.isFacetDisabled(openLineageContext, "spark_unknown"))
+        .filter(qe -> !FacetUtils.isFacetDisabled(openLineageContext, "sparkUnknown"))
         .flatMap(
             qe ->
                 openLineageContext
                     .getMeterRegistry()
                     .timer("openlineage.spark.unknownFacet.time")
                     .record(() -> unknownEntryFacetListener.build(qe.optimizedPlan())))
-        .ifPresent(facet -> runFacetsBuilder.put("spark_unknown", facet));
+        .ifPresent(facet -> runFacetsBuilder.put("sparkUnknown", facet));
     unknownEntryFacetListener.clear();
 
     RunFacets runFacets = buildRunFacets(nodes, runFacetBuilders, runFacetsBuilder);
@@ -309,7 +309,7 @@ class OpenLineageRunEventBuilder {
                                 toScalaFn(
                                     ds -> {
                                       if (!FacetUtils.isFacetDisabled(
-                                          openLineageContext, "spark_unknown")) {
+                                          openLineageContext, "sparkUnknown")) {
                                         unknownEntryFacetListener.accept(node);
                                       }
                                       return ds;

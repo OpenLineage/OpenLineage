@@ -49,7 +49,7 @@ class ArgumentParserTest {
     assertThat(config.getFacetsConfig().getDeprecatedDisabledFacets()).isEmpty();
     assertThat(config.getFacetsConfig().getDisabledFacets())
         .containsAllEntriesOf(
-            ImmutableMap.of("spark_unknown", true, "spark.logicalPlan", true, "debug", true));
+            ImmutableMap.of("sparkUnknown", true, "spark.logicalPlan", true, "debug", true));
     assertThat(config.getTransportConfig()).isInstanceOf(ConsoleConfig.class);
   }
 
@@ -235,7 +235,7 @@ class ArgumentParserTest {
         .isEqualTo("aDisabledFacet");
     assertThat(config.getFacetsConfig().getDisabledFacets())
         .containsAllEntriesOf(
-            ImmutableMap.of("spark_unknown", false, "spark.logicalPlan", true, "debug", true));
+            ImmutableMap.of("sparkUnknown", false, "spark.logicalPlan", true, "debug", true));
   }
 
   @Test

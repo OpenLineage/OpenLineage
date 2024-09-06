@@ -12,7 +12,7 @@ facets:
   spark:
     logicalPlan:
       disabled: true
-  spark_unknown:
+  sparkUnknown:
     disabled: false
 # The debug facet is disabled implicitly
 #  debug:

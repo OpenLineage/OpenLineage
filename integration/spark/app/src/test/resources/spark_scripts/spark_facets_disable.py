@@ -12,7 +12,7 @@ spark = (
     SparkSession.builder.master("local")
     .appName("Open Lineage Integration Hive")
     .enableHiveSupport()
-    .config("spark.openlineage.facets.spark_unknown.disabled", "true")
+    .config("spark.openlineage.facets.sparkUnknown.disabled", "true")
     .config("spark.openlineage.facets.spark.logicalPlan.disabled", "true")
     .config("spark.openlineage.facets.dataSource.disabled", "true")
     .getOrCreate()

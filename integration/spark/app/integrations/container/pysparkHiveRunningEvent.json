@@ -8,7 +8,7 @@
     "run": {
         "facets": {
             "spark.logicalPlan": {},
-            "spark_unknown": {
+            "sparkUnknown": {
                 "inputs": [
                     {
                         "description": {},

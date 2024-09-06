@@ -33,7 +33,7 @@ In YAML configuration file you can also disable facets to filter them out from t
 transport:
   type: console
 facets:
-  spark_unknown:
+  sparkUnknown:
     disabled: true
   spark:
     logicalPlan:
@@ -49,7 +49,7 @@ transport:
   type: console
 facets:
   disabled:
-    - spark_unknown
+    - sparkUnknown
     - spark.logicalPlan
 ```
 

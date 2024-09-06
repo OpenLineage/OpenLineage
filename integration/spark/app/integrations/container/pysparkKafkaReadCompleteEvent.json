@@ -3,7 +3,7 @@
   "run": {
     "facets": {
       "spark.logicalPlan": {},
-      "spark_unknown": {},
+      "sparkUnknown": {},
       "processing_engine": {}
     }
   },

@@ -13,7 +13,7 @@ spark = (
     SparkSession.builder.master("local")
     .appName("Open Lineage Integration Overwrite Hive")
     .config("spark.sql.warehouse.dir", "/tmp/overwrite")
-    .config("spark.openlineage.facets.spark_unknown.disabled", "true")
+    .config("spark.openlineage.facets.sparkUnknown.disabled", "true")
     .config("spark.openlineage.facets.spark.logicalPlan.disabled", "true")
     .enableHiveSupport()
     .getOrCreate()

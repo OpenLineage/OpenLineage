@@ -91,7 +91,7 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
 
       @Override
       public List<D> apply(LogicalPlan x) {
-        if (!FacetUtils.isFacetDisabled(context, "spark_unknown")) {
+        if (!FacetUtils.isFacetDisabled(context, "sparkUnknown")) {
           unknownEntryFacetListener.accept(x);
         }
         return builder.apply(event, (P) x);
