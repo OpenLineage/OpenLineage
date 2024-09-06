@@ -5,12 +5,9 @@
 
 package io.openlineage.client.transports;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,26 +24,10 @@ public class CompositeTransport extends Transport {
   }
 
   private void initializeTransports() {
-    for (Map<String, Object> transportParams : config.getTransports()) {
-      TransportConfig transportConfig;
-      try {
-        transportConfig = createTransportConfig(transportParams);
-      } catch (JsonProcessingException e) {
-        throw new RuntimeException("Error creating transport config", e);
-      }
+    for (TransportConfig transportConfig : config.getTransports()) {
       Transport transport = TransportResolver.resolveTransportByConfig(transportConfig);
       transports.add(transport);
     }
-  }
-
-  private TransportConfig createTransportConfig(Map<String, Object> map)
-      throws JsonProcessingException {
-    // Convert the Map to a JSON string
-    ObjectMapper objectMapper = new ObjectMapper();
-    String jsonString = objectMapper.writeValueAsString(map);
-
-    // Deserialize the JSON string to TransportConfig
-    return objectMapper.readValue(jsonString, TransportConfig.class);
   }
 
   @Override

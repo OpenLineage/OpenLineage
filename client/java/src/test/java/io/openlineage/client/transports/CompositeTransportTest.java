@@ -78,8 +78,10 @@ class CompositeTransportTest {
     Map<String, Object> fakeTransportBConfig = new HashMap<>();
     fakeTransportBConfig.put("type", "fakeB");
 
-    compositeConfig =
-        new CompositeConfig(Arrays.asList(fakeTransportAConfig, fakeTransportBConfig), true);
+    try (MockedStatic<TransportResolver> mockedStatic = mockTransportResolver()) {
+      compositeConfig =
+          new CompositeConfig(Arrays.asList(fakeTransportAConfig, fakeTransportBConfig), true);
+    }
   }
 
   public static MockedStatic<TransportResolver> mockTransportResolver() {
@@ -141,7 +143,7 @@ class CompositeTransportTest {
   void testEmitPartialFailureContinueOnFailureFalse() {
     try (MockedStatic<TransportResolver> mockedStatic = mockTransportResolver()) {
       CompositeConfig configWithFailFast =
-          new CompositeConfig(compositeConfig.getTransports(), false);
+          CompositeConfig.createFromTransportConfigs(compositeConfig.getTransports(), false);
       CompositeTransport compositeTransport = new CompositeTransport(configWithFailFast);
       doThrow(new RuntimeException("FakeTransportA failed"))
           .when(fakeTransportA)
@@ -182,8 +184,6 @@ class CompositeTransportTest {
     try (MockedStatic<TransportResolver> mockedStatic = mockTransportResolver()) {
       Map<String, Object> invalidConfig = new HashMap<>();
       invalidConfig.put("type", "INVALID");
-      CompositeConfig invalidCompositeConfig =
-          new CompositeConfig(Arrays.asList(invalidConfig), true);
       // Mock behavior for invalid type
       mockedStatic
           .when(() -> TransportResolver.resolveTransportConfigByType("INVALID"))
@@ -191,8 +191,25 @@ class CompositeTransportTest {
 
       IllegalArgumentException exception =
           assertThrows(
-              IllegalArgumentException.class, () -> new CompositeTransport(invalidCompositeConfig));
+              IllegalArgumentException.class,
+              () -> new CompositeConfig(Arrays.asList(invalidConfig), true));
       assertTrue(exception.getMessage().contains("Invalid transport"));
+    }
+  }
+
+  @Test
+  void testConfigWithMap() {
+    try (MockedStatic<TransportResolver> mockedStatic = mockTransportResolver()) {
+      Map<String, Object> config = new HashMap<>();
+      Map<String, Object> fakeTransportAConfig = new HashMap<>();
+      fakeTransportAConfig.put("type", "fakeA");
+      Map<String, Object> fakeTransportBConfig = new HashMap<>();
+      fakeTransportBConfig.put("type", "fakeB");
+      config.put("myFakeA", fakeTransportAConfig);
+      config.put("myFakeB", fakeTransportBConfig);
+      CompositeConfig compositeConfig = new CompositeConfig(config, true);
+      assertEquals(compositeConfig.getTransports().get(1).getName(), "myFakeA");
+      assertEquals(compositeConfig.getTransports().get(0).getName(), "myFakeB");
     }
   }
 }

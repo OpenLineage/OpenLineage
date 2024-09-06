@@ -1,0 +1,13 @@
+transport:
+  type: composite
+  transports:
+    first:
+      type: http
+      url: http://localhost:5050
+      endpoint: api/v1/lineage
+      auth:
+        type: api_key
+        apiKey: random_token
+      compression: gzip
+    second:
+      type: console

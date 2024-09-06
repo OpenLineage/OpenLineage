@@ -15,6 +15,7 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.circuitBreaker.StaticCircuitBreakerConfig;
 import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceResolverConfig;
 import io.openlineage.client.transports.ApiKeyTokenProvider;
+import io.openlineage.client.transports.CompositeConfig;
 import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.KafkaConfig;
@@ -156,6 +157,35 @@ class ArgumentParserTest {
     assertEquals("test", transportConfig.getRoleArn());
     assertEquals("test1", transportConfig.getProperties().get("test1"));
     assertEquals("test2", transportConfig.getProperties().get("test2"));
+  }
+
+  @Test
+  void testConfToCompositeTransport() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.transport.type", "composite")
+            .set("spark.openlineage.transport.continueOnFailure", "true")
+            .set("spark.openlineage.transport.transports.kavvka.type", "kafka")
+            .set("spark.openlineage.transport.transports.kavvka.topicName", "test")
+            .set("spark.openlineage.transport.transports.kavvka.messageKey", "explicit-key")
+            .set("spark.openlineage.transport.transports.kavvka.properties.test1", "test1")
+            .set("spark.openlineage.transport.transports.kavvka.properties.test2", "test2")
+            .set("spark.openlineage.transport.transports.local.type", "http")
+            .set(
+                "spark.openlineage.transport.transports.local.url",
+                "http://your-openlineage-endpoint/api/v1/lineage");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+    CompositeConfig transportConfig = (CompositeConfig) config.getTransportConfig();
+    assertEquals(
+        "http://your-openlineage-endpoint/api/v1/lineage",
+        ((HttpConfig) transportConfig.getTransports().get(1)).getUrl().toString());
+    KafkaConfig kafkaConfig = (KafkaConfig) transportConfig.getTransports().get(0);
+    assertEquals("test", kafkaConfig.getTopicName());
+    assertEquals("explicit-key", kafkaConfig.getMessageKey());
+    assertEquals("test1", kafkaConfig.getProperties().get("test1"));
+    assertEquals("test2", kafkaConfig.getProperties().get("test2"));
+    assertEquals("kavvka", kafkaConfig.getName());
   }
 
   @Test

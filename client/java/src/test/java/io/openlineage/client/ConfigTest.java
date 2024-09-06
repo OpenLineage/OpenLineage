@@ -39,6 +39,8 @@ import java.util.List;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 
 class ConfigTest {
@@ -54,12 +56,12 @@ class ConfigTest {
   }
 
   @SuppressWarnings({"unchecked", "PMD.AvoidAccessibilityAlteration"})
-  @Test
-  void testLoadCompositeTransportConfigFromYaml()
+  @ParameterizedTest
+  @ValueSource(strings = {"config/composite-array.yaml", "config/composite-map.yaml"})
+  void testLoadCompositeTransportConfigFromYaml(String yamlFile)
       throws NoSuchFieldException, SecurityException, IllegalArgumentException,
           IllegalAccessException {
-    OpenLineageClient client =
-        Clients.newClient(new TestConfigPathProvider("config/composite.yaml"));
+    OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(yamlFile));
     assertThat(client.transport).isInstanceOf(CompositeTransport.class);
     CompositeTransport compositeTransport = (CompositeTransport) client.transport;
     Field transportsField = compositeTransport.getClass().getDeclaredField("transports");
