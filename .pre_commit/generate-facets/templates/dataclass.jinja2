@@ -173,6 +173,6 @@ class {{ class_name }}:
 {%- endif -%}
 {#- add validator methods -#}
 {%- for field in fields -%}
-    {{ validators.validator(field.name, field.type_hint) }}
+    {{ validators.validator(field.name, field.type_hint, field.required) }}
 {%- endfor -%}
 {%- endif -%}
