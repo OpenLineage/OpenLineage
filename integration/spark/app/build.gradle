@@ -24,18 +24,18 @@ ext {
     scala = project.findProperty('scala.binary.version').toString()
     activeRuntimeElementsConfiguration = "scala" + scala.replace(".", "") + "RuntimeElements"
 
-    assertjVersion = '3.25.1'
+    assertjVersion = '3.26.3'
     bigqueryVersion = '0.35.1'
-    junit5Version = '5.10.1'
+    junit5Version = '5.11.0'
     mockitoVersion = '4.11.0'
-    postgresqlVersion = '42.7.1'
-    testcontainersVersion = '1.19.3'
+    postgresqlVersion = '42.7.4'
+    testcontainersVersion = '1.20.1'
     configurableTestConfig = [
         sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
         hostDir: project.findProperty('host.dir') ?: System.getProperty('host.dir'),
         testDir: project.findProperty('test.dir') ?: System.getProperty('test.dir')
     ]
-    micrometerVersion = '1.13.2'
+    micrometerVersion = '1.13.3'
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
@@ -91,7 +91,7 @@ dependencies {
     implementation(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark40", configuration: "scala213RuntimeElements"))
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.3")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.3.1")
 
     compileOnly("org.apache.spark:spark-core_${scala}:${spark}")
     compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")
@@ -108,7 +108,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation("org.postgresql:postgresql:${postgresqlVersion}")
     testImplementation('org.hamcrest:hamcrest-library:3.0')
-    testImplementation('org.xerial:sqlite-jdbc:3.45.0.0')
+    testImplementation('org.xerial:sqlite-jdbc:3.46.1.0')
     testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
@@ -137,7 +137,7 @@ dependencies {
     testImplementation('net.javacrumbs.json-unit:json-unit-core:2.38.0')
 
     testRuntimeOnly("org.slf4j:slf4j-api:2.0.16")
-    testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.22.1"))
+    testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.23.1"))
     testRuntimeOnly("org.apache.logging.log4j:log4j-api")
     testRuntimeOnly("org.apache.logging.log4j:log4j-core")
     testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl")
@@ -568,7 +568,7 @@ List<Dependency> hadoopClientDependencies(String spark, String scala) {
 List<Dependency> additionalJars(String spark, String scala) {
     final def registry = [
             "2.4.8": [
-                    dependencies.create("org.slf4j:slf4j-api:1.7.16"),
+                    dependencies.create("org.slf4j:slf4j-api:2.0.16"),
                     dependencies.create("org.slf4j:slf4j-log4j12:1.7.16"),
                     // 2.10.2 is the latest stable for Spark 2
                     dependencies.create("org.apache.hadoop:hadoop-common:2.10.2", {
@@ -609,8 +609,8 @@ List<Dependency> additionalJars(String spark, String scala) {
                     dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.4_${scala}:1.6.0")
             ],
             "3.5.1": [
-                    dependencies.create("org.slf4j:slf4j-api:2.0.10"),
-                    dependencies.create("org.slf4j:slf4j-reload4j:2.0.10"),
+                    dependencies.create("org.slf4j:slf4j-api:2.0.16"),
+                    dependencies.create("org.slf4j:slf4j-reload4j:2.0.16"),
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
                         transitive = false
                     }),
