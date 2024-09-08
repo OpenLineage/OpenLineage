@@ -506,7 +506,7 @@ OpenLineage backend should be able to store this information when submitted, and
 
 ![image](./custom-facets.png)
 
-You might have noticed the schema URL is actually that of `BaseFacet`. By default, if the facet class did not specify its own schema URL, that value would be that of BaseFacet. From the view of OpenLineage specification, this is legal. However, if you have your own JSON spec defined, and has it publicly accessible, you can specify it by overriding the `_get_schema` function as such:
+You might have noticed the schema URL is actually that of `BaseFacet`. By default, if the facet class did not specify its own schema URL, that value would be that of BaseFacet. From the view of OpenLineage specification, this is legal. However, if you have your own JSON spec defined, and has it publically accessible, you can specify it by overriding the `_get_schema` function as such:
 
 ```python
 @attr.s

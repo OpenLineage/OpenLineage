@@ -99,11 +99,49 @@ repos:
         entry: python ./.pre_commit/check-redactions.py
         always_run: true
         pass_filenames: false
-      - id: pmd
-        name: pmd
-        description: "Runs the PMD static code analyzer."
-        language: docker_image
-        entry: -v ./.pmd_cache:/opt/.pmd_cache --entrypoint .pre_commit/run-pmd.sh cimg/openjdk:11.0
+      - id: spec-changes
+        name: Verify spec changes committed to website
+        language: script
+        files: ^spec/
+        entry: .pre_commit/run-spec-snapshot.sh
+      - id: pmd-client-java
+        name: pmd-client-java
+        description: "Runs the PMD static code analyzer - Java client."
+        language: script
+        entry: .pre_commit/run-pmd.sh --java-version 17 --ruleset-file client/java/pmd-openlineage.xml
         files: ^client/java/src/.*\.java$
         exclude: ".*test.*"
         require_serial: true
+      - id: pmd-flink
+        name: pmd-flink
+        description: "Runs the PMD static code analyzer - Flink"
+        language: script
+        entry: .pre_commit/run-pmd.sh --java-version 17 --ruleset-file integration/flink/pmd-openlineage.xml
+        files: ^integration/flink/.*\.java$
+        exclude: ".*test.*"
+        require_serial: true
+      - id: pmd-spark
+        name: pmd-spark
+        description: "Runs the PMD static code analyzer - Spark."
+        language: script
+        entry: .pre_commit/run-pmd.sh --java-version 17 --ruleset-file integration/spark/pmd-openlineage.xml
+        files: ^integration/flink/.*\.java$
+        exclude: ".*test.*"
+        require_serial: true
+      - id: spotless-client-java
+        name: spotless-client-java
+        description: "Runs the Spotless formatter."
+        language: system
+        entry: bash -c "cd client/java && ./gradlew spotlessApply"
+        files: ^client/java/src/.*\.java$
+        exclude: ".*test.*"
+        pass_filenames: false
+      - id: spotless-integration-spark
+        name: spotless-integration-spark
+        description: "Runs the Spotless formatter for Spark."
+        language: system
+        entry: bash -c "cd integration/spark && ./gradlew spotlessApply"
+        files: ^integration/spark/.*\.java$
+        exclude: ".*test.*"
+        pass_filenames: false
+

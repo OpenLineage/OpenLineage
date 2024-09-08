@@ -1,8 +1,46 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.20.4...HEAD)
-* **Spark: Lineage for Iceberg datasets that are present outside of Spark's catalog is now present** [`#2937`](https://github.com/OpenLineage/OpenLineage/pull/2937) [@d-m-h](https://github.com/d-m-h)
-    *Previously, reading Iceberg datasets outside the configured Spark catalog prevented the datasets from being present in the `inputs` property of the `RunEvent`.* 
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.22.0...HEAD)
+
+## [1.22.0](https://github.com/OpenLineage/OpenLineage/compare/1.21.1...1.22.0) - 2024-09-05
+
+### Added
+* **SQL: add support for `USE` statement with different syntaxes** [`#2944`](https://github.com/OpenLineage/OpenLineage/pull/2944) [@kacpermuda](https://github.com/kacpermuda)  
+    *Adjusts our Context so that it can use the new support for this statement in the parser and pass it to a number of queries.*
+* **Spark: add script to build Spark dependencies** [`#3044`](https://github.com/OpenLineage/OpenLineage/pull/3044) [@arturowczarek](https://github.com/arturowczarek)  
+    *Adds a script to rebuild dependencies automatically following releases.*
+* **Website: versionable docs** [`#3007`](https://github.com/OpenLineage/OpenLineage/pull/3007) [`#3023`](https://github.com/OpenLineage/OpenLineage/pull/3023) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds a GitHub action that creates a new Docusaurus version on a tag push, verifiable using the openlineage-site repo. Implements a monorepo approach in a new `website` directory.*
+
+### Fixed
+* **SQL: add support for `SingleQuotedString` in `Identifier()`** [`#3035`](https://github.com/OpenLineage/OpenLineage/pull/3035) [@kacpermuda](https://github.com/kacpermuda)  
+    *Single quoted strings were being treated differently than strings with no quotes, double quotes, or backticks.*
+* **SQL: support `IDENTIFIER` function instead of treating it like table name** [`#2999`](https://github.com/OpenLineage/OpenLineage/pull/2999) [@kacpermuda](https://github.com/kacpermuda)  
+    *Adds support for this identifier in SELECT, MERGE, UPDATE, and DELETE statements. For now, only static identifiers are supported. When a variable is used, this table is removed from lineage to avoid emitting incorrect lineage.*
+* **Spark: fix issue with only one table in inputs from SQL query while reading from JDBC** [`#2918`](https://github.com/OpenLineage/OpenLineage/pull/2918) [@Imbruced](https://github.com/Imbruced)  
+    *Events created did not contain the correct input table when the query contained multiple tables.*
+* **Spark: fix AWS Glue jobs naming for RDD events** [`#3020`](https://github.com/OpenLineage/OpenLineage/pull/3020) [@arturowczarek](https://github.com/arturowczarek)  
+    *The naming for RDD jobs now uses the same code as SQL and Application events.*
+
+## [1.21.1](https://github.com/OpenLineage/OpenLineage/compare/1.20.5...1.21.1) - 2024-08-29
+
+### Added
+* **Spec: add GCP Dataproc facet** [`#2987`](https://github.com/OpenLineage/OpenLineage/pull/2987) [@tnazarew](https://github.com/tnazarew)  
+    *Registers the Google Cloud Platform Dataproc run facet.*
+
+### Fixed
+* **Airflow: update SQL integration code to work with latest sqlparser-rs main** [`#2983`](https://github.com/OpenLineage/OpenLineage/pull/2983) [@kacpermuda](https://github.com/kacpermuda)  
+    *Adjusts the SQL integration after our sqlparser-rs fork has been updated to the latest main.*
+* **Spark: fix AWS Glue jobs naming for SQL events** [`#3001`](https://github.com/OpenLineage/OpenLineage/pull/3001) [@arturowczarek](https://github.com/arturowczarek)  
+    *SQL events now properly use the names of the jobs retrieved from AWS Glue.*
+* **Spark: fix issue with column lineage when using delta merge into command** [`#2986`](https://github.com/OpenLineage/OpenLineage/pull/2986) [@Imbruced](https://github.com/Imbruced)  
+    *A view instance of a node is now included when gathering data sources for input columns.*
+* **Spark: minor Spark filters refactor** [`#2990`](https://github.com/OpenLineage/OpenLineage/pull/2990) [@arturowczarek](https://github.com/arturowczarek)  
+    *Fixes a number of minor issues.*
+* **Spark: Iceberg tables in AWS Glue have slashes instead of dots in symlinks** [`#2984`](https://github.com/OpenLineage/OpenLineage/pull/2984) [@arturowczarek](https://github.com/arturowczarek)  
+    *They should use slashes and the prefix `table/`.*
+* **Spark: lineage for Iceberg datasets that are present outside of Spark's catalog is now present** [`#2937`](https://github.com/OpenLineage/OpenLineage/pull/2937) [@d-m-h](https://github.com/d-m-h)
+    *Previously, reading Iceberg datasets outside the configured Spark catalog prevented the datasets from being present in the `inputs` property of the `RunEvent`.*
 
 ## [1.20.5](https://github.com/OpenLineage/OpenLineage/compare/1.19.0...1.20.5) - 2024-08-23
 

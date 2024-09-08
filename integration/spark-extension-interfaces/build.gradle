@@ -7,7 +7,11 @@ plugins {
     id 'com.diffplug.spotless' version '6.12.0'
     id "com.github.johnrengelman.shadow" version "8.1.1"
     id "pmd"
+    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
+
+group = "io.openlineage"
+
 
 ext {
     junit5Version = '5.10.1'
@@ -177,16 +181,13 @@ publishing {
                 "version": project.property("version")
         ]
     }
+}
 
+nexusPublishing {
     repositories {
-        maven {
-            def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
-            def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
-            credentials {
-                username = System.getenv('RELEASE_USERNAME')
-                password = System.getenv('RELEASE_PASSWORD')
-            }
+        sonatype {
+            username = System.getenv('RELEASE_USERNAME')
+            password = System.getenv('RELEASE_PASSWORD')
         }
     }
 }

@@ -470,6 +470,32 @@ class SparkDeltaIntegrationTest {
     verifyEvents(mockServer, "pysparkDeltaGroupByCompleteEvent.json");
   }
 
+  @Test
+  @SneakyThrows
+  void testMergeCommandColumnLineage() {
+    spark.sql("DROP TABLE if exists events");
+    spark.sql("CREATE TABLE events (event_id long, last_updated_at long) USING delta");
+    spark.sql("DROP TABLE if exists updates");
+    spark.sql("CREATE TABLE updates (event_id long, updated_at long) USING delta");
+
+    spark.sql("INSERT INTO events VALUES (1, 1641290276);");
+    spark.sql("INSERT INTO updates VALUES (1, 1641290277);");
+    spark.sql("INSERT INTO updates VALUES (2, 1641290277);");
+
+    spark
+        .sql("select event_id, coalesce(updated_at,0) as updated_at from updates")
+        .createOrReplaceTempView("updates2");
+
+    spark.sql(
+        "MERGE INTO events target USING updates2 updates "
+            + " ON target.event_id = updates.event_id"
+            + " WHEN MATCHED THEN UPDATE SET target.last_updated_at = updates.updated_at"
+            + " WHEN NOT MATCHED THEN INSERT (event_id, last_updated_at) "
+            + "VALUES (event_id, updated_at)");
+
+    verifyEvents(mockServer, "deltaMergeCommandVerification.json");
+  }
+
   /**
    * Environment variables differ on local environment and CI. This method returns any environment
    * variable being set for testing.

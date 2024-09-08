@@ -27,6 +27,10 @@ This means you don't have to do anything besides configuring where the events ar
 
 ##### Airflow 2.1 - 2.2
 
+> **_NOTE:_** The last version of openlineage-airflow to support Airflow versions 2.1-2.2 is **1.14.0**  
+
+<br />
+
 Integration for those versions has limitations: it does not support tracking failed jobs, 
 and job starts are registered only when a job ends (a `LineageBackend`-based approach collects all metadata 
 for a task on each task's completion).

@@ -14,8 +14,8 @@ You can make this file available to the client in three ways (the list also pres
 2. Place an `openlineage.yml` in the user's current working directory.
 3. Place an `openlineage.yml` under `.openlineage/` in the user's home directory (`~/.openlineage/openlineage.yml`).
 
-
 ## Environment Variables
+
 The following environment variables are available:
 
 | Name                 | Description                                                                 | Since |
@@ -23,20 +23,38 @@ The following environment variables are available:
 | OPENLINEAGE_CONFIG   | The path to the YAML configuration file. Example: `path/to/openlineage.yml` |       |
 | OPENLINEAGE_DISABLED | When `true`, OpenLineage will not emit events.                              | 0.9.0 |
 
-
 ## Facets Configuration
 
-In YAML configuration file you can also specify a list of disabled facets that will not be included in OpenLineage event.
+In YAML configuration file you can also disable facets to filter them out from the OpenLineage event.
 
 *YAML Configuration*
+
 ```yaml
 transport:
   type: console
 facets:
-  disabled: 
-    - spark_unknown
-    - spark_logicalPlan
+  spark_unknown:
+    disabled: true
+  spark:
+    logicalPlan:
+      disabled: true
 ```
+
+### Deprecated syntax
+
+The following syntax is deprecated and soon will be removed:
+
+```yaml
+transport:
+  type: console
+facets:
+  disabled:
+    - spark_unknown
+    - spark.logicalPlan
+```
+
+The rationale behind deprecation is that some of the facets were disabled by default in some integrations. When we added
+something extra but didn't include the defaults, they were unintentionally enabled.
 
 ## Transports
 

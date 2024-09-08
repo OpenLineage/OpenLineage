@@ -196,6 +196,10 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
     return datasetBuilder(ident.getName(), ident.getNamespace(), facetsBuilder.build()).build();
   }
 
+  public D getDataset(String name, String namespace) {
+    return datasetBuilder(name, namespace, datasetFacetBuilder(namespace).build()).build();
+  }
+
   /**
    * Construct a {@link OpenLineage.DatasetFacets} given a schema and a namespace.
    *
@@ -209,6 +213,15 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
         .getOpenLineage()
         .newDatasetFacetsBuilder()
         .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
+        .dataSource(
+            PlanUtils.datasourceFacet(
+                context.getOpenLineage(), namespaceResolver.resolve(namespaceUri)));
+  }
+
+  private OpenLineage.DatasetFacetsBuilder datasetFacetBuilder(String namespaceUri) {
+    return context
+        .getOpenLineage()
+        .newDatasetFacetsBuilder()
         .dataSource(
             PlanUtils.datasourceFacet(
                 context.getOpenLineage(), namespaceResolver.resolve(namespaceUri)));

@@ -16,12 +16,11 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.EventEmitter;
-import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark.api.JobNameBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.naming.JobNameBuilder;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -54,7 +53,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private final OpenLineageContext olContext;
   private final EventEmitter eventEmitter;
   private final OpenLineageRunEventBuilder runEventBuilder;
-  private final OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
 
   private boolean emittedOnSqlExecutionStart = false;
   private boolean emittedOnSqlExecutionEnd = false;
@@ -101,7 +99,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .applicationParentRunFacet(buildApplicationParentFacet())
                 .event(startEvent)
                 .runEventBuilder(
-                    openLineage
+                    olContext
+                        .getOpenLineage()
                         .newRunEventBuilder()
                         .eventTime(toZonedTime(startEvent.time()))
                         .eventType(eventType))
@@ -147,7 +146,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .applicationParentRunFacet(buildApplicationParentFacet())
                 .event(endEvent)
                 .runEventBuilder(
-                    openLineage
+                    olContext
+                        .getOpenLineage()
                         .newRunEventBuilder()
                         .eventTime(toZonedTime(endEvent.time()))
                         .eventType(eventType))
@@ -179,7 +179,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .applicationParentRunFacet(buildApplicationParentFacet())
                 .event(stageSubmitted)
                 .runEventBuilder(
-                    openLineage
+                    olContext
+                        .getOpenLineage()
                         .newRunEventBuilder()
                         .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
                         .eventType(RUNNING))
@@ -208,7 +209,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .applicationParentRunFacet(buildApplicationParentFacet())
                 .event(stageCompleted)
                 .runEventBuilder(
-                    openLineage
+                    olContext
+                        .getOpenLineage()
                         .newRunEventBuilder()
                         .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
                         .eventType(RUNNING))
@@ -260,7 +262,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .applicationParentRunFacet(buildApplicationParentFacet())
                 .event(jobStart)
                 .runEventBuilder(
-                    openLineage
+                    olContext
+                        .getOpenLineage()
                         .newRunEventBuilder()
                         .eventTime(toZonedTime(jobStart.time()))
                         .eventType(eventType))
@@ -308,7 +311,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
                 .applicationParentRunFacet(buildApplicationParentFacet())
                 .event(jobEnd)
                 .runEventBuilder(
-                    openLineage
+                    olContext
+                        .getOpenLineage()
                         .newRunEventBuilder()
                         .eventTime(toZonedTime(jobEnd.time()))
                         .eventType(eventType))
@@ -334,7 +338,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   protected OpenLineage.JobBuilder buildJob() {
-    return openLineage
+    return olContext
+        .getOpenLineage()
         .newJobBuilder()
         .name(JobNameBuilder.build(olContext))
         .namespace(this.eventEmitter.getJobNamespace());
@@ -357,7 +362,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
       processingType = SPARK_PROCESSING_TYPE_BATCH;
     }
 
-    return openLineage
+    return olContext
+        .getOpenLineage()
         .newJobTypeJobFacetBuilder()
         .jobType(SPARK_JOB_TYPE)
         .processingType(processingType)
@@ -368,7 +374,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private OpenLineage.JobFacetsBuilder getJobFacetsBuilder(QueryExecution queryExecution) {
 
     OpenLineage.JobFacetsBuilder builder =
-        openLineage.newJobFacetsBuilder().jobType(getJobTypeJobFacet(queryExecution));
+        olContext
+            .getOpenLineage()
+            .newJobFacetsBuilder()
+            .jobType(getJobTypeJobFacet(queryExecution));
 
     Optional<OpenLineage.SQLJobFacet> sqlFacets = resolveSQLFacets(queryExecution);
 
@@ -421,6 +430,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
       return Optional.empty();
     }
 
-    return Optional.of(openLineage.newSQLJobFacetBuilder().query(query).build());
+    return Optional.of(olContext.getOpenLineage().newSQLJobFacetBuilder().query(query).build());
   }
 }
