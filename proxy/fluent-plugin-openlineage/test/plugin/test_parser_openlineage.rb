@@ -1,5 +1,5 @@
 require_relative '../helper'
-require_relative '../../lib/fluent/plugin/parser_openlineage'
+require_relative '../../lib/fluent/plugin/parser_openlineage.rb'
 
 class OpenlineageParserTest < Test::Unit::TestCase
   setup do
