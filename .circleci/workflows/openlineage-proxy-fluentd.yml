@@ -1,11 +1,11 @@
 workflows:
-  openlineage-proxy-fluent-plugin-openlineage:
+  openlineage-proxy-fluentPluginOpenlineage:
     jobs:
-      - build-proxy-fluent-plugin-openlineage:
+      - build-proxy-fluentPluginOpenlineage:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-      - build-proxy-fluent-plugin-openlineage:
+      - build-proxy-fluentPluginOpenlineage:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
@@ -13,11 +13,11 @@ workflows:
               only: main
           context: release
           requires:
-            - build-proxy-fluent-plugin-openlineage
+            - build-proxy-fluentPluginOpenlineage
       - workflow_complete:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           requires:
-            - build-proxy-fluent-plugin-openlineage
-            - build-image-proxy-fluent-plugin-openlineage
+            - build-proxy-fluentPluginOpenlineage
+            - build-image-proxy-fluentPluginOpenlineage
