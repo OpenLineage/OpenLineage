@@ -534,7 +534,7 @@ jobs:
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
           export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
           export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
-                  
+          
           ./gradlew --console=plain javadoc sourceJar shadowJar -Pscala.binary.version=<< parameters.scala >> -Pjava.compile.home=/usr/lib/jvm/java-17-openjdk-amd64
           ./gradlew --console=plain publishToMavenLocal -Pscala.binary.version=<< parameters.scala >> -Pjava.compile.home=/usr/lib/jvm/java-17-openjdk-amd64
       - persist_to_workspace:
@@ -1010,8 +1010,8 @@ jobs:
           paths:
             - ~/.gradle
 
-  build-proxy-fluent-plugin-openlineage:
-    working_directory: ~/openlineage/proxy/fluent-plugin-openlineage
+  build-proxy-fluentd:
+    working_directory: ~/openlineage/proxy/fluentd
     docker:
       - image: cimg/ruby:3.2
     steps:

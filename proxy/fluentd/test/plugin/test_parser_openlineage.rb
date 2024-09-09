@@ -1,5 +1,5 @@
-require_relative '../helper'
-require_relative '../../lib/fluent/plugin/parser_openlineage.rb'
+require "helper"
+require "fluent/plugin/parser_openlineage.rb"
 
 class OpenlineageParserTest < Test::Unit::TestCase
   setup do
@@ -10,14 +10,14 @@ class OpenlineageParserTest < Test::Unit::TestCase
     )
   end
 
- test "test event with no runId" do
-   ol_event = File.read("events/event_no_run_id.json")
+  test "test event with no runId" do
+    ol_event = File.read("events/event_no_run_id.json")
 
-   err = assert_raise Fluent::ParserError do
-     @parser.instance.parse(ol_event)
-   end
-   assert_match(/Openlineage validation failed: (.+) path "\/run": "runId" is a required property/, err.message)
- end
+    err = assert_raise Fluent::ParserError do
+      @parser.instance.parse(ol_event)
+    end
+    assert_match(/Openlineage validation failed: (.+) path "\/run": "runId" is a required property/, err.message)
+  end
 
   test "test invalid json" do
     assert_raise Fluent::ParserError do
@@ -28,8 +28,8 @@ class OpenlineageParserTest < Test::Unit::TestCase
   test "event full test" do
     ol_event = File.read("events/event_full.json")
     @parser.instance.parse(ol_event) { | time, json |
-       assert_equal("ea041791-68bc-4ae1-bd89-4c8106a157e4", json['run']['runId'])
-       assert_equal(2000, json['outputs'][0]['outputFacets']['outputStatistics']['rowCount'])
+      assert_equal("ea041791-68bc-4ae1-bd89-4c8106a157e4", json['run']['runId'])
+      assert_equal(2000, json['outputs'][0]['outputFacets']['outputStatistics']['rowCount'])
     }
   end
 
@@ -40,13 +40,13 @@ class OpenlineageParserTest < Test::Unit::TestCase
     }
   end
 
- test "invalid spec_directory test" do
-   assert_raise Fluent::ParserError do
-     @parser.configure(
-       'spec_directory' => './non-existent-spec/'
-     )
-   end
- end
+  test "invalid spec_directory test" do
+    assert_raise Fluent::ParserError do
+      @parser.configure(
+        'spec_directory' => './non-existent-spec/'
+      )
+    end
+  end
 
   test "valid spec_directory without slash" do
     @parser.configure(
@@ -71,7 +71,7 @@ class OpenlineageParserTest < Test::Unit::TestCase
     @parser.configure(
       'spec_directory' => '../../spec/',
       'validate_run_facets' => false,
-    )
+      )
     @parser.instance.parse(ol_event) { | time, json |
       assert_equal("41fb5137-f0fd-4ee5-ba5c-56f8571d1bd7", json['run']['runId'])
     }
@@ -90,7 +90,7 @@ class OpenlineageParserTest < Test::Unit::TestCase
     @parser.configure(
       'spec_directory' => '../../spec/',
       'validate_job_facets' => false,
-    )
+      )
     @parser.instance.parse(ol_event) { | time, json |
       assert_equal("41fb5137-f0fd-4ee5-ba5c-56f8571d1bd7", json['run']['runId'])
     }
@@ -101,7 +101,7 @@ class OpenlineageParserTest < Test::Unit::TestCase
     @parser.configure(
       'spec_directory' => '../../spec/',
       'validate_dataset_facets' => true,
-    )
+      )
     err = assert_raise Fluent::ParserError do
       @parser.instance.parse(ol_event)
     end
@@ -110,11 +110,11 @@ class OpenlineageParserTest < Test::Unit::TestCase
 
   test "input dataset facet validation" do
     ol_event = File.read("events/event_invalid_input_dataset_facet.json")
-     @parser.configure(
+    @parser.configure(
       'json_parser' => 'yajl',
       'spec_directory' => '../../spec/',
       'validate_input_dataset_facets' => true,
-    )
+      )
     err = assert_raise Fluent::ParserError do
       @parser.instance.parse(ol_event)
     end
@@ -126,7 +126,7 @@ class OpenlineageParserTest < Test::Unit::TestCase
     @parser.configure(
       'spec_directory' => '../../spec/',
       'validate_output_dataset_facets' => true,
-    )
+      )
     err = assert_raise Fluent::ParserError do
       @parser.instance.parse(ol_event)
     end

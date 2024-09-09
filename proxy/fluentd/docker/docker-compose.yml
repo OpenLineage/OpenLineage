@@ -2,7 +2,7 @@ services:
   proxy:
     build:
       context: ../../..
-      dockerfile: proxy/fluent-plugin-openlineage/docker/Dockerfile
+      dockerfile: proxy/fluentd/docker/Dockerfile
     container_name: openlineage-fluentd
     volumes:
       - ./conf:/fluentd/etc/
