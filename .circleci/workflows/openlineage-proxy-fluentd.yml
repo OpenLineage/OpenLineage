@@ -21,4 +21,3 @@ workflows:
           requires:
             - build-proxy-fluent-plugin-openlineage
             - build-image-proxy-fluent-plugin-openlineage
-            - release-proxy-fluent-plugin-openlineage
