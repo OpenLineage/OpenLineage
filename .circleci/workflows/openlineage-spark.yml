@@ -132,6 +132,8 @@ workflows:
           context: slack-secrets
           requires:
             - integration-test-integration-spark
+            - integration-test-databricks-integration-spark
+            - configurable-integration-test-spark
             - jar-verification-spark
       - workflow_complete:
           filters:
