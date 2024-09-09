@@ -113,7 +113,7 @@ jobs:
               check_change integration/dagster/ openlineage-python.yml
               check_change integration/dbt/ openlineage-python.yml
               check_change proxy/backend/ openlineage-proxy-backend.yml
-              check_change proxy/fluent-plugin-openlineage/ openlineage-proxy-fluentd.yml
+              check_change proxy/fluentd/ openlineage-proxy-fluentd.yml
               check_change website openlineage-website.yml
             fi
             touch workflow_files.txt

@@ -1010,7 +1010,7 @@ jobs:
           paths:
             - ~/.gradle
 
-  build-proxy-fluentd:
+  build-proxy-fluent-plugin-openlineage:
     working_directory: ~/openlineage/proxy/fluent-plugin-openlineage
     docker:
       - image: cimg/ruby:3.2
