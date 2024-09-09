@@ -25,17 +25,17 @@ javadoc {
 }
 
 ext {
-    assertjVersion = "3.25.1"
+    assertjVersion = "3.26.3"
     awaitilityVersion = "4.2.2"
-    bigqueryVersion = "0.35.1"
+    bigqueryVersion = "0.41.0"
     databricksVersion = "0.1.4"
-    junit5Version = "5.10.1"
+    junit5Version = "5.11.0"
     kafkaClientsVersion = "3.8.0"
-    micrometerVersion = '1.13.0'
+    micrometerVersion = '1.13.3'
     mockitoVersion = "4.11.0"
     mockserverVersion = "5.14.0"
-    postgresqlVersion = "42.7.1"
-    sqlLiteVersion = "3.45.0.0"
+    postgresqlVersion = "42.7.4"
+    sqlLiteVersion = "3.46.1.0"
     testcontainersVersion = "1.19.3"
     micrometerVersion = '1.13.2'
 
