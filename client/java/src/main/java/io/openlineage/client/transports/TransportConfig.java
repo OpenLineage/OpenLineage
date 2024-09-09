@@ -7,7 +7,18 @@ package io.openlineage.client.transports;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import java.util.WeakHashMap;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonTypeIdResolver(TransportConfigTypeIdResolver.class)
-public interface TransportConfig {}
+public interface TransportConfig {
+  WeakHashMap<TransportConfig, String> nameRegistry = new WeakHashMap<>();
+
+  default String getName() {
+    return nameRegistry.get(this);
+  }
+
+  default void setName(String name) {
+    nameRegistry.put(this, name);
+  }
+}
