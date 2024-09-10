@@ -193,6 +193,7 @@ public class DatabricksUtils {
             .build();
 
     log.info("Creating cluster");
+    workspace.config().setHttpTimeoutSeconds(600); // 10 minutes, otherwise it's rather setup issue
     CreateClusterResponse response =
         workspace
             .apiClient()
@@ -221,7 +222,7 @@ public class DatabricksUtils {
     Path jarFile =
         Files.list(Paths.get("../build/libs/"))
             .filter(p -> p.getFileName().toString().startsWith("openlineage-spark_"))
-            .filter(p -> p.getFileName().toString().endsWith("jar"))
+            .filter(p -> p.getFileName().toString().endsWith("-SNAPSHOT.jar"))
             .findAny()
             .orElseThrow(() -> new RuntimeException("openlineage-spark jar not found"));
 
