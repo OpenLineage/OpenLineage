@@ -31,10 +31,10 @@ workflows:
                 'java:17-spark:3.3.4-scala:2.13',
                 'java:8-spark:3.4.3-scala:2.12',
                 'java:8-spark:3.4.3-scala:2.13',
-                'java:8-spark:3.5.1-scala:2.12',
-                'java:8-spark:3.5.1-scala:2.13',
-                'java:17-spark:3.5.1-scala:2.12',
-                'java:17-spark:3.5.1-scala:2.13',
+                'java:8-spark:3.5.2-scala:2.12',
+                'java:8-spark:3.5.2-scala:2.13',
+                'java:17-spark:3.5.2-scala:2.12',
+                'java:17-spark:3.5.2-scala:2.13',
                 'java:17-spark:4.0.0-scala:2.13'
               ]
           requires:
@@ -92,7 +92,7 @@ workflows:
           context: integration-tests
           matrix:
             parameters:
-              spark-version: [ '3.4.2', '3.5.0' ]
+              spark-version: [ '3.4.2', '3.5.2' ]
           requires:
             - approval-integration-spark
       - integration-test-integration-spark:
@@ -112,10 +112,10 @@ workflows:
                 'java:17-spark:3.3.4-scala:2.13',
                 'java:8-spark:3.4.3-scala:2.12',
                 'java:8-spark:3.4.3-scala:2.13',
-                'java:8-spark:3.5.1-scala:2.12',
-                'java:8-spark:3.5.1-scala:2.13',
-                'java:17-spark:3.5.1-scala:2.12',
-                'java:17-spark:3.5.1-scala:2.13',
+                'java:8-spark:3.5.2-scala:2.12',
+                'java:8-spark:3.5.2-scala:2.13',
+                'java:17-spark:3.5.2-scala:2.12',
+                'java:17-spark:3.5.2-scala:2.13',
                 'java:17-spark:4.0.0-scala:2.13'
               ]
           requires:

@@ -4,7 +4,7 @@
 |Apache Airflow| 2.1.*, 2.2.*, 2.3.*                        |https://github.com/apache/airflow/releases|[README](./airflow/README.md)|Support for Airflow 1.x is deprecated|
 |Dagster| 0.13.8+                                    |https://github.com/dagster-io/dagster/releases|[README](./dagster/README.md)| |
 |dbt| 0.20+, 1.3                                 |https://github.com/dbt-labs/dbt-core/releases|[README](./dbt/README.md)| |
-|Apache Spark| 2.4.6, 3.1.2, 3.2.1+, 3.3.1+, 3.4.3, 3.5.1 |https://github.com/apache/spark/tags|[README](./spark/README.md)| |
+|Apache Spark| 2.4.6, 3.1.2, 3.2.1+, 3.3.1+, 3.4.3, 3.5.2 |https://github.com/apache/spark/tags|[README](./spark/README.md)| |
 |Apache Flink| 1.15.4, 1.16.2, 1.17.1, 1.18.1             |https://github.com/apache/flink/tags|[README](./flink/README.md)|  |
 
 ----
