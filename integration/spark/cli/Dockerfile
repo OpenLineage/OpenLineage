@@ -1,16 +1,17 @@
-FROM openjdk:11
+FROM amazoncorretto:17-alpine-jdk
 ADD integration/sql /usr/lib/openlineage/integration/sql
 ADD client/java /usr/lib/openlineage/client/java
 ADD integration/spark-extension-entrypoint /usr/lib/openlineage/integration/spark-extension-entrypoint
 ADD spec /usr/lib/openlineage/spec
 VOLUME "/root/.m2" "/root/.gradle" "/root/.cargo" "/var/run/docker.sock"
+RUN apk add --update alpine-sdk
+RUN apk --no-cache add curl cargo build-base bash
 RUN \
     cd /usr/lib/openlineage/client/java && \
-    ./gradlew --no-daemon shadowJar publishToMavenLocal &&  \
+    ./gradlew --no-daemon shadowJar publishToMavenLocal && \
     cd /usr/lib/openlineage/integration/spark-extension-entrypoint && \
-    ./gradlew --no-daemon build publishToMavenLocal &&  \
+    ./gradlew --no-daemon jar publishToMavenLocal &&  \
     cd /usr/lib/openlineage/integration/sql/iface-java && \
-    apt-get update && apt-get -y install build-essential && \
     ./script/compile.sh && \
     ./script/build.sh
 WORKDIR /usr/lib/openlineage/integration/spark
