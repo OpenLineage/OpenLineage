@@ -107,6 +107,7 @@ jobs:
               check_change integration/spark/ openlineage-java.yml openlineage-spark.yml
               check_change integration/spark-extension-interfaces/ openlineage-java.yml openlineage-spark.yml
               check_change integration/flink/ openlineage-java.yml openlineage-flink.yml
+              check_change integration/flink-native-listener/ openlineage-java.yml openlineage-flink.yml
               check_change client/python/ openlineage-python.yml
               check_change integration/common/ openlineage-python.yml
               check_change integration/airflow/ openlineage-python.yml

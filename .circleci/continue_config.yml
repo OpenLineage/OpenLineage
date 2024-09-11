@@ -1036,6 +1036,55 @@ jobs:
           path: build/libs
           destination: libs
 
+  build-integration-flink-native:
+    working_directory: ~/openlineage/integration/flink-native-listener
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    steps:
+      - *checkout_project_root
+      - when:
+          condition:
+            equal: [ inactive, << pipeline.parameters.nightly-run >> ] # TODO: should be active -> this is just testing
+          steps:
+            - run:
+                name: Generate cache key
+                command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
+            - restore_cache:
+                keys:
+                  - v1-integration-flink-native-listener-{{ checksum "/tmp/checksum.txt" }}
+            - run:
+                name: Build and install locally Flink from master branch
+                command: |
+                  cd /tmp 
+                  git clone https://github.com/apache/flink
+                  cd flink
+                  git checkout 3f39a7b0822db99161cf00db23a0e160cc8684b2
+                  ./mvnw clean install -DskipTests
+            - run:
+                name: Build and install locally flink-connector-kafka
+                command: |
+                  cd /tmp
+                  git clone https://github.com/pawel-big-lebowski/flink-connector-kafka
+                  cd flink-connector-kafka
+                  git checkout lineage-impl
+                  mvn clean install -DskipTests
+            - attach_workspace:
+                at: ~/
+            - run:
+                name: Run built-in lineage listener tests
+                command: |
+                  ./gradlew clean build
+            - persist_to_workspace:
+                root: ~/
+                paths:
+                  - .m2/repository/io/openlineage/flink-native-listener
+                  - openlineage/integration/flink-native-listener/build-cache
+                  - openlineage/integration/flink-native-listener/build/libs
+            - store_artifacts:
+                path: build/libs
+                destination: libs
+
   test-integration-flink:
     parameters:
       flink-version:
