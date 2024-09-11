@@ -1,4 +1,3 @@
-version: "3.3"
 services:
   proxy:
     build:
@@ -10,6 +9,8 @@ services:
       - ../lib/fluent/plugin/:/fluentd/openlineage-parser/
     ports:
       - "9880:9880"
+      - "24220:24220"
+      - "24231:24231"
     environment:
       - MARQUEZ_HTTP_ENDPOINT=http://marquez-api:5000/api/v1/lineage
     entrypoint: ["/bin/entrypoint.sh", "-p", "/fluentd/openlineage-parser"]
