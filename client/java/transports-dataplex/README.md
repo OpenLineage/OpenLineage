@@ -29,7 +29,7 @@ be emitted correctly.
 - `type` - string, must be `"dataplex"`. Required.
 - `endpoint` - string, specifies the endpoint to which events are sent, default value is `datalineage.googleapis.com:443`. Optional.
 - `projectId` - string, the project quota identifier. If not provided, it is determined based on user credentials. Optional.
-- `locations` - string, [Dataplex locations](https://cloud.google.com/dataplex/docs/locations). Optional, default:
+- `location` - string, [Dataplex location](https://cloud.google.com/dataplex/docs/locations). Optional, default:
   `"us"`.
 - `credentialsFile` - string, path
   to the [Service Account credentials JSON file](https://developers.google.com/workspace/guides/create-credentials#create_credentials_for_a_service_account).

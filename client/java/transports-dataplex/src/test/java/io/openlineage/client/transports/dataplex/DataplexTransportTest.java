@@ -32,7 +32,7 @@ class DataplexTransportTest {
     DataplexConfig config = new DataplexConfig();
 
     config.setProjectId("my-project");
-    config.setLocations("us");
+    config.setLocation("us");
 
     Transport transport = new DataplexTransport(config, producer);
     OpenLineageClient client = new OpenLineageClient(transport);
@@ -57,7 +57,7 @@ class DataplexTransportTest {
     DataplexConfig config = new DataplexConfig();
 
     config.setProjectId("my-project");
-    config.setLocations("us");
+    config.setLocation("us");
 
     Transport transport = new DataplexTransport(config, producer);
     OpenLineageClient client = new OpenLineageClient(transport);

@@ -4,10 +4,9 @@
 */
 package io.openlineage.client.transports.dataplex;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.MergeConfig;
 import io.openlineage.client.transports.TransportConfig;
-import java.util.Map;
+
 import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,7 +25,7 @@ public class DataplexConfig implements TransportConfig, MergeConfig<DataplexConf
 
   @Getter @Setter private @Nullable String credentialsFile;
 
-  @Getter @Setter private @Nullable String locations;
+  @Getter @Setter private @Nullable String location;
 
 
   @Override
@@ -35,6 +34,6 @@ public class DataplexConfig implements TransportConfig, MergeConfig<DataplexConf
         mergePropertyWith(endpoint, other.endpoint),
         mergePropertyWith(projectId, other.projectId),
         mergePropertyWith(credentialsFile, other.credentialsFile),
-        mergePropertyWith(locations, other.locations));
+        mergePropertyWith(location, other.location));
   }
 }

@@ -5,7 +5,6 @@
 package io.openlineage.client.transports.dataplex;
 
 import com.google.api.gax.core.FixedCredentialsProvider;
-import com.google.api.gax.rpc.FixedHeaderProvider;
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
@@ -46,7 +45,7 @@ public class DataplexTransport extends Transport implements Closeable {
         String.format(
             "projects/%s/locations/%s",
             getProjectId(config, createSettings(config)),
-            config.getLocations() != null ? config.getLocations() : "us");
+            config.getLocation() != null ? config.getLocation() : "us");
   }
 
   @Override
