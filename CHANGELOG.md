@@ -8,6 +8,8 @@
   *Emit events in parallel for composite transport. Running in parallel is a default behaviour `continueOnFailure` set to `true`. Default value of `continueOnFailure` got changed from `false` to `true`.*
 * **Spark: Collect `ScanReport` and `CommitReport` in OpenLineage events when dealing with Iceberg tables.** [`#3256`](https://github.com/OpenLineage/OpenLineage/pull/3256) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
   *Collects additional Iceberg metrics for datasets read or written through the library. Visit `Dataset Metrics` docs for more details.*
+* **Flink: Experimental version for flink native lineage listener.** [`#3099`](https://github.com/OpenLineage/OpenLineage/pull/3099) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *New flink listener to extract lineage through native Flink interfaces. Supports Flink SQL. Requires Flink 2.0.*
 
 ## [1.25.0](https://github.com/OpenLineage/OpenLineage/compare/1.24.2...1.25.0) - 2024-11-25
 

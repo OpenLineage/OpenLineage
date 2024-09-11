@@ -1036,6 +1036,43 @@ jobs:
           path: build/libs
           destination: libs
 
+  build-integration-flink-native:
+    working_directory: ~/openlineage/integration/flink-native-listener
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
+      - restore_cache:
+          keys:
+            - v1-integration-flink-native-listener-{{ checksum "/tmp/checksum.txt" }}
+      - run:
+          name: Build and install locally flink-connector-kafka
+          command: |
+            cd /tmp
+            git clone https://github.com/lvyanquan/flink-connector-kafka
+            cd flink-connector-kafka
+            git checkout 096ab5a # Depends on https://github.com/apache/flink-connector-kafka/pull/140
+            mvn clean install -DskipTests
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Run built-in lineage listener tests
+          command: |
+            ./gradlew clean build
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - .m2/repository/io/openlineage/flink-native-listener
+            - openlineage/integration/flink-native-listener/build-cache
+            - openlineage/integration/flink-native-listener/build/libs
+      - store_artifacts:
+          path: build/libs
+          destination: libs
+
   test-integration-flink:
     parameters:
       flink-version:
