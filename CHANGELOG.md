@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.26.0...HEAD)
 
+### Added
+
+* **Flink: Experimental version for flink native lineage listener.** [`#3099`](https://github.com/OpenLineage/OpenLineage/pull/3099) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *New flink listener to extract lineage through native Flink interfaces. Supports Flink SQL. Requires Flink 2.0.*
+
 
 ## [1.26.0](https://github.com/OpenLineage/OpenLineage/compare/1.25.0...1.26.0) - 2024-12-20
 
