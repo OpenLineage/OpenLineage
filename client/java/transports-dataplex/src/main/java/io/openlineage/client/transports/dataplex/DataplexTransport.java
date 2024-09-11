@@ -97,9 +97,6 @@ public class DataplexTransport extends Transport implements Closeable {
         builder.setCredentialsProvider(FixedCredentialsProvider.create(googleCredentials));
       }
     }
-    if (config.getHeaders() != null && !config.getHeaders().isEmpty()) {
-      builder.setHeaderProvider(FixedHeaderProvider.create(config.getHeaders()));
-    }
 
     return builder.build();
   }

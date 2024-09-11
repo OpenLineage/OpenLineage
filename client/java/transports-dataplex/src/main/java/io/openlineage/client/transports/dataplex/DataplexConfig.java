@@ -28,10 +28,6 @@ public class DataplexConfig implements TransportConfig, MergeConfig<DataplexConf
 
   @Getter @Setter private @Nullable String locations;
 
-  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  @Getter
-  @Setter
-  private @Nullable Map<String, String> headers;
 
   @Override
   public DataplexConfig mergeWithNonNull(DataplexConfig other) {
@@ -39,7 +35,6 @@ public class DataplexConfig implements TransportConfig, MergeConfig<DataplexConf
         mergePropertyWith(endpoint, other.endpoint),
         mergePropertyWith(projectId, other.projectId),
         mergePropertyWith(credentialsFile, other.credentialsFile),
-        mergePropertyWith(locations, other.locations),
-        mergePropertyWith(headers, other.headers));
+        mergePropertyWith(locations, other.locations));
   }
 }

@@ -36,7 +36,6 @@ be emitted correctly.
   Optional, if not
   provided [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials)
   are used
-- `headers` - dictionary specifying request headers. Optional.
 
 ### Behavior
 
