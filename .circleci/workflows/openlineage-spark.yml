@@ -95,6 +95,14 @@ workflows:
               spark-version: [ '3.4.2', '3.5.2' ]
           requires:
             - approval-integration-spark
+          post-steps:
+            - when:
+                condition:
+                  equal: [ active, << pipeline.parameters.nightly-run >> ]
+                steps:
+                  - slack/notify:
+                      event: fail
+                      template: basic_fail_1
       - integration-test-integration-spark:
           filters:
             tags:
@@ -120,16 +128,32 @@ workflows:
               ]
           requires:
             - approval-integration-spark
+          post-steps:
+            - when:
+                condition:
+                  equal: [ active, << pipeline.parameters.nightly-run >> ]
+                steps:
+                  - slack/notify:
+                      event: fail
+                      template: basic_fail_1
       - configurable-integration-test-spark:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           context: integration-tests
-      - slack-notify:
+          post-steps:
+            - when:
+                condition:
+                  equal: [ active, << pipeline.parameters.nightly-run >> ]
+                steps:
+                  - slack/notify:
+                      event: fail
+                      template: basic_fail_1
+      - slack-notify-success:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-          context: slack-secrets
+          context: integration-tests
           requires:
             - integration-test-integration-spark
             - integration-test-databricks-integration-spark
@@ -140,7 +164,7 @@ workflows:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           requires:
-            - slack-notify
+            - slack-notify-success
       - release-integration-spark:
           context: release
           requires:
