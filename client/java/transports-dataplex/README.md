@@ -27,7 +27,7 @@ be emitted correctly.
 ### Configuration
 
 - `type` - string, must be `"dataplex"`. Required.
-- `endpoint` - string, specifies the endpoint to which events are sent. Optional.
+- `endpoint` - string, specifies the endpoint to which events are sent, default value is `datalineage.googleapis.com:443`. Optional.
 - `projectId` - string, the project quota identifier. If not provided, it is determined based on user credentials. Optional.
 - `locations` - string, [Dataplex locations](https://cloud.google.com/dataplex/docs/locations). Optional, default:
   `"us"`.
@@ -39,6 +39,6 @@ be emitted correctly.
 
 ### Behavior
 
-- Events are serialized to JSON, included as a part of `gRPC` request, and then dispatched to the `Dataplex` endpoint.
+- Events are serialized to JSON, included as part of a `gRPC` request, and then dispatched to the `Dataplex` endpoint.
 - Two constructors are available: one accepting both `SyncLineageClient` and `DataplexConfig` and another solely accepting
   `DataplexConfig`.
