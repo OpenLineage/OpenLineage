@@ -16,7 +16,10 @@ plugins {
     id 'com.github.johnrengelman.shadow'
     id 'io.franzbecker.gradle-lombok'
     id 'io.openlineage.common-config'
+    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
+
+group = "io.openlineage"
 
 archivesBaseName='openlineage-flink'
 
@@ -59,7 +62,7 @@ def reportsDir = "${buildDir}/reports"
 def coverageDir = "${reportsDir}/coverage"
 
 jacoco {
-    toolVersion = '0.8.5'
+    toolVersion = '0.8.12'
     reportsDir = file(coverageDir)
 }
 
@@ -144,14 +147,13 @@ publishing {
                 "version": project.property("version")
         ]
     }
+}
 
+nexusPublishing {
     repositories {
-        maven {
-            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
-            credentials {
-                username = System.getenv('RELEASE_USERNAME')
-                password = System.getenv('RELEASE_PASSWORD')
-            }
+        sonatype {
+            username = System.getenv('RELEASE_USERNAME')
+            password = System.getenv('RELEASE_PASSWORD')
         }
     }
 }

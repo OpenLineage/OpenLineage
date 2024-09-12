@@ -19,6 +19,7 @@ import static io.openlineage.spark.agent.SparkContainerUtils.SPARK_DOCKER_CONTAI
 import static io.openlineage.spark.agent.SparkContainerUtils.addSparkConfig;
 import static io.openlineage.spark.agent.SparkContainerUtils.mountFiles;
 import static io.openlineage.spark.agent.SparkContainerUtils.mountPath;
+import static io.openlineage.spark.agent.SparkTestUtils.mapToSchemaRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,6 +30,7 @@ import static org.testcontainers.containers.Network.newNetwork;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.spark.agent.SparkTestUtils.SchemaRecord;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -50,8 +52,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.ClearType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MockServerContainer;
@@ -81,7 +81,6 @@ class SparkScalaContainerTest {
 
   private static GenericContainer<?> spark;
   private static MockServerClient mockServerClient;
-  private static final Logger logger = LoggerFactory.getLogger(SparkContainerIntegrationTest.class);
   private static final String SPARK_3_OR_ABOVE = "^[3-9].*";
   private static final String SPARK_3_ONLY = "^3.*";
   private static final String SCALA_2_12 = "^2.12.*";
@@ -109,7 +108,7 @@ class SparkScalaContainerTest {
     try {
       if (spark != null) spark.stop();
     } catch (Exception e) {
-      logger.error("Unable to shut down pyspark container", e);
+      log.error("Unable to shut down pyspark container", e);
     }
   }
 
@@ -118,7 +117,7 @@ class SparkScalaContainerTest {
     try {
       openLineageClientMockContainer.stop();
     } catch (Exception e) {
-      logger.error("Unable to shut down openlineage client container", e);
+      log.error("Unable to shut down openlineage client container", e);
     }
     network.close();
   }
@@ -456,13 +455,13 @@ class SparkScalaContainerTest {
 
     assertFalse(nonEmptyInputEvents.isEmpty());
 
-    List<SchemaUtils.SchemaRecord> expectedInputSchema =
+    List<SchemaRecord> expectedInputSchema =
         Arrays.asList(
-            new SchemaUtils.SchemaRecord("data", "binary"),
-            new SchemaUtils.SchemaRecord("streamName", "string"),
-            new SchemaUtils.SchemaRecord("partitionKey", "string"),
-            new SchemaUtils.SchemaRecord("sequenceNumber", "string"),
-            new SchemaUtils.SchemaRecord("approximateArrivalTimestamp", "timestamp"));
+            new SchemaRecord("data", "binary"),
+            new SchemaRecord("streamName", "string"),
+            new SchemaRecord("partitionKey", "string"),
+            new SchemaRecord("sequenceNumber", "string"),
+            new SchemaRecord("approximateArrivalTimestamp", "timestamp"));
 
     nonEmptyInputEvents.forEach(
         event -> {
@@ -471,7 +470,7 @@ class SparkScalaContainerTest {
           assertEquals("kinesis://localstack:4566", event.getInputs().get(0).getNamespace());
           assertEquals(
               expectedInputSchema,
-              SchemaUtils.mapToSchemaRecord(event.getInputs().get(0).getFacets().getSchema()));
+              mapToSchemaRecord(event.getInputs().get(0).getFacets().getSchema()));
         });
   }
 
@@ -553,12 +552,12 @@ class SparkScalaContainerTest {
 
     assertFalse(nonEmptySourceEvents.isEmpty());
 
-    List<SchemaUtils.SchemaRecord> expectedInputSchema =
+    List<SchemaRecord> expectedInputSchema =
         Arrays.asList(
-            new SchemaUtils.SchemaRecord("_id", "string"),
-            new SchemaUtils.SchemaRecord("name", "string"),
-            new SchemaUtils.SchemaRecord("date", "timestamp"),
-            new SchemaUtils.SchemaRecord("location", "string"));
+            new SchemaRecord("_id", "string"),
+            new SchemaRecord("name", "string"),
+            new SchemaRecord("date", "timestamp"),
+            new SchemaRecord("location", "string"));
 
     nonEmptySourceEvents.forEach(
         nonEmptyInputEvent -> {
@@ -569,8 +568,7 @@ class SparkScalaContainerTest {
               nonEmptyInputEvent.getInputs().get(0).getNamespace());
           assertEquals(
               expectedInputSchema,
-              SchemaUtils.mapToSchemaRecord(
-                  nonEmptyInputEvent.getInputs().get(0).getFacets().getSchema()));
+              mapToSchemaRecord(nonEmptyInputEvent.getInputs().get(0).getFacets().getSchema()));
         });
 
     spark.stop();

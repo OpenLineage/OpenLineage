@@ -25,6 +25,15 @@ pub struct ContextFrame {
     // symbol. Only those symbols are meaningful outside of the processed query.
     aliases: AliasTable,
     pub column_ancestry: HashMap<ColumnMeta, ColumnAncestors>,
+    pub dependencies: HashSet<DbTableMeta>,
+    pub cte_dependencies: HashMap<String, CteDependency>,
+    pub is_main_body: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct CteDependency {
+    pub is_used: bool,
+    pub deps: HashSet<DbTableMeta>,
 }
 
 impl ContextFrame {
@@ -34,6 +43,9 @@ impl ContextFrame {
             column: None,
             aliases: AliasTable::new(),
             column_ancestry: HashMap::new(),
+            dependencies: HashSet::new(),
+            cte_dependencies: HashMap::new(),
+            is_main_body: true,
         }
     }
 }
@@ -62,7 +74,10 @@ pub struct Context<'a> {
     // Some databases allow to specify default schema. When schema for table is not referenced,
     // we're using this default as it.
     default_schema: Option<String>,
-    // Dialect used in this statements.
+    // Some databases allow to specify default database. When database for table is not referenced,
+    // we're using this default as it.
+    default_database: Option<String>,
+    // Dialect used in these statements.
     dialect: &'a dyn CanonicalDialect,
     // Used to generate unique names for unaliased columns created from compound expressions
     column_id: u32,
@@ -76,17 +91,23 @@ impl<'a> Context<'a> {
             outputs: HashSet::new(),
             frames: vec![ContextFrame::new()],
             default_schema: None,
+            default_database: None,
             dialect: &SnowflakeDialect,
             column_id: 0,
         }
     }
 
-    pub fn new(dialect: &dyn CanonicalDialect, default_schema: Option<String>) -> Context {
+    pub fn new(
+        dialect: &dyn CanonicalDialect,
+        default_schema: Option<String>,
+        default_database: Option<String>,
+    ) -> Context {
         Context {
             inputs: HashSet::new(),
             outputs: HashSet::new(),
             frames: vec![ContextFrame::new()],
             default_schema,
+            default_database,
             dialect,
             column_id: 0,
         }
@@ -95,7 +116,12 @@ impl<'a> Context<'a> {
     // --- Table Lineage ---
 
     pub fn add_input(&mut self, table: Vec<Ident>) {
-        let name = DbTableMeta::new(table, self.dialect, self.default_schema.clone());
+        let name = DbTableMeta::new(
+            table,
+            self.dialect,
+            self.default_schema.clone(),
+            self.default_database.clone(),
+        );
         if !self.is_table_alias(&name) {
             self.inputs.insert(name);
         }
@@ -111,6 +137,7 @@ impl<'a> Context<'a> {
             table,
             self.dialect,
             self.default_schema.clone(),
+            self.default_database.clone(),
             provided_namespace,
             provided_field_schema,
             false,
@@ -121,7 +148,12 @@ impl<'a> Context<'a> {
     }
 
     pub fn add_output(&mut self, output: Vec<Ident>) {
-        let name = DbTableMeta::new(output, self.dialect, self.default_schema.clone());
+        let name = DbTableMeta::new(
+            output,
+            self.dialect,
+            self.default_schema.clone(),
+            self.default_database.clone(),
+        );
         if !self.is_table_alias(&name) {
             self.outputs.insert(name);
         }
@@ -137,6 +169,7 @@ impl<'a> Context<'a> {
             output,
             self.dialect,
             self.default_schema.clone(),
+            self.default_database.clone(),
             provided_namespace,
             provided_field_schema,
             false,
@@ -174,8 +207,25 @@ impl<'a> Context<'a> {
         if let Some(recent) = self.frames.last() {
             frame.table.clone_from(&recent.table);
             frame.column.clone_from(&recent.column);
+            frame.is_main_body.clone_from(&recent.is_main_body);
         }
         self.frames.push(frame);
+    }
+
+    pub fn is_main(&mut self) -> bool {
+        if let Some(frame) = self.frames.last_mut() {
+            return frame.is_main_body;
+        }
+
+        false
+    }
+
+    pub fn set_frame_to_main_body(&mut self) {
+        self.frames.last_mut().unwrap().is_main_body = true;
+    }
+
+    pub fn unset_frame_to_main_body(&mut self) {
+        self.frames.last_mut().unwrap().is_main_body = false;
     }
 
     pub fn pop_frame(&mut self) -> Option<ContextFrame> {
@@ -184,8 +234,55 @@ impl<'a> Context<'a> {
 
     pub fn add_table_alias(&mut self, table: DbTableMeta, alias: Vec<Ident>) {
         if let Some(frame) = self.frames.last_mut() {
-            let alias = DbTableMeta::new(alias, self.dialect, self.default_schema.clone());
+            let alias = DbTableMeta::new(
+                alias,
+                self.dialect,
+                self.default_schema.clone(),
+                self.default_database.clone(),
+            );
             frame.aliases.add_table_alias(table, alias);
+        }
+    }
+
+    pub fn add_table_dependency(&mut self, table: Vec<Ident>) {
+        let name = DbTableMeta::new(
+            table,
+            self.dialect,
+            self.default_schema.clone(),
+            self.default_database.clone(),
+        );
+
+        if let Some(frame) = self.frames.last_mut() {
+            frame.dependencies.extend(vec![name]);
+        }
+    }
+
+    pub fn has_alias(&self, table: String) -> bool {
+        for frame in self.frames.iter().rev() {
+            if frame.cte_dependencies.contains_key(&table) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    pub fn mark_table_as_used(&mut self, table: Vec<Ident>) {
+        let name = DbTableMeta::new(
+            table,
+            self.dialect,
+            self.default_schema.clone(),
+            self.default_database.clone(),
+        );
+
+        for frame in self.frames.iter_mut().rev() {
+            if frame.cte_dependencies.contains_key(&name.qualified_name()) {
+                if let Some(cte) = frame.cte_dependencies.get_mut(&name.qualified_name()) {
+                    cte.is_used = true;
+                }
+
+                return;
+            }
         }
     }
 
@@ -205,6 +302,18 @@ impl<'a> Context<'a> {
         let name = self.next_unnamed_column();
         if let Some(frame) = self.frames.last_mut() {
             frame.column.replace(ColumnMeta::new(name, None));
+        }
+    }
+
+    pub fn set_default_database(&mut self, database: Option<String>) {
+        if let Some(db) = database {
+            self.default_database = Some(db);
+        }
+    }
+
+    pub fn set_default_schema(&mut self, schema: Option<String>) {
+        if let Some(sch) = schema {
+            self.default_schema = Some(sch);
         }
     }
 
@@ -249,11 +358,38 @@ impl<'a> Context<'a> {
         }
 
         frame.column_ancestry = result;
+        frame.dependencies.extend(old.dependencies);
+        frame.is_main_body = old.is_main_body;
     }
 
     pub fn collect(&mut self, mut old: ContextFrame) {
         if let Some(frame) = self.frames.last_mut() {
             frame.column_ancestry.extend(old.column_ancestry.drain());
+            frame.dependencies.extend(old.dependencies);
+            frame.is_main_body = old.is_main_body;
+        }
+    }
+
+    pub fn collect_inputs(
+        &mut self,
+        cte_deps: HashMap<String, CteDependency>,
+        deps: HashSet<DbTableMeta>,
+    ) {
+        if cte_deps.is_empty() {
+            for table in deps {
+                self.inputs.insert(table.clone());
+            }
+            return;
+        }
+
+        for (_key, value) in cte_deps {
+            if !value.is_used {
+                continue;
+            }
+
+            for table in value.deps {
+                self.inputs.insert(table.clone());
+            }
         }
     }
 
@@ -268,11 +404,88 @@ impl<'a> Context<'a> {
                 })
                 .collect::<HashMap<ColumnMeta, ColumnAncestors>>();
             frame.column_ancestry.extend(old_ancestry);
+            frame.dependencies.extend(old.dependencies);
+            frame.cte_dependencies.extend(old.cte_dependencies);
+            frame.is_main_body = old.is_main_body;
+        }
+    }
+
+    pub fn collect_lower_nested_dependencies(&mut self, cte_name: String) {
+        if let Some(frame) = self.frames.last_mut() {
+            let deps_in_one_level_below: Vec<CteDependency> = frame
+                .cte_dependencies
+                .values()
+                .cloned()
+                .collect::<Vec<CteDependency>>();
+
+            if deps_in_one_level_below.is_empty() {
+                return;
+            }
+
+            let mut resolved_dependencies = HashSet::new();
+
+            for dep in deps_in_one_level_below {
+                if !dep.is_used {
+                    continue;
+                }
+
+                resolved_dependencies.extend(dep.deps.clone());
+            }
+
+            frame.cte_dependencies = HashMap::new();
+            frame.cte_dependencies.insert(
+                cte_name,
+                CteDependency {
+                    is_used: false,
+                    deps: resolved_dependencies,
+                },
+            );
+
+            frame.dependencies = HashSet::new();
+        }
+    }
+
+    pub fn adjust_cte_dependencies(&mut self, cte_name: String) {
+        // filter upper level deps
+        let size = self.frames.iter().clone().len();
+
+        let dependencies = self.frames[size - 1].dependencies.clone();
+        let cte_dependencies = self.frames[size - 1].cte_dependencies.clone();
+
+        let mut resolved_dependencies = HashSet::new();
+
+        for dependency in dependencies {
+            if cte_name.clone() == dependency.name {
+                continue;
+            }
+
+            if cte_dependencies.contains_key(&dependency.name) {
+                resolved_dependencies
+                    .extend(cte_dependencies.get(&dependency.name).unwrap().clone().deps);
+                continue;
+            }
+
+            resolved_dependencies.insert(dependency.clone());
+        }
+
+        if let Some(frame) = self.frames.last_mut() {
+            frame.cte_dependencies.insert(
+                cte_name.clone(),
+                CteDependency {
+                    is_used: false,
+                    deps: resolved_dependencies,
+                },
+            );
+            frame.dependencies = HashSet::new();
         }
     }
 
     pub fn collect_aliases(&mut self, old: &ContextFrame) {
         if let Some(frame) = self.frames.last_mut() {
+            frame.is_main_body = old.is_main_body;
+            frame.dependencies.extend(old.dependencies.clone());
+            frame.cte_dependencies.extend(old.cte_dependencies.clone());
+
             for (alias, t) in old.aliases.tables() {
                 frame.aliases.add_table_alias(t.clone(), alias.clone());
             }
@@ -311,6 +524,10 @@ impl<'a> Context<'a> {
 
     pub fn default_schema(&self) -> &Option<String> {
         &self.default_schema
+    }
+
+    pub fn default_database(&self) -> &Option<String> {
+        &self.default_database
     }
 
     // --- Utils ---
@@ -409,15 +626,15 @@ mod tests {
                     &HashSet::from([
                         ColumnMeta::new(
                             "x".to_string(),
-                            Some(DbTableMeta::new_default_dialect("t2".to_string()))
+                            Some(DbTableMeta::new_default_dialect("t2".to_string())),
                         ),
                         ColumnMeta::new(
                             "y".to_string(),
-                            Some(DbTableMeta::new_default_dialect("t1".to_string()))
+                            Some(DbTableMeta::new_default_dialect("t1".to_string())),
                         ),
                         ColumnMeta::new(
                             "b".to_string(),
-                            Some(DbTableMeta::new_default_dialect("t1".to_string()))
+                            Some(DbTableMeta::new_default_dialect("t1".to_string())),
                         ),
                     ])
                 ),
@@ -425,7 +642,7 @@ mod tests {
                     &ColumnMeta::new("d".to_string(), None),
                     &HashSet::from([ColumnMeta::new(
                         "b".to_string(),
-                        Some(DbTableMeta::new_default_dialect("t1".to_string()))
+                        Some(DbTableMeta::new_default_dialect("t1".to_string())),
                     ),])
                 ),
             ]
@@ -464,21 +681,21 @@ mod tests {
                 (
                     &ColumnMeta::new(
                         "c".to_string(),
-                        Some(DbTableMeta::new_default_dialect("alias".to_string()))
+                        Some(DbTableMeta::new_default_dialect("alias".to_string())),
                     ),
                     &HashSet::from([ColumnMeta::new(
                         "a".to_string(),
-                        Some(DbTableMeta::new_default_dialect("table".to_string()))
+                        Some(DbTableMeta::new_default_dialect("table".to_string())),
                     ),])
                 ),
                 (
                     &ColumnMeta::new(
                         "d".to_string(),
-                        Some(DbTableMeta::new_default_dialect("alias".to_string()))
+                        Some(DbTableMeta::new_default_dialect("alias".to_string())),
                     ),
                     &HashSet::from([ColumnMeta::new(
                         "b".to_string(),
-                        Some(DbTableMeta::new_default_dialect("table".to_string()))
+                        Some(DbTableMeta::new_default_dialect("table".to_string())),
                     ),])
                 ),
             ]

@@ -21,12 +21,13 @@ idea {
 }
 
 ext {
-    assertjVersion = "3.25.1"
+    assertjVersion = "3.26.3"
     deltaVersion = "2.4.0"
     icebergVersion = "1.3.1"
     jacksonVersion = "2.15.3"
-    junit5Version = "5.10.1"
+    junit5Version = "5.11.0"
     mockitoVersion = "4.11.0"
+    micrometerVersion = "1.13.3"
 
     sparkVersion = project.findProperty("spark34.spark.version")
     scalaBinaryVersion = project.findProperty("scala.binary.version")
@@ -40,6 +41,7 @@ dependencies {
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.iceberg:iceberg-spark-runtime-3.4_${scalaBinaryVersion}:${icebergVersion}")
     compileOnly("io.delta:delta-core_${scalaBinaryVersion}:${deltaVersion}")
+    compileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     // TODO: Replace this with 'testImplementation'
     testFixturesApi(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
@@ -51,6 +53,7 @@ dependencies {
     testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
     testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
+    testFixturesApi("io.micrometer:micrometer-core:${micrometerVersion}")
 
     // Scala 2.12
     scala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
@@ -59,9 +62,11 @@ dependencies {
     scala212CompileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")
     scala212CompileOnly("org.apache.iceberg:iceberg-spark-runtime-3.4_2.12:${icebergVersion}")
     scala212CompileOnly("io.delta:delta-core_2.12:${deltaVersion}")
+    scala212CompileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     testScala212Implementation("io.delta:delta-core_2.12:${deltaVersion}")
     testScala212Implementation("org.apache.iceberg:iceberg-spark-runtime-3.4_2.12:${icebergVersion}")
+    testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testScala212Implementation("org.apache.spark:spark-sql_2.12:${sparkVersion}")
     testScala212Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala212Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
@@ -76,10 +81,12 @@ dependencies {
     scala213CompileOnly("org.apache.spark:spark-sql_2.13:${sparkVersion}")
     scala213CompileOnly("org.apache.iceberg:iceberg-spark-runtime-3.4_2.13:${icebergVersion}")
     scala213CompileOnly("io.delta:delta-core_2.13:${deltaVersion}")
+    scala213CompileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     // Replace 'testFixturesApi' with 'testScala213TestImplementation'
     testScala213Implementation("io.delta:delta-core_2.13:${deltaVersion}")
     testScala213Implementation("org.apache.iceberg:iceberg-spark-runtime-3.4_2.13:${icebergVersion}")
+    testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testScala213Implementation("org.apache.spark:spark-sql_2.13:${sparkVersion}")
     testScala213Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala213Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")

@@ -5,3 +5,10 @@
  */
 
 rootProject.name = 'openlineage-sql-java'
+
+buildCache {
+    local {
+        directory = new File(rootDir, 'build-cache')
+    }
+}
+

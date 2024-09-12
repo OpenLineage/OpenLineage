@@ -1,35 +1,110 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.19.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.22.0...HEAD)
+
+## [1.22.0](https://github.com/OpenLineage/OpenLineage/compare/1.21.1...1.22.0) - 2024-09-05
+
 ### Added
-* **Spark: compile & test Spark integration on Java 17.** [`#2828`](https://github.com/OpenLineage/OpenLineage/pull/2828) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Spark integration is always compiled with Java 17, while tests are running on both Java 8 and Java 17 according to the configuration.*
-* **Spark: Support preview release of Spark 4.0 .** [`#2854`](https://github.com/OpenLineage/OpenLineage/pull/2854) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Include Spark 4.0 preview release in the integration tests.*
-* **Spark: add handling for `Window`** [`#2901`](https://github.com/OpenLineage/OpenLineage/pull/2901) [@tnazarew](https://github.com/tnazarew)  
-  *Adds handling for `Window`-type nodes of a logical plan.*
+* **SQL: add support for `USE` statement with different syntaxes** [`#2944`](https://github.com/OpenLineage/OpenLineage/pull/2944) [@kacpermuda](https://github.com/kacpermuda)  
+    *Adjusts our Context so that it can use the new support for this statement in the parser and pass it to a number of queries.*
+* **Spark: add script to build Spark dependencies** [`#3044`](https://github.com/OpenLineage/OpenLineage/pull/3044) [@arturowczarek](https://github.com/arturowczarek)  
+    *Adds a script to rebuild dependencies automatically following releases.*
+* **Website: versionable docs** [`#3007`](https://github.com/OpenLineage/OpenLineage/pull/3007) [`#3023`](https://github.com/OpenLineage/OpenLineage/pull/3023) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds a GitHub action that creates a new Docusaurus version on a tag push, verifiable using the openlineage-site repo. Implements a monorepo approach in a new `website` directory.*
 
 ### Fixed
-* **Spark: fix issue with kafka source when saving with for each batch method** [`#2868`](https://github.com/OpenLineage/OpenLineage/pull/2868) [@imbruced](https://github.com/Imbruced)    
-    *Fixes issue when spark is in the streaming mode, then kafka input is in project plan which was filtered, hence input for kafka was not present in the event*    
+* **SQL: add support for `SingleQuotedString` in `Identifier()`** [`#3035`](https://github.com/OpenLineage/OpenLineage/pull/3035) [@kacpermuda](https://github.com/kacpermuda)  
+    *Single quoted strings were being treated differently than strings with no quotes, double quotes, or backticks.*
+* **SQL: support `IDENTIFIER` function instead of treating it like table name** [`#2999`](https://github.com/OpenLineage/OpenLineage/pull/2999) [@kacpermuda](https://github.com/kacpermuda)  
+    *Adds support for this identifier in SELECT, MERGE, UPDATE, and DELETE statements. For now, only static identifiers are supported. When a variable is used, this table is removed from lineage to avoid emitting incorrect lineage.*
+* **Spark: fix issue with only one table in inputs from SQL query while reading from JDBC** [`#2918`](https://github.com/OpenLineage/OpenLineage/pull/2918) [@Imbruced](https://github.com/Imbruced)  
+    *Events created did not contain the correct input table when the query contained multiple tables.*
+* **Spark: fix AWS Glue jobs naming for RDD events** [`#3020`](https://github.com/OpenLineage/OpenLineage/pull/3020) [@arturowczarek](https://github.com/arturowczarek)  
+    *The naming for RDD jobs now uses the same code as SQL and Application events.*
+
+## [1.21.1](https://github.com/OpenLineage/OpenLineage/compare/1.20.5...1.21.1) - 2024-08-29
+
+### Added
+* **Spec: add GCP Dataproc facet** [`#2987`](https://github.com/OpenLineage/OpenLineage/pull/2987) [@tnazarew](https://github.com/tnazarew)  
+    *Registers the Google Cloud Platform Dataproc run facet.*
+
+### Fixed
+* **Airflow: update SQL integration code to work with latest sqlparser-rs main** [`#2983`](https://github.com/OpenLineage/OpenLineage/pull/2983) [@kacpermuda](https://github.com/kacpermuda)  
+    *Adjusts the SQL integration after our sqlparser-rs fork has been updated to the latest main.*
+* **Spark: fix AWS Glue jobs naming for SQL events** [`#3001`](https://github.com/OpenLineage/OpenLineage/pull/3001) [@arturowczarek](https://github.com/arturowczarek)  
+    *SQL events now properly use the names of the jobs retrieved from AWS Glue.*
+* **Spark: fix issue with column lineage when using delta merge into command** [`#2986`](https://github.com/OpenLineage/OpenLineage/pull/2986) [@Imbruced](https://github.com/Imbruced)  
+    *A view instance of a node is now included when gathering data sources for input columns.*
+* **Spark: minor Spark filters refactor** [`#2990`](https://github.com/OpenLineage/OpenLineage/pull/2990) [@arturowczarek](https://github.com/arturowczarek)  
+    *Fixes a number of minor issues.*
+* **Spark: Iceberg tables in AWS Glue have slashes instead of dots in symlinks** [`#2984`](https://github.com/OpenLineage/OpenLineage/pull/2984) [@arturowczarek](https://github.com/arturowczarek)  
+    *They should use slashes and the prefix `table/`.*
+* **Spark: lineage for Iceberg datasets that are present outside of Spark's catalog is now present** [`#2937`](https://github.com/OpenLineage/OpenLineage/pull/2937) [@d-m-h](https://github.com/d-m-h)
+    *Previously, reading Iceberg datasets outside the configured Spark catalog prevented the datasets from being present in the `inputs` property of the `RunEvent`.*
+
+## [1.20.5](https://github.com/OpenLineage/OpenLineage/compare/1.19.0...1.20.5) - 2024-08-23
+
+### Added
+* **Python: add `CompositeTransport`** [`#2925`](https://github.com/OpenLineage/OpenLineage/pull/2925) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds a `CompositeTransport` that can accept other transport configs to instantiate transports and use them to emit events.*
+* **Spark: compile & test Spark integration on Java 17** [`#2828`](https://github.com/OpenLineage/OpenLineage/pull/2828) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *The Spark integration is always compiled with Java 17, while tests are running on both Java 8 and Java 17 according to the configuration.*
+* **Spark: support preview release of Spark 4.0** [`#2854`](https://github.com/OpenLineage/OpenLineage/pull/2854) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Includes the Spark 4.0 preview release in the integration tests.*
+* **Spark: add handling for `Window`** [`#2901`](https://github.com/OpenLineage/OpenLineage/pull/2901) [@tnazarew](https://github.com/tnazarew)  
+    *Adds handling for `Window`-type nodes of a logical plan.*
+* **Spark: extract and send events with raw SQL from Spark** [`#2913`](https://github.com/OpenLineage/OpenLineage/pull/2913) [@Imbruced](https://github.com/Imbruced)  
+    *Adds a parser that traverses `QueryExecution` to get the SQL query used from the SQL field with a BFS algorithm.*
+* **Spark: support Mongostream source** [`#2887`](https://github.com/OpenLineage/OpenLineage/pull/2887) [@Imbruced](https://github.com/Imbruced)  
+    *Adds a Mongo streaming visitor and tests.*
+* **Spark: new mechanism for disabling facets** [`#2912`](https://github.com/OpenLineage/OpenLineage/pull/2912) [@arturowczarek](https://github.com/arturowczarek)  
+    *The mechanism makes `FacetConfig` accept the disabled flag for any facet instead of passing them as a list.*
+* **Spark: support Kinesis source** [`#2906`](https://github.com/OpenLineage/OpenLineage/pull/2906) [@Imbruced](https://github.com/Imbruced)  
+    *Adds a Kinesis class handler in the streaming source builder.*
+* **Spark: extract `DatasetIdentifier` from extension `LineageNode`** [`#2900`](https://github.com/OpenLineage/OpenLineage/pull/2900) [@ddebowczyk92](https://github.com/ddebowczyk92)  
+    *Adds support for cases in which `LogicalRelation` has a grandChild node that implements the `LineageRelation` interface.*
+* **Spark: extract Dataset from underlying `BaseRelation`** [`#2893`](https://github.com/OpenLineage/OpenLineage/pull/2893) [@ddebowczyk92](https://github.com/ddebowczyk92)  
+    *`DatasetIdentifier` is now extracted from the underlying node of `LogicalRelation`.*
+* **Spark: add descriptions and Marquez UI to Docker Compose file** [`#2889`](https://github.com/OpenLineage/OpenLineage/pull/2889) [@jonathanlbt1](https://github.com/jonathanlbt1)  
+    *Adds the `marquez-web` service to docker-compose.yml.*
+
+### Fixed
+* **Proxy: bug fixed on error messages descriptions** [`#2880`](https://github.com/OpenLineage/OpenLineage/pull/2880) [@jonathanlbt1](https://github.com/jonathanlbt1)  
+    *Improves error logging.*
+* **Proxy: update Docker image for Fluentd 1.17** [`#2877`](https://github.com/OpenLineage/OpenLineage/pull/2877) [@jonathanlbt1](https://github.com/jonathanlbt1)  
+    *Upgrades the Fluentd version.*
+* **Spark: fix issue with Kafka source when saving with `for each` batch method** [`#2868`](https://github.com/OpenLineage/OpenLineage/pull/2868) [@imbruced](https://github.com/Imbruced)  
+    *Fixes an issue when Spark is in streaming mode and input for Kafka was not present in the event.*
+* **Spark: properly set ARN in namespace for Iceberg Glue symlinks** [`#2943`](https://github.com/OpenLineage/OpenLineage/pull/2943) [@arturowczarek](https://github.com/arturowczarek)  
+    *Makes `IcebergHandler` support Glue catalog tables and create the symlink using the code from `PathUtils`.*
+* **Spark: accept any provider for AWS Glue storage format** [`#2917`](https://github.com/OpenLineage/OpenLineage/pull/2917) [@arturowczarek](https://github.com/arturowczarek)  
+    *Makes the AWS Glue ARN generating method accept every format (including Parquet), not only Hive SerDe.*
+* **Spark: return valid JSON for failed logical plan serialization** [`#2892`](https://github.com/OpenLineage/OpenLineage/pull/2892) [@arturowczarek](https://github.com/arturowczarek)  
+    *The `LogicalPlanSerializer` now returns `<failed-to-serialize-logical-plan>` for failed serialization instead of an empty string.*
+* **Spark: extract legacy column lineage visitors loader** [`#2883`](https://github.com/OpenLineage/OpenLineage/pull/2883) [@arturowczarek](https://github.com/arturowczarek)  
+    *Refactors `CustomCollectorsUtils` for improved readability.*
+* **Spark: add Kafka input source when writing in `foreach` batch mode** [`#2868`](https://github.com/OpenLineage/OpenLineage/pull/2868) [@Imbruced](https://github.com/Imbruced)  
+    *Fixes a bug keeping Kafka input sources from being produced.*
+* **Spark: extract `DatasetIdentifier` from `SaveIntoDataSourceCommandVisitor` options** [`#2934`](https://github.com/OpenLineage/OpenLineage/pull/2934) [@ddebowczyk92](https://github.com/ddebowczyk92)  
+    *Extracts `DatasetIdentifier` from command's options instead of relying on `p.createRelation(sqlContext, command.options())`, which is a heavy operation for `JdbcRelationProvider`.*
 
 ## [1.19.0](https://github.com/OpenLineage/OpenLineage/compare/1.18.0...1.19.0) - 2024-07-22
 
 ### Added
 * **Airflow: add `log_url` to `AirflowRunFacet`** [`#2852`](https://github.com/OpenLineage/OpenLineage/pull/2852) [@dolfinus](https://github.com/dolfinus)  
-    *Adds taskinstance's `log_url` field to `AirflowRunFacet`.*
+    *Adds taskinstance's `log_url` field to `AirflowRunFacet`*
 * **Spark: add handling for `Generate`** [`#2856`](https://github.com/OpenLineage/OpenLineage/pull/2856) [@tnazarew](https://github.com/tnazarew)  
     *Adds handling for `Generate`-type nodes of a logical plan (e.g., explode operations).*
 * **Java: add `DerbyJdbcExtractor`** [`#2869`](https://github.com/OpenLineage/OpenLineage/pull/2869) [@dolfinus](https://github.com/dolfinus)  
     *Adds `JdbcExtractor` implementation for Derby database. As this is a file-based DBMS, its Dataset namespace is `file` and name is an absolute path to a database file.*
-* **Spark: verify bytecode version of the built jar.** [`#2859`](https://github.com/OpenLineage/OpenLineage/pull/2859) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+* **Spark: verify bytecode version of the built jar** [`#2859`](https://github.com/OpenLineage/OpenLineage/pull/2859) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Extends the `JarVerifier` plugin to ensure all compiled classes have a bytecode version of Java 8 or lower.*
 * **Spark: add Kafka streaming source support** [`#2851`](https://github.com/OpenLineage/OpenLineage/pull/2851) [@d-m-h](https://github.com/d-m-h) [@imbruced](https://github.com/Imbruced)  
     *Adds support for Kafka streaming sources to Kafka streaming sinks. Inputs and outputs are now included in lineage events.*
 
 ### Fixed
 * **Airflow: replace datetime.now with airflow.utils.timezone.utcnow** [`#2865`](https://github.com/OpenLineage/OpenLineage/pull/2865) [@kacpermuda](https://github.com/kacpermuda)  
-    *Fixes missing timezone information in task FAIL events.*
+    *Fixes missing timezone information in task FAIL events*
 * **Spark: remove shaded dependency in `ColumnLevelLineageBuilder`** [`#2850`](https://github.com/OpenLineage/OpenLineage/pull/2850) [@tnazarew](https://github.com/tnazarew)  
     *Removes the shaded `Streams` dependency in `ColumnLevelLineageBuilder` causing a `ClassNotFoundException`.*
 * **Spark: make Delta dataset symlink consistent with non-Delta tables** [`#2863`](https://github.com/OpenLineage/OpenLineage/pull/2863) [@dolfinus](https://github.com/dolfinus)  
@@ -61,7 +136,7 @@
     *Handles simple Oracle JDBC URLs, like `oracle:thin:@//host:port/serviceName` and `oracle:thin@host:port:sid`, and converts each to a dataset with namespace `oracle://host:port` and name `sid.schema.table` or `serviceName.schema.table`.*
 * **Spark: configurable test with Docker image provided** [`#2822`](https://github.com/OpenLineage/OpenLineage/pull/2822) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Extends the configurable integration test feature to enable getting the Docker image name as a name.*
-* **Spark: Support Iceberg 1.4 on Spark 3.5.1.** [`#2838`](https://github.com/OpenLineage/OpenLineage/pull/2838) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+* **Spark: Support Iceberg 1.4 on Spark 3.5.1** [`#2838`](https://github.com/OpenLineage/OpenLineage/pull/2838) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Include Iceberg support for Spark 3.5. Fix column level lineage facet for `UNION` queries.*
 * **Spec: add example for change in `#2756`** [`#2801`](https://github.com/OpenLineage/OpenLineage/pull/2801) [@Sheeri](https://github.com/Sheeri)  
     *Updates the `customLineage` facet test for the new syntax created in `#2756`.*

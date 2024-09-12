@@ -43,6 +43,7 @@ public class OpenLineageRunEventContext {
   private RunEventBuilder runEventBuilder;
   private JobBuilder jobBuilder;
   private OpenLineage.JobFacetsBuilder jobFacetsBuilder;
+  private OpenLineage.RunFacetsBuilder runFacetsBuilder;
   private Optional<StageInfo> stageInfo;
   private Optional<Integer> jobId;
   private Optional<UUID> overwriteRunId;

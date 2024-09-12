@@ -1,0 +1,59 @@
+name: Version documentation
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  id-token: write
+
+jobs:
+  site-deploy:
+    name: Build and Publish To openlineage-site repo
+    runs-on: ubuntu-latest
+    environment: openlineage-site-push
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: 'source'
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/checkout@v4
+        with:
+          repository: 'Openlineage/openlineage-site'
+          path: 'target'
+          token:  ${{ secrets.ACTIONS_GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: source/website/package-lock.json
+      - name: Install dependencies
+        run:  |
+          cd target
+          yarn install --frozen-lockfile
+      - name: Generate new version
+        run: |
+          cd source
+          LATEST_VERSION=$(git tag --sort=taggerdate | tail -1)
+          echo latest version is $LATEST_VERSION
+          echo "LATEST_VERSION=${LATEST_VERSION}" >> "$GITHUB_ENV"
+          cd ../target
+          if [ -d "versioned_docs/version-$LATEST_VERSION" ]
+          then
+            echo "Version already exists. skipping"
+          else
+            echo "Generating version $LATEST_VERSION"
+            yarn run docusaurus docs:version $LATEST_VERSION
+          fi
+      - name: Push target repo
+        run: |
+          cd target
+          git config user.name "GitHub Action Website Snapshot"
+          git config user.email "<>"
+          git add .
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "Generating new version $LATEST_VERSION"
+            git push
+          fi

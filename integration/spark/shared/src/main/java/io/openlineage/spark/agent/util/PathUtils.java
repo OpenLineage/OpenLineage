@@ -26,6 +26,7 @@ import org.apache.spark.sql.internal.StaticSQLConf;
 public class PathUtils {
   private static final String DEFAULT_DB = "default";
   private static final String HIVE_METASTORE_GLUE_CATALOG_ID_KEY = "hive.metastore.glue.catalogid";
+  public static final String GLUE_TABLE_PREFIX = "table/";
 
   public static DatasetIdentifier fromPath(Path path) {
     return fromURI(path.toUri());
@@ -65,7 +66,8 @@ public class PathUtils {
       // Even if glue catalog is used, it will have a hive metastore URI
       // Use ARN format 'arn:aws:glue:{region}:{account_id}:table/{database}/{table}'
       String tableName = nameFromTableIdentifier(catalogTable.identifier(), "/");
-      symlinkDataset = Optional.of(new DatasetIdentifier("table/" + tableName, glueArn.get()));
+      symlinkDataset =
+          Optional.of(new DatasetIdentifier(GLUE_TABLE_PREFIX + tableName, glueArn.get()));
     } else if (metastoreUri.isPresent()) {
       // dealing with Hive tables
       URI hiveUri = prepareHiveUri(metastoreUri.get());
@@ -152,7 +154,7 @@ public class PathUtils {
   }
 
   @SneakyThrows
-  private static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
+  public static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
     Optional<String> clientFactory =
         SparkConfUtils.findHadoopConfigKey(hadoopConf, "hive.metastore.client.factory.class");
     // Fetch from spark config if set.

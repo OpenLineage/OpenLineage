@@ -1,0 +1,95 @@
+name: Visual difference detection
+# This workflow performs visual comparisons between the main branch and a pull request.
+# It activates when the "visual-comparison-required" label is added to a pull request.
+#
+# KEY POINTS:
+# - Activation:         The workflow triggers only when the "visual-comparison-required" label is added.
+# - Trigger Conditions: Subsequent commits or amendments to the pull request will not trigger the workflow again.
+#                       To re-trigger, remove and add again the "visual-comparison-required" label.
+# - Label Handling:     Other labels can also activate the workflow. However, the workflow will halt if the "visual-comparison-required" label is missing.
+# - Caution:            If the "visual-comparison-required" label is present, adding other labels will still trigger and execute the entire workflow.
+
+on:
+  pull_request:
+    types: [ labeled ]
+
+jobs:
+  check-label:
+    # Checks if the "visual-comparison-required" label is present on the pull request.
+    # The remaining jobs will only run if this label is found.
+    name: Check for "visual-comparison-required" label
+    runs-on: ubuntu-latest
+    outputs:
+      visual-comparison-required-label-found: ${{ steps.check.outputs.visual-comparison-required-label-found }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Check for "visual-comparison-required" label
+        id: check
+        env:
+          VISUAL_COMPARISON_REQUIRED_LABEL_PRESENT: ${{ contains(github.event.pull_request.labels.*.name, 'visual-comparison-required') }}
+        run: |
+          echo "visual-comparison-required-label-found=$VISUAL_COMPARISON_REQUIRED_LABEL_PRESENT" | tee "$GITHUB_OUTPUT"
+
+  take-screenshots-main:
+    # This job takes screenshots of the main branch for visual comparison.
+    # It runs only if the "visual-comparison-required" label is found.
+    name: Take screenshots (main branch)
+    needs: check-label
+    if: needs.check-label.outputs.visual-comparison-required-label-found == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      # We switch to the main branch to take the screenshots
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: current
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: yarn playwright install --with-deps chromium
+      - name: Build the website
+        run: yarn docusaurus build
+      - name: Take screenshots with Playwright
+        run: yarn workspace argos screenshot
+      # Argos needs two extra pieces of information to associate screenshots with the branch.
+      # - We have to set the ARGOS_BRANCH variable to main, so that it could be labelled properly in the UI
+      # - We have to set the ARGOS_COMMIT variable to the main branch commit sha. It is necessary, because Argos
+      #   uses this information to make sure the screenshots for comparison are the ancestors of the version
+      #   in the pull request
+      - name: Store the main branch sha in GitHub environmental variables
+        run: echo "ARGOS_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
+      - name: Upload screenshots to Argos
+        run: yarn workspace argos upload
+        env:
+          ARGOS_BRANCH: main
+          ARGOS_COMMIT: ${{ env.ARGOS_COMMIT }}
+
+  take-screenshots-pull-request:
+    # This job takes screenshots of the pull request branch for visual comparison.
+    # It runs only if the "visual-comparison-required" label is found.
+    name: Take screenshots (pull request branch)
+    needs: [check-label, take-screenshots-main]
+    if: needs.check-label.outputs.visual-comparison-required-label-found == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: current
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: yarn playwright install --with-deps chromium
+      - name: Build the website
+        run: yarn docusaurus build
+      - name: Take screenshots with Playwright
+        run: yarn workspace argos screenshot
+      - name: Upload screenshots to Argos
+        run: yarn workspace argos upload

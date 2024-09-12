@@ -21,10 +21,14 @@ import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceResolver
 import io.openlineage.client.dataset.namespace.resolver.PatternMatchingGroupNamespaceResolverConfig;
 import io.openlineage.client.dataset.namespace.resolver.PatternNamespaceResolverConfig;
 import io.openlineage.client.metrics.MicrometerProvider;
+import io.openlineage.client.transports.CompositeTransport;
 import io.openlineage.client.transports.ConsoleConfig;
+import io.openlineage.client.transports.ConsoleTransport;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.HttpTransport;
 import io.openlineage.client.transports.NoopTransport;
+import io.openlineage.client.transports.Transport;
+import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,6 +39,8 @@ import java.util.List;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 
 class ConfigTest {
@@ -47,6 +53,23 @@ class ConfigTest {
   void testLoadConfigFromYaml() throws URISyntaxException {
     OpenLineageClient client = Clients.newClient(new TestConfigPathProvider("config/http.yaml"));
     assertThat(client.transport).isInstanceOf(HttpTransport.class);
+  }
+
+  @SuppressWarnings({"unchecked", "PMD.AvoidAccessibilityAlteration"})
+  @ParameterizedTest
+  @ValueSource(strings = {"config/composite-array.yaml", "config/composite-map.yaml"})
+  void testLoadCompositeTransportConfigFromYaml(String yamlFile)
+      throws NoSuchFieldException, SecurityException, IllegalArgumentException,
+          IllegalAccessException {
+    OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(yamlFile));
+    assertThat(client.transport).isInstanceOf(CompositeTransport.class);
+    CompositeTransport compositeTransport = (CompositeTransport) client.transport;
+    Field transportsField = compositeTransport.getClass().getDeclaredField("transports");
+    transportsField.setAccessible(true);
+    List<Transport> target = (List<Transport>) transportsField.get(compositeTransport);
+    assertThat(target).hasSize(2);
+    assertThat(target.get(0)).isInstanceOf(HttpTransport.class);
+    assertThat(target.get(1)).isInstanceOf(ConsoleTransport.class);
   }
 
   @Test

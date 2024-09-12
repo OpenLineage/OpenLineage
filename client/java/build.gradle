@@ -16,10 +16,14 @@ plugins {
     // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
     id 'com.diffplug.spotless' version '6.13.0'
     id "org.openapi.generator" version "6.6.0"
-    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "com.github.johnrengelman.shadow" version "8.1.1"
     id "pmd"
-    id "io.freefair.lombok" version "8.6"
+    id "io.freefair.lombok" version "8.10"
+    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
+
+group = "io.openlineage"
+
 
 pmd {
     consoleOutput = true
@@ -44,12 +48,12 @@ repositories {
 ext {
     assertjVersion = '3.26.3'
     jacksonVersion = "2.15.3"
-    junit5Version = '5.10.3'
+    junit5Version = '5.11.0'
     lombokVersion = '1.18.34'
     mockitoVersion = '5.2.0'
-    micrometerVersion = '1.13.0'
+    micrometerVersion = '1.13.3'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
-    guavaVersion = '33.2.1-jre'
+    guavaVersion = '33.3.0-jre'
 }
 
 configurations {
@@ -64,13 +68,13 @@ dependencies {
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
     implementation 'org.apache.httpcomponents:httpclient:4.5.14'
-    implementation 'commons-logging:commons-logging:1.3.3'
+    implementation 'commons-logging:commons-logging:1.3.4'
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation "io.micrometer:micrometer-core:${micrometerVersion}"
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     compileOnly 'org.apache.kafka:kafka-clients:3.8.0'
-    compileOnly 'com.amazonaws:amazon-kinesis-producer:0.15.10'
+    compileOnly 'com.amazonaws:amazon-kinesis-producer:0.15.11'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     compileOnly "io.micrometer:micrometer-registry-statsd:${micrometerVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -115,6 +119,7 @@ task generateCode(type: JavaExec) {
     def rootUrl = "file:$rootDir/../../spec/".toString()
     args rootUrl + "OpenLineage.json"
     args rootUrl
+    outputs.files("src/main/java/server", "src/main/java/client/OpenLineage.java")
 }
 
 openApiGenerate {
@@ -132,6 +137,8 @@ task sourceJar(type: Jar) {
 javadoc {
     dependsOn delombok
     failOnError = true
+
+    options.addBooleanOption("Xdoclint:-missing", true)
 
     def capturedOutput = []
     def listener = { capturedOutput << it } as StandardOutputListener
@@ -155,7 +162,10 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
+delombok.dependsOn tasks.generateCode
+sourceJar.dependsOn tasks.generateCode
 compileJava.dependsOn tasks.generateCode
+sourceSets.main.java.srcDirs tasks.generateCode
 
 test {
     useJUnitPlatform()
@@ -202,14 +212,13 @@ publishing {
                 "version": project.property("version")
         ]
     }
+}
 
+nexusPublishing {
     repositories {
-        maven {
-            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
-            credentials {
-                username = System.getenv('RELEASE_USERNAME')
-                password = System.getenv('RELEASE_PASSWORD')
-            }
+        sonatype {
+            username = System.getenv('RELEASE_USERNAME')
+            password = System.getenv('RELEASE_PASSWORD')
         }
     }
 }
@@ -248,11 +257,13 @@ spotless {
     }
 }
 
+spotlessJava.dependsOn generateCode
+
 def reportsDir = "${buildDir}/reports";
 def coverageDir = "${reportsDir}/coverage";
 
 jacoco {
-    toolVersion = '0.8.5'
+    toolVersion = '0.8.12'
     reportsDir = file(coverageDir)
 }
 

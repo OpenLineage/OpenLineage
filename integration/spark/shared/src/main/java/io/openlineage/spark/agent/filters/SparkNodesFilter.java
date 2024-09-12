@@ -19,7 +19,7 @@ import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.Repartition;
 import org.apache.spark.sql.execution.command.CreateDatabaseCommand;
 
-/** If a root node of an Spark action is one of defined nodes, we should filter it */
+/** If a root node of a Spark action is one of defined nodes, we should filter it */
 public class SparkNodesFilter implements EventFilter {
   private final OpenLineageContext context;
 
@@ -45,9 +45,9 @@ public class SparkNodesFilter implements EventFilter {
 
   private boolean filterNode(LogicalPlan plan) {
     if (plan.isStreaming()) {
-      // When spark is in the streaming mode, kafka input when saving with method forEach batch is
+      // When Spark is in the streaming mode, Kafka input when saving with method forEach batch is
       // in the different
-      // plan which starts from Project, hence we are losing information about the kafka input
+      // plan which starts from Project, hence we are losing information about the Kafka input
       // dataset.
       return filterNodes.stream()
           .filter(node -> !node.equals(Project.class.getCanonicalName()))

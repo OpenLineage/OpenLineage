@@ -245,7 +245,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
     ) -> Tuple[Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Optional[Dict[Any, Any]]]:
         manifest = self.load_metadata(self.manifest_path, [2, 3, 4, 5, 6, 7], self.logger)
 
-        run_result = self.load_metadata(self.run_result_path, [2, 3, 4, 5], self.logger)
+        run_result = self.load_metadata(self.run_result_path, [2, 3, 4, 5, 6], self.logger)
 
         try:
             catalog: Optional[Dict[Any, Any]] = self.load_metadata(self.catalog_path, [1], self.logger)

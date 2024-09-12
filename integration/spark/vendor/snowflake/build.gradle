@@ -6,11 +6,12 @@ plugins {
 }
 
 ext {
-    assertjVersion = '3.25.1'
-    junit5Version = '5.10.1'
+    assertjVersion = '3.26.3'
+    junit5Version = '5.11.0'
     snowflakeVersion = '2.13.0'
     mockitoVersion = '4.11.0'
     lombokVersion = '1.18.30'
+    micrometerVersion = '1.13.3'
 
     snowflakeLookup = [
             '2.4.8': '2.9.3',
@@ -22,7 +23,7 @@ ext {
 
     sparkProp = project.findProperty('spark.version').toString()
     // because snowflake doesn't have a 3.5.0 connector yet
-    spark = (sparkProp == "3.5.1" || sparkProp.toString().startsWith("4")) ? "3.4.3" : sparkProp
+    spark = (sparkProp == "3.5.2" || sparkProp.toString().startsWith("4")) ? "3.4.3" : sparkProp
 
     series = spark.substring(0, 3)
     scala = project.findProperty('scala.binary.version').toString()
@@ -49,6 +50,7 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:${junit5Version}"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.junit.jupiter:junit-jupiter-params")
+    testImplementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testImplementation("org.assertj:assertj-core:${assertjVersion}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation("org.mockito:mockito-inline:${mockitoVersion}")

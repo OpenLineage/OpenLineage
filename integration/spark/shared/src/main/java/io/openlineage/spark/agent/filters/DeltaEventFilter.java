@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
+import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
@@ -56,31 +57,21 @@ public class DeltaEventFilter implements EventFilter {
    * We get exact copies of OL events for org.apache.spark.scheduler.SparkListenerJobStart and
    * org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart. The same happens for end
    * events.
-   *
-   * @return
    */
   private boolean isOnJobStartOrEnd(SparkListenerEvent event) {
     return event instanceof SparkListenerJobStart || event instanceof SparkListenerJobEnd;
   }
 
-  /**
-   * Returns true if LocalRelation is the only element of LogicalPlan.
-   *
-   * @return
-   */
+  /** Returns true if LocalRelation is the only element of LogicalPlan. */
   private boolean isLocalRelationOnly() {
     return getLogicalPlan(context)
         .filter(plan -> plan.children() != null)
-        .filter(plan -> plan.children().size() == 0)
+        .filter(plan -> plan.children().isEmpty())
         .filter(plan -> plan instanceof LocalRelation)
         .isPresent();
   }
 
-  /**
-   * Returns true if Filter is a root node of LogicalPlan
-   *
-   * @return
-   */
+  /** Returns true if Filter is a root node of LogicalPlan */
   private boolean isFilterRoot() {
     return getLogicalPlan(context).filter(plan -> plan instanceof Filter).isPresent();
   }
@@ -92,8 +83,8 @@ public class DeltaEventFilter implements EventFilter {
         .map(
             attributes ->
                 attributes.stream()
-                    .map(a -> a.name())
-                    .collect(Collectors.toList())
+                    .map(NamedExpression::name)
+                    .collect(Collectors.toSet())
                     .containsAll(DELTA_LOG_INTERNAL_COLUMNS))
         .orElse(false);
   }
@@ -113,10 +104,10 @@ public class DeltaEventFilter implements EventFilter {
                     .map(node -> JavaConverters.seqAsJavaListConverter(node.output()).asJava())
                     .map(
                         attributes ->
-                            attributes.stream().map(a -> a.name()).collect(Collectors.toList()))
-                    .filter(attrs -> attrs.containsAll(DELTA_INTERNAL_RDD_COLUMNS))
-                    .findAny()
-                    .isPresent())
+                            attributes.stream()
+                                .map(NamedExpression::name)
+                                .collect(Collectors.toSet()))
+                    .anyMatch(attrs -> attrs.containsAll(DELTA_INTERNAL_RDD_COLUMNS)))
         .orElse(false);
   }
 

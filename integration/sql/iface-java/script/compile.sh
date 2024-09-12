@@ -34,6 +34,7 @@ fi
 # Build the Rust bindings
 rm -rf build/libs/*
 cd $ROOT/..
+cargo clean
 cargo build -p openlineage_sql_java
 
 shopt -s extglob

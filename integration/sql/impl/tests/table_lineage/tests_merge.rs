@@ -38,6 +38,54 @@ fn merge_subquery_when_not_matched() {
     );
 }
 
+#[test]
+fn merge_identifier_function() {
+    let test_cases = vec![
+        (
+            "target",
+            "'source'",
+            vec![table("source")],
+            vec![table("target")],
+        ),
+        ("$target", ":source", vec![], vec![]),
+        ("?", "$source", vec![], vec![]),
+        (
+            ":myschema || '.' || :mytab",
+            "source",
+            vec![table("source")],
+            vec![],
+        ),
+    ];
+
+    let dialects = vec!["snowflake", "databricks", "mssql"];
+
+    for (out_table_id, in_table_id, in_tables, out_tables) in &test_cases {
+        for dialect in &dialects {
+            let sql = format!(
+                "MERGE INTO \
+                IDENTIFIER({}) \
+                USING \
+                identifier({})\
+                ON target.id = source.id \
+                WHEN MATCHED THEN \
+                UPDATE \
+                SET target.description = source.description",
+                out_table_id, in_table_id
+            );
+            assert_eq!(
+                test_sql_dialect(&sql, dialect).unwrap().table_lineage,
+                TableLineage {
+                    in_tables: in_tables.clone(),
+                    out_tables: out_tables.clone(),
+                },
+                "Failed for dialect: {} with SQL: {}",
+                dialect,
+                sql
+            );
+        }
+    }
+}
+
 // QUALIFY expression is not yet supported
 #[ignore]
 #[test]

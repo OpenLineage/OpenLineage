@@ -1,0 +1,57 @@
+---
+title: Announcing OpenLineage 1.0
+date: 2023-08-04
+authors: [Lu]
+description: We are pleased to announce the first major release of OpenLineage. This release completes the first version of a new static lineage feature.
+---
+
+Announcing OpenLineage [v1.0](https://github.com/OpenLineage/OpenLineage/releases/tag/1.0.0)! We’re officially in 1.x territory!
+
+<!--truncate-->
+
+It has become more and more apparent to us that managing data has become an O(n^2) problem. Every company is a data company, and every department within an organization is then again a mini data ecosystem in and of itself.  When departments interact, there’s a duplication of effort across pipeline tooling, and deployment of new tools can break existing lineage workflows. 
+
+This is why we’re seeing increasing demand for OpenLineage support across various tools, and we’re super excited to see more and more data engineers, developers and database managers joining our community. 
+
+Momentum seems to be growing behind OpenLineage as the industry standard for runtime lineage collection. At the same time, a consensus appears to be forming that an open spec will get us closest to 100% coverage of data ecosystem tooling, one that is highly granular and also general-purpose enough to be consistent across various data workloads.
+
+### An Evolving Spec
+
+Now that we’re at v1.0, static lineage has made its way to OpenLineage! Up till now, OpenLineage has focused on “runtime” lineage - i.e., metadata generated when jobs are run. Capturing information as transformations of datasets occur enables precise descriptions of those transformations. 
+
+The 1.0 release reflects the fact that there is demand for "design-time" lineage. The concept behind this is that even when datasets are not being touched yet, lineage metadata about them can still be useful and valuable.
+
+Although operational lineage covers many use cases, some scenarios call for lineage about jobs that have not run - and might never do so. 
+
+Also, in many cases, a combination of both static and runtime approaches provides the best operational results. For example, imagine that a dataset exists in a data warehouse and dashboarding tool for which a pipeline has always been broken. Static lineage will show not only that the dataset exists but also that the pipeline for it has never run or always fails.  
+
+
+### Implementing Static Lineage
+
+For an overview of the implementation, read the [release preview](static-lineage) by Michael Robinson.
+
+The first part of the implementation was authored by Paweł Leszczyński in [OpenLineage 0.29.2](https://github.com/OpenLineage/OpenLineage/releases/tag/0.29.2), which included two new event types along with support for them in the Python client.
+
+Additional work, contributed by Julien Le Dem and Jakub Dardziński, involved:
+- adding facet deletion to handle the case in which a user adds and deletes a dataset in the same request ([0.30.1](https://github.com/OpenLineage/OpenLineage/releases/tag/0.30.1))
+- removing references to facets from the core spec that broke compatibility with the Json schema specification ([1.0.0](https://github.com/OpenLineage/OpenLineage/releases/tag/1.0.0)).
+
+On the Marquez side, adding support for static lineage is ongoing. [Marquez 0.37.0](https://github.com/MarquezProject/marquez/releases/tag/0.37.0) includes support in the API for decoding static events via a new [`EventTypeResolver`](https://github.com/MarquezProject/marquez/pull/2495).
+
+### Supporting New Use Cases
+
+With the release of 1.0, we now support use cases like:
+
+- bootstrapping of a lineage graph with prospective runs for auditing
+- capturing dataset ownership changes outside of runs
+- consuming facets from external systems
+- creating dataset symlinks more easily
+
+Static lineage promises to fill the blind spots that dynamic lineage alone could not reach, offering a macroscopic view of how data flows and is accessed throughout an entire organization.
+
+### Additional Resources
+
+* [Getting Started Guide](../getting-started)
+* [OpenLineage 1.0 Release](https://github.com/OpenLineage/OpenLineage/releases/tag/1.0.0)
+* [JsonSchema Specification](https://github.com/OpenLineage/OpenLineage/tree/main/spec/OpenLineage.json)
+* [OpenAPI Specification for HTTP-based Implementation](https://openlineage.io/apidocs/openapi/)  

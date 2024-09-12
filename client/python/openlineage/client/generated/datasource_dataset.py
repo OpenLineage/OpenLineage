@@ -21,6 +21,8 @@ class DatasourceDatasetFacet(DatasetFacet):
 
     @uri.validator
     def uri_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        if value is None:
+            return
         from urllib.parse import urlparse
 
         urlparse(value)

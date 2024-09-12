@@ -19,8 +19,11 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.spark.SparkCatalog;
 import org.apache.iceberg.spark.source.SparkTable;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.RuntimeConfig;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
@@ -30,6 +33,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import scala.collection.immutable.Map;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
@@ -38,6 +42,9 @@ class IcebergHandlerTest {
   private OpenLineageContext context = mock(OpenLineageContext.class);
   private IcebergHandler icebergHandler = new IcebergHandler(context);
   private SparkSession sparkSession = mock(SparkSession.class);
+  private SparkContext sparkContext = mock(SparkContext.class);
+  private SparkConf sparkConf = new SparkConf();
+  private Configuration hadoopConf = new Configuration();
   private RuntimeConfig runtimeConfig = mock(RuntimeConfig.class);
 
   @ParameterizedTest
@@ -162,8 +169,16 @@ class IcebergHandlerTest {
 
   @Test
   @SneakyThrows
+  @SetEnvironmentVariable(key = "AWS_DEFAULT_REGION", value = "us-west-2")
   void testGetDatasetIdentifierForGlue() {
     when(sparkSession.conf()).thenReturn(runtimeConfig);
+    sparkConf.set("spark.glue.accountId", "1122334455");
+    when(sparkContext.getConf()).thenReturn(sparkConf);
+    hadoopConf.set(
+        "hive.metastore.client.factory.class",
+        "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory");
+    when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
     when(runtimeConfig.getAll())
         .thenReturn(
             new Map.Map2<>(
@@ -193,8 +208,8 @@ class IcebergHandlerTest {
 
     assertThat(datasetIdentifier.getSymlinks())
         .singleElement()
-        .hasFieldOrPropertyWithValue("namespace", "file:/tmp/warehouse")
-        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("namespace", "arn:aws:glue:us-west-2:1122334455")
+        .hasFieldOrPropertyWithValue("name", "table/database/table")
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
 

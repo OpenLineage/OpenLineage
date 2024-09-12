@@ -36,7 +36,7 @@ public class FlinkContainerUtils {
 
   static MockServerContainer makeMockServerContainer(Network network) {
     return new MockServerContainer(
-            DockerImageName.parse("jamesdbloom/mockserver:mockserver-5.12.0"))
+            DockerImageName.parse("mockserver/mockserver").withTag("mockserver-5.15.0"))
         .withNetwork(network)
         .withNetworkAliases("openlineageclient");
   }

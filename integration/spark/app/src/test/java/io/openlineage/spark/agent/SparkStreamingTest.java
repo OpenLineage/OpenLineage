@@ -5,6 +5,12 @@
 
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.SparkTestUtils.SPARK_3_OR_ABOVE;
+import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
+import static io.openlineage.spark.agent.SparkTestUtils.SchemaRecord;
+import static io.openlineage.spark.agent.SparkTestUtils.createHttpServer;
+import static io.openlineage.spark.agent.SparkTestUtils.createSparkSession;
+import static io.openlineage.spark.agent.SparkTestUtils.mapToSchemaRecord;
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.expr;
 import static org.apache.spark.sql.functions.from_json;
@@ -15,19 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
-import io.openlineage.client.OpenLineageClientUtils;
-import java.io.BufferedReader;
+import io.openlineage.spark.agent.util.OpenLineageHttpHandler;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -35,10 +33,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
@@ -47,7 +42,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -80,8 +74,6 @@ import org.testcontainers.utility.DockerImageName;
 @Slf4j
 @Tag("integration-test")
 class SparkStreamingTest {
-  private static final String SPARK_3_OR_ABOVE = "^[3-9].*";
-  private static final String SPARK_VERSION = "spark.version";
 
   @Getter
   static class InputMessage {
@@ -91,18 +83,6 @@ class SparkStreamingTest {
     public InputMessage(String id, long epoch) {
       this.id = id;
       this.epoch = epoch;
-    }
-  }
-
-  @Getter
-  @EqualsAndHashCode
-  static class SchemaRecord {
-    private final String name;
-    private final String type;
-
-    public SchemaRecord(String name, String type) {
-      this.name = name;
-      this.type = type;
     }
   }
 
@@ -151,7 +131,7 @@ class SparkStreamingTest {
     }
   }
 
-  private static final OpenLineageEndpointHandler handler = new OpenLineageEndpointHandler();
+  private static final OpenLineageHttpHandler handler = new OpenLineageHttpHandler();
 
   @Test
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
@@ -201,7 +181,7 @@ class SparkStreamingTest {
     Awaitility.await().atMost(Duration.ofSeconds(60)).until(() -> spark.sparkContext().isStopped());
 
     List<RunEvent> events =
-        handler.events.getOrDefault("test_kafka_source_to_kafka_sink", new ArrayList<>());
+        handler.getEventsMap().getOrDefault("test_kafka_source_to_kafka_sink", new ArrayList<>());
 
     List<RunEvent> sqlEvents =
         events.stream()
@@ -290,7 +270,7 @@ class SparkStreamingTest {
             .start();
 
     streamingQuery.awaitTermination(Duration.ofSeconds(20).toMillis());
-    List<RunEvent> events = handler.events.get("test_kafka_source_to_batch_sink");
+    List<RunEvent> events = handler.getEventsMap().get("test_kafka_source_to_batch_sink");
 
     assertThat(events).isNotEmpty();
 
@@ -366,7 +346,7 @@ class SparkStreamingTest {
 
     streamingQuery.awaitTermination(Duration.ofSeconds(20).toMillis());
 
-    List<RunEvent> events = handler.events.get("test_kafka_source_to_jdbc_batch_sink");
+    List<RunEvent> events = handler.getEventsMap().get("test_kafka_source_to_jdbc_batch_sink");
 
     assertTrue(events.size() > 1);
 
@@ -427,7 +407,9 @@ class SparkStreamingTest {
         .awaitTermination(Duration.ofSeconds(10).toMillis());
 
     List<RunEvent> events =
-        handler.events.getOrDefault("test_kafka_cluster_resolve_namespace", new ArrayList<>());
+        handler
+            .getEventsMap()
+            .getOrDefault("test_kafka_cluster_resolve_namespace", new ArrayList<>());
 
     assertTrue(events.stream().anyMatch(x -> !x.getInputs().isEmpty()));
 
@@ -465,7 +447,8 @@ class SparkStreamingTest {
         .start()
         .awaitTermination(Duration.ofSeconds(10).toMillis());
 
-    List<RunEvent> events = handler.events.get("test_read_from_csv_files_in_a_streaming_mode");
+    List<RunEvent> events =
+        handler.getEventsMap().get("test_read_from_csv_files_in_a_streaming_mode");
 
     List<RunEvent> csvInputEventsUsingStreaming =
         events.stream().filter(x -> !x.getInputs().isEmpty()).collect(Collectors.toList());
@@ -497,17 +480,6 @@ class SparkStreamingTest {
         });
 
     spark.stop();
-  }
-
-  private static HttpServer createHttpServer(HttpHandler handler) throws IOException {
-    int randomPort = new Random().nextInt(1000) + 10000;
-
-    HttpServer server = HttpServer.create(new InetSocketAddress(randomPort), 0);
-    server.createContext("/api/v1/lineage", handler);
-    server.setExecutor(null);
-    server.start();
-
-    return server;
   }
 
   private Dataset<Row> processKafkaTopic(Dataset<Row> input) {
@@ -559,39 +531,6 @@ class SparkStreamingTest {
     populateTopic(bootstrapServers, kafkaSourceTopic);
 
     return new KafkaTestContainer(kafka, kafkaSourceTopic, kafkaTargetTopic, bootstrapServers);
-  }
-
-  private static SparkSession createSparkSession(Integer httpServerPort, String appName) {
-    String userDirProperty = System.getProperty("user.dir");
-    Path userDirPath = Paths.get(userDirProperty);
-    UUID testUuid = UUID.randomUUID();
-
-    Path derbySystemHome = userDirPath.resolve("tmp").resolve("derby").resolve(testUuid.toString());
-    Path sparkSqlWarehouse =
-        userDirPath.resolve("tmp").resolve("spark-sql-warehouse").resolve(testUuid.toString());
-
-    OpenLineageSparkListener.close();
-
-    return SparkSession.builder()
-        .appName(appName)
-        .master("local[*]")
-        .config("spark.extraListeners", OpenLineageSparkListener.class.getCanonicalName())
-        .config("spark.driver.host", "localhost")
-        .config("spark.driver.extraJavaOptions", "-Dderby.system.home=" + derbySystemHome)
-        .config("spark.sql.warehouse.dir", sparkSqlWarehouse.toString())
-        .config("spark.ui.enabled", false)
-        .config("spark.openlineage.transport.type", "http")
-        .config("spark.openlineage.transport.url", "http://localhost:" + httpServerPort)
-        .config("spark.openlineage.facets.spark_unknown.disabled", "true")
-        .config("spark.openlineage.dataset.namespaceResolvers.prod-cluster.type", "hostList")
-        .config("spark.openlineage.dataset.namespaceResolvers.prod-cluster.hosts", "[localhost]")
-        .getOrCreate();
-  }
-
-  private List<SchemaRecord> mapToSchemaRecord(OpenLineage.SchemaDatasetFacet schema) {
-    return schema.getFields().stream()
-        .map(field -> new SchemaRecord(field.getName(), field.getType()))
-        .collect(Collectors.toList());
   }
 
   private void populateTopic(String bootstrapServers, String topic) {
@@ -652,51 +591,5 @@ class SparkStreamingTest {
     } catch (ExecutionException | InterruptedException e) {
       throw new RuntimeException(e);
     }
-  }
-}
-
-@Tag("integration-test")
-class OpenLineageEndpointHandler implements HttpHandler {
-  List<String> eventsContainer = new ArrayList<>();
-
-  Map<String, List<RunEvent>> events = new HashMap<>();
-
-  public OpenLineageEndpointHandler() {}
-
-  @Override
-  public void handle(HttpExchange exchange) throws IOException {
-    InputStreamReader isr =
-        new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
-    BufferedReader br = new BufferedReader(isr);
-    String value = br.readLine();
-
-    eventsContainer.add(value);
-
-    RunEvent runEvent = OpenLineageClientUtils.runEventFromJson(value);
-    String jobName = runEvent.getJob().getName();
-
-    Optional<String> jobNameShort = Arrays.stream(jobName.split("\\.")).findFirst();
-
-    if (!jobNameShort.isPresent()) {
-      return;
-    }
-
-    String jobNameShortString = jobNameShort.get();
-
-    if (!events.containsKey(jobNameShortString)) {
-      events.put(jobNameShortString, new ArrayList<>());
-    }
-
-    events.get(jobNameShortString).add(runEvent);
-
-    exchange.sendResponseHeaders(200, 0);
-    try (Writer writer =
-        new OutputStreamWriter(exchange.getResponseBody(), StandardCharsets.UTF_8)) {
-      writer.write("{}");
-    }
-  }
-
-  public List<String> getEvents() {
-    return eventsContainer;
   }
 }

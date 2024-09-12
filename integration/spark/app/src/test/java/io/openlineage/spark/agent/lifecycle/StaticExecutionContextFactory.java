@@ -5,6 +5,9 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
@@ -76,28 +79,32 @@ public class StaticExecutionContextFactory extends ContextFactory {
 
   @Override
   public ExecutionContext createRddExecutionContext(int jobId) {
-    RddExecutionContext rdd =
-        new RddExecutionContext(openLineageEventEmitter) {
-          @Override
-          public void start(SparkListenerJobStart jobStart) {
-            try {
-              boolean acquired = semaphore.tryAcquire(1, TimeUnit.SECONDS);
-              if (!acquired) {
-                throw new RuntimeException("Timeout acquiring permit");
-              }
-            } catch (InterruptedException e) {
-              throw new RuntimeException("Unable to acquire semaphore", e);
-            }
-            super.start(jobStart);
+    OpenLineageContext olContext = mock(OpenLineageContext.class);
+    when(olContext.getOpenLineage())
+        .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    SparkOpenLineageConfig olConfig = new SparkOpenLineageConfig();
+    olConfig.setOverriddenAppName("test_rdd");
+    when(olContext.getOpenLineageConfig()).thenReturn(olConfig);
+    return new RddExecutionContext(olContext, openLineageEventEmitter) {
+      @Override
+      public void start(SparkListenerJobStart jobStart) {
+        try {
+          boolean acquired = semaphore.tryAcquire(1, TimeUnit.SECONDS);
+          if (!acquired) {
+            throw new RuntimeException("Timeout acquiring permit");
           }
+        } catch (InterruptedException e) {
+          throw new RuntimeException("Unable to acquire semaphore", e);
+        }
+        super.start(jobStart);
+      }
 
-          @Override
-          public void end(SparkListenerJobEnd jobEnd) {
-            super.end(jobEnd);
-            semaphore.release();
-          }
-        };
-    return rdd;
+      @Override
+      public void end(SparkListenerJobEnd jobEnd) {
+        super.end(jobEnd);
+        semaphore.release();
+      }
+    };
   }
 
   @Override
