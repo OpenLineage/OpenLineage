@@ -27,18 +27,22 @@ be emitted correctly.
 ### Configuration
 
 - `type` - string, must be `"dataplex"`. Required.
-- `endpoint` - string, specifies the endpoint to which events are sent, default value is `datalineage.googleapis.com:443`. Optional.
-- `projectId` - string, the project quota identifier. If not provided, it is determined based on user credentials. Optional.
+- `endpoint` - string, specifies the endpoint to which events are sent, default value is
+  `datalineage.googleapis.com:443`. Optional.
+- `projectId` - string, the project quota identifier. If not provided, it is determined based on user credentials.
+  Optional.
 - `location` - string, [Dataplex location](https://cloud.google.com/dataplex/docs/locations). Optional, default:
   `"us"`.
 - `credentialsFile` - string, path
-  to the [Service Account credentials JSON file](https://developers.google.com/workspace/guides/create-credentials#create_credentials_for_a_service_account).
+  to
+  the [Service Account credentials JSON file](https://developers.google.com/workspace/guides/create-credentials#create_credentials_for_a_service_account).
   Optional, if not
   provided [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials)
   are used
+- `mode` - enum that specifies the type of client used for publishing OpenLineage events to Dataplex. Possible values:
+  `sync` (synchronous) or `async` (asynchronous). Optional, default: `sync`.
 
 ### Behavior
 
 - Events are serialized to JSON, included as part of a `gRPC` request, and then dispatched to the `Dataplex` endpoint.
-- Two constructors are available: one accepting both `SyncLineageClient` and `DataplexConfig` and another solely accepting
-  `DataplexConfig`.
+- Depending on the `mode` chosen, requests are sent using either a synchronous or asynchronous client.

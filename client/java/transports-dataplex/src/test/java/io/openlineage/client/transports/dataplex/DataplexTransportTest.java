@@ -10,10 +10,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.api.core.ApiFuture;
 import com.google.api.gax.rpc.AsyncTaskException;
 import com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventRequest;
 import com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventResponse;
 import com.google.cloud.datalineage.producerclient.helpers.OpenLineageHelper;
+import com.google.cloud.datalineage.producerclient.v1.AsyncLineageProducerClient;
 import com.google.cloud.datalineage.producerclient.v1.SyncLineageProducerClient;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
@@ -27,14 +29,17 @@ import org.junit.jupiter.api.Test;
 class DataplexTransportTest {
 
   @Test
-  void clientEmitsRunEventGCPTransport() throws Exception {
-    SyncLineageProducerClient producer = mock(SyncLineageProducerClient.class);
+  void clientEmitsRunEventGCPTransportSyncMode() throws Exception {
+    SyncLineageProducerClient syncClient = mock(SyncLineageProducerClient.class);
     DataplexConfig config = new DataplexConfig();
 
     config.setProjectId("my-project");
     config.setLocation("us");
 
-    Transport transport = new DataplexTransport(config, producer);
+    DataplexTransport.ProducerClientWrapper clientWrapper =
+        new DataplexTransport.ProducerClientWrapper(config, syncClient);
+
+    Transport transport = new DataplexTransport(clientWrapper);
     OpenLineageClient client = new OpenLineageClient(transport);
 
     OpenLineage.RunEvent event = runEvent();
@@ -43,23 +48,26 @@ class DataplexTransportTest {
             .setParent("projects/my-project/locations/us")
             .setOpenLineage(OpenLineageHelper.jsonToStruct(OpenLineageClientUtils.toJson(event)))
             .build();
-    when(producer.processOpenLineageRunEvent(request))
+    when(syncClient.processOpenLineageRunEvent(request))
         .thenReturn(ProcessOpenLineageRunEventResponse.newBuilder().build());
 
     client.emit(event);
 
-    verify(producer, times(1)).processOpenLineageRunEvent(request);
+    verify(syncClient, times(1)).processOpenLineageRunEvent(request);
   }
 
   @Test
-  void gcpTransportRaisesOnException() throws Exception {
-    SyncLineageProducerClient producer = mock(SyncLineageProducerClient.class);
+  void clientEmitsRunEventGCPTransportAsyncMode() throws Exception {
+    AsyncLineageProducerClient asyncClient = mock(AsyncLineageProducerClient.class);
     DataplexConfig config = new DataplexConfig();
 
     config.setProjectId("my-project");
     config.setLocation("us");
 
-    Transport transport = new DataplexTransport(config, producer);
+    DataplexTransport.ProducerClientWrapper clientWrapper =
+        new DataplexTransport.ProducerClientWrapper(config, asyncClient);
+
+    Transport transport = new DataplexTransport(clientWrapper);
     OpenLineageClient client = new OpenLineageClient(transport);
 
     OpenLineage.RunEvent event = runEvent();
@@ -68,7 +76,33 @@ class DataplexTransportTest {
             .setParent("projects/my-project/locations/us")
             .setOpenLineage(OpenLineageHelper.jsonToStruct(OpenLineageClientUtils.toJson(event)))
             .build();
-    when(producer.processOpenLineageRunEvent(request)).thenThrow(AsyncTaskException.class);
+    when(asyncClient.processOpenLineageRunEvent(request)).thenReturn(mock(ApiFuture.class));
+
+    client.emit(event);
+
+    verify(asyncClient, times(1)).processOpenLineageRunEvent(request);
+  }
+
+  @Test
+  void gcpTransportRaisesOnException() throws Exception {
+    AsyncLineageProducerClient async = mock(AsyncLineageProducerClient.class);
+    DataplexConfig config = new DataplexConfig();
+    config.setProjectId("my-project");
+    config.setLocation("us");
+
+    DataplexTransport.ProducerClientWrapper clientWrapper =
+        new DataplexTransport.ProducerClientWrapper(config, async);
+
+    Transport transport = new DataplexTransport(clientWrapper);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    OpenLineage.RunEvent event = runEvent();
+    ProcessOpenLineageRunEventRequest request =
+        ProcessOpenLineageRunEventRequest.newBuilder()
+            .setParent("projects/my-project/locations/us")
+            .setOpenLineage(OpenLineageHelper.jsonToStruct(OpenLineageClientUtils.toJson(event)))
+            .build();
+    when(async.processOpenLineageRunEvent(request)).thenThrow(AsyncTaskException.class);
 
     assertThrows(OpenLineageClientException.class, () -> client.emit(runEvent()));
   }

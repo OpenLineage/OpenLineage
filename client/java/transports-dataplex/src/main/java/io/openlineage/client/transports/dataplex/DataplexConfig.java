@@ -6,7 +6,6 @@ package io.openlineage.client.transports.dataplex;
 
 import io.openlineage.client.MergeConfig;
 import io.openlineage.client.transports.TransportConfig;
-
 import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,6 +18,11 @@ import lombok.ToString;
 @ToString
 public class DataplexConfig implements TransportConfig, MergeConfig<DataplexConfig> {
 
+  enum Mode {
+    sync,
+    async
+  }
+
   @Getter @Setter private @Nullable String endpoint;
 
   @Getter @Setter private @Nullable String projectId;
@@ -27,6 +31,7 @@ public class DataplexConfig implements TransportConfig, MergeConfig<DataplexConf
 
   @Getter @Setter private @Nullable String location;
 
+  @Getter @Setter private @Nullable Mode mode;
 
   @Override
   public DataplexConfig mergeWithNonNull(DataplexConfig other) {
@@ -34,6 +39,7 @@ public class DataplexConfig implements TransportConfig, MergeConfig<DataplexConf
         mergePropertyWith(endpoint, other.endpoint),
         mergePropertyWith(projectId, other.projectId),
         mergePropertyWith(credentialsFile, other.credentialsFile),
-        mergePropertyWith(location, other.location));
+        mergePropertyWith(location, other.location),
+        mergePropertyWith(mode, other.mode));
   }
 }
