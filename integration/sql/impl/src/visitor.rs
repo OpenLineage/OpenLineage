@@ -18,23 +18,31 @@ pub trait Visit {
 
 impl Visit for With {
     fn visit(&self, context: &mut Context) -> Result<()> {
-        for cte in &self.cte_tables {
+        let size = self.cte_tables.len();
+        for i in 0..size {
             context.add_table_alias(
                 DbTableMeta::new_default_dialect("".to_string()),
-                vec![cte.alias.name.clone()],
+                vec![self.cte_tables[i].alias.name.clone()],
             );
             context.push_frame();
-            cte.query.visit(context)?;
+            self.cte_tables[i].query.visit(context)?;
             let frame = context.pop_frame();
             if let Some(f) = frame {
                 let table = DbTableMeta::new(
-                    vec![cte.alias.name.clone()],
+                    vec![self.cte_tables[i].alias.name.clone()],
                     context.dialect(),
                     context.default_schema().clone(),
                     context.default_database().clone(),
                 );
                 context.collect_with_table(f, table);
             }
+
+            if i == 0 {
+                context
+                    .collect_lower_nested_dependencies(self.cte_tables[i].alias.name.clone().value);
+            }
+
+            context.adjust_cte_dependencies(self.cte_tables[i].alias.name.clone().value);
         }
         Ok(())
     }
@@ -69,7 +77,19 @@ impl Visit for TableFactor {
                 if let Some(alias) = alias {
                     context.add_table_alias(table, vec![alias.name.clone()]);
                 }
-                context.add_input(effective_name.clone().0);
+
+                if !context.is_main() {
+                    context.add_table_dependency(effective_name.clone().0);
+                }
+
+                if context.is_main() && !context.has_alias(effective_name.to_string()) {
+                    context.add_input(effective_name.clone().0);
+                }
+
+                if context.is_main() && context.has_alias(effective_name.to_string()) {
+                    context.mark_table_as_used(effective_name.clone().0);
+                }
+
                 Ok(())
             }
             TableFactor::Pivot { table, alias, .. } => {
@@ -531,6 +551,10 @@ impl Visit for SetExpr {
 impl Visit for Query {
     fn visit(&self, context: &mut Context) -> Result<()> {
         context.push_frame();
+        if self.with.is_some() {
+            context.unset_frame_to_main_body();
+        }
+
         match &self.with {
             Some(with) => with.visit(context)?,
             None => (),
@@ -540,7 +564,16 @@ impl Visit for Query {
         context.collect_aliases(&with_frame);
 
         context.push_frame();
+        if self.with.is_some() {
+            context.set_frame_to_main_body();
+        }
+
         self.body.visit(context)?;
+
+        if self.with.is_some() {
+            context.unset_frame_to_main_body();
+        }
+
         let frame = context.pop_frame().unwrap();
         context.collect(frame);
 
@@ -753,6 +786,9 @@ impl Visit for Statement {
         }
 
         let frame = context.pop_frame().unwrap();
+        let cte_deps = frame.cte_dependencies.clone();
+        let deps = frame.dependencies.clone();
+        context.collect_inputs(cte_deps, deps);
         context.collect(frame);
 
         Ok(())
