@@ -44,6 +44,11 @@ public final class DataSourceV2ScanRelationOnStartInputDatasetBuilder
 
   @Override
   public List<InputDataset> apply(DataSourceV2ScanRelation plan) {
+    if (context.getSparkExtensionVisitorWrapper().isDefinedAt(plan.relation().table())) {
+      List<InputDataset> tableInputs = getTableInputs(plan);
+      return tableInputs;
+    }
+
     DataSourceV2Relation relation = plan.relation();
     OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
         context.getOpenLineage().newDatasetFacetsBuilder();

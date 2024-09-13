@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.connector.catalog.Table;
+import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 
 /**
@@ -49,5 +51,14 @@ public abstract class AbstractQueryPlanInputDatasetBuilder<P extends LogicalPlan
             node, ScalaConversionUtils.toScalaFn((lp) -> Collections.<InputDataset>emptyList()))
         .stream()
         .collect(Collectors.toList());
+  }
+
+  protected List<InputDataset> getTableInputs(DataSourceV2ScanRelation plan) {
+    Table table = plan.relation().table();
+
+    return context
+        .getSparkExtensionVisitorWrapper()
+        .getInputs(table, table.getClass().getName())
+        .getLeft();
   }
 }

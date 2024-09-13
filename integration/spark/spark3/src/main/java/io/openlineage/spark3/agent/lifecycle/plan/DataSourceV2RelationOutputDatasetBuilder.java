@@ -46,6 +46,10 @@ public class DataSourceV2RelationOutputDatasetBuilder
   @Override
   protected List<OpenLineage.OutputDataset> apply(
       SparkListenerEvent event, DataSourceV2Relation relation) {
+    if (context.getSparkExtensionVisitorWrapper().isDefinedAt(relation.table())) {
+      return getTableOutputs(relation);
+    }
+
     OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
         context.getOpenLineage().newDatasetFacetsBuilder();
 
