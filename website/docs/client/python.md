@@ -404,16 +404,18 @@ job = Job(namespace="food_delivery", name="example.order_data")
 
 To create a run object you’ll need to specify a unique ID:
 ```python
-run = Run(str(generate_new_uuid()))
+run = Run(runId=str(generate_new_uuid()))
 ```
 
 a START run event:
 ```python
 client.emit(
 	RunEvent(
-		RunState.START,
-		datetime.now().isoformat(),
-		run, job, producer
+		eventType=RunState.START,
+		eventTime=datetime.now().isoformat(),
+		run=run, 
+        job=job, 
+        producer=producer,
 	)
 )
 ```
@@ -422,9 +424,9 @@ and, finally, a COMPLETE run event:
 ```python
 client.emit(
 	RunEvent(
-		RunState.COMPLETE,
-		datetime.now().isoformat(),
-		run, job, producer,
+		eventType=RunState.COMPLETE,
+		eventTime=datetime.now().isoformat(),
+		run=run, job=job, producer=producer,
 		inputs=[inventory],
 		outputs=[menus, orders],
 	)
