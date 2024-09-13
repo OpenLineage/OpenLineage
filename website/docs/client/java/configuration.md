@@ -23,6 +23,12 @@ The following environment variables are available:
 | OPENLINEAGE_CONFIG   | The path to the YAML configuration file. Example: `path/to/openlineage.yml` |       |
 | OPENLINEAGE_DISABLED | When `true`, OpenLineage will not emit events.                              | 0.9.0 |
 
+You can also configure the client with dynamic environment variables.
+
+import DynamicEnvVars from './partials/java_dynamic_env_vars.md';
+
+<DynamicEnvVars/>
+
 ## Facets Configuration
 
 In YAML configuration file you can also disable facets to filter them out from the OpenLineage event.

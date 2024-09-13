@@ -8,9 +8,12 @@ package io.openlineage.spark.agent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
+import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.circuitBreaker.StaticCircuitBreakerConfig;
 import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceResolverConfig;
@@ -22,11 +25,14 @@ import io.openlineage.client.transports.KafkaConfig;
 import io.openlineage.client.transports.KinesisConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 class ArgumentParserTest {
 
@@ -157,6 +163,55 @@ class ArgumentParserTest {
     assertEquals("test", transportConfig.getRoleArn());
     assertEquals("test1", transportConfig.getProperties().get("test1"));
     assertEquals("test2", transportConfig.getProperties().get("test2"));
+  }
+
+  @Test
+  void testLoadConfigFromEnvVars() {
+    try (MockedStatic mocked = mockStatic(Environment.class)) {
+      Map<String, String> sparkConfig = new HashMap<>();
+
+      sparkConfig.put("OPENLINEAGE__TRANSPORT__TYPE", "composite");
+      sparkConfig.put("OPENLINEAGE__TRANSPORT__CONTINUE_ON_FAILURE", "true");
+      sparkConfig.put("OPENLINEAGE__TRANSPORT__TRANSPORTS__KAVVKA__TYPE", "kafka");
+      sparkConfig.put("OPENLINEAGE__TRANSPORT__TRANSPORTS__KAVVKA__TOPIC_NAME", "test");
+      sparkConfig.put("OPENLINEAGE__TRANSPORT__TRANSPORTS__KAVVKA__MESSAGE_KEY", "explicit-key");
+      sparkConfig.put(
+          "OPENLINEAGE__TRANSPORT__TRANSPORTS__KAVVKA__PROPERTIES",
+          "{\"test1\": \"test1\", \"test2\": \"test2\"}");
+      sparkConfig.put("OPENLINEAGE__TRANSPORT__TRANSPORTS__LOCAL__TYPE", "http");
+      sparkConfig.put(
+          "OPENLINEAGE__TRANSPORT__TRANSPORTS__LOCAL__URL",
+          "http://your-openlineage-endpoint/api/v1/lineage");
+      when(Environment.getAllEnvironmentVariables()).thenReturn(sparkConfig);
+
+      SparkConf sparkConf = new SparkConf();
+      SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+      CompositeConfig transportConfig = (CompositeConfig) config.getTransportConfig();
+      assertEquals(
+          "http://your-openlineage-endpoint/api/v1/lineage",
+          ((HttpConfig) transportConfig.getTransports().get(0)).getUrl().toString());
+      KafkaConfig kafkaConfig = (KafkaConfig) transportConfig.getTransports().get(1);
+      assertEquals("test", kafkaConfig.getTopicName());
+      assertEquals("explicit-key", kafkaConfig.getMessageKey());
+      assertEquals("test1", kafkaConfig.getProperties().get("test1"));
+      assertEquals("test2", kafkaConfig.getProperties().get("test2"));
+      assertEquals("kavvka", kafkaConfig.getName());
+    }
+  }
+
+  @Test
+  void testLoadConfigPrecedence() {
+    try (MockedStatic mocked = mockStatic(Environment.class)) {
+      when(Environment.getAllEnvironmentVariables())
+          .thenReturn(Collections.singletonMap("OPENLINEAGE__TRANSPORT__TYPE", "console"));
+
+      SparkConf sparkConf =
+          new SparkConf()
+              .set("spark.openlineage.transport.type", "http")
+              .set("spark.openlineage.transport.url", URL);
+      SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+      assertThat(config.getTransportConfig()).isInstanceOf(HttpConfig.class);
+    }
   }
 
   @Test

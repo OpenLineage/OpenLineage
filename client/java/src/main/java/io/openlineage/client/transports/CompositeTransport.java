@@ -30,6 +30,10 @@ public class CompositeTransport extends Transport {
     }
   }
 
+  public List<Transport> getTransports() {
+    return transports;
+  }
+
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
     for (Transport transport : transports) {
