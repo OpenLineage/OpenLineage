@@ -6,7 +6,6 @@ import traceback
 from typing import Any, Dict, List, Optional
 
 import attr
-import botocore
 from openlineage.client.facet_v2 import (
     BaseFacet,
     error_message_run,
@@ -27,7 +26,7 @@ class RedshiftFacets:
 class RedshiftDataDatasetsProvider:
     def __init__(
         self,
-        client: botocore.client,
+        client,
         connection_details: Dict[str, Any],
         logger: Optional[logging.Logger] = None,
     ):
