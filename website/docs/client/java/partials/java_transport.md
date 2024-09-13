@@ -700,3 +700,93 @@ OpenLineageClient client = OpenLineageClient.builder()
 
 </TabItem>
 </Tabs>
+
+### [Dataplex](https://github.com/OpenLineage/OpenLineage/blob/main/client/transports-dataplex/src/main/java/io/openlineage/client/transports/dataplex/DataplexTransport.java)
+
+To use this transport in your project, you need to include `io.openlineage:transports-dataplex` artifact in
+your build configuration. This is particularly important for environments like `Spark`, where this transport must be on
+the classpath for lineage events to be emitted correctly.
+
+#### Configuration
+
+- `type` - string, must be `"dataplex"`. Required.
+- `endpoint` - string, specifies the endpoint to which events are sent, default value is
+  `datalineage.googleapis.com:443`. Optional.
+- `projectId` - string, the project quota identifier. If not provided, it is determined based on user credentials.
+  Optional.
+- `location` - string, [Dataplex location](https://cloud.google.com/dataplex/docs/locations). Optional, default:
+  `"us"`.
+- `credentialsFile` - string, path
+  to
+  the [Service Account credentials JSON file](https://developers.google.com/workspace/guides/create-credentials#create_credentials_for_a_service_account).
+  Optional, if not
+  provided [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials)
+  are used
+- `mode` - enum that specifies the type of client used for publishing OpenLineage events to Dataplex. Possible values:
+  `sync` (synchronous) or `async` (asynchronous). Optional, default: `async`.
+
+#### Behavior
+
+- Events are serialized to JSON, included as part of a `gRPC` request, and then dispatched to the `Dataplex` endpoint.
+- Depending on the `mode` chosen, requests are sent using either a synchronous or asynchronous client.
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: dataplex
+  projectId: your_gcp_project_id
+  location: us
+  mode: sync
+  credentialsFile: path/to/credentials.json
+```
+
+</TabItem>
+<TabItem value="spark" label="Spark Config">
+
+```ini
+spark.openlineage.transport.type=dataplex
+spark.openlineage.transport.projectId=your_gcp_project_id
+spark.openlineage.transport.location=us
+spark.openlineage.transport.mode=sync
+spark.openlineage.transport.credentialsFile=path/to/credentials.json
+```
+
+</TabItem>
+<TabItem value="flink" label="Flink Config">
+
+```ini
+openlineage.transport.type=dataplex
+openlineage.transport.projectId=your_gcp_project_id
+openlineage.transport.location=us
+openlineage.transport.mode=sync
+openlineage.transport.credentialsFile=path/to/credentials.json
+```
+
+</TabItem>
+<TabItem value="java" label="Java Code">
+
+```java
+import io.openlineage.client.OpenLineageClient;
+import io.openlineage.client.transports.dataplex.DataplexConfig;
+import io.openlineage.client.transports.dataplex.DataplexTransport;
+
+
+DataplexConfig dataplexConfig = new DataplexConfig();
+
+dataplexConfig.setProjectId("your_kinesis_stream_name");
+dataplexConfig.setLocation("your_aws_region");
+dataplexConfig.setMode("sync");
+dataplexConfig.setCredentialsFile("path/to/credentials.json");
+
+OpenLineageClient client = OpenLineageClient.builder()
+        .transport(
+                new DataplexTransport(dataplexConfig))
+        .build();
+```
+
+</TabItem>
+</Tabs>
