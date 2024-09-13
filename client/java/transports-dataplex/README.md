@@ -40,7 +40,7 @@ be emitted correctly.
   provided [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials)
   are used
 - `mode` - enum that specifies the type of client used for publishing OpenLineage events to Dataplex. Possible values:
-  `sync` (synchronous) or `async` (asynchronous). Optional, default: `sync`.
+  `sync` (synchronous) or `async` (asynchronous). Optional, default: `async`.
 
 ### Behavior
 

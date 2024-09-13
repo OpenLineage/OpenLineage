@@ -75,16 +75,16 @@ public class DataplexTransport extends Transport implements Closeable {
 
     protected ProducerClientWrapper(DataplexConfig config) throws IOException {
       LineageSettings settings;
-      if (DataplexConfig.Mode.async == config.getMode()) {
-        syncLineageClient = null;
-        settings = createAsyncSettings(config);
-        asyncLineageClient =
-            AsyncLineageProducerClient.create((AsyncLineageProducerClientSettings) settings);
-      } else {
+      if (DataplexConfig.Mode.sync == config.getMode()) {
         settings = createSyncSettings(config);
         syncLineageClient =
             SyncLineageProducerClient.create((SyncLineageProducerClientSettings) settings);
         asyncLineageClient = null;
+      } else {
+        syncLineageClient = null;
+        settings = createAsyncSettings(config);
+        asyncLineageClient =
+            AsyncLineageProducerClient.create((AsyncLineageProducerClientSettings) settings);
       }
       this.parent = getParent(config, settings);
     }
