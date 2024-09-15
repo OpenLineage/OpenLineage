@@ -13,7 +13,7 @@ plugins {
     id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
     id "com.adarshr.test-logger" version "4.0.0"
-    id "org.gradle.test-retry" version "1.5.10"
+    id "org.gradle.test-retry" version "1.6.0"
 }
 
 ext {
@@ -35,7 +35,7 @@ ext {
         hostDir: project.findProperty('host.dir') ?: System.getProperty('host.dir'),
         testDir: project.findProperty('test.dir') ?: System.getProperty('test.dir')
     ]
-    micrometerVersion = '1.13.3'
+    micrometerVersion = '1.13.4'
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,

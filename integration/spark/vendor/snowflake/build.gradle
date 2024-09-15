@@ -11,7 +11,7 @@ ext {
     snowflakeVersion = '2.13.0'
     mockitoVersion = '4.11.0'
     lombokVersion = '1.18.30'
-    micrometerVersion = '1.13.3'
+    micrometerVersion = '1.13.4'
 
     snowflakeLookup = [
             '2.4.8': '2.9.3',
