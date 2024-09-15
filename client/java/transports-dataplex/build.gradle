@@ -44,18 +44,18 @@ repositories {
 
 ext {
     assertjVersion = '3.26.3'
-    junit5Version = '5.10.3'
+    junit5Version = '5.11.0'
     lombokVersion = '1.18.34'
     mockitoVersion = '5.2.0'
-    micrometerVersion = '1.13.2'
+    micrometerVersion = '1.13.4'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
-    guavaVersion = '33.2.1-jre'
+    guavaVersion = '33.3.0-jre'
 }
 
 dependencies {
     compileOnly(rootProject)
     implementation("com.google.cloud.datalineage:producerclient-java8:1.0.0")
-    implementation("com.google.cloud:google-cloud-datalineage:0.32.0")
+    implementation("com.google.cloud:google-cloud-datalineage:0.41.0")
     compileOnly("com.fasterxml.jackson.core:jackson-core:${jacksonVersion}")
     compileOnly("com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}")
     compileOnly("org.slf4j:slf4j-api:1.7.36")
