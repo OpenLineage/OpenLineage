@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2024 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
@@ -8,20 +13,19 @@ import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.View;
 
-public class ViewVisitor extends AbstractQueryPlanInputDatasetBuilder<View>  {
+public class ViewVisitor extends AbstractQueryPlanInputDatasetBuilder<View> {
 
-    @Override
-    public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
-        return x instanceof View && ((View) x).child() != null;
-    }
+  @Override
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    return x instanceof View && ((View) x).child() != null;
+  }
 
-    public ViewVisitor(OpenLineageContext context) {
-        super(context, true);
-    }
+  public ViewVisitor(OpenLineageContext context) {
+    super(context, true);
+  }
 
-    @Override
-    protected List<OpenLineage.InputDataset> apply(SparkListenerEvent event, View x) {
-        return delegate(x.child(), event);
-    }
-
+  @Override
+  protected List<OpenLineage.InputDataset> apply(SparkListenerEvent event, View x) {
+    return delegate(x.child(), event);
+  }
 }
