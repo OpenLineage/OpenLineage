@@ -31,7 +31,7 @@ ext {
     databricksVersion = "0.1.4"
     junit5Version = "5.11.0"
     kafkaClientsVersion = "3.8.0"
-    micrometerVersion = '1.13.3'
+    micrometerVersion = '1.13.4'
     mockitoVersion = "4.11.0"
     mockserverVersion = "5.14.0"
     postgresqlVersion = "42.7.4"
