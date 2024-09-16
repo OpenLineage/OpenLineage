@@ -493,7 +493,7 @@ class SparkDeltaIntegrationTest {
             + " WHEN NOT MATCHED THEN INSERT (event_id, last_updated_at) "
             + "VALUES (event_id, updated_at)");
 
-    verifyEvents(mockServer, "deltaMergeCommandVerification.json");
+    verifyEvents(mockServer, "deltaMergeCommandVerificationStart.json", "deltaMergeCommandVerificationComplete.json");
   }
 
   /**

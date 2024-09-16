@@ -77,7 +77,7 @@ public class ColumnLevelLineageUtils {
     return plan;
   }
 
-  private static void collectInputsAndExpressionDependencies(
+  static void collectInputsAndExpressionDependencies(
       ColumnLevelLineageContext context, LogicalPlan plan) {
     ExpressionDependencyCollector.collect(context, plan);
     InputFieldsCollector.collect(context, plan);

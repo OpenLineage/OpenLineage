@@ -1,0 +1,94 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "facets": {
+      "jobType": {
+        "processingType": "BATCH",
+        "integration": "SPARK",
+        "jobType": "SQL_JOB"
+      },
+      "sql": {
+        "query": "MERGE INTO events target USING updates2 updates  ON target.event_id = updates.event_id WHEN MATCHED THEN UPDATE SET target.last_updated_at = updates.updated_at WHEN NOT MATCHED THEN INSERT (event_id, last_updated_at) VALUES (event_id, updated_at)"
+      }
+    }
+  },
+  "inputs": [],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/delta/events",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "version": {
+          "datasetVersion": "2"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "event_id",
+              "type": "long"
+            },
+            {
+              "name": "last_updated_at",
+              "type": "long"
+            }
+          ]
+        },
+        "columnLineage": {
+          "fields": {
+            "event_id": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/tmp/delta/events",
+                  "field": "event_id",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/delta/updates",
+                  "field": "event_id",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "last_updated_at": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/tmp/delta/updates",
+                  "field": "updated_at",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "TRANSFORMATION",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}
