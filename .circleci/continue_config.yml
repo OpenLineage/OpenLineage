@@ -946,7 +946,7 @@ jobs:
       - run: ./gradlew --no-daemon --console=plain clean jarVerification -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
       - run: ./gradlew --no-daemon --console=plain clean jarVerification -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
 
-  slack-notify:
+  slack-notify-success:
     docker:
       - image: "cimg/base:stable"
     steps:
@@ -958,9 +958,6 @@ jobs:
             - slack/notify:
                 event: pass
                 template: basic_success_1
-            - slack/notify:
-                event: fail
-                template: basic_fail_1
 
   # FLINK
 
