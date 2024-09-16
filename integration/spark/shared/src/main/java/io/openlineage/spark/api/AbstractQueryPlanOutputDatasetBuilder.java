@@ -17,6 +17,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.connector.catalog.Identifier;
+import org.apache.spark.sql.connector.catalog.Table;
+import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 
 /**
@@ -88,5 +90,14 @@ public abstract class AbstractQueryPlanOutputDatasetBuilder<P extends LogicalPla
     suffix += identifier.name();
 
     return suffix;
+  }
+
+  protected List<OpenLineage.OutputDataset> getTableOutputs(DataSourceV2Relation plan) {
+    Table table = plan.table();
+
+    return context
+        .getSparkExtensionVisitorWrapper()
+        .getOutputs(table, table.getClass().getName())
+        .getLeft();
   }
 }

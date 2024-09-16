@@ -12,14 +12,20 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.List;
 import java.util.stream.Stream;
+import org.apache.spark.SparkContext;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
@@ -32,7 +38,15 @@ import org.mockito.MockedStatic;
 
 class DataSourceV2RelationDatasetBuilderTest {
 
-  OpenLineageContext context = mock(OpenLineageContext.class);
+  OpenLineageContext context =
+      OpenLineageContext.builder()
+          .sparkSession(mock(SparkSession.class))
+          .sparkContext(mock(SparkContext.class))
+          .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+          .meterRegistry(new SimpleMeterRegistry())
+          .openLineageConfig(new SparkOpenLineageConfig())
+          .sparkExtensionVisitorWrapper(mock(SparkOpenLineageExtensionVisitorWrapper.class))
+          .build();
   DatasetFactory factory = mock(DatasetFactory.class);
 
   @Test
@@ -65,6 +79,8 @@ class DataSourceV2RelationDatasetBuilderTest {
 
     when(openLineage.newDatasetFacetsBuilder()).thenReturn(datasetFacetsBuilder);
     when(context.getOpenLineage()).thenReturn(openLineage);
+    when(context.getSparkExtensionVisitorWrapper())
+        .thenReturn(mock(SparkOpenLineageExtensionVisitorWrapper.class));
 
     try (MockedStatic planUtils3MockedStatic =
         mockStatic(DataSourceV2RelationDatasetExtractor.class)) {

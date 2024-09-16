@@ -51,6 +51,13 @@ export const Producers: Array<Partner> = [
         org_url: "https://greatexpectations.io"
     },
     {
+        image: "hamilton_logo.png",
+        org: "DAGWorks Inc.",
+        description: "Using Hamilton's OpenLineageAdapter, you can automatically push data lineage information via any OpenLineage Client.",
+        docs_url: "https://hamilton.dagworks.io/",
+        org_url: "https://github.com/dagworks-inc/hamilton"
+    },
+    {
         image: "keboola_logo_lg.svg",
         org: "Keboola",
         description: "Keboola's OpenLineage integration automatically pushes all job information to an OpenLineage-compatible API endpoint.",

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
@@ -75,6 +76,8 @@ class DataSourceV2ScanRelationOnEndInputDatasetBuilderTest {
     when(openLineage.newDatasetFacetsBuilder()).thenReturn(datasetFacetsBuilder);
     when(context.getOpenLineage()).thenReturn(openLineage);
     when(scanRelation.relation()).thenReturn(relation);
+    when(context.getSparkExtensionVisitorWrapper())
+        .thenReturn(mock(SparkOpenLineageExtensionVisitorWrapper.class));
 
     try (MockedStatic<DataSourceV2RelationDatasetExtractor> ignored =
         mockStatic(DataSourceV2RelationDatasetExtractor.class)) {

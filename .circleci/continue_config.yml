@@ -478,6 +478,81 @@ jobs:
           paths:
             - ~/.m2
 
+  build-transports-dataplex:
+    working_directory: ~/openlineage/client/java/transports-dataplex
+    parameters:
+      release:
+        default: false
+        type: boolean
+    docker:
+      - image: cimg/openjdk:17.0
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
+      - restore_cache:
+          keys:
+            - v1-client-java-{{ checksum "/tmp/checksum.txt" }}
+      - run: ../gradlew --no-daemon --console=plain --stacktrace build check jacocoTestReport
+      - run: bash <(curl -s https://codecov.io/bash)
+      - run: ../gradlew --console=plain javadoc sourceJar shadowJar
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+          
+          ../gradlew --console=plain publishToMavenLocal --info
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - .m2/repository/io/openlineage/transports-dataplex
+            - openlineage/client/java/transports-dataplex/build-cache
+            - openlineage/client/java/transports-dataplex/build
+      - store_test_results:
+          path: client/java/transports-dataplex/build/test-results/test
+      - store_artifacts:
+          path: build/reports/tests/test
+          destination: test-report
+      - store_artifacts:
+          path: build/reports/tests/pmd
+          destination: pmd-report
+      - store_artifacts:
+          path: build/libs
+          destination: libs
+      - save_cache:
+          key: v1-transports-dataplex-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  release-transports-dataplex:
+    working_directory: ~/openlineage/client/java/transports-dataplex
+    docker:
+      - image: cimg/openjdk:17.0
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
+      - attach_workspace:
+          at: ~/
+      - run: ../gradlew --console=plain javadoc sourceJar shadowJar
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+
+          ../gradlew --console=plain publishToSonatype closeAndReleaseSonatypeStagingRepository --info
+      - store_artifacts:
+          path: ./build/libs
+          destination: transports-dataplex-artifacts
+      - save_cache:
+          key: v1-release-transports-dataplex-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.m2
+
   release-integration-spark:
     working_directory: ~/openlineage/integration/spark
     docker:
