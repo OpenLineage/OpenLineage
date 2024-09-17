@@ -11,7 +11,6 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.ProjectVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.ViewVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
@@ -64,7 +63,7 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new SubqueryAliasInputDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeInputDatasetBuilder(context))
             .add(new ViewVisitor(context))
-            .add(new ProjectVisitor(context))
+            //            .add(new ProjectVisitor(context))
             .add(new DataSourceV2RelationInputDatasetBuilder(context, datasetFactory));
 
     if (DeltaUtils.hasMergeIntoCommandClass()) {
