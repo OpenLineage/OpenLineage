@@ -5,8 +5,8 @@
 
 package io.openlineage.spark.agent.column;
 
-import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.*;
-import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.FILTER;
+import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertColumnDependsOn;
+import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertColumnDependsOnInputs;
 import static org.apache.spark.sql.functions.col;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -21,7 +21,6 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.DatasetBuilderFactoryProvider;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
-import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
 import io.openlineage.spark.agent.util.DerbyUtils;
 import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -57,17 +56,18 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import scala.collection.immutable.HashMap;
 
+// TODO #3084: Remove when the column lineage has dataset dependencies flag removed
 @Slf4j
 @Tag("iceberg")
-class ColumnLevelLineageIcebergTest {
+class ColumnLevelLineageIcebergDeprecatedTest {
 
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
   private static final String INT_TYPE = "int";
   private static final String FILE = "file";
-  private static final String T1_EXPECTED_NAME = "/tmp/column_level_lineage/db/t1";
-  private static final String T2_EXPECTED_NAME = "/tmp/column_level_lineage/db/t2";
+  private static final String T1_EXPECTED_NAME = "/tmp/column_level_lineage_deprecated/db/t1";
+  private static final String T2_EXPECTED_NAME = "/tmp/column_level_lineage_deprecated/db/t2";
   private static final String CREATE_T1_FROM_TEMP =
       "CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp";
   SparkSession spark;
@@ -91,7 +91,7 @@ class ColumnLevelLineageIcebergTest {
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
-    DerbyUtils.loadSystemProperty(ColumnLevelLineageIcebergTest.class.getName());
+    DerbyUtils.loadSystemProperty(ColumnLevelLineageIcebergDeprecatedTest.class.getName());
     SparkSession$.MODULE$.cleanupAnyExistingSession();
   }
 
@@ -115,7 +115,7 @@ class ColumnLevelLineageIcebergTest {
             .config("spark.sql.catalog.spark_catalog", "org.apache.iceberg.spark.SparkCatalog")
             .config("spark.sql.catalog.spark_catalog.type", "hive")
             .config("spark.sql.catalog.local", "org.apache.iceberg.spark.SparkCatalog")
-            .config("spark.sql.catalog.local.warehouse", "/tmp/column_level_lineage/")
+            .config("spark.sql.catalog.local.warehouse", "/tmp/column_level_lineage_deprecated/")
             .config("spark.sql.catalog.local.type", "hadoop")
             .config(
                 "spark.sql.extensions",
@@ -124,7 +124,7 @@ class ColumnLevelLineageIcebergTest {
             .getOrCreate();
 
     SparkOpenLineageConfig config = new SparkOpenLineageConfig();
-    config.getColumnLineageConfig().setDatasetLineageEnabled(true);
+    config.getColumnLineageConfig().setDatasetLineageEnabled(false);
     context =
         OpenLineageContext.builder()
             .sparkSession(spark)
@@ -141,7 +141,7 @@ class ColumnLevelLineageIcebergTest {
         .addAll(DatasetBuilderFactoryProvider.getInstance().getColumnLevelLineageVisitors(context));
 
     FileSystem.get(spark.sparkContext().hadoopConfiguration())
-        .delete(new Path("/tmp/column_level_lineage/"), true);
+        .delete(new Path("/tmp/column_level_lineage_deprecated/"), true);
 
     spark.sql("DROP TABLE IF EXISTS local.db.t1");
     spark.sql("DROP TABLE IF EXISTS local.db.t2");
@@ -380,9 +380,7 @@ class ColumnLevelLineageIcebergTest {
     assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "d", FILE, T1_EXPECTED_NAME, "b");
     assertColumnDependsOnInputs(facet, "c", 1);
-    assertColumnDependsOnInputs(facet, "d", 1);
-    assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(FILTER));
+    assertColumnDependsOnInputs(facet, "d", 2);
   }
 
   @Test

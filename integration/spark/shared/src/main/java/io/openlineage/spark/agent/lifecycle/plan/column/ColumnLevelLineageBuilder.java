@@ -155,15 +155,12 @@ public class ColumnLevelLineageBuilder {
    *
    * @return
    */
-  public ColumnLineageDatasetFacetFields build() {
+  public ColumnLineageDatasetFacetFields buildFields(boolean datasetLineageEnabled) {
     OpenLineage.ColumnLineageDatasetFacetFieldsBuilder fieldsBuilder =
         context.getOpenLineage().newColumnLineageDatasetFacetFieldsBuilder();
 
     List<TransformedInput> datasetDependencyInputs =
-        datasetDependencies.stream()
-            .flatMap(e -> getInputsUsedFor(e).stream())
-            .distinct()
-            .collect(Collectors.toList());
+        datasetLineageEnabled ? Collections.emptyList() : datasetDependencyInputs();
 
     schema.getFields().stream()
         .map(field -> Pair.of(field, getInputsUsedFor(field.getName())))
@@ -184,7 +181,7 @@ public class ColumnLevelLineageBuilder {
     return fieldsBuilder.build();
   }
 
-  private List<OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields> facetInputFields(
+  private List<OpenLineage.InputField> facetInputFields(
       List<TransformedInput> inputFields, List<TransformedInput> datasetDependencyInputs) {
     Map<Input, List<TransformedInput>> combinedInputs = new HashMap<>();
     inputFields.stream()
@@ -195,7 +192,7 @@ public class ColumnLevelLineageBuilder {
     return combinedInputs.entrySet().stream()
         .map(
             field ->
-                new OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFieldsBuilder()
+                new OpenLineage.InputFieldBuilder()
                     .namespace(field.getKey().getDatasetIdentifier().getNamespace())
                     .name(field.getKey().getDatasetIdentifier().getName())
                     .field(field.getKey().getFieldName())
@@ -265,5 +262,23 @@ public class ColumnLevelLineageBuilder {
 
   public ExprId getMapping(ColumnMeta columnMeta) {
     return externalExpressionMappings.get(columnMeta);
+  }
+
+  public Optional<List<OpenLineage.InputField>> buildDatasetDependencies(
+      boolean datasetLineageEnabled) {
+    if (datasetLineageEnabled) {
+      List<OpenLineage.InputField> result =
+          facetInputFields(Collections.emptyList(), datasetDependencyInputs());
+      return result.isEmpty() ? Optional.empty() : Optional.of(result);
+    } else {
+      return Optional.empty();
+    }
+  }
+
+  private List<TransformedInput> datasetDependencyInputs() {
+    return datasetDependencies.stream()
+        .flatMap(e -> getInputsUsedFor(e).stream())
+        .distinct()
+        .collect(Collectors.toList());
   }
 }

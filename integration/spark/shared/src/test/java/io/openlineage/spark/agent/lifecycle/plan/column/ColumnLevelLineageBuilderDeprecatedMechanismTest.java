@@ -21,7 +21,7 @@ import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ColumnLevelLineageBuilderTest {
+class ColumnLevelLineageBuilderDeprecatedMechanismTest {
 
   private static final String TABLE_A = "tableA";
   private static final String INPUT_A = "inputA";
@@ -43,9 +43,7 @@ class ColumnLevelLineageBuilderTest {
   @BeforeEach
   void setup() {
     when(context.getOpenLineage()).thenReturn(openLineage);
-    SparkOpenLineageConfig config = new SparkOpenLineageConfig();
-    config.getColumnLineageConfig().setDatasetLineageEnabled(true);
-    when(context.getOpenLineageConfig()).thenReturn(config);
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
   }
 
   @Test
@@ -120,7 +118,7 @@ class ColumnLevelLineageBuilderTest {
     builder.addInput(rootExprId, diB, "inputB");
 
     List<OpenLineage.InputField> facetFields =
-        builder.buildFields(true).getAdditionalProperties().get("a").getInputFields();
+        builder.buildFields(false).getAdditionalProperties().get("a").getInputFields();
 
     assertEquals(2, facetFields.size());
 
@@ -139,7 +137,7 @@ class ColumnLevelLineageBuilderTest {
     builder.addDependency(rootExprId, childExprId);
 
     // no inputs
-    assertEquals(0, builder.buildFields(true).getAdditionalProperties().size());
+    assertEquals(0, builder.buildFields(false).getAdditionalProperties().size());
   }
 
   @Test
@@ -152,7 +150,7 @@ class ColumnLevelLineageBuilderTest {
     builder.addDependency(rootExprId, childExprId);
 
     List<OpenLineage.InputField> facetFields =
-        builder.buildFields(true).getAdditionalProperties().get("a").getInputFields();
+        builder.buildFields(false).getAdditionalProperties().get("a").getInputFields();
 
     assertEquals(1, facetFields.size());
   }
