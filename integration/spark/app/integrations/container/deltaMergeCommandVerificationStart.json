@@ -1,12 +1,5 @@
 {
   "eventType": "START",
-  "job": {
-    "facets": {
-      "sql": {
-        "query": "MERGE INTO events target USING updates2 updates  ON target.event_id = updates.event_id WHEN MATCHED THEN UPDATE SET target.last_updated_at = updates.updated_at WHEN NOT MATCHED THEN INSERT (event_id, last_updated_at) VALUES (event_id, updated_at)"
-      }
-    }
-  },
   "inputs": [
     {
       "namespace": "file",
