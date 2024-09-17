@@ -5,14 +5,12 @@
 
 package io.openlineage.spark.agent.column;
 
+import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertAllColumnsDependsOnType;
 import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertColumnDependsOnType;
-import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertDatasetDependsOnType;
-import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.CONDITIONAL;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.FILTER;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.GROUP_BY;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.JOIN;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.SORT;
-import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.WINDOW;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -47,19 +45,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
+// TODO #3084: Remove when the column lineage has dataset dependencies flag removed
 @Slf4j
 @EnabledIfSystemProperty(named = "spark.version", matches = "([34].*)")
-class ColumnLineageWithTransformationTypesTest {
+class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
 
   private static final String FILE = "file";
 
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
 
-  private static final String T1_EXPECTED_NAME = "column_transformation/t1";
-  private static final String T2_EXPECTED_NAME = "column_transformation/t2";
-  private static final String T3_EXPECTED_NAME = "column_transformation/t3";
-  public static final String DATA_PATH = "/tmp/column_transformation";
+  private static final String T1_EXPECTED_NAME = "column_transformation_deprecated/t1";
+  private static final String T2_EXPECTED_NAME = "column_transformation_deprecated/t2";
+  private static final String T3_EXPECTED_NAME = "column_transformation_deprecated/t3";
+  public static final String DATA_PATH = "/tmp/column_transformation_deprecated";
   SparkSession spark;
   OpenLineageContext context;
   SparkListenerEvent event = mock(SparkListenerSQLExecutionEnd.class);
@@ -70,7 +69,8 @@ class ColumnLineageWithTransformationTypesTest {
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
-    DerbyUtils.loadSystemProperty(ColumnLineageWithTransformationTypesTest.class.getName());
+    DerbyUtils.loadSystemProperty(
+        ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest.class.getName());
     SparkSession$.MODULE$.cleanupAnyExistingSession();
   }
 
@@ -95,7 +95,7 @@ class ColumnLineageWithTransformationTypesTest {
             .getOrCreate();
 
     SparkOpenLineageConfig config = new SparkOpenLineageConfig();
-    config.getColumnLineageConfig().setDatasetLineageEnabled(true);
+    config.getColumnLineageConfig().setDatasetLineageEnabled(false);
     context =
         OpenLineageContext.builder()
             .sparkSession(spark)
@@ -116,40 +116,6 @@ class ColumnLineageWithTransformationTypesTest {
   }
 
   @Test
-  void simpleQueryOnlyIdentity() {
-    createTable("t1", "a;int");
-    OpenLineage.ColumnLineageDatasetFacet facet =
-        getFacetForQuery(getSchemaFacet("a;int"), "SELECT a FROM t1");
-
-    assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
-  }
-
-  @Test
-  void simpleQueryOnlyTransform() {
-    createTable("t1", "a;int", "b;int");
-    OpenLineage.ColumnLineageDatasetFacet facet =
-        getFacetForQuery(
-            getSchemaFacet("a;int", "b;int"), "SELECT concat(a, 'test') AS a, a+b as b FROM t1");
-
-    assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
-    assertColumnDependsOnType(
-        facet, "b", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
-    assertColumnDependsOnType(
-        facet, "b", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.transformation());
-  }
-
-  @Test
-  void simpleQueryOnlyAggregation() {
-    createTable("t1", "a;int");
-    OpenLineage.ColumnLineageDatasetFacet facet =
-        getFacetForQuery(getSchemaFacet("a;int"), "SELECT count(a) AS a FROM t1");
-    assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.aggregation(true));
-  }
-
-  @Test
   void simpleQueryIndirect() {
     createTable("t1", "a;int", "b;int");
     OpenLineage.ColumnLineageDatasetFacet facet =
@@ -158,8 +124,8 @@ class ColumnLineageWithTransformationTypesTest {
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
 
-    assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
+    assertColumnDependsOnType(
+        facet, "a", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
   }
 
   @Test
@@ -172,34 +138,14 @@ class ColumnLineageWithTransformationTypesTest {
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
 
-    assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
-    assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
-    assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(GROUP_BY));
-    assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(SORT));
-  }
-
-  @Test
-  void simpleQueryPriorityDirect() {
-    createTable("t1", "a;int", "b;int");
-    OpenLineage.ColumnLineageDatasetFacet facet =
-        getFacetForQuery(
-            getSchemaFacet("i;int", "t;int", "a;int", "ta;int", "tat;int"),
-            "SELECT a as i, a + 1 as t, sum(b) as a, 2 * sum(b) as ta, 2 * sum(b + 3) as tat FROM t1 GROUP BY a");
-
     assertColumnDependsOnType(
-        facet, "i", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
     assertColumnDependsOnType(
-        facet, "t", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+        facet, "a", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
     assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation());
+        facet, "a", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(GROUP_BY));
     assertColumnDependsOnType(
-        facet, "ta", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation());
-    assertColumnDependsOnType(
-        facet, "tat", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation());
+        facet, "a", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(SORT));
   }
 
   @Test
@@ -229,69 +175,6 @@ class ColumnLineageWithTransformationTypesTest {
   }
 
   @Test
-  void simpleQueryWithConditional() {
-    createTable("t1", "a;int", "b;int");
-    OpenLineage.ColumnLineageDatasetFacet facet =
-        getFacetForQuery(
-            getSchemaFacet("cond;int"),
-            "SELECT CASE WHEN b > 1 THEN a ELSE a + b END AS cond FROM t1");
-
-    assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
-    assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
-    assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.transformation());
-
-    assertColumnDependsOnType(
-        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(CONDITIONAL));
-  }
-
-  @Test
-  void simpleQueryExplode() {
-    createTable("t1", "a;string");
-    OpenLineage.ColumnLineageDatasetFacet facet =
-        getFacetForQuery(
-            getSchemaFacet("a;string"),
-            "SELECT a FROM (SELECT explode(split(a, ' ')) AS a FROM t1)");
-
-    assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
-  }
-
-  @Test
-  void simpleQueryRank() {
-    createTable("t1", "a;string", "b;string", "c;int");
-    OpenLineage.ColumnLineageDatasetFacet facet =
-        getFacetForQuery(
-            getSchemaFacet("a;string", "rank;int"),
-            "SELECT a, RANK() OVER (PARTITION BY b ORDER BY c) as rank FROM t1;");
-
-    assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
-    assertColumnDependsOnType(
-        facet, "rank", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(WINDOW));
-    assertColumnDependsOnType(
-        facet, "rank", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(WINDOW));
-  }
-
-  @Test
-  void simpleQueryWindowedAggregate() {
-    createTable("t1", "a;int", "b;string", "c;int");
-    OpenLineage.ColumnLineageDatasetFacet facet =
-        getFacetForQuery(
-            getSchemaFacet("s;int"),
-            "SELECT sum(a) OVER (PARTITION BY b ORDER BY c) AS s FROM t1;");
-
-    assertColumnDependsOnType(
-        facet, "s", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.aggregation());
-    assertColumnDependsOnType(
-        facet, "s", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(WINDOW));
-    assertColumnDependsOnType(
-        facet, "s", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(WINDOW));
-  }
-
-  @Test
   void complexQueryCTEJoinsFilter() {
     createTable("t1", "a;int", "b;string");
     createTable("t2", "a;int", "c;int");
@@ -313,18 +196,48 @@ class ColumnLineageWithTransformationTypesTest {
     assertColumnDependsOnType(
         facet, "d", FILE, T3_EXPECTED_NAME, "d", TransformationInfo.identity());
 
-    assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(JOIN));
-    assertDatasetDependsOnType(
-        facet, FILE, T2_EXPECTED_NAME, "a", TransformationInfo.indirect(JOIN));
-    assertDatasetDependsOnType(
-        facet, FILE, T3_EXPECTED_NAME, "a", TransformationInfo.indirect(JOIN));
-    assertDatasetDependsOnType(
-        facet, FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
-    assertDatasetDependsOnType(
-        facet, FILE, T2_EXPECTED_NAME, "c", TransformationInfo.indirect(FILTER));
-    assertDatasetDependsOnType(
-        facet, FILE, T3_EXPECTED_NAME, "d", TransformationInfo.indirect(SORT));
+    assertAllColumnsDependsOnType(
+        facet,
+        Arrays.asList("a", "b", "c", "d"),
+        FILE,
+        T1_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(JOIN));
+    assertAllColumnsDependsOnType(
+        facet,
+        Arrays.asList("a", "b", "c", "d"),
+        FILE,
+        T2_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(JOIN));
+    assertAllColumnsDependsOnType(
+        facet,
+        Arrays.asList("a", "b", "c", "d"),
+        FILE,
+        T3_EXPECTED_NAME,
+        "a",
+        TransformationInfo.indirect(JOIN));
+    assertAllColumnsDependsOnType(
+        facet,
+        Arrays.asList("a", "b", "c", "d"),
+        FILE,
+        T1_EXPECTED_NAME,
+        "b",
+        TransformationInfo.indirect(FILTER));
+    assertAllColumnsDependsOnType(
+        facet,
+        Arrays.asList("a", "b", "c", "d"),
+        FILE,
+        T2_EXPECTED_NAME,
+        "c",
+        TransformationInfo.indirect(FILTER));
+    assertAllColumnsDependsOnType(
+        facet,
+        Arrays.asList("a", "b", "c", "d"),
+        FILE,
+        T3_EXPECTED_NAME,
+        "d",
+        TransformationInfo.indirect(SORT));
   }
 
   @NotNull
