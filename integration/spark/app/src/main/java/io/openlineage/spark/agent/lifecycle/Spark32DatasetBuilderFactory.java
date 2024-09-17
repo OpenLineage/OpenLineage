@@ -63,7 +63,6 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new SubqueryAliasInputDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeInputDatasetBuilder(context))
             .add(new ViewVisitor(context))
-            //            .add(new ProjectVisitor(context))
             .add(new DataSourceV2RelationInputDatasetBuilder(context, datasetFactory));
 
     if (DeltaUtils.hasMergeIntoCommandClass()) {
