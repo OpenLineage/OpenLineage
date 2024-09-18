@@ -15,39 +15,38 @@
  */
 package io.openlineage.hive.client;
 
-import io.openlineage.client.*;
-import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
-import io.openlineage.client.transports.FacetsConfig;
-import io.openlineage.client.transports.TransportFactory;
-import java.util.Optional;
+import static com.google.common.hash.Hashing.sha512;
+
+import io.openlineage.client.Clients;
+import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageClient;
+import io.openlineage.client.OpenLineageClientException;
+import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.hive.api.OpenLineageContext;
+import io.openlineage.hive.util.NetworkUtils;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.conf.HiveConf;
 
+@Getter
 @Slf4j
 public class EventEmitter {
-  @Getter private OpenLineageClient client;
-  @Getter private UUID runId;
-  @Getter private String jobName;
-  @Getter private String jobNamespace;
+  private final OpenLineageClient client;
+  private final UUID runId;
+  private final String jobName;
+  private final String jobNamespace;
 
-  public EventEmitter(Configuration conf) {
-    OpenLineageYaml openLineageYaml = HiveOpenLineageConfigParser.extractOpenLineageYaml(conf);
-    String[] disabledFacets =
-        Optional.ofNullable(openLineageYaml.getFacetsConfig())
-            .orElse(new FacetsConfig().withDisabledFacets(new String[0]))
-            .getDisabledFacets();
-    this.client =
-        OpenLineageClient.builder()
-            .transport(new TransportFactory(openLineageYaml.getTransportConfig()).build())
-            .circuitBreaker(new CircuitBreakerFactory(openLineageYaml.getCircuitBreaker()).build())
-            .disableFacets(disabledFacets)
-            .build();
+  public EventEmitter(OpenLineageContext olContext) {
+    Configuration conf = olContext.getHadoopConf();
+    this.client = Clients.newClient(olContext.getOpenLineageConfig());
     this.runId = UUID.randomUUID();
-    this.jobName = extractJobName(conf);
-    this.jobNamespace = conf.get(HiveOpenLineageConfigParser.NAMESPACE);
+    this.jobNamespace =
+        conf.get(
+            HiveOpenLineageConfigParser.NAMESPACE_KEY, getJobNamespace(olContext.getQueryString()));
+    this.jobName =
+        conf.get(
+            HiveOpenLineageConfigParser.JOB_NAME_KEY, NetworkUtils.LOCAL_IP_ADDRESS.getHostName());
   }
 
   public void emit(OpenLineage.RunEvent event) {
@@ -56,30 +55,12 @@ public class EventEmitter {
       log.debug(
           "Emitting lineage completed successfully: {}", OpenLineageClientUtils.toJson(event));
     } catch (OpenLineageClientException exception) {
-      log.error("Could not emit lineage w/ exception", exception);
+      log.error("Could not emit lineage", exception);
     }
   }
 
-  // TODO: Figure out if the hook would ever be used in contexts other than when
-  //  the 'hive.query.id' is available. For example, are hooks even called with Pig?
-  protected String extractJobName(Configuration conf) {
-    if (!conf.get("hive.query.id", "").isEmpty()) {
-      // In this case, the user is running a plain Hive query directly from Hive itself.
-      return "hive-query-id-" + conf.get(HiveConf.ConfVars.HIVEQUERYID.varname);
-    } else if (!conf.get("pig.script.id", "").isEmpty()
-        && !conf.get("pig.job.submitted.timestamp", "").isEmpty()) {
-      // The user is running a Hive query from Pig. Use the job's timestamp as a pig script might
-      // run multiple jobs.
-      return String.format(
-          "pig-%s-%s", conf.get("pig.script.id"), conf.get("pig.job.submitted.timestamp"));
-    } else if (!conf.get("mapreduce.lib.hcatoutput.id", "").isEmpty()) {
-      // Possibly from Pig in Tez mode in some environments (e.g. Dataproc)
-      return String.format("hcat-output-%s", conf.get("mapreduce.lib.hcatoutput.id"));
-    } else if (!conf.get("mapreduce.workflow.id", "").isEmpty()) {
-      // Map reduce job, possibly from Pig in MR mode in some environments (e.g. Dataproc)
-      return String.format("mapreduce-%s", conf.get("mapreduce.workflow.id"));
-    }
-    // Fall back: generate our own ID
-    return String.format("custom-query-id-%s", UUID.randomUUID());
+  public static String getJobNamespace(String queryString) {
+    // TODO: Confirm that this is an appropriate hashing function to use
+    return sha512().hashUnencodedChars(queryString).toString();
   }
 }

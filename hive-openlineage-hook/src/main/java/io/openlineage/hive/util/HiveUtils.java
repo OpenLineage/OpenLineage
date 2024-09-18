@@ -13,26 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.openlineage.hive.transport;
+package io.openlineage.hive.util;
 
-import io.openlineage.client.transports.ConsoleConfig;
-import io.openlineage.client.transports.TransportBuilder;
-import io.openlineage.client.transports.TransportConfig;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.ql.metadata.Hive;
+import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.metadata.Table;
 
-public class DummyTransportBuilder implements TransportBuilder {
+public class HiveUtils {
 
-  @Override
-  public TransportConfig getConfig() {
-    return new ConsoleConfig();
-  }
-
-  @Override
-  public Transport build(TransportConfig config) {
-    return new DummyTransport();
-  }
-
-  @Override
-  public String getType() {
-    return "dummy";
+  public static Table getTable(Configuration conf, String dbName, String tableName) {
+    HiveConf hiveConf = new HiveConf(conf, HiveConf.class);
+    try {
+      return Hive.get(hiveConf).getTable(dbName, tableName);
+    } catch (HiveException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

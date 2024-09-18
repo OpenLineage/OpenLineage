@@ -15,29 +15,43 @@
  */
 package io.openlineage.hive.client;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.openlineage.client.OpenLineageClientUtils;
-import io.openlineage.client.OpenLineageYaml;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 
 public class HiveOpenLineageConfigParser {
   public static final String CONF_PREFIX = "hive.openlineage.";
-  public static final String ARRAY_PREFIX_CHAR = "[";
-  public static final String ARRAY_SUFFIX_CHAR = "]";
-  public static final String ARRAY_ELEMENTS_SEPARATOR = ";";
   public static final Set<String> PROPERTIES_PREFIXES =
       new HashSet<>(
           Arrays.asList("transport.properties.", "transport.urlParams.", "transport.headers."));
-  public static final String NAMESPACE = CONF_PREFIX + "namespace";
+  public static final String NAMESPACE_KEY = CONF_PREFIX + "namespace";
+  public static final String JOB_NAME_KEY = CONF_PREFIX + "job.name";
 
-  public static OpenLineageYaml extractOpenLineageYaml(Configuration conf) {
+  private static final ObjectMapper JSON = new ObjectMapper();
+
+  public static String unescapeValue(String value) {
+    if (!value.contains("&amp;") && !value.contains("&quot;")) {
+      return value;
+    }
+    String unescapedValue = StringEscapeUtils.unescapeXml(value);
+    return unescapeValue(unescapedValue);
+  }
+
+  public static HiveOpenLineageConfig extractFromHadoopConf(Configuration conf) {
     Set<String> configKeys =
         conf.getPropsWithPrefix(CONF_PREFIX).keySet().stream()
             .filter(
@@ -46,11 +60,14 @@ public class HiveOpenLineageConfigParser {
                         || key.startsWith("facets")
                         || key.startsWith("circuitBreaker"))
             .collect(Collectors.toSet());
-    ObjectMapper objectMapper = new ObjectMapper();
-    ObjectNode objectNode = objectMapper.createObjectNode();
+    ObjectNode objectNode = JSON.createObjectNode();
     for (String key : configKeys) {
       ObjectNode nodePointer = objectNode;
-      String value = conf.get(CONF_PREFIX + key);
+      // TODO: Figure out why the conf values are XML-escaped multiple times when running
+      //  acceptance tests on Dataproc
+      //  See b/369429658
+      String possiblyEscapedValue = conf.get(CONF_PREFIX + key);
+      String value = unescapeValue(possiblyEscapedValue);
       if (StringUtils.isNotBlank(value)) {
         List<String> pathKeys = getJsonPath(key);
         List<String> nonLeafs = pathKeys.subList(0, pathKeys.size() - 1);
@@ -61,23 +78,28 @@ public class HiveOpenLineageConfigParser {
           }
           nodePointer = (ObjectNode) nodePointer.get(node);
         }
-        if (isArrayType(value)) {
-          ArrayNode arrayNode = nodePointer.putArray(leaf);
-          String valueWithoutBrackets =
-              isArrayType(value) ? value.substring(1, value.length() - 1) : value;
-          Arrays.stream(valueWithoutBrackets.split(ARRAY_ELEMENTS_SEPARATOR))
-              .filter(StringUtils::isNotBlank)
-              .forEach(arrayNode::add);
+        Object parsedValue = parseValue(value);
+        if (parsedValue instanceof String) {
+          nodePointer.put(leaf, (String) parsedValue);
+        } else if (parsedValue instanceof JsonNode) {
+          nodePointer.set(leaf, (JsonNode) parsedValue);
         } else {
-          nodePointer.put(leaf, value);
+          throw new RuntimeException("Unexpected value: " + value);
         }
       }
     }
     try {
-      return OpenLineageClientUtils.loadOpenLineageYaml(
-          new ByteArrayInputStream(objectMapper.writeValueAsBytes(objectNode)));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+      return JSON.readValue(
+          new ByteArrayInputStream(JSON.writeValueAsBytes(objectNode)),
+          new TypeReference<HiveOpenLineageConfig>() {});
+    } catch (IOException | IllegalArgumentException configException) {
+      try {
+        throw new RuntimeException(
+            "Failure to read the configuration: " + JSON.writeValueAsString(objectNode),
+            configException);
+      } catch (JsonProcessingException jsonException) {
+        throw new RuntimeException(configException);
+      }
     }
   }
 
@@ -94,9 +116,16 @@ public class HiveOpenLineageConfigParser {
         .orElseGet(() -> Arrays.asList(keyPath.replace("openlineage.", "").split("\\.")));
   }
 
-  private static boolean isArrayType(String value) {
-    return value.startsWith(ARRAY_PREFIX_CHAR)
-        && value.endsWith(ARRAY_SUFFIX_CHAR)
-        && value.contains(ARRAY_ELEMENTS_SEPARATOR);
+  private static Object parseValue(String value) {
+    try {
+      JsonNode jsonNode = JSON.readTree(value);
+      if (jsonNode.isObject() || jsonNode.isArray()) {
+        return jsonNode;
+      } else {
+        return jsonNode.asText();
+      }
+    } catch (Exception e) {
+      return value;
+    }
   }
 }

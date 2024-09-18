@@ -15,226 +15,87 @@
  */
 package io.openlineage.hive.hooks;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineageClientUtils;
-import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.hive.api.OpenLineageContext;
 import io.openlineage.hive.client.EventEmitter;
+import io.openlineage.hive.client.HiveOpenLineageConfigParser;
 import io.openlineage.hive.client.Versions;
-import io.openlineage.hive.util.PathUtils;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.*;
-import java.util.stream.Collectors;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.hadoop.hive.ql.QueryPlan;
-import org.apache.hadoop.hive.ql.hooks.*;
-import org.apache.hadoop.hive.ql.metadata.Table;
-import org.apache.hadoop.hive.ql.optimizer.lineage.LineageCtx;
+import org.apache.hadoop.hive.ql.hooks.Entity;
+import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
+import org.apache.hadoop.hive.ql.hooks.HookContext;
+import org.apache.hadoop.hive.ql.hooks.ReadEntity;
+import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
-import org.apache.hive.common.util.HiveVersionInfo;
 
 public class HiveOpenLineageHook implements ExecuteWithHookContext {
 
-  private static final HashSet<String> OPERATION_NAMES = new HashSet<>();
+  private static final HashSet<HiveOperation> SUPPORTED_OPERATIONS = new HashSet<>();
 
-  // TODO: Add all supported operations
   static {
-    OPERATION_NAMES.add(HiveOperation.QUERY.getOperationName());
-    //    OPERATION_NAMES.add(HiveOperation.CREATETABLE.getOperationName());
-    OPERATION_NAMES.add(HiveOperation.CREATETABLE_AS_SELECT.getOperationName());
-    //    OPERATION_NAMES.add(HiveOperation.ALTERVIEW_AS.getOperationName());
-    //    OPERATION_NAMES.add(HiveOperation.CREATEVIEW.getOperationName());
-    //    OPERATION_NAMES.add(HiveOperation.ALTERTABLE_ADDCOLS.getOperationName());
+    SUPPORTED_OPERATIONS.add(HiveOperation.QUERY);
+    SUPPORTED_OPERATIONS.add(HiveOperation.CREATETABLE_AS_SELECT);
+  }
+
+  public static Set<ReadEntity> getValidInputs(QueryPlan queryPlan) {
+    Set<ReadEntity> validInputs = new HashSet<>();
+    for (ReadEntity readEntity : queryPlan.getInputs()) {
+      Entity.Type entityType = readEntity.getType();
+      if ((entityType == Entity.Type.TABLE || entityType == Entity.Type.PARTITION)
+          && !readEntity.isDummy()) {
+        validInputs.add(readEntity);
+      }
+    }
+    return validInputs;
+  }
+
+  public static Set<WriteEntity> getValidOutputs(QueryPlan queryPlan) {
+    Set<WriteEntity> validOutputs = new HashSet<>();
+    for (WriteEntity writeEntity : queryPlan.getOutputs()) {
+      Entity.Type entityType = writeEntity.getType();
+      if ((entityType == Entity.Type.TABLE || entityType == Entity.Type.PARTITION)
+          && !writeEntity.isDummy()) {
+        validOutputs.add(writeEntity);
+      }
+    }
+    return validOutputs;
   }
 
   @Override
   public void run(HookContext hookContext) throws Exception {
     QueryPlan queryPlan = hookContext.getQueryPlan();
-    LineageCtx.Index index = hookContext.getIndex();
-    SessionState sessionState = SessionState.get();
-    if (hookContext.getHookType() == HookContext.HookType.POST_EXEC_HOOK
-        && sessionState != null
-        && index != null
-        && OPERATION_NAMES.contains(queryPlan.getOperationName())
-        && !queryPlan.isExplain()) {
-      emitOpenLineageEvent(hookContext, index);
+    Set<ReadEntity> validInputs = getValidInputs(queryPlan);
+    Set<WriteEntity> validOutputs = getValidOutputs(queryPlan);
+    if (hookContext.getHookType() != HookContext.HookType.POST_EXEC_HOOK
+        || SessionState.get() == null
+        || hookContext.getIndex() == null
+        || !SUPPORTED_OPERATIONS.contains(queryPlan.getOperation())
+        || queryPlan.isExplain()
+        || queryPlan.getInputs().isEmpty()
+        || queryPlan.getOutputs().isEmpty()
+        || validInputs.isEmpty()
+        || validOutputs.isEmpty()) {
+      return;
     }
-  }
-
-  private List<OpenLineage.InputDataset> getInputDatasets(HookContext hookContext)
-      throws Exception {
-    List<OpenLineage.InputDataset> inputs = new ArrayList<>();
-    for (ReadEntity input : hookContext.getQueryPlan().getInputs()) {
-      Entity.Type entityType = input.getType();
-      if (entityType == Entity.Type.TABLE || entityType == Entity.Type.PARTITION) {
-        Table table = input.getTable();
-        DatasetIdentifier di = PathUtils.fromTable(table, hookContext.getConf());
-        OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
-        OpenLineage.SchemaDatasetFacet schemaFacet = getSchemaDatasetFacet(ol, table);
-        OpenLineage.SymlinksDatasetFacet symlinksDatasetFacet = getSymlinkFacets(ol, di);
-        inputs.add(
-            ol.newInputDatasetBuilder()
-                .namespace(di.getNamespace())
-                .name(di.getName())
-                .facets(
-                    ol.newDatasetFacetsBuilder()
-                        .schema(schemaFacet)
-                        .symlinks(symlinksDatasetFacet)
-                        .build())
-                .build());
-      }
-    }
-    return inputs;
-  }
-
-  private List<OpenLineage.OutputDataset> getOutputDatasets(
-      HookContext hookContext, LineageCtx.Index index) {
-    ColumnLineageExtractor.ColumnLineage columnLineage =
-        ColumnLineageExtractor.getColumnLineage(hookContext.getQueryPlan(), index);
-    List<OpenLineage.OutputDataset> outputs = new ArrayList<>();
-    for (WriteEntity output : hookContext.getQueryPlan().getOutputs()) {
-      Entity.Type entityType = output.getType();
-      if (entityType == Entity.Type.TABLE || entityType == Entity.Type.PARTITION) {
-        Table table = output.getTable();
-        DatasetIdentifier di = PathUtils.fromTable(table, hookContext.getConf());
-        OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
-        OpenLineage.SchemaDatasetFacet schemaFacet = getSchemaDatasetFacet(ol, table);
-        OpenLineage.SymlinksDatasetFacet symlinksFacet = getSymlinkFacets(ol, di);
-        OpenLineage.ColumnLineageDatasetFacet columnsFacet =
-            getColumnFacets(ol, columnLineage.getOutputTables().get(table));
-        outputs.add(
-            ol.newOutputDatasetBuilder()
-                .namespace(di.getNamespace())
-                .name(di.getName())
-                .facets(
-                    ol.newDatasetFacetsBuilder()
-                        .schema(schemaFacet)
-                        .symlinks(symlinksFacet)
-                        .columnLineage(columnsFacet)
-                        .build())
-                .build());
-      }
-    }
-    return outputs;
-  }
-
-  private OpenLineage.ColumnLineageDatasetFacet getColumnFacets(
-      OpenLineage ol, List<ColumnLineageExtractor.OutputFieldLineage> outputLineages) {
-    if (outputLineages == null) {
-      return null;
-    }
-    OpenLineage.ColumnLineageDatasetFacetBuilder columnLineageFacetBuilder =
-        ol.newColumnLineageDatasetFacetBuilder();
-    OpenLineage.ColumnLineageDatasetFacetFieldsBuilder inputFieldsFacetBuilder =
-        ol.newColumnLineageDatasetFacetFieldsBuilder();
-    for (ColumnLineageExtractor.OutputFieldLineage lineage : outputLineages) {
-      List<OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields> olInputFields =
-          new ArrayList<>();
-      for (ColumnLineageExtractor.InputFieldLineage fieldLineage : lineage.getInputFields()) {
-        OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields olField =
-            new OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFieldsBuilder()
-                // .namespace()  // TODO
-                .name(fieldLineage.getInputTable().getFullyQualifiedName())
-                .field(fieldLineage.getInputFieldName())
-                .build();
-        olInputFields.add(olField);
-      }
-      OpenLineage.ColumnLineageDatasetFacetFieldsAdditional value =
-          ol.newColumnLineageDatasetFacetFieldsAdditionalBuilder()
-              .inputFields(olInputFields)
-              .build();
-      inputFieldsFacetBuilder.put(lineage.getOutputFieldName(), value);
-    }
-    columnLineageFacetBuilder.put("fields", inputFieldsFacetBuilder.build());
-    return columnLineageFacetBuilder.build();
-  }
-
-  private OpenLineage.SymlinksDatasetFacet getSymlinkFacets(OpenLineage ol, DatasetIdentifier di) {
-    if (!di.getSymlinks().isEmpty()) {
-      List<OpenLineage.SymlinksDatasetFacetIdentifiers> symlinks =
-          di.getSymlinks().stream()
-              .map(
-                  symlink ->
-                      ol.newSymlinksDatasetFacetIdentifiersBuilder()
-                          .name(symlink.getName())
-                          .namespace(symlink.getNamespace())
-                          .type(symlink.getType().toString())
-                          .build())
-              .collect(Collectors.toList());
-      return ol.newSymlinksDatasetFacet(symlinks);
-    }
-    return null;
-  }
-
-  private static OpenLineage.SchemaDatasetFacet getSchemaDatasetFacet(OpenLineage ol, Table table) {
-    List<FieldSchema> columns = table.getCols();
-    OpenLineage.SchemaDatasetFacet schemaFacet = null;
-    if (columns != null && !columns.isEmpty()) {
-      List<OpenLineage.SchemaDatasetFacetFields> fields = new ArrayList<>();
-      for (FieldSchema column : columns) {
-        fields.add(
-            ol.newSchemaDatasetFacetFields(
-                column.getName(), column.getType(), column.getComment()));
-      }
-      schemaFacet = ol.newSchemaDatasetFacet(fields);
-    }
-    return schemaFacet;
-  }
-
-  private void emitOpenLineageEvent(HookContext hookContext, LineageCtx.Index index)
-      throws Exception {
     OpenLineageContext olContext =
         OpenLineageContext.builder()
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .queryString(hookContext.getQueryPlan().getQueryString())
+            .eventTime(Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.of("UTC")))
+            .readEntities(validInputs)
+            .writeEntities(validOutputs)
+            .hadoopConf(hookContext.getConf())
+            .openlineageHiveIntegrationVersion(Versions.getVersion())
+            .openLineageConfig(
+                HiveOpenLineageConfigParser.extractFromHadoopConf(hookContext.getConf()))
             .build();
-    OpenLineage ol = olContext.getOpenLineage();
-    Configuration conf = hookContext.getConf();
-    EventEmitter emitter = new EventEmitter(conf);
-    OpenLineage.RunBuilder runBuilder =
-        ol.newRunBuilder()
-            .runId(emitter.getRunId())
-            .facets(
-                ol.newRunFacetsBuilder()
-                    .put(
-                        "processing_engine",
-                        ol.newProcessingEngineRunFacetBuilder()
-                            .name("hive")
-                            .version(HiveVersionInfo.getVersion())
-                            .put(
-                                "execution_engine", hookContext.getQueryInfo().getExecutionEngine())
-                            .openlineageAdapterVersion(
-                                this.getClass().getPackage().getImplementationVersion())
-                            .build())
-                    .build());
-    OpenLineage.RunEvent runEvent =
-        ol.newRunEventBuilder()
-            .eventType(OpenLineage.RunEvent.EventType.COMPLETE)
-            .eventTime(
-                Instant.ofEpochMilli(hookContext.getQueryInfo().getBeginTime()) // FIXME?
-                    .atZone(ZoneId.of("UTC")))
-            .run(runBuilder.build())
-            .job(
-                ol.newJobBuilder()
-                    .namespace(emitter.getJobNamespace())
-                    .name(emitter.getJobName())
-                    // TODO: Add job facets
-                    //                    .facets(
-                    //                        ol.newJobFacetsBuilder()
-                    //                            .build())
-                    .build())
-            .inputs(getInputDatasets(hookContext))
-            .outputs(getOutputDatasets(hookContext, index))
-            .build();
-
-    // Send the event
-    ObjectMapper mapper = new ObjectMapper();
-    Object jsonObject = mapper.readValue(OpenLineageClientUtils.toJson(runEvent), Object.class);
-    String prettyJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonObject);
-    System.out.println(prettyJson);
+    EventEmitter emitter = new EventEmitter(olContext);
+    OpenLineage.RunEvent runEvent = Faceting.getRunEvent(emitter, olContext);
     emitter.emit(runEvent);
   }
 }
