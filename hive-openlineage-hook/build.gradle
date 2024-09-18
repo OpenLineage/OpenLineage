@@ -1,5 +1,7 @@
 ext {
-    openLineageVersion = '1.9.1'
+    openLineageVersion = '1.23.0-SNAPSHOT'
+    cloudDataLineageVersion = '0.39.0'
+    producerClientVersion = '1.0.0'
     cloudStorageVersion = '2.36.1'
     gcsConnectorVersion = 'hadoop2-2.2.21'
     lombokVersion = '1.18.32'
@@ -8,76 +10,133 @@ ext {
     hiveBigqueryConnectorVersion = '2.0.3'
     assertjVersion = '3.25.3'
     hiverunnerVersion = '6.1.0'
-    jupiterVersion = '5.10.1'
+    jupiterVersion = '5.11.0'
+    jacksonVersion = '2.17.1'
+    mockitoVersion = '4.11.0'
 }
 
-// TODO: Check if this is needed for the tests
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(8))
+    }
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+compileJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+compileTestJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+tasks.register('acceptanceTest', Test) {
+    useJUnitPlatform()
+
+    include '**/*Acceptance*.class'
+
+    // Create the shaded jar before an acceptance test is run.
+    // The shaded JAR is later automatically uploaded to the test cluster
+    // as part the acceptance test execution.
+    dependsOn shadowJar
+}
+
 test {
     useJUnitPlatform()
+
+    // TODO: Check if this is in fact needed for the integration tests
     forkEvery = 1
     maxParallelForks = 1
+    maxHeapSize = "2g"
+
+    // Use the `acceptanceTest` task instead of `test` for acceptance tests
+    exclude '**/*Acceptance*.class'
 }
 
 dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     implementation "org.projectlombok:lombok:${lombokVersion}"
     implementation "com.google.guava:guava:${guaveVersion}"
+    compileOnly project(path: ':shaded-integration-test-dependencies', configuration: 'shadow')
+    implementation ("io.openlineage:openlineage-java:${openLineageVersion}") {
+        exclude group: 'com.fasterxml.jackson.core', module: '*'
+    }
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    // TODO: We might not want this to be included in the shaded JAR and instead rely on Dataproc including it?
+    implementation ("io.openlineage:transports-dataplex:${openLineageVersion}")
 
-//    // FIXME
-//    // Projects built locally and published to local Maven repository:
-//    compileOnly ('com.google.cloud.datacatalog:lineage-producer:0.0.7:all') {
-//        exclude group: 'io.grpc'
-//    }
-//    // The OL Dataproc fork:
-//    compileOnly 'io.openlineage:openlineage-java:1.10.0'
+    // Test dependencies ---------------------------------------------------------------------
 
-    compileOnly "io.openlineage:openlineage-java:${openLineageVersion}"
-    compileOnly project(path: ':shaded-test-dependencies', configuration: 'shadow')
-
-    // Test dependencies ------------------------------------------------
-
-    // FIXME: Workaround for Datanucleus to work with the shaded-test-dependencies library
-    //  Fix it properly in the shaded-test-dependencies's lib shading instead.
-    testImplementation 'org.datanucleus:datanucleus-rdbms:4.1.19'
-    testImplementation 'org.datanucleus:datanucleus-api-jdo:4.2.4'
-    testImplementation 'org.datanucleus:datanucleus-core:4.1.17'
-
-    testImplementation ("com.google.cloud:google-cloud-bigquery:${bigqueryVersion}")
+    testImplementation project(path: ':shaded-integration-test-dependencies', configuration: 'shadow')
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${jupiterVersion}"
     testImplementation("io.github.hiverunner:hiverunner:${hiverunnerVersion}") {
         exclude group: 'org.apache.tez', module: '*'
-        exclude group: 'org.apache.hive', module: 'hive-serde'
-        exclude group: 'org.apache.hive', module: 'hive-upgrade-acid'
-        exclude group: 'org.apache.hive.hcatalog', module: 'hive-webhcat-java-client'
-        exclude group: 'org.apache.hive', module: 'hive-jdbc'
-        exclude group: 'org.apache.hive', module: 'hive-service'
-        exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-common'
-        exclude group: 'org.apache.hadoop', module: 'hadoop-annotations'
-        exclude group: 'org.apache.hadoop', module: 'hadoop-yarn-client'
-        exclude group: 'org.apache.hadoop', module: 'hadoop-mapreduce-client-core'
+        exclude group: 'org.apache.hive', module: '*'
+        exclude group: 'org.apache.hive.hcatalog', module: '*'
+        exclude group: 'org.apache.hadoop', module: '*'
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-annotations'
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation ("com.google.cloud:google-cloud-bigquery:${bigqueryVersion}") {
+        exclude group: 'io.grpc', module: '*'
+        exclude group: 'com.google.protobuf', module: '*'
+        exclude group: 'com.google.api', module: 'gax'
+        exclude group: 'com.google.api', module: 'gax-grpc'
+    }
     testImplementation ("com.google.cloud.hive:hive-bigquery-connector:${hiveBigqueryConnectorVersion}") {
         exclude module: 'hive-bigquery-parent'
+        exclude group: 'com.google.protobuf', module: '*'
     }
     testImplementation("com.google.cloud:google-cloud-storage:${cloudStorageVersion}") {
         exclude group: 'io.grpc', module: '*'
+        exclude group: 'com.google.protobuf', module: '*'
+        exclude group: 'com.google.api', module: 'gax'
+        exclude group: 'com.google.api', module: 'gax-grpc'
     }
     testImplementation("com.google.cloud.bigdataoss:gcs-connector:${gcsConnectorVersion}:shaded") {
         exclude group: 'io.grpc', module: '*'
         exclude group: 'com.google.guava', module: '*'
         exclude group: 'com.google.code.gson', module: '*'
+        exclude group: 'com.google.protobuf', module: '*'
+        exclude group: 'com.google.api', module: 'gax'
+        exclude group: 'com.google.api', module: 'gax-grpc'
     }
-    testImplementation "io.openlineage:openlineage-java:${openLineageVersion}"
-    testImplementation project(path: ':shaded-test-dependencies', configuration: 'shadow')
+    testImplementation ("io.openlineage:openlineage-java:${openLineageVersion}") {
+        exclude group: 'com.fasterxml.jackson.core', module: '*'
+    }
+    testImplementation ("io.openlineage:transports-dataplex:${openLineageVersion}")
+    testImplementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
+    testImplementation "com.google.cloud:google-cloud-datalineage:${cloudDataLineageVersion}"
+    testImplementation "com.google.cloud.datalineage:producerclient-java8:${producerClientVersion}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+
+    // FIXME: Workaround for Datanucleus to work with the shaded-integration-test-dependencies library
+    //  Fix it properly in the shaded-integration-test-dependencies's lib shading instead.
+    testImplementation 'org.datanucleus:datanucleus-rdbms:4.1.19'
+    testImplementation 'org.datanucleus:datanucleus-api-jdo:4.2.4'
+    testImplementation 'org.datanucleus:datanucleus-core:4.1.17'
 }
 
-apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'com.gradleup.shadow'
 
 shadowJar {
-    archiveClassifier.set('')
+    archiveClassifier.set('shaded')
+    doFirst {
+        println "Files to be included in shadow jar:"
+        inputs.files.each { println it }
+    }
 
     zip64 true
 
@@ -90,10 +149,12 @@ shadowJar {
     exclude 'META-INF/LICENSE'
     exclude 'META-INF/NOTICE'
 
-    def packagesToRelocate = [
+    // Relocate some packages
+    [
             'com.google.common',
-    ]
-    packagesToRelocate.each { pkg ->
+            'com.google.protobuf',
+            'com.fasterxml',
+    ].each { pkg ->
         relocate pkg, "hive.openlineage.repackaged.${pkg}"
     }
 

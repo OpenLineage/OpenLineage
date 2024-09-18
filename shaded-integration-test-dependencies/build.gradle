@@ -1,5 +1,7 @@
+import com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer
+
 plugins {
-    id 'com.github.johnrengelman.shadow' version '7.1.0'
+    id 'com.gradleup.shadow' version '8.3.0'
 }
 
 group = 'com.google.cloud.hive'
@@ -21,6 +23,9 @@ dependencies {
     implementation("org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}") {
         exclude group: 'com.google.guava', module: 'guava'
         exclude group: 'org.apache.avro', module: 'avro'
+    }
+    implementation("org.apache.hadoop:hadoop-hdfs:${hadoopVersion}") {
+        exclude group: 'com.google.guava', module: 'guava'
     }
 
     // Hive dependencies
@@ -81,8 +86,8 @@ tasks.jar {
 }
 
 shadowJar {
+    // Don't need a classifier since the module is already has "shaded" in its name
     archiveClassifier.set('')
-
     zip64 true
 
     exclude 'module-info.class'
@@ -94,14 +99,23 @@ shadowJar {
     exclude 'META-INF/LICENSE'
     exclude 'META-INF/NOTICE'
 
-    // Exclude Datanucleus packages:
+    // Exclude all Datanucleus packages
     exclude 'org/datanucleus/**'
 
-    relocate 'com.google.common', 'hive.shaded.com.google.common'
-    relocate 'com.google.gson', 'hive.shaded.com.google.gson'
-    relocate 'com.google.protobuf', 'hive.shaded.com.google.protobuf'
-    relocate 'io.netty', 'hive.shaded.io.netty'
-    relocate 'com.lmax', 'disruptor'
+    // Relocate some packages
+    [
+            'com.google.common',
+            'com.google.gson',
+            'com.google.protobuf',
+            'io.netty',
+            'com.lmax.disruptor',
+            'com.fasterxml.jackson',
+    ].each { packageName ->
+        relocate packageName, "hive.shaded.${packageName}"
+    }
 
     mergeServiceFiles()
+
+    // Avoid some pesky Log4j warnings
+    transform(Log4j2PluginsCacheFileTransformer)
 }

@@ -15,35 +15,67 @@
  */
 package io.openlineage.hive.transport;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.Transport;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Appends Openlineage events to a file specified. Events are separated by a newline character,
- * while all the existing newline characters within event json are removed. FileTransport was
- * introduced for the purpose of integration tests.
- */
 @Slf4j
 public class DummyTransport extends Transport {
 
-  private static final List<String> events = Collections.synchronizedList(new ArrayList<>());
+  @Getter
+  private static final List<OpenLineage.BaseEvent> events =
+      Collections.synchronizedList(new ArrayList<>());
 
-  public DummyTransport() {}
+  public void emit(@NonNull OpenLineage.BaseEvent event) {
+    try {
+      ObjectMapper mapper = new ObjectMapper();
+      Object jsonObject = mapper.readValue(OpenLineageClientUtils.toJson(event), Object.class);
+      String prettyJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonObject);
+      System.out.println(prettyJson);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+    events.add(event);
+  }
 
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
-    emit(OpenLineageClientUtils.toJson(runEvent));
+    emit((OpenLineage.BaseEvent) runEvent);
   }
 
-  @Deprecated
   @Override
-  public void emit(String eventAsJson) {
-    events.add(eventAsJson);
+  public void emit(@NonNull OpenLineage.DatasetEvent datasetEvent) {
+    emit((OpenLineage.BaseEvent) datasetEvent);
+  }
+
+  @Override
+  public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
+    emit((OpenLineage.BaseEvent) jobEvent);
+  }
+
+  public static OpenLineage.RunEvent getLastEvent() {
+    return (OpenLineage.RunEvent) events.get(events.size() - 1);
+  }
+
+  public static OpenLineage.OutputDataset getOutputDataset(String output) {
+    OpenLineage.RunEvent lastEvent = getLastEvent();
+    for (OpenLineage.OutputDataset od : lastEvent.getOutputs()) {
+      if (od.getName().endsWith("/" + output)) {
+        return od;
+      }
+    }
+    throw new RuntimeException("Could not find output: " + output);
+  }
+
+  public static OpenLineage.ColumnLineageDatasetFacet getColumnLineage(String output) {
+    return getOutputDataset(output).getFacets().getColumnLineage();
   }
 }

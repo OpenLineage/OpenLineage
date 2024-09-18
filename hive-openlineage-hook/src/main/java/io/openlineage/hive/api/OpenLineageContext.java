@@ -16,11 +16,17 @@
 package io.openlineage.hive.api;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.hive.client.HiveOpenLineageConfig;
+import java.time.ZonedDateTime;
+import java.util.Set;
 import java.util.UUID;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.ql.hooks.ReadEntity;
+import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 
 /**
  * Context holder with references to several required objects during construction of an OpenLineage
@@ -34,12 +40,25 @@ import org.apache.hadoop.conf.Configuration;
 @Value
 @Builder
 public class OpenLineageContext {
-  final UUID runUuid = UUID.randomUUID();
-  Configuration conf;
+  UUID runUuid = UUID.randomUUID();
 
   /**
    * A non-null, preconfigured {@link OpenLineage} client instance for constructing OpenLineage
    * model objects
    */
   @NonNull OpenLineage openLineage;
+
+  @NonNull @Getter HiveOpenLineageConfig openLineageConfig;
+
+  @NonNull String openlineageHiveIntegrationVersion;
+
+  @NonNull String queryString;
+
+  @NonNull Configuration hadoopConf;
+
+  @NonNull Set<ReadEntity> readEntities;
+
+  @NonNull Set<WriteEntity> writeEntities;
+
+  @NonNull ZonedDateTime eventTime;
 }
