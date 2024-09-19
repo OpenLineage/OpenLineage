@@ -29,9 +29,16 @@ public final class Clients {
     if (isDisabled()) {
       return OpenLineageClient.builder().transport(new NoopTransport()).build();
     }
-    final OpenLineageConfig openLineageConfig =
-        OpenLineageClientUtils.loadOpenLineageConfigYaml(
-            configPathProvider, new TypeReference<OpenLineageConfig>() {});
+    OpenLineageConfig openLineageConfig;
+    try {
+      openLineageConfig =
+          OpenLineageClientUtils.loadOpenLineageConfigYaml(
+              configPathProvider, new TypeReference<OpenLineageConfig>() {});
+    } catch (OpenLineageClientException e) {
+      openLineageConfig =
+          OpenLineageClientUtils.loadOpenLineageConfigFromEnvVars(
+              new TypeReference<OpenLineageConfig>() {});
+    }
     return newClient(openLineageConfig);
   }
 

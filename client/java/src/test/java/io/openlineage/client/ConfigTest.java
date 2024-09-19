@@ -6,6 +6,7 @@
 package io.openlineage.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,6 +81,46 @@ class ConfigTest {
 
       OpenLineageClient client = Clients.newClient(new TestConfigPathProvider("config/http.yaml"));
       assertThat(client.transport).isInstanceOf(NoopTransport.class);
+    }
+  }
+
+  @Test
+  void testNoConfigRaisesException() throws URISyntaxException {
+    assertThrows(OpenLineageClientException.class, () -> Clients.newClient());
+  }
+
+  @Test
+  void testLoadConfigFromEnvVars() throws URISyntaxException {
+    try (MockedStatic mocked = mockStatic(Environment.class)) {
+      when(Environment.getAllEnvironmentVariables())
+          .thenReturn(Map.of("OPENLINEAGE__TRANSPORT__TYPE", "console"));
+
+      OpenLineageClient client = Clients.newClient();
+      assertThat(client.transport).isInstanceOf(ConsoleTransport.class);
+    }
+  }
+
+  @Test
+  void testLoadConfigCompositeFromEnvVars() throws URISyntaxException {
+    try (MockedStatic mocked = mockStatic(Environment.class)) {
+      when(Environment.getAllEnvironmentVariables())
+          .thenReturn(
+              Map.of(
+                  "OPENLINEAGE__TRANSPORT__TYPE",
+                  "composite",
+                  "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TYPE",
+                  "console",
+                  "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TYPE",
+                  "http",
+                  "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__URL",
+                  "local"));
+
+      OpenLineageClient client = Clients.newClient();
+      assertThat(client.transport).isInstanceOf(CompositeTransport.class);
+      assertThat(((CompositeTransport) client.transport).getTransports().get(0))
+          .isInstanceOf(HttpTransport.class);
+      assertThat(((CompositeTransport) client.transport).getTransports().get(1))
+          .isInstanceOf(ConsoleTransport.class);
     }
   }
 

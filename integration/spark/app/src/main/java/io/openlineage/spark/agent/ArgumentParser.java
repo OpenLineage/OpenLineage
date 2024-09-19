@@ -68,6 +68,8 @@ public class ArgumentParser {
     // TRY READING CONFIG FROM FILE
     Optional<SparkOpenLineageConfig> configFromFile = extractOpenLineageConfFromFile();
 
+    Optional<SparkOpenLineageConfig> configFromEnvVars = extractOpenLineageConfFromEnvVars();
+
     if ("http".equals(conf.get(SPARK_CONF_TRANSPORT_TYPE, ""))) {
       findSparkConfigKey(conf, SPARK_CONF_HTTP_URL)
           .ifPresent(url -> UrlParser.parseUrl(url).forEach(conf::set));
@@ -81,6 +83,10 @@ public class ArgumentParser {
       targetConfig = configFromSparkConf;
     }
 
+    if (configFromEnvVars.isPresent()) {
+      targetConfig = configFromEnvVars.get().mergeWith(targetConfig);
+    }
+
     // SET DEFAULTS
     if (targetConfig.getTransportConfig() == null) {
       targetConfig.setTransportConfig(new ConsoleConfig());
@@ -88,6 +94,20 @@ public class ArgumentParser {
 
     extractSparkSpecificConfigEntriesFromSparkConf(conf, targetConfig);
     return targetConfig;
+  }
+
+  private static Optional<SparkOpenLineageConfig> extractOpenLineageConfFromEnvVars() {
+    Optional<SparkOpenLineageConfig> configFromFile;
+    try {
+      configFromFile =
+          Optional.of(
+              OpenLineageClientUtils.loadOpenLineageConfigFromEnvVars(
+                  new TypeReference<SparkOpenLineageConfig>() {}));
+    } catch (OpenLineageClientException e) {
+      log.info("Couldn't log config from file, will read it from SparkConf");
+      configFromFile = Optional.empty();
+    }
+    return configFromFile;
   }
 
   private static Optional<SparkOpenLineageConfig> extractOpenLineageConfFromFile() {
