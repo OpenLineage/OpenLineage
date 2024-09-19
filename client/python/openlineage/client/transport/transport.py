@@ -35,6 +35,7 @@ class Config:
 
 class Transport:
     kind: str | None = None
+    name: str | None = None
     config_class: type[Config] = Config
 
     def emit(self, event: Event) -> Any:

@@ -50,6 +50,8 @@ class DefaultTransportFactory(TransportFactory):
             msg = "You need to pass transport type in config."
             raise TypeError(msg) from None
 
+        transport_name = config.pop("name", None)
+
         transport_class_type_or_str = self.transports.get(transport_type, transport_type)
 
         if isinstance(transport_class_type_or_str, str):
@@ -68,4 +70,7 @@ class DefaultTransportFactory(TransportFactory):
             msg = f"Config {config_class} has to be class, and subclass of Config"
             raise TypeError(msg)
 
-        return transport_class(config_class.from_dict(config))  # type: ignore[call-arg]
+        transport: Transport = transport_class(config_class.from_dict(config))  # type: ignore[call-arg]
+        if transport_name and not transport.name:
+            transport.name = transport_name
+        return transport

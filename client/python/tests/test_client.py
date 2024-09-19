@@ -20,7 +20,9 @@ from openlineage.client.run import (
     RunEvent,
     RunState,
 )
-from openlineage.client.transport.http import HttpTransport
+from openlineage.client.transport.composite import CompositeTransport
+from openlineage.client.transport.console import ConsoleTransport
+from openlineage.client.transport.http import ApiKeyTokenProvider, HttpTransport, TokenProvider
 from openlineage.client.transport.noop import NoopTransport
 from openlineage.client.uuid import generate_new_uuid
 
@@ -389,3 +391,172 @@ def test_http_transport_from_url_no_options() -> None:
     assert transport.timeout == timeout
     assert transport.verify is True
     assert transport.config.auth.api_key == "xxx"
+
+
+@patch.dict(
+    os.environ, {"OPENLINEAGE_URL": "http://example.com", "OPENLINEAGE__TRANSPORT__TYPE": "composite"}
+)
+def test_composite_transport_with_aliased_url() -> None:
+    transport: CompositeTransport = OpenLineageClient().transport
+    assert transport.kind == CompositeTransport.kind
+    assert len(transport.transports) == 1
+    assert transport.transports[0].kind == HttpTransport.kind
+    assert isinstance(transport.transports[0].config.auth, TokenProvider)
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE_API_KEY": "random_key",
+        "OPENLINEAGE__TRANSPORT__TYPE": "composite",
+    },
+)
+def test_composite_transport_with_aliased_url_and_api_key() -> None:
+    transport: CompositeTransport = OpenLineageClient().transport
+    assert transport.kind == CompositeTransport.kind
+    assert len(transport.transports) == 1
+    assert transport.transports[0].kind == HttpTransport.kind
+    assert isinstance(transport.transports[0].config.auth, ApiKeyTokenProvider)
+    assert transport.transports[0].config.auth.api_key == "random_key"
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__ANOTHER__TYPE": "console",
+    },
+)
+def test_composite_transport_with_aliased_url_and_second_transport() -> None:
+    transport: CompositeTransport = OpenLineageClient().transport
+    assert transport.kind == CompositeTransport.kind
+    assert len(transport.transports) == 2  # noqa: PLR2004
+    assert transport.transports[0].kind == HttpTransport.kind
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP": "{}",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__ANOTHER__TYPE": "console",
+    },
+)
+def test_composite_transport_with_aliased_url_and_overriden_alias() -> None:
+    transport: CompositeTransport = OpenLineageClient().transport
+    assert transport.kind == CompositeTransport.kind
+    assert len(transport.transports) == 1
+    assert transport.transports[0].kind == ConsoleTransport.kind
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP__TYPE": "console",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__ANOTHER__TYPE": "console",
+    },
+)
+def test_openlineage_url_does_not_alias_when_transport_exists() -> None:
+    transport: CompositeTransport = OpenLineageClient().transport
+    assert transport.kind == CompositeTransport.kind
+    assert len(transport.transports) == 2  # noqa: PLR2004
+    assert transport.transports[0].kind == transport.transports[1].kind == ConsoleTransport.kind
+
+
+class TestOpenLineageConfigLoader:
+    @pytest.mark.parametrize(
+        ("env_vars", "expected_config"),
+        [
+            (
+                {
+                    "OPENLINEAGE__TRANSPORT__TYPE": "http",
+                    "OPENLINEAGE__TRANSPORT__URL": "http://localhost:5050",
+                    "OPENLINEAGE__TRANSPORT__AUTH__API_KEY": "random_token",
+                },
+                {
+                    "transport": {
+                        "type": "http",
+                        "url": "http://localhost:5050",
+                        "auth": {"api_key": "random_token"},
+                    }
+                },
+            ),
+            (
+                {
+                    "OPENLINEAGE__TRANSPORT__TYPE": "composite",
+                    "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TYPE": "http",
+                    "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__URL": "http://localhost:5050",
+                    "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TYPE": "console",
+                },
+                {
+                    "transport": {
+                        "type": "composite",
+                        "transports": {
+                            "first": {"type": "http", "url": "http://localhost:5050"},
+                            "second": {"type": "console"},
+                        },
+                    }
+                },
+            ),
+            (
+                {"OPENLINEAGE__TRANSPORT": '{"type": "console"}', "OPENLINEAGE__TRANSPORT__TYPE": "http"},
+                {"transport": {"type": "console"}},
+            ),
+            (
+                {
+                    "OPENLINEAGE__TRANSPORT__TYPE": "kafka",
+                    "OPENLINEAGE__TRANSPORT__PROPERTIES": '{"key.serializer": "org.apache.kafka.common.serialization.StringSerializer"}',  # noqa: E501
+                },
+                {
+                    "transport": {
+                        "type": "kafka",
+                        "properties": {
+                            "key.serializer": "org.apache.kafka.common.serialization.StringSerializer"
+                        },
+                    }
+                },
+            ),
+            (
+                {
+                    "OPENLINEAGE__TRANSPORT__TYPE": "test",
+                    "OPENLINEAGE__TRANSPORT__MY_NAME__LIST": '["first", "SeCond"]',
+                },
+                {"transport": {"my_name": {"list": ["first", "SeCond"]}, "type": "test"}},
+            ),
+            (
+                {
+                    "OPENLINEAGE__TRANSPORT__TYPE": "http",
+                    "OPENLINEAGE__TRANSPORT__URL": "http://localhost:5050",
+                    "OPENLINEAGE__TRANSPORT__AUTH__API_KEY": "random_token",
+                    "OPENLINEAGE__TRANSPORT__AUTH__COMPRESSION": "gzip",
+                },
+                {
+                    "transport": {
+                        "type": "http",
+                        "url": "http://localhost:5050",
+                        "auth": {"api_key": "random_token", "compression": "gzip"},
+                    }
+                },
+            ),
+            (
+                {
+                    "OPENLINEAGE__TRANSPORT": '{"type": "console"}',
+                    "OPENLINEAGE__TRANSPORT__TYPE": "http",
+                    "OPENLINEAGE__TRANSPORT__URL": "http://localhost:5050",
+                    "OPENLINEAGE__TRANSPORT__AUTH__API_KEY": "random_token",
+                    "OPENLINEAGE__TRANSPORT__AUTH__COMPRESSION": "gzip",
+                },
+                {"transport": {"type": "console"}},
+            ),
+        ],
+    )
+    @patch.dict(os.environ, {})
+    def test_config_loader(self, env_vars, expected_config):
+        with patch.dict(os.environ, env_vars):
+            config = OpenLineageClient._load_config_from_env_variables()  # noqa: SLF001
+            assert config == expected_config

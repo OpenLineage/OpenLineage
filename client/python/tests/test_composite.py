@@ -67,6 +67,16 @@ def test_composite_transport_create_transports():
     assert transport.transports[0].kind == "fake"
 
 
+def test_composite_transport_from_dict_config():
+    config = CompositeConfig(
+        transports={"fake_trans": {"type": "tests.transport.FakeTransport"}}, continue_on_failure=True
+    )
+    transport = CompositeTransport(config)
+    assert len(transport.transports) == 1
+    assert transport.transports[0].kind == "fake"
+    assert transport.transports[0].name == "fake_trans"
+
+
 @mock.patch("openlineage.client.transport.get_default_factory")
 def test_transports(mock_factory):
     mock_transport1 = MagicMock(spec=Transport)
