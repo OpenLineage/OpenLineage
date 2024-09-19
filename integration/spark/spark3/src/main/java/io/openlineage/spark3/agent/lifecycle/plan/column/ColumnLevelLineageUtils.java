@@ -55,7 +55,11 @@ public class ColumnLevelLineageUtils {
     OpenLineage.ColumnLineageDatasetFacetBuilder facetBuilder =
         olContext.getOpenLineage().newColumnLineageDatasetFacetBuilder();
 
-    facetBuilder.fields(context.getBuilder().build());
+    facetBuilder.fields(context.getBuilder().buildFields());
+    context
+        .getBuilder()
+        .buildDatasetDependencies()
+        .ifPresent(facetBuilder::dataset);
     OpenLineage.ColumnLineageDatasetFacet facet = facetBuilder.build();
 
     if (facet.getFields().getAdditionalProperties().isEmpty()) {

@@ -24,6 +24,7 @@ import lombok.ToString;
 
 /** Config class to store entries which are specific only to Spark integration. */
 @Getter
+@Setter
 @NoArgsConstructor
 @ToString
 public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageConfig> {
@@ -32,15 +33,15 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
 
   public static final String DEFAULT_NAMESPACE = "default";
 
-  @Setter @NonNull private String namespace;
-  @Setter @Getter private String parentJobName;
-  @Setter @Getter private String parentJobNamespace;
-  @Setter @Getter private String parentRunId;
-  @Setter @Getter private String overriddenAppName;
-  @Setter @NonNull private String debugFacet;
-  @Setter @Getter private String testExtensionProvider;
-  @Setter private JobNameConfig jobName;
-  @Setter private JobConfig job;
+  @NonNull private String namespace;
+  private String parentJobName;
+  private String parentJobNamespace;
+  private String parentRunId;
+  private String overriddenAppName;
+  @NonNull private String debugFacet;
+  private String testExtensionProvider;
+  private JobNameConfig jobName;
+  private JobConfig job;
 
   public SparkOpenLineageConfig(
       String namespace,
@@ -102,23 +103,25 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   }
 
   @Getter
+  @Setter
   @ToString
   public static class JobNameConfig {
-    @Setter @Getter @NonNull private Boolean appendDatasetName = true;
-    @Setter @Getter @NonNull private Boolean replaceDotWithUnderscore = false;
+    @NonNull private Boolean appendDatasetName = true;
+    @NonNull private Boolean replaceDotWithUnderscore = false;
   }
 
   @Getter
+  @Setter
   @ToString
   public static class JobConfig {
-    @Setter @Getter private JobOwnersConfig owners;
+    private JobOwnersConfig owners;
   }
 
   @Getter
   @ToString
   public static class JobOwnersConfig {
-    @JsonAnySetter @Setter @Getter @NonNull
-    private Map<String, String> additionalProperties = new HashMap<>();
+    @JsonAnySetter @NonNull
+    private final Map<String, String> additionalProperties = new HashMap<>();
   }
 
   @Override

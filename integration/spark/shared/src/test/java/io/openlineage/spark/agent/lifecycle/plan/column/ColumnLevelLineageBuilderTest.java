@@ -14,6 +14,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
@@ -107,7 +108,7 @@ class ColumnLevelLineageBuilderTest {
   }
 
   @Test
-  void testBuild() {
+  void testBuildFields() {
     DatasetIdentifier diA = new DatasetIdentifier(TABLE_A, DB);
     DatasetIdentifier diB = new DatasetIdentifier("tableB", DB);
 
@@ -115,8 +116,8 @@ class ColumnLevelLineageBuilderTest {
     builder.addInput(rootExprId, diA, INPUT_A);
     builder.addInput(rootExprId, diB, "inputB");
 
-    List<OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields> facetFields =
-        builder.build().getAdditionalProperties().get("a").getInputFields();
+    List<OpenLineage.InputField> facetFields =
+        builder.buildFields().getAdditionalProperties().get("a").getInputFields();
 
     assertEquals(2, facetFields.size());
 
@@ -130,16 +131,16 @@ class ColumnLevelLineageBuilderTest {
   }
 
   @Test
-  void testBuildWithEmptyInputs() {
+  void testBuildFieldsWithEmptyInputs() {
     builder.addOutput(rootExprId, "a");
     builder.addDependency(rootExprId, childExprId);
 
     // no inputs
-    assertEquals(0, builder.build().getAdditionalProperties().size());
+    assertEquals(0, builder.buildFields().getAdditionalProperties().size());
   }
 
   @Test
-  void testBuildWithDuplicatedInputs() {
+  void testBuildFieldsWithDuplicatedInputs() {
     DatasetIdentifier di = new DatasetIdentifier(TABLE_A, DB);
 
     builder.addOutput(rootExprId, "a");
@@ -147,8 +148,8 @@ class ColumnLevelLineageBuilderTest {
     builder.addInput(childExprId, di, INPUT_A); // the same input with different exprId
     builder.addDependency(rootExprId, childExprId);
 
-    List<OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields> facetFields =
-        builder.build().getAdditionalProperties().get("a").getInputFields();
+    List<OpenLineage.InputField> facetFields =
+        builder.buildFields().getAdditionalProperties().get("a").getInputFields();
 
     assertEquals(1, facetFields.size());
   }

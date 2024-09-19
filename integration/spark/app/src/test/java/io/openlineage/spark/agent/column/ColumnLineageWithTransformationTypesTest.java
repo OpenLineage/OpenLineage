@@ -5,8 +5,8 @@
 
 package io.openlineage.spark.agent.column;
 
-import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertAllColumnsDependsOnType;
 import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertColumnDependsOnType;
+import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertDatasetDependsOnType;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.CONDITIONAL;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.FILTER;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.GROUP_BY;
@@ -157,8 +157,8 @@ class ColumnLineageWithTransformationTypesTest {
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
 
-    assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
+    assertDatasetDependsOnType(
+        facet, FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
   }
 
   @Test
@@ -171,14 +171,14 @@ class ColumnLineageWithTransformationTypesTest {
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
 
-    assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
-    assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
-    assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(GROUP_BY));
-    assertColumnDependsOnType(
-        facet, "a", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(SORT));
+    assertDatasetDependsOnType(
+        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+    assertDatasetDependsOnType(
+        facet, FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
+    assertDatasetDependsOnType(
+        facet, FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(GROUP_BY));
+    assertDatasetDependsOnType(
+        facet, FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(SORT));
   }
 
   @Test
@@ -312,48 +312,18 @@ class ColumnLineageWithTransformationTypesTest {
     assertColumnDependsOnType(
         facet, "d", FILE, T3_EXPECTED_NAME, "d", TransformationInfo.identity());
 
-    assertAllColumnsDependsOnType(
-        facet,
-        Arrays.asList("a", "b", "c", "d"),
-        FILE,
-        T1_EXPECTED_NAME,
-        "a",
-        TransformationInfo.indirect(JOIN));
-    assertAllColumnsDependsOnType(
-        facet,
-        Arrays.asList("a", "b", "c", "d"),
-        FILE,
-        T2_EXPECTED_NAME,
-        "a",
-        TransformationInfo.indirect(JOIN));
-    assertAllColumnsDependsOnType(
-        facet,
-        Arrays.asList("a", "b", "c", "d"),
-        FILE,
-        T3_EXPECTED_NAME,
-        "a",
-        TransformationInfo.indirect(JOIN));
-    assertAllColumnsDependsOnType(
-        facet,
-        Arrays.asList("a", "b", "c", "d"),
-        FILE,
-        T1_EXPECTED_NAME,
-        "b",
-        TransformationInfo.indirect(FILTER));
-    assertAllColumnsDependsOnType(
-        facet,
-        Arrays.asList("a", "b", "c", "d"),
-        FILE,
-        T2_EXPECTED_NAME,
-        "c",
-        TransformationInfo.indirect(FILTER));
-    assertAllColumnsDependsOnType(
-        facet,
-        Arrays.asList("a", "b", "c", "d"),
-        FILE,
-        T3_EXPECTED_NAME,
-        "d",
-        TransformationInfo.indirect(SORT));
+    assertDatasetDependsOnType(
+        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(JOIN));
+    assertDatasetDependsOnType(
+        facet, FILE, T2_EXPECTED_NAME, "a", TransformationInfo.indirect(JOIN));
+    assertDatasetDependsOnType(
+        facet, FILE, T3_EXPECTED_NAME, "a", TransformationInfo.indirect(JOIN));
+    assertDatasetDependsOnType(
+        facet, FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
+    assertDatasetDependsOnType(
+        facet, FILE, T2_EXPECTED_NAME, "c", TransformationInfo.indirect(FILTER));
+    assertDatasetDependsOnType(
+        facet, FILE, T3_EXPECTED_NAME, "d", TransformationInfo.indirect(SORT));
   }
 
   @NotNull
