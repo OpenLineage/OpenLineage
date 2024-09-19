@@ -333,7 +333,6 @@ fn test_complex_cte() {
     )
         .unwrap();
 
-    println!("sss");
     assert_eq!(
         output.column_lineage,
         vec![
