@@ -25,7 +25,7 @@ pub struct ContextFrame {
     // symbol. Only those symbols are meaningful outside of the processed query.
     aliases: AliasTable,
     pub column_ancestry: HashMap<ColumnMeta, ColumnAncestors>,
-    pub dependencies: HashMap<DbTableMeta, HashSet<ColumnMeta>>,
+    pub dependencies: HashSet<DbTableMeta>,
     pub cte_dependencies: HashMap<String, CteDependency>,
     pub is_main_body: bool,
 }
@@ -33,7 +33,7 @@ pub struct ContextFrame {
 #[derive(Debug, Clone)]
 pub struct CteDependency {
     pub is_used: bool,
-    pub deps: HashMap<DbTableMeta, HashSet<ColumnMeta>>,
+    pub deps: HashSet<DbTableMeta>,
 }
 
 impl ContextFrame {
@@ -43,7 +43,7 @@ impl ContextFrame {
             column: None,
             aliases: AliasTable::new(),
             column_ancestry: HashMap::new(),
-            dependencies: HashMap::new(),
+            dependencies: HashSet::new(),
             cte_dependencies: HashMap::new(),
             is_main_body: true,
         }
@@ -253,7 +253,7 @@ impl<'a> Context<'a> {
         );
 
         if let Some(frame) = self.frames.last_mut() {
-            frame.dependencies.insert(name, HashSet::new());
+            frame.dependencies.extend(vec![name]);
         }
     }
 
@@ -392,10 +392,10 @@ impl<'a> Context<'a> {
     pub fn collect_inputs(
         &mut self,
         cte_deps: HashMap<String, CteDependency>,
-        deps: HashMap<DbTableMeta, HashSet<ColumnMeta>>,
+        deps: HashSet<DbTableMeta>,
     ) {
         if cte_deps.is_empty() {
-            for table in deps.keys() {
+            for table in deps {
                 self.inputs.insert(table.clone());
             }
             return;
@@ -406,7 +406,7 @@ impl<'a> Context<'a> {
                 continue;
             }
 
-            for table in value.deps.keys() {
+            for table in value.deps {
                 self.inputs.insert(table.clone());
             }
         }
@@ -441,7 +441,7 @@ impl<'a> Context<'a> {
                 return;
             }
 
-            let mut resolved_dependencies = HashMap::new();
+            let mut resolved_dependencies = HashSet::new();
 
             for dep in deps_in_one_level_below {
                 if !dep.is_used {
@@ -460,7 +460,7 @@ impl<'a> Context<'a> {
                 },
             );
 
-            frame.dependencies = HashMap::new();
+            frame.dependencies = HashSet::new();
         }
     }
 
@@ -471,9 +471,9 @@ impl<'a> Context<'a> {
         let dependencies = self.frames[size - 1].dependencies.clone();
         let cte_dependencies = self.frames[size - 1].cte_dependencies.clone();
 
-        let mut resolved_dependencies = HashMap::new();
+        let mut resolved_dependencies = HashSet::new();
 
-        for (dependency, columns) in dependencies {
+        for dependency in dependencies {
             if cte_name.clone() == dependency.name {
                 continue;
             }
@@ -484,7 +484,7 @@ impl<'a> Context<'a> {
                 continue;
             }
 
-            resolved_dependencies.insert(dependency.clone(), columns.clone());
+            resolved_dependencies.insert(dependency.clone());
         }
 
         if let Some(frame) = self.frames.last_mut() {
@@ -495,7 +495,7 @@ impl<'a> Context<'a> {
                     deps: resolved_dependencies,
                 },
             );
-            frame.dependencies = HashMap::new();
+            frame.dependencies = HashSet::new();
         }
     }
 
