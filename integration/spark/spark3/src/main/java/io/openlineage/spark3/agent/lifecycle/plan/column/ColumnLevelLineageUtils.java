@@ -55,20 +55,10 @@ public class ColumnLevelLineageUtils {
     OpenLineage.ColumnLineageDatasetFacetBuilder facetBuilder =
         olContext.getOpenLineage().newColumnLineageDatasetFacetBuilder();
 
-    boolean datasetLineageEnabled =
-        context
-            .getOlContext()
-            .getOpenLineageConfig()
-            .getColumnLineageConfig()
-            .isDatasetLineageEnabled();
-    if (!datasetLineageEnabled) {
-      log.warn(
-          "DEPRECATION WARNING: The columnLineage.deprecatedMechanismEnabled configuration is set to true. This flag will default to false in the future versions and soon will be removed (defaulting to true).");
-    }
-    facetBuilder.fields(context.getBuilder().buildFields(datasetLineageEnabled));
+    facetBuilder.fields(context.getBuilder().buildFields());
     context
         .getBuilder()
-        .buildDatasetDependencies(datasetLineageEnabled)
+        .buildDatasetDependencies()
         .ifPresent(facetBuilder::dataset);
     OpenLineage.ColumnLineageDatasetFacet facet = facetBuilder.build();
 

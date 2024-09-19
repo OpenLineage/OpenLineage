@@ -6,7 +6,6 @@
 package io.openlineage.spark.api;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
@@ -44,9 +43,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   private JobNameConfig jobName;
   private JobConfig job;
 
-  @JsonProperty("columnLineage")
-  private ColumnLineageConfig columnLineageConfig;
-
   public SparkOpenLineageConfig(
       String namespace,
       String parentJobName,
@@ -60,8 +56,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       FacetsConfig facetsConfig,
       DatasetConfig datasetConfig,
       CircuitBreakerConfig circuitBreaker,
-      Map<String, Object> metricsConfig,
-      ColumnLineageConfig columnLineageConfig) {
+      Map<String, Object> metricsConfig) {
     super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig);
     this.namespace = namespace;
     this.parentJobName = parentJobName;
@@ -71,7 +66,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.testExtensionProvider = testExtensionProvider;
     this.jobName = jobName;
     this.job = job;
-    this.columnLineageConfig = columnLineageConfig;
   }
 
   @Override
@@ -106,14 +100,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       namespace = DEFAULT_NAMESPACE;
     }
     return namespace;
-  }
-
-  public ColumnLineageConfig getColumnLineageConfig() {
-    if (columnLineageConfig == null) {
-      columnLineageConfig = new ColumnLineageConfig();
-      columnLineageConfig.setDatasetLineageEnabled(true);
-    }
-    return columnLineageConfig;
   }
 
   @Getter
@@ -153,7 +139,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(facetsConfig, other.facetsConfig),
         mergePropertyWith(datasetConfig, other.datasetConfig),
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
-        mergePropertyWith(metricsConfig, other.metricsConfig),
-        mergePropertyWith(columnLineageConfig, other.columnLineageConfig));
+        mergePropertyWith(metricsConfig, other.metricsConfig));
   }
 }
