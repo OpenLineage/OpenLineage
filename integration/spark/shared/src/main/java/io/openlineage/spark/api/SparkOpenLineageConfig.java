@@ -111,8 +111,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   public ColumnLineageConfig getColumnLineageConfig() {
     if (columnLineageConfig == null) {
       columnLineageConfig = new ColumnLineageConfig();
-      // TODO #3084: For the release 1.26.0 this flag should default to true
-      columnLineageConfig.setDatasetLineageEnabled(false);
+      columnLineageConfig.setDatasetLineageEnabled(true);
     }
     return columnLineageConfig;
   }

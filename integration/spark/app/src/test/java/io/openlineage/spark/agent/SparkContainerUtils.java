@@ -213,8 +213,6 @@ public class SparkContainerUtils {
     addSparkConfig(
         sparkConf,
         "spark.openlineage.dataset.namespaceResolvers.kafka-cluster-prod.hosts=[kafka-host;kafka-host-other]");
-    // TODO #3084: For the release 1.26.0 this flag will be set to true, so this line can be removed
-    addSparkConfig(sparkConf, "spark.openlineage.columnLineage.datasetLineageEnabled=true");
 
     String sparkSubmitPath = CONTAINER_SPARK_HOME_DIR + "/bin/spark-submit";
     List<String> sparkSubmit = new ArrayList(Arrays.asList(sparkSubmitPath, "--master", "local"));
