@@ -25,7 +25,7 @@ pub struct ContextFrame {
     // symbol. Only those symbols are meaningful outside of the processed query.
     aliases: AliasTable,
     pub column_ancestry: HashMap<ColumnMeta, ColumnAncestors>,
-    pub dependencies: HashSet<DbTableMeta>,
+    pub dependencies: HashMap<DbTableMeta, HashSet<ColumnMeta>>,
     pub cte_dependencies: HashMap<String, CteDependency>,
     pub is_main_body: bool,
 }
@@ -33,7 +33,7 @@ pub struct ContextFrame {
 #[derive(Debug, Clone)]
 pub struct CteDependency {
     pub is_used: bool,
-    pub deps: HashSet<DbTableMeta>,
+    pub deps: HashMap<DbTableMeta, HashSet<ColumnMeta>>,
 }
 
 impl ContextFrame {
@@ -43,7 +43,7 @@ impl ContextFrame {
             column: None,
             aliases: AliasTable::new(),
             column_ancestry: HashMap::new(),
-            dependencies: HashSet::new(),
+            dependencies: HashMap::new(),
             cte_dependencies: HashMap::new(),
             is_main_body: true,
         }
@@ -253,7 +253,7 @@ impl<'a> Context<'a> {
         );
 
         if let Some(frame) = self.frames.last_mut() {
-            frame.dependencies.extend(vec![name]);
+            frame.dependencies.insert(name, HashSet::new());
         }
     }
 
@@ -347,9 +347,29 @@ impl<'a> Context<'a> {
         for (col, ancestors) in &frame.column_ancestry {
             let mut expanded = ColumnAncestors::new();
             for ancestor in ancestors {
-                let prev = old.column_ancestry.get(ancestor);
-                if let Some(list) = prev {
-                    expanded.extend(list.iter().cloned());
+                // here we need also look on other if they are connected
+                let mut result = Vec::new();
+                let mut stack = Vec::new();
+
+                stack.push(ancestor.clone());
+
+                while !stack.is_empty() {
+                    let current = stack.pop().unwrap();
+                    let column_ancestors = old.column_ancestry.get(&current);
+                    if column_ancestors.is_none() {
+                        result.push(current.clone());
+                        continue
+                    }
+
+                    column_ancestors.map(|ancestors| {
+                        for ancestor in ancestors {
+                            stack.push(ancestor.clone());
+                        }
+                    });
+                }
+
+                if !result.is_empty() {
+                    expanded.extend(result.iter().cloned());
                 } else {
                     expanded.insert(ancestor.clone());
                 }
@@ -373,10 +393,10 @@ impl<'a> Context<'a> {
     pub fn collect_inputs(
         &mut self,
         cte_deps: HashMap<String, CteDependency>,
-        deps: HashSet<DbTableMeta>,
+        deps: HashMap<DbTableMeta, HashSet<ColumnMeta>>,
     ) {
         if cte_deps.is_empty() {
-            for table in deps {
+            for table in deps.keys() {
                 self.inputs.insert(table.clone());
             }
             return;
@@ -387,7 +407,7 @@ impl<'a> Context<'a> {
                 continue;
             }
 
-            for table in value.deps {
+            for table in value.deps.keys() {
                 self.inputs.insert(table.clone());
             }
         }
@@ -422,7 +442,7 @@ impl<'a> Context<'a> {
                 return;
             }
 
-            let mut resolved_dependencies = HashSet::new();
+            let mut resolved_dependencies = HashMap::new();
 
             for dep in deps_in_one_level_below {
                 if !dep.is_used {
@@ -441,7 +461,7 @@ impl<'a> Context<'a> {
                 },
             );
 
-            frame.dependencies = HashSet::new();
+            frame.dependencies = HashMap::new();
         }
     }
 
@@ -452,9 +472,9 @@ impl<'a> Context<'a> {
         let dependencies = self.frames[size - 1].dependencies.clone();
         let cte_dependencies = self.frames[size - 1].cte_dependencies.clone();
 
-        let mut resolved_dependencies = HashSet::new();
+        let mut resolved_dependencies = HashMap::new();
 
-        for dependency in dependencies {
+        for (dependency, columns) in dependencies {
             if cte_name.clone() == dependency.name {
                 continue;
             }
@@ -465,7 +485,7 @@ impl<'a> Context<'a> {
                 continue;
             }
 
-            resolved_dependencies.insert(dependency.clone());
+            resolved_dependencies.insert(dependency.clone(), columns.clone());
         }
 
         if let Some(frame) = self.frames.last_mut() {
@@ -476,7 +496,7 @@ impl<'a> Context<'a> {
                     deps: resolved_dependencies,
                 },
             );
-            frame.dependencies = HashSet::new();
+            frame.dependencies = HashMap::new();
         }
     }
 

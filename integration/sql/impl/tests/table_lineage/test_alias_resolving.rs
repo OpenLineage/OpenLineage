@@ -1,6 +1,7 @@
 // Copyright 2018-2024 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
+use openlineage_sql::{ColumnLineage, ColumnMeta};
 use crate::test_utils::*;
 
 #[test]
@@ -316,4 +317,151 @@ fn table_references_connected_ctes() {
             .collect::<Vec<String>>(),
         vec!["users2"]
     )
+}
+
+#[test]
+fn test_complex_cte() {
+    let output = test_sql(
+        "with tab1 as (
+                 SELECT s.col1, s.col2, s2.col3, s2.col4
+                 from stg as s, stg2 AS s2
+            ),
+            tab2 as (
+                 SELECT col1, col2, col3, col4 from tab1
+            )
+            SELECT col1, col2, col3, col4 FROM tab2",
+    )
+        .unwrap();
+
+    println!("sss");
+    assert_eq!(
+        output.column_lineage,
+        vec![
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "col1".to_string()
+                },
+                lineage: vec![
+                    ColumnMeta {
+                        origin: Some(table("stg")),
+                        name: "col1".to_string()
+                    },
+                ]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "col2".to_string()
+                },
+                lineage: vec![
+                    ColumnMeta {
+                        origin: Some(table("stg")),
+                        name: "col2".to_string()
+                    },
+                ]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "col3".to_string()
+                },
+                lineage: vec![
+                    ColumnMeta {
+                        origin: Some(table("stg2")),
+                        name: "col3".to_string()
+                    },
+                ]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "col4".to_string()
+                },
+                lineage: vec![
+                    ColumnMeta {
+                        origin: Some(table("stg2")),
+                        name: "col4".to_string()
+                    },
+                ]
+            }
+        ]
+    );
+}
+
+#[test]
+fn test_column_resolving_in_complex_cte() {
+    let output = test_sql(
+        "with stage_1 as
+            (
+                   SELECT col_1, col_2, col_3, col_4 FROM source_tbl
+                   WHERE date_time >= current_date AND  col_1 IN (SELECT distinct col_1 FROM source_tbl)
+            ),
+            stage_2 as
+            (
+                select col_1, col_2, col_3, col_4 from stage_1
+            )
+            select tl.col_1, s_acc.x,
+            s_coa_acc.y,
+            tl.col_3, tl.col_4
+            from stage_2 tl
+            join tbl2 s_acc on s_acc.x= tl.col_2
+            left join tbl3 s_coa_acc on s_coa_acc.y= tl.col_2",
+    )
+        .unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "col_1".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("source_tbl")),
+                    name: "col_1".to_string()
+                }]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "col_3".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("source_tbl")),
+                    name: "col_3".to_string()
+                }]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "col_4".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("source_tbl")),
+                    name: "col_4".to_string()
+                }]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "x".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("tbl2")),
+                    name: "x".to_string()
+                }]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "y".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("tbl3")),
+                    name: "y".to_string()
+                }]
+            },
+        ]
+    );
 }
