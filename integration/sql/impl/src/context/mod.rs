@@ -353,19 +353,18 @@ impl<'a> Context<'a> {
 
                 stack.push(ancestor.clone());
 
-                while !stack.is_empty() {
-                    let current = stack.pop().unwrap();
+                while let Some(current) = stack.pop() {
                     let column_ancestors = old.column_ancestry.get(&current);
                     if column_ancestors.is_none() {
                         result.push(current.clone());
-                        continue
+                        continue;
                     }
 
-                    column_ancestors.map(|ancestors| {
+                    if let Some(ancestors) = column_ancestors {
                         for ancestor in ancestors {
                             stack.push(ancestor.clone());
                         }
-                    });
+                    }
                 }
 
                 if !result.is_empty() {
