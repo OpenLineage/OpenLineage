@@ -40,6 +40,7 @@ class Adapter(Enum):
     DATABRICKS = "databricks"
     SQLSERVER = "sqlserver"
     DREMIO = "dremio"
+    ATHENA = "athena"
 
     @staticmethod
     def adapters() -> str:
@@ -583,6 +584,8 @@ class DbtArtifactProcessor:
             return f"mssql://{profile['server']}:{profile['port']}"
         elif self.adapter_type == Adapter.DREMIO:
             return f"dremio://{profile['software_host']}:{profile['port']}"
+        elif self.adapter_type == Adapter.ATHENA:
+            return "athena"
         elif self.adapter_type == Adapter.SPARK:
             port = ""
 
