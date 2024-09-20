@@ -76,6 +76,21 @@ commands:
             sudo update-alternatives --set java ${JAVA_BIN}
             sudo update-alternatives --set javac ${JAVAC_BIN}
 
+  store_submodule_tests:
+    parameters:
+      submodule:
+        type: string
+        description: submodule name
+    description: Store test results and test report of a given submodule
+    steps:
+      - store_test_results:
+          name: Upload test results of << parameters.submodule >>
+          path: << parameters.submodule >>/build/test-results/test
+      - store_artifacts:
+          name: Upload test reports of << parameters.submodule >>
+          path: << parameters.submodule >>/build/reports/tests/test
+          destination: test-report-<< parameters.submodule >>
+
   install_integration_common:
     description: "Install common integration"
     parameters:
@@ -609,11 +624,24 @@ jobs:
           when: on_fail
           command: cat build/test-results/test/TEST-*.xml
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}
-      - store_test_results:
-          path: build/test-results/test
-      - store_artifacts:
-          path: build/reports/tests/test
-          destination: test-report
+      - store_submodule_tests:
+          submodule: app
+      - store_submodule_tests:
+          submodule: spark2
+      - store_submodule_tests:
+          submodule: spark3
+      - store_submodule_tests:
+          submodule: spark31
+      - store_submodule_tests:
+          submodule: spark32
+      - store_submodule_tests:
+          submodule: spark33
+      - store_submodule_tests:
+          submodule: spark34
+      - store_submodule_tests:
+          submodule: spark35
+      - store_submodule_tests:
+          submodule: spark40
       - store_artifacts:
           path: build/reports/tests/pmd
           destination: pmd-report

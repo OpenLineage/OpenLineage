@@ -147,7 +147,8 @@ class LogicalPlanSerializer {
     "constraints",
     "data",
     "deltaLog",
-    "limitExpr"
+    "limitExpr",
+    "mockitoInterceptor" // don't serialize fields if plan is a mock
   })
   @SuppressWarnings("PMD")
   abstract class ChildMixIn {}

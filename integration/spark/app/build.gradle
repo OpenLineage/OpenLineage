@@ -12,7 +12,6 @@ plugins {
     id("io.freefair.lombok")
     id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
-    id "com.adarshr.test-logger" version "4.0.0"
     id "org.gradle.test-retry" version "1.6.0"
 }
 
@@ -205,11 +204,6 @@ tasks.named("test", Test.class) {
         }
     }
     systemProperties = testSystemProperties(spark, scala)
-
-    testLogging {
-        events "passed", "skipped", "failed"
-        showStandardStreams = true
-    }
 }
 
 tasks.named("jar", Jar.class) {
@@ -263,10 +257,6 @@ tasks.named("shadowJar", ShadowJar.class) {
 }
 
 tasks.withType(Test).configureEach {
-    testLogging {
-        events("passed", "skipped", "failed")
-        showStandardStreams = true
-    }
     systemProperties = testSystemProperties(spark, scala)
     retry {
         boolean isCiServer = System.getenv().containsKey("CI")
