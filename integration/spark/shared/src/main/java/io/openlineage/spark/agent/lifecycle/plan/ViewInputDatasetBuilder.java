@@ -15,14 +15,14 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.View;
 
-public class ViewVisitor extends AbstractQueryPlanInputDatasetBuilder<View> {
+public class ViewInputDatasetBuilder extends AbstractQueryPlanInputDatasetBuilder<View> {
 
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
     return x instanceof View && ((View) x).child() != null;
   }
 
-  public ViewVisitor(OpenLineageContext context) {
+  public ViewInputDatasetBuilder(OpenLineageContext context) {
     super(context, true);
   }
 
