@@ -8,6 +8,8 @@ package io.openlineage.gradle.plugin
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.diffplug.gradle.spotless.SpotlessPlugin
 import com.diffplug.spotless.FormatterFunc
+import com.adarshr.gradle.testlogger.TestLoggerPlugin
+import com.adarshr.gradle.testlogger.TestLoggerExtension
 import io.freefair.gradle.plugins.lombok.LombokExtension
 import io.freefair.gradle.plugins.lombok.LombokPlugin
 import org.gradle.api.JavaVersion
@@ -49,6 +51,7 @@ class CommonConfigPlugin : Plugin<Project> {
         configureLombok(target)
         configureSpotless(target)
         configurePrintSourceSetTask(target)
+        configureTestLogger(target)
     }
 
     private fun getPluginExtension(target: Project): CommonConfigPluginExtension =
@@ -142,6 +145,14 @@ class CommonConfigPlugin : Plugin<Project> {
         val commonConfigExtension = getPluginExtension(target)
         with(target.extensions.getByType<LombokExtension>()) {
             version.set(commonConfigExtension.lombokVersion)
+        }
+    }
+
+    private fun configureTestLogger(target: Project) = target.plugins.withType<TestLoggerPlugin> {
+        target.extensions.configure<TestLoggerExtension> {
+            showExceptions = false
+            showStackTraces = false
+            showStandardStreams = true
         }
     }
 
