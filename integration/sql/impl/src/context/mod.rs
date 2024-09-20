@@ -422,7 +422,30 @@ impl<'a> Context<'a> {
                     (col, anc)
                 })
                 .collect::<HashMap<ColumnMeta, ColumnAncestors>>();
-            frame.column_ancestry.extend(old_ancestry);
+
+            let mut result: HashMap<ColumnMeta, ColumnAncestors> = HashMap::new();
+
+            for (key_column_meta, column_ancestors) in old_ancestry.iter() {
+                for column_meta in column_ancestors {
+                    if let Some(origin) = column_meta.origin.clone() {
+                        if frame.aliases.is_table_alias(&origin) && origin == from_table {
+                            continue;
+                        }
+                    }
+
+                    result
+                        .entry(key_column_meta.clone())
+                        .or_default()
+                        .insert(column_meta.clone());
+                }
+            }
+
+            if !result.is_empty() {
+                frame.column_ancestry.extend(old_ancestry);
+            } else {
+                frame.column_ancestry.extend(result);
+            }
+
             frame.dependencies.extend(old.dependencies);
             frame.cte_dependencies.extend(old.cte_dependencies);
             frame.is_main_body = old.is_main_body;

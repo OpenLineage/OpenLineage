@@ -455,3 +455,65 @@ fn test_column_resolving_in_complex_cte() {
         ]
     );
 }
+
+#[test]
+fn test_cte_with_cycles() {
+    let output = test_sql(
+        "WITH tab1 AS (
+                SELECT s.col1, s.col2, s2.col3, s2.col4
+                FROM stg AS s, stg2 AS s2
+            ), tab1 AS (
+                SELECT col1, col2, col3, col4
+                FROM tab1
+            )
+            SELECT col1, col2, col3, col4
+            FROM tab1",
+    )
+    .unwrap();
+
+    assert_eq!(
+        output.column_lineage,
+        vec![
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "col1".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("stg")),
+                    name: "col1".to_string()
+                }]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "col2".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("stg")),
+                    name: "col2".to_string()
+                }]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "col3".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("stg2")),
+                    name: "col3".to_string()
+                }]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "col4".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("stg2")),
+                    name: "col4".to_string()
+                }]
+            },
+        ]
+    );
+}
