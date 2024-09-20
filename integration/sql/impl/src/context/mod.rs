@@ -423,7 +423,7 @@ impl<'a> Context<'a> {
                 })
                 .collect::<HashMap<ColumnMeta, ColumnAncestors>>();
 
-            let mut result: HashMap<ColumnMeta, ColumnAncestors> = HashMap::new();
+            let mut removed_circular_deps: HashMap<ColumnMeta, ColumnAncestors> = HashMap::new();
 
             for (key_column_meta, column_ancestors) in old_ancestry.iter() {
                 for column_meta in column_ancestors {
@@ -433,17 +433,17 @@ impl<'a> Context<'a> {
                         }
                     }
 
-                    result
+                    removed_circular_deps
                         .entry(key_column_meta.clone())
                         .or_default()
                         .insert(column_meta.clone());
                 }
             }
 
-            if !result.is_empty() {
+            if !removed_circular_deps.is_empty() {
                 frame.column_ancestry.extend(old_ancestry);
             } else {
-                frame.column_ancestry.extend(result);
+                frame.column_ancestry.extend(removed_circular_deps);
             }
 
             frame.dependencies.extend(old.dependencies);
