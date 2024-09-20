@@ -347,9 +347,11 @@ impl<'a> Context<'a> {
         for (col, ancestors) in &frame.column_ancestry {
             let mut expanded = ColumnAncestors::new();
             for ancestor in ancestors {
-                let prev = old.column_ancestry.get(ancestor);
-                if let Some(list) = prev {
-                    expanded.extend(list.iter().cloned());
+                // here we need also look on other if they are connected
+                let traversed = Context::expand_ancestors(ancestor.clone(), &old);
+
+                if !traversed.is_empty() {
+                    expanded.extend(traversed.iter().cloned());
                 } else {
                     expanded.insert(ancestor.clone());
                 }
@@ -360,6 +362,29 @@ impl<'a> Context<'a> {
         frame.column_ancestry = result;
         frame.dependencies.extend(old.dependencies);
         frame.is_main_body = old.is_main_body;
+    }
+
+    fn expand_ancestors(ancestor: ColumnMeta, old: &ContextFrame) -> Vec<ColumnMeta> {
+        let mut result = Vec::new();
+        let mut stack = Vec::new();
+
+        stack.push(ancestor.clone());
+
+        while let Some(current) = stack.pop() {
+            let column_ancestors = old.column_ancestry.get(&current);
+            if column_ancestors.is_none() {
+                result.push(current.clone());
+                continue;
+            }
+
+            if let Some(ancestors) = column_ancestors {
+                for ancestor in ancestors {
+                    stack.push(ancestor.clone());
+                }
+            }
+        }
+
+        result
     }
 
     pub fn collect(&mut self, mut old: ContextFrame) {
@@ -403,11 +428,45 @@ impl<'a> Context<'a> {
                     (col, anc)
                 })
                 .collect::<HashMap<ColumnMeta, ColumnAncestors>>();
-            frame.column_ancestry.extend(old_ancestry);
+
+            let removed_circular_deps =
+                Context::remove_circular_deps(&old_ancestry, frame, from_table);
+
+            if !removed_circular_deps.is_empty() {
+                frame.column_ancestry.extend(old_ancestry);
+            } else {
+                frame.column_ancestry.extend(removed_circular_deps);
+            }
+
             frame.dependencies.extend(old.dependencies);
             frame.cte_dependencies.extend(old.cte_dependencies);
             frame.is_main_body = old.is_main_body;
         }
+    }
+
+    fn remove_circular_deps(
+        old_ancestry: &HashMap<ColumnMeta, ColumnAncestors>,
+        frame: &ContextFrame,
+        from_table: DbTableMeta,
+    ) -> HashMap<ColumnMeta, ColumnAncestors> {
+        let mut removed_circular_deps: HashMap<ColumnMeta, ColumnAncestors> = HashMap::new();
+
+        for (key_column_meta, column_ancestors) in old_ancestry.iter() {
+            for column_meta in column_ancestors {
+                if let Some(origin) = column_meta.origin.clone() {
+                    if frame.aliases.is_table_alias(&origin) && origin == from_table {
+                        continue;
+                    }
+                }
+
+                removed_circular_deps
+                    .entry(key_column_meta.clone())
+                    .or_default()
+                    .insert(column_meta.clone());
+            }
+        }
+
+        removed_circular_deps
     }
 
     pub fn collect_lower_nested_dependencies(&mut self, cte_name: String) {
