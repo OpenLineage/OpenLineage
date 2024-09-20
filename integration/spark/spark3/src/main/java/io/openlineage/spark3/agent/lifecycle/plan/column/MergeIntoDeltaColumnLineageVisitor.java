@@ -68,6 +68,10 @@ public abstract class MergeIntoDeltaColumnLineageVisitor implements ColumnLevelL
   @Override
   public void collectExpressionDependencies(ColumnLevelLineageContext context, LogicalPlan node) {
     if (node instanceof MergeIntoCommand) {
+
+      ColumnLevelLineageUtils.collectInputsAndExpressionDependencies(
+          context, ((MergeIntoCommand) node).source());
+
       getMergeActions((MergeIntoCommand) node)
           .filter(action -> action instanceof DeltaMergeAction)
           .map(action -> (DeltaMergeAction) action)

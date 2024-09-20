@@ -54,19 +54,6 @@
                       "masking": false
                     }
                   ]
-                },
-                {
-                  "namespace": "file",
-                  "name": "/tmp/delta/updates2",
-                  "field": "event_id",
-                  "transformations": [
-                    {
-                      "type": "DIRECT",
-                      "subtype": "IDENTITY",
-                      "description": "",
-                      "masking": false
-                    }
-                  ]
                 }
               ]
             },
@@ -74,12 +61,12 @@
               "inputFields": [
                 {
                   "namespace": "file",
-                  "name": "/tmp/delta/updates2",
+                  "name": "/tmp/delta/updates",
                   "field": "updated_at",
                   "transformations": [
                     {
                       "type": "DIRECT",
-                      "subtype": "IDENTITY",
+                      "subtype": "TRANSFORMATION",
                       "description": "",
                       "masking": false
                     }
@@ -88,21 +75,6 @@
               ]
             }
           }
-        },
-        "symlinks": {
-          "identifiers": [
-            {
-              "namespace": "file:/tmp/delta",
-              "name": "default.events",
-              "type": "TABLE"
-            }
-          ]
-        }
-      },
-      "outputFacets": {
-        "outputStatistics": {
-          "rowCount": 0,
-          "size": 0
         }
       }
     }

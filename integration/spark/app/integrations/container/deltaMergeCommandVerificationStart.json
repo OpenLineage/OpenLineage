@@ -1,0 +1,154 @@
+{
+  "eventType": "START",
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/delta/events",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "event_id",
+              "type": "long"
+            },
+            {
+              "name": "last_updated_at",
+              "type": "long"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/delta",
+              "name": "default.events",
+              "type": "TABLE"
+            }
+          ]
+        }
+      },
+      "inputFacets": {}
+    },
+    {
+      "namespace": "file",
+      "name": "/tmp/delta/updates",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "event_id",
+              "type": "long"
+            },
+            {
+              "name": "updated_at",
+              "type": "long"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/delta",
+              "name": "default.updates",
+              "type": "TABLE"
+            }
+          ]
+        }
+      },
+      "inputFacets": {}
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/delta/events",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "event_id",
+              "type": "long"
+            },
+            {
+              "name": "last_updated_at",
+              "type": "long"
+            }
+          ]
+        },
+        "columnLineage": {
+          "fields": {
+            "event_id": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/tmp/delta/events",
+                  "field": "event_id",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/delta/updates",
+                  "field": "event_id",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "last_updated_at": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/tmp/delta/updates",
+                  "field": "updated_at",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "TRANSFORMATION",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/delta",
+              "name": "default.events",
+              "type": "TABLE"
+            }
+          ]
+        }
+      },
+      "outputFacets": {}
+    }
+  ]
+}

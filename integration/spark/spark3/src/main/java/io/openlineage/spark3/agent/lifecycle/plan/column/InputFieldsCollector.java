@@ -37,7 +37,6 @@ import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.OneRowRelation;
 import org.apache.spark.sql.catalyst.plans.logical.UnaryNode;
-import org.apache.spark.sql.catalyst.plans.logical.View;
 import org.apache.spark.sql.execution.ExternalRDD;
 import org.apache.spark.sql.execution.LogicalRDD;
 import org.apache.spark.sql.execution.columnar.InMemoryRelation;
@@ -141,17 +140,8 @@ public class InputFieldsCollector {
       // skip without warning
     } else if (node instanceof LeafNode) {
       log.warn("Could not extract dataset identifier from {}", node.getClass().getCanonicalName());
-    } else if (node instanceof View) {
-      List<DatasetIdentifier> inputDatasets = new ArrayList<>();
-      View view = ((View) node);
-
-      context
-          .getOlContext()
-          .getSparkSession()
-          .ifPresent(spark -> inputDatasets.add(PathUtils.fromCatalogTable(view.desc(), spark)));
-
-      return inputDatasets;
     }
+
     return Collections.emptyList();
   }
 
