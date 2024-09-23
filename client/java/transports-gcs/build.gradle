@@ -29,7 +29,23 @@ dependencies {
 }
 
 shadowJar {
-    relocate "com.google.storage", "io.openlineage.client.shaded.com.google.storage"
+    dependencies {
+        exclude 'google/**'
+        exclude 'grpc/**'
+        exclude 'opencensus/**'
+        exclude 'com/fasterxml/**'
+    }
+
+    relocate "com.google", "io.openlineage.client.shaded.com.google"
+    relocate "org.checkerframework", "io.openlineage.client.shaded.org.checkerframework"
+    relocate "org.codehaus", "io.openlineage.client.shaded.org.codehaus"
+    relocate "org.conscrypt", "io.openlineage.client.shaded.org.conscrypt"
+    relocate "org.threeten", "io.openlineage.client.shaded.org.threeten"
+    relocate "org.apache", "io.openlineage.client.shaded.org.apache"
+    relocate "io.opencensus", "io.openlineage.client.shaded.io.opencensus"
+    relocate "io.grpc", "io.openlineage.client.shaded.io.grpc"
+    relocate "io.opentelemetry", "io.openlineage.client.shaded.io.opentelemetry"
+    relocate "io.perfmark", "io.openlineage.client.shaded.io.perfmark"
 }
 
 apply from: '../transports.build.gradle'
