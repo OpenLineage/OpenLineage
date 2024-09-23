@@ -585,7 +585,7 @@ class DbtArtifactProcessor:
         elif self.adapter_type == Adapter.DREMIO:
             return f"dremio://{profile['software_host']}:{profile['port']}"
         elif self.adapter_type == Adapter.ATHENA:
-            return "athena"
+            return f"awsathena://athena.{profile['region_name']}.amazonaws.com"
         elif self.adapter_type == Adapter.SPARK:
             port = ""
 
