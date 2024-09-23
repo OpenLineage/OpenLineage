@@ -13,7 +13,7 @@ plugins {
     id "com.adarshr.test-logger" version "3.2.0"
     // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
     id 'com.diffplug.spotless' version '6.13.0'
-    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id "com.gradleup.shadow" version "8.3.2"
     id "pmd"
     id "io.freefair.lombok" version "8.10"
 }
@@ -26,6 +26,10 @@ dependencies {
     implementation('com.google.cloud:google-cloud-storage:2.42.0')
 
     testImplementation('com.google.cloud:google-cloud-nio:0.123.10')
+}
+
+shadowJar {
+    relocate "com.google.storage", "io.openlineage.client.shaded.com.google.storage"
 }
 
 apply from: '../transports.build.gradle'

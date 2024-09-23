@@ -16,7 +16,7 @@ plugins {
     // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
     id 'com.diffplug.spotless' version '6.13.0'
     id "org.openapi.generator" version "6.6.0"
-    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id "com.gradleup.shadow" version "8.3.2"
     id "pmd"
     id "io.freefair.lombok" version "8.10"
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
