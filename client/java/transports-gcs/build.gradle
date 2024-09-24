@@ -34,6 +34,7 @@ shadowJar {
         exclude 'grpc/**'
         exclude 'opencensus/**'
         exclude 'com/fasterxml/**'
+        exclude 'org/slf4j/**'
     }
 
     relocate "com.google", "io.openlineage.client.shaded.com.google"
