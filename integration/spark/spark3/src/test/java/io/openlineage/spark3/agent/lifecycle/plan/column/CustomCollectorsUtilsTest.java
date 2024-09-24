@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Optional;
@@ -49,6 +50,7 @@ class CustomCollectorsUtilsTest {
     when(plan.output()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
     when(child.children()).thenReturn(ScalaConversionUtils.asScalaSeqEmpty());
     when(context.getOpenLineage()).thenReturn(openLineage);
+    when(context.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
 
     Mockito.doCallRealMethod().when(plan).foreach(any());
     Mockito.doCallRealMethod().when(child).foreach(any());
