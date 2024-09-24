@@ -87,6 +87,8 @@ class HttpConfig(Config):
     session: Session | None = attr.ib(default=None)
     # not set by TransportFactory
     adapter: HTTPAdapter | None = attr.ib(default=None)
+    # custom headers support
+    custom_headers: dict[str, str] = attr.ib(factory=dict)
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> HttpConfig:
@@ -150,6 +152,7 @@ class HttpTransport(Transport):
             self.session.headers["Content-Type"] = "application/json"
             auth_headers = self._auth_headers(config.auth)
             self.session.headers.update(auth_headers)
+            self.session.headers.update(config.custom_headers)
         self.timeout = config.timeout
         self.verify = config.verify
         self.compression = config.compression
@@ -168,6 +171,9 @@ class HttpTransport(Transport):
         http_client.HTTPConnection.debuglevel = 0
         body, headers = self._prepare_request(Serde.to_json(event))
 
+        # Update headers with custom headers from the config
+        headers.update(self.config.custom_headers)
+
         if self.session:
             resp = self.session.post(
                 url=urljoin(self.url, self.endpoint),
@@ -179,6 +185,7 @@ class HttpTransport(Transport):
         else:
             headers["Content-Type"] = "application/json"
             headers.update(self._auth_headers(self.config.auth))
+            headers.update(self.config.custom_headers)
             with Session() as session:
                 resp = session.post(
                     url=urljoin(self.url, self.endpoint),

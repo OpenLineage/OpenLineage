@@ -232,6 +232,7 @@ Allows sending events to HTTP endpoint, using [requests](https://requests.readth
   - `type` - string specifying the "api_key" or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
   - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`. Added in v1.13.0.
+- `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
 
 #### Behavior
 
