@@ -31,7 +31,6 @@ import io.openlineage.hive.client.EventEmitter;
 import io.openlineage.hive.client.Versions;
 import io.openlineage.hive.facets.HivePropertiesFacetBuilder;
 import io.openlineage.hive.util.HiveUtils;
-import io.openlineage.hive.util.PathUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -64,7 +63,7 @@ public class Faceting {
           && !input.isDummy()) {
         sanitizeEntity(olContext.getHadoopConf(), input);
         Table table = input.getTable();
-        DatasetIdentifier di = PathUtils.fromTable(table);
+        DatasetIdentifier di = HiveUtils.getDatasetIdentifierFromTable(table);
         OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
         SchemaDatasetFacet schemaFacet = getSchemaDatasetFacet(olContext, table);
         SymlinksDatasetFacet symlinksDatasetFacet = getSymlinkFacets(ol, di);
@@ -92,7 +91,7 @@ public class Faceting {
           && !output.isDummy()) {
         sanitizeEntity(olContext.getHadoopConf(), output);
         Table outputTable = output.getTable();
-        DatasetIdentifier di = PathUtils.fromTable(outputTable);
+        DatasetIdentifier di = HiveUtils.getDatasetIdentifierFromTable(outputTable);
         OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
         SchemaDatasetFacet schemaFacet = getSchemaDatasetFacet(olContext, outputTable);
         SymlinksDatasetFacet symlinksFacet = getSymlinkFacets(ol, di);

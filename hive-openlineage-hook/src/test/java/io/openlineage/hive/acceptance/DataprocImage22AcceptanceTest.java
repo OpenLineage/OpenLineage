@@ -13,27 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.openlineage.hive.transport;
+package io.openlineage.hive.acceptance;
 
-import io.openlineage.client.transports.ConsoleConfig;
-import io.openlineage.client.transports.Transport;
-import io.openlineage.client.transports.TransportBuilder;
-import io.openlineage.client.transports.TransportConfig;
+public class DataprocImage22AcceptanceTest extends DataprocAcceptanceTestBase {
 
-public class DummyTransportBuilder implements TransportBuilder {
-
-  @Override
-  public TransportConfig getConfig() {
-    return new ConsoleConfig();
-  }
-
-  @Override
-  public Transport build(TransportConfig config) {
-    return new DummyTransport();
-  }
-
-  @Override
-  public String getType() {
-    return "dummy";
+  protected String getDataprocImageVersion() {
+    return "2.2-debian12";
   }
 }
