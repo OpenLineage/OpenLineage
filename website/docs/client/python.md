@@ -177,6 +177,32 @@ transport:
 ```
 </TabItem>
 
+<TabItem value="kafka" label="Kafka Transport Example">
+
+Setting following environment variables:
+
+```sh
+OPENLINEAGE__TRANSPORT__TYPE=kafka
+OPENLINEAGE__TRANSPORT__TOPIC=my_topic
+OPENLINEAGE__TRANSPORT__CONFIG='{"bootstrap.servers": "localhost:9092,another.host:9092", "acks": "all", "retries": 3}'
+OPENLINEAGE__TRANSPORT__FLUSH=true
+OPENLINEAGE__TRANSPORT__MESSAGE_KEY=some-value
+```
+
+is equivalent to passing following YAML configuration:
+```yaml
+transport:
+  type: kafka
+  topic: my_topic
+  config:
+    bootstrap.servers: localhost:9092,another.host:9092
+    acks: all
+    retries: 3
+  flush: true
+  message_key: some-value # this has been aliased to messageKey
+```
+</TabItem>
+
 </Tabs>
 
 #### HTTP transport configuration with environment variables

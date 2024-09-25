@@ -29,6 +29,7 @@ from openlineage.client.uuid import generate_new_uuid
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from openlineage.client.transport.kafka import KafkaTransport
     from pytest_mock import MockerFixture
 
 
@@ -466,6 +467,27 @@ def test_openlineage_url_does_not_alias_when_transport_exists() -> None:
     assert transport.kind == CompositeTransport.kind
     assert len(transport.transports) == 2  # noqa: PLR2004
     assert transport.transports[0].kind == transport.transports[1].kind == ConsoleTransport.kind
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE__TRANSPORT__TYPE": "kafka",
+        "OPENLINEAGE__TRANSPORT__TOPIC": "my_topic",
+        "OPENLINEAGE__TRANSPORT__CONFIG": '{"bootstrap.servers": "localhost:9092,another.host:9092", "acks": "all", "retries": 3}',  # noqa: E501
+        "OPENLINEAGE__TRANSPORT__FLUSH": "true",
+        "OPENLINEAGE__TRANSPORT__MESSAGE_KEY": "some-value",
+    },
+)
+def test_kafka_transport_configured_with_aliased_message_key() -> None:
+    transport: KafkaTransport = OpenLineageClient().transport
+    assert transport.message_key == "some-value"
+    assert transport.flush is True
+    assert transport.kafka_config.config == {
+        "bootstrap.servers": "localhost:9092,another.host:9092",
+        "acks": "all",
+        "retries": 3,
+    }
 
 
 class TestOpenLineageConfigLoader:
