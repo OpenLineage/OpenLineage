@@ -35,7 +35,7 @@ class CompositeConfig(Config):
             transport will halt the emission process for subsequent transports.
     """
 
-    transports: list[dict[str, Any]] = attr.ib()
+    transports: list[dict[str, Any]] | dict[str, dict[str, Any]] = attr.ib()
     continue_on_failure: bool = attr.ib(default=True)
 
     @classmethod
@@ -63,7 +63,12 @@ class CompositeTransport(Transport):
         from openlineage.client.transport import get_default_factory
 
         transports = []
-        for transport_config in self.config.transports:
+        config_transports = self.config.transports
+        if isinstance(config_transports, dict):
+            config_transports = [
+                {**config, "name": name} for name, config in config_transports.items() if config
+            ]
+        for transport_config in config_transports:
             transports.append(get_default_factory().create(transport_config))
         return transports
 

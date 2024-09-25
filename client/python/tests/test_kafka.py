@@ -106,6 +106,22 @@ def test_kafka_loads_partial_config_with_defaults() -> None:
     assert config.flush is True
 
 
+def test_kafka_config_accepts_aliased_message_key() -> None:
+    config = KafkaConfig.from_dict(
+        {
+            "type": "kafka",
+            "topic": "my_topic",
+            "message_key": "some-value",
+            "flush": True,
+            "config": {"bootstrap.servers": "localhost:9092,another.host:9092", "acks": "all", "retries": 3},
+        }
+    )
+
+    assert config.messageKey == "some-value"
+    assert config.topic == "my_topic"
+    assert config.flush is True
+
+
 def test_kafka_load_config_fails_on_no_config() -> None:
     with pytest.raises(TypeError):
         KafkaConfig.from_dict(

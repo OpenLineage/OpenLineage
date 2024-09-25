@@ -2,6 +2,9 @@
 sidebar_position: 5
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Python
 
 ## Overview
@@ -59,6 +62,148 @@ The following environment variables are available to use:
 | OPENLINEAGE_API_KEY        | Token included in the Authentication HTTP header as the Bearer    | secret_token_123        |        |
 
 If you are using Airflow integration, there are additional [environment variables available](../integrations/airflow/usage.md#environment-variables).
+
+#### Dynamic configuration with environment variables
+
+You can also configure the client with dynamic environment variables.
+Environment variables that configure the OpenLineage client follow a specific pattern. All variables that affect the client configuration start with the prefix `OPENLINEAGE__`, followed by nested keys separated by double underscores (`__`).
+
+##### Key Features
+
+1. Prefix Requirement: All environment variables must begin with `OPENLINEAGE__`.
+2. Sections Separation: Configuration sections are separated using double underscores `__` to form the hierarchy.
+3. Lowercase Conversion: Environment variable values are automatically converted to lowercase.
+4. JSON String Support: You can pass a JSON string at any level of the configuration hierarchy, which will be merged into the final configuration structure.
+5. Hyphen Restriction: Since environment variable names cannot contain `-` (hyphen), if a name strictly requires a hyphen, use a JSON string as the value of the environment variable.
+6. Precedence Rules:
+* Top-level keys have precedence and will not be overwritten by more nested entries.
+* For example, `OPENLINEAGE__TRANSPORT='{..}'` will not have its keys overwritten by `OPENLINEAGE__TRANSPORT__AUTH__KEY='key'`.
+
+##### Dynamic Alias for Transport Variables
+
+To facilitate easier management of environment variables, aliases are dynamically created for certain variables like `OPENLINEAGE_URL`. If `OPENLINEAGE_URL` is set, it automatically translates into specific transport configurations
+that can be used with Composite transport with `default_http` as the name of the HTTP transport.
+
+Alias rules are following:
+* If environment variable `OPENLINEAGE_URL`="http://example.com" is set, it would insert following environment variables:
+```sh
+OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP__TYPE="http"
+OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP__URL="http://example.com"
+```
+* Similarly if environment variable `OPENLINEAGE_API_KEY`="random_key" is set, it will be translated to:
+```sh
+OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP__AUTH='{"type": "api_key", "apiKey": "random_key"}'
+```
+qually with environment variable `OPENLINEAGE_ENDPOINT`="api/v1/lineage", that translates to:
+```sh
+OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP__ENDPOINT="api/v1/lineage"
+```
+* If one does not want to use aliased HTTP transport in Composite Transport, they can set `OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP` to `{}`.
+
+
+#### Examples
+
+<Tabs groupId="configs">
+<TabItem value="basic" label="Basic Example">
+
+Setting following environment variables:
+
+```sh
+OPENLINEAGE__TRANSPORT__TYPE=http
+OPENLINEAGE__TRANSPORT__URL=http://localhost:5050
+OPENLINEAGE__TRANSPORT__ENDPOINT=/api/v1/lineage
+OPENLINEAGE__TRANSPORT__AUTH='{"type":"api_key", "apiKey":"random_token"}'
+OPENLINEAGE__TRANSPORT__COMPRESSION=gzip
+```
+
+is equivalent to passing following YAML configuration:
+```yaml
+transport:
+  type: http
+  url: http://localhost:5050
+  endpoint: api/v1/lineage
+  auth:
+    type: api_key
+    apiKey: random_token
+  compression: gzip
+```
+</TabItem>
+
+<TabItem value="composite" label="Composite Example">
+
+Setting following environment variables:
+
+```sh
+OPENLINEAGE__TRANSPORT__TYPE=composite
+OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TYPE=http
+OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__URL=http://localhost:5050
+OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__ENDPOINT=/api/v1/lineage
+OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__AUTH='{"type":"api_key", "apiKey":"random_token"}'
+OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__COMPRESSION=gzip
+OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TYPE=console
+```
+
+is equivalent to passing following YAML configuration:
+```yaml
+transport:
+  type: composite
+  transports:
+    first:
+      type: http
+      url: http://localhost:5050
+      endpoint: api/v1/lineage
+      auth:
+        type: api_key
+        apiKey: random_token
+      compression: gzip
+    second:
+      type: console
+```
+</TabItem>
+
+<TabItem value="precedence" label="Precedence Example">
+
+Setting following environment variables:
+
+```sh
+OPENLINEAGE__TRANSPORT='{"type":"console"}'
+OPENLINEAGE__TRANSPORT__TYPE=http
+```
+
+is equivalent to passing following YAML configuration:
+```yaml
+transport:
+  type: console
+```
+</TabItem>
+
+<TabItem value="kafka" label="Kafka Transport Example">
+
+Setting following environment variables:
+
+```sh
+OPENLINEAGE__TRANSPORT__TYPE=kafka
+OPENLINEAGE__TRANSPORT__TOPIC=my_topic
+OPENLINEAGE__TRANSPORT__CONFIG='{"bootstrap.servers": "localhost:9092,another.host:9092", "acks": "all", "retries": 3}'
+OPENLINEAGE__TRANSPORT__FLUSH=true
+OPENLINEAGE__TRANSPORT__MESSAGE_KEY=some-value
+```
+
+is equivalent to passing following YAML configuration:
+```yaml
+transport:
+  type: kafka
+  topic: my_topic
+  config:
+    bootstrap.servers: localhost:9092,another.host:9092
+    acks: all
+    retries: 3
+  flush: true
+  message_key: some-value # this has been aliased to messageKey
+```
+</TabItem>
+
+</Tabs>
 
 #### HTTP transport configuration with environment variables
 

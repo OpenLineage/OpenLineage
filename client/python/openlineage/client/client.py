@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import json
 import logging
 import os
 import warnings
@@ -15,6 +16,8 @@ from openlineage.client.serde import Serde
 if TYPE_CHECKING:
     from requests import Session
     from requests.adapters import HTTPAdapter
+
+import contextlib
 
 from openlineage.client import event_v2
 from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
@@ -40,6 +43,9 @@ _T = TypeVar("_T", bound="OpenLineageClient")
 
 
 class OpenLineageClient:
+    DYNAMIC_ENV_VARS_PREFIX = "OPENLINEAGE__"
+    DEFAULT_URL_TRANSPORT_NAME = "default_http"
+
     def __init__(  # noqa: PLR0913
         self,
         url: str | None = None,
@@ -63,6 +69,8 @@ class OpenLineageClient:
         # Make config ellipsis - as a guard value to not try to
         # reload yaml each time config is referred to.
         self._config: dict[str, dict[str, str]] | None = None
+
+        self._alias_env_vars()
 
         self.transport = self._resolve_transport(
             url=url, options=options, session=session, transport=transport, factory=factory
@@ -131,7 +139,7 @@ class OpenLineageClient:
                 self._config = {}
         return self._config
 
-    def _resolve_transport(self, **kwargs: Any) -> Transport:
+    def _resolve_transport(self, **kwargs: Any) -> Transport:  # noqa: PLR0911
         """
         Resolves the transport mechanism based on the provided arguments or environment settings.
 
@@ -166,11 +174,16 @@ class OpenLineageClient:
                 url=kwargs["url"], options=kwargs.get("options"), session=kwargs.get("session")
             )
 
-        # 5. Check HTTP transport initialization with env variables
+        # 5. Check transport initialization with env variables
+        if config := self._load_config_from_env_variables():
+            factory = kwargs.get("factory") or get_default_factory()
+            return factory.create(config["transport"])
+
+        # 6. Check HTTP transport initialization with env variables
         if os.environ.get("OPENLINEAGE_URL"):
             return self._http_transport_from_env_variables()
 
-        # 6. If all else fails, print events to console
+        # 7. If all else fails, print events to console
         from openlineage.client.transport.console import ConsoleConfig, ConsoleTransport
 
         log.warning("Couldn't find any OpenLineage transport configuration; will print events to console.")
@@ -245,3 +258,68 @@ class OpenLineageClient:
                 session=session,
             ),
         )
+
+    def _alias_env_vars(self) -> None:
+        default_transport_name = self.DEFAULT_URL_TRANSPORT_NAME.upper()
+        if url := os.environ.get("OPENLINEAGE_URL"):
+            if any(
+                k.startswith(f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}")
+                for k in os.environ
+            ):
+                log.warning(
+                    "%s already found in environment variables, skipping aliasing OPENLINEAGE_URL",
+                    default_transport_name,
+                )
+                return
+            os.environ[f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}__TYPE"] = "http"
+            os.environ[f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}__URL"] = url
+            if api_key := os.environ.get("OPENLINEAGE_API_KEY"):
+                os.environ[
+                    f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}__AUTH"
+                ] = json.dumps(
+                    {
+                        "type": "api_key",
+                        "apiKey": api_key,
+                    }
+                )
+            if endpoint := os.environ.get("OPENLINEAGE_ENDPOINT"):
+                os.environ[
+                    f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}__ENDPOINT"
+                ] = endpoint
+
+    @classmethod
+    def _load_config_from_env_variables(cls) -> dict[str, Any] | None:
+        config: dict[str, Any] = {}
+
+        # get os.environ.items only starting with OPENLINEAGE_ prefix and reverse sort
+        # to make sure that top-level keys have precedence
+        env_vars = sorted(
+            filter(lambda k: k[0].startswith(cls.DYNAMIC_ENV_VARS_PREFIX), os.environ.items()), reverse=True
+        )
+
+        for env_key, env_value in env_vars:
+            keys = env_key[len(cls.DYNAMIC_ENV_VARS_PREFIX) :].split("__")
+
+            # Parse value (try to parse as JSON, otherwise lowercase the value)
+            with contextlib.suppress(json.JSONDecodeError):
+                env_value = json.loads(env_value)  # noqa: PLW2901
+
+            cls._insert_into_config(config, keys, env_value)
+
+        if (transport_config := config.get("transport")) is None or transport_config.get("type") is None:
+            return None
+
+        return config
+
+    @staticmethod
+    def _insert_into_config(config: dict[str, Any], key_path: list[str], value: str) -> None:
+        keys = [key.lower() for key in key_path]
+
+        current = config
+        for key in keys[:-1]:
+            if key not in current:
+                current[key] = {}
+            current = current[key]
+
+        # Overwrite if key already exists
+        current[keys[-1]] = value
