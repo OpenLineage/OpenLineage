@@ -47,6 +47,17 @@ public class ColumnLevelLineageTestUtils {
             outputColumn));
   }
 
+  static void assertDatasetDependsOnType(
+      OpenLineage.ColumnLineageDatasetFacet facet,
+      String expectedNamespace,
+      String expectedName,
+      String expectedInputField,
+      TransformationInfo transformation) {
+    assertTrue(
+        hasDatasetInputField(
+            facet, expectedNamespace, expectedName, expectedInputField, transformation));
+  }
+
   static void assertAllColumnsDependsOnType(
       OpenLineage.ColumnLineageDatasetFacet facet,
       List<String> outputColumns,
@@ -76,20 +87,39 @@ public class ColumnLevelLineageTestUtils {
       String outputColumn) {
     return facet.getFields().getAdditionalProperties().get(outputColumn).getInputFields().stream()
         .anyMatch(
-            f ->
-                f.getNamespace().equalsIgnoreCase(expectedNamespace)
-                    && f.getName().endsWith(expectedName)
-                    && f.getField().equalsIgnoreCase(expectedInputField)
-                    && f.getTransformations().stream()
-                        .map(
-                            t ->
-                                new TransformationInfo(
-                                    TransformationInfo.Types.valueOf(t.getType()),
-                                    TransformationInfo.Subtypes.valueOf(t.getSubtype()),
-                                    t.getDescription(),
-                                    t.getMasking()))
-                        .collect(Collectors.toSet())
-                        .contains(transformation));
+            f -> isField(expectedNamespace, expectedName, expectedInputField, transformation, f));
+  }
+
+  private static boolean hasDatasetInputField(
+      OpenLineage.ColumnLineageDatasetFacet facet,
+      String expectedNamespace,
+      String expectedName,
+      String expectedInputField,
+      TransformationInfo transformation) {
+    return facet.getDataset().stream()
+        .anyMatch(
+            f -> isField(expectedNamespace, expectedName, expectedInputField, transformation, f));
+  }
+
+  private static boolean isField(
+      String expectedNamespace,
+      String expectedName,
+      String expectedInputField,
+      TransformationInfo transformation,
+      OpenLineage.InputField f) {
+    return f.getNamespace().equalsIgnoreCase(expectedNamespace)
+        && f.getName().endsWith(expectedName)
+        && f.getField().equalsIgnoreCase(expectedInputField)
+        && f.getTransformations().stream()
+            .map(
+                t ->
+                    new TransformationInfo(
+                        TransformationInfo.Types.valueOf(t.getType()),
+                        TransformationInfo.Subtypes.valueOf(t.getSubtype()),
+                        t.getDescription(),
+                        t.getMasking()))
+            .collect(Collectors.toSet())
+            .contains(transformation);
   }
 
   static void assertColumnDependsOnInputs(
