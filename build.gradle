@@ -3,6 +3,7 @@ plugins {
     // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
     id 'com.diffplug.spotless' version '6.13.0'
     id 'com.gradleup.shadow' version '8.3.0'
+    id 'com.adarshr.test-logger' version '4.0.0'
 }
 
 group = 'io.openlineage'
@@ -12,7 +13,7 @@ subprojects {
     tasks.withType(Test).tap {
         configureEach {
             // Prevent Gradle from caching tests results
-            dependsOn 'cleanTest'
+            outputs.upToDateWhen { false }
         }
     }
 }

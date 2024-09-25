@@ -22,6 +22,10 @@ import com.google.cloud.bigquery.DatasetId;
 import com.google.cloud.bigquery.DatasetInfo;
 import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.TableResult;
+import com.google.cloud.datacatalog.lineage.v1.LineageEvent;
+import com.google.cloud.datacatalog.lineage.v1.Link;
+import com.google.cloud.datacatalog.lineage.v1.LocationName;
+import com.google.cloud.datacatalog.lineage.v1.Process;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
@@ -31,31 +35,40 @@ import com.google.cloud.storage.StorageOptions;
 import com.klarna.hiverunner.HiveRunnerExtension;
 import com.klarna.hiverunner.HiveShell;
 import com.klarna.hiverunner.annotations.HiveSQL;
-import io.openlineage.hive.client.HiveOpenLineageConfigParser;
 import io.openlineage.hive.hooks.HiveOpenLineageHook;
+import io.openlineage.hive.testutils.DataplexTestUtils;
+import io.openlineage.hive.testutils.HivePropertiesExtension;
+import io.openlineage.hive.transport.DummyTransport;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.StrSubstitutor;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
-import org.apache.hadoop.hive.ql.hooks.LineageLogger;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(HiveRunnerExtension.class)
-public abstract class IntegrationTestsBase {
+@ExtendWith({HiveRunnerExtension.class, HivePropertiesExtension.class})
+public abstract class TestsBase {
 
   protected static String dataset;
   public static final String GCP_LOCATION_ENV_VAR = "GCP_LOCATION";
   public static final String TEST_BUCKET_ENV_VAR = "TEST_BUCKET";
   protected static String testBucketName;
+  protected String olJobNamespace;
+  protected String olJobName;
+  protected Process dataplexProcess;
 
   @HiveSQL(
       files = {},
@@ -85,7 +98,15 @@ public abstract class IntegrationTestsBase {
   }
 
   @BeforeEach
-  public void setupEach() {
+  public void setupEach(TestInfo testInfo) {
+    DummyTransport.getEvents().clear();
+    String className = testInfo.getTestClass().map(Class::getSimpleName).orElse("UnknownClass");
+    String methodName = testInfo.getTestMethod().map(Method::getName).orElse("UnknownMethod");
+    olJobName = String.format("%s.%s", className, methodName);
+    olJobNamespace =
+        String.format(
+            "test_namespace_%d_%d",
+            Long.MAX_VALUE - System.currentTimeMillis(), Long.MAX_VALUE - System.nanoTime());
     initHive();
   }
 
@@ -93,6 +114,48 @@ public abstract class IntegrationTestsBase {
   static void tearDownAll() {
     // Cleanup the test BQ dataset
     deleteBqDatasetAndTables(dataset);
+  }
+
+  @AfterEach
+  public void tearDownEach(TestInfo testInfo) throws IOException {
+    Process process = getDataplexProcess();
+    if (process != null) {
+      DataplexTestUtils.deleteProcess(process);
+    }
+  }
+
+  public Process getDataplexProcess() throws IOException {
+    if (dataplexProcess == null) {
+      return DataplexTestUtils.getProcessWithDisplayName(
+          getDataplexLocationName(), String.format("%s:%s", olJobNamespace, olJobName));
+    }
+    return dataplexProcess;
+  }
+
+  public List<Link> getBigQueryLinks(String sourceTable, String targetTable)
+      throws IOException, InterruptedException {
+    // FIXME: The Links are created asynchronously in the Dataplex backend so there might be a
+    //  small delay before we can retrieve them.
+    // TODO: Replace with a more robust retry strategy
+    Thread.sleep(2000);
+    String source = null;
+    String target = null;
+    if (sourceTable != null) {
+      source = String.format("bigquery:%s.%s.%s", getProject(), dataset, sourceTable);
+    }
+    if (targetTable != null) {
+      target = String.format("bigquery:%s.%s.%s", getProject(), dataset, targetTable);
+    }
+    return DataplexTestUtils.searchLinks(getDataplexLocationName(), source, target);
+  }
+
+  public List<LineageEvent> getDataplexEvents() throws IOException {
+    Process process = getDataplexProcess();
+    if (process != null) {
+      return DataplexTestUtils.getEventsForProcess(process.getName());
+    } else {
+      return Collections.emptyList();
+    }
   }
 
   public static void createBqDataset(String dataset) {
@@ -123,6 +186,10 @@ public abstract class IntegrationTestsBase {
     return getBigQueryService().getOptions().getProjectId();
   }
 
+  public static LocationName getDataplexLocationName() {
+    return LocationName.of(getProject(), getGcpLocation());
+  }
+
   private static Storage getStorageClient() {
     return StorageOptions.newBuilder().setCredentials(getCredentials()).build().getService();
   }
@@ -137,7 +204,7 @@ public abstract class IntegrationTestsBase {
     return BigQueryOptions.newBuilder().setCredentials(getCredentials()).build().getService();
   }
 
-  private static com.google.auth.Credentials getCredentials() {
+  public static com.google.auth.Credentials getCredentials() {
     try {
       return GoogleCredentials.getApplicationDefault();
     } catch (IOException e) {
@@ -161,18 +228,39 @@ public abstract class IntegrationTestsBase {
   }
 
   public void initHive(String engine) {
-    addExecHooks(HiveConf.ConfVars.POSTEXECHOOKS, HiveOpenLineageHook.class, LineageLogger.class);
+    addExecHooks(HiveConf.ConfVars.POSTEXECHOOKS, HiveOpenLineageHook.class);
     hive.setHiveConfValue(HiveConf.ConfVars.HIVE_EXECUTION_ENGINE.varname, engine);
-    hive.setHiveConfValue(HiveOpenLineageConfigParser.CONF_PREFIX + "transport.type", "dummy");
-    //    hive.setHiveConfValue(HiveOpenLineageConfigParser.CONF_PREFIX + "transport.type",
-    // "datacatalog");
-    //    hive.setHiveConfValue(HiveOpenLineageConfigParser.CONF_PREFIX + "transport.project",
-    // getProject());
-    //    hive.setHiveConfValue(HiveOpenLineageConfigParser.CONF_PREFIX + "transport.location",
-    // getGcpLocation());
-    hive.setHiveConfValue(HiveOpenLineageConfigParser.CONF_PREFIX + "namespace", "testnamespace");
+    hive.setHiveConfValue("hive.openlineage.transport.type", "composite");
+    hive.setHiveConfValue(
+        "hive.openlineage.transport.transports",
+        "[{\"type\":\"dummy\"}, {\"type\":\"dataplex\",\"mode\":\"sync\"}]");
+
+    // TODO: Check if this should instead be "hive.openlineage.job.namespace"
+    hive.setHiveConfValue("hive.openlineage.namespace", olJobNamespace);
+    hive.setHiveConfValue("hive.openlineage.job.name", olJobName);
     hive.setHiveConfValue("hive.tez.container.size", "1024");
+
+    // Load potential Hive config values passed from the HiveProperties extension
+    Map<String, String> hiveConfSystemOverrides = getHiveConfSystemOverrides();
+    for (String key : hiveConfSystemOverrides.keySet()) {
+      hive.setHiveConfValue(key, hiveConfSystemOverrides.get(key));
+    }
+
     hive.start();
+  }
+
+  /** Return Hive config values passed from system properties */
+  public static Map<String, String> getHiveConfSystemOverrides() {
+    Map<String, String> overrides = new HashMap<>();
+    Properties systemProperties = System.getProperties();
+    for (String key : systemProperties.stringPropertyNames()) {
+      if (key.startsWith(HivePropertiesExtension.HIVECONF_SYSTEM_OVERRIDE_PREFIX)) {
+        String hiveConfKey =
+            key.substring(HivePropertiesExtension.HIVECONF_SYSTEM_OVERRIDE_PREFIX.length());
+        overrides.put(hiveConfKey, systemProperties.getProperty(key));
+      }
+    }
+    return overrides;
   }
 
   public String renderQueryTemplate(String queryTemplate) {

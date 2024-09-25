@@ -15,6 +15,10 @@
  */
 package io.openlineage.hive.util;
 
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
+import java.net.URI;
+import lombok.SneakyThrows;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.metadata.Hive;
@@ -30,5 +34,19 @@ public class HiveUtils {
     } catch (HiveException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @SneakyThrows
+  public static DatasetIdentifier getDatasetIdentifierFromTable(Table table) {
+    if (table.getParameters() != null && table.getParameters().get("bq.table") != null) {
+      return new DatasetIdentifier(table.getParameters().get("bq.table"), "bigquery");
+    }
+    if (table.getSd() != null && table.getSd().getLocation() != null) {
+      URI uri = new URI(table.getSd().getLocation());
+      DatasetIdentifier di = FilesystemDatasetUtils.fromLocation(uri);
+      return di.withSymlink(
+          table.getFullyQualifiedName(), table.getCatName(), DatasetIdentifier.SymlinkType.TABLE);
+    }
+    return new DatasetIdentifier(table.getFullyQualifiedName(), table.getCatName());
   }
 }

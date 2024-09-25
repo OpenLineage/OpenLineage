@@ -39,15 +39,46 @@ compileTestJava {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+// Testing ---------------------------------------------------------------------------------------
+
+apply plugin: 'com.adarshr.test-logger'
+
+testlogger {
+    theme 'plain'
+    showStandardStreams true
+}
+
 tasks.register('acceptanceTest', Test) {
     useJUnitPlatform()
 
-    include '**/*Acceptance*.class'
+    filter {
+        includeTestsMatching "*Acceptance*"
+    }
 
     // Create the shaded jar before an acceptance test is run.
     // The shaded JAR is later automatically uploaded to the test cluster
     // as part the acceptance test execution.
     dependsOn shadowJar
+}
+
+tasks.register('unitTest', Test) {
+    useJUnitPlatform()
+    filter {
+        excludeTestsMatching "*Acceptance*"
+        excludeTestsMatching "*Integration*"
+    }
+}
+
+tasks.register('integrationTest', Test) {
+    useJUnitPlatform()
+    filter {
+        includeTestsMatching "*Integration*"
+    }
+
+    // TODO: Check if this is in fact needed for the integration tests
+    forkEvery = 1
+    maxParallelForks = 1
+    maxHeapSize = "2g"
 }
 
 test {
@@ -59,8 +90,12 @@ test {
     maxHeapSize = "2g"
 
     // Use the `acceptanceTest` task instead of `test` for acceptance tests
-    exclude '**/*Acceptance*.class'
+    filter {
+        excludeTestsMatching "*Acceptance*"
+    }
 }
+
+// Dependencies ----------------------------------------------------------------------------------
 
 dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -77,6 +112,7 @@ dependencies {
     // Test dependencies ---------------------------------------------------------------------
 
     testImplementation project(path: ':shaded-integration-test-dependencies', configuration: 'shadow')
+    testImplementation project(path: ':shaded-acceptance-test-dependencies', configuration: 'shadow')
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${jupiterVersion}"
     testImplementation("io.github.hiverunner:hiverunner:${hiverunnerVersion}") {
@@ -128,6 +164,8 @@ dependencies {
     testImplementation 'org.datanucleus:datanucleus-api-jdo:4.2.4'
     testImplementation 'org.datanucleus:datanucleus-core:4.1.17'
 }
+
+// Shading ---------------------------------------------------------------------------------------
 
 apply plugin: 'com.gradleup.shadow'
 

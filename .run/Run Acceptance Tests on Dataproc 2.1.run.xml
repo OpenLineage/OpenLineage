@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run All Integration Tests" type="GradleRunConfiguration" factoryName="Gradle">
+  <configuration default="false" name="Run Acceptance Tests on Dataproc 2.1" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -10,7 +10,9 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value=":hive-openlineage-hook:integrationTest" />
+          <option value=":hive-openlineage-hook:acceptanceTest" />
+          <option value="--tests" />
+          <option value="&quot;io.openlineage.hive.acceptance.DataprocImage21AcceptanceTest&quot;" />
         </list>
       </option>
       <option name="vmOptions" />

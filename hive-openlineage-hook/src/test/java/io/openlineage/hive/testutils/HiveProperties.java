@@ -13,27 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.openlineage.hive.transport;
+package io.openlineage.hive.testutils;
 
-import io.openlineage.client.transports.ConsoleConfig;
-import io.openlineage.client.transports.Transport;
-import io.openlineage.client.transports.TransportBuilder;
-import io.openlineage.client.transports.TransportConfig;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public class DummyTransportBuilder implements TransportBuilder {
-
-  @Override
-  public TransportConfig getConfig() {
-    return new ConsoleConfig();
-  }
-
-  @Override
-  public Transport build(TransportConfig config) {
-    return new DummyTransport();
-  }
-
-  @Override
-  public String getType() {
-    return "dummy";
-  }
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface HiveProperties {
+  HiveProperty[] value();
 }

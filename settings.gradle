@@ -2,3 +2,4 @@ rootProject.name = 'hive-lineage'
 
 include 'hive-openlineage-hook'
 include 'shaded-integration-test-dependencies'
+include 'shaded-acceptance-test-dependencies'

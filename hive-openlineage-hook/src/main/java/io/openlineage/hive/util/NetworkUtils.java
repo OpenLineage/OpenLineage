@@ -27,7 +27,7 @@ public class NetworkUtils {
 
   public static final InetAddress LOCAL_IP_ADDRESS = findLocalInetAddress();
 
-  private static InetAddress findLocalInetAddress() {
+  public static InetAddress findLocalInetAddress() {
     try {
       InetAddress address = InetAddress.getLocalHost();
       if (address.isLoopbackAddress()) {
