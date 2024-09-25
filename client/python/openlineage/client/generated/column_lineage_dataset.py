@@ -15,9 +15,15 @@ class ColumnLineageDatasetFacet(DatasetFacet):
     fields: dict[str, Fields]
     """Column level lineage that maps output fields into input fields used to evaluate them."""
 
+    dataset: list[InputField] | None = attr.field(factory=list)
+    """
+    Column level lineage that affects the whole dataset. This includes filtering, sorting, grouping
+    (aggregates), joining, window functions, etc.
+    """
+
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-1-0/ColumnLineageDatasetFacet.json#/$defs/ColumnLineageDatasetFacet"
+        return "https://openlineage.io/spec/facets/1-2-0/ColumnLineageDatasetFacet.json#/$defs/ColumnLineageDatasetFacet"
 
 
 @attr.define
@@ -35,6 +41,8 @@ class Fields(RedactMixin):
 
 @attr.define
 class InputField(RedactMixin):
+    """Represents a single dependency on some field (column)."""
+
     namespace: str
     """The input dataset namespace"""
 
@@ -46,6 +54,10 @@ class InputField(RedactMixin):
 
     transformations: list[Transformation] | None = attr.field(factory=list)
     _skip_redact: ClassVar[list[str]] = ["namespace", "name", "field"]
+
+    @staticmethod
+    def _get_schema() -> str:
+        return "https://openlineage.io/spec/facets/1-2-0/ColumnLineageDatasetFacet.json#/$defs/InputField"
 
 
 @attr.define
