@@ -115,7 +115,7 @@ class ColumnLevelLineageBuilderTest {
     builder.addInput(rootExprId, diA, INPUT_A);
     builder.addInput(rootExprId, diB, "inputB");
 
-    List<OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields> facetFields =
+    List<OpenLineage.InputField> facetFields =
         builder.build().getAdditionalProperties().get("a").getInputFields();
 
     assertEquals(2, facetFields.size());
@@ -147,7 +147,7 @@ class ColumnLevelLineageBuilderTest {
     builder.addInput(childExprId, di, INPUT_A); // the same input with different exprId
     builder.addDependency(rootExprId, childExprId);
 
-    List<OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields> facetFields =
+    List<OpenLineage.InputField> facetFields =
         builder.build().getAdditionalProperties().get("a").getInputFields();
 
     assertEquals(1, facetFields.size());
