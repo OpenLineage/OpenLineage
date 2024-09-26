@@ -441,6 +441,96 @@ client = OpenLineageClient(transport=FileTransport(file_config))
 
 </Tabs>
 
+### Composite
+
+The `CompositeTransport` is designed to combine multiple transports, allowing event emission to several destinations. This is useful when events need to be sent to multiple targets, such as a logging system and an API endpoint. The events are delivered sequentially - one after another in a defined order.
+
+#### Configuration
+
+- `type` - string, must be "composite". Required.
+- `transports` - a list or a map of transport configurations. Required.
+- `continue_on_failure` - boolean flag, determines if the process should continue even when one of the transports fails. Default is `false`.
+
+#### Behavior
+
+- The configured transports will be initialized and used in sequence to emit OpenLineage events.
+- If `continue_on_failure` is set to `false`, a failure in one transport will stop the event emission process, and an exception will be raised.
+- If `continue_on_failure` is `true`, the failure will be logged, but the remaining transports will still attempt to send the event.
+
+#### Notes for Multiple Transports
+The composite transport can be used with any OpenLineage transport (e.g. `HttpTransport`, `KafkaTransport`, etc).
+
+The `transports` configuration can be provided in two formats:
+
+1. A list of transport configurations, where each transport may optionally include a `name` field.
+2. A map of transport configurations, where the key acts as the name for each transport.
+The map format is particularly useful for configurations set via environment variables.
+
+##### Why are transport names used?
+Transport names are not required for basic functionality. Their primary purpose is to enable configuration of composite transports via environment variables, which is only supported when names are defined.
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml-list" label="Yaml Config (List)">
+
+```yaml
+transport:
+  type: composite
+  continueOnFailure: true
+  transports:
+    - type: http
+      url: http://example.com/api
+      name: my_http
+    - type: http
+      url: http://localhost:5000
+      endpoint: /api/v1/lineage
+```
+
+</TabItem>
+<TabItem value="yaml-map" label="Yaml Config (Map)">
+
+```yaml
+transport:
+  type: composite
+  continueOnFailure: true
+  transports:
+    my_http:
+      type: http
+      url: http://example.com/api
+    local_http:
+      type: http
+      url: http://localhost:5000
+      endpoint: /api/v1/lineage
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.composite import CompositeTransport, CompositeConfig
+
+config = CompositeConfig.from_dict(
+        {
+            "type": "composite",
+            "transports": [
+                {
+                    "type": "kafka",
+                    "config": {"bootstrap.servers": "localhost:9092"},
+                    "topic": "random-topic",
+                    "messageKey": "key",
+                    "flush": False,
+                },
+                {"type": "console"},
+            ],
+        },
+    )
+client = OpenLineageClient(transport=CompositeTransport(config))
+```
+</TabItem>
+</Tabs>
+
 ### Custom Transport Type
 
 To implement a custom transport, follow the instructions in [`transport.py`](https://github.com/OpenLineage/OpenLineage/blob/main/client/python/openlineage/client/transport/transport.py).
