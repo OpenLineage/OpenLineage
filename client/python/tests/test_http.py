@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import datetime
 import gzip
+import os
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock, patch
 
 from openlineage.client import OpenLineageClient
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.serde import Serde
-from openlineage.client.transport.http import HttpCompression, HttpConfig, HttpTransport
+from openlineage.client.transport.http import ApiKeyTokenProvider, HttpCompression, HttpConfig, HttpTransport
 from openlineage.client.uuid import generate_new_uuid
 from requests import Session
 
@@ -163,3 +165,119 @@ def test_http_config_configs_session() -> None:
         assert not hasattr(config.auth, "api_key")
         assert config.session is s
         assert config.adapter is None
+
+
+@patch("requests.Session.post")
+def test_http_transport_custom_headers_applied(mock_post):
+    custom_headers = {"X-Custom-Header": "CustomValue", "X-Another-Header": "AnotherValue"}
+
+    config = HttpConfig(url="http://example.com", custom_headers=custom_headers)
+
+    transport = HttpTransport(config)
+    mock_event = MagicMock()
+
+    with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
+        transport.emit(mock_event)
+
+    mock_post.assert_called_once()
+    _, kwargs = mock_post.call_args
+    headers = kwargs["headers"]
+
+    assert headers["X-Custom-Header"] == "CustomValue"
+    assert headers["X-Another-Header"] == "AnotherValue"
+
+
+@patch("requests.Session.post")
+def test_http_transport_auth_and_custom_headers_applied(mock_post):
+    custom_headers = {"X-Custom-Header": "CustomValue"}
+    auth_token = "Bearer test_token"  # noqa: S105
+
+    # Set up config with an ApiKeyTokenProvider
+    config = HttpConfig(
+        url="http://example.com",
+        auth=ApiKeyTokenProvider({"api_key": "test_token"}),
+        custom_headers=custom_headers,
+    )
+
+    transport = HttpTransport(config)
+    mock_event = MagicMock()
+
+    with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
+        transport.emit(mock_event)
+
+    mock_post.assert_called_once()
+    _, kwargs = mock_post.call_args
+    headers = kwargs["headers"]
+
+    assert headers["Authorization"] == auth_token
+    assert headers["X-Custom-Header"] == "CustomValue"
+
+
+@patch("requests.Session.post")
+def test_http_transport_no_custom_headers(mock_post):
+    config = HttpConfig(url="http://example.com")
+    transport = HttpTransport(config)
+    mock_event = MagicMock()
+
+    with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
+        transport.emit(mock_event)
+
+    mock_post.assert_called_once()
+    _, kwargs = mock_post.call_args
+    headers = kwargs["headers"]
+
+    # Only the Content-Type header should be set if no custom headers
+    assert headers["Content-Type"] == "application/json"
+    assert "X-Custom-Header" not in headers
+
+
+@patch("requests.Session.post")
+def test_http_transport_compression_with_custom_headers(mock_post):
+    custom_headers = {"X-Custom-Header": "CustomValue"}
+
+    config = HttpConfig(
+        url="http://example.com", compression=HttpCompression.GZIP, custom_headers=custom_headers
+    )
+    transport = HttpTransport(config)
+    mock_event = MagicMock()
+
+    with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'), patch(
+        "gzip.compress", return_value=b"compressed_data"
+    ):
+        transport.emit(mock_event)
+
+    mock_post.assert_called_once()
+    _, kwargs = mock_post.call_args
+    headers = kwargs["headers"]
+    data = kwargs["data"]
+
+    assert headers["X-Custom-Header"] == "CustomValue"
+    assert headers["Content-Encoding"] == "gzip"
+    assert data == b"compressed_data"
+
+
+@patch("requests.Session.post")
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE__TRANSPORT__TYPE": "http",
+        "OPENLINEAGE__TRANSPORT__URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__CUSTOM_HEADERS__CUSTOM_HEADER": "FIRST",
+        "OPENLINEAGE__TRANSPORT__CUSTOM_HEADERS__ANOTHER_HEADER": "second",
+    },
+)
+def test_http_transport_with_custom_headers_from_env_vars(mock_post):
+    transport = OpenLineageClient().transport
+    mock_event = MagicMock()
+
+    with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'), patch(
+        "gzip.compress", return_value=b"compressed_data"
+    ):
+        transport.emit(mock_event)
+
+    mock_post.assert_called_once()
+    _, kwargs = mock_post.call_args
+    headers = kwargs["headers"]
+
+    assert headers["custom_header"] == "FIRST"
+    assert headers["another_header"] == "second"
