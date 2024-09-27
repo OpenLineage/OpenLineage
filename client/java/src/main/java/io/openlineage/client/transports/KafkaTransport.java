@@ -99,4 +99,9 @@ public final class KafkaTransport extends Transport {
       log.error("Failed to collect lineage event: {}", eventAsJson, e);
     }
   }
+
+  @Override
+  public void close() throws Exception {
+    producer.close();
+  }
 }

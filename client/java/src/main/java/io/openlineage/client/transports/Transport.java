@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
 @NoArgsConstructor
-public abstract class Transport {
+public abstract class Transport implements AutoCloseable {
   enum Type {
     CONSOLE,
     FILE,
@@ -28,4 +28,7 @@ public abstract class Transport {
   public abstract void emit(@NonNull OpenLineage.DatasetEvent datasetEvent);
 
   public abstract void emit(@NonNull OpenLineage.JobEvent jobEvent);
+
+  @Override
+  public void close() throws Exception {}
 }

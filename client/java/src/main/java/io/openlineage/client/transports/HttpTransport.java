@@ -14,7 +14,6 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -39,7 +38,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
 @Slf4j
-public final class HttpTransport extends Transport implements Closeable {
+public final class HttpTransport extends Transport {
   private static final String API_V1 = "/api/v1";
 
   private final CloseableHttpClient http;
