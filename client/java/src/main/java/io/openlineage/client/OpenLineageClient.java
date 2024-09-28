@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /** HTTP client used to emit {@link OpenLineage.RunEvent}s to HTTP backend. */
 @Slf4j
-public final class OpenLineageClient {
+public final class OpenLineageClient implements AutoCloseable {
   final Transport transport;
   final Optional<CircuitBreaker> circuitBreaker;
   final MeterRegistry meterRegistry;
@@ -158,6 +158,12 @@ public final class OpenLineageClient {
    */
   public static Builder builder() {
     return new Builder();
+  }
+
+  @Override
+  public void close() throws Exception {
+    transport.close();
+    meterRegistry.close();
   }
 
   /**

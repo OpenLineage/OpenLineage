@@ -97,4 +97,9 @@ public class GcsTransport extends Transport {
     Blob blob = storage.create(blobInfo, content);
     log.debug("Stored event: {}", blob.asBlobInfo().getBlobId().toGsUtilUri());
   }
+
+  @Override
+  public void close() throws Exception {
+    storage.close();
+  }
 }

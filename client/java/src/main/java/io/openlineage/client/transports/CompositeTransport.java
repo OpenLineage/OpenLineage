@@ -6,6 +6,7 @@
 package io.openlineage.client.transports;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageClientException;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.NonNull;
@@ -72,5 +73,18 @@ public class CompositeTransport extends Transport {
       throw new RuntimeException(
           "Transport " + transport.getClass().getSimpleName() + " failed to emit event", e);
     }
+  }
+
+  @Override
+  public void close() throws Exception {
+    transports.forEach(
+        t -> {
+          try {
+            t.close();
+          } catch (Exception e) {
+            log.error("Failed to close {} transport", t.getClass().getSimpleName(), e);
+            throw new OpenLineageClientException(e);
+          }
+        });
   }
 }
