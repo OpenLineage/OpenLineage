@@ -7,7 +7,7 @@ plugins {
 
 ext {
     assertjVersion = '3.26.3'
-    junit5Version = '5.11.0'
+    junit5Version = '5.11.1'
     snowflakeVersion = '2.13.0'
     mockitoVersion = '4.11.0'
     lombokVersion = '1.18.30'
