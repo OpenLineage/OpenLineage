@@ -1,0 +1,57 @@
+/*
+/* Copyright 2018-2024 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+plugins {
+    id 'eclipse'
+    id 'jacoco'
+    id 'java'
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+    id "com.adarshr.test-logger" version "3.2.0"
+    // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
+    id 'com.diffplug.spotless' version '6.13.0'
+    id "com.gradleup.shadow" version "8.3.2"
+    id "pmd"
+    id "io.freefair.lombok" version "8.10"
+    id "com.github.gmazzo.buildconfig" version "5.5.0"
+}
+
+ext {
+    projectDescription = "S3 OpenLineage transport library"
+    s3MockVersion = "3.11.0"
+    testcontainersVersion = "1.19.3"
+}
+
+sourceSets {
+    test {
+        buildConfig {
+            // We should use the same version of dependency and Docker image
+            buildConfigField(String, "S3_MOCK_VERSION", s3MockVersion)
+        }
+    }
+}
+
+
+dependencies {
+    compileOnly("com.google.code.findbugs:jsr305:3.0.2")
+    implementation(platform("software.amazon.awssdk:bom:2.28.11"))
+    implementation("software.amazon.awssdk:auth")
+    implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:url-connection-client")
+
+    testImplementation("com.adobe.testing:s3mock-testcontainers:${s3MockVersion}")
+    testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
+    testImplementation("org.testcontainers:junit-jupiter")
+}
+
+shadowJar {
+    relocate "software.amazon", "io.openlineage.client.shaded.software.amazon"
+    relocate "org.apache", "io.openlineage.client.shaded.org.apache"
+    relocate "org.reactivestreams", "io.openlineage.client.shaded.org.reactivestreams"
+    relocate "org.slf4j", "io.openlineage.client.shaded.org.slf4j"
+}
+
+apply from: '../transports.build.gradle'

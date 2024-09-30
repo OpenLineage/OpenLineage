@@ -438,8 +438,9 @@ jobs:
       release:
         default: false
         type: boolean
-    docker:
-      - image: cimg/openjdk:17.0
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
     steps:
       - *checkout_project_root
       - run:
@@ -448,6 +449,7 @@ jobs:
       - restore_cache:
           keys:
             - v1-client-java-{{ checksum "/tmp/checksum.txt" }}
+      - set_java_version
       - run: ./gradlew --no-daemon --console=plain --stacktrace build check jacocoTestReport
       - run: bash <(curl -s https://codecov.io/bash)
       - publish_shadow_jar_local
@@ -463,6 +465,8 @@ jobs:
           path: transports-dataplex/build/test-results/test
       - store_test_results:
           path: transports-gcs/build/test-results/test
+      - store_test_results:
+          path: transports-s3/build/test-results/test
       - store_artifacts:
           path: build/reports/tests/test
           destination: test-report
@@ -471,6 +475,9 @@ jobs:
           destination: test-report
       - store_artifacts:
           path: transports-gcs/build/reports/tests/test
+          destination: test-report
+      - store_artifacts:
+          path: transports-s3/build/reports/tests/test
           destination: test-report
       - store_artifacts:
           path: build/reports/tests/pmd
@@ -483,6 +490,9 @@ jobs:
           destination: libs
       - store_artifacts:
           path: transports-gcs/build/libs
+          destination: libs
+      - store_artifacts:
+          path: transports-s3/build/libs
           destination: libs
       - save_cache:
           key: v1-client-java-{{ checksum "/tmp/checksum.txt" }}
@@ -510,6 +520,9 @@ jobs:
       - store_artifacts:
           path: ./transports-gcs/build/libs
           destination: transports-gcs-artifacts
+      - store_artifacts:
+          path: ./transports-s3/build/libs
+          destination: transports-s3-artifacts
       - save_cache:
           key: v1-release-client-java-{{ checksum "/tmp/checksum.txt" }}
           paths:
