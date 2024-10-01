@@ -43,6 +43,7 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.SparkVersionUtils;
 import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -51,6 +52,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -61,7 +63,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.LongWritable;
@@ -88,6 +92,7 @@ import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.AfterEach;
@@ -119,6 +124,8 @@ class SparkReadWriteIntegTest {
   private static final String GREATER_THAN_SPARK2 = "([34].*)";
   private static final String SPARK_VERSION = "spark.version";
 
+  private final String ParquetFileLocation =
+      Paths.get(System.getProperty("user.dir"), "parquet-file-path-1").toString();
   private final KafkaContainer kafkaContainer =
       new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.0.0"));
 
@@ -139,6 +146,12 @@ class SparkReadWriteIntegTest {
   public void tearDown() {
     if (kafkaContainer.isCreated()) {
       kafkaContainer.stop();
+    }
+
+    try {
+      FileUtils.deleteDirectory(new File(ParquetFileLocation.toString()));
+    } catch (IOException e) {
+      log.error("Failed to delete directory", e);
     }
   }
 
@@ -775,6 +788,48 @@ class SparkReadWriteIntegTest {
         .get()
         .hasFieldOrPropertyWithValue(NAMESPACE, namespace)
         .hasFieldOrPropertyWithValue(NAME, bDatasetName);
+  }
+
+  @Test
+  void testInvalidInputOutputWhenSavingToParquetAndThenShowingOnlySchema(SparkSession spark) {
+    ArrayList<Row> rows = new ArrayList<>();
+    rows.add(RowFactory.create("Alice"));
+    rows.add(RowFactory.create("Bob"));
+    rows.add(RowFactory.create("Charlie"));
+
+    StructType structType = new StructType().add("name", "string");
+    Dataset<Row> df = spark.createDataFrame(rows, structType);
+
+    df.write().parquet(ParquetFileLocation);
+
+    spark.read().parquet(ParquetFileLocation).printSchema();
+
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(1)).emit(lineageEvent.capture());
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+
+    // there should not be any event with input dataset available
+    events.forEach(
+        event -> {
+          assertEquals(0, event.getInputs().size());
+        });
+
+    List<OpenLineage.OutputDataset> nonEmptyOutputs =
+        events.stream()
+            .map(OpenLineage.RunEvent::getOutputs)
+            .filter(outputs -> !outputs.isEmpty())
+            .flatMap(List::stream)
+            .collect(Collectors.toList());
+
+    // also there should be at least one event with output dataset
+    AssertionsForClassTypes.assertThat(nonEmptyOutputs.size()).isGreaterThan(0);
+
+    AssertionsForClassTypes.assertThat(nonEmptyOutputs.get(0).getName())
+        .isEqualTo(ParquetFileLocation);
+
+    spark.stop();
   }
 
   private CompletableFuture sendMessage(
