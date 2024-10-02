@@ -5,8 +5,8 @@
 
 package io.openlineage.spark.agent.column;
 
-import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertColumnDependsOn;
-import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertColumnDependsOnInputs;
+import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.*;
+import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.FILTER;
 import static org.apache.spark.sql.functions.col;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -21,6 +21,7 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.DatasetBuilderFactoryProvider;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
+import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
 import io.openlineage.spark.agent.util.DerbyUtils;
 import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -123,6 +124,7 @@ class ColumnLevelLineageIcebergTest {
             .getOrCreate();
 
     SparkOpenLineageConfig config = new SparkOpenLineageConfig();
+    config.getColumnLineageConfig().setDatasetLineageEnabled(true);
     context =
         OpenLineageContext.builder()
             .sparkSession(spark)
@@ -378,7 +380,9 @@ class ColumnLevelLineageIcebergTest {
     assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "d", FILE, T1_EXPECTED_NAME, "b");
     assertColumnDependsOnInputs(facet, "c", 1);
-    assertColumnDependsOnInputs(facet, "d", 2);
+    assertColumnDependsOnInputs(facet, "d", 1);
+    assertDatasetDependsOnType(
+        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(FILTER));
   }
 
   @Test
