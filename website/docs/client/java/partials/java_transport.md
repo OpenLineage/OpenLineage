@@ -793,3 +793,85 @@ OpenLineageClient client = OpenLineageClient.builder()
 
 </TabItem>
 </Tabs>
+
+### [Google Cloud Storage](https://github.com/OpenLineage/OpenLineage/blob/main/client/java/transports-gcs/src/main/java/io/openlineage/client/transports/gcs/GcsTransport.java)
+
+To use this transport in your project, you need to include `io.openlineage:transports-gcs` artifact in
+your build configuration. This is particularly important for environments like `Spark`, where this transport must be on
+the classpath for lineage events to be emitted correctly.
+
+#### Configuration
+
+- `type` - string, must be `"gcs"`. Required.
+- `projectId` - string, the project quota identifier. Required.
+- `credentialsFile` - string, path
+  to the [Service Account credentials JSON file](https://developers.google.com/workspace/guides/create-credentials#create_credentials_for_a_service_account).
+  Optional, if not
+  provided [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials)
+  are used
+- `bucketName` - string, the GCS bucket name. Required
+- `fileNamePrefix` - string, prefix for the event file names. Optional.
+
+#### Behavior
+
+- Events are serialized to JSON and stored in the specified GCS bucket.
+- Each event file is named based on its `eventTime`, converted to epoch milliseconds, with an optional prefix if configured.
+- Two constructors are available: one accepting both `Storage` and `GcsTransportConfig` and another solely accepting
+  `GcsTransportConfig`.
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: gcs
+  bucketName: my-gcs-bucket
+  fileNamePrefix: /file/name/prefix/
+  credentialsFile: path/to/credentials.json
+```
+
+</TabItem>
+<TabItem value="spark" label="Spark Config">
+
+```ini
+spark.openlineage.transport.type=gcs
+spark.openlineage.transport.bucketName=my-gcs-bucket
+spark.openlineage.transport.credentialsFile=path/to/credentials.json
+spark.openlineage.transport.credentialsFile=file/name/prefix/
+```
+
+</TabItem>
+<TabItem value="flink" label="Flink Config">
+
+```ini
+openlineage.transport.type=gcs
+openlineage.transport.bucketName=my-gcs-bucket
+openlineage.transport.credentialsFile=path/to/credentials.json
+openlineage.transport.credentialsFile=file/name/prefix/
+```
+
+</TabItem>
+<TabItem value="java" label="Java Code">
+
+```java
+import io.openlineage.client.OpenLineageClient;
+import io.openlineage.client.transports.gcs.GcsTransportConfig;
+import io.openlineage.client.transports.dataplex.GcsTransport;
+
+
+DataplexConfig gcsConfig = new GcsTransportConfig();
+
+gcsConfig.setBucketName("my-bucket-name");
+gcsConfig.setFileNamePrefix("/file/name/prefix/");
+gcsConfig.setCredentialsFile("path/to/credentials.json");
+
+OpenLineageClient client = OpenLineageClient.builder()
+        .transport(
+                new GcsTransport(dataplexConfig))
+        .build();
+```
+
+</TabItem>
+</Tabs>
