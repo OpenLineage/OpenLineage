@@ -501,8 +501,9 @@ jobs:
 
   release-client-java:
     working_directory: ~/openlineage/client/java
-    docker:
-      - image: cimg/openjdk:17.0
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
     steps:
       - *checkout_project_root
       - run:
@@ -510,6 +511,7 @@ jobs:
           command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - attach_workspace:
           at: ~/
+      - set_java_version
       - publish_shadow_jar
       - store_artifacts:
           path: ./build/libs
