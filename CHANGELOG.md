@@ -2,6 +2,43 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.22.0...HEAD)
 
+
+## [1.23.0](https://github.com/OpenLineage/OpenLineage/compare/1.22.0...1.23.0) - 2024-10-04
+
+### Added
+* **Java: added CompositeTransport** [`#3039`](https://github.com/OpenLineage/OpenLineage/pull/2944) [@JDarDagran](https://github.com/JDarDagran)   
+    *This allows user to specify multiple targets to which OpenLineage events will be emitted.*
+* **Spark extension interfaces: support table extended sources** [`#3062`](https://github.com/OpenLineage/OpenLineage/pull/3062) [@Imbruced](https://github.com/Imbruced)  
+    *Interfaces are now able to extract lineage from Table interface, not only RelationProvider.*
+* **Java: added GCP Dataplex transport** [`#3043`](https://github.com/OpenLineage/OpenLineage/pull/3043) [@ddebowczyk92](https://github.com/ddebowczyk92)  
+    *Dataplex transport is now available as a separate Maven package for users that want to send OL events to GCP Dataplex*
+* **Java: added Google Cloud Storage transport** [`#3077`](https://github.com/OpenLineage/OpenLineage/pull/3077) [@ddebowczyk92](https://github.com/ddebowczyk92)  
+    *GCS transport is now available as a separate Maven package for users that want to send OL events to Google Cloud Storage*
+* **Java: added S3 transport** [`#3129`](https://github.com/OpenLineage/OpenLineage/pull/3129) [@arturowczarek](https://github.com/arturowczarek)  
+    *S3 transport is now available as a separate Maven package for users that want to send OL events to S3*
+* **Java: add option to configure client via environment variables ** [`#3094`](https://github.com/OpenLineage/OpenLineage/pull/3094) [@JDarDagran](https://github.com/JDarDagran)  
+    *Specified variables are now autotranslated to configuration values.*
+* **Python: add option to configure client via environment variables ** [`#3114`](https://github.com/OpenLineage/OpenLineage/pull/3114) [@JDarDagran](https://github.com/JDarDagran)  
+    *Specified variables are now autotranslated to configuration values.*
+* **Python: add option to add custom headers in HTTP transport ** [`#3116`](https://github.com/OpenLineage/OpenLineage/pull/3116) [@JDarDagran](https://github.com/JDarDagran)  
+    *Allows user to add custom headers, for example for auth purposes.*
+* **Column level lineage: add full dataset dependencies ** [`#3097`](https://github.com/OpenLineage/OpenLineage/pull/3097) [`#3098`](https://github.com/OpenLineage/OpenLineage/pull/3098) [@arturowczarek](https://github.com/arturowczarek)  
+    *Now, if datasetLineageEnabled is enabled, and when column level lineage depends on the whole dataset, it does add dataset dependency instead of listing all the column fields in that dataset.*
+* **Java: OpenLineageClient and Transports are now AutoCloseable** [`#3122`](https://github.com/OpenLineage/OpenLineage/pull/3122) [@ddebowczyk92](https://github.com/ddebowczyk92)  
+    *This prevents a number of issues that might be caused by not closing underlying transports*
+
+### Fixed
+* **Python Facet generator does not validate optional arguments** [`#3054`](https://github.com/OpenLineage/OpenLineage/pull/3054) [@JDarDagran](https://github.com/JDarDagran)  
+    *This fixes issue where NominalTimeRunFacet Facet breaks when nominalEndTime is None*
+* **SQL: report only actually used tables from CTEs, rather than all** [`#2962`](https://github.com/OpenLineage/OpenLineage/pull/2962) [@Imbruced](https://github.com/Imbruced)  
+    *With this change, if SQL specified CTE, but does not use it in final query, the lineage won't be falsely reported*
+* **Fluentd: Enhancing plugin's capabilities** [`#3068`](https://github.com/OpenLineage/OpenLineage/pull/3068) [@jonathanlbt1](https://github.com/jonathanlbt1)  
+    *This change enhances performance and docs of fluentd proxy plugin.*
+* **SQL: fix parser to point to origin table instead of CTEs** [`#3107`](https://github.com/OpenLineage/OpenLineage/pull/3107) [@Imbruced](https://github.com/Imbruced)  
+    *For some complex CTEs, parser emitted CTE as a target table instead of original table. This is now fixed.*
+* **Spark: column lineage correctly produces for merge into command** [`#3095`](https://github.com/OpenLineage/OpenLineage/pull/3095) [@Imbruced](https://github.com/Imbruced)  
+    *Now OL produces CLL correctly for the potential view in the middle.*
+
 ## [1.22.0](https://github.com/OpenLineage/OpenLineage/compare/1.21.1...1.22.0) - 2024-09-05
 
 ### Added
