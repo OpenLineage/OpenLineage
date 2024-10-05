@@ -5,8 +5,7 @@
 
 package io.openlineage.spark.agent.column;
 
-import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertAllColumnsDependsOnType;
-import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertColumnDependsOnType;
+import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.*;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.FILTER;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.GROUP_BY;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.JOIN;
@@ -120,12 +119,12 @@ class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
     createTable("t1", "a;int", "b;int");
     OpenLineage.ColumnLineageDatasetFacet facet =
         getFacetForQuery(getSchemaFacet("a;int"), "SELECT a FROM t1 WHERE b > 1");
-
+    assertCountColumnDependencies(facet, 2);
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
-
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
+    assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
@@ -134,10 +133,9 @@ class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
     OpenLineage.ColumnLineageDatasetFacet facet =
         getFacetForQuery(
             getSchemaFacet("a;int"), "SELECT a FROM t1 WHERE b > 1 GROUP BY a, c ORDER BY c");
-
+    assertCountColumnDependencies(facet, 5);
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
-
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
     assertColumnDependsOnType(
@@ -146,9 +144,11 @@ class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
         facet, "a", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(GROUP_BY));
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(SORT));
+    assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
+  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void simpleQueryMasking() {
     createTable("t1", "a;int", "b;int");
     OpenLineage.ColumnLineageDatasetFacet facet =
@@ -161,17 +161,28 @@ class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
                 + "sum(b) as a, "
                 + "sha1(string(sum(b))) as ma "
                 + "FROM t1 GROUP BY a");
-
+    assertCountColumnDependencies(facet, 10);
     assertColumnDependsOnType(
         facet, "i", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
     assertColumnDependsOnType(
+        facet, "i", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+    assertColumnDependsOnType(
         facet, "t", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+    assertColumnDependsOnType(
+        facet, "t", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
     assertColumnDependsOnType(
         facet, "mt", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation(true));
     assertColumnDependsOnType(
+        facet, "mt", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+    assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation());
     assertColumnDependsOnType(
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+    assertColumnDependsOnType(
         facet, "ma", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation(true));
+    assertColumnDependsOnType(
+        facet, "ma", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+    assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
@@ -186,7 +197,9 @@ class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
                 + "tmp2 as (SELECT * FROM t2 where c = 1),\n "
                 + "tmp3 as (SELECT tmp.a, b, c from tmp join tmp2 on tmp.a = tmp2.a)\n "
                 + "SELECT tmp3.a as a, b, c, d FROM tmp3 join t3 on tmp3.a = t3.a order by d");
-
+    // TODO: There are appears to be bug here.
+    //  Normally this should work: assertCountColumnDependencies(facet, 28);
+    //  However, there appears to be 44 dataset dependencies (i.e. 16 too many).
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
     assertColumnDependsOnType(
@@ -195,7 +208,6 @@ class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
         facet, "c", FILE, T2_EXPECTED_NAME, "c", TransformationInfo.identity());
     assertColumnDependsOnType(
         facet, "d", FILE, T3_EXPECTED_NAME, "d", TransformationInfo.identity());
-
     assertAllColumnsDependsOnType(
         facet,
         Arrays.asList("a", "b", "c", "d"),
@@ -238,6 +250,7 @@ class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
         T3_EXPECTED_NAME,
         "d",
         TransformationInfo.indirect(SORT));
+    assertCountDatasetDependencies(facet, 0);
   }
 
   @NotNull

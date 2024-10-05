@@ -5,8 +5,7 @@
 
 package io.openlineage.spark.agent.column;
 
-import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertColumnDependsOnType;
-import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertDatasetDependsOnType;
+import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.*;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.CONDITIONAL;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.FILTER;
 import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.GROUP_BY;
@@ -120,9 +119,10 @@ class ColumnLineageWithTransformationTypesTest {
     createTable("t1", "a;int");
     OpenLineage.ColumnLineageDatasetFacet facet =
         getFacetForQuery(getSchemaFacet("a;int"), "SELECT a FROM t1");
-
+    assertCountColumnDependencies(facet, 1);
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+    assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
@@ -131,13 +131,14 @@ class ColumnLineageWithTransformationTypesTest {
     OpenLineage.ColumnLineageDatasetFacet facet =
         getFacetForQuery(
             getSchemaFacet("a;int", "b;int"), "SELECT concat(a, 'test') AS a, a+b as b FROM t1");
-
+    assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
     assertColumnDependsOnType(
         facet, "b", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
     assertColumnDependsOnType(
         facet, "b", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.transformation());
+    assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
@@ -145,8 +146,10 @@ class ColumnLineageWithTransformationTypesTest {
     createTable("t1", "a;int");
     OpenLineage.ColumnLineageDatasetFacet facet =
         getFacetForQuery(getSchemaFacet("a;int"), "SELECT count(a) AS a FROM t1");
+    assertCountColumnDependencies(facet, 1);
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.aggregation(true));
+    assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
@@ -154,10 +157,10 @@ class ColumnLineageWithTransformationTypesTest {
     createTable("t1", "a;int", "b;int");
     OpenLineage.ColumnLineageDatasetFacet facet =
         getFacetForQuery(getSchemaFacet("a;int"), "SELECT a FROM t1 WHERE b > 1");
-
+    assertCountColumnDependencies(facet, 1);
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
-
+    assertCountDatasetDependencies(facet, 1);
     assertDatasetDependsOnType(
         facet, FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(FILTER));
   }
@@ -167,11 +170,14 @@ class ColumnLineageWithTransformationTypesTest {
     createTable("t1", "a;int", "b;int", "c;int");
     OpenLineage.ColumnLineageDatasetFacet facet =
         getFacetForQuery(
-            getSchemaFacet("a;int"), "SELECT a FROM t1 WHERE b > 1 GROUP BY a, c ORDER BY c");
-
+            getSchemaFacet("a;int", "c;int"),
+            "SELECT a, c FROM t1 WHERE b > 1 GROUP BY a, c ORDER BY c");
+    assertCountColumnDependencies(facet, 2);
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
-
+    assertColumnDependsOnType(
+        facet, "c", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.identity());
+    assertCountDatasetDependencies(facet, 4);
     assertDatasetDependsOnType(
         facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
     assertDatasetDependsOnType(
@@ -189,7 +195,7 @@ class ColumnLineageWithTransformationTypesTest {
         getFacetForQuery(
             getSchemaFacet("i;int", "t;int", "a;int", "ta;int", "tat;int"),
             "SELECT a as i, a + 1 as t, sum(b) as a, 2 * sum(b) as ta, 2 * sum(b + 3) as tat FROM t1 GROUP BY a");
-
+    assertCountColumnDependencies(facet, 5);
     assertColumnDependsOnType(
         facet, "i", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
     assertColumnDependsOnType(
@@ -200,6 +206,9 @@ class ColumnLineageWithTransformationTypesTest {
         facet, "ta", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation());
     assertColumnDependsOnType(
         facet, "tat", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation());
+    assertCountDatasetDependencies(facet, 1);
+    assertDatasetDependsOnType(
+        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
   }
 
   @Test
@@ -215,7 +224,7 @@ class ColumnLineageWithTransformationTypesTest {
                 + "sum(b) as a, "
                 + "sha1(string(sum(b))) as ma "
                 + "FROM t1 GROUP BY a");
-
+    assertCountColumnDependencies(facet, 5);
     assertColumnDependsOnType(
         facet, "i", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
     assertColumnDependsOnType(
@@ -226,25 +235,45 @@ class ColumnLineageWithTransformationTypesTest {
         facet, "a", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation());
     assertColumnDependsOnType(
         facet, "ma", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.aggregation(true));
+    assertCountDatasetDependencies(facet, 1);
+    assertDatasetDependsOnType(
+        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
   }
 
   @Test
-  void simpleQueryWithConditional() {
+  void simpleQueryWithCaseWhenConditional() {
     createTable("t1", "a;int", "b;int");
     OpenLineage.ColumnLineageDatasetFacet facet =
         getFacetForQuery(
             getSchemaFacet("cond;int"),
             "SELECT CASE WHEN b > 1 THEN a ELSE a + b END AS cond FROM t1");
-
+    assertCountColumnDependencies(facet, 4);
     assertColumnDependsOnType(
         facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
     assertColumnDependsOnType(
         facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
     assertColumnDependsOnType(
         facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.transformation());
-
     assertColumnDependsOnType(
         facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(CONDITIONAL));
+    assertCountDatasetDependencies(facet, 0);
+  }
+
+  @Test
+  void simpleQueryWithIfConditional() {
+    createTable("t1", "a;int", "b;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(getSchemaFacet("cond;int"), "SELECT IF(b > 1, a, a + b) AS cond FROM t1");
+    assertCountColumnDependencies(facet, 4);
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.transformation());
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(CONDITIONAL));
+    assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
@@ -254,9 +283,10 @@ class ColumnLineageWithTransformationTypesTest {
         getFacetForQuery(
             getSchemaFacet("a;string"),
             "SELECT a FROM (SELECT explode(split(a, ' ')) AS a FROM t1)");
-
+    assertCountColumnDependencies(facet, 1);
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+    assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
@@ -266,13 +296,14 @@ class ColumnLineageWithTransformationTypesTest {
         getFacetForQuery(
             getSchemaFacet("a;string", "rank;int"),
             "SELECT a, RANK() OVER (PARTITION BY b ORDER BY c) as rank FROM t1;");
-
+    assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
     assertColumnDependsOnType(
         facet, "rank", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(WINDOW));
     assertColumnDependsOnType(
         facet, "rank", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(WINDOW));
+    assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
@@ -282,13 +313,31 @@ class ColumnLineageWithTransformationTypesTest {
         getFacetForQuery(
             getSchemaFacet("s;int"),
             "SELECT sum(a) OVER (PARTITION BY b ORDER BY c) AS s FROM t1;");
-
+    assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(
         facet, "s", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.aggregation());
     assertColumnDependsOnType(
         facet, "s", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(WINDOW));
     assertColumnDependsOnType(
         facet, "s", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(WINDOW));
+    assertCountDatasetDependencies(facet, 0);
+  }
+
+  @Test
+  void simpleQueryWindowedTransformation() {
+    createTable("t1", "a;int", "b;string", "c;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("l;int"),
+            "SELECT LAG(a, 3, 0) OVER (PARTITION BY b ORDER BY c) AS l FROM t1;");
+    assertCountColumnDependencies(facet, 3);
+    assertColumnDependsOnType(
+        facet, "l", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.transformation());
+    assertColumnDependsOnType(
+        facet, "l", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(WINDOW));
+    assertColumnDependsOnType(
+        facet, "l", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.indirect(WINDOW));
+    assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
@@ -303,7 +352,7 @@ class ColumnLineageWithTransformationTypesTest {
                 + "tmp2 as (SELECT * FROM t2 where c = 1),\n "
                 + "tmp3 as (SELECT tmp.a, b, c from tmp join tmp2 on tmp.a = tmp2.a)\n "
                 + "SELECT tmp3.a as a, b, c, d FROM tmp3 join t3 on tmp3.a = t3.a order by d");
-
+    assertCountColumnDependencies(facet, 4);
     assertColumnDependsOnType(
         facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
     assertColumnDependsOnType(
@@ -312,7 +361,9 @@ class ColumnLineageWithTransformationTypesTest {
         facet, "c", FILE, T2_EXPECTED_NAME, "c", TransformationInfo.identity());
     assertColumnDependsOnType(
         facet, "d", FILE, T3_EXPECTED_NAME, "d", TransformationInfo.identity());
-
+    // TODO: There are appears to be bug here.
+    //  Normally this should work: assertCountDatasetDependencies(facet, 6);
+    //  However, there appears to be 10 dataset dependencies (i.e. 4 too many).
     assertDatasetDependsOnType(
         facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(JOIN));
     assertDatasetDependsOnType(
@@ -325,6 +376,30 @@ class ColumnLineageWithTransformationTypesTest {
         facet, FILE, T2_EXPECTED_NAME, "c", TransformationInfo.indirect(FILTER));
     assertDatasetDependsOnType(
         facet, FILE, T3_EXPECTED_NAME, "d", TransformationInfo.indirect(SORT));
+  }
+
+  @Test
+  void union() {
+    createTable("t1", "a;int", "b;string");
+    createTable("t2", "a;int", "c;string");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("a;int", "b;string"),
+            "SELECT a, b, 'table1' as source\n"
+                + "FROM t1\n"
+                + "UNION ALL\n"
+                + "SELECT a, c, 'table2' as source\n"
+                + "FROM t2");
+    assertCountColumnDependencies(facet, 4);
+    assertColumnDependsOnType(
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+    assertColumnDependsOnType(
+        facet, "a", FILE, T2_EXPECTED_NAME, "a", TransformationInfo.identity());
+    assertColumnDependsOnType(
+        facet, "b", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.identity());
+    assertColumnDependsOnType(
+        facet, "b", FILE, T2_EXPECTED_NAME, "c", TransformationInfo.identity());
+    assertCountDatasetDependencies(facet, 0);
   }
 
   @NotNull
