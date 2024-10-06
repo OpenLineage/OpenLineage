@@ -13,16 +13,16 @@ plugins {
     id "com.adarshr.test-logger" version "3.2.0"
     // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
     id 'com.diffplug.spotless' version '6.13.0'
-    id "com.gradleup.shadow" version "8.3.2"
+    id "com.gradleup.shadow" version "8.3.3"
     id "pmd"
-    id "io.freefair.lombok" version "8.10"
+    id "io.freefair.lombok" version "8.10.2"
     id "com.github.gmazzo.buildconfig" version "5.5.0"
 }
 
 ext {
     projectDescription = "S3 OpenLineage transport library"
     s3MockVersion = "3.11.0"
-    testcontainersVersion = "1.19.3"
+    testcontainersVersion = "1.20.2"
 }
 
 sourceSets {
@@ -37,7 +37,7 @@ sourceSets {
 
 dependencies {
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
-    implementation(platform("software.amazon.awssdk:bom:2.28.11"))
+    implementation(platform("software.amazon.awssdk:bom:2.28.16"))
     implementation("software.amazon.awssdk:auth")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:url-connection-client")
