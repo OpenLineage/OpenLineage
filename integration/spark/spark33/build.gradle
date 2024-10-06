@@ -24,9 +24,9 @@ ext {
     assertjVersion = "3.26.3"
     icebergVersion = "0.14.1"
     jacksonVersion = "2.15.3"
-    junit5Version = "5.11.1"
+    junit5Version = "5.11.2"
     mockitoVersion = "4.11.0"
-    micrometerVersion = "1.13.4"
+    micrometerVersion = "1.13.5"
 
     sparkVersion = project.findProperty("spark33.spark.version")
     scalaBinaryVersion = project.findProperty("scala.binary.version")

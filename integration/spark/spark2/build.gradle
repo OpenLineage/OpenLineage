@@ -25,10 +25,10 @@ ext {
     deltaVersion = "1.1.0"
     icebergVersion = "0.14.1"
     jacksonVersion = "2.15.3"
-    junit5Version = "5.11.1"
+    junit5Version = "5.11.2"
     mockitoVersion = "4.11.0"
     postgresqlVersion = "42.7.4"
-    micrometerVersion = '1.13.4'
+    micrometerVersion = '1.13.5'
 
     sparkVersion = project.findProperty("spark2.spark.version")
     scalaBinaryVersion = "2.11"
