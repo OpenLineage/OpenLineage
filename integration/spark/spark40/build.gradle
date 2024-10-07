@@ -13,6 +13,12 @@ scalaVariants {
     create("2.13")
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
 idea {
     module {
         testSources.from(sourceSets.testScala213.java.srcDirs)

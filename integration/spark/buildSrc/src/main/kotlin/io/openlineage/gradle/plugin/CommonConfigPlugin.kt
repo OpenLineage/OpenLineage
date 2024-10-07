@@ -87,10 +87,6 @@ class CommonConfigPlugin : Plugin<Project> {
                     // never run compile on CI without property being set
                     throw RuntimeException("java.compile.home should be always set on CI env")
                 }
-
-                if (!target.hasProperty("java.compile.home") && JavaVersion.current() < JavaVersion.VERSION_17) {
-                    throw RuntimeException("This project will not compile with Java version below 17.")
-                }
             }
         }
 
