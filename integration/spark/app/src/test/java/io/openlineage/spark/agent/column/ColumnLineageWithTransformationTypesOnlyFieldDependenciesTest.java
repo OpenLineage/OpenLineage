@@ -47,6 +47,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 // TODO #3084: Remove when the column lineage has dataset dependencies flag removed
 @Slf4j
 @EnabledIfSystemProperty(named = "spark.version", matches = "([34].*)")
+@SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
 class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
 
   private static final String FILE = "file";
@@ -148,7 +149,6 @@ class ColumnLineageWithTransformationTypesOnlyFieldDependenciesTest {
   }
 
   @Test
-  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void simpleQueryMasking() {
     createTable("t1", "a;int", "b;int");
     OpenLineage.ColumnLineageDatasetFacet facet =
