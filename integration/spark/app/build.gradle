@@ -25,16 +25,16 @@ ext {
 
     assertjVersion = '3.26.3'
     bigqueryVersion = '0.35.1'
-    junit5Version = '5.11.1'
+    junit5Version = '5.11.2'
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.4'
-    testcontainersVersion = '1.20.1'
+    testcontainersVersion = '1.20.2'
     configurableTestConfig = [
         sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
         hostDir: project.findProperty('host.dir') ?: System.getProperty('host.dir'),
         testDir: project.findProperty('test.dir') ?: System.getProperty('test.dir')
     ]
-    micrometerVersion = '1.13.4'
+    micrometerVersion = '1.13.5'
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
@@ -136,7 +136,7 @@ dependencies {
     testImplementation('net.javacrumbs.json-unit:json-unit-core:2.38.0')
 
     testRuntimeOnly("org.slf4j:slf4j-api:2.0.16")
-    testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.24.0"))
+    testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.24.1"))
     testRuntimeOnly("org.apache.logging.log4j:log4j-api")
     testRuntimeOnly("org.apache.logging.log4j:log4j-core")
     testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl")
