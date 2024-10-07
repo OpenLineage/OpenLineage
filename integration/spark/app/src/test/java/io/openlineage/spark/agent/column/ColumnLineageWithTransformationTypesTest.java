@@ -48,6 +48,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 @Slf4j
 @EnabledIfSystemProperty(named = "spark.version", matches = "([34].*)")
+@SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
 class ColumnLineageWithTransformationTypesTest {
 
   private static final String FILE = "file";
