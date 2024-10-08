@@ -79,6 +79,7 @@ class EmrIntegrationTest {
   private static final EmrTestEnvironment.EmrTestEnvironmentProperties emrTestParameters;
 
   static {
+    String clusterId = DynamicParameter.ClusterId.resolve();
     // Tests prefix with the date mark to tell when they were run in UTC
     String testsPrefix =
         DynamicParameter.TestsKeyPrefix.resolve()
