@@ -8,7 +8,7 @@ RUN apk add --update alpine-sdk
 RUN apk --no-cache add curl cargo build-base bash
 RUN \
     cd /usr/lib/openlineage/client/java && \
-    ./gradlew --no-daemon shadowJar publishToMavenLocal && \
+    ./gradlew --no-daemon -x test shadowJar publishToMavenLocal && \
     cd /usr/lib/openlineage/integration/spark-extension-entrypoint && \
     ./gradlew --no-daemon jar publishToMavenLocal &&  \
     cd /usr/lib/openlineage/integration/sql/iface-java && \
