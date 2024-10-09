@@ -131,4 +131,49 @@ public class ColumnLevelLineageTestUtils {
         expectedAmountOfInputs,
         facet.getFields().getAdditionalProperties().get(outputColumn).getInputFields().size());
   }
+
+  static int countColumnDependencies(OpenLineage.ColumnLineageDatasetFacet facet) {
+    return countColumnDependencies(facet, null);
+  }
+
+  static int countColumnDependencies(
+      OpenLineage.ColumnLineageDatasetFacet facet, String outputColumn) {
+    int count = 0;
+    for (String column : facet.getFields().getAdditionalProperties().keySet()) {
+      if (outputColumn == null || column.equals(outputColumn)) {
+        List<OpenLineage.InputField> inputFields =
+            facet.getFields().getAdditionalProperties().get(column).getInputFields();
+        for (OpenLineage.InputField inputField : inputFields) {
+          count += inputField.getTransformations().size();
+        }
+      }
+    }
+    return count;
+  }
+
+  static void assertCountColumnDependencies(
+      OpenLineage.ColumnLineageDatasetFacet facet, int expected) {
+    assertEquals(expected, countColumnDependencies(facet));
+  }
+
+  static void assertCountColumnDependencies(
+      OpenLineage.ColumnLineageDatasetFacet facet, String outputColumn, int expected) {
+    assertEquals(expected, countColumnDependencies(facet, outputColumn));
+  }
+
+  static int countDatasetDependencies(OpenLineage.ColumnLineageDatasetFacet facet) {
+    int count = 0;
+    List<OpenLineage.InputField> inputFields = facet.getDataset();
+    if (inputFields != null) {
+      for (OpenLineage.InputField inputField : inputFields) {
+        count += inputField.getTransformations().size();
+      }
+    }
+    return count;
+  }
+
+  static void assertCountDatasetDependencies(
+      OpenLineage.ColumnLineageDatasetFacet facet, int expected) {
+    assertEquals(expected, countDatasetDependencies(facet));
+  }
 }
