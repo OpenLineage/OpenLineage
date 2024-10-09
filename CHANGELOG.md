@@ -6,7 +6,7 @@
 ## [1.23.0](https://github.com/OpenLineage/OpenLineage/compare/1.22.0...1.23.0) - 2024-10-04
 
 ### Added
-* **Java: added CompositeTransport** [`#3039`](https://github.com/OpenLineage/OpenLineage/pull/2944) [@JDarDagran](https://github.com/JDarDagran)   
+* **Java: added CompositeTransport** [`#3039`](https://github.com/OpenLineage/OpenLineage/pull/3039) [@JDarDagran](https://github.com/JDarDagran)   
     *This allows user to specify multiple targets to which OpenLineage events will be emitted.*
 * **Spark extension interfaces: support table extended sources** [`#3062`](https://github.com/OpenLineage/OpenLineage/pull/3062) [@Imbruced](https://github.com/Imbruced)  
     *Interfaces are now able to extract lineage from Table interface, not only RelationProvider.*
