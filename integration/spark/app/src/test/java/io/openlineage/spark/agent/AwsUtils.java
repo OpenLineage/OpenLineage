@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -68,13 +69,63 @@ class AwsUtils {
         .max(Comparator.naturalOrder());
   }
 
-  public void deleteFiles(S3Client s3Client, String bucket, String prefix) {}
+  @SuppressWarnings("PMD.NullAssignment")
+  public void deleteFiles(S3Client s3Client, String bucket, String prefix) {
+    String continuationToken = null;
+
+    do {
+      // Step 1: List objects with the specified prefix
+      ListObjectsV2Request.Builder listRequestBuilder =
+          ListObjectsV2Request.builder()
+              .bucket(bucket)
+              .prefix(prefix)
+              .maxKeys(1000); // Max keys per request
+
+      if (continuationToken != null) {
+        listRequestBuilder.continuationToken(continuationToken);
+      }
+
+      ListObjectsV2Response listResponse = s3Client.listObjectsV2(listRequestBuilder.build());
+
+      List<ObjectIdentifier> objectsToDelete = new ArrayList<>();
+
+      for (S3Object s3Object : listResponse.contents()) {
+        objectsToDelete.add(ObjectIdentifier.builder().key(s3Object.key()).build());
+      }
+
+      // Step 2: Delete objects in batches (up to 1000 per request)
+      if (!objectsToDelete.isEmpty()) {
+        DeleteObjectsRequest deleteRequest =
+            DeleteObjectsRequest.builder()
+                .bucket(bucket)
+                .delete(Delete.builder().objects(objectsToDelete).build())
+                .build();
+
+        DeleteObjectsResponse deleteResponse = s3Client.deleteObjects(deleteRequest);
+
+        List<S3Error> errors = deleteResponse.errors();
+        if (!errors.isEmpty()) {
+          for (S3Error error : errors) {
+            log.error("Failed to delete [{}]. Error message: [{}]", error.key(), error.message());
+          }
+        }
+      }
+
+      // Step 3: Prepare for the next iteration if more objects are available
+      continuationToken = listResponse.isTruncated() ? listResponse.nextContinuationToken() : null;
+
+    } while (continuationToken != null);
+  }
 
   static List<OpenLineage.RunEvent> fetchEventsEmitted(
       S3Client s3Client, String bucketName, String location) {
-    return readAllFilesInPath(s3Client, bucketName, location)
-        .map(OpenLineageClientUtils::runEventFromJson)
-        .collect(Collectors.toList());
+    log.info("Fetching events from [{}]...", AwsUtils.s3Url(bucketName, location));
+    List<OpenLineage.RunEvent> events =
+        readAllFilesInPath(s3Client, bucketName, location)
+            .map(OpenLineageClientUtils::runEventFromJson)
+            .collect(Collectors.toList());
+    log.info("There are [{}] events.", events.size());
+    return events;
   }
 
   private static Stream<String> readAllFilesInPath(

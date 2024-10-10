@@ -24,6 +24,18 @@ public enum DynamicParameter {
   ClusterId("clusterId", ""),
   PreventS3Cleanup("preventS3Cleanup", "false"),
   PreventClusterTermination("preventClusterTermination", "false"),
+  /**
+   * Determines which port can be used to debug the application. For debugging to work, make sure
+   * the EC2 subnet has the firewall rule, allowing you to access the master node using this port.
+   * You have to edit the EC2 security group the cluster is attached to and add the TCP inbound
+   * rule. Then you can use remote debugging option in your IDE (with this port and the master
+   * node's IP address) to attach session. If attaching seems to keep forever, it means that the
+   * firewall rule is not correct. If the server rejects the debugger's connection it means the
+   * application is not running yet, and you should repeat the attempt or make sure it is still
+   * running. You should run the cluster beforehand, note the master IP address and have the
+   * debugging session prepared before you attach the
+   */
+  DebugPort("debugPort", "5005"),
 
   // CLUSTER
   EmrLabel("emrLabel", "emr-7.2.0"),
@@ -32,6 +44,10 @@ public enum DynamicParameter {
   ServiceRole("serviceRole", "EMR_DefaultRole"),
   MasterInstanceType("masterInstanceType", "m4.large"),
   SlaveInstanceType("slaveInstanceType", "m4.large"),
+  Ec2SubnetId("ec2SubnetId"),
+  /** The optional key pair which can be used to SSH to the cluster. Useful for troubleshooting. */
+  SshKeyPairName("sshKeyPairName", ""),
+  IdleClusterTerminationSeconds("clusterIdleTerminationSeconds", "300"),
 
   /** The bucket where the tests keep the dependency jars, scripts, produced events, logs, etc */
   BucketName("bucketName"),

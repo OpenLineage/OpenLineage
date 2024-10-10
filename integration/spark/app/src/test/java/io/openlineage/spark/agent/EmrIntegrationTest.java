@@ -12,6 +12,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -79,32 +80,40 @@ class EmrIntegrationTest {
   private static final EmrTestEnvironment.EmrTestEnvironmentProperties emrTestParameters;
 
   static {
-    String clusterId = DynamicParameter.ClusterId.resolve();
     // Tests prefix with the date mark to tell when they were run in UTC
     String testsPrefix =
         DynamicParameter.TestsKeyPrefix.resolve()
             + ZonedDateTime.now(ZoneOffset.UTC)
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"))
             + "/";
+    String clusterId = DynamicParameter.ClusterId.resolve();
+    EmrTestEnvironment.EmrTestEnvironmentProperties.NewCluster newCluster =
+        "".equals(clusterId)
+            ? EmrTestEnvironment.EmrTestEnvironmentProperties.NewCluster.builder()
+                .emrLabel(DynamicParameter.EmrLabel.resolve())
+                .ec2InstanceProfile(DynamicParameter.Ec2InstanceProfile.resolve())
+                .serviceRole(DynamicParameter.ServiceRole.resolve())
+                .masterInstanceType(DynamicParameter.MasterInstanceType.resolve())
+                .slaveInstanceType(DynamicParameter.SlaveInstanceType.resolve())
+                .subnetId(DynamicParameter.Ec2SubnetId.resolve())
+                .ec2SshKeyName(DynamicParameter.SshKeyPairName.resolve())
+                .idleClusterTerminationSeconds(
+                    Long.parseLong(DynamicParameter.IdleClusterTerminationSeconds.resolve()))
+                .build()
+            : null;
     emrTestParameters =
         EmrTestEnvironment.EmrTestEnvironmentProperties.builder()
             .development(
                 EmrTestEnvironment.EmrTestEnvironmentProperties.Development.builder()
                     // We can connect to the existing EMR cluster to speed up testing
-                    .clusterId(DynamicParameter.ClusterId.resolve())
+                    .clusterId(clusterId)
                     .preventS3Cleanup(
                         Boolean.parseBoolean(DynamicParameter.PreventS3Cleanup.resolve()))
                     .preventClusterTermination(
                         Boolean.parseBoolean(DynamicParameter.PreventClusterTermination.resolve()))
+                    .debugPort(Integer.parseInt(DynamicParameter.DebugPort.resolve()))
                     .build())
-            .cluster(
-                EmrTestEnvironment.EmrTestEnvironmentProperties.NewCluster.builder()
-                    .emrLabel(DynamicParameter.EmrLabel.resolve())
-                    .ec2InstanceProfile(DynamicParameter.Ec2InstanceProfile.resolve())
-                    .serviceRole(DynamicParameter.ServiceRole.resolve())
-                    .masterInstanceType(DynamicParameter.MasterInstanceType.resolve())
-                    .slaveInstanceType(DynamicParameter.SlaveInstanceType.resolve())
-                    .build())
+            .cluster(newCluster)
             .bucketName(DynamicParameter.BucketName.resolve())
             .keyPrefix(testsPrefix)
             .build();
@@ -147,5 +156,89 @@ class EmrIntegrationTest {
     assertThat("someNamespace").isEqualTo(completeEvent.getJob().getNamespace());
     assertThat("s3://" + emrTestParameters.getBucketName())
         .isEqualTo(completeEvent.getOutputs().get(0).getNamespace());
+  }
+
+  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+  @Test
+  void testImplicitGlueCatalogIsUsed() {
+    /*
+     * The Aws Glue integration in EMR connects to the Glue catalog with the identifier specified by property
+     * "hive.metastore.glue.catalogid". When it is not provided, we still want to use Glue and receive
+     * the correct symlinks. In such scenarios the account ID of the current AWS account will be used as catalog ID.
+     */
+    String bucketName = emrTestParameters.getBucketName();
+    String outputPrefix = emrTestParameters.getKeyPrefix() + "output";
+    String databaseName = "peopleDatabase";
+    String glueDatabaseName = databaseName.toLowerCase(Locale.ROOT);
+    String databaseLocation = outputPrefix + "/" + databaseName;
+    String inputTableName = "peopleSource";
+    String glueInputTableName = inputTableName.toLowerCase(Locale.ROOT);
+    String outputTableName = "peopleDestination";
+    String glueOutputTableName = outputTableName.toLowerCase(Locale.ROOT);
+    List<OpenLineage.RunEvent> runEvents =
+        emrTestEnvironment.runScript(
+            "glue_symlink_implicit_account_id.py",
+            Map.of(
+                "bucketName", bucketName,
+                "outputPrefix", outputPrefix,
+                "databaseName", databaseName,
+                "sourceTableName", inputTableName,
+                "destinationTableName", outputTableName));
+
+    assertThat(runEvents).isNotEmpty();
+
+    OpenLineage.RunEvent inOutEvent =
+        runEvents.stream()
+            .filter(runEvent -> runEvent.getEventType() == OpenLineage.RunEvent.EventType.COMPLETE)
+            .filter(runEvent -> !runEvent.getOutputs().isEmpty())
+            .filter(runEvent -> !runEvent.getInputs().isEmpty())
+            .filter(
+                runEvent ->
+                // Has output symlink
+                {
+                  OpenLineage.SymlinksDatasetFacet symlinks =
+                      runEvent.getOutputs().get(0).getFacets().getSymlinks();
+                  return symlinks != null && !symlinks.getIdentifiers().isEmpty();
+                })
+            .filter(
+                runEvent ->
+                // Has input symlink
+                {
+                  OpenLineage.SymlinksDatasetFacet symlinks =
+                      runEvent.getInputs().get(0).getFacets().getSymlinks();
+                  return symlinks != null && !symlinks.getIdentifiers().isEmpty();
+                })
+            .findFirst()
+            .get();
+
+    OpenLineage.InputDataset inputDataset = inOutEvent.getInputs().get(0);
+    OpenLineage.SymlinksDatasetFacetIdentifiers inputDatasetSymlink =
+        inputDataset.getFacets().getSymlinks().getIdentifiers().get(0);
+
+    assertThat(inputDataset.getNamespace()).isEqualTo("s3://" + bucketName);
+    /*
+      Note:
+      The dataset name (table files' location) is formed by concatenating the database location and the table name.
+      - The database location is case-sensitive.
+      - Both the table name and database name are always converted to lowercase in AWS Glue.
+
+      As a result, when combining them, the dataset name might contain a mix of uppercase (from the location)
+      and lowercase characters (from the table name).
+    */
+    assertThat(inputDataset.getName()).isEqualTo(databaseLocation + "/" + glueInputTableName);
+    assertThat(inputDatasetSymlink.getNamespace()).startsWith("arn:aws:glue:");
+    assertThat(inputDatasetSymlink.getName())
+        .isEqualTo("table/" + glueDatabaseName + "/" + glueInputTableName);
+    assertThat(inputDatasetSymlink.getType()).isEqualTo("TABLE");
+
+    OpenLineage.OutputDataset outputDataset = inOutEvent.getOutputs().get(0);
+    OpenLineage.SymlinksDatasetFacetIdentifiers outputDatasetSymlink =
+        outputDataset.getFacets().getSymlinks().getIdentifiers().get(0);
+    assertThat(outputDataset.getNamespace()).isEqualTo("s3://" + bucketName);
+    assertThat(outputDataset.getName()).isEqualTo(databaseLocation + "/" + glueOutputTableName);
+    assertThat(outputDatasetSymlink.getNamespace()).startsWith("arn:aws:glue:");
+    assertThat(outputDatasetSymlink.getName())
+        .isEqualTo("table/" + glueDatabaseName + "/" + glueOutputTableName);
+    assertThat(outputDatasetSymlink.getType()).isEqualTo("TABLE");
   }
 }
