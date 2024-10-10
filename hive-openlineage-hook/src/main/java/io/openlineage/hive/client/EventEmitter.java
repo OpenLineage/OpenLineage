@@ -18,7 +18,7 @@ package io.openlineage.hive.client;
 import static com.google.common.hash.Hashing.sha512;
 
 import io.openlineage.client.Clients;
-import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
@@ -31,7 +31,7 @@ import org.apache.hadoop.conf.Configuration;
 
 @Getter
 @Slf4j
-public class EventEmitter {
+public class EventEmitter implements AutoCloseable {
   private final OpenLineageClient client;
   private final UUID runId;
   private final String jobName;
@@ -49,9 +49,9 @@ public class EventEmitter {
             HiveOpenLineageConfigParser.JOB_NAME_KEY, NetworkUtils.LOCAL_IP_ADDRESS.getHostName());
   }
 
-  public void emit(OpenLineage.RunEvent event) {
+  public void emit(RunEvent event) {
     try {
-      this.client.emit(event);
+      client.emit(event);
       log.debug(
           "Emitting lineage completed successfully: {}", OpenLineageClientUtils.toJson(event));
     } catch (OpenLineageClientException exception) {
@@ -62,5 +62,10 @@ public class EventEmitter {
   public static String getJobNamespace(String queryString) {
     // TODO: Confirm that this is an appropriate hashing function to use
     return sha512().hashUnencodedChars(queryString).toString();
+  }
+
+  @Override
+  public void close() throws Exception {
+    client.close();
   }
 }

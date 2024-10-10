@@ -35,7 +35,7 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 
 public class HiveOpenLineageHook implements ExecuteWithHookContext {
 
-  private static final HashSet<HiveOperation> SUPPORTED_OPERATIONS = new HashSet<>();
+  private static final Set<HiveOperation> SUPPORTED_OPERATIONS = new HashSet<>();
 
   static {
     SUPPORTED_OPERATIONS.add(HiveOperation.QUERY);
@@ -94,8 +94,9 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext {
             .openLineageConfig(
                 HiveOpenLineageConfigParser.extractFromHadoopConf(hookContext.getConf()))
             .build();
-    EventEmitter emitter = new EventEmitter(olContext);
-    OpenLineage.RunEvent runEvent = Faceting.getRunEvent(emitter, olContext);
-    emitter.emit(runEvent);
+    try (EventEmitter emitter = new EventEmitter(olContext)) {
+      OpenLineage.RunEvent runEvent = Faceting.getRunEvent(emitter, olContext);
+      emitter.emit(runEvent);
+    }
   }
 }

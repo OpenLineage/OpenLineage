@@ -93,13 +93,17 @@ public class HiveOpenLineageConfigParser {
           new ByteArrayInputStream(JSON.writeValueAsBytes(objectNode)),
           new TypeReference<HiveOpenLineageConfig>() {});
     } catch (IOException | IllegalArgumentException configException) {
+      String errorMessage;
       try {
-        throw new RuntimeException(
-            "Failure to read the configuration: " + JSON.writeValueAsString(objectNode),
-            configException);
+        errorMessage = "Failure to read the configuration: " + JSON.writeValueAsString(objectNode);
       } catch (JsonProcessingException jsonException) {
-        throw new RuntimeException(configException);
+        // If we can't serialize the objectNode, fall back to a generic error message
+        errorMessage =
+            "Failure to read the configuration and unable to serialize the configuration object";
+        // Combine both exceptions
+        configException.addSuppressed(jsonException);
       }
+      throw new RuntimeException(errorMessage, configException);
     }
   }
 
