@@ -25,7 +25,6 @@ import org.apache.spark.sql.internal.StaticSQLConf;
 @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
 public class PathUtils {
   private static final String DEFAULT_DB = "default";
-  private static final String HIVE_METASTORE_GLUE_CATALOG_ID_KEY = "hive.metastore.glue.catalogid";
   public static final String GLUE_TABLE_PREFIX = "table/";
 
   public static DatasetIdentifier fromPath(Path path) {
@@ -60,7 +59,7 @@ public class PathUtils {
     Configuration hadoopConf = sparkContext.hadoopConfiguration();
 
     Optional<URI> metastoreUri = getMetastoreUri(sparkContext);
-    Optional<String> glueArn = getGlueArn(sparkConf, hadoopConf);
+    Optional<String> glueArn = AwsUtils.getGlueArn(sparkConf, hadoopConf);
 
     if (glueArn.isPresent()) {
       // Even if glue catalog is used, it will have a hive metastore URI
@@ -151,54 +150,6 @@ public class PathUtils {
       return Optional.empty();
     }
     return SparkConfUtils.getMetastoreUri(context);
-  }
-
-  @SneakyThrows
-  public static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
-    Optional<String> clientFactory =
-        SparkConfUtils.findHadoopConfigKey(hadoopConf, "hive.metastore.client.factory.class");
-    // Fetch from spark config if set.
-    clientFactory =
-        clientFactory.isPresent()
-            ? clientFactory
-            : SparkConfUtils.findSparkConfigKey(sparkConf, "hive.metastore.client.factory.class");
-    if (!clientFactory.isPresent()
-        || !"com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
-            .equals(clientFactory.get())) {
-      return Optional.empty();
-    }
-
-    Optional<String> region =
-        Optional.ofNullable(System.getenv("AWS_DEFAULT_REGION"))
-            .filter(s -> !s.isEmpty())
-            .map(Optional::of)
-            .orElseGet(() -> Optional.ofNullable(System.getenv("AWS_REGION")));
-
-    Optional<String> accountId =
-        SparkConfUtils.findSparkConfigKey(sparkConf, "spark.glue.accountId");
-    // For AWS Glue catalog in EMR spark
-    // Glue catalog with EMR guide:
-    // https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-glue.html
-    Optional<String> glueCatalogIdForEMR =
-        SparkConfUtils.findSparkConfigKey(sparkConf, HIVE_METASTORE_GLUE_CATALOG_ID_KEY);
-    // For AWS Glue access in Athena for Spark
-    // Guide: https://docs.aws.amazon.com/athena/latest/ug/spark-notebooks-cross-account-glue.html
-    // spark config "spark.hadoop.hive.metastore.glue.catalogid" is copied to hadoop
-    // "hive.metastore.glue.catalogid" by SparkHadoopUtil (removing the prefix spark.hadoop)
-    Optional<String> glueCatalogIdForAthena =
-        SparkConfUtils.findHadoopConfigKey(hadoopConf, HIVE_METASTORE_GLUE_CATALOG_ID_KEY);
-
-    Optional<String> glueCatalogId =
-        Stream.of(glueCatalogIdForEMR, glueCatalogIdForAthena, accountId)
-            .filter(Optional::isPresent)
-            .findFirst()
-            .orElse(Optional.empty());
-
-    if (!region.isPresent() || !glueCatalogId.isPresent()) {
-      return Optional.empty();
-    }
-
-    return Optional.of("arn:aws:glue:" + region.get() + ":" + glueCatalogId.get());
   }
 
   /** Get DatasetIdentifier name in format database.table or table */

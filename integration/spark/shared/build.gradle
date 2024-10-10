@@ -64,6 +64,10 @@ dependencies {
         exclude(group: "com.fasterxml.jackson.module")
     }
 
+    // TODO This should be compile only or shadowed
+    implementation(platform("software.amazon.awssdk:bom:2.28.11"))
+    implementation("software.amazon.awssdk:sts")
+
     // TODO: Convert these to testImplementation
     testFixturesApi(platform("org.junit:junit-bom:${junit5Version}"))
     testFixturesApi("org.junit.jupiter:junit-jupiter")
