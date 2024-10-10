@@ -1,5 +1,5 @@
 ext {
-    openLineageVersion = '1.23.0-SNAPSHOT'
+    openLineageVersion = '1.24.0-SNAPSHOT'
     cloudDataLineageVersion = '0.39.0'
     producerClientVersion = '1.0.0'
     cloudStorageVersion = '2.36.1'
@@ -92,6 +92,11 @@ test {
     // Use the `acceptanceTest` task instead of `test` for acceptance tests
     filter {
         excludeTestsMatching "*Acceptance*"
+    }
+
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = true
     }
 }
 

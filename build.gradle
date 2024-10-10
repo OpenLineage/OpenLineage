@@ -2,8 +2,9 @@ plugins {
     id 'java'
     // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
     id 'com.diffplug.spotless' version '6.13.0'
-    id 'com.gradleup.shadow' version '8.3.0'
     id 'com.adarshr.test-logger' version '4.0.0'
+    id 'com.gradleup.shadow' version '8.3.3'
+    id 'pmd'
 }
 
 group = 'io.openlineage'
@@ -25,6 +26,7 @@ tasks.withType(JavaCompile).configureEach {
 subprojects {
     apply plugin: 'java'
     apply plugin: 'com.diffplug.spotless'
+    apply plugin: 'pmd'
     repositories {
         mavenCentral()
         mavenLocal()
@@ -34,6 +36,19 @@ subprojects {
         //  connector.
         mavenCentral() {
             metadataSources { artifact() }
+        }
+    }
+    pmd {
+        consoleOutput = true
+        toolVersion = "6.46.0"
+        rulesMinimumPriority = 5
+        ruleSetFiles = rootProject.files("pmd-config.xml")
+        ruleSets = []
+        ignoreFailures = false
+    }
+    pmdMain {
+        reports {
+            html.required = true
         }
     }
     spotless {

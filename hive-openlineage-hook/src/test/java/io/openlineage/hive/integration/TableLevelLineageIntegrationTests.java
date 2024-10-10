@@ -32,7 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-public class IntegrationTests extends TestsBase {
+public class TableLevelLineageIntegrationTests extends TestsBase {
 
   public static final String TEST_TABLE_NAME = "mytable";
   public static final String ANOTHER_TEST_TABLE_NAME = "anothertable";
