@@ -123,6 +123,12 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }
+
+    testImplementation(platform("software.amazon.awssdk:bom:2.28.11"))
+    testImplementation("software.amazon.awssdk:auth")
+    testImplementation("software.amazon.awssdk:emr")
+    testImplementation("software.amazon.awssdk:s3")
+
     testImplementation("org.mock-server:mockserver-netty:5.14.0:shaded") {
         exclude group: 'com.google.guava', module: 'guava'
         exclude group: 'com.fasterxml.jackson.core'
@@ -369,6 +375,13 @@ tasks.register("integrationTest", Test.class) {
     useJUnitPlatform {
         includeTags("integration-test")
         excludeTags("configurable-integration-test")
+        /*
+         We don't want to run Databricks or AWS integration tests by default.
+         The "regular" integration tests are run for every pull request.
+         We want to run Databricks and AWS integration tests on demand and nightly.
+         See `databricksIntegrationTest` and `awsIntegrationTest` tasks.
+         */
+        excludeTags("aws")
         excludeTags("databricks")
         logger.warn("[IntegrationTest] hasDeltaDependencies: ${hasDeltaDependencies(spark, scala)}")
         if (!hasDeltaDependencies(spark, scala)) {
@@ -395,6 +408,27 @@ tasks.register("databricksIntegrationTest", Test) {
     }
 }
 
+
+tasks.register("awsIntegrationTest", Test) {
+    group = "verification"
+    dependsOn(integrationTestDependencies)
+    testClassesDirs = testSourceSet.output.classesDirs
+    classpath = files(tasks.shadowJar.outputs.files.singleFile, sourceSets.test.runtimeClasspath)
+    useJUnitPlatform {
+        includeTags("aws")
+    }
+    options {
+        /*
+        The "test" task runs JUnit tests in a separate JVM, and by default, system properties (-D parameters)
+        are not forwarded to it. Gradle allows forwarding them with -P parameter, but not everyone is aware of that.
+        Here, we selectively pass only properties that start with "openlineage" to avoid conflicts with
+        environment-related properties (e.g., current working directory) that could affect resource discovery.
+        The properties are later used in template resolution.
+         */
+        systemProperties = System.getProperties().findAll { key, value -> key.toString().startsWith("openlineage") }
+    }
+}
+
 tasks.register("configurableIntegrationTest", Test) {
     group = "verification"
     dependsOn(integrationTestDependencies)
@@ -403,9 +437,9 @@ tasks.register("configurableIntegrationTest", Test) {
     useJUnitPlatform {
         includeTags("configurable-integration-test")
     }
-    systemProperties.put("spark.conf.file", configurableTestConfig["sparkConfFile"] )
-    systemProperties.put("test.dir", configurableTestConfig["testDir"] )
-    systemProperties.put("host.dir", configurableTestConfig["hostDir"] )
+    systemProperties.put("spark.conf.file", configurableTestConfig["sparkConfFile"])
+    systemProperties.put("test.dir", configurableTestConfig["testDir"])
+    systemProperties.put("host.dir", configurableTestConfig["hostDir"])
 
     environment("TESTCONTAINERS_HOST_OVERRIDE", "host.docker.internal")
 }
