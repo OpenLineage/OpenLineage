@@ -115,11 +115,14 @@ public class RddPathUtils {
 
     @Override
     public Stream<Path> extract(ParallelCollectionRDD rdd) {
+      int SEQ_LIMIT = 1000;
       try {
         Object data = FieldUtils.readField(rdd, "data", true);
         log.debug("ParallelCollectionRDD data: {}", data);
-        if (data instanceof Seq) {
-          return ScalaConversionUtils.fromSeq((Seq) data).stream()
+        if ((data instanceof Seq) && ((Seq) data).head() instanceof Tuple2) {
+          // exit if the first element is invalid
+          Seq data_slice = (Seq) ((Seq) data).slice(0, SEQ_LIMIT);
+          return ScalaConversionUtils.fromSeq(data_slice).stream()
               .map(
                   el -> {
                     Path path = null;
