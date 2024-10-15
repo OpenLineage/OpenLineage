@@ -95,6 +95,6 @@ class MetastoreHive3Test {
   }
 
   public static Dataset<Row> executeSql(String query, String... params) {
-    return spark.sql(String.format(query, params));
+    return spark.sql(String.format(query, (Object[]) params));
   }
 }
