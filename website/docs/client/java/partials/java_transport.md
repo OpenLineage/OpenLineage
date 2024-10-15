@@ -704,15 +704,15 @@ OpenLineageClient client = OpenLineageClient.builder()
 </TabItem>
 </Tabs>
 
-### [Dataplex](https://github.com/OpenLineage/OpenLineage/blob/main/client/transports-dataplex/src/main/java/io/openlineage/client/transports/dataplex/DataplexTransport.java)
+### [GcpLineage](https://github.com/OpenLineage/OpenLineage/blob/main/client/transports-dataplex/src/main/java/io/openlineage/client/transports/gcplineage/GcpLineageTransport.java)
 
-To use this transport in your project, you need to include `io.openlineage:transports-dataplex` artifact in
+To use this transport in your project, you need to include `io.openlineage:transports-gcplineage` artifact in
 your build configuration. This is particularly important for environments like `Spark`, where this transport must be on
 the classpath for lineage events to be emitted correctly.
 
 #### Configuration
 
-- `type` - string, must be `"dataplex"`. Required.
+- `type` - string, must be `"gcplineage"`. Required.
 - `endpoint` - string, specifies the endpoint to which events are sent, default value is
   `datalineage.googleapis.com:443`. Optional.
 - `projectId` - string, the project quota identifier. If not provided, it is determined based on user credentials.
@@ -725,12 +725,12 @@ the classpath for lineage events to be emitted correctly.
   Optional, if not
   provided [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials)
   are used
-- `mode` - enum that specifies the type of client used for publishing OpenLineage events to Dataplex. Possible values:
+- `mode` - enum that specifies the type of client used for publishing OpenLineage events to GCP Lineage service. Possible values:
   `sync` (synchronous) or `async` (asynchronous). Optional, default: `async`.
 
 #### Behavior
 
-- Events are serialized to JSON, included as part of a `gRPC` request, and then dispatched to the `Dataplex` endpoint.
+- Events are serialized to JSON, included as part of a `gRPC` request, and then dispatched to the `GCP Lineage service` endpoint.
 - Depending on the `mode` chosen, requests are sent using either a synchronous or asynchronous client.
 
 #### Examples
@@ -740,7 +740,7 @@ the classpath for lineage events to be emitted correctly.
 
 ```yaml
 transport:
-  type: dataplex
+  type: gcplineage
   projectId: your_gcp_project_id
   location: us
   mode: sync
@@ -751,7 +751,7 @@ transport:
 <TabItem value="spark" label="Spark Config">
 
 ```ini
-spark.openlineage.transport.type=dataplex
+spark.openlineage.transport.type=gcplineage
 spark.openlineage.transport.projectId=your_gcp_project_id
 spark.openlineage.transport.location=us
 spark.openlineage.transport.mode=sync
@@ -762,7 +762,7 @@ spark.openlineage.transport.credentialsFile=path/to/credentials.json
 <TabItem value="flink" label="Flink Config">
 
 ```ini
-openlineage.transport.type=dataplex
+openlineage.transport.type=gcplineage
 openlineage.transport.projectId=your_gcp_project_id
 openlineage.transport.location=us
 openlineage.transport.mode=sync
@@ -774,20 +774,20 @@ openlineage.transport.credentialsFile=path/to/credentials.json
 
 ```java
 import io.openlineage.client.OpenLineageClient;
-import io.openlineage.client.transports.dataplex.DataplexConfig;
-import io.openlineage.client.transports.dataplex.DataplexTransport;
+import io.openlineage.client.transports.gcplineage.GcpLineageTransportConfig;
+import io.openlineage.client.transports.dataplex.GcpLineageTransport;
 
 
-DataplexConfig dataplexConfig = new DataplexConfig();
+GcpLineageTransportConfig gcplineageConfig = new GcpLineageTransportConfig();
 
-dataplexConfig.setProjectId("your_kinesis_stream_name");
-dataplexConfig.setLocation("your_aws_region");
-dataplexConfig.setMode("sync");
-dataplexConfig.setCredentialsFile("path/to/credentials.json");
+gcplineageConfig.setProjectId("your_gcp_project_id");
+gcplineageConfig.setLocation("your_gcp_location");
+gcplineageConfig.setMode("sync");
+gcplineageConfig.setCredentialsFile("path/to/credentials.json");
 
 OpenLineageClient client = OpenLineageClient.builder()
         .transport(
-                new DataplexTransport(dataplexConfig))
+                new GcpLineageTransport(gcplineageConfig))
         .build();
 ```
 
