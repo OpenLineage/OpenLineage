@@ -38,6 +38,9 @@ jobs:
     needs: check-label
     if: needs.check-label.outputs.visual-comparison-required-label-found == 'true'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./website
     steps:
       # We switch to the main branch to take the screenshots
       - name: Check out repository code
@@ -76,6 +79,9 @@ jobs:
     needs: [check-label, take-screenshots-main]
     if: needs.check-label.outputs.visual-comparison-required-label-found == 'true'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./website
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
