@@ -8,7 +8,6 @@ package io.openlineage.gradle.plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
-import org.gradle.configurationcache.extensions.capitalized
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.getByType
@@ -48,6 +47,9 @@ class ScalaVariantDelegate(
         configureTasks()
         configureArtifacts()
     }
+
+    fun CharSequence.capitalized(): String =
+        toString().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 
     private fun getSourceSetContainer(target: Project) =
         target.extensions.getByType<SourceSetContainer>()
