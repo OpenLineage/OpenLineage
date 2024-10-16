@@ -192,7 +192,7 @@ class LibraryTest {
   void testRDDName(SparkSession spark) {
     JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
     JavaRDD<Integer> numbers =
-        sc.parallelize(IntStream.range(1, 100).mapToObj(Integer::new).collect(Collectors.toList()));
+        sc.parallelize(IntStream.range(1, 100).boxed().collect(Collectors.toList()));
     numbers.setName("numbers");
     JavaRDD<String> transformed =
         numbers.filter(n -> n > 10 && n < 90).map(i -> i * i).map(String::valueOf);
