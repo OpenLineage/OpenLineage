@@ -86,14 +86,17 @@ public class GCPUtils {
         getClusterUUID(context).ifPresent(p -> dataprocProperties.put("clusterUuid", p));
         getDataprocJobID(context).ifPresent(p -> dataprocProperties.put("jobId", p));
         getDataprocJobUUID(context).ifPresent(p -> dataprocProperties.put("jobUuid", p));
+        dataprocProperties.put("runType", "job");
         break;
       case BATCH:
         getDataprocBatchID(context).ifPresent(p -> dataprocProperties.put("batchId", p));
         getDataprocBatchUUID(context).ifPresent(p -> dataprocProperties.put("batchUuid", p));
+        dataprocProperties.put("runType", "batch");
         break;
       case INTERACTIVE:
         getDataprocSessionID(context).ifPresent(p -> dataprocProperties.put("sessionId", p));
         getDataprocSessionUUID(context).ifPresent(p -> dataprocProperties.put("sessionUuid", p));
+        dataprocProperties.put("runType", "session");
         break;
       case UNKNOWN:
         // do nothing

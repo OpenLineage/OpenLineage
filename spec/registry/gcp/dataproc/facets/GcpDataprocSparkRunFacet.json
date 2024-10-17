@@ -50,6 +50,10 @@
               "description": "The name of the query node in the executed Spark Plan. Often used to describe the command being executed.",
               "type": "string"
             },
+            "runType": {
+              "description": "Identifies whether the Dataproc run is a job, a batch or a session.",
+              "type": "string"
+            },
             "sessionId": {
               "description": "Populated only for Dataproc serverless interactive sessions. The resource id of the session, used for URL generation.",
               "type": "string"
