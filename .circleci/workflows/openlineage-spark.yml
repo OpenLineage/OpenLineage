@@ -23,17 +23,17 @@ workflows:
             parameters:
               env-variant: [
                 'java:8-spark:2.4.8-scala:2.12',
-                'java:8-spark:3.2.4-scala:2.12',
-                'java:8-spark:3.2.4-scala:2.13',
-                'java:8-spark:3.3.4-scala:2.12',
-                'java:8-spark:3.3.4-scala:2.13',
-                'java:17-spark:3.3.4-scala:2.12',
-                'java:17-spark:3.3.4-scala:2.13',
-                'java:8-spark:3.4.3-scala:2.12',
-                'java:8-spark:3.4.3-scala:2.13',
-                'java:8-spark:3.5.2-scala:2.12',
-                'java:8-spark:3.5.2-scala:2.13',
-                'java:17-spark:3.5.2-scala:2.12',
+                'java:8-spark:3.2.4-scala:2.12-full-tests',
+                'java:8-spark:3.2.4-scala:2.13-full-tests',
+                'java:8-spark:3.3.4-scala:2.12-full-tests',
+                'java:8-spark:3.3.4-scala:2.13-full-tests',
+                'java:17-spark:3.3.4-scala:2.12-full-tests',
+                'java:17-spark:3.3.4-scala:2.13-full-tests',
+                'java:8-spark:3.4.3-scala:2.12-full-tests',
+                'java:8-spark:3.4.3-scala:2.13-full-tests',
+                'java:8-spark:3.5.2-scala:2.12-full-tests',
+                'java:8-spark:3.5.2-scala:2.13-full-tests',
+                'java:17-spark:3.5.2-scala:2.12-full-tests',
                 'java:17-spark:3.5.2-scala:2.13',
                 'java:17-spark:4.0.0-scala:2.13'
               ]
@@ -92,7 +92,10 @@ workflows:
           context: integration-tests
           matrix:
             parameters:
-              spark-version: [ '3.4.2', '3.5.2' ]
+              env-variant: [
+                'java:8-spark:3.4.3-scala:2.12-full-tests',
+                'java:17-spark:3.5.2-scala:2.13-full-tests'
+              ]
           requires:
             - approval-integration-spark
           post-steps:
@@ -112,17 +115,17 @@ workflows:
             parameters:
               env-variant: [
                 'java:8-spark:2.4.8-scala:2.12',
-                'java:8-spark:3.2.4-scala:2.12',
-                'java:8-spark:3.2.4-scala:2.13',
-                'java:8-spark:3.3.4-scala:2.12',
-                'java:8-spark:3.3.4-scala:2.13',
-                'java:17-spark:3.3.4-scala:2.12',
-                'java:17-spark:3.3.4-scala:2.13',
-                'java:8-spark:3.4.3-scala:2.12',
-                'java:8-spark:3.4.3-scala:2.13',
-                'java:8-spark:3.5.2-scala:2.12',
-                'java:8-spark:3.5.2-scala:2.13',
-                'java:17-spark:3.5.2-scala:2.12',
+                'java:8-spark:3.2.4-scala:2.12-full-tests',
+                'java:8-spark:3.2.4-scala:2.13-full-tests',
+                'java:8-spark:3.3.4-scala:2.12-full-tests',
+                'java:8-spark:3.3.4-scala:2.13-full-tests',
+                'java:17-spark:3.3.4-scala:2.12-full-tests',
+                'java:17-spark:3.3.4-scala:2.13-full-tests',
+                'java:8-spark:3.4.3-scala:2.12-full-tests',
+                'java:8-spark:3.4.3-scala:2.13-full-tests',
+                'java:8-spark:3.5.2-scala:2.12-full-tests',
+                'java:8-spark:3.5.2-scala:2.13-full-tests',
+                'java:17-spark:3.5.2-scala:2.12-full-tests',
                 'java:17-spark:3.5.2-scala:2.13',
                 'java:17-spark:4.0.0-scala:2.13'
               ]
