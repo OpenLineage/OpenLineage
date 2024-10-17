@@ -33,7 +33,8 @@ A dataset, or `table`, is organized according to a producer, namespace, database
 | GCS                           | Blob storage                         | gs://{bucket name}                                           | {object key}                                             |
 | HDFS                          | Distributed file system              | hdfs://{namenode host}:{namenode port}                       | {path}                                                   |
 | Kafka                         | distributed event streaming platform | kafka://{bootstrap server host}:{port}                       | {topic}                                                  |
-| Local file system             | File system                          | file://{host}                                                | {path}                                                   |
+| Local file system             | File system                          | file                                                         | {path}                                                   |
+| Remote file system            | File system                          | file://{host}                                                | {path}                                                   |
 | S3                            | Blob Storage                         | s3://{bucket name}                                           | {object key}                                             |
 | WASBS (Azure Blob Storage)    | Blob Storage                         | wasbs://{container name}@{service name}.dfs.core.windows.net | {object key}                                             |
 
