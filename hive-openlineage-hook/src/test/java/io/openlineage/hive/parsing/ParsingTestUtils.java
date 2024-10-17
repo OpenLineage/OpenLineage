@@ -17,27 +17,23 @@ package io.openlineage.hive.parsing;
 
 import java.util.Arrays;
 import java.util.List;
-import org.apache.hadoop.hive.ql.plan.ExprNodeColumnDesc;
-import org.apache.hadoop.hive.ql.plan.ExprNodeConstantDesc;
-import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
-import org.apache.hadoop.hive.ql.plan.ExprNodeGenericFuncDesc;
+
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDFOPGreaterThan;
-import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 
 public class ParsingTestUtils {
 
-  public static ExprNodeDesc createExprNodeDesc(String columnName) {
-    return new ExprNodeColumnDesc(TypeInfoFactory.stringTypeInfo, columnName, "table", false);
+  public static BaseExpr createParsedExpr(String columnName) {
+    ColumnExpr column = new ColumnExpr();
+    column.setName(columnName);
+    return column;
   }
 
-  public static ExprNodeDesc createConstantExprNodeDesc(String value) {
-    return new ExprNodeConstantDesc(TypeInfoFactory.stringTypeInfo, value);
+  public static BaseExpr createConstantExpr(String value) {
+    return new ConstantExpr(value);
   }
 
-  public static ExprNodeDesc createGreaterThanExpr(String leftCol, String rightCol) {
-    List<ExprNodeDesc> children =
-        Arrays.asList(createExprNodeDesc(leftCol), createExprNodeDesc(rightCol));
-    return new ExprNodeGenericFuncDesc(
-        TypeInfoFactory.booleanTypeInfo, new GenericUDFOPGreaterThan(), children);
+  public static BaseExpr createGreaterThanExpr(String leftCol, String rightCol) {
+    List<BaseExpr> children = Arrays.asList(createParsedExpr(leftCol), createParsedExpr(rightCol));
+    return new FunctionExpr(new GenericUDFOPGreaterThan(), children);
   }
 }

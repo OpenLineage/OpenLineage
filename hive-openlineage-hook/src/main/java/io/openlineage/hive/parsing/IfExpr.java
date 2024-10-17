@@ -16,20 +16,20 @@
 package io.openlineage.hive.parsing;
 
 import java.util.List;
+
 import lombok.Getter;
 import lombok.NonNull;
-import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
 
 @Getter
-public class IfExpr extends ParentExpr {
-  private static final long serialVersionUID = 1L;
+public class IfExpr extends BaseExpr {
 
-  public IfExpr(@NonNull List<ExprNodeDesc> children) {
+  public IfExpr(@NonNull List<BaseExpr> children) {
     super(children);
   }
 
   @Override
   public String toString() {
-    return String.format("If: [%s, %s, %s]", children.get(0), children.get(1), children.get(2));
+    return String.format(
+        "If: [%s, %s, %s]", getChildren().get(0), getChildren().get(1), getChildren().get(2));
   }
 }

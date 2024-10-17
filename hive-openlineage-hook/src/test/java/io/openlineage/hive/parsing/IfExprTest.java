@@ -15,24 +15,23 @@
  */
 package io.openlineage.hive.parsing;
 
-import static io.openlineage.hive.parsing.ParsingTestUtils.createConstantExprNodeDesc;
-import static io.openlineage.hive.parsing.ParsingTestUtils.createGreaterThanExpr;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.Arrays;
 import java.util.List;
-import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
+
+import static io.openlineage.hive.parsing.ParsingTestUtils.createConstantExpr;
+import static io.openlineage.hive.parsing.ParsingTestUtils.createGreaterThanExpr;
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 
 class IfExprTest {
 
   @Test
   void testIf() {
-    List<ExprNodeDesc> children =
+    List<BaseExpr> children =
         Arrays.asList(
             createGreaterThanExpr("x", "y"),
-            createConstantExprNodeDesc("greater"),
-            createConstantExprNodeDesc("lesser or equal"));
+            createConstantExpr("greater"),
+            createConstantExpr("lesser or equal"));
     IfExpr ifExpr = new IfExpr(children);
     String expected =
         "If: [GenericUDFOPGreaterThan(Column[x], Column[y]), Const string greater, Const string lesser or equal]";

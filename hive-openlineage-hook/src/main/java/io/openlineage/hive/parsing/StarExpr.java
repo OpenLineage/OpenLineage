@@ -16,17 +16,16 @@
 package io.openlineage.hive.parsing;
 
 import java.util.List;
+
 import lombok.Getter;
 import lombok.NonNull;
-import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
 
 @Getter
-public class StarExpr extends ParentExpr {
-  private static final long serialVersionUID = 1L;
+public class StarExpr extends BaseExpr {
 
   private final List<String> aliases;
 
-  public StarExpr(@NonNull List<String> aliases, @NonNull List<ExprNodeDesc> children) {
+  public StarExpr(@NonNull List<String> aliases, @NonNull List<BaseExpr> children) {
     super(children);
     this.aliases = aliases;
   }

@@ -16,20 +16,19 @@
 package io.openlineage.hive.parsing;
 
 import java.util.List;
+
 import lombok.Getter;
 import lombok.NonNull;
-import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
 
 @Getter
-public class GenericExpr extends ParentExpr {
-  private static final long serialVersionUID = 1L;
+public class GenericExpr extends BaseExpr {
 
-  public GenericExpr(@NonNull List<ExprNodeDesc> children) {
+  public GenericExpr(@NonNull List<BaseExpr> children) {
     super(children);
   }
 
   @Override
   public String toString() {
-    return String.format("Generic: [%s]", children);
+    return String.format("Generic: [%s]", getChildren());
   }
 }

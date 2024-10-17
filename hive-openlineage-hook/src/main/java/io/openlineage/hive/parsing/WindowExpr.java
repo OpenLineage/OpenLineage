@@ -16,20 +16,19 @@
 package io.openlineage.hive.parsing;
 
 import java.util.List;
+
 import lombok.Getter;
 import lombok.NonNull;
-import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
 
 @Getter
-public class WindowExpr extends ParentExpr {
-  private static final long serialVersionUID = 1L;
+public class WindowExpr extends BaseExpr {
 
-  public WindowExpr(@NonNull List<ExprNodeDesc> children) {
+  public WindowExpr(@NonNull List<BaseExpr> children) {
     super(children);
   }
 
   @Override
   public String toString() {
-    return String.format("Window: [%s]", children);
+    return String.format("Window: [%s]", getChildren());
   }
 }

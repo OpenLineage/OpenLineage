@@ -15,13 +15,12 @@
  */
 package io.openlineage.hive.parsing;
 
-import static io.openlineage.hive.parsing.ParsingTestUtils.createConstantExprNodeDesc;
-import static io.openlineage.hive.parsing.ParsingTestUtils.createExprNodeDesc;
+import java.util.List;
+
+import static io.openlineage.hive.parsing.ParsingTestUtils.createConstantExpr;
+import static io.openlineage.hive.parsing.ParsingTestUtils.createParsedExpr;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.List;
-import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDTF;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDTFExplode;
 import org.junit.jupiter.api.Test;
@@ -31,8 +30,7 @@ class UDTFExprTest {
   @Test
   void testUDTFExpr() {
     GenericUDTF function = new GenericUDTFExplode();
-    List<ExprNodeDesc> children =
-        asList(createExprNodeDesc("array_column"), createConstantExprNodeDesc("5"));
+    List<BaseExpr> children = asList(createParsedExpr("array_column"), createConstantExpr("5"));
     UDTFExpr udtfExpr = new UDTFExpr(function, children);
     assertThat(udtfExpr.getFunction()).isEqualTo(function);
     assertThat(udtfExpr.getChildren()).isEqualTo(children);

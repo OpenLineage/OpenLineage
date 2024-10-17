@@ -15,11 +15,10 @@
  */
 package io.openlineage.hive.parsing;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.Arrays;
 import java.util.List;
-import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDFOPPlus;
 import org.junit.jupiter.api.Test;
 
@@ -28,10 +27,9 @@ class FunctionExprTest {
   @Test
   void testFunction() {
     GenericUDFOPPlus plusUDF = new GenericUDFOPPlus();
-    List<ExprNodeDesc> children =
+    List<BaseExpr> children =
         Arrays.asList(
-            ParsingTestUtils.createExprNodeDesc("x"),
-            ParsingTestUtils.createConstantExprNodeDesc("5"));
+            ParsingTestUtils.createParsedExpr("x"), ParsingTestUtils.createConstantExpr("5"));
     FunctionExpr functionExpr = new FunctionExpr(plusUDF, children);
     assertThat(functionExpr.getFunction()).isEqualTo(plusUDF);
     assertThat(functionExpr.getChildren()).isEqualTo(children);

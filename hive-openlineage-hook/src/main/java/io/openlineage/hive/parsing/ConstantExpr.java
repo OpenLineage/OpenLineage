@@ -15,23 +15,14 @@
  */
 package io.openlineage.hive.parsing;
 
-import java.util.List;
-
 import lombok.Getter;
-import lombok.NonNull;
-import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 
 @Getter
-public class FunctionExpr extends BaseExpr {
-  private final GenericUDF function;
+public class ConstantExpr extends BaseExpr {
 
-  public FunctionExpr(@NonNull GenericUDF function, @NonNull List<BaseExpr> children) {
-    super(children);
-    this.function = function;
-  }
+  private final Object value;
 
-  @Override
-  public String toString() {
-    return String.format("Function (%s): [%s]", function, getChildren());
+  public ConstantExpr(Object value) {
+    this.value = value;
   }
 }
