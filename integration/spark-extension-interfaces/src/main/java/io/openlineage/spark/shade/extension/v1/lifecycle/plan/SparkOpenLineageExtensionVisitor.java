@@ -32,13 +32,26 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 /**
- * This class serves as a container that wraps all the interface method calls exposed by this
- * package. The openlineage-spark accesses these wrapper methods through reflection.
+ * This class serves as a visitor that wraps method calls for handling input and output lineage in
+ * Spark jobs, as defined in the OpenLineage-Spark extension.
+ *
+ * <p>The OpenLineage-Spark library uses reflection to access these wrapper methods for extracting
+ * lineage information from Spark's LogicalPlan and other relevant components. The visitor class
+ * handles different types of lineage nodes, such as {@link InputLineageNode} and {@link
+ * OutputLineageNode}, and allows conversion to a format suitable for lineage tracking.
  */
 public final class SparkOpenLineageExtensionVisitor {
   private static final ObjectMapper mapper = OpenLineageClientUtils.newObjectMapper();
   private final OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
 
+  /**
+   * Determines if the given {@code lineageNode} is of a type that this visitor can process.
+   * Specifically, it checks if the object is an instance of {@link LineageRelationProvider}, {@link
+   * LineageRelation}, {@link InputLineageNode}, or {@link OutputLineageNode}.
+   *
+   * @param lineageNode the node representing a lineage component
+   * @return {@code true} if the node is of a supported type, {@code false} otherwise
+   */
   public boolean isDefinedAt(Object lineageNode) {
     return lineageNode instanceof LineageRelationProvider
         || lineageNode instanceof LineageRelation
@@ -46,6 +59,16 @@ public final class SparkOpenLineageExtensionVisitor {
         || lineageNode instanceof OutputLineageNode;
   }
 
+  /**
+   * Applies the visitor to a {@link LineageRelationProvider}, extracting lineage information such
+   * as the {@link DatasetIdentifier} from the provided {@code lineageNode}.
+   *
+   * @param lineageNode the lineage node to process
+   * @param sparkListenerEventName the name of the Spark listener event
+   * @param sqlContext the SQL context of the current Spark execution
+   * @param parameters additional parameters relevant to the lineage extraction
+   * @return a map containing lineage information in a serialized format
+   */
   public Map<String, Object> apply(
       Object lineageNode, String sparkListenerEventName, Object sqlContext, Object parameters) {
     if (lineageNode instanceof LineageRelationProvider) {
@@ -58,6 +81,14 @@ public final class SparkOpenLineageExtensionVisitor {
     return Collections.emptyMap();
   }
 
+  /**
+   * Applies the visitor to a {@link LineageRelation}, {@link InputLineageNode}, or {@link
+   * OutputLineageNode}, extracting and serializing the relevant lineage information.
+   *
+   * @param lineageNode the lineage node to process
+   * @param sparkListenerEventName the name of the Spark listener event
+   * @return a map containing the serialized lineage data
+   */
   public Map<String, Object> apply(Object lineageNode, String sparkListenerEventName) {
     if (lineageNode instanceof LineageRelation) {
       LineageRelation lineageRelation = (LineageRelation) lineageNode;
@@ -143,6 +174,7 @@ public final class SparkOpenLineageExtensionVisitor {
     return map;
   }
 
+  /** Utility class to handle versioning for the OpenLineage producer URI. */
   private static class Versions {
     public static final URI OPEN_LINEAGE_PRODUCER_URI = getProducerUri();
 
@@ -153,6 +185,11 @@ public final class SparkOpenLineageExtensionVisitor {
               getVersion()));
     }
 
+    /**
+     * Retrieves the version information from a properties file.
+     *
+     * @return the version string, or "main" if the version cannot be determined
+     */
     @SuppressWarnings("PMD")
     public static String getVersion() {
       try {
