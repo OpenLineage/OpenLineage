@@ -8,6 +8,7 @@ package io.openlineage.spark.agent;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,11 +19,18 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.core.internal.waiters.ResponseOrException;
+import software.amazon.awssdk.core.waiters.WaiterOverrideConfiguration;
+import software.amazon.awssdk.retries.api.BackoffStrategy;
 import software.amazon.awssdk.services.emr.EmrClient;
 import software.amazon.awssdk.services.emr.model.*;
 import software.amazon.awssdk.services.emr.waiters.EmrWaiter;
 import software.amazon.awssdk.services.s3.S3Client;
 
+/**
+ * The class that manages all the resources required to perform EMR integration tests. It provides
+ * convenient methods for running scripts and retrieving the events. It creates the cluster,
+ * terminates it, cleans up the S3 resources.
+ */
 @Slf4j
 public class EmrTestEnvironment implements AutoCloseable {
   private final EmrClient client = EmrClient.builder().build();
@@ -40,7 +48,8 @@ public class EmrTestEnvironment implements AutoCloseable {
   @Getter
   static class EmrTestEnvironmentProperties {
     @NonNull private final Development development;
-    @NonNull private final NewCluster cluster;
+    private final NewCluster cluster;
+    // The name of the bucket used for jars, scripts and logs
     @NonNull private final String bucketName;
     // The unique prefix used to run the tests. It is the location where the files with jars,
     // scripts, events and logs will be stored
@@ -62,7 +71,7 @@ public class EmrTestEnvironment implements AutoCloseable {
       // cluster
       // with test but want to keep it for future tests
       private final boolean preventClusterTermination;
-      // The name of the bucket used for jars, scripts and logs
+      private final int debugPort;
     }
 
     @Builder
@@ -73,6 +82,9 @@ public class EmrTestEnvironment implements AutoCloseable {
       @NonNull private final String ec2InstanceProfile;
       @NonNull private final String masterInstanceType;
       @NonNull private final String slaveInstanceType;
+      @NonNull private final String subnetId;
+      @NonNull private final String ec2SshKeyName;
+      private final long idleClusterTerminationSeconds;
     }
 
     public String getJobsPrefix() {
@@ -190,6 +202,9 @@ public class EmrTestEnvironment implements AutoCloseable {
                                     "spark-submit",
                                     "--jars",
                                     jars,
+                                    "--driver-java-options",
+                                    "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:"
+                                        + properties.getDevelopment().getDebugPort(),
                                     "--conf",
                                     "spark.extraListeners=io.openlineage.spark.agent.OpenLineageSparkListener",
                                     "--conf",
@@ -204,9 +219,9 @@ public class EmrTestEnvironment implements AutoCloseable {
                         .build())
                 .build());
     String stepId = addJobFlowStepsResponse.stepIds().get(0);
-    log.info("PySpark step submitted with ID [{}]. Waiting for completion.", stepId);
+    log.info("PySpark step submitted with ID [{}]. Waiting for completion...", stepId);
     waitForStepToComplete(stepId);
-    log.info("PySpark step [{}] completed. Fetching events.", stepId);
+    log.info("PySpark step [{}] completed.", stepId);
   }
 
   void waitForStepToComplete(String stepId) {
@@ -214,7 +229,15 @@ public class EmrTestEnvironment implements AutoCloseable {
         DescribeStepRequest.builder().clusterId(clusterId).stepId(stepId).build();
 
     ResponseOrException<DescribeStepResponse> matched =
-        waiter.waitUntilStepComplete(describeStepRequest).matched();
+        waiter
+            .waitUntilStepComplete(
+                describeStepRequest,
+                WaiterOverrideConfiguration.builder()
+                    .backoffStrategyV2(BackoffStrategy.fixedDelay(Duration.ofSeconds(5)))
+                    .maxAttempts(120)
+                    .waitTimeout(Duration.ofMinutes(10))
+                    .build())
+            .matched();
 
     matched
         .response()
@@ -264,6 +287,7 @@ public class EmrTestEnvironment implements AutoCloseable {
 
   private String createNewCluster(EmrTestEnvironmentProperties properties) {
     EmrTestEnvironmentProperties.NewCluster cluster = properties.getCluster();
+
     RunJobFlowRequest request =
         RunJobFlowRequest.builder()
             .name("OpenLineageIntegrationTest")
@@ -280,12 +304,18 @@ public class EmrTestEnvironment implements AutoCloseable {
                             "hive.execution.engine",
                             "spark"))
                     .build())
+            .autoTerminationPolicy(
+                AutoTerminationPolicy.builder()
+                    .idleTimeout(cluster.getIdleClusterTerminationSeconds())
+                    .build())
             .instances(
                 JobFlowInstancesConfig.builder()
                     .instanceCount(1)
                     .keepJobFlowAliveWhenNoSteps(true) // Cluster doesn't shut down immediately
                     .masterInstanceType(cluster.getMasterInstanceType())
                     .slaveInstanceType(cluster.getSlaveInstanceType())
+                    .ec2SubnetId(cluster.getSubnetId())
+                    .ec2KeyName(cluster.ec2SshKeyName)
                     .build())
             .jobFlowRole(cluster.getEc2InstanceProfile())
             .serviceRole(cluster.getServiceRole())
@@ -296,7 +326,7 @@ public class EmrTestEnvironment implements AutoCloseable {
   }
 
   private void waitForClusterReady(String clusterId) {
-    log.info("Waiting for cluster [{}] ready", clusterId);
+    log.info("Waiting for cluster [{}] ready...", clusterId);
     // The default waiting strategy is to poll the cluster for 30 minutes (max 60 times) with around
     // 30 seconds between each attempt until the cluster says it is ready.
     ResponseOrException<DescribeClusterResponse> waiterResponse =
@@ -304,12 +334,7 @@ public class EmrTestEnvironment implements AutoCloseable {
             .waitUntilClusterRunning(DescribeClusterRequest.builder().clusterId(clusterId).build())
             .matched();
 
-    waiterResponse
-        .response()
-        .ifPresent(
-            response -> {
-              log.info("Cluster [{}] is ready", clusterId);
-            });
+    waiterResponse.response().ifPresent(response -> log.info("Cluster [{}] is ready", clusterId));
 
     waiterResponse
         .exception()
@@ -331,10 +356,7 @@ public class EmrTestEnvironment implements AutoCloseable {
 
     waiterResponse
         .response()
-        .ifPresent(
-            response -> {
-              log.info("Cluster [{}] has been terminated", clusterId);
-            });
+        .ifPresent(response -> log.info("Cluster [{}] has been terminated", clusterId));
 
     waiterResponse
         .exception()

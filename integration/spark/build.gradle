@@ -182,6 +182,12 @@ shadowJar {
     relocate "com.fasterxml.jackson", "io.openlineage.spark.shaded.com.fasterxml.jackson"
     relocate "org.LatencyUtils", "io.openlineage.spark.shaded.org.latencyutils"
     relocate "org.HdrHistogram", "io.openlineage.spark.shaded.org.hdrhistogram"
+
+    // AWS SDK dependencies
+    relocate "software.amazon", "io.openlineage.spark.shaded.software.amazon"
+    relocate "org.reactivestreams", "io.openlineage.spark.shaded.org.reactivestreams"
+    relocate "io.netty", "io.openlineage.spark.shaded.io.netty"
+
     manifest {
         attributes(
                 "Created-By": "Gradle ${gradle.gradleVersion}",

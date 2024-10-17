@@ -427,6 +427,9 @@ tasks.register("awsIntegrationTest", Test) {
          */
         systemProperties = System.getProperties().findAll { key, value -> key.toString().startsWith("openlineage") }
     }
+    testLogging {
+        exceptionFormat "full"
+    }
 }
 
 tasks.register("configurableIntegrationTest", Test) {

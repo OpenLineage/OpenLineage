@@ -1,0 +1,52 @@
+name: Integration tests for Spark AWS
+
+# Runs the AWS integration tests
+#
+# The workflow is triggered manually. To run, you have to install GitHub CLI, setup secrets and run:
+# gh workflow run "Integration tests for Spark AWS" --ref <name of your branch>
+#
+# The required secrets are:
+# - EMR_TESTS_AWS_ACCESS_KEY_ID
+# - EMR_TESTS_AWS_SECRET_ACCESS_KEY
+# - EMR_TESTS_AWS_REGION
+# - EMR_TESTS_BUCKET_NAME
+# - EMR_TESTS_EC2_SUBNET_ID
+#
+# For local development use the command as in the step "Run AWS integration tests" below. You can specify
+# more parameters. See class DynamicParameters and EmrIntegrationTest in Spark integration for details.
+
+on:
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: integration/spark
+
+jobs:
+  run-integration-tests-emr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.EMR_TESTS_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.EMR_TESTS_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.EMR_TESTS_AWS_REGION }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '17'
+      - name: Build Spark integration dependencies
+        run: ./buildDependencies.sh
+      - name: Build Spark integration jar
+        run: ./gradlew shadowJar -x test -Pjava.compile.home=${JAVA_HOME}
+      - name: Run AWS integration tests
+        run: ./gradlew awsIntegrationTest --info -x test -Pjava.compile.home=${JAVA_HOME} -Dopenlineage.tests.bucketName=${{ secrets.EMR_TESTS_BUCKET_NAME }} -Dopenlineage.tests.ec2SubnetId=${{ secrets.EMR_TESTS_EC2_SUBNET_ID }}
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: integration/spark/app/build/test-results
