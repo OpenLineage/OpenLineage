@@ -29,7 +29,7 @@ A dataset, or `table`, is organized according to a producer, namespace, database
 | Snowflake                     | Warehouse                            | snowflake://{organization name}-{account name}               | {database}.{schema}.{table}                              |
 | Trino                         | Warehouse                            | trino://{host}:{port}                                        | {catalog}.{schema}.{table}                               |
 | ABFSS (Azure Data Lake Gen2)  | Data lake                            | abfss://{container name}@{service name}.dfs.core.windows.net | {path}                                                   |
-| DBFS (Databricks File System) | Distributed file system              | hdfs://{workspace name}                                      | {path}                                                   |
+| DBFS (Databricks File System) | Distributed file system              | dbfs://{workspace name}                                      | {path}                                                   |
 | GCS                           | Blob storage                         | gs://{bucket name}                                           | {object key}                                             |
 | HDFS                          | Distributed file system              | hdfs://{namenode host}:{namenode port}                       | {path}                                                   |
 | Kafka                         | distributed event streaming platform | kafka://{bootstrap server host}:{port}                       | {topic}                                                  |
