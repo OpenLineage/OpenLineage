@@ -8,13 +8,26 @@ import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.OpenLineage.InputDatasetInputFacetsBuilder;
 import java.util.Objects;
 
-/** Input dataset with a node in LogicalPlan where a input dataset shall be extracted from */
+/**
+ * Represents an input dataset associated with a node in a LogicalPlan. This class allows the
+ * extraction of facets (metadata) from the input dataset.
+ *
+ * <p>It implements both {@link InputDatasetWithFacets} and {@link DatasetWithDelegate}, providing
+ * methods to retrieve dataset facets and the node from which the dataset is extracted.
+ */
 public class InputDatasetWithDelegate implements InputDatasetWithFacets, DatasetWithDelegate {
 
   private final Object node;
   private final DatasetFacetsBuilder datasetFacetsBuilder;
   private final InputDatasetInputFacetsBuilder inputFacetsBuilder;
 
+  /**
+   * Constructs a new {@code InputDatasetWithDelegate}.
+   *
+   * @param node the node in the LogicalPlan from which the input dataset is extracted
+   * @param datasetFacetsBuilder a builder for the dataset facets
+   * @param inputFacetsBuilder a builder for the input dataset input facets
+   */
   public InputDatasetWithDelegate(
       Object node,
       DatasetFacetsBuilder datasetFacetsBuilder,
@@ -24,16 +37,31 @@ public class InputDatasetWithDelegate implements InputDatasetWithFacets, Dataset
     this.inputFacetsBuilder = inputFacetsBuilder;
   }
 
+  /**
+   * Returns the {@link DatasetFacetsBuilder} for building dataset facets.
+   *
+   * @return the dataset facets builder
+   */
   @Override
   public DatasetFacetsBuilder getDatasetFacetsBuilder() {
     return datasetFacetsBuilder;
   }
 
+  /**
+   * Returns the {@link InputDatasetInputFacetsBuilder} for building input dataset facets.
+   *
+   * @return the input dataset input facets builder
+   */
   @Override
   public InputDatasetInputFacetsBuilder getInputFacetsBuilder() {
     return inputFacetsBuilder;
   }
 
+  /**
+   * Returns the node in the LogicalPlan from which the input dataset is extracted.
+   *
+   * @return the LogicalPlan node
+   */
   @Override
   public Object getNode() {
     return node;
