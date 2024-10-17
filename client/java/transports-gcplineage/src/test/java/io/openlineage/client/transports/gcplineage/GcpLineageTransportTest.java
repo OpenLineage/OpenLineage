@@ -2,7 +2,7 @@
 /* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
-package io.openlineage.client.transports.dataplex;
+package io.openlineage.client.transports.gcplineage;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -26,20 +26,20 @@ import java.net.URI;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-class DataplexTransportTest {
+class GcpLineageTransportTest {
 
   @Test
   void clientEmitsRunEventGCPTransportSyncMode() throws Exception {
     SyncLineageProducerClient syncClient = mock(SyncLineageProducerClient.class);
-    DataplexConfig config = new DataplexConfig();
+    GcpLineageTransportConfig config = new GcpLineageTransportConfig();
 
     config.setProjectId("my-project");
     config.setLocation("us");
 
-    DataplexTransport.ProducerClientWrapper clientWrapper =
-        new DataplexTransport.ProducerClientWrapper(config, syncClient);
+    GcpLineageTransport.ProducerClientWrapper clientWrapper =
+        new GcpLineageTransport.ProducerClientWrapper(config, syncClient);
 
-    Transport transport = new DataplexTransport(clientWrapper);
+    Transport transport = new GcpLineageTransport(clientWrapper);
     OpenLineageClient client = new OpenLineageClient(transport);
 
     OpenLineage.RunEvent event = runEvent();
@@ -59,15 +59,15 @@ class DataplexTransportTest {
   @Test
   void clientEmitsRunEventGCPTransportAsyncMode() throws Exception {
     AsyncLineageProducerClient asyncClient = mock(AsyncLineageProducerClient.class);
-    DataplexConfig config = new DataplexConfig();
+    GcpLineageTransportConfig config = new GcpLineageTransportConfig();
 
     config.setProjectId("my-project");
     config.setLocation("us");
 
-    DataplexTransport.ProducerClientWrapper clientWrapper =
-        new DataplexTransport.ProducerClientWrapper(config, asyncClient);
+    GcpLineageTransport.ProducerClientWrapper clientWrapper =
+        new GcpLineageTransport.ProducerClientWrapper(config, asyncClient);
 
-    Transport transport = new DataplexTransport(clientWrapper);
+    Transport transport = new GcpLineageTransport(clientWrapper);
     OpenLineageClient client = new OpenLineageClient(transport);
 
     OpenLineage.RunEvent event = runEvent();
@@ -86,14 +86,14 @@ class DataplexTransportTest {
   @Test
   void gcpTransportRaisesOnException() throws Exception {
     AsyncLineageProducerClient async = mock(AsyncLineageProducerClient.class);
-    DataplexConfig config = new DataplexConfig();
+    GcpLineageTransportConfig config = new GcpLineageTransportConfig();
     config.setProjectId("my-project");
     config.setLocation("us");
 
-    DataplexTransport.ProducerClientWrapper clientWrapper =
-        new DataplexTransport.ProducerClientWrapper(config, async);
+    GcpLineageTransport.ProducerClientWrapper clientWrapper =
+        new GcpLineageTransport.ProducerClientWrapper(config, async);
 
-    Transport transport = new DataplexTransport(clientWrapper);
+    Transport transport = new GcpLineageTransport(clientWrapper);
     OpenLineageClient client = new OpenLineageClient(transport);
 
     OpenLineage.RunEvent event = runEvent();

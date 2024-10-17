@@ -1,8 +1,8 @@
-# Google Cloud Platform Dataplex Transport
+# Google Cloud Platform GcpLineage Transport
 
 This library provides a transport layer that integrates OpenLineage with Google Cloud Platform's Dataplex service.
 It wraps the `com.google.cloud.datalineage:producerclient-java8` library into an OpenLineage transport, allowing you to
-emit lineage events directly to Dataplex using `gRPC` channel.
+emit lineage events directly to GCP Lineage service using `gRPC` channel.
 
 ## Getting Started
 
@@ -19,14 +19,14 @@ be emitted correctly.
 
 <dependency>
     <groupId>io.openlineage</groupId>
-    <artifactId>transports-dataplex</artifactId>
+    <artifactId>transports-gcplineage</artifactId>
     <version>YOUR_VERSION_HERE</version>
 </dependency>
 ```
 
 ### Configuration
 
-- `type` - string, must be `"dataplex"`. Required.
+- `type` - string, must be `"gcplineage"`. Required.
 - `endpoint` - string, specifies the endpoint to which events are sent, default value is
   `datalineage.googleapis.com:443`. Optional.
 - `projectId` - string, the project quota identifier. If not provided, it is determined based on user credentials.
@@ -39,7 +39,7 @@ be emitted correctly.
   Optional, if not
   provided [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials)
   are used
-- `mode` - enum that specifies the type of client used for publishing OpenLineage events to Dataplex. Possible values:
+- `mode` - enum that specifies the type of client used for publishing OpenLineage events to GCP Lineage service. Possible values:
   `sync` (synchronous) or `async` (asynchronous). Optional, default: `async`.
 
 ### Behavior

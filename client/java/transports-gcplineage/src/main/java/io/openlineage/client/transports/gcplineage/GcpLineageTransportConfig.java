@@ -2,7 +2,7 @@
 /* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
-package io.openlineage.client.transports.dataplex;
+package io.openlineage.client.transports.gcplineage;
 
 import io.openlineage.client.MergeConfig;
 import io.openlineage.client.transports.TransportConfig;
@@ -16,7 +16,8 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-public class DataplexConfig implements TransportConfig, MergeConfig<DataplexConfig> {
+public class GcpLineageTransportConfig
+    implements TransportConfig, MergeConfig<GcpLineageTransportConfig> {
 
   enum Mode {
     sync,
@@ -34,8 +35,8 @@ public class DataplexConfig implements TransportConfig, MergeConfig<DataplexConf
   @Getter @Setter private @Nullable Mode mode;
 
   @Override
-  public DataplexConfig mergeWithNonNull(DataplexConfig other) {
-    return new DataplexConfig(
+  public GcpLineageTransportConfig mergeWithNonNull(GcpLineageTransportConfig other) {
+    return new GcpLineageTransportConfig(
         mergePropertyWith(endpoint, other.endpoint),
         mergePropertyWith(projectId, other.projectId),
         mergePropertyWith(credentialsFile, other.credentialsFile),

@@ -2,7 +2,7 @@
 /* Copyright 2018-2024 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
-package io.openlineage.client.transports.dataplex;
+package io.openlineage.client.transports.gcplineage;
 
 import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutureCallback;
@@ -36,15 +36,15 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class DataplexTransport extends Transport {
+public class GcpLineageTransport extends Transport {
 
   private final ProducerClientWrapper producerClientWrapper;
 
-  public DataplexTransport(@NonNull DataplexConfig config) throws IOException {
+  public GcpLineageTransport(@NonNull GcpLineageTransportConfig config) throws IOException {
     this(new ProducerClientWrapper(config));
   }
 
-  protected DataplexTransport(@NonNull ProducerClientWrapper client) throws IOException {
+  protected GcpLineageTransport(@NonNull ProducerClientWrapper client) throws IOException {
     this.producerClientWrapper = client;
   }
 
@@ -73,9 +73,9 @@ public class DataplexTransport extends Transport {
     private final AsyncLineageClient asyncLineageClient;
     private final String parent;
 
-    protected ProducerClientWrapper(DataplexConfig config) throws IOException {
+    protected ProducerClientWrapper(GcpLineageTransportConfig config) throws IOException {
       LineageSettings settings;
-      if (DataplexConfig.Mode.sync == config.getMode()) {
+      if (GcpLineageTransportConfig.Mode.sync == config.getMode()) {
         settings = createSyncSettings(config);
         syncLineageClient =
             SyncLineageProducerClient.create((SyncLineageProducerClientSettings) settings);
@@ -89,14 +89,14 @@ public class DataplexTransport extends Transport {
       this.parent = getParent(config, settings);
     }
 
-    protected ProducerClientWrapper(DataplexConfig config, SyncLineageClient client)
+    protected ProducerClientWrapper(GcpLineageTransportConfig config, SyncLineageClient client)
         throws IOException {
       this.syncLineageClient = client;
       this.parent = getParent(config, createAsyncSettings(config));
       this.asyncLineageClient = null;
     }
 
-    protected ProducerClientWrapper(DataplexConfig config, AsyncLineageClient client)
+    protected ProducerClientWrapper(GcpLineageTransportConfig config, AsyncLineageClient client)
         throws IOException {
       this.asyncLineageClient = client;
       this.parent = getParent(config, createSyncSettings(config));
@@ -140,29 +140,30 @@ public class DataplexTransport extends Transport {
       ApiFutures.addCallback(future, callback, MoreExecutors.directExecutor());
     }
 
-    private String getParent(DataplexConfig config, LineageSettings settings) throws IOException {
+    private String getParent(GcpLineageTransportConfig config, LineageSettings settings)
+        throws IOException {
       return String.format(
           "projects/%s/locations/%s",
           getProjectId(config, settings),
           config.getLocation() != null ? config.getLocation() : "us");
     }
 
-    private static SyncLineageProducerClientSettings createSyncSettings(DataplexConfig config)
-        throws IOException {
+    private static SyncLineageProducerClientSettings createSyncSettings(
+        GcpLineageTransportConfig config) throws IOException {
       SyncLineageProducerClientSettings.Builder builder =
           SyncLineageProducerClientSettings.newBuilder();
       return createSettings(config, builder).build();
     }
 
-    private static AsyncLineageProducerClientSettings createAsyncSettings(DataplexConfig config)
-        throws IOException {
+    private static AsyncLineageProducerClientSettings createAsyncSettings(
+        GcpLineageTransportConfig config) throws IOException {
       AsyncLineageProducerClientSettings.Builder builder =
           AsyncLineageProducerClientSettings.newBuilder();
       return createSettings(config, builder).build();
     }
 
     private static <T extends LineageSettings.Builder> T createSettings(
-        DataplexConfig config, T builder) throws IOException {
+        GcpLineageTransportConfig config, T builder) throws IOException {
       if (config.getEndpoint() != null) {
         builder.setEndpoint(config.getEndpoint());
       }
@@ -179,7 +180,7 @@ public class DataplexTransport extends Transport {
       return builder;
     }
 
-    private static String getProjectId(DataplexConfig config, LineageSettings settings)
+    private static String getProjectId(GcpLineageTransportConfig config, LineageSettings settings)
         throws IOException {
       if (config.getProjectId() != null) {
         return config.getProjectId();

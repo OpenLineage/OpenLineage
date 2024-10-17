@@ -19,7 +19,7 @@ plugins {
 }
 
 ext {
-    projectDescription = "GCP Dataplex OpenLineage transport library"
+    projectDescription = "GcpLineage OpenLineage transport library"
 }
 
 dependencies {
