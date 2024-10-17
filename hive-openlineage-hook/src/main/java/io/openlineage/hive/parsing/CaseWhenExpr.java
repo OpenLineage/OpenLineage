@@ -16,20 +16,19 @@
 package io.openlineage.hive.parsing;
 
 import java.util.List;
+
 import lombok.Getter;
 import lombok.NonNull;
-import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
 
 @Getter
-public class CaseWhenExpr extends ParentExpr {
-  private static final long serialVersionUID = 1L;
+public class CaseWhenExpr extends BaseExpr {
 
-  public CaseWhenExpr(@NonNull List<ExprNodeDesc> children) {
+  public CaseWhenExpr(@NonNull List<BaseExpr> children) {
     super(children);
   }
 
   @Override
   public String toString() {
-    return String.format("CaseWhen: [%s]", children);
+    return String.format("CaseWhen: [%s]", getChildren());
   }
 }

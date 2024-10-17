@@ -19,44 +19,30 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
 
 @Getter
 @RequiredArgsConstructor
-public class QueryExpr extends ExprNodeDesc {
-  private static final long serialVersionUID = 1L;
+public class QueryExpr extends BaseExpr {
 
   private final String id;
   private final Map<String, List<QueryExpr>> subQueries = new HashMap<>();
-  private final List<ExprNodeDesc> selectExpressions = new ArrayList<>();
+  private final List<BaseExpr> selectExpressions = new ArrayList<>();
   private final List<String> selectAliases = new ArrayList<>();
-  private final List<ExprNodeDesc> groupByExpressions = new ArrayList<>();
-  private final List<ExprNodeDesc> whereExpressions = new ArrayList<>();
-  private final List<ExprNodeDesc> joinExpressions = new ArrayList<>();
-  private final List<ExprNodeDesc> orderByExpressions = new ArrayList<>();
+  private final List<BaseExpr> groupByExpressions = new ArrayList<>();
+  private final List<BaseExpr> whereExpressions = new ArrayList<>();
+  private final List<BaseExpr> joinExpressions = new ArrayList<>();
+  private final List<BaseExpr> orderByExpressions = new ArrayList<>();
 
-  public void addSelectExpression(String alias, ExprNodeDesc expr) {
+  public void addSelectExpression(String alias, BaseExpr expr) {
     selectAliases.add(alias);
     selectExpressions.add(expr);
   }
 
-  public void addSelectExpressions(List<String> aliases, List<ExprNodeDesc> exprs) {
+  public void addSelectExpressions(List<String> aliases, List<BaseExpr> exprs) {
     selectAliases.addAll(aliases);
     selectExpressions.addAll(exprs);
-  }
-
-  @Override
-  @SuppressWarnings("PMD.CloneMethodMustImplementCloneable")
-  public QueryExpr clone() {
-    // Not implemented because not needed for our purposes
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean isSame(Object o) {
-    // Not implemented because not needed for our purposes
-    throw new UnsupportedOperationException();
   }
 }

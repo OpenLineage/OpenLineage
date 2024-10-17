@@ -16,23 +16,22 @@
 package io.openlineage.hive.parsing;
 
 import java.util.List;
+
 import lombok.Getter;
 import lombok.NonNull;
-import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDTF;
 
 @Getter
-public class UDTFExpr extends ParentExpr {
-  private static final long serialVersionUID = 1L;
+public class UDTFExpr extends BaseExpr {
   private final GenericUDTF function;
 
-  public UDTFExpr(@NonNull GenericUDTF function, @NonNull List<ExprNodeDesc> children) {
+  public UDTFExpr(@NonNull GenericUDTF function, @NonNull List<BaseExpr> children) {
     super(children);
     this.function = function;
   }
 
   @Override
   public String toString() {
-    return String.format("UDTF (%s): [%s]", function, children);
+    return String.format("UDTF (%s): [%s]", function, getChildren());
   }
 }

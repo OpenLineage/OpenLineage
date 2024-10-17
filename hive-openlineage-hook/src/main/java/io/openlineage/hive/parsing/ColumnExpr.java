@@ -16,37 +16,18 @@
 package io.openlineage.hive.parsing;
 
 import java.util.List;
+
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.hadoop.hive.ql.metadata.Table;
-import org.apache.hadoop.hive.ql.plan.ExprNodeDesc;
 
 @Getter
 @Setter
-public class ColumnExpr extends ExprNodeDesc {
-  private static final long serialVersionUID = 1L;
+public class ColumnExpr extends BaseExpr {
 
   private int index = -1;
   private String name;
   private Table table;
   private List<QueryExpr> queries;
-  private ExprNodeDesc expression;
-
-  @Override
-  @SuppressWarnings("PMD.CloneMethodMustImplementCloneable")
-  public ColumnExpr clone() {
-    // Not implemented because not needed for our purposes
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean isSame(Object o) {
-    // Not implemented because not needed for our purposes
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public String getExprString() {
-    return String.format("Column: %s", name);
-  }
+  private BaseExpr expression;
 }
