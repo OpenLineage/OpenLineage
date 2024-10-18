@@ -352,8 +352,6 @@ impl<'a> Context<'a> {
 
                 if !traversed.is_empty() {
                     expanded.extend(traversed.iter().cloned());
-                } else {
-                    expanded.insert(ancestor.clone());
                 }
             }
             result.insert(col.clone(), expanded);
@@ -367,19 +365,41 @@ impl<'a> Context<'a> {
     fn expand_ancestors(ancestor: ColumnMeta, old: &ContextFrame) -> Vec<ColumnMeta> {
         let mut result = Vec::new();
         let mut stack = Vec::new();
+        let mut max_iter = 40;
 
         stack.push(ancestor.clone());
 
         while let Some(current) = stack.pop() {
-            let column_ancestors = old.column_ancestry.get(&current);
+            max_iter -= 1;
+            if max_iter <= 0 {
+                break;
+            }
+
+            let column_ancestors = old
+                .column_ancestry
+                .get(&current)
+                // try to find by name in case of column without origin
+                // this can happen when selecting from subquery without alias
+                .or_else(|| {
+                    old.column_ancestry.iter().find_map(|(col, anc)| {
+                        if col.name == current.name && current.origin.is_none() {
+                            Some(anc)
+                        } else {
+                            None
+                        }
+                    })
+                });
             if column_ancestors.is_none() {
                 result.push(current.clone());
                 continue;
             }
 
             if let Some(ancestors) = column_ancestors {
-                for ancestor in ancestors {
-                    stack.push(ancestor.clone());
+                for anc in ancestors {
+                    // avoid infinite loop
+                    if anc != &current {
+                        stack.push(anc.clone());
+                    }
                 }
             }
         }
@@ -434,8 +454,6 @@ impl<'a> Context<'a> {
 
             if !removed_circular_deps.is_empty() {
                 frame.column_ancestry.extend(old_ancestry);
-            } else {
-                frame.column_ancestry.extend(removed_circular_deps);
             }
 
             frame.dependencies.extend(old.dependencies);
