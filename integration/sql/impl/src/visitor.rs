@@ -555,9 +555,8 @@ impl Visit for Query {
             context.unset_frame_to_main_body();
         }
 
-        match &self.with {
-            Some(with) => with.visit(context)?,
-            None => (),
+        if let Some(with) = &self.with {
+            with.visit(context)?
         }
         let with_frame = context.pop_frame().unwrap();
 
