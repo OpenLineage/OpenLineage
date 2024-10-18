@@ -19,7 +19,7 @@ import static io.openlineage.hive.client.HiveOpenLineageConfigParser.extractFrom
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.transports.ConsoleConfig;
-import io.openlineage.client.transports.dataplex.DataplexConfig;
+import io.openlineage.client.transports.gcplineage.GcpLineageTransportConfig;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.Test;
 
@@ -57,9 +57,9 @@ public class HiveOpenLineageConfigParserTest {
     conf.set("hive.openlineage.transport.projectId", "myproject");
     conf.set("hive.openlineage.transport.location", "mylocation");
     HiveOpenLineageConfig config = extractFromHadoopConf(conf);
-    assertThat(((DataplexConfig) config.getTransportConfig()).getProjectId())
+    assertThat(((GcpLineageTransportConfig) config.getTransportConfig()).getProjectId())
         .isEqualTo("myproject");
-    assertThat(((DataplexConfig) config.getTransportConfig()).getLocation())
+    assertThat(((GcpLineageTransportConfig) config.getTransportConfig()).getLocation())
         .isEqualTo("mylocation");
     assertThat(config.getJob()).isNull();
     assertThat(config.getFacetsConfig()).isNull();

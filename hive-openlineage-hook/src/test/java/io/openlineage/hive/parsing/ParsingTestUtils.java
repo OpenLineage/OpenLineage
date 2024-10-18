@@ -17,23 +17,12 @@ package io.openlineage.hive.parsing;
 
 import java.util.Arrays;
 import java.util.List;
-
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDFOPGreaterThan;
 
 public class ParsingTestUtils {
 
-  public static BaseExpr createParsedExpr(String columnName) {
-    ColumnExpr column = new ColumnExpr();
-    column.setName(columnName);
-    return column;
-  }
-
-  public static BaseExpr createConstantExpr(String value) {
-    return new ConstantExpr(value);
-  }
-
   public static BaseExpr createGreaterThanExpr(String leftCol, String rightCol) {
-    List<BaseExpr> children = Arrays.asList(createParsedExpr(leftCol), createParsedExpr(rightCol));
+    List<BaseExpr> children = Arrays.asList(new ColumnExpr(leftCol), new ColumnExpr(rightCol));
     return new FunctionExpr(new GenericUDFOPGreaterThan(), children);
   }
 }
