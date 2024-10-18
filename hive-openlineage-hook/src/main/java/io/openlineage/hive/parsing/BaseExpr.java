@@ -16,7 +16,6 @@
 package io.openlineage.hive.parsing;
 
 import java.util.List;
-
 import lombok.Getter;
 
 @Getter

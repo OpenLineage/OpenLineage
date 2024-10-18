@@ -16,7 +16,6 @@
 package io.openlineage.hive.parsing;
 
 import java.util.List;
-
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.hadoop.hive.ql.metadata.Table;
@@ -30,4 +29,15 @@ public class ColumnExpr extends BaseExpr {
   private Table table;
   private List<QueryExpr> queries;
   private BaseExpr expression;
+
+  public ColumnExpr(String name) {
+    this.name = name;
+  }
+
+  public ColumnExpr(String name, int index, List<QueryExpr> queries, Table table) {
+    this.name = name;
+    this.index = index;
+    this.queries = queries;
+    this.table = table;
+  }
 }

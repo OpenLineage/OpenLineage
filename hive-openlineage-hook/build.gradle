@@ -112,7 +112,7 @@ dependencies {
     }
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     // TODO: We might not want this to be included in the shaded JAR and instead rely on Dataproc including it?
-    implementation ("io.openlineage:transports-dataplex:${openLineageVersion}")
+    implementation ("io.openlineage:transports-gcplineage:${openLineageVersion}")
 
     // Test dependencies ---------------------------------------------------------------------
 
@@ -156,7 +156,7 @@ dependencies {
     testImplementation ("io.openlineage:openlineage-java:${openLineageVersion}") {
         exclude group: 'com.fasterxml.jackson.core', module: '*'
     }
-    testImplementation ("io.openlineage:transports-dataplex:${openLineageVersion}")
+    testImplementation ("io.openlineage:transports-gcplineage:${openLineageVersion}")
     testImplementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
     testImplementation "com.google.cloud:google-cloud-datalineage:${cloudDataLineageVersion}"
     testImplementation "com.google.cloud.datalineage:producerclient-java8:${producerClientVersion}"

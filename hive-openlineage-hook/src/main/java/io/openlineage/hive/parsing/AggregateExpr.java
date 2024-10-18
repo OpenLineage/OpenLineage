@@ -16,7 +16,6 @@
 package io.openlineage.hive.parsing;
 
 import java.util.List;
-
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFResolver;
