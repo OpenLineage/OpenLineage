@@ -30,7 +30,7 @@ ext {
     junit5Version = "5.11.2"
     lombokVersion = "1.18.30"
     mockitoVersion = "4.11.0"
-    micrometerVersion = "1.13.5"
+    micrometerVersion = "1.13.6"
 
     sparkVersion = project.findProperty("spark3.spark.version")
     scalaBinaryVersion = project.findProperty("scala.binary.version")
