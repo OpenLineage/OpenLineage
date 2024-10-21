@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-0/GcpDataprocSparkRunFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/GcpDataprocRunFacet.json",
   "$defs": {
-    "GcpDataprocSparkRunFacet": {
+    "GcpDataprocRunFacet": {
       "allOf": [
         {
           "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunFacet"
@@ -11,11 +11,11 @@
           "type": "object",
           "properties": {
             "appId": {
-              "description": "Application ID set in the spark configuration of the current context. Its format depends on the resource manager.",
+              "description": "Application ID set by the resource manager. For spark jobs, it is set in the spark configuration of the current context.",
               "type": "string"
             },
             "appName": {
-              "description": "App name set in the spark configuration of the current context. It may be provided by the user.",
+              "description": "App name which may be provided by the user, or some default is used by the resource manager. For spark jobs, it is set in the spark configuration of the current context.",
               "type": "string"
             },
             "batchId": {
@@ -72,8 +72,8 @@
   },
   "type": "object",
   "properties": {
-    "gcp_dataproc_spark": {
-      "$ref": "#/$defs/GcpDataprocSparkRunFacet"
+    "gcp_dataproc": {
+      "$ref": "#/$defs/GcpDataprocRunFacet"
     }
   }
 }
