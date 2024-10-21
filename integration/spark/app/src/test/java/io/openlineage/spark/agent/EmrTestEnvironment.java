@@ -260,7 +260,7 @@ public class EmrTestEnvironment implements AutoCloseable {
     if (properties.getDevelopment().isPreventS3Cleanup()) {
       log.info(
           "The [{}] flag has been enabled. Skipping S3 cleanup. Remember to remove it manually.",
-          DynamicParameter.PreventS3Cleanup.getTemplateParameter());
+          EmrDynamicParameter.PreventS3Cleanup.getParameterName());
     } else {
       log.info("Deleting the files under [{}]", properties.getKeyPrefix());
       AwsUtils.deleteFiles(s3Client, properties.getBucketName(), properties.getKeyPrefix());
