@@ -10,20 +10,27 @@ import static org.awaitility.Awaitility.await;
 
 import com.databricks.sdk.WorkspaceClient;
 import com.databricks.sdk.service.compute.ClusterDetails;
+import com.databricks.sdk.service.compute.ClusterLogConf;
+import com.databricks.sdk.service.compute.CreateCluster;
 import com.databricks.sdk.service.compute.CreateClusterResponse;
+import com.databricks.sdk.service.compute.DbfsStorageInfo;
+import com.databricks.sdk.service.compute.InitScriptInfo;
 import com.databricks.sdk.service.compute.ListClustersRequest;
+import com.databricks.sdk.service.compute.WorkspaceStorageInfo;
 import com.databricks.sdk.service.files.Delete;
+import com.databricks.sdk.service.jobs.Run;
 import com.databricks.sdk.service.jobs.Source;
 import com.databricks.sdk.service.jobs.SparkPythonTask;
 import com.databricks.sdk.service.jobs.SubmitRun;
+import com.databricks.sdk.service.jobs.SubmitRunResponse;
 import com.databricks.sdk.service.jobs.SubmitTask;
+import com.databricks.sdk.service.workspace.Import;
+import com.databricks.sdk.service.workspace.ImportFormat;
+import com.databricks.sdk.support.Wait;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClientUtils;
-import io.openlineage.spark.agent.databricks.ClusterLogConf;
-import io.openlineage.spark.agent.databricks.CreateCluster;
-import io.openlineage.spark.agent.databricks.InitScript;
-import io.openlineage.spark.agent.databricks.WorkspaceDestination;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -34,6 +41,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.AbstractMap;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +51,6 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 
 @Slf4j
 public class DatabricksUtils {
@@ -62,58 +69,84 @@ public class DatabricksUtils {
   public static final String NODE_TYPE = "Standard_DS3_v2";
   public static final String INIT_SCRIPT_FILE = "/Shared/open-lineage-init-script.sh";
   public static final String DBFS_CLUSTER_LOGS = "dbfs:/databricks/openlineage/cluster-logs";
-  private static final String SPARK_VERSION = "spark.version";
   public static final String DBFS_EVENTS_FILE =
       "dbfs:/databricks/openlineage/events_" + platformVersion() + ".log";
 
   public static String platformVersion() {
-    return PLATFORM_VERSIONS.get(System.getProperty(SPARK_VERSION)).replace(".", "_");
+    return PLATFORM_VERSIONS
+        .get(DatabricksDynamicParameter.SparkVersion.resolve())
+        .replace(".", "_");
   }
 
   @SneakyThrows
   static String init(WorkspaceClient workspace) {
-    uploadOpenlineageJar(workspace);
+    String resolvedClusterId = DatabricksDynamicParameter.ClusterId.resolve();
+    boolean attachingToExistingCluster = !"".equals(resolvedClusterId);
 
-    // clear cluster logs
-    Delete deleteClusterLogs = new Delete();
-    deleteClusterLogs.setPath(DBFS_CLUSTER_LOGS);
-    deleteClusterLogs.setRecursive(true);
-    workspace.dbfs().delete(deleteClusterLogs);
+    uploadOpenLineageJar(workspace);
+    uploadInitializationScript(workspace);
 
-    // check if cluster is available
-    Iterable<ClusterDetails> clusterDetails = workspace.clusters().list(new ListClustersRequest());
-    if (clusterDetails != null) {
-      log.info("Encountered clusters to delete.");
-      StreamSupport.stream(clusterDetails.spliterator(), false)
-          .filter(cl -> cl.getClusterName().equals(getClusterName()))
-          .forEach(
-              cl -> {
-                log.info("Deleting a cluster {}-{}.", cl.getClusterName(), cl.getClusterId());
-                workspace.clusters().permanentDelete(cl.getClusterId());
-              });
+    if (attachingToExistingCluster) {
+      log.info("Attaching to the existing cluster [{}]", resolvedClusterId);
+      /*
+         OpenLineage jars are copied from DBFS to the cluster during the initialization script execution.
+         To ensure the updated jar is used, the cluster must be restarted after updating the jar.
+         Without a restart, the initialization script won't run again, and the old jar will still be used.
+      */
+      log.warn(
+          "⚠️ The cluster must be restarted to apply changes if the OpenLineage jar has been updated. ⚠️");
+      return resolvedClusterId;
+    } else {
+      // We may reuse the cluster name where there are existing old logs. This can happen if the
+      // tests failed. Here we make sure the logs are clean.
+      Delete deleteClusterLogs = new Delete();
+      deleteClusterLogs.setPath(DBFS_CLUSTER_LOGS);
+      deleteClusterLogs.setRecursive(true);
+      workspace.dbfs().delete(deleteClusterLogs);
+
+      log.info("Creating a new Databricks cluster.");
+      String sparkPlatformVersion = getSparkPlatformVersion();
+      String clusterName = CLUSTER_NAME + "_" + getSparkPlatformVersion();
+      log.debug("Ensuring the cluster with name [{}] doesn't exist.", clusterName);
+      for (ClusterDetails clusterDetail : workspace.clusters().list(new ListClustersRequest())) {
+        if (clusterDetail.getClusterName().equals(clusterName)) {
+          log.info(
+              "Deleting a cluster [{}] with ID [{}].",
+              clusterDetail.getClusterName(),
+              clusterDetail.getClusterId());
+          workspace.clusters().permanentDelete(clusterDetail.getClusterId());
+        }
+      }
+      Wait<ClusterDetails, CreateClusterResponse> cluster =
+          createCluster(workspace, clusterName, sparkPlatformVersion);
+
+      String clusterId = cluster.getResponse().getClusterId();
+      log.info("Ensuring the new cluster [{}] with ID [{}] is running...", clusterName, clusterId);
+      cluster.get(Duration.ofMinutes(10));
+      return clusterId;
     }
-    String clusterId = createCluster(workspace);
-
-    log.info("Ensuring cluster is running");
-    workspace.clusters().ensureClusterIsRunning(clusterId);
-
-    return clusterId;
   }
 
   @SneakyThrows
-  static void shutdown(WorkspaceClient workspace, String clusterId) {
+  static void shutdown(
+      WorkspaceClient workspace,
+      String clusterId,
+      boolean preventClusterTermination,
+      boolean existingClusterUsed,
+      String executionTimestamp) {
     // remove events file
     workspace.dbfs().delete(DBFS_EVENTS_FILE);
 
-    // need to terminate cluster to have access to cluster logs
-    workspace.clusters().delete(clusterId);
-    workspace.clusters().waitGetClusterTerminated(clusterId);
+    if (!(preventClusterTermination || existingClusterUsed)) {
+      // need to terminate cluster to have access to cluster logs
+      workspace.clusters().delete(clusterId);
+      workspace.clusters().waitGetClusterTerminated(clusterId);
+    }
 
-    // wait for logs to be available
     Path clusterLogs = Paths.get(DBFS_CLUSTER_LOGS + "/" + clusterId + "/driver/log4j-active.log");
-
+    log.info("Waiting for the cluster logs to be available on DBFS under [{}]...", clusterLogs);
     await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(300))
         .pollInterval(Duration.ofSeconds(3))
         .until(
             () -> {
@@ -125,24 +158,21 @@ public class DatabricksUtils {
             });
 
     // fetch logs and move to local file
-    FileWriter fileWriter = new FileWriter("./build/cluster-log4j.log");
-    workspace.dbfs().readAllLines(clusterLogs, StandardCharsets.UTF_8).stream()
-        .forEach(
-            line -> {
-              try {
-                fileWriter.write(line + System.lineSeparator());
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
-            });
+    String logsLocation = "./build/" + executionTimestamp + "-cluster-log4j.log";
+    log.info("Fetching cluster logs to [{}]", logsLocation);
+    writeLinesToFile(
+        logsLocation, workspace.dbfs().readAllLines(clusterLogs, StandardCharsets.UTF_8));
+    log.info("Logs fetched.");
 
     workspace.dbfs().delete(clusterLogs.toAbsolutePath().toString());
   }
 
   @SneakyThrows
-  static List<RunEvent> runScript(WorkspaceClient workspace, String clusterId, String scriptName) {
+  static List<RunEvent> runScript(
+      WorkspaceClient workspace, String clusterId, String scriptName, String executionTimestamp) {
     // upload scripts
     String dbfsScriptPath = "dbfs:/databricks/openlineage/scripts/" + scriptName;
+    log.info("Uploading script [{}] to [{}]", scriptName, dbfsScriptPath);
     String taskName = scriptName.replace(".py", "");
 
     workspace
@@ -151,6 +181,7 @@ public class DatabricksUtils {
             Paths.get(dbfsScriptPath),
             readAllBytes(
                 Paths.get(Resources.getResource("databricks_notebooks/" + scriptName).getPath())));
+    log.info("The script [{}] has been uploaded to [{}].", scriptName, dbfsScriptPath);
 
     SparkPythonTask task = new SparkPythonTask();
     task.setSource(Source.WORKSPACE);
@@ -166,59 +197,63 @@ public class DatabricksUtils {
     submitRun.setTasks(Collections.singletonList(runSubmitTaskSettings));
 
     // trigger one time job
-    workspace.jobs().submit(submitRun).get();
+    log.info("Submitting PySpark task [{}]...", taskName);
+    Wait<Run, SubmitRunResponse> submit = workspace.jobs().submit(submitRun);
+    log.info("PySpark task [{}] submitted. Waiting for completion...", taskName);
+    submit.get();
+    log.info("PySpark task [{}] completed.", taskName);
 
-    return fetchEventsEmitted(workspace);
+    return fetchEventsEmitted(workspace, scriptName, executionTimestamp);
   }
 
   @SneakyThrows
-  private static String createCluster(WorkspaceClient workspace) {
-    HashMap<String, String> sparkConf = new HashMap<String, String>();
+  private static Wait<ClusterDetails, CreateClusterResponse> createCluster(
+      WorkspaceClient workspace, String clusterName, String sparkPlatformVersion) {
+    HashMap<String, String> sparkConf = new HashMap<>();
     sparkConf.put("spark.openlineage.facets.debug.disabled", "false");
     sparkConf.put("spark.openlineage.transport.type", "file");
+    // Each test case script should copy this file to dbfs:/databricks/openlineage/ at the end of
+    // execution.
     sparkConf.put("spark.openlineage.transport.location", "/tmp/events.log");
     sparkConf.put("spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener");
-    sparkConf.put("spark.openlineage.version", "v1");
     CreateCluster createCluster =
-        CreateCluster.builder()
-            .cluster_name(getClusterName())
-            .spark_version(getSparkPlatformVersion())
-            .node_type_id(NODE_TYPE)
-            .autotermination_minutes(10L)
-            .num_workers(1L)
-            .init_scripts(
-                new InitScript[] {new InitScript(new WorkspaceDestination(INIT_SCRIPT_FILE))})
-            .spark_conf(sparkConf)
-            .cluster_log_conf(new ClusterLogConf(new WorkspaceDestination(DBFS_CLUSTER_LOGS)))
-            .build();
+        new CreateCluster()
+            .setClusterName(clusterName)
+            .setSparkVersion(sparkPlatformVersion)
+            .setNodeTypeId(NODE_TYPE)
+            .setAutoterminationMinutes(10L)
+            .setNumWorkers(1L)
+            .setInitScripts(
+                ImmutableList.of(
+                    new InitScriptInfo()
+                        .setWorkspace(new WorkspaceStorageInfo().setDestination(INIT_SCRIPT_FILE))))
+            .setSparkConf(sparkConf)
+            .setClusterLogConf(
+                new ClusterLogConf()
+                    .setDbfs(new DbfsStorageInfo().setDestination(DBFS_CLUSTER_LOGS)));
 
-    log.info("Creating cluster");
+    log.info("Creating cluster [{}]...", createCluster);
     workspace.config().setHttpTimeoutSeconds(600); // 10 minutes, otherwise it's rather setup issue
-    CreateClusterResponse response =
-        workspace
-            .apiClient()
-            .POST("/api/2.0/clusters/create", createCluster, CreateClusterResponse.class);
-
-    return response.getClusterId();
-  }
-
-  @NotNull
-  private static String getClusterName() {
-    return CLUSTER_NAME + "_" + getSparkPlatformVersion();
+    return workspace.clusters().create(createCluster);
   }
 
   private static String getSparkPlatformVersion() {
-    if (!PLATFORM_VERSIONS_NAMES.containsKey(System.getProperty(SPARK_VERSION))) {
-      log.error("Unsupported spark_version for databricks test {}", SPARK_VERSION);
+    String sparkVersion = DatabricksDynamicParameter.SparkVersion.resolve();
+    if (!PLATFORM_VERSIONS_NAMES.containsKey(sparkVersion)) {
+      log.error("Unsupported [spark.version] for databricks test: [{}].", sparkVersion);
     }
 
-    log.info(
-        "Databricks version {}", PLATFORM_VERSIONS_NAMES.get(System.getProperty(SPARK_VERSION)));
-    return PLATFORM_VERSIONS_NAMES.get(System.getProperty(SPARK_VERSION));
+    log.info("Databricks version: [{}].", PLATFORM_VERSIONS_NAMES.get(sparkVersion));
+    return PLATFORM_VERSIONS_NAMES.get(sparkVersion);
   }
 
+  /**
+   * Copies the jar to the DBFS location from where it is copied to the driver host by the
+   * initialization script. The copying happens only on the cluster initialization, so you have to
+   * restart the cluster if you change the jar and want to use it.
+   */
   @SneakyThrows
-  private static void uploadOpenlineageJar(WorkspaceClient workspace) {
+  private static void uploadOpenLineageJar(WorkspaceClient workspace) {
     Path jarFile =
         Files.list(Paths.get("../build/libs/"))
             .filter(p -> p.getFileName().toString().startsWith("openlineage-spark_"))
@@ -245,11 +280,39 @@ public class DatabricksUtils {
           .forEach(f -> workspace.dbfs().delete(f.getPath()));
     }
 
-    // upload to DBFS -> 12MB file upload need to go in chunks smaller than 1MB each
-    FileInputStream fis = new FileInputStream(jarFile.toString());
-    OutputStream outputStream =
-        workspace.dbfs().getOutputStream("dbfs:/databricks/openlineage/" + jarFile.getFileName());
+    String destination = "dbfs:/databricks/openlineage/" + jarFile.getFileName();
+    uploadFileToDbfs(workspace, jarFile, destination);
+    log.info("OpenLineage jar has been uploaded to [{}]", destination);
+  }
 
+  /**
+   * Uploads the cluster initialization script to DBFS.
+   *
+   * <p>The script is used by the clusters to copy OpenLineage jar to the location where it can be
+   * loaded by the driver.
+   */
+  private static void uploadInitializationScript(WorkspaceClient workspace) throws IOException {
+    String string =
+        Resources.toString(
+            Paths.get("../databricks/open-lineage-init-script.sh").toUri().toURL(),
+            StandardCharsets.UTF_8);
+    String encodedString = Base64.getEncoder().encodeToString(string.getBytes());
+    workspace
+        .workspace()
+        .importContent(
+            new Import()
+                .setPath(INIT_SCRIPT_FILE)
+                .setContent(encodedString)
+                .setFormat(ImportFormat.AUTO)
+                .setOverwrite(true));
+  }
+
+  @SneakyThrows
+  private static void uploadFileToDbfs(WorkspaceClient workspace, Path jarFile, String toLocation) {
+    FileInputStream fis = new FileInputStream(jarFile.toString());
+    OutputStream outputStream = workspace.dbfs().getOutputStream(toLocation);
+
+    // upload to DBFS -> 12MB file upload need to go in chunks smaller than 1MB each
     byte[] buf = new byte[500000]; // approx 0.5MB
     int len = fis.read(buf);
     while (len != -1) {
@@ -261,12 +324,43 @@ public class DatabricksUtils {
   }
 
   @SneakyThrows
-  private static List<RunEvent> fetchEventsEmitted(WorkspaceClient workspace) {
-    return workspace
-        .dbfs()
-        .readAllLines(Paths.get(DBFS_EVENTS_FILE), StandardCharsets.UTF_8)
-        .stream()
-        .map(event -> OpenLineageClientUtils.runEventFromJson(event))
+  private static List<RunEvent> fetchEventsEmitted(
+      WorkspaceClient workspace, String scriptName, String executionTimestamp) {
+    Path path = Paths.get(DBFS_EVENTS_FILE);
+    log.info("Fetching events from [{}]...", path);
+
+    List<String> eventsLines = workspace.dbfs().readAllLines(path, StandardCharsets.UTF_8);
+    log.info("There are [{}] events.", eventsLines.size());
+
+    saveEventsLocally(scriptName, executionTimestamp, eventsLines);
+
+    return eventsLines.stream()
+        .map(OpenLineageClientUtils::runEventFromJson)
         .collect(Collectors.toList());
+  }
+
+  /** Downloads the events locally for troubleshooting purposes */
+  private static void saveEventsLocally(
+      String scriptName, String executionTimestamp, List<String> lines) throws IOException {
+    // The source file path is reused and deleted before every test. As long as the tests are not
+    // executed concurrently, it should contain the events from the current test.
+    String eventsLocation = "./build/" + executionTimestamp + "-" + scriptName + "-events.ndjson";
+    log.info("Fetching events to [{}]", eventsLocation);
+    writeLinesToFile(eventsLocation, lines);
+    log.info("Events fetched.");
+  }
+
+  private static void writeLinesToFile(String eventsLocation, List<String> lines)
+      throws IOException {
+    try (FileWriter fileWriter = new FileWriter(eventsLocation)) {
+      lines.forEach(
+          line -> {
+            try {
+              fileWriter.write(line + System.lineSeparator());
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          });
+    }
   }
 }

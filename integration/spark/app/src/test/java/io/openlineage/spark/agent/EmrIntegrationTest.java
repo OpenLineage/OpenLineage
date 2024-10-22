@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
  * methods like unit tests or Spark integration tests in the container.
  *
  * <p>To execute the tests, configure the required parameters using system properties (refer to
- * {@link DynamicParameter} for more details).
+ * {@link EmrDynamicParameter} for more details).
  *
  * <h2>PySpark Test Samples</h2>
  *
@@ -64,7 +64,7 @@ import org.junit.jupiter.api.Test;
  *
  * <p>All infrastructure details and configuration parameters should be set using system properties.
  * For example: {@code -Dopenlineage.tests.bucketName=my-bucket-name}. Most parameters have
- * defaults. For a full list of configurable parameters, see {@link DynamicParameter}.
+ * defaults. For a full list of configurable parameters, see {@link EmrDynamicParameter}.
  *
  * <h3>Note on JUnit and Gradle</h3>
  *
@@ -82,23 +82,23 @@ class EmrIntegrationTest {
   static {
     // Tests prefix with the date mark to tell when they were run in UTC
     String testsPrefix =
-        DynamicParameter.TestsKeyPrefix.resolve()
+        EmrDynamicParameter.TestsKeyPrefix.resolve()
             + ZonedDateTime.now(ZoneOffset.UTC)
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"))
             + "/";
-    String clusterId = DynamicParameter.ClusterId.resolve();
+    String clusterId = EmrDynamicParameter.ClusterId.resolve();
     EmrTestEnvironment.EmrTestEnvironmentProperties.NewCluster newCluster =
         "".equals(clusterId)
             ? EmrTestEnvironment.EmrTestEnvironmentProperties.NewCluster.builder()
-                .emrLabel(DynamicParameter.EmrLabel.resolve())
-                .ec2InstanceProfile(DynamicParameter.Ec2InstanceProfile.resolve())
-                .serviceRole(DynamicParameter.ServiceRole.resolve())
-                .masterInstanceType(DynamicParameter.MasterInstanceType.resolve())
-                .slaveInstanceType(DynamicParameter.SlaveInstanceType.resolve())
-                .subnetId(DynamicParameter.Ec2SubnetId.resolve())
-                .ec2SshKeyName(DynamicParameter.SshKeyPairName.resolve())
+                .emrLabel(EmrDynamicParameter.EmrLabel.resolve())
+                .ec2InstanceProfile(EmrDynamicParameter.Ec2InstanceProfile.resolve())
+                .serviceRole(EmrDynamicParameter.ServiceRole.resolve())
+                .masterInstanceType(EmrDynamicParameter.MasterInstanceType.resolve())
+                .slaveInstanceType(EmrDynamicParameter.SlaveInstanceType.resolve())
+                .subnetId(EmrDynamicParameter.Ec2SubnetId.resolve())
+                .ec2SshKeyName(EmrDynamicParameter.SshKeyPairName.resolve())
                 .idleClusterTerminationSeconds(
-                    Long.parseLong(DynamicParameter.IdleClusterTerminationSeconds.resolve()))
+                    Long.parseLong(EmrDynamicParameter.IdleClusterTerminationSeconds.resolve()))
                 .build()
             : null;
     emrTestParameters =
@@ -108,13 +108,14 @@ class EmrIntegrationTest {
                     // We can connect to the existing EMR cluster to speed up testing
                     .clusterId(clusterId)
                     .preventS3Cleanup(
-                        Boolean.parseBoolean(DynamicParameter.PreventS3Cleanup.resolve()))
+                        Boolean.parseBoolean(EmrDynamicParameter.PreventS3Cleanup.resolve()))
                     .preventClusterTermination(
-                        Boolean.parseBoolean(DynamicParameter.PreventClusterTermination.resolve()))
-                    .debugPort(Integer.parseInt(DynamicParameter.DebugPort.resolve()))
+                        Boolean.parseBoolean(
+                            EmrDynamicParameter.PreventClusterTermination.resolve()))
+                    .debugPort(Integer.parseInt(EmrDynamicParameter.DebugPort.resolve()))
                     .build())
             .cluster(newCluster)
-            .bucketName(DynamicParameter.BucketName.resolve())
+            .bucketName(EmrDynamicParameter.BucketName.resolve())
             .keyPrefix(testsPrefix)
             .build();
   }

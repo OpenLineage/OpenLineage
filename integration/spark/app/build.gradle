@@ -119,7 +119,7 @@ dependencies {
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
     testImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
-    testImplementation("com.databricks:databricks-sdk-java:0.4.0") {
+    testImplementation("com.databricks:databricks-sdk-java:0.32.2") {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }
@@ -406,6 +406,20 @@ tasks.register("databricksIntegrationTest", Test) {
     useJUnitPlatform {
         includeTags("databricks")
     }
+    options {
+        systemProperties = openLineageSystemProperties()
+    }
+}
+
+/**
+ The "test" task runs JUnit tests in a separate JVM, and by default, system properties (-D parameters)
+ are not forwarded to it. Gradle allows forwarding them with -P parameter, but not everyone is aware of that.
+ Here, we selectively pass only properties that start with "openlineage" to avoid conflicts with
+ environment-related properties (e.g., current working directory) that could affect resource discovery.
+ The properties are later used {@link io.openlineage.spark.agent.DynamicParameter}
+ */
+private Map<Object, Object> openLineageSystemProperties() {
+    System.getProperties().findAll { key, value -> key.toString().startsWith("openlineage") }
 }
 
 
@@ -418,14 +432,7 @@ tasks.register("awsIntegrationTest", Test) {
         includeTags("aws")
     }
     options {
-        /*
-        The "test" task runs JUnit tests in a separate JVM, and by default, system properties (-D parameters)
-        are not forwarded to it. Gradle allows forwarding them with -P parameter, but not everyone is aware of that.
-        Here, we selectively pass only properties that start with "openlineage" to avoid conflicts with
-        environment-related properties (e.g., current working directory) that could affect resource discovery.
-        The properties are later used in template resolution.
-         */
-        systemProperties = System.getProperties().findAll { key, value -> key.toString().startsWith("openlineage") }
+        systemProperties = openLineageSystemProperties()
     }
     testLogging {
         exceptionFormat "full"

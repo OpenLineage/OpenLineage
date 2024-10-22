@@ -19,6 +19,9 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunFacet;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,14 +48,16 @@ class DatabricksIntegrationTest {
 
   private static WorkspaceClient workspace;
   private static String clusterId;
+  private static final String executionTimestamp =
+      ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
 
   @BeforeAll
   @SneakyThrows
   public static void setup() {
     DatabricksConfig config =
         new DatabricksConfig()
-            .setHost(System.getProperty("databricksHost"))
-            .setToken(System.getProperty("databricksToken"));
+            .setHost(DatabricksDynamicParameter.Host.resolve())
+            .setToken(DatabricksDynamicParameter.Token.resolve());
 
     workspace = new WorkspaceClient(config);
     clusterId = init(workspace);
@@ -66,14 +71,20 @@ class DatabricksIntegrationTest {
   @AfterAll
   public static void shutdown() {
     if (clusterId != null) {
-      DatabricksUtils.shutdown(workspace, clusterId);
+      boolean existingClusterUsed = "".equals(DatabricksDynamicParameter.ClusterId.resolve());
+      DatabricksUtils.shutdown(
+          workspace,
+          clusterId,
+          Boolean.parseBoolean(DatabricksDynamicParameter.PreventClusterTermination.resolve()),
+          existingClusterUsed,
+          executionTimestamp);
     }
   }
 
   @Test
   @SneakyThrows
   void testCreateTableAsSelect() {
-    List<RunEvent> runEvents = runScript(workspace, clusterId, "ctas.py");
+    List<RunEvent> runEvents = runScript(workspace, clusterId, "ctas.py", executionTimestamp);
     RunEvent lastEvent = runEvents.get(runEvents.size() - 1);
 
     OutputDataset outputDataset = lastEvent.getOutputs().get(0);
@@ -124,7 +135,8 @@ class DatabricksIntegrationTest {
   @Test
   @SneakyThrows
   void testNarrowTransformation() {
-    List<RunEvent> runEvents = runScript(workspace, clusterId, "narrow_transformation.py");
+    List<RunEvent> runEvents =
+        runScript(workspace, clusterId, "narrow_transformation.py", executionTimestamp);
     assertThat(runEvents).isNotEmpty();
 
     // assert start event exists
@@ -156,7 +168,8 @@ class DatabricksIntegrationTest {
   @Test
   @SneakyThrows
   void testWideTransformation() {
-    List<RunEvent> runEvents = runScript(workspace, clusterId, "wide_transformation.py");
+    List<RunEvent> runEvents =
+        runScript(workspace, clusterId, "wide_transformation.py", executionTimestamp);
     assertThat(runEvents).isNotEmpty();
 
     // assert start event exists
@@ -181,7 +194,8 @@ class DatabricksIntegrationTest {
 
   @Test
   void testWriteReadFromTableWithLocation() {
-    List<RunEvent> runEvents = runScript(workspace, clusterId, "dataset_names.py");
+    List<RunEvent> runEvents =
+        runScript(workspace, clusterId, "dataset_names.py", executionTimestamp);
 
     // find complete event with output dataset containing name
     OutputDataset outputDataset =
@@ -210,7 +224,7 @@ class DatabricksIntegrationTest {
   @Test
   @SneakyThrows
   void testMergeInto() {
-    List<RunEvent> runEvents = runScript(workspace, clusterId, "merge_into.py");
+    List<RunEvent> runEvents = runScript(workspace, clusterId, "merge_into.py", executionTimestamp);
 
     RunEvent event =
         runEvents.stream()

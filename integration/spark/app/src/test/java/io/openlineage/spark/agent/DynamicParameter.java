@@ -5,83 +5,85 @@
 
 package io.openlineage.spark.agent;
 
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import javax.annotation.Nullable;
+import org.slf4j.Logger;
 
 /**
- * Class for dynamic provisioning of parameters. In the current form it retrieves the values from
- * the system properties. They can be set using -Dopenlineage.tests.parameterName=value when running
- * the application.
+ * Represents a dynamically provisioned parameter whose value can be retrieved from system
+ * properties. Implementations of this interface define parameter names, prefixes, default values,
+ * and logging capabilities.
+ *
+ * <p>Parameters can be specified when running the application using the {@code -D} JVM argument
+ * syntax: {@code -D<prefix>.<parameterName>=value}.
+ *
+ * <p>For example, if a parameter has a prefix of {@code openlineage.test} and a parameter name of
+ * {@code clusterId}, it can be set using {@code -Dopenlineage.test.clusterId=value}.
+ *
+ * <p>The {@link #resolve()} method retrieves the parameter's value from the system properties,
+ * returning the default value if the property is not set and a default is provided.
  */
-@Slf4j
-@Getter
-public enum DynamicParameter {
-  // DEVELOPMENT
+public interface DynamicParameter {
   /**
-   * The ID of the EMR cluster if we want to use the existing one instead of creating a new one in
-   * the tests
+   * Returns the prefix applied to the parameter name when constructing the full system property
+   * key. The full key is formed by concatenating the prefix, a dot ('.'), and the parameter name.
+   * If the prefix is not necessary, this method may return {@code null}.
+   *
+   * @return the prefix string or {@code null} if no prefix is used
    */
-  ClusterId("clusterId", ""),
-  PreventS3Cleanup("preventS3Cleanup", "false"),
-  PreventClusterTermination("preventClusterTermination", "false"),
+  @Nullable
+  String getPrefix();
+
   /**
-   * Determines which port can be used to debug the application. For debugging to work, make sure
-   * the EC2 subnet has the firewall rule, allowing you to access the master node using this port.
-   * You have to edit the EC2 security group the cluster is attached to and add the TCP inbound
-   * rule. Then you can use remote debugging option in your IDE (with this port and the master
-   * node's IP address) to attach session. If attaching seems to keep forever, it means that the
-   * firewall rule is not correct. If the server rejects the debugger's connection it means the
-   * application is not running yet, and you should repeat the attempt or make sure it is still
-   * running. You should run the cluster beforehand, note the master IP address and have the
-   * debugging session prepared before you attach the
+   * Returns the name of the parameter used when constructing the full system property key. This
+   * name is appended to the prefix (if any) to form the complete key.
+   *
+   * @return the parameter name
    */
-  DebugPort("debugPort", "5005"),
+  String getParameterName();
 
-  // CLUSTER
-  EmrLabel("emrLabel", "emr-7.2.0"),
-  EventsKeyPrefix("eventsKeyPrefix", "events"),
-  Ec2InstanceProfile("ec2InstanceProfile", "EMR_EC2_DefaultRole"),
-  ServiceRole("serviceRole", "EMR_DefaultRole"),
-  MasterInstanceType("masterInstanceType", "m4.large"),
-  SlaveInstanceType("slaveInstanceType", "m4.large"),
-  Ec2SubnetId("ec2SubnetId"),
-  /** The optional key pair which can be used to SSH to the cluster. Useful for troubleshooting. */
-  SshKeyPairName("sshKeyPairName", ""),
-  IdleClusterTerminationSeconds("clusterIdleTerminationSeconds", "300"),
+  String name();
 
-  /** The bucket where the tests keep the dependency jars, scripts, produced events, logs, etc */
-  BucketName("bucketName"),
   /**
-   * The prefix where the tests will be run. Each test execution will have a separate random
-   * directory inside.
+   * Returns the {@link Logger} instance used for logging messages.
+   *
+   * @return the Logger instance
    */
-  TestsKeyPrefix("testsKeyPrefix", "emr-integration-tests/test-");
+  Logger getLog();
 
-  private final String templateParameter;
-  private final String defaultValue;
+  /**
+   * Returns the default value of the parameter if it is not specified in the system properties. May
+   * return {@code null} if there is no default value.
+   *
+   * @return the default value or {@code null} if none is specified
+   */
+  @Nullable
+  String getDefaultValue();
 
-  DynamicParameter(String templateParameter) {
-    this(templateParameter, null);
-  }
-
-  DynamicParameter(String templateParameter, String defaultValue) {
-    this.templateParameter = templateParameter;
-    this.defaultValue = defaultValue;
-  }
-
-  String resolve() {
-    String key = "openlineage.tests." + getTemplateParameter();
-    log.debug("Resolving parameter [{}] using key [{}]", name(), key);
+  /**
+   * Resolves the value of the parameter by retrieving it from the system properties using the
+   * constructed key. If the parameter is not found in the system properties and a default value is
+   * provided, the default value is returned. If the parameter is not found and no default value is
+   * provided, a {@link RuntimeException} is thrown.
+   *
+   * @return the resolved parameter value
+   * @throws RuntimeException if the parameter value is not found and no default value is provided
+   */
+  default String resolve() {
+    // We can skip prefix in special cases where it is not used.
+    String prefix = getPrefix() != null ? getPrefix() + "." : "";
+    String key = prefix + getParameterName();
+    getLog().debug("Resolving parameter [{}] using key [{}]", name(), key);
     String resolved = System.getProperty(key);
     if (resolved != null) {
       return resolved;
     } else {
-      if (defaultValue != null) {
-        log.debug(
-            "The value for parameter [{}] has not been found. Using the default value [{}]",
-            key,
-            defaultValue);
-        return defaultValue;
+      if (getDefaultValue() != null) {
+        getLog()
+            .debug(
+                "The value for parameter [{}] has not been found. Using the default value [{}]",
+                key,
+                getDefaultValue());
+        return getDefaultValue();
       }
     }
     throw new RuntimeException(
