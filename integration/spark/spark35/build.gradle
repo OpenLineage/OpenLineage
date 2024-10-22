@@ -23,9 +23,9 @@ idea {
 ext {
     assertjVersion = "3.26.3"
     commonsLangVersion = "3.12.0"
-    junit5Version = "5.11.2"
+    junit5Version = "5.11.3"
     mockitoVersion = "4.11.0"
-    micrometerVersion = "1.13.5"
+    micrometerVersion = "1.13.6"
 
     sparkVersion = project.findProperty("spark35.spark.version")
     scalaBinaryVersion = project.findProperty("scala.binary.version")
