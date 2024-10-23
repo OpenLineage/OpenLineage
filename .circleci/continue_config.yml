@@ -876,7 +876,7 @@ jobs:
                 sudo update-alternatives --set java ${JAVA_BIN}
                 sudo update-alternatives --set javac ${JAVAC_BIN}
             - run: ./gradlew --console=plain shadowJar -x test -Pjava.compile.home=${JAVA17_HOME}
-            - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test   -Pspark.version=<< parameters.spark-version >> -Popenlineage.tests.databricks.host=$DATABRICKS_HOST -Popenlineage.tests.databricks.token=$DATABRICKS_TOKEN -Pjava.compile.home=${JAVA17_HOME}
+            - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test -Pspark.version=<< parameters.spark-version >> -Dopenlineage.tests.databricks.host=$DATABRICKS_HOST -Dopenlineage.tests.databricks.token=$DATABRICKS_TOKEN -Pjava.compile.home=${JAVA17_HOME}
             - store_test_results:
                 path: app/build/test-results/databricksIntegrationTest
             - store_artifacts:
