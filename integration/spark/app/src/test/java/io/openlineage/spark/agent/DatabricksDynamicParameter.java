@@ -42,7 +42,7 @@ public enum DatabricksDynamicParameter implements DynamicParameter {
   // CLUSTER PARAMETERS
 
   /** The Spark version as provided by Gradle. This case is not using the openlineage prefix. */
-  SparkVersion("spark.version", null, "3.5.2");
+  SparkVersion("spark.version", null, null);
 
   private final String parameterName;
   private final String defaultValue;
