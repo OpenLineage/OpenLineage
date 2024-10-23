@@ -62,9 +62,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       Collections.synchronizedMap(new HashMap<>());
   private static final Map<Integer, ExecutionContext> rddExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
-  private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
+  private static final WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
   private static ContextFactory contextFactory;
-  private static JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
+  private static final JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
   private static final Function1<SparkSession, SparkContext> sparkContextFromSession =
       ScalaConversionUtils.toScalaFn(SparkSession::sparkContext);
   private static final Function0<Option<SparkContext>> activeSparkContext =
@@ -74,7 +74,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   private static MeterRegistry meterRegistry;
 
-  private static String sparkVersion = package$.MODULE$.SPARK_VERSION();
+  private static final String sparkVersion = package$.MODULE$.SPARK_VERSION();
 
   private final boolean isDisabled = checkIfDisabled();
 
@@ -101,10 +101,13 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (isDisabled) {
       return;
     }
-    initializeContextFactoryIfNotInitialized();
     if (event instanceof SparkListenerSQLExecutionStart) {
+      initializeContextFactoryIfNotInitialized();
+      log.debug("onOtherEvent called with event type SparkListenerSQLExecutionStart: [{}].", event);
       sparkSQLExecStart((SparkListenerSQLExecutionStart) event);
     } else if (event instanceof SparkListenerSQLExecutionEnd) {
+      initializeContextFactoryIfNotInitialized();
+      log.debug("onOtherEvent called with event type SparkListenerSQLExecutionEnd: [{}].", event);
       sparkSQLExecEnd((SparkListenerSQLExecutionEnd) event);
     }
   }
@@ -117,7 +120,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
               meterRegistry.counter("openlineage.spark.event.sql.start").increment();
               circuitBreaker.run(
                   () -> {
-                    activeJobId.ifPresent(id -> context.setActiveJobId(id));
+                    activeJobId.ifPresent(context::setActiveJobId);
                     context.start(startEvent);
                     return null;
                   });
@@ -132,7 +135,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (context != null) {
       circuitBreaker.run(
           () -> {
-            activeJobId.ifPresent(id -> context.setActiveJobId(id));
+            activeJobId.ifPresent(context::setActiveJobId);
             context.end(endEvent);
             return null;
           });
@@ -143,7 +146,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
               c ->
                   circuitBreaker.run(
                       () -> {
-                        activeJobId.ifPresent(id -> c.setActiveJobId(id));
+                        activeJobId.ifPresent(c::setActiveJobId);
                         c.end(endEvent);
                         return null;
                       }));
@@ -156,8 +159,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (isDisabled) {
       return;
     }
+    log.debug("onJobStart called [{}].", jobStart);
     activeJobId = Optional.of(jobStart.jobId());
-    log.debug("onJobStart called {}", jobStart);
     initializeContextFactoryIfNotInitialized();
     meterRegistry.counter("openlineage.spark.event.job.start").increment();
     Optional<ActiveJob> activeJob =
@@ -218,6 +221,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (isDisabled) {
       return;
     }
+    log.debug("onJobEnd called [{}].", jobEnd);
     ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
     meterRegistry.counter("openlineage.spark.event.job.end").increment();
     circuitBreaker.run(
@@ -237,11 +241,11 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (isDisabled || sparkVersion.startsWith("2")) {
       return;
     }
-    log.debug("onTaskEnd {}", taskEnd);
+    log.debug("onTaskEnd called [{}].", taskEnd);
     jobMetrics.addMetrics(taskEnd.stageId(), taskEnd.taskMetrics());
   }
 
-  public static ExecutionContext getSparkApplicationExecutionContext() {
+  private static ExecutionContext getSparkApplicationExecutionContext() {
     Optional<SparkContext> sparkContext =
         asJavaOptional(
             SparkSession.getDefaultSession()
@@ -250,20 +254,20 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     return contextFactory.createSparkApplicationExecutionContext(sparkContext.orElse(null));
   }
 
-  public static Optional<ExecutionContext> getSparkSQLExecutionContext(long executionId) {
+  private static Optional<ExecutionContext> getSparkSQLExecutionContext(long executionId) {
     return Optional.ofNullable(
         sparkSqlExecutionRegistry.computeIfAbsent(
             executionId,
             (e) -> contextFactory.createSparkSQLExecutionContext(executionId).orElse(null)));
   }
 
-  public static Optional<ExecutionContext> getExecutionContext(int jobId) {
+  private static Optional<ExecutionContext> getExecutionContext(int jobId) {
     return Optional.ofNullable(
         rddExecutionRegistry.computeIfAbsent(
             jobId, (e) -> contextFactory.createRddExecutionContext(jobId)));
   }
 
-  public static Optional<ExecutionContext> getExecutionContext(int jobId, long executionId) {
+  private static Optional<ExecutionContext> getExecutionContext(int jobId, long executionId) {
     Optional<ExecutionContext> executionContext = getSparkSQLExecutionContext(executionId);
     executionContext.ifPresent(context -> rddExecutionRegistry.put(jobId, context));
     return executionContext;
@@ -284,6 +288,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (isDisabled) {
       return;
     }
+    log.debug("onApplicationEnd called [{}].", applicationEnd);
     meterRegistry.counter("openlineage.spark.event.app.end").increment();
     meterRegistry
         .counter("openlineage.spark.event.app.end.memoryusage")
@@ -308,6 +313,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (isDisabled) {
       return;
     }
+    log.debug("onApplicationStart called [{}].", applicationStart);
     initializeContextFactoryIfNotInitialized(applicationStart.appName());
     meterRegistry.counter("openlineage.spark.event.app.start").increment();
     meterRegistry
@@ -358,7 +364,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     }
   }
 
-  private static void initializeMetrics(OpenLineageConfig openLineageConfig) {
+  private static void initializeMetrics(OpenLineageConfig<?> openLineageConfig) {
     meterRegistry =
         MicrometerProvider.addMeterRegistryFromConfig(openLineageConfig.getMetricsConfig());
     String disabledFacets;
