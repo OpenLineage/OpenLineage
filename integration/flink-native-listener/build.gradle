@@ -1,0 +1,269 @@
+/*
+/* Copyright 2018-2024 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+import org.apache.tools.ant.filters.ReplaceTokens
+
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'pmd'
+    id 'signing'
+    id 'jacoco'
+    id "com.adarshr.test-logger"
+    id 'com.diffplug.spotless'
+    id 'com.github.johnrengelman.shadow'
+    id 'io.freefair.lombok' version "8.10.2"
+    id 'io.openlineage.common-config'
+    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
+}
+
+group = "io.openlineage"
+
+archivesBaseName='openlineage-flink-native-listener'
+
+ext {
+    flinkVersion = project.getProperty('flink.version')
+    flinkVersionShort = flinkVersion.substring(0,4)
+    isReleaseVersion = !version.endsWith('-SNAPSHOT')
+    assertjVersion = '3.25.3'
+    jacksonVersion = "2.15.3"
+    junit5Version = '5.10.2'
+    scalaLibraryVersion = '2.12.7'
+    mockitoVersion = '5.14.1'
+}
+
+
+dependencies {
+    api "io.openlineage:openlineage-java:${project.version}"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+
+    compileOnly "org.apache.flink:flink-core:$flinkVersion"
+    compileOnly "org.apache.flink:flink-runtime:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
+    compileOnly "org.apache.flink:flink-streaming-java:$flinkVersion"
+    // locally deployed https://github.com/pawel-big-lebowski/flink-connector-kafka
+    compileOnly "org.apache.flink:flink-connector-kafka:3.4-SNAPSHOT"
+    compileOnly "org.apache.flink:flink-connector-test-utils:$flinkVersion"
+
+
+    testImplementation "org.scala-lang:scala-library:$scalaLibraryVersion"
+    testImplementation "org.apache.flink:flink-java:$flinkVersion"
+    testImplementation "org.apache.flink:flink-connector-test-utils:$flinkVersion"
+    testImplementation("org.apache.flink:flink-table-test-utils:$flinkVersion") {
+        exclude(group: "org.apache.flink", module: "flink-table-planner-loader")
+    }
+    testImplementation "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
+    testImplementation "org.apache.flink:flink-connector-base:$flinkVersion"
+    testImplementation "org.apache.flink:flink-json:$flinkVersion"
+    // locally deployed https://github.com/pawel-big-lebowski/flink-connector-kafka
+    testImplementation "org.apache.flink:flink-connector-kafka:3.4-SNAPSHOT"
+    testImplementation "org.apache.kafka:kafka-clients:3.4.0"
+    testImplementation "org.testcontainers:kafka:1.20.1"
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation("org.slf4j:slf4j-api:2.0.16")
+    testImplementation("org.slf4j:slf4j-simple:2.0.16")
+
+}
+
+compileJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+compileTestJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+
+task sourceJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+def commonTestConfiguration = {
+    classpath =  project.sourceSets.test.runtimeClasspath
+}
+
+test {
+    jvmArgs(
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+            "--add-opens=java.base/java.io=ALL-UNNAMED",
+            "--add-opens=java.base/java.net=ALL-UNNAMED",
+            "--add-opens=java.base/java.nio=ALL-UNNAMED",
+            "--add-opens=java.base/java.util=ALL-UNNAMED"
+    )
+
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
+}
+
+def reportsDir = "${buildDir}/reports"
+def coverageDir = "${reportsDir}/coverage"
+
+jacoco {
+    toolVersion = '0.8.12'
+    reportsDir = file(coverageDir)
+}
+
+jacocoTestReport {
+    reports {
+        xml {
+            enabled true
+        }
+        html {
+            enabled true
+            destination = file(coverageDir)
+        }
+    }
+}
+
+def validateReleaseVersionProperty = tasks.register("validateReleaseVersionProperty") {
+    group = "verification"
+    description = "Check if the isReleaseVersion property exists and is a boolean"
+    doLast {
+        if (project.hasProperty("isReleaseVersion")) {
+            if (project.property("isReleaseVersion") instanceof Boolean) {
+                logger.lifecycle("isReleaseVersion property exists and is a boolean")
+            } else {
+                throw new GradleException("isReleaseVersion property exists but is not a boolean")
+            }
+        } else {
+            throw new GradleException("isReleaseVersion property does not exist")
+        }
+    }
+}
+
+tasks.named("build").configure {
+    dependsOn(validateReleaseVersionProperty)
+}
+
+tasks.withType(GenerateModuleMetadata.class).configureEach {
+    enabled = false
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'io.openlineage'
+            artifactId = 'openlineage-flink-native-listener'
+
+            from components.java
+
+            artifact sourceJar
+            artifact javadocJar
+
+            pom {
+                name = 'openlineage-flink-native-listener'
+                description = 'OpenLineage listener for Flink'
+                url = 'https://github.com/OpenLineage/OpenLineage'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'openlineage'
+                        name = 'OpenLineage Project'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/OpenLineage/OpenLineage.git'
+                    developerConnection = 'scm:git:ssh://github.com:OpenLineage/OpenLineage.git'
+                    url = 'https://github.com/OpenLineage/OpenLineage'
+                }
+                withXml {
+                    Node pomNode = asNode()
+                    pomNode.remove(pomNode.get("dependencies"))
+                }
+            }
+        }
+    }
+
+    processResources {
+        filter ReplaceTokens, tokens: [
+                "version": project.property("version")
+        ]
+    }
+}
+
+nexusPublishing {
+    repositories {
+        sonatype {
+            username = System.getenv('RELEASE_USERNAME')
+            password = System.getenv('RELEASE_PASSWORD')
+        }
+    }
+}
+
+signing {
+    required { isReleaseVersion }
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.mavenJava
+}
+
+shadowJar {
+    dependencies {
+        exclude(dependency('org.slf4j::'))
+    }
+
+    archiveClassifier = ''
+    exclude 'org/apache/commons/logging/**'
+
+    relocate 'com.fasterxml.jackson', 'io.openlineage.flink.shaded.com.fasterxml.jackson'
+    relocate 'com.github.ok2c.hc5', 'io.openlineage.flink.shaded.com.github.ok2c.hc5'
+    relocate 'org.apache.httpcomponents.client5', 'io.openlineage.flink.shaded.org.apache.httpcomponents.client5'
+    relocate 'org.apache.http', 'io.openlineage.flink.shaded.org.apache.http'
+    relocate 'javassist', 'io.openlineage.flink.shaded.javassist'
+    relocate 'org.yaml', 'io.openlineage.flink.shaded.org.yaml'
+    relocate 'org.apache.hc', 'io.openlineage.flink.shaded.org.apache.hc'
+    relocate 'org.apache.commons.codec', 'io.openlineage.flink.shaded.org.apache.commons.codec'
+    relocate 'org.apache.commons.lang3', 'io.openlineage.flink.shaded.org.apache.commons.lang3'
+    relocate "org.hdrhistogram", "io.openlineage.spark.shaded.org.hdrhistogram"
+    relocate "org.latencyutils", "io.openlineage.spark.shaded.org.latencyutils"
+
+    manifest {
+        attributes(
+                'Created-By': "Gradle ${gradle.gradleVersion}",
+                'Built-By': System.getProperty('user.name'),
+                'Build-Jdk': System.getProperty('java.version'),
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
+    }
+    zip64 true
+}
+
+assemble {
+    dependsOn shadowJar
+}
+
+spotlessJava {
+    dependsOn("compileJava", "compileTestJava")
+}
