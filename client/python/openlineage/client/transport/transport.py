@@ -20,6 +20,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypeVar
 
+import attr
+
 if TYPE_CHECKING:
     from openlineage.client.client import Event
 
@@ -27,6 +29,7 @@ if TYPE_CHECKING:
 _T = TypeVar("_T", bound="Config")
 
 
+@attr.s
 class Config:
     @classmethod
     def from_dict(cls: type[_T], params: dict[str, Any]) -> _T:  # noqa: ARG003

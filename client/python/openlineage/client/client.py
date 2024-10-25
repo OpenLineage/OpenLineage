@@ -10,8 +10,9 @@ from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 import attr
 import yaml
-from openlineage.client.filter import Filter, create_filter
+from openlineage.client.filter import Filter, FilterConfig, create_filter
 from openlineage.client.serde import Serde
+from openlineage.client.utils import deep_merge_dicts
 
 if TYPE_CHECKING:
     from requests import Session
@@ -20,8 +21,17 @@ if TYPE_CHECKING:
 import contextlib
 
 from openlineage.client import event_v2
+from openlineage.client.facets import FacetsConfig
+from openlineage.client.generated.environment_variables_run import (
+    EnvironmentVariable,
+    EnvironmentVariablesRunFacet,
+)
 from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
-from openlineage.client.transport import Transport, TransportFactory, get_default_factory
+from openlineage.client.transport import (
+    Transport,
+    TransportFactory,
+    get_default_factory,
+)
 from openlineage.client.transport.http import HttpConfig, HttpTransport, create_token_provider
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
 
@@ -36,6 +46,24 @@ class OpenLineageClientOptions:
     verify: bool = attr.ib(default=True)
     api_key: str = attr.ib(default=None)
     adapter: HTTPAdapter = attr.ib(default=None)
+
+
+@attr.s
+class OpenLineageConfig:
+    transport: dict[str, Any] | None = attr.ib(factory=dict)
+    facets: FacetsConfig = attr.ib(factory=FacetsConfig)
+    filters: list[FilterConfig] = attr.ib(factory=list)
+
+    @classmethod
+    def from_dict(cls, params: dict[str, Any]) -> OpenLineageConfig:
+        config = cls()
+        if "transport" in params:
+            config.transport = params["transport"]
+        if "facets" in params:
+            config.facets = FacetsConfig(**params["facets"])
+        if "filters" in params:
+            config.filters = [FilterConfig(**filter_config) for filter_config in params["filters"]]
+        return config
 
 
 log = logging.getLogger(__name__)
@@ -53,6 +81,8 @@ class OpenLineageClient:
         session: Session | None = None,
         transport: Transport | None = None,
         factory: TransportFactory | None = None,
+        *,
+        config: dict[str, str] | None = None,
     ) -> None:
         # Set parent's logging level if environment variable is present
         custom_logging_level = os.getenv("OPENLINEAGE_CLIENT_LOGGING", None)
@@ -68,7 +98,9 @@ class OpenLineageClient:
 
         # Make config ellipsis - as a guard value to not try to
         # reload yaml each time config is referred to.
-        self._config: dict[str, dict[str, str]] | None = None
+        self._config: OpenLineageConfig | None = None
+
+        self.user_defined_config: dict[str, str] | None = config
 
         self._alias_env_vars()
 
@@ -78,7 +110,7 @@ class OpenLineageClient:
         log.info("OpenLineageClient will use `%s` transport", self.transport.kind)
 
         self._filters: list[Filter] = []
-        for conf in self.config.get("filters", []):
+        for conf in self.config.filters:
             _filter = create_filter(conf)
             if _filter:
                 self._filters.append(_filter)
@@ -94,7 +126,7 @@ class OpenLineageClient:
 
     @classmethod
     def from_dict(cls: type[_T], config: dict[str, str]) -> _T:
-        return cls(transport=get_default_factory().create(config=config))
+        return cls(config=config)
 
     def filter_event(
         self,
@@ -122,6 +154,8 @@ class OpenLineageClient:
             log.debug("OpenLineage event has been filtered out and will not be emitted.")
             return
 
+        event = self.add_environment_facets(event)
+
         if log.isEnabledFor(logging.DEBUG):
             val = Serde.to_json(event).encode("utf-8")
             log.debug("OpenLineageClient will emit event %s", val)
@@ -129,17 +163,39 @@ class OpenLineageClient:
         log.debug("OpenLineage event successfully emitted.")
 
     @property
-    def config(self) -> dict[str, Any]:
-        """Content of OpenLineage YAML config file."""
+    def config(self) -> OpenLineageConfig:
+        """
+        Retrieves the OpenLineage configuration.
+
+        This property method returns the content of the OpenLineage YAML config file.
+        The configuration is determined by merging sources in the following order of precedence:
+        1. User-defined configuration passed to the client constructor.
+        2. YAML config file located in one of the following paths:
+        - Path specified by the `OPENLINEAGE_CONFIG` environment variable.
+        - Current working directory.
+        - `$HOME/.openlineage`.
+        3. Environment variables with the `OPENLINEAGE__` prefix.
+        If the configuration is not already loaded, it will be constructed by merging the above sources.
+        In case of a TypeError during the parsing of the configuration, a ValueError will be raised indicating
+        that the structure of the config does not match the expected format.
+        """
         if self._config is None:
-            config_path = self._find_yaml_config_path()
-            if config_path:
-                self._config = self._get_config_file_content(config_path)
-            else:
-                self._config = {}
+            config_dict: dict[str, Any] = {}
+            if self.user_defined_config:
+                config_dict = self.user_defined_config
+            if config_path := self._find_yaml_config_path():
+                config_dict = deep_merge_dicts(self._get_config_file_content(config_path), config_dict)
+            if config_from_env_vars := self._load_config_from_env_variables():
+                config_dict = deep_merge_dicts(config_from_env_vars, config_dict)
+            try:
+                self._config = OpenLineageConfig.from_dict(config_dict)
+            except TypeError as e:
+                # raise exception that structure of the config does not match
+                msg = "Failed to parse OpenLineage config."
+                raise ValueError(msg) from e
         return self._config
 
-    def _resolve_transport(self, **kwargs: Any) -> Transport:  # noqa: PLR0911
+    def _resolve_transport(self, **kwargs: Any) -> Transport:
         """
         Resolves the transport mechanism based on the provided arguments or environment settings.
 
@@ -164,9 +220,9 @@ class OpenLineageClient:
             return cast(Transport, kwargs["transport"])
 
         # 3. Check if transport configuration is provided in YAML config file
-        if self.config.get("transport"):
+        if self.config.transport and self.config.transport.get("type"):
             factory = kwargs.get("factory") or get_default_factory()
-            return factory.create(self.config["transport"])
+            return factory.create(self.config.transport)
 
         # 4. Check legacy HTTP transport initialization with url and options
         if kwargs.get("url"):
@@ -174,16 +230,11 @@ class OpenLineageClient:
                 url=kwargs["url"], options=kwargs.get("options"), session=kwargs.get("session")
             )
 
-        # 5. Check transport initialization with env variables
-        if config := self._load_config_from_env_variables():
-            factory = kwargs.get("factory") or get_default_factory()
-            return factory.create(config["transport"])
-
-        # 6. Check HTTP transport initialization with env variables
+        # 5. Check HTTP transport initialization with env variables
         if os.environ.get("OPENLINEAGE_URL"):
             return self._http_transport_from_env_variables()
 
-        # 7. If all else fails, print events to console
+        # 6. If all else fails, print events to console
         from openlineage.client.transport.console import ConsoleConfig, ConsoleTransport
 
         log.warning("Couldn't find any OpenLineage transport configuration; will print events to console.")
@@ -306,9 +357,6 @@ class OpenLineageClient:
 
             cls._insert_into_config(config, keys, env_value)
 
-        if (transport_config := config.get("transport")) is None or transport_config.get("type") is None:
-            return None
-
         return config
 
     @staticmethod
@@ -323,3 +371,28 @@ class OpenLineageClient:
 
         # Overwrite if key already exists
         current[keys[-1]] = value
+
+    def add_environment_facets(self, event: Event) -> Event:
+        """
+        Adds environment variables as facets to the event object.
+        """
+        if isinstance(event, RunEvent) and (env_vars := self._collect_environment_variables()):
+            event.run.facets["environmentVariables"] = EnvironmentVariablesRunFacet(
+                environmentVariables=[
+                    EnvironmentVariable(name=name, value=value) for name, value in env_vars.items()
+                ]
+            )
+        return event
+
+    def _collect_environment_variables(self) -> dict[str, str]:
+        """
+        Collects and returns a dictionary of relevant environment variables.
+        """
+        filtered_vars = {k: v for k, v in os.environ.items() if k in self.config.facets.environment_variables}
+        missing_vars = set(self.config.facets.environment_variables) - set(filtered_vars)
+        if missing_vars:
+            log.warning(
+                "The following environment variables are missing: %s when adding to OpenLineage event",
+                missing_vars,
+            )
+        return filtered_vars

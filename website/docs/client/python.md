@@ -538,6 +538,32 @@ To implement a custom transport, follow the instructions in [`transport.py`](htt
 
 The `type` property (required) must be a fully qualified class name that can be imported.
 
+## Environment Variables Run Facet
+
+To include specific environment variables in OpenLineage events, the `OpenLineageClient` can add them as a facet called `EnvironmentVariablesRunFacet`. This feature allows you to specify which environment variables should be collected and attached to each emitted event.
+
+To enable this, configure the `environment_variables` option within the `facets` section of your `OpenLineageClient` configuration.
+
+<Tabs groupId="env-vars-run-facet">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+facets:
+  environment_variables:
+    - VAR1
+    - VAR2
+```
+
+</TabItem>
+<TabItem value="env-vars" label="Dynamic Environment Variables">
+
+```sh
+OPENLINEAGE__FACETS__ENVIRONMENT_VARIABLES='["VAR1", "VAR2"]'
+```
+
+</TabItem>
+</Tabs>
+
 ## Getting Started
 
 To try out the client, follow the steps below to install and explore OpenLineage, Marquez (the reference implementation of OpenLineage), and the client itself. Then, the instructions will show you how to use these tools to add a run event and datasets to an existing namespace.
