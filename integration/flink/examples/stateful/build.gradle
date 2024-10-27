@@ -22,7 +22,7 @@ shadowJar {
 ext {
     flinkVersion = project.getProperty('flink.version')
     flinkVersionShort = flinkVersion.substring(0,4)
-    hadoopVersion = '3.3.1'
+    hadoopVersion = '3.4.1'
 
     versionsMap = [
             "1.15": ["cassandra": "1.15.4", "kafka": flinkVersion, "jdbc": "1.15.4", "iceberg": "1.3.0", "alternativeShort": "1.15", "protobuf": "NA"],
@@ -43,11 +43,11 @@ dependencies {
         exclude module: 'log4j'
     }
 
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter:5.10.2"
-    testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.20'
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter:5.11.3"
+    testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.22'
     testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
-    implementation 'org.awaitility:awaitility:4.2.0'
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.3.1'
+    implementation 'org.awaitility:awaitility:4.2.2'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.4'
 
     implementation("io.openlineage:openlineage-java:$project.version")
     compileOnly "org.apache.flink:flink-java:$flinkVersion"
@@ -78,7 +78,7 @@ dependencies {
     implementation 'io.confluent:kafka-protobuf-serializer:7.6.0'
     implementation 'io.confluent:kafka-schema-registry-client:7.6.0'
     implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.9.1'
-    implementation 'org.postgresql:postgresql:42.7.2'
+    implementation 'org.postgresql:postgresql:42.7.4'
     implementation "org.apache.hadoop:hadoop-hdfs:$hadoopVersion"
     implementation "org.apache.hadoop:hadoop-common:$hadoopVersion"
     implementation("org.apache.hadoop:hadoop-minicluster:$hadoopVersion") {
