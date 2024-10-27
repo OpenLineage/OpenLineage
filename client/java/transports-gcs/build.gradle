@@ -23,7 +23,7 @@ ext {
 }
 
 dependencies {
-    implementation('com.google.cloud:google-cloud-storage:2.43.2')
+    implementation('com.google.cloud:google-cloud-storage:2.44.1')
 
     testImplementation('com.google.cloud:google-cloud-nio:0.127.25')
 }
