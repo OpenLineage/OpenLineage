@@ -211,7 +211,7 @@ For exploring visually, we’ll also want to start up the Marquez web project. W
 containers, run the following command in a new terminal:
 
 ```bash
-docker run --network spark_default -p 3000:3000 -e MARQUEZ_HOST=marquez-api -e MARQUEZ_PORT=5000 --link marquez-api:marquez-api marquezproject/marquez-web:0.19.1
+docker run --network spark_default -p 3000:3000 -e MARQUEZ_HOST=marquez-api -e MARQUEZ_PORT=5000 -e WEB_PORT=3000 --link marquez-api:marquez-api marquezproject/marquez-web:0.19.1
 ```
 
 Now open a new browser tab and navigate to `http://localhost:3000`. You should see a screen like the following:

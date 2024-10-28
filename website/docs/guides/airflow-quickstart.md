@@ -110,6 +110,7 @@ services:
     environment:
       - MARQUEZ_HOST=api
       - MARQUEZ_PORT=5000
+      - WEB_PORT=3000
     ports:
       - "3000:3000"
     depends_on:
