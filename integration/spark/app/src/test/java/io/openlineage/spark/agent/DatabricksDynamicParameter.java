@@ -19,30 +19,50 @@ import org.slf4j.Logger;
 @Getter
 public enum DatabricksDynamicParameter implements DynamicParameter {
 
+  // WORKSPACE PARAMETERS
+
+  Host("workspace.host"),
+
+  Token("workspace.token"),
+
+  // CLUSTER PARAMETERS
+
+  /** The Spark version as provided by Gradle. This case is not using the openlineage prefix. */
+  SparkVersion("spark.version", null, "3.5.2"),
+
   // DEVELOPMENT PARAMETERS
 
   /**
    * The ID of the cluster to use. If specified, the tests will use this existing cluster instead of
    * creating a new one.
    */
-  ClusterId("clusterId", ""),
+  ClusterId("development.clusterId", ""),
 
   /**
    * When set to {@code true}, prevents the EMR cluster from terminating after tests complete. This
    * allows for manual inspection and debugging of the cluster state.
    */
-  PreventClusterTermination("preventClusterTermination", "false"),
+  PreventClusterTermination("development.preventClusterTermination", "false"),
 
-  // WORKSPACE PARAMETERS
+  /**
+   * The location where the events should be stored for troubleshooting purposes. Each test has its
+   * own file with execution timestamp as the prefix and the name of the script being executed.
+   */
+  EventsFileLocation("development.eventsFileLocation", "./build"),
+  FetchEvents("development.fetchEvents", "./build"),
 
-  Host("host"),
-
-  Token("token"),
-
-  // CLUSTER PARAMETERS
-
-  /** The Spark version as provided by Gradle. This case is not using the openlineage prefix. */
-  SparkVersion("spark.version", null, null);
+  /**
+   * When set to {@code true}, the given logs are fetched and stored under specified location. They
+   * have the execution timestamp prefix added to the name of the file. It can take up to several
+   * minutes for the logs to be available on DBFS, so you may consider keeping this function off if
+   * you don't need them.
+   */
+  FetchLog4jLogs("development.logs.log4j.enabled", "false"),
+  FetchStdout("development.logs.stdout.enabled", "false"),
+  FetchStderr("development.logs.stderr.enabled", "false"),
+  Log4jLogsLocation("development.logs.log4j.location", "./build"),
+  StdoutLocation("development.logs.stdout.location", "./build"),
+  StderrLocation("development.logs.stderr.location", "./build");
 
   private final String parameterName;
   private final String defaultValue;
