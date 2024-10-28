@@ -865,7 +865,7 @@ jobs:
             - set_java_spark_scala_version:
                   env-variant: << parameters.env-variant >>
             - run: ./gradlew --console=plain shadowJar -x test -Pjava.compile.home=${JAVA17_HOME}
-            - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test   -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME}  -PdatabricksHost=${DATABRICKS_HOST} -PdatabricksToken=${DATABRICKS_TOKEN}
+            - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Dopenlineage.tests.databricks.host=$DATABRICKS_HOST -Dopenlineage.tests.databricks.token=$DATABRICKS_TOKEN
             - store_test_results:
                 path: app/build/test-results/databricksIntegrationTest
             - store_artifacts:
