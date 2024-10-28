@@ -38,6 +38,7 @@ services:
     environment:
       - MARQUEZ_HOST=marquez-api
       - MARQUEZ_PORT=5000
+      - WEB_PORT=3000
     ports:
       - "3000:3000"
     stdin_open: true
