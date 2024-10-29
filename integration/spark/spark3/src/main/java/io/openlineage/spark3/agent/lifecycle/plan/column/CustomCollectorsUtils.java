@@ -8,8 +8,6 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
@@ -39,13 +37,6 @@ public class CustomCollectorsUtils {
    * visitors based on the Spark version and the libraries in use.
    */
   private static List<ColumnLevelLineageVisitor> getCollectors(ColumnLevelLineageContext context) {
-    return concatLists(
-        LegacyColumnLineageVisitorsLoader.getVisitors(),
-        context.getOlContext().getColumnLevelLineageVisitors());
-  }
-
-  private static List<ColumnLevelLineageVisitor> concatLists(
-      List<ColumnLevelLineageVisitor> list1, List<ColumnLevelLineageVisitor> list2) {
-    return Stream.concat(list1.stream(), list2.stream()).collect(Collectors.toList());
+    return context.getOlContext().getColumnLevelLineageVisitors();
   }
 }
