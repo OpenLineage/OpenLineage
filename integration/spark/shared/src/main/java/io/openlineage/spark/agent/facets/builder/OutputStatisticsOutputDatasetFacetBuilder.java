@@ -49,6 +49,7 @@ public class OutputStatisticsOutputDatasetFacetBuilder
         jobMetricsHolder.pollMetrics(context.getActiveJobId().get());
     if (metrics.containsKey(JobMetricsHolder.Metric.WRITE_BYTES)
         || metrics.containsKey(JobMetricsHolder.Metric.WRITE_RECORDS)) {
+      // TODO: make sure any of the values is above 0
       consumer.accept(
           "outputStatistics",
           context
