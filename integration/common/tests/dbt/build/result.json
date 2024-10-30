@@ -43,7 +43,13 @@
 			}
 		],
 		"job": {
-			"facets": {},
+			"facets": {
+				"jobType": {
+					"jobType": "MODEL",
+					"integration": "DBT",
+					"processingType": "BATCH"
+				}
+			},
 			"name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model.build.run",
 			"namespace": "job-namespace"
 		},
@@ -77,7 +83,13 @@
 			}
 		],
 		"job": {
-			"facets": {},
+			"facets": {
+				"jobType": {
+					"jobType": "SNAPSHOT",
+					"integration": "DBT",
+					"processingType": "BATCH"
+				}
+			},
 			"name": "random-gcp-project.dbt_test1.dbt_bigquery_test.orders_snapshot.build.snapshot",
 			"namespace": "job-namespace"
 		},
@@ -154,7 +166,13 @@
 			}
 		],
 		"job": {
-			"facets": {},
+			"facets": {
+				"jobType": {
+					"jobType": "TEST",
+					"integration": "DBT",
+					"processingType": "BATCH"
+				}
+			},
 			"name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model.build.test",
 			"namespace": "job-namespace"
 		},
