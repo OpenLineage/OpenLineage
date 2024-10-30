@@ -1,4 +1,3 @@
-// TODO: that is Airflow specific facet that should be placed in new system-specific directory
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://openlineage.io/spec/facets/1-0-0/AirflowRunFacet.json",
@@ -101,7 +100,7 @@
           "type": "string"
         },
         "tags": {
-          "type": "string"
+          "type": "array"
         },
         "start_date": {
           "type": "string",
@@ -134,7 +133,7 @@
         }
       },
       "additionalProperties": true,
-      "required": ["duration", "try_number"]
+      "required": ["try_number"]
     },
     "DagRun": {
       "type": "object",
