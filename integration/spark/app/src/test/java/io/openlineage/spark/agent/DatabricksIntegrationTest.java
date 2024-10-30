@@ -5,23 +5,14 @@
 
 package io.openlineage.spark.agent;
 
-import static io.openlineage.spark.agent.DatabricksUtils.DBFS_EVENTS_FILE;
-import static io.openlineage.spark.agent.DatabricksUtils.init;
-import static io.openlineage.spark.agent.DatabricksUtils.platformVersion;
-import static io.openlineage.spark.agent.DatabricksUtils.runScript;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.databricks.sdk.WorkspaceClient;
-import com.databricks.sdk.core.DatabricksConfig;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFieldsAdditional;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunFacet;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,7 +20,6 @@ import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -46,55 +36,65 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class DatabricksIntegrationTest {
 
-  private static WorkspaceClient workspace;
-  private static String clusterId;
-  private static final String executionTimestamp =
-      ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
-
-  @BeforeAll
-  @SneakyThrows
-  public static void setup() {
-    DatabricksConfig config =
-        new DatabricksConfig()
-            .setHost(DatabricksDynamicParameter.Host.resolve())
-            .setToken(DatabricksDynamicParameter.Token.resolve());
-
-    workspace = new WorkspaceClient(config);
-    clusterId = init(workspace);
-  }
+  private static final DatabricksEnvironment databricks =
+      new DatabricksEnvironment(
+          DatabricksEnvironment.DatabricksEnvironmentProperties.builder()
+              .workspace(
+                  DatabricksEnvironment.DatabricksEnvironmentProperties.Workspace.builder()
+                      .host(DatabricksDynamicParameter.Host.resolve())
+                      .token(DatabricksDynamicParameter.Token.resolve())
+                      .build())
+              .cluster(
+                  DatabricksEnvironment.DatabricksEnvironmentProperties.Cluster.builder()
+                      .sparkVersion(DatabricksDynamicParameter.SparkVersion.resolve())
+                      .build())
+              .development(
+                  DatabricksEnvironment.DatabricksEnvironmentProperties.Development.builder()
+                      .existingClusterId(DatabricksDynamicParameter.ClusterId.resolve())
+                      .preventClusterTermination(
+                          Boolean.parseBoolean(
+                              DatabricksDynamicParameter.PreventClusterTermination.resolve()))
+                      .fetchLog4jLogs(
+                          Boolean.parseBoolean(DatabricksDynamicParameter.FetchLog4jLogs.resolve()))
+                      .log4jLogsLocation(DatabricksDynamicParameter.Log4jLogsLocation.resolve())
+                      .fetchStdout(
+                          Boolean.parseBoolean(DatabricksDynamicParameter.FetchStdout.resolve()))
+                      .stdoutLocation(DatabricksDynamicParameter.StdoutLocation.resolve())
+                      .fetchStderr(
+                          Boolean.parseBoolean(DatabricksDynamicParameter.FetchStderr.resolve()))
+                      .stderrLocation(DatabricksDynamicParameter.StderrLocation.resolve())
+                      .fetchEvents(
+                          Boolean.parseBoolean(DatabricksDynamicParameter.FetchEvents.resolve()))
+                      .eventsFileLocation(DatabricksDynamicParameter.EventsFileLocation.resolve())
+                      .build())
+              .build());
+  private final String platformVersion = databricks.getPlatformVersion();
 
   @BeforeEach
   public void beforeEach() {
-    workspace.dbfs().delete(DBFS_EVENTS_FILE);
+    databricks.deleteEventsFile();
   }
 
   @AfterAll
   public static void shutdown() {
-    if (clusterId != null) {
-      boolean existingClusterUsed = "".equals(DatabricksDynamicParameter.ClusterId.resolve());
-      DatabricksUtils.shutdown(
-          workspace,
-          clusterId,
-          Boolean.parseBoolean(DatabricksDynamicParameter.PreventClusterTermination.resolve()),
-          existingClusterUsed,
-          executionTimestamp);
-    }
+    databricks.fetchLogs();
+    databricks.close();
   }
 
   @Test
   @SneakyThrows
   void testCreateTableAsSelect() {
-    List<RunEvent> runEvents = runScript(workspace, clusterId, "ctas.py", executionTimestamp);
+    List<RunEvent> runEvents = databricks.runScript("ctas.py");
     RunEvent lastEvent = runEvents.get(runEvents.size() - 1);
 
     OutputDataset outputDataset = lastEvent.getOutputs().get(0);
     InputDataset inputDataset = lastEvent.getInputs().get(0);
 
     assertThat(outputDataset.getNamespace()).isEqualTo("dbfs");
-    assertThat(outputDataset.getName()).isEqualTo("/user/hive/warehouse/ctas_" + platformVersion());
+    assertThat(outputDataset.getName()).isEqualTo("/user/hive/warehouse/ctas_" + platformVersion);
 
     assertThat(inputDataset.getNamespace()).isEqualTo("dbfs");
-    assertThat(inputDataset.getName()).isEqualTo("/user/hive/warehouse/temp_" + platformVersion());
+    assertThat(inputDataset.getName()).isEqualTo("/user/hive/warehouse/temp_" + platformVersion);
 
     // test DatabricksEnvironmentFacetBuilder handler
     RunEvent eventWithDatabricksProperties =
@@ -135,8 +135,7 @@ class DatabricksIntegrationTest {
   @Test
   @SneakyThrows
   void testNarrowTransformation() {
-    List<RunEvent> runEvents =
-        runScript(workspace, clusterId, "narrow_transformation.py", executionTimestamp);
+    List<RunEvent> runEvents = databricks.runScript("narrow_transformation.py");
     assertThat(runEvents).isNotEmpty();
 
     // assert start event exists
@@ -162,14 +161,13 @@ class DatabricksIntegrationTest {
 
     assertThat(completeEvent).isPresent();
     assertThat(completeEvent.get().getOutputs().get(0).getName())
-        .isEqualTo("/data/path/to/output/narrow_transformation_" + platformVersion());
+        .isEqualTo("/data/path/to/output/narrow_transformation_" + platformVersion);
   }
 
   @Test
   @SneakyThrows
   void testWideTransformation() {
-    List<RunEvent> runEvents =
-        runScript(workspace, clusterId, "wide_transformation.py", executionTimestamp);
+    List<RunEvent> runEvents = databricks.runScript("wide_transformation.py");
     assertThat(runEvents).isNotEmpty();
 
     // assert start event exists
@@ -189,13 +187,12 @@ class DatabricksIntegrationTest {
 
     assertThat(completeEvent).isPresent();
     assertThat(completeEvent.get().getOutputs().get(0).getName())
-        .isEqualTo("/data/output/wide_transformation/result_" + platformVersion());
+        .isEqualTo("/data/output/wide_transformation/result_" + platformVersion);
   }
 
   @Test
   void testWriteReadFromTableWithLocation() {
-    List<RunEvent> runEvents =
-        runScript(workspace, clusterId, "dataset_names.py", executionTimestamp);
+    List<RunEvent> runEvents = databricks.runScript("dataset_names.py");
 
     // find complete event with output dataset containing name
     OutputDataset outputDataset =
@@ -224,7 +221,7 @@ class DatabricksIntegrationTest {
   @Test
   @SneakyThrows
   void testMergeInto() {
-    List<RunEvent> runEvents = runScript(workspace, clusterId, "merge_into.py", executionTimestamp);
+    List<RunEvent> runEvents = databricks.runScript("merge_into.py");
 
     RunEvent event =
         runEvents.stream()
@@ -244,41 +241,41 @@ class DatabricksIntegrationTest {
             .getAdditionalProperties();
 
     assertThat(event.getOutputs()).hasSize(1);
-    assertThat(event.getOutputs().get(0).getName()).endsWith("events_" + platformVersion());
+    assertThat(event.getOutputs().get(0).getName()).endsWith("events_" + platformVersion);
 
     assertThat(event.getInputs()).hasSize(2);
     assertThat(event.getInputs().stream().map(d -> d.getName()).collect(Collectors.toList()))
         .containsExactlyInAnyOrder(
-            "/user/hive/warehouse/test_db.db/updates_" + platformVersion(),
-            "/user/hive/warehouse/test_db.db/events_" + platformVersion());
+            "/user/hive/warehouse/test_db.db/updates_" + platformVersion,
+            "/user/hive/warehouse/test_db.db/events_" + platformVersion);
 
     assertThat(fields).hasSize(2);
     assertThat(fields.get("last_updated_at").getInputFields()).hasSize(1);
     assertThat(fields.get("last_updated_at").getInputFields().get(0))
         .hasFieldOrPropertyWithValue("namespace", "dbfs")
         .hasFieldOrPropertyWithValue(
-            "name", "/user/hive/warehouse/test_db.db/updates_" + platformVersion())
+            "name", "/user/hive/warehouse/test_db.db/updates_" + platformVersion)
         .hasFieldOrPropertyWithValue("field", "updated_at");
 
     assertThat(fields.get("event_id").getInputFields()).hasSize(2);
     assertThat(
             fields.get("event_id").getInputFields().stream()
-                .filter(e -> e.getName().endsWith("updates_" + platformVersion()))
+                .filter(e -> e.getName().endsWith("updates_" + platformVersion))
                 .findFirst()
                 .get())
         .hasFieldOrPropertyWithValue("namespace", "dbfs")
         .hasFieldOrPropertyWithValue(
-            "name", "/user/hive/warehouse/test_db.db/updates_" + platformVersion())
+            "name", "/user/hive/warehouse/test_db.db/updates_" + platformVersion)
         .hasFieldOrPropertyWithValue("field", "event_id");
 
     assertThat(
             fields.get("event_id").getInputFields().stream()
-                .filter(e -> e.getName().endsWith("events_" + platformVersion()))
+                .filter(e -> e.getName().endsWith("events_" + platformVersion))
                 .findFirst()
                 .get())
         .hasFieldOrPropertyWithValue("namespace", "dbfs")
         .hasFieldOrPropertyWithValue(
-            "name", "/user/hive/warehouse/test_db.db/events_" + platformVersion())
+            "name", "/user/hive/warehouse/test_db.db/events_" + platformVersion)
         .hasFieldOrPropertyWithValue("field", "event_id");
   }
 }
