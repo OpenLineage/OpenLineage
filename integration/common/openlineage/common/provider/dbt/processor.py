@@ -19,6 +19,7 @@ from openlineage.client.facet_v2 import (
     data_quality_assertions_dataset,
     datasource_dataset,
     documentation_dataset,
+    job_type_job,
     output_statistics_output_dataset,
     parent_run,
     schema_dataset,
@@ -259,12 +260,14 @@ class DbtArtifactProcessor:
 
             run_id = str(generate_new_uuid())
             if name.startswith("snapshot."):
+                jobType = "SNAPSHOT"
                 job_name = (
                     f"{output_node['database']}.{output_node['schema']}"
                     f".{self.removeprefix(run['unique_id'], 'snapshot.')}"
                     + (".build.snapshot" if self.command == "build" else ".snapshot")
                 )
             else:
+                jobType = "MODEL"
                 job_name = (
                     f"{output_node['database']}.{output_node['schema']}"
                     f".{self.removeprefix(run['unique_id'], 'model.')}"
@@ -276,7 +279,14 @@ class DbtArtifactProcessor:
             else:
                 sql = output_node["compiled_sql"]
 
-            job_facets: Dict[str, JobFacet] = {}
+            job_facets: Dict[str, JobFacet] = {
+                "jobType": job_type_job.JobTypeJobFacet(
+                    jobType=jobType,
+                    integration="DBT",
+                    processingType="BATCH",
+                    producer=self.producer,
+                )
+            }
             if sql:
                 job_facets["sql"] = sql_job.SQLJobFacet(sql)
 
@@ -327,6 +337,15 @@ class DbtArtifactProcessor:
                 + (".build.test" if self.command == "build" else ".test")
             )
 
+            job_facets: Dict[str, JobFacet] = {
+                "jobType": job_type_job.JobTypeJobFacet(
+                    jobType="TEST",
+                    integration="DBT",
+                    processingType="BATCH",
+                    producer=self.producer,
+                )
+            }
+
             run_id = str(generate_new_uuid())
             dataset_facets: Dict[str, InputDatasetFacet] = {"dataQualityAssertions": assertion_facet}
             events.add(
@@ -335,7 +354,7 @@ class DbtArtifactProcessor:
                     started_at,
                     completed_at,
                     self.get_run(run_id),
-                    Job(self.job_namespace, job_name),
+                    Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
                     [
                         InputDataset(
                             namespace=namespace,
