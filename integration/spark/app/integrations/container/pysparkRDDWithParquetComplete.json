@@ -2,7 +2,7 @@
   "eventType": "COMPLETE",
   "job": {
     "namespace": "testRddWithParquet",
-    "name": "open_lineage_integration_rd_d_with_parquet.execute_insert_into_hadoop_fs_relation_command.tmp_rdd_c"
+    "name": "open_lineage_integration_rdd_with_parquet.execute_insert_into_hadoop_fs_relation_command.tmp_rdd_c"
   },
   "inputs": [
     {
