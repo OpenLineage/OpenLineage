@@ -557,8 +557,8 @@ jobs:
 
   release-integration-spark:
     working_directory: ~/openlineage/integration/spark
-    docker:
-      - image: cimg/openjdk:17.0
+    machine:
+      image: ubuntu-2404:current
     steps:
       - *checkout_project_root
       - run:
@@ -569,6 +569,7 @@ jobs:
             - v1-release-client-java-{{ checksum "/tmp/checksum.txt" }}
       - attach_workspace:
           at: ~/
+      - set_java_version
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
@@ -576,8 +577,8 @@ jobs:
           export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
 
           # Publish *.jar
-          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository --info -Pscala.binary.version=2.12 -Pjava.compile.home=/usr/local/jdk-17.0.11
-          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository --info -Pscala.binary.version=2.13 -Pjava.compile.home=/usr/local/jdk-17.0.11
+          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository --info -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
+          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository --info -Pscala.binary.version=2.13 -Pjava.compile.home=${JAVA17_HOME}
       - store_artifacts:
           path: ./build/libs
           destination: spark-client-artifacts
