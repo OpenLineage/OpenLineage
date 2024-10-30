@@ -22,7 +22,6 @@ import io.openlineage.client.transports.CompositeConfig;
 import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.KafkaConfig;
-import io.openlineage.client.transports.KinesisConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
 import java.util.Collections;
@@ -70,14 +69,10 @@ class ArgumentParserTest {
     SparkOpenLineageConfig configKafka =
         ArgumentParser.parse(
             new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "kafka"));
-    SparkOpenLineageConfig configKinesis =
-        ArgumentParser.parse(
-            new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "kinesis"));
 
     assertThat(config.getTransportConfig()).isInstanceOf(ConsoleConfig.class);
     assertThat(configHttp.getTransportConfig()).isInstanceOf(HttpConfig.class);
     assertThat(configKafka.getTransportConfig()).isInstanceOf(KafkaConfig.class);
-    assertThat(configKinesis.getTransportConfig()).isInstanceOf(KinesisConfig.class);
   }
 
   @Test
@@ -142,25 +137,6 @@ class ArgumentParserTest {
     KafkaConfig transportConfig = (KafkaConfig) config.getTransportConfig();
     assertEquals("test", transportConfig.getTopicName());
     assertEquals("explicit-key", transportConfig.getMessageKey());
-    assertEquals("test1", transportConfig.getProperties().get("test1"));
-    assertEquals("test2", transportConfig.getProperties().get("test2"));
-  }
-
-  @Test
-  void testConfToKinesisConfig() {
-    SparkConf sparkConf =
-        new SparkConf()
-            .set("spark.openlineage.transport.type", "kinesis")
-            .set("spark.openlineage.transport.streamName", "test")
-            .set("spark.openlineage.transport.region", "test")
-            .set("spark.openlineage.transport.roleArn", "test")
-            .set("spark.openlineage.transport.properties.test1", "test1")
-            .set("spark.openlineage.transport.properties.test2", "test2");
-    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
-    KinesisConfig transportConfig = (KinesisConfig) config.getTransportConfig();
-    assertEquals("test", transportConfig.getStreamName());
-    assertEquals("test", transportConfig.getRegion());
-    assertEquals("test", transportConfig.getRoleArn());
     assertEquals("test1", transportConfig.getProperties().get("test1"));
     assertEquals("test2", transportConfig.getProperties().get("test2"));
   }

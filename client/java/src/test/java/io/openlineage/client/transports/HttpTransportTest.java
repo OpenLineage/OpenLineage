@@ -9,16 +9,15 @@ import static io.openlineage.client.Events.datasetEvent;
 import static io.openlineage.client.Events.jobEvent;
 import static io.openlineage.client.Events.runEvent;
 import static java.util.Collections.singletonMap;
-import static org.apache.http.HttpHeaders.ACCEPT;
-import static org.apache.http.HttpHeaders.CONTENT_TYPE;
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
+import static org.apache.hc.core5.http.ContentType.APPLICATION_JSON;
+import static org.apache.hc.core5.http.HttpHeaders.ACCEPT;
+import static org.apache.hc.core5.http.HttpHeaders.CONTENT_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,20 +35,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
-import org.apache.http.HttpEntity;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.config.RequestConfig.Builder;
-import org.apache.http.client.entity.GzipCompressingEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.*;
-import org.apache.http.impl.client.CloseableHttpClient;
+import lombok.SneakyThrows;
+import org.apache.hc.client5.http.entity.GzipCompressingEntity;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.NameValuePair;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.MockedStatic;
 
+@SuppressWarnings("unchecked")
 class HttpTransportTest {
 
   @Test
@@ -81,13 +80,14 @@ class HttpTransportTest {
     OpenLineageClient client = new OpenLineageClient(transport);
 
     CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
-    when(response.getStatusLine().getStatusCode()).thenReturn(200);
+    when(response.getCode()).thenReturn(200);
 
-    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
+    when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
+        .thenReturn(response);
 
     client.emit(runEvent());
 
-    verify(http, times(1)).execute(any());
+    verify(http, times(1)).execute(any(), any(HttpClientResponseHandler.class));
   }
 
   @Test
@@ -100,6 +100,7 @@ class HttpTransportTest {
   }
 
   @Test
+  @SneakyThrows
   void httpTransportDefaultEndpoint() throws IOException {
     CloseableHttpClient http = mock(CloseableHttpClient.class);
     HttpConfig config = new HttpConfig();
@@ -107,22 +108,24 @@ class HttpTransportTest {
     Transport transport = new HttpTransport(http, config);
     OpenLineageClient client = new OpenLineageClient(transport);
 
-    ArgumentCaptor<HttpUriRequest> captor = ArgumentCaptor.forClass(HttpUriRequest.class);
+    ArgumentCaptor<ClassicHttpRequest> captor = ArgumentCaptor.forClass(ClassicHttpRequest.class);
 
     CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
 
-    when(response.getStatusLine().getStatusCode()).thenReturn(200);
-    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
+    when(response.getCode()).thenReturn(200);
+    when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
+        .thenReturn(response);
 
     client.emit(runEvent());
 
-    verify(http, times(1)).execute(captor.capture());
+    verify(http, times(1)).execute(captor.capture(), any(HttpClientResponseHandler.class));
 
-    assertThat(captor.getValue().getURI())
+    assertThat(captor.getValue().getUri())
         .isEqualTo(URI.create("https://localhost:1500/api/v1/lineage"));
   }
 
   @Test
+  @SneakyThrows
   void httpTransportAcceptsExplicitEndpoint() throws IOException {
     CloseableHttpClient http = mock(CloseableHttpClient.class);
     HttpConfig config = new HttpConfig();
@@ -131,18 +134,19 @@ class HttpTransportTest {
     Transport transport = new HttpTransport(http, config);
     OpenLineageClient client = new OpenLineageClient(transport);
 
-    ArgumentCaptor<HttpUriRequest> captor = ArgumentCaptor.forClass(HttpUriRequest.class);
+    ArgumentCaptor<ClassicHttpRequest> captor = ArgumentCaptor.forClass(ClassicHttpRequest.class);
 
     CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
 
-    when(response.getStatusLine().getStatusCode()).thenReturn(200);
-    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
+    when(response.getCode()).thenReturn(200);
+    when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
+        .thenReturn(response);
 
     client.emit(runEvent());
 
-    verify(http, times(1)).execute(captor.capture());
+    verify(http, times(1)).execute(captor.capture(), any(HttpClientResponseHandler.class));
 
-    assertThat(captor.getValue().getURI()).isEqualTo(URI.create("https://localhost:1500/"));
+    assertThat(captor.getValue().getUri()).isEqualTo(URI.create("https://localhost:1500/"));
   }
 
   @Test
@@ -154,10 +158,11 @@ class HttpTransportTest {
     OpenLineageClient client = new OpenLineageClient(transport);
 
     CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
-    when(response.getStatusLine().getStatusCode()).thenReturn(500);
+    when(response.getCode()).thenReturn(500);
     when(response.getEntity()).thenReturn(new StringEntity("whoops!", ContentType.TEXT_PLAIN));
 
-    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
+    when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
+        .thenThrow(new HttpTransportResponseException(500, "whoops!"));
 
     HttpTransportResponseException thrown =
         assertThrows(HttpTransportResponseException.class, () -> client.emit(runEvent()));
@@ -166,75 +171,63 @@ class HttpTransportTest {
     assertThat(thrown.getMessage()).contains("500");
     assertThat(thrown.getMessage()).contains("whoops!");
 
-    verify(http, times(1)).execute(any());
+    verify(http, times(1)).execute(any(), any(HttpClientResponseHandler.class));
   }
 
   @Test
   void httpTransportRaisesOnConnectionFail() throws IOException {
     CloseableHttpClient http = mock(CloseableHttpClient.class);
-    Transport transport = HttpTransport.builder().uri("http://localhost:1500").http(http).build();
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("http://localhost:1500"));
+    Transport transport = new HttpTransport(http, config);
     OpenLineageClient client = new OpenLineageClient(transport);
 
-    when(http.execute(any(HttpUriRequest.class))).thenThrow(new IOException(""));
+    when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
+        .thenThrow(new IOException("Connection failed"));
 
     assertThrows(OpenLineageClientException.class, () -> client.emit(runEvent()));
 
-    verify(http, times(1)).execute(any());
+    verify(http, times(1)).execute(any(), any(HttpClientResponseHandler.class));
   }
 
   @Test
   void httpTransportBuilderRaisesOnBadUri() throws IOException {
     CloseableHttpClient http = mock(CloseableHttpClient.class);
-    HttpTransport.Builder builder = HttpTransport.builder().http(http);
-    assertThrows(OpenLineageClientException.class, () -> builder.uri("!http://localhost:1500!"));
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
+    config.setEndpoint("/");
+    assertThrows(OpenLineageClientException.class, () -> new HttpTransport(http, config));
   }
 
   @Test
+  @SneakyThrows
   void httpTransportSendsAuthAndQueryParams() throws IOException {
     CloseableHttpClient http = mock(CloseableHttpClient.class);
-    Transport transport =
-        HttpTransport.builder()
-            .uri("http://localhost:1500", singletonMap("param", "value"))
-            .http(http)
-            .apiKey("apiKey")
-            .build();
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500"));
+    config.setUrlParams(singletonMap("param", "value"));
+    ApiKeyTokenProvider auth = new ApiKeyTokenProvider();
+    auth.setApiKey("apiKey");
+    config.setAuth(auth);
+    Transport transport = new HttpTransport(http, config);
 
     OpenLineageClient client = new OpenLineageClient(transport);
     CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
 
-    when(response.getStatusLine().getStatusCode()).thenReturn(200);
-    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
+    when(response.getCode()).thenReturn(200);
+    when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
+        .thenReturn(response);
 
-    ArgumentCaptor<HttpUriRequest> captor = ArgumentCaptor.forClass(HttpUriRequest.class);
+    ArgumentCaptor<ClassicHttpRequest> captor = ArgumentCaptor.forClass(ClassicHttpRequest.class);
 
     client.emit(runEvent());
 
-    verify(http, times(1)).execute(captor.capture());
+    verify(http, times(1)).execute(captor.capture(), any(HttpClientResponseHandler.class));
 
     assertThat(captor.getValue().getFirstHeader("Authorization").getValue())
         .isEqualTo("Bearer apiKey");
-    assertThat(captor.getValue().getURI())
-        .isEqualTo(URI.create("http://localhost:1500/api/v1/lineage?param=value"));
-  }
-
-  @Test
-  void clientClosesNetworkResources() throws IOException {
-    CloseableHttpClient http = mock(CloseableHttpClient.class);
-    HttpConfig config = new HttpConfig();
-    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
-    Transport transport = new HttpTransport(http, config);
-    OpenLineageClient client = new OpenLineageClient(transport);
-
-    CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
-    when(response.getStatusLine().getStatusCode()).thenReturn(200);
-    when(response.getEntity().isStreaming()).thenReturn(true);
-
-    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
-
-    client.emit(runEvent());
-
-    verify(response, times(1)).close();
-    verify(response.getEntity().getContent(), times(1)).close();
+    assertThat(captor.getValue().getUri())
+        .isEqualTo(URI.create("https://localhost:1500/api/v1/lineage?param=value"));
   }
 
   @Test
@@ -254,10 +247,10 @@ class HttpTransportTest {
     OpenLineageClient client = new OpenLineageClient(transport);
 
     CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
-    when(response.getStatusLine().getStatusCode()).thenReturn(200);
+    when(response.getCode()).thenReturn(200);
     when(response.getEntity().isStreaming()).thenReturn(true);
-    Map<String, HttpPost> map = new HashMap<>();
-    when(http.execute(any(HttpUriRequest.class)))
+    Map<String, ClassicHttpRequest> map = new HashMap<>();
+    when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
         .thenAnswer(
             invocation -> {
               map.put("test", invocation.getArgument(0));
@@ -266,7 +259,7 @@ class HttpTransportTest {
 
     client.emit(runEvent());
     Map<String, String> resultHeaders =
-        Arrays.stream(map.get("test").getAllHeaders())
+        Arrays.stream(map.get("test").getHeaders())
             .collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
     assertThat(resultHeaders)
         .containsEntry(ACCEPT, APPLICATION_JSON.toString())
@@ -286,10 +279,10 @@ class HttpTransportTest {
     OpenLineageClient client = new OpenLineageClient(transport);
 
     CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
-    when(response.getStatusLine().getStatusCode()).thenReturn(200);
+    when(response.getCode()).thenReturn(200);
     when(response.getEntity().isStreaming()).thenReturn(true);
-    Map<String, HttpPost> map = new HashMap<>();
-    when(http.execute(any(HttpUriRequest.class)))
+    Map<String, ClassicHttpRequest> map = new HashMap<>();
+    when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
         .thenAnswer(
             invocation -> {
               map.put("test", invocation.getArgument(0));
@@ -331,13 +324,14 @@ class HttpTransportTest {
     OpenLineageClient client = new OpenLineageClient(transport);
 
     CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
-    when(response.getStatusLine().getStatusCode()).thenReturn(200);
+    when(response.getCode()).thenReturn(200);
 
-    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
+    when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
+        .thenReturn(response);
 
     client.emit(datasetEvent());
 
-    verify(http, times(1)).execute(any());
+    verify(http, times(1)).execute(any(), any(HttpClientResponseHandler.class));
   }
 
   @Test
@@ -349,48 +343,13 @@ class HttpTransportTest {
     OpenLineageClient client = new OpenLineageClient(transport);
 
     CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
-    when(response.getStatusLine().getStatusCode()).thenReturn(200);
+    when(response.getCode()).thenReturn(200);
 
-    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
+    when(http.execute(any(ClassicHttpRequest.class), any(HttpClientResponseHandler.class)))
+        .thenReturn(response);
 
     client.emit(jobEvent());
 
-    verify(http, times(1)).execute(any());
-  }
-
-  @Test
-  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
-  void testTimeout() {
-    HttpConfig config = new HttpConfig();
-    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
-    config.setTimeout(2.5d); // 2.5 seconds
-
-    Builder builder = mock(Builder.class);
-    try (MockedStatic mocked = mockStatic(RequestConfig.class)) {
-      when(RequestConfig.custom()).thenReturn(builder);
-      when(builder.setConnectTimeout(2500)).thenReturn(builder);
-      when(builder.setConnectionRequestTimeout(2500)).thenReturn(builder);
-      when(builder.setSocketTimeout(2500)).thenReturn(builder);
-
-      new HttpTransport(config);
-    }
-  }
-
-  @Test
-  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
-  void testTimeoutInMillis() {
-    HttpConfig config = new HttpConfig();
-    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
-    config.setTimeoutInMillis(3000); // 3 seconds
-
-    Builder builder = mock(Builder.class);
-    try (MockedStatic mocked = mockStatic(RequestConfig.class)) {
-      when(RequestConfig.custom()).thenReturn(builder);
-      when(builder.setConnectTimeout(3000)).thenReturn(builder);
-      when(builder.setConnectionRequestTimeout(3000)).thenReturn(builder);
-      when(builder.setSocketTimeout(3000)).thenReturn(builder);
-
-      new HttpTransport(config);
-    }
+    verify(http, times(1)).execute(any(), any(HttpClientResponseHandler.class));
   }
 }

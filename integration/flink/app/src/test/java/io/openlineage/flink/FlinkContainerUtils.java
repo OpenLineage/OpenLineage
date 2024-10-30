@@ -290,8 +290,8 @@ public class FlinkContainerUtils {
   }
 
   static String getExampleAppJarPath() {
-    return Arrays.stream(new File(System.getProperty("fixtures.dir")).listFiles())
-        .filter(file -> file.getName().startsWith("stateful"))
+    return Arrays.stream((new File("../fixtures")).listFiles())
+        .filter(file -> file.getName().startsWith("flink-examples-stateful"))
         .map(file -> file.getPath())
         .findAny()
         .get();

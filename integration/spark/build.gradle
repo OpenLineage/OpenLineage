@@ -174,10 +174,10 @@ shadowJar {
     relocate "org.apache.httpcomponents.client5", "io.openlineage.spark.shaded.org.apache.httpcomponents.client5"
     relocate "javassist", "io.openlineage.spark.shaded.javassist"
     relocate "org.apache.hc", "io.openlineage.spark.shaded.org.apache.hc"
+    relocate "org.apache.http", "io.openlineage.spark.shaded.org.apache.http"
     relocate "org.apache.commons.codec", "io.openlineage.spark.shaded.org.apache.commons.codec"
     relocate "org.apache.commons.lang3", "io.openlineage.spark.shaded.org.apache.commons.lang3"
     relocate "org.apache.commons.beanutils", "io.openlineage.spark.shaded.org.apache.commons.beanutils"
-    relocate "org.apache.http", "io.openlineage.spark.shaded.org.apache.http"
     relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
     relocate "com.fasterxml.jackson", "io.openlineage.spark.shaded.com.fasterxml.jackson"
     relocate "org.LatencyUtils", "io.openlineage.spark.shaded.org.latencyutils"

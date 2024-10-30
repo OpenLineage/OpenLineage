@@ -10,9 +10,10 @@ import io.openlineage.client.OpenLineageClientUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 
 /**
  * Appends Openlineage events to a file specified. Events are separated by a newline character,
@@ -46,11 +47,13 @@ public class FileTransport extends Transport {
 
   private void emit(String eventAsJson) {
     try {
-      FileUtils.writeStringToFile(
-          file,
-          eventAsJson.replace(System.lineSeparator(), "") + System.lineSeparator(),
-          StandardCharsets.UTF_8,
-          true);
+      Files.createDirectories(file.getParentFile().toPath());
+      Files.write(
+          file.toPath(),
+          (eventAsJson.replace(System.lineSeparator(), "") + System.lineSeparator())
+              .getBytes(StandardCharsets.UTF_8),
+          StandardOpenOption.CREATE,
+          StandardOpenOption.APPEND);
       log.debug("emitted event: " + eventAsJson);
     } catch (IOException | IllegalArgumentException e) {
       log.error("Writing event to a file {} failed: {}", file.getPath(), e);

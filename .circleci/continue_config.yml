@@ -982,7 +982,6 @@ jobs:
           at: ~/
       - set_java_version
       - run: chmod -R 777 data/iceberg/db
-      - run: ./gradlew --console=plain examples:stateful:build -Pflink.version=<< parameters.flink-version >>
       - run: ./gradlew --no-daemon --console=plain integrationTest --i -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail

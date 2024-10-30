@@ -16,7 +16,6 @@ public abstract class Transport implements AutoCloseable {
     FILE,
     HTTP,
     KAFKA,
-    KINESIS,
     NOOP
   };
 

@@ -3,7 +3,11 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.client.transports;
+package io.openlineage.client.transports.kinesis;
+
+import io.openlineage.client.transports.Transport;
+import io.openlineage.client.transports.TransportBuilder;
+import io.openlineage.client.transports.TransportConfig;
 
 public class KinesisTransportBuilder implements TransportBuilder {
 

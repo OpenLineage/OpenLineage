@@ -7,7 +7,6 @@ package io.openlineage.client.transports;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.annotations.VisibleForTesting;
 import io.openlineage.client.MergeConfig;
 import java.util.AbstractMap;
 import java.util.Collections;
@@ -77,8 +76,7 @@ public class FacetsConfig implements MergeConfig<FacetsConfig> {
    * separated.by.dots and one prefix can include many disabled facets. For this reason this
    * function can return a list of disabled facet properties.
    */
-  @VisibleForTesting
-  static List<DisabledFacetProperty> asDisabledFacetProperties(String key, Object value) {
+  public static List<DisabledFacetProperty> asDisabledFacetProperties(String key, Object value) {
     /*
     The algorithm:
     - Flatten {prefix: {facet: {field: value, disabled: value}}, to to {prefix.facet.field: value, prefix.facet.disabled: value}
@@ -160,8 +158,7 @@ public class FacetsConfig implements MergeConfig<FacetsConfig> {
   }
 
   @Data
-  @VisibleForTesting
-  static class DisabledFacetProperty {
+  public static class DisabledFacetProperty {
     private final String facetName;
     private final boolean disabled;
   }
