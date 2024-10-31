@@ -6,6 +6,7 @@
 package io.openlineage.spark3.agent.utils;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
@@ -26,15 +27,14 @@ public class DataSourceV2RelationDatasetExtractor {
 
   public static <D extends OpenLineage.Dataset> List<D> extract(
       DatasetFactory<D> datasetFactory, OpenLineageContext context, DataSourceV2Relation relation) {
-    return extract(
-        datasetFactory, context, relation, context.getOpenLineage().newDatasetFacetsBuilder());
+    return extract(datasetFactory, context, relation, datasetFactory.createCompositeFacetBuilder());
   }
 
   public static <D extends OpenLineage.Dataset> List<D> extract(
       DatasetFactory<D> datasetFactory,
       OpenLineageContext context,
       DataSourceV2Relation relation,
-      OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder) {
+      DatasetCompositeFacetsBuilder datasetFacetsBuilder) {
 
     OpenLineage openLineage = context.getOpenLineage();
     Optional<DatasetIdentifier> di = getDatasetIdentifierExtended(context, relation);
@@ -47,9 +47,12 @@ public class DataSourceV2RelationDatasetExtractor {
 
                 Map<String, String> tableProperties = relation.table().properties();
                 CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, tableProperties)
-                    .map(storageDatasetFacet -> datasetFacetsBuilder.storage(storageDatasetFacet));
+                    .map(
+                        storageDatasetFacet ->
+                            datasetFacetsBuilder.getFacets().storage(storageDatasetFacet));
               }
               datasetFacetsBuilder
+                  .getFacets()
                   .schema(PlanUtils.schemaFacet(openLineage, relation.schema()))
                   .dataSource(PlanUtils.datasourceFacet(openLineage, identifier.getNamespace()));
 

@@ -15,6 +15,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetFacet;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
 import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -34,14 +35,14 @@ class ExtensionDataSourceV2UtilsTest {
   Table table = mock(Table.class);
   Map<String, String> properties = new HashMap<>();
   OpenLineage openLineage;
-  OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder;
+  DatasetCompositeFacetsBuilder datasetFacetsBuilder;
   URI producer;
 
   @BeforeEach
   void setup() throws URISyntaxException {
     producer = new URI("https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client");
     openLineage = new OpenLineage(producer);
-    datasetFacetsBuilder = openLineage.newDatasetFacetsBuilder();
+    datasetFacetsBuilder = new DatasetCompositeFacetsBuilder(openLineage);
 
     when(relation.table()).thenReturn(table);
     when(table.properties()).thenReturn(properties);
@@ -97,11 +98,11 @@ class ExtensionDataSourceV2UtilsTest {
                     .type("int64")
                     .build()));
 
-    assertThat(datasetFacetsBuilder.build().getSchema().get_producer().toString())
+    assertThat(datasetFacetsBuilder.getFacets().build().getSchema().get_producer().toString())
         .isEqualTo("https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client");
-    assertThat(datasetFacetsBuilder.build().getSchema().get_schemaURL().toString())
+    assertThat(datasetFacetsBuilder.getFacets().build().getSchema().get_schemaURL().toString())
         .isEqualTo(schemaDatasetFacet.get_schemaURL().toString());
-    assertThat(datasetFacetsBuilder.build().getSchema().getFields().get(0))
+    assertThat(datasetFacetsBuilder.getFacets().build().getSchema().getFields().get(0))
         .hasFieldOrPropertyWithValue("name", "user_id")
         .hasFieldOrPropertyWithValue("type", "int64");
   }
@@ -124,7 +125,7 @@ class ExtensionDataSourceV2UtilsTest {
     ExtensionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
 
     DatasetFacet datasetFacet =
-        datasetFacetsBuilder.build().getAdditionalProperties().get("customFacet");
+        datasetFacetsBuilder.getFacets().build().getAdditionalProperties().get("customFacet");
 
     assertThat(datasetFacet.get_producer()).isEqualTo(producer);
     assertThat(datasetFacet.getAdditionalProperties().get("property4")).isEqualTo("value4");
@@ -147,7 +148,7 @@ class ExtensionDataSourceV2UtilsTest {
     ExtensionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
 
     DatasetFacet datasetFacet =
-        datasetFacetsBuilder.build().getAdditionalProperties().get("customFacet");
+        datasetFacetsBuilder.getFacets().build().getAdditionalProperties().get("customFacet");
 
     assertThat(datasetFacet.get_producer()).isEqualTo(producer);
   }

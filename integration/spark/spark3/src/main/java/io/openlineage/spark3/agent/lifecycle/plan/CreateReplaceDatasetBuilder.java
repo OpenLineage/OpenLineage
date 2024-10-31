@@ -6,6 +6,7 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -104,23 +105,25 @@ public class CreateReplaceDatasetBuilder
     }
 
     OpenLineage openLineage = context.getOpenLineage();
-    OpenLineage.DatasetFacetsBuilder builder =
-        openLineage
-            .newDatasetFacetsBuilder()
-            .schema(PlanUtils.schemaFacet(openLineage, schema))
-            .lifecycleStateChange(
-                openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
-            .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
+    DatasetCompositeFacetsBuilder builder = new DatasetCompositeFacetsBuilder(openLineage);
+
+    builder
+        .getFacets()
+        .schema(PlanUtils.schemaFacet(openLineage, schema))
+        .lifecycleStateChange(
+            openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
+        .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
 
     if (includeDatasetVersion(event)) {
       Optional<String> datasetVersion =
           CatalogUtils3.getDatasetVersion(context, tableCatalog, identifier, tableProperties);
       datasetVersion.ifPresent(
-          version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
+          version ->
+              builder.getFacets().version(openLineage.newDatasetVersionDatasetFacet(version)));
     }
 
     CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, tableProperties)
-        .map(storageDatasetFacet -> builder.storage(storageDatasetFacet));
+        .map(storageDatasetFacet -> builder.getFacets().storage(storageDatasetFacet));
     return Collections.singletonList(outputDataset().getDataset(di.get(), builder));
   }
 

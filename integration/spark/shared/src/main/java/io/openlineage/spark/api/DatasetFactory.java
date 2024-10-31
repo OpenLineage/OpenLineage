@@ -7,6 +7,7 @@ package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeOutputVisitor;
@@ -42,7 +43,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   abstract OpenLineage.Builder<D> datasetBuilder(
-      String name, String namespace, OpenLineage.DatasetFacets datasetFacet);
+      String name, String namespace, DatasetCompositeFacetsBuilder facetsBuilder);
 
   /**
    * Create a {@link DatasetFactory} that constructs only {@link OpenLineage.InputDataset}s.
@@ -54,13 +55,14 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
     return new DatasetFactory<OpenLineage.InputDataset>(context) {
       @Override
       public OpenLineage.Builder<OpenLineage.InputDataset> datasetBuilder(
-          String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
+          String name, String namespace, DatasetCompositeFacetsBuilder facetsBuilder) {
         return context
             .getOpenLineage()
             .newInputDatasetBuilder()
             .namespace(namespaceResolver.resolve(namespace))
             .name(name)
-            .facets(datasetFacet);
+            .inputFacets(facetsBuilder.getInputFacets().build())
+            .facets(facetsBuilder.getFacets().build());
       }
     };
   }
@@ -75,13 +77,14 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
     return new DatasetFactory<OpenLineage.OutputDataset>(context) {
       @Override
       public OpenLineage.Builder<OpenLineage.OutputDataset> datasetBuilder(
-          String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
+          String name, String namespace, DatasetCompositeFacetsBuilder facetsBuilder) {
         return context
             .getOpenLineage()
             .newOutputDatasetBuilder()
             .namespace(namespaceResolver.resolve(namespace))
             .name(name)
-            .facets(datasetFacet);
+            .outputFacets(facetsBuilder.getOutputFacets().build())
+            .facets(facetsBuilder.getFacets().build());
       }
     };
   }
@@ -96,7 +99,15 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * @return
    */
   public D getDataset(String name, String namespace, StructType schema) {
-    return datasetBuilder(name, namespace, datasetFacetBuilder(schema, namespace).build()).build();
+    DatasetCompositeFacetsBuilder facetsBuilder = createCompositeFacetBuilder();
+    facetsBuilder
+        .getFacets()
+        .dataSource(
+            PlanUtils.datasourceFacet(
+                context.getOpenLineage(), namespaceResolver.resolve(namespace)))
+        .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema));
+
+    return datasetBuilder(name, namespace, facetsBuilder).build();
   }
 
   /**
@@ -108,11 +119,14 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * @return
    */
   public D getDataset(
-      URI outputPath, StructType schema, OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder) {
+      URI outputPath, StructType schema, DatasetCompositeFacetsBuilder datasetFacetsBuilder) {
     String namespace = PlanUtils.namespaceUri(outputPath);
     datasetFacetsBuilder
+        .getFacets()
         .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
-        .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespace));
+        .dataSource(
+            PlanUtils.datasourceFacet(
+                context.getOpenLineage(), namespaceResolver.resolve(namespace)));
 
     return getDataset(new DatasetIdentifier(outputPath.getPath(), namespace), datasetFacetsBuilder);
   }
@@ -127,7 +141,15 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    */
   public D getDataset(URI outputPath, StructType schema) {
     String namespace = PlanUtils.namespaceUri(outputPath);
-    return getDataset(PathUtils.fromURI(outputPath), datasetFacetBuilder(schema, namespace));
+    DatasetCompositeFacetsBuilder facetsBuilder = createCompositeFacetBuilder();
+    facetsBuilder
+        .getFacets()
+        .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
+        .dataSource(
+            PlanUtils.datasourceFacet(
+                context.getOpenLineage(), namespaceResolver.resolve(namespace)));
+
+    return getDataset(PathUtils.fromURI(outputPath), facetsBuilder);
   }
 
   /**
@@ -138,8 +160,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * @return
    */
   public D getDataset(DatasetIdentifier ident, StructType schema) {
-    OpenLineage.DatasetFacetsBuilder facetsBuilder =
-        datasetFacetBuilder(schema, ident.getNamespace());
+    DatasetCompositeFacetsBuilder facetsBuilder = datasetFacetBuilder(schema, ident.getNamespace());
     includeSymlinksFacet(facetsBuilder, ident);
     return getDataset(ident, facetsBuilder);
   }
@@ -155,16 +176,18 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    */
   public D getDataset(
       DatasetIdentifier ident, StructType schema, LifecycleStateChange lifecycleStateChange) {
-    OpenLineage.DatasetFacetsBuilder facetsBuilder =
-        datasetFacetBuilder(schema, ident.getNamespace());
-    facetsBuilder.lifecycleStateChange(
-        context.getOpenLineage().newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null));
+    DatasetCompositeFacetsBuilder facetsBuilder = datasetFacetBuilder(schema, ident.getNamespace());
+    facetsBuilder
+        .getFacets()
+        .lifecycleStateChange(
+            context
+                .getOpenLineage()
+                .newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null));
     includeSymlinksFacet(facetsBuilder, ident);
     return getDataset(new DatasetIdentifier(ident.getName(), ident.getNamespace()), facetsBuilder);
   }
 
-  private void includeSymlinksFacet(
-      OpenLineage.DatasetFacetsBuilder builder, DatasetIdentifier di) {
+  private void includeSymlinksFacet(DatasetCompositeFacetsBuilder builder, DatasetIdentifier di) {
     if (!di.getSymlinks().isEmpty()) {
       List<OpenLineage.SymlinksDatasetFacetIdentifiers> symlinks =
           di.getSymlinks().stream()
@@ -179,7 +202,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
                           .build())
               .collect(Collectors.toList());
 
-      builder.symlinks(context.getOpenLineage().newSymlinksDatasetFacet(symlinks));
+      builder.getFacets().symlinks(context.getOpenLineage().newSymlinksDatasetFacet(symlinks));
     }
   }
 
@@ -191,13 +214,13 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * @param facetsBuilder
    * @return
    */
-  public D getDataset(DatasetIdentifier ident, OpenLineage.DatasetFacetsBuilder facetsBuilder) {
+  public D getDataset(DatasetIdentifier ident, DatasetCompositeFacetsBuilder facetsBuilder) {
     includeSymlinksFacet(facetsBuilder, ident);
-    return datasetBuilder(ident.getName(), ident.getNamespace(), facetsBuilder.build()).build();
+    return datasetBuilder(ident.getName(), ident.getNamespace(), facetsBuilder).build();
   }
 
   public D getDataset(String name, String namespace) {
-    return datasetBuilder(name, namespace, datasetFacetBuilder(namespace).build()).build();
+    return datasetBuilder(name, namespace, datasetFacetBuilder(namespace)).build();
   }
 
   /**
@@ -207,23 +230,30 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * @param namespaceUri
    * @return
    */
-  private OpenLineage.DatasetFacetsBuilder datasetFacetBuilder(
+  private DatasetCompositeFacetsBuilder datasetFacetBuilder(
       StructType schema, String namespaceUri) {
-    return context
-        .getOpenLineage()
-        .newDatasetFacetsBuilder()
+    DatasetCompositeFacetsBuilder builder = createCompositeFacetBuilder();
+    builder
+        .getFacets()
         .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
         .dataSource(
             PlanUtils.datasourceFacet(
                 context.getOpenLineage(), namespaceResolver.resolve(namespaceUri)));
+    return builder;
   }
 
-  private OpenLineage.DatasetFacetsBuilder datasetFacetBuilder(String namespaceUri) {
-    return context
-        .getOpenLineage()
-        .newDatasetFacetsBuilder()
+  private DatasetCompositeFacetsBuilder datasetFacetBuilder(String namespaceUri) {
+    DatasetCompositeFacetsBuilder builder = createCompositeFacetBuilder();
+    builder
+        .getFacets()
         .dataSource(
             PlanUtils.datasourceFacet(
                 context.getOpenLineage(), namespaceResolver.resolve(namespaceUri)));
+
+    return builder;
+  }
+
+  public DatasetCompositeFacetsBuilder createCompositeFacetBuilder() {
+    return new DatasetCompositeFacetsBuilder(context.getOpenLineage());
   }
 }

@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -47,21 +48,19 @@ public class TruncateTableCommandVisitor
         PathUtils.fromCatalogTable(table, context.getSparkSession().get());
 
     DatasetFactory<OutputDataset> datasetFactory = outputDataset();
-    return Collections.singletonList(
-        datasetFactory.getDataset(
-            datasetIdentifier,
-            new OpenLineage.DatasetFacetsBuilder()
-                .schema(null)
-                .dataSource(
-                    PlanUtils.datasourceFacet(
-                        context.getOpenLineage(), datasetIdentifier.getNamespace()))
-                .lifecycleStateChange(
-                    context
-                        .getOpenLineage()
-                        .newLifecycleStateChangeDatasetFacet(
-                            OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
-                                .TRUNCATE,
-                            null))));
+    DatasetCompositeFacetsBuilder facetsBuilder = datasetFactory.createCompositeFacetBuilder();
+    facetsBuilder
+        .getFacets()
+        .schema(null)
+        .dataSource(
+            PlanUtils.datasourceFacet(context.getOpenLineage(), datasetIdentifier.getNamespace()))
+        .lifecycleStateChange(
+            context
+                .getOpenLineage()
+                .newLifecycleStateChangeDatasetFacet(
+                    OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.TRUNCATE,
+                    null));
+    return Collections.singletonList(datasetFactory.getDataset(datasetIdentifier, facetsBuilder));
   }
 
   @Override

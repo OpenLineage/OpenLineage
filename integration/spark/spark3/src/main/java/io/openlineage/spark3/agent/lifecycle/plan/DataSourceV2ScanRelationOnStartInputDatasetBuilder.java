@@ -5,8 +5,8 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
-import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.spark.api.AbstractQueryPlanInputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -50,10 +50,10 @@ public final class DataSourceV2ScanRelationOnStartInputDatasetBuilder
     }
 
     DataSourceV2Relation relation = plan.relation();
-    OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
-        context.getOpenLineage().newDatasetFacetsBuilder();
+    DatasetCompositeFacetsBuilder datasetFacetsBuilder = factory.createCompositeFacetBuilder();
 
-    DatasetVersionDatasetFacetUtils.includeDatasetVersion(context, datasetFacetsBuilder, relation);
+    DatasetVersionDatasetFacetUtils.includeDatasetVersion(
+        context, datasetFacetsBuilder.getFacets(), relation);
     return DataSourceV2RelationDatasetExtractor.extract(
         factory, context, relation, datasetFacetsBuilder);
   }

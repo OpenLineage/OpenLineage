@@ -37,7 +37,7 @@ public class ExtensionLineageRelationHandler<D extends Dataset> {
       return Collections.singletonList(datasetFactory.getDataset(di, x.schema()));
     } else {
       return Collections.singletonList(
-          datasetFactory.getDataset(di, context.getOpenLineage().newDatasetFacetsBuilder()));
+          datasetFactory.getDataset(di, datasetFactory.createCompositeFacetBuilder()));
     }
   }
 }
