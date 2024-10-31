@@ -79,6 +79,7 @@ def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata)
         "1a69c0a7-04bb-408b-980e-cbbfb1831ef7",
         "f99310b4-339a-4381-ad3e-c1b95c24ff11",
         "c11f2efd-4415-45fc-8081-10d2aaa594d2",
+        "b901441a-7b4a-4a97-aa61-a200106b3ce3"
     ]
 
     processor = DbtLocalArtifactProcessor(

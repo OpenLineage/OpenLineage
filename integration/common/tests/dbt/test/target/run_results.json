@@ -279,6 +279,27 @@
             "message": null,
             "failures": 0,
             "unique_id": "test.dbt_bigquery_test.unique_test_third_dbt_model_second_id.f3c38f3b89"
+        },
+        {
+            "status": "pass",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2021-08-23T15:06:24.008644Z",
+                    "completed_at": "2021-08-23T15:06:24.031682Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2021-08-23T15:06:24.034392Z",
+                    "completed_at": "2021-08-23T15:06:27.418481Z"
+                }
+            ],
+            "thread_id": "Thread-1",
+            "execution_time": 3.411060333251953,
+            "adapter_response": {},
+            "message": null,
+            "failures": 0,
+            "unique_id": "test.dbt_bigquery_test.source_not_null_dbt_test2_source_table_id.a44e73432a"
         }
     ],
     "elapsed_time": 25.34427523612976,

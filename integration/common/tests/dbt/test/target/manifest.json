@@ -484,6 +484,96 @@
             "relation_name": "`random-gcp-project`.`dbt_test1_dbt_test__audit`.`not_null_test_first_dbt_model_id`",
             "column_name": "id"
         },
+        "test.dbt_bigquery_test.source_not_null_dbt_test2_source_table_id.a44e73432a": {
+            "raw_sql": "{{ test_not_null(**_dbt_schema_test_kwargs) }}",
+            "test_metadata": {
+                "name": "not_null",
+                "kwargs": {
+                    "column_name": "id",
+                    "model": "{% if config.get('where') %}(select * from {{ source('dbt_test2', 'source_table') }} where {{config.get('where')}}) test_dbt_test2_source_table {% else %}{{ source('dbt_test2', 'source_table') }}{% endif %}"
+                },
+                "namespace": null
+            },
+            "compiled": true,
+            "resource_type": "test",
+            "depends_on": {
+                "macros": [
+                    "macro.dbt.test_not_null",
+                    "macro.dbt.should_store_failures",
+                    "macro.dbt.statement"
+                ],
+                "nodes": [
+                    "source.dbt_bigquery_test.dbt_test2.source_table"
+                ]
+            },
+            "config": {
+                "enabled": true,
+                "materialized": "test",
+                "persist_docs": {},
+                "vars": {},
+                "quoting": {},
+                "column_types": {},
+                "alias": null,
+                "schema": "dbt_test__audit",
+                "database": null,
+                "tags": [],
+                "full_refresh": null,
+                "severity": "ERROR",
+                "store_failures": null,
+                "where": null,
+                "limit": null,
+                "fail_calc": "count(*)",
+                "warn_if": "!= 0",
+                "error_if": "!= 0",
+                "post-hook": [],
+                "pre-hook": []
+            },
+            "database": "random-gcp-project",
+            "schema": "dbt_test1_dbt_test__audit",
+            "fqn": [
+                "dbt_bigquery_test",
+                "schema_test",
+                "source_not_null_dbt_test2_source_table_id"
+            ],
+            "unique_id": "test.dbt_bigquery_test.source_not_null_dbt_test2_source_table_id.a44e73432a",
+            "package_name": "dbt_bigquery_test",
+            "root_path": "/home/dbt/code/dbt-test",
+            "path": "schema_test/source_not_null_dbt_test2_source_table_id.sql",
+            "original_file_path": "models/example/schema.yml",
+            "name": "source_not_null_dbt_test2_source_table_id",
+            "alias": "source_not_null_dbt_test2_source_table_id",
+            "checksum": {
+                "name": "none",
+                "checksum": ""
+            },
+            "tags": [
+                "schema"
+            ],
+            "refs": [],
+            "sources": [
+                [
+                    "dbt_test2",
+                    "source_table"
+                ]
+            ],
+            "description": "",
+            "columns": {},
+            "meta": {},
+            "docs": {
+                "show": true
+            },
+            "patch_path": null,
+            "compiled_path": "target/compiled/dbt_bigquery_test/models/example/schema.yml/schema_test/source_not_null_dbt_test2_source_table_id.sql",
+            "build_path": "target/run/dbt_bigquery_test/models/example/schema.yml/schema_test/source_not_null_dbt_test2_source_table_id.sql",
+            "deferred": false,
+            "unrendered_config": {},
+            "created_at": 1629731179,
+            "compiled_sql": "\n    \n    \n\nselect *\nfrom `random-gcp-project`.`dbt_test2`.`source_table`\nwhere id is null\n\n\n",
+            "extra_ctes_injected": true,
+            "extra_ctes": [],
+            "relation_name": "`random-gcp-project`.`dbt_test1_dbt_test__audit`.`source_not_null_dbt_test2_source_table_id`",
+            "column_name": "id"
+        },
         "test.dbt_bigquery_test.dbt_expectations_expect_column_values_to_not_be_null_test_first_dbt_model_id.2da7e7b96e": {
             "raw_sql": "{{ dbt_expectations.test_expect_column_values_to_not_be_null(**_dbt_schema_test_kwargs) }}{{ config(alias=\"dbt_expectations_expect_column_177e5e4ed27ab51efa28f8ff7a38e5fb\") }}",
             "test_metadata": {
@@ -1526,6 +1616,52 @@
             "unrendered_config": {},
             "relation_name": "`random-gcp-project`.`dbt_test1`.`source_table`",
             "created_at": 1629731179
+        },
+        "source.dbt_bigquery_test.dbt_test2.source_table": {
+            "fqn": [
+                "dbt_bigquery_test",
+                "example",
+                "dbt_test2",
+                "source_table"
+            ],
+            "database": "random-gcp-project",
+            "schema": "dbt_test2",
+            "unique_id": "source.dbt_bigquery_test.dbt_test2.source_table",
+            "package_name": "dbt_bigquery_test",
+            "root_path": "/home/dbt/code/dbt-test",
+            "path": "models/example/schema.yml",
+            "original_file_path": "models/example/schema.yml",
+            "name": "source_table",
+            "source_name": "dbt_test2",
+            "source_description": "",
+            "loader": "",
+            "identifier": "source_table",
+            "resource_type": "source",
+            "quoting": {
+                "database": null,
+                "schema": null,
+                "identifier": null,
+                "column": null
+            },
+            "loaded_at_field": null,
+            "freshness": {
+                "warn_after": null,
+                "error_after": null,
+                "filter": null
+            },
+            "external": null,
+            "description": "",
+            "columns": {},
+            "meta": {},
+            "source_meta": {},
+            "tags": [],
+            "config": {
+                "enabled": true
+            },
+            "patch_path": null,
+            "unrendered_config": {},
+            "relation_name": "`random-gcp-project`.`dbt_test2`.`source_table`",
+            "created_at": 1629731179
         }
     },
     "macros": {},
@@ -1594,7 +1730,11 @@
         "test.dbt_bigquery_test.not_null_test_third_dbt_model_second_id.808ed9e604": [
             "model.dbt_bigquery_test.test_third_dbt_model"
         ],
-        "source.dbt_bigquery_test.dbt_test1.source_table": []
+        "test.dbt_bigquery_test.source_not_null_dbt_test2_source_table_id.a44e73432a": [
+            "source.dbt_bigquery_test.dbt_test2.source_table"
+        ],
+        "source.dbt_bigquery_test.dbt_test1.source_table": [],
+        "source.dbt_bigquery_test.dbt_test2.source_table": []
     },
     "child_map": {
         "model.dbt_bigquery_test.test_third_dbt_model": [
@@ -1634,8 +1774,12 @@
         "test.dbt_bigquery_test.not_null_test_third_dbt_model_id.ee37a1e1fb": [],
         "test.dbt_bigquery_test.unique_test_third_dbt_model_second_id.f3c38f3b89": [],
         "test.dbt_bigquery_test.not_null_test_third_dbt_model_second_id.808ed9e604": [],
+        "test.dbt_bigquery_test.source_not_null_dbt_test2_source_table_id.a44e73432a": [],
         "source.dbt_bigquery_test.dbt_test1.source_table": [
             "model.dbt_bigquery_test.test_second_parallel_dbt_model"
+        ],
+        "source.dbt_bigquery_test.dbt_test2.source_table": [
+            "test.dbt_bigquery_test.source_not_null_dbt_test2_source_table_id.a44e73432a"
         ]
     }
 }
