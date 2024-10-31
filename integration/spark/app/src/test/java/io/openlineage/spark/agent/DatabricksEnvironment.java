@@ -332,13 +332,18 @@ public class DatabricksEnvironment implements AutoCloseable {
   }
 
   private String getSparkPlatformVersion() {
-    String sparkVersion = properties.cluster.getSparkVersion();
+    String sparkVersion = properties.getCluster().getSparkVersion();
     if (!PLATFORM_VERSIONS_NAMES.containsKey(sparkVersion)) {
-      log.error("Unsupported [spark.version] for databricks test: [{}].", sparkVersion);
+      log.error(
+          "Unsupported [spark.version] for Databricks test: [{}]. Supported versions are {}",
+          sparkVersion,
+          PLATFORM_VERSIONS_NAMES.keySet());
+      throw new IllegalStateException("Unsupported [spark.version] for Databricks");
     }
 
-    log.info("Databricks version: [{}].", PLATFORM_VERSIONS_NAMES.get(sparkVersion));
-    return PLATFORM_VERSIONS_NAMES.get(sparkVersion);
+    String platformVersion = PLATFORM_VERSIONS_NAMES.get(sparkVersion);
+    log.info("Databricks version: [{}].", platformVersion);
+    return platformVersion;
   }
 
   /**
