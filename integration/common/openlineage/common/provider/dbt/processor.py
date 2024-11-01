@@ -317,7 +317,8 @@ class DbtArtifactProcessor:
         assertions = self.parse_assertions(context, nodes)
 
         events = DbtEvents()
-        for name, node in context.manifest["nodes"].items():
+        manifest_nodes = {**context.manifest["nodes"], **context.manifest["sources"]}
+        for name, node in manifest_nodes.items():
             if not name.startswith("model.") and not name.startswith("source."):
                 continue
             if len(assertions[name]) == 0:
