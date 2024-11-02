@@ -154,7 +154,7 @@ jobs:
                   pip install pyyaml==6.0.1
                   python dev/filter_approvals.py
       - run: |
-          export IS_FULL_TESTS=$(gh pr view --json labels | jq 'any(.currentBranch.labels[]; .name == "full-tests")')
+          export IS_FULL_TESTS=$(gh pr view --json labels | jq 'any(.labels[]; .name == "full-tests")')
           echo $IS_FULL_TESTS
           if [ -z "$IS_FULL_TESTS" ] || [ "$IS_FULL_TESTS" == "0" ]; then
             pip install pyyaml==6.0.1
