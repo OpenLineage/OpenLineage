@@ -90,7 +90,7 @@ dependencies {
     implementation(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark40", configuration: "scala213RuntimeElements"))
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.4")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.1")
 
     compileOnly("org.apache.spark:spark-core_${scala}:${spark}")
     compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")
@@ -124,7 +124,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.module'
     }
 
-    testImplementation(platform("software.amazon.awssdk:bom:2.29.1"))
+    testImplementation(platform("software.amazon.awssdk:bom:2.29.6"))
     testImplementation("software.amazon.awssdk:auth")
     testImplementation("software.amazon.awssdk:emr")
     testImplementation("software.amazon.awssdk:s3")
