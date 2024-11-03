@@ -13,7 +13,7 @@ plugins {
     id "com.adarshr.test-logger" version "3.2.0"
     // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
     id 'com.diffplug.spotless' version '6.13.0'
-    id "com.gradleup.shadow" version "8.3.3"
+    id "com.gradleup.shadow" version "8.3.5"
     id "pmd"
     id "io.freefair.lombok" version "8.10.2"
     id "com.github.gmazzo.buildconfig" version "5.5.0"
@@ -37,7 +37,7 @@ sourceSets {
 
 dependencies {
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
-    implementation(platform("software.amazon.awssdk:bom:2.29.1"))
+    implementation(platform("software.amazon.awssdk:bom:2.29.6"))
     implementation("software.amazon.awssdk:auth")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:url-connection-client")
