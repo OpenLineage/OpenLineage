@@ -13,14 +13,15 @@ This guide was developed using an **earlier version** of this integration and ma
 Adding OpenLineage to Spark is refreshingly uncomplicated, and this is thanks to Spark's SparkListener interface. OpenLineage integrates with Spark by implementing SparkListener and collecting information about jobs executed inside a Spark application. To activate the listener, add the following properties to your Spark configuration in your cluster's `spark-defaults.conf` file or, alternatively, add them to specific jobs on submission via the `spark-submit` command:
 
 ```
-spark.jars.packages     io.openlineage:openlineage-spark:0.3.+
+spark.jars.packages     io.openlineage:openlineage-spark:1.23.0
 spark.extraListeners    io.openlineage.spark.agent.OpenLineageSparkListener
 ```
 
 Once activated, the listener needs to know where to report lineage events, as well as the namespace of your jobs. Add the following additional configuration lines to your `spark-defaults.conf` file or your Spark submission script:
 
 ```
-spark.openlineage.host      {your.openlineage.host}
+spark.openlineage.transport.url      {your.openlineage.host}
+spark.openlineage.transport.type     {your.openlineage.transport.type}
 spark.openlineage.namespace {your.openlineage.namespace}
 ```
 
@@ -90,9 +91,10 @@ spark = (SparkSession.builder.master('local').appName('openlineage_spark_test')
         .config('spark.jars', ",".join(files))
         
         # Install and set up the OpenLineage listener
-        .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.3.+')
+        .config('spark.jars.packages', 'io.openlineage:openlineage-spark:1.23.0')
         .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
-        .config('spark.openlineage.host', 'http://marquez-api:5000')
+        .config('spark.openlineage.transport.url', 'http://marquez-api:5000')
+        .config('spark.openlineage.transport.type', 'http')
         .config('spark.openlineage.namespace', 'spark_integration')
         
         # Configure the Google credentials and project id
