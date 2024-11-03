@@ -52,7 +52,7 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           exclude: ['**/partials/**'],
           editUrl:
-            'https://github.com/OpenLineage/docs/tree/main/',
+            'https://github.com/OpenLineage/OpenLineage/tree/main/website/',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),

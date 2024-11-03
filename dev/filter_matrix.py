@@ -11,6 +11,9 @@ for _, workflow_definition in d["workflows"].items():
     if not jobs:
         continue
 
+    test_job = None
+    integration_test_job = None
+
     for job in jobs:
         if "test-integration-spark" in job:
             test_job = job["test-integration-spark"]
