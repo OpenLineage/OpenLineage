@@ -27,31 +27,33 @@ In the process of implementing column-level lineage, Paweł and Julien contribut
 
 An example of a `columnLineage` facet in the outputs array of a lineage event:
 
-    {
-      "namespace": "{namespace of the outputdataset}",
-      "name": "{name of the output dataset}",
-      "facets": {
-        "schema": {
-          "fields": [
-            { "name": "{first column of the output dataset}", "type": "{its type}"},
-            { "name": "{second column of the output dataset}", "type": "{its type}"},
-            ...
-          ]
-        },
-        "columnLineage": {
-          "{first column of the output dataset}": {
-            "inputFields": [
-              { "namespace": "{input dataset namespace}", name: "{input dataset name}", "field": "{input dataset column name}"},
-              ... other inputs
-            ],
-            "transformationDescription": "identical",
-            "transformationType": "IDENTITY"
-          },
-          "{second column of the output dataset}": ...,
-          ...
-        }
-      }
+```json
+{
+  "namespace": "{namespace of the outputdataset}",
+  "name": "{name of the output dataset}",
+  "facets": {
+    "schema": {
+      "fields": [
+        { "name": "{first column of the output dataset}", "type": "{its type}"},
+        { "name": "{second column of the output dataset}", "type": "{its type}"},
+        ...
+      ]
+    },
+    "columnLineage": {
+      "{first column of the output dataset}": {
+        "inputFields": [
+          { "namespace": "{input dataset namespace}", name: "{input dataset name}", "field": "{input dataset column name}"},
+          ... other inputs
+        ],
+        "transformationDescription": "identical",
+        "transformationType": "IDENTITY"
+      },
+      "{second column of the output dataset}": ...,
+      ...
     }
+  }
+}
+```
 
 ### How it works
 
