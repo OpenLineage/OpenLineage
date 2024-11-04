@@ -12,18 +12,18 @@ In the world of data lineage, it's essential to have a reliable and flexible way
 
 <!--truncate-->
 
-# What is the Composite Transport?
+## What is the Composite Transport?
 
 The Composite Transport is a type of transport in OpenLineage that enables you to send events to multiple destinations sequentially. This is useful when you need to send events to multiple targets, such as a logging system and an API endpoint, one after another in a defined order.
 
-## Key Features of the Composite Transport
+### Key Features of the Composite Transport
 
 * Flexibility: The Composite Transport can include a variety of other transport types, such as HTTP, Kafka, and more, allowing you to choose the best transport for each destination.
 * Convenience: The Composite Transport allows you to configure multiple transports in a single configuration, making it easy to set up and manage your event emission process.
 * Redundancy: With the Composite Transport, you can send events to multiple destinations for redundancy, ensuring that your events are delivered even if one destination fails.
 * Different processing: The Composite Transport allows you to send events to different destinations for different types of processing, such as logging and analytics.
 
-# How to Use the Composite Transport
+## How to Use the Composite Transport
 
 To use the Composite Transport, you can configure it in two formats: a list of transport configurations or a map of transport configurations. The list format is useful when you have a fixed set of transports, while the map format is useful when you need to configure transports dynamically.
 
@@ -107,7 +107,7 @@ transport:
 
 </Tabs>
 
-# Conclusion
+## Conclusion
 
 The Composite Transport enhances event distribution in OpenLineage by providing flexibility, redundancy, and ease of configuration.
 Whether you need to send events to multiple targets or ensure reliable delivery in the event of failure, this feature simplifies your workflow.

@@ -1,8 +1,7 @@
 // @ts-check
 // Note: type annotations allow type checking and IDEs autocompletion
 
-const lightCodeTheme = require('prism-react-renderer/themes/github');
-const darkCodeTheme = require('prism-react-renderer/themes/dracula');
+const prism = require('prism-react-renderer');
 
 const links = [
   { to: '/getting-started', label: 'Getting Started', position: 'left' },
@@ -130,8 +129,8 @@ const config = {
         ],
       },
       prism: {
-        theme: lightCodeTheme,
-        darkTheme: darkCodeTheme,
+        theme: prism.themes.github,
+        darkTheme: prism.themes.dracula,
         additionalLanguages: ['java'],
       },
       colorMode: {

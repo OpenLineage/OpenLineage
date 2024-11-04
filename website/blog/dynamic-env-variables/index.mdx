@@ -18,36 +18,36 @@ In this guide, we'll explore how to leverage dynamic environment variables to si
 
 <!--truncate-->
 
-# What's New in 1.23.0
+## What's New in 1.23.0
 
 In the upcoming **1.23.0 release** of OpenLineage, we're excited to introduce dynamic environment variables, which will revolutionize the way you configure your OpenLineage client. With this feature, you'll be able to simplify your configuration, improve maintainability, and adapt to changing environments with ease.
 
-# Why Dynamic Environment Variables?
+## Why Dynamic Environment Variables?
 
-### Flexibility on a Whole New Level
+#### Flexibility on a Whole New Level
 Stop worrying about reconfiguring code or files—dynamic environment variables let you adjust settings on the fly. This feature is perfect for developers, testers, and production environments that demand real-time adaptability.
 
-### Centralized Management at Your Fingertips
+#### Centralized Management at Your Fingertips
 With environment variables, you can securely store configuration details alongside other essential application settings. No more scattering information across multiple files—it’s all in one place.
 
-### Cleaner Code, Happier Developers
+#### Cleaner Code, Happier Developers
 Say goodbye to the clutter of parsing configuration files in your codebase. Dynamic environment variables lead to cleaner, more maintainable applications, saving you time and headaches.
 
-### Seamless Integration for Effortless Deployment
+#### Seamless Integration for Effortless Deployment
 Dynamic environment variables easily sync with modern deployment tools and practices, ensuring smooth and stress-free configuration management every time.
 
-## When to Use Dynamic Environment Variables
+### When to Use Dynamic Environment Variables
 
-### Development & Testing
+#### Development & Testing
 Need to experiment with new configurations quickly? Dynamic environment variables let you do just that—without ever touching your code.
 
-### Production Deployments
+#### Production Deployments
 Keep your production environment secure and organized by managing all configuration settings with ease and efficiency.
 
-### Dynamic Environments
+#### Dynamic Environments
 No more manual updates! Easily adapt to rapidly changing environments with this flexible configuration approach.
 
-## Key Features You’ll Love
+### Key Features You’ll Love
 * **Dynamic Updates**: Modify configurations in real-time without restarting your application.
 * **Hierarchical Organization**: Keep your settings clear and manageable with nested sections.
 * **Automatic Conversions**: OpenLineage automatically converts variable names to camelCase in Java, ensuring consistency.
@@ -55,7 +55,7 @@ No more manual updates! Easily adapt to rapidly changing environments with this 
 * **Effortless Integration**: Tie your configuration process into deployment tools and scripting languages for smooth automation.
 
 
-### Quick Setup Example: HTTP Transport Configuration
+#### Quick Setup Example: HTTP Transport Configuration
 
 Let’s see dynamic environment variables in action! Suppose you need to configure your client to send events to an HTTP endpoint with basic authentication. Here’s how simple it is using environment variables:
 
@@ -99,7 +99,7 @@ transport:
 ```
 
 
-### Configuring CompositeTransport with Aliases for Ultimate Flexibility
+#### Configuring CompositeTransport with Aliases for Ultimate Flexibility
 
 In Python, configuring CompositeTransport is a breeze with aliases for `OPENLINEAGE_URL`, `OPENLINEAGE_API_KEY`, and `OPENLINEAGE_ENDPOINT`.
 It allows you to create a default configuration for the default HTTP transport and easily add extra targets.
@@ -122,7 +122,7 @@ OPENLINEAGE__TRANSPORT__TRANSPORTS__ANOTHER_TARGET__COMPRESSION=gzip
 
 You’ve just configured a CompositeTransport with two targets: `default_http` and `another_target`. The best part? You didn’t have to touch your config files!
 
-### Troubleshooting
+#### Troubleshooting
 
 Got issues? Here’s how to troubleshoot common problems with OpenLineage configuration:
 
@@ -131,7 +131,7 @@ Got issues? Here’s how to troubleshoot common problems with OpenLineage config
 * **Client Permissions**: Ensure your OpenLineage client has access to read the environment variables, especially in containers like Docker.
 * **Environment Variable Verification**: Confirm all necessary environment variables are set in the correct environment.
 
-## Wrap up: Embrace Dynamic Configuration
+### Wrap up: Embrace Dynamic Configuration
 
 Dynamic environment variables offer a powerful and flexible approach to configuring the OpenLineage client. By leveraging this feature, you can streamline your setup, improve maintainability, and adapt configurations seamlessly within your dynamic environments. Say goodbye to complex configuration files and hello to a more efficient and scalable OpenLineage setup!
 

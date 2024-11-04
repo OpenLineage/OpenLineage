@@ -8,9 +8,6 @@ Each time dbt runs, it generates a trove of metadata about datasets and the work
 
 <!--truncate-->
 
-```toc
-```
-
 The first time I built a data warehouse was in a completely different era, even though it wasn’t all that long ago. It was a few dozen tables + a collection of loader scripts and an ETL tool. If I’m honest, calling the whole thing a “data warehouse” is a bit grandiose, but it worked.
 
 At the time, my defining question was “how can I make all of my most important data available for study without spending more than it’s worth?” Because my database capacity wasn’t infinite, I couldn’t keep all of my data forever. The jobs I wrote would pull data from operational data stores, perform a bunch of slicing and aggregation, and load summary data into the warehouse. They shoveled bits every night from one server to another, performing calculations in between - and that meant they had to run on a beefy server with close proximity to my data.
@@ -21,7 +18,7 @@ Cloud data warehouses like [Google BigQuery](https://cloud.google.com/bigquery/)
 
 Fortunately, each time dbt runs it generates a trove of metadata about datasets and the work it performs with them. In this post, I’d like to show you how to harvest this metadata and put it to good use.
 
-# Our Example
+## Our Example
 
 For our example, let’s choose the kind of experiment that I might run in my day-to-day life. I’m the head of marketing at [Datakin](https://datakin.com), which means the metrics I’m most interested in are usually about some sort of human behavior.
 
@@ -41,7 +38,7 @@ So let’s see what we can learn from the Stack Overflow [public data set in Big
 
 This is exactly the kind of experiment I have run multiple times over the years, across numerous stacks. It’s usually pretty messy. But this time, after running all of these models, we will be rewarded with a gorgeous [Marquez](https://marquezproject.ai/) lineage graph. We’ll be able to see how everything fits together.
 
-# Setting Everything Up
+## Setting Everything Up
 
 First, if you haven’t already, run through the excellent [dbt tutorial](https://docs.getdbt.com/tutorial/setting-up). It will show you how to create a BigQuery project, provision a service account, download a JSON key, and set up your local dbt environment. The rest of this example assumes that you have created a BigQuery project where our models can be run, and you know how to properly configure dbt to connect to it.
 
@@ -116,7 +113,7 @@ Connection:
   Connection test: OK connection ok
 ```
 
-# A Few Important Details
+## A Few Important Details
 
 There are a couple of considerations to make when designing dbt models for use with OpenLineage. By following these conventions, you can help OpenLineage collect the most complete metadata possible.
 
@@ -145,7 +142,7 @@ select * from {{ source('stackoverflow', 'posts_answers') }}
 where parent_id in (select id from {{ ref('filtered_questions') }} )
 ```
 
-# Performing a Run
+## Performing a Run
 
 Okay! We are ready to perform a run. Before we do, though, there’s one last step we need to take.
 
@@ -201,7 +198,7 @@ Emitted 16 openlineage events
 
 Note the output showing the number of OpenLineage events emitted to Marquez.
 
-# Reviewing the Output
+## Reviewing the Output
 
 If everything ran successfully you should be able to see a list of jobs when you navigate to http://localhost:3000. Upon clicking a job, you will see a lineage graph that looks similar to this:
 

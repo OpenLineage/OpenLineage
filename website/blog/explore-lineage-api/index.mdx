@@ -42,7 +42,7 @@ history to see how changes in one part of the map cause ripples in other areas. 
 recent changes to the Marquez API, we’ll demonstrate how to diagnose job failures and how to explore
 the impact of code changes on downstream dependents.
 
-## Getting Started
+### Getting Started
 
 To get started, we need a running instance of Marquez with a little bit of seed data. For these
 exercises, we'll assume you have a terminal with the following programs installed
@@ -73,7 +73,7 @@ seed-marquez-with-metadata exited with code 0
 
 Once the seed job is done, we can begin exploring the API.
 
-### The Jobs
+#### The Jobs
 In a separate terminal window, type the following command
 ```bash
 curl "http://localhost:5000/api/v1/namespaces/food_delivery/jobs/" | jq | less
@@ -169,7 +169,7 @@ The response includes the set of input and output datasets, as well as the curre
 ```
 If a new version of the job is created, any or all of these fields can change.
 
-### The Job Run
+#### The Job Run
 The next thing to notice is the `latestRun` field. This includes information about the latest Run
 of this job:
 ```json
@@ -215,7 +215,7 @@ The other important field to notice in the Run structure is the `state`
 ```
 Uh-oh. Looks like the last time this job ran, it failed.
 
-## Tracing Failures
+### Tracing Failures
 
 The first question we have when diagnosing a failure is
 
@@ -289,7 +289,7 @@ and the `outputVersions`.
 ```
 These fields give us what we need to trace the lineage of the specific job runs we want to compare.
 
-### Job Versions
+#### Job Versions
 The first thing to look at is the `jobVersion`. Nearly 100% of the time, a job failure can be traced
 to a code change. Let's compare the job version of the failed run with the job version of the successful
 one:
@@ -341,7 +341,7 @@ when the run completes, _even if the job run failed_. Sometimes this has no impa
 as the output datasets can be determined before the job run executes. But sometimes we see impacts
 like this where a job run failed before we had a chance to discover the output datasets.
 
-## Tracing Upstream Lineage
+### Tracing Upstream Lineage
 
 So what gives? The job code didn't actually change! So what caused the failure?
 
@@ -350,7 +350,7 @@ Here's where the lineage tracking becomes useful. Recall again, the run output g
 We already know that the `outputVersions` is empty because the latest failed run didn't have
 a chance to determine the outputs. But we can take a look at the input datasets.
 
-### Dataset Versions
+#### Dataset Versions
 ```bash
 diff <(curl -s "http://localhost:5000/api/v1/jobs/runs/$FAILED_RUN_ID" | jq -r '.inputVersions') \
      <(curl -s "http://localhost:5000/api/v1/jobs/runs/$SUCCESSFUL_RUN_ID" | jq -r '.inputVersions')

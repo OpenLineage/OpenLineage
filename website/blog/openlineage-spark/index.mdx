@@ -8,7 +8,7 @@ Spark ushered in a brand new age of data democratization... and left us with a m
 
 <!--truncate-->
 
-## The Age of Data Democratization
+### The Age of Data Democratization
 
 In 2015, Apache Spark seemed to be taking over the world. Many of us had spent the prior few years moving our large
 datasets out of the Data Warehouse into "Data Lakes"- repositories of structured and unstructured data in
@@ -29,7 +29,7 @@ tools to process raw data in object stores without the dependency on software en
 attracted to its ability to perform multiple operations on data without the I/O overhead of alternatives, like Pig or
 Hive, data scientists were thrilled to start piping that data through their NumPy and Pandas scripts. 
 
-## A Colossal Mess
+### A Colossal Mess
 
 Of course, the natural consequence of this data democratization is that it becomes difficult to keep track of who is
 using the data and for what purpose. Hidden dependencies and Hyrum’s Law suddenly meant that changes to the data schema
@@ -43,7 +43,7 @@ both producers and consumers of data about the state of that data and the potent
 bugs. Naturally, support for Apache Spark seemed like a good idea and, while the Spark 2.4 branch has been supported for
 some time, the recent OpenLineage 0.3 release has explicit support for Spark 3.1. 🎉 
 
-## Getting Started
+### Getting Started
 
 Our approach to integrating with Spark is not super novel nor is it complicated to integrate into your own system. Spark
 has had a SparkListener interface since before the 1.x days. If you're a heavy Spark user, it's likely you're already
@@ -60,7 +60,7 @@ spark.openlineage.transport.url     {your.openlineage.url}
 spark.openlineage.transport.type    'http'
 spark.openlineage.namespace	        {your.openlineage.namespace}
 ```
-## The Demo
+### The Demo
 
 Trying out the Spark integration is super easy if you already have Docker Desktop and git installed. To follow along
 with this demo, you’ll also need a Google Cloud account and a Service Account JSON key file for an account that has
