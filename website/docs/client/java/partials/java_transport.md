@@ -101,7 +101,8 @@ spark.openlineage.transport.headers.X-Some-Extra-Header=abc
 spark.openlineage.transport.compression=gzip
 ```
 
-<details><summary>URL parsing within Spark integration</summary>
+<details>
+<summary>URL parsing within Spark integration</summary>
 <p>
 
 You can supply http parameters using values in url, the parsed `spark.openlineage.*` properties are located in url as follows:
