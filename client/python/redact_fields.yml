@@ -92,6 +92,13 @@
   classes:
     - class_name: DocumentationJobFacet
       redact_fields: []
+- module: environment_variables_run
+  classes:
+    - class_name: EnvironmentVariable
+      redact_fields:
+        - name
+    - class_name: EnvironmentVariablesRunFacet
+      redact_fields: []
 - module: error_message_run
   classes:
     - class_name: ErrorMessageRunFacet
