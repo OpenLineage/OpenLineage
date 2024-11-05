@@ -3,11 +3,8 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.client.transports;
+package io.openlineage.client.transports.kinesis;
 
-import static io.openlineage.client.Events.datasetEvent;
-import static io.openlineage.client.Events.jobEvent;
-import static io.openlineage.client.Events.runEvent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -19,14 +16,17 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Properties;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 class KinesisTransportTest {
   @Test
   void clientEmitsRunEventKinesisTransport() throws IOException {
-    KinesisProducer producer = mock(KinesisProducer.class);
+    KinesisProducer producer = Mockito.mock(KinesisProducer.class);
     KinesisConfig config = new KinesisConfig();
 
     Properties properties = new Properties();
@@ -42,7 +42,18 @@ class KinesisTransportTest {
 
     when(producer.addUserRecord(any(UserRecord.class))).thenReturn(mock(ListenableFuture.class));
 
-    OpenLineage.RunEvent event = runEvent();
+    OpenLineage.Job job =
+        new OpenLineage.JobBuilder().namespace("test-namespace").name("test-job").build();
+    OpenLineage.Run run =
+        new OpenLineage.RunBuilder()
+            .runId(UUID.fromString("ea445b5c-22eb-457a-8007-01c7c52b6e54"))
+            .build();
+    OpenLineage.RunEvent event =
+        new OpenLineage(URI.create("http://test.producer"))
+            .newRunEventBuilder()
+            .job(job)
+            .run(run)
+            .build();
     client.emit(event);
 
     ArgumentCaptor<UserRecord> captor = ArgumentCaptor.forClass(UserRecord.class);
@@ -59,7 +70,7 @@ class KinesisTransportTest {
 
   @Test
   void clientEmitsDatasetEventKinesisTransport() throws IOException {
-    KinesisProducer producer = mock(KinesisProducer.class);
+    KinesisProducer producer = Mockito.mock(KinesisProducer.class);
     KinesisConfig config = new KinesisConfig();
 
     Properties properties = new Properties();
@@ -75,7 +86,16 @@ class KinesisTransportTest {
 
     when(producer.addUserRecord(any(UserRecord.class))).thenReturn(mock(ListenableFuture.class));
 
-    OpenLineage.DatasetEvent event = datasetEvent();
+    OpenLineage.StaticDataset dataset =
+        new OpenLineage.StaticDatasetBuilder()
+            .namespace("test-namespace")
+            .name("test-dataset")
+            .build();
+    OpenLineage.DatasetEvent event =
+        new OpenLineage(URI.create("http://test.producer"))
+            .newDatasetEventBuilder()
+            .dataset(dataset)
+            .build();
     client.emit(event);
 
     ArgumentCaptor<UserRecord> captor = ArgumentCaptor.forClass(UserRecord.class);
@@ -93,7 +113,7 @@ class KinesisTransportTest {
 
   @Test
   void clientEmitsJobEventKinesisTransport() throws IOException {
-    KinesisProducer producer = mock(KinesisProducer.class);
+    KinesisProducer producer = Mockito.mock(KinesisProducer.class);
     KinesisConfig config = new KinesisConfig();
 
     Properties properties = new Properties();
@@ -109,7 +129,10 @@ class KinesisTransportTest {
 
     when(producer.addUserRecord(any(UserRecord.class))).thenReturn(mock(ListenableFuture.class));
 
-    OpenLineage.JobEvent event = jobEvent();
+    OpenLineage.Job job =
+        new OpenLineage.JobBuilder().namespace("test-namespace").name("test-job").build();
+    OpenLineage.JobEvent event =
+        new OpenLineage(URI.create("http://test.producer")).newJobEventBuilder().job(job).build();
     client.emit(event);
 
     ArgumentCaptor<UserRecord> captor = ArgumentCaptor.forClass(UserRecord.class);

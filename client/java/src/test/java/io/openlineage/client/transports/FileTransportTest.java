@@ -14,10 +14,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import lombok.SneakyThrows;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,11 +34,32 @@ class FileTransportTest {
   @BeforeEach
   @SneakyThrows
   public void beforeEach() {
-    FileUtils.deleteDirectory(new File(FILE_LOCATION_DIR));
+    File dir = new File(FILE_LOCATION_DIR);
+    if (dir.exists()) {
+      deleteDirectory(dir);
+    }
 
     fileConfig = new FileConfig();
     fileConfig.setLocation(FILE_LOCATION);
     transport = new FileTransport(fileConfig);
+  }
+
+  private void deleteDirectory(File dir) throws IOException {
+    File[] files = dir.listFiles();
+    if (files != null) {
+      for (File file : files) {
+        if (file.isDirectory()) {
+          deleteDirectory(file);
+        } else {
+          if (!file.delete()) {
+            throw new IOException("Failed to delete file: " + file);
+          }
+        }
+      }
+    }
+    if (!dir.delete()) {
+      throw new IOException("Failed to delete directory: " + dir);
+    }
   }
 
   @Test
@@ -47,7 +70,7 @@ class FileTransportTest {
 
     transport.emit(event);
 
-    List<String> lines = FileUtils.readLines(new File(FILE_LOCATION));
+    List<String> lines = Files.readAllLines(Paths.get(FILE_LOCATION));
 
     assertThat(lines.size()).isEqualTo(1);
     assertThat(lines.get(0)).isEqualTo(eventSerialized);
@@ -61,7 +84,7 @@ class FileTransportTest {
 
     transport.emit(event);
 
-    List<String> lines = FileUtils.readLines(new File(FILE_LOCATION));
+    List<String> lines = Files.readAllLines(Paths.get(FILE_LOCATION));
 
     assertThat(lines.size()).isEqualTo(1);
     assertThat(lines.get(0)).isEqualTo(eventSerialized);
@@ -75,7 +98,7 @@ class FileTransportTest {
 
     transport.emit(event);
 
-    List<String> lines = FileUtils.readLines(new File(FILE_LOCATION));
+    List<String> lines = Files.readAllLines(Paths.get(FILE_LOCATION));
 
     assertThat(lines.size()).isEqualTo(1);
     assertThat(lines.get(0)).isEqualTo(eventSerialized);
@@ -96,7 +119,7 @@ class FileTransportTest {
     // should not be written
     transport.emit(runEvent());
 
-    assertThat(FileUtils.readLines(new File(FILE_LOCATION)).size()).isEqualTo(1);
+    assertThat(Files.readAllLines(Paths.get(FILE_LOCATION)).size()).isEqualTo(1);
   }
 
   @Test
@@ -108,7 +131,7 @@ class FileTransportTest {
     transport.emit(event);
     transport.emit(anotherEvent);
 
-    List<String> lines = FileUtils.readLines(new File(FILE_LOCATION));
+    List<String> lines = Files.readAllLines(Paths.get(FILE_LOCATION));
 
     String eventSerialized = OpenLineageClientUtils.toJson(event);
     String anotherEventSerialized = OpenLineageClientUtils.toJson(anotherEvent);
@@ -128,7 +151,7 @@ class FileTransportTest {
             .build();
 
     transport.emit(event);
-    List<String> lines = FileUtils.readLines(new File(FILE_LOCATION));
+    List<String> lines = Files.readAllLines(Paths.get(FILE_LOCATION));
 
     assertThat(lines.size()).isEqualTo(1);
     assertThat(lines.get(0))

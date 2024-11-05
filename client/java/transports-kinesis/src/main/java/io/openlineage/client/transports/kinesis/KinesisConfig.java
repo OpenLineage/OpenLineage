@@ -3,10 +3,11 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.client.transports;
+package io.openlineage.client.transports.kinesis;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.MergeConfig;
+import io.openlineage.client.transports.TransportConfig;
 import java.util.Properties;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

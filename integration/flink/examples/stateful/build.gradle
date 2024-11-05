@@ -2,12 +2,18 @@ plugins {
     id 'java-library'
     id 'jacoco'
     id 'pmd'
-    id "com.adarshr.test-logger"
-    id 'com.diffplug.spotless'
-    id "com.github.johnrengelman.shadow"
-    id 'io.openlineage.common-config'
+    id "com.adarshr.test-logger" version "4.0.0"
+    id 'com.diffplug.spotless' version '6.23.0'
+    id "com.github.johnrengelman.shadow" version "8.1.1"
     id "com.github.davidmc24.gradle.plugin.avro" version "1.9.1"
     id "com.google.protobuf" version "0.9.4"
+}
+
+repositories {
+    gradlePluginPortal()
+    mavenCentral()
+    maven { url "https://packages.confluent.io/maven/" }
+    mavenLocal()
 }
 
 group 'io.openlineage.flink'
@@ -36,8 +42,6 @@ ext {
 }
 
 dependencies {
-    implementation(project(path: ":app"))
-    implementation(project(path: ":shared"))
     configurations.all {
         exclude module: 'slf4j-log4j12'
         exclude module: 'log4j'
@@ -49,7 +53,7 @@ dependencies {
     implementation 'org.awaitility:awaitility:4.2.0'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.3.1'
 
-    implementation("io.openlineage:openlineage-java:$project.version")
+    implementation "io.openlineage:openlineage-flink:$project.version"
     compileOnly "org.apache.flink:flink-java:$flinkVersion"
     compileOnly "org.apache.flink:flink-streaming-scala_2.12:$flinkVersion"
     compileOnly "org.apache.flink:flink-streaming-java:$flinkVersion"
@@ -111,6 +115,13 @@ avro {
     fieldVisibility = 'PUBLIC'
 }
 
+compileJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
 
 extractIncludeTestProto.enabled = false
 

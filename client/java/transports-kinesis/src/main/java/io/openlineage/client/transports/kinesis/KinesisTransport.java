@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.client.transports;
+package io.openlineage.client.transports.kinesis;
 
 import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.services.kinesis.producer.KinesisProducer;
@@ -15,6 +15,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.transports.Transport;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -34,8 +35,6 @@ public class KinesisTransport extends Transport {
 
   public KinesisTransport(
       @NonNull final KinesisProducer kinesisProducer, @NonNull final KinesisConfig kinesisConfig) {
-
-    super(Type.KINESIS);
     this.streamName = kinesisConfig.getStreamName();
     this.region = kinesisConfig.getRegion();
     this.roleArn = kinesisConfig.getRoleArn();
@@ -44,7 +43,6 @@ public class KinesisTransport extends Transport {
   }
 
   public KinesisTransport(@NonNull final KinesisConfig kinesisConfig) {
-    super(Type.KINESIS);
     this.streamName = kinesisConfig.getStreamName();
     this.region = kinesisConfig.getRegion();
     this.roleArn = kinesisConfig.getRoleArn();

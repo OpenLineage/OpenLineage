@@ -5,11 +5,11 @@
 
 package io.openlineage.client.transports;
 
-import static org.apache.http.Consts.UTF_8;
-import static org.apache.http.HttpHeaders.ACCEPT;
-import static org.apache.http.HttpHeaders.AUTHORIZATION;
-import static org.apache.http.HttpHeaders.CONTENT_TYPE;
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.hc.core5.http.ContentType.APPLICATION_JSON;
+import static org.apache.hc.core5.http.HttpHeaders.ACCEPT;
+import static org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION;
+import static org.apache.hc.core5.http.HttpHeaders.CONTENT_TYPE;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientException;
@@ -25,17 +25,24 @@ import lombok.NonNull;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.entity.GzipCompressingEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.entity.GzipCompressingEntity;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.SocketConfig;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
+import org.apache.hc.core5.net.URIBuilder;
+import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
+import org.apache.hc.core5.pool.PoolReusePolicy;
+import org.apache.hc.core5.util.Timeout;
 
 @Slf4j
 public final class HttpTransport extends Transport {
@@ -63,14 +70,30 @@ public final class HttpTransport extends Transport {
       // default one
       timeoutMs = 5000;
     }
+    Timeout timeout = Timeout.ofMilliseconds(timeoutMs);
 
-    RequestConfig config =
-        RequestConfig.custom()
-            .setConnectTimeout(timeoutMs)
-            .setConnectionRequestTimeout(timeoutMs)
-            .setSocketTimeout(timeoutMs)
+    PoolingHttpClientConnectionManager connectionManager =
+        PoolingHttpClientConnectionManagerBuilder.create()
+            .setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(timeout).build())
+            .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.STRICT)
+            .setConnPoolPolicy(PoolReusePolicy.LIFO)
+            .setDefaultConnectionConfig(
+                ConnectionConfig.custom()
+                    .setSocketTimeout(timeout)
+                    .setConnectTimeout(timeout)
+                    .setTimeToLive(timeout)
+                    .build())
             .build();
-    return HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+
+    RequestConfig requestConfig =
+        RequestConfig.custom()
+            .setConnectionRequestTimeout(timeout)
+            .setResponseTimeout(timeout)
+            .build();
+    return HttpClientBuilder.create()
+        .setConnectionManager(connectionManager)
+        .setDefaultRequestConfig(requestConfig)
+        .build();
   }
 
   public HttpTransport(
@@ -130,21 +153,22 @@ public final class HttpTransport extends Transport {
   private void emit(String eventAsJson) {
     log.debug("POST event on URL {}", uri);
     try {
-      final HttpPost request = new HttpPost();
-      request.setURI(uri);
+      ClassicRequestBuilder request = ClassicRequestBuilder.post(uri);
       setHeaders(request);
       setBody(request, eventAsJson);
 
-      try (CloseableHttpResponse response = http.execute(request)) {
-        throwOnHttpError(response);
-        EntityUtils.consume(response.getEntity());
-      }
+      http.execute(
+          request.build(),
+          response -> {
+            throwOnHttpError(response);
+            return null;
+          });
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
     }
   }
 
-  private void setBody(HttpPost request, String body) {
+  private void setBody(ClassicRequestBuilder request, String body) {
     HttpEntity entity = new StringEntity(body, APPLICATION_JSON);
     if (compression == HttpConfig.Compression.GZIP) {
       entity = new GzipCompressingEntity(entity);
@@ -152,22 +176,25 @@ public final class HttpTransport extends Transport {
     request.setEntity(entity);
   }
 
-  private void setHeaders(HttpPost request) {
+  private void setHeaders(ClassicRequestBuilder request) {
+    this.headers.forEach((key, value) -> request.setHeader(key, value));
     // set headers to accept json
-    headers.put(ACCEPT, APPLICATION_JSON.toString());
-    headers.put(CONTENT_TYPE, APPLICATION_JSON.toString());
+    request.setHeader(ACCEPT, APPLICATION_JSON.toString());
+    request.setHeader(CONTENT_TYPE, APPLICATION_JSON.toString());
     // if tokenProvider preset overwrite authorization
     if (tokenProvider != null) {
-      headers.put(AUTHORIZATION, tokenProvider.getToken());
+      request.addHeader(AUTHORIZATION, tokenProvider.getToken());
     }
-    headers.forEach(request::addHeader);
   }
 
-  private void throwOnHttpError(@NonNull HttpResponse response) throws IOException {
-    final int code = response.getStatusLine().getStatusCode();
+  private void throwOnHttpError(@NonNull ClassicHttpResponse response)
+      throws IOException, ParseException {
+    final int code = response.getCode();
+    HttpEntity entity = response.getEntity();
+    String body = EntityUtils.toString(entity, UTF_8);
+    EntityUtils.consume(entity);
     if (code >= 400 && code < 600) { // non-2xx
-      throw new HttpTransportResponseException(
-          code, EntityUtils.toString(response.getEntity(), UTF_8));
+      throw new HttpTransportResponseException(code, body);
     }
   }
 
