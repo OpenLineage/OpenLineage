@@ -8,13 +8,13 @@ Facets are a self-contained definition of one aspect of a job, dataset, or run a
 
 <!--truncate-->
 
-# Building consensus
+## Building consensus
 
 OpenLineage is an open source project, part of the LFAI&Data foundation, that standardizes lineage collection in the data ecosystem. In this increasingly rich ecosystem - that includes SQL-driven data warehouses, programmatic data processing frameworks like Spark or Pandas, and machine learning - it is near-impossible to maintain a clear and sane view of data lineage across everything without the collaboration of the ecosystem around a shared standard. Open source collaboration is a very powerful mechanism that can produce widely-adopted standard APIs.
 
 [OpenLineage draws a clear parallel with OpenTelemetry](https://openlineage.io/blog/openlineage-takes-inspiration-from-opentelemetry/) which provides a standard API to collect traces and metrics in the service world. It also draws from the experience of the Apache Parquet and Apache Arrow projects, which aim to define standard columnar data representations at-rest and in-memory.
 
-## Open Source
+### Open Source
 Standardizing an API through open source collaboration can be challenging. On one end, you need to get input and feedback from the people who will use the API in different contexts. On the other, you want to avoid getting stuck in disagreements arising from the different and sometimes incompatible viewpoints that inevitably drive these discussions. Thankfully, there are mechanisms to help organize and decouple those disagreements and drive discussions towards conclusion.
 
 A community driven open source project works very differently from a product you buy off the shelf. At the very moment you start using it - maybe starting by reading the doc - you become part of the community and start sharing a little bit of ownership. As with any software, you might encounter problems... but in this case, you immediately become part of the solution. In a healthy community, how much of the solution you become is entirely up to you.
@@ -25,7 +25,7 @@ One of the success factors of such an open source project is how much it can min
 
 In a multi-faceted domain like data lineage, enabling others to lead discussions is critical.
 
-## Making progress
+### Making progress
 In this context, we need mechanisms to converge often and make incremental progress. 
 
 You definitely want to avoid having a big monolithic spec that takes a long time to reach consensus on - if you ever do. A discussion around a large ultra-spec that combines specifications from multiple related domains will lose steam. We need to keep conversations focused on the topics that individual contributors care about. It is critical to subdivide the specification in concrete and granular decision points where consistent and significant progress can be made.
@@ -36,7 +36,7 @@ This will keep conversations focused and moving. It also decouples workstreams w
 
 For example the contributors interested in data quality might be different from the ones interested in column-level lineage or query performance.
 
-## Embracing different points of view
+### Embracing different points of view
 Depending on their perspective, contributors may have very different opinions on how to model a certain aspect of data. Or they may have different use-cases in mind. Instead of pitting different view-points against each other and forcing alignment on every point, it is sometimes beneficial to allow them to be expressed separately. 
 
 For example, when you ask a data practitioner "what is data lineage?" they may have very different definitions for it. 
@@ -46,7 +46,7 @@ For example, when you ask a data practitioner "what is data lineage?" they may h
 
 All those are valid view points that deserve to be captured appropriately and can be defined independently in a framework that allows them to cohabitate.
 
-# Mechanics
+## Mechanics
 
 OpenLineage is purposefully providing a faceted model around a minimalistic core spec to enable this granular decision making, minimize friction in contributing, and favor community-driven improvements.
 
@@ -57,25 +57,25 @@ The core spec focuses on high-level modeling of jobs, runs, datasets, and their 
 
 **Facets** are pieces of metadata that can be attached to those core entities. Facets have their own schema and capture various aspects of those entities.
 
-## Facets are individual atomic specs
+### Facets are individual atomic specs
 Like the core model, facets are defined by a `JSONSchema`. They are a self-contained definition of one aspect of a job, a dataset, or a run at the time the event happened. They make the model extensible. The notion of facets is powerful because it makes it easy to add more information to the model - you just define a new facet. There’s a clear compatibility model when introducing a new facet, since fields that are defined at the same time are grouped together.
 
 For example, there’s a facet to capture the schema of a dataset. There’s a facet to capture the version of a job in source control. There’s a facet to capture the parameters of a run. Facets are optional and may not apply to every instance of an entity.
 
-## Facets enable specialization of models
+### Facets enable specialization of models
 The core entities are fairly generic. A dataset might be a table in a warehouse or a topic in a Kafka broker. A job might be a SQL query or a machine learning training job.
 
 This generic high level model of lineage can be specialized by adding facets for that particular type of entity. At-rest data might be versioned, enabling transactions at the run level. Streaming data might capture the offsets and partitions where a streaming job started reading. Datasets might have a schema like a warehouse table, or not (for example, in the case of a machine learning model).
 
 By capturing a generic representation of lineage and allowing progressive specialization of those entities, this approach offers a lot of flexibility. 
 
-## Facets allow expressing different point of views
+### Facets allow expressing different point of views
 There can be divergent points of view on how to model a certain aspect of metadata. Facets allow these models to cohabitate in a common framework.
 
 One example of this is capturing the physical plan of a query execution. Each data warehouse might have its own unique way of describing execution plans. It is very valuable to be able to capture both a precise (but maybe too specific) model as well as a generic (but possibly imprecise or lossy) representation. They can be captured as two different facets. This also gives us opportunities to define several competing models and use the resulting information to collaborate on a more unified and generic representation. This emergent modeling is actually extremely useful in an open source setting, and as a way to make incremental progress.
 
-## Custom facets make the model decentralized
+### Custom facets make the model decentralized
 Most importantly, the OpenLineage spec allows custom facets that are defined elsewhere, completely outside of the spec. This allows others to extend the spec as-needed without having to coordinate with anyone or ask any permission from a governing body. They can make their own opinionated definition of an aspect of metadata. All that is required is that they publish a `JSONSchema` that describes their facets, prefixed by a unique namespace. This lowers the barrier to experimentation and encourages incremental progress by making the experimentation of others visible. The facets that become broadly useful can eventually be represented in the core spec.
 
-# Contribute!
+## Contribute!
 As a community, we’ve done our best to minimize friction when experimenting with or contributing to OpenLineage. We’re looking forward to seeing you join us as we make data lineage transparent across the data ecosystem.

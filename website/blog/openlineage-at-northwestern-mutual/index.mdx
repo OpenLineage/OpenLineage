@@ -10,19 +10,19 @@ Northwestern Mutual is building an Enterprise Data Platform. In this guest blog,
 
 I joined Northwestern Mutual last year to oversee the implementation and delivery of their Enterprise Data Platform (Unified Data Platform). With over 160 years of history, Northwestern Mutual has been serving our clients with insurance and investment products, as well as financial planning, advisory and consultation services. It goes without saying that the company has accumulated a vast amount of data over this time. Our team’s objective is to empower data analysts, data scientists, and data engineers with the platform capabilities they need to derive insights and garner value from many disparate data sources.
 
-# Ready...Set...Go!
+## Ready...Set...Go!
 
 So, where do you start? The industry has taught us a lot over the past 10+ years - *remember when on-premises Hadoop clusters were all the rage*? When revisiting the approach we took within our Data Platform Engineering teams, I see a lot of alignment to the [Data Engineering Manifesto](https://connectingdots.xyz/blog/posts/2021/05/the-data-engineering-manifesto/). A few principles really jump out:
 
-### Embrace cloud managed services
+#### Embrace cloud managed services
 
 Many of the foundational needs of an Enterprise Data Platform can be accomplished using a cloud-first mindset. While we may not all agree which cloud provider is best, we can all agree that the level of scale and sophistication accomplished around things like storage, compute, and redundancy are going to be MUCH greater when relying on a cloud provider than when rolling your own solution.
 
-### We are software engineers
+#### We are software engineers
 
 The Data Mesh evolution has reminded the industry that centralized data teams do not scale or empower anybody. With this principle in mind, our platform teams embraced full automation from the beginning and designed for self-service workflows. We do not want to become the bottleneck to insights; rather, we want to enable data owners to manage and share their datasets throughout the company. We want to empower data engineers with transformation and machine learning capabilities, so that they can author pipelines and deliver insights.
 
-### Aim for simplicity through consistency
+#### Aim for simplicity through consistency
 
 Traditionally, data platforms have gathered and constructed technical metadata based on events of the past. For example, there are many crawlers that will examine various database systems and build a catalog to make those datasets “discoverable.” Logs from various jobs can be parsed in *extremely specific ways* to identify datasets consumed and produced by a given pipeline to infer data lineage.
 
@@ -30,7 +30,7 @@ We viewed these traditional methods as a massive impediment to activating DataOp
 
 We also recognize and appreciate the complexity of this portion of the platform and did not find it wise to build from the ground up. Especially with the industry momentum towards real-time data observability, why add another custom solution to the stack? With such an evolving technical landscape, it was important for us to avoid vendor lock to allow us flexibility in future decisions.
 
-# NM hearts OL
+## NM hearts OL
 
 When we first learned of the OpenLineage specification, we were very intrigued and hopeful. An open specification focused on observing real-time events AND unifying tools and frameworks?!? Fast forward nine months, and we cannot believe how much capability we have developed around data observability in such a brief time. Let me back up a little...
 
@@ -38,7 +38,7 @@ Marquez is a metadata management framework that implements the OpenLineage speci
 
 We were able to quickly deploy this framework into our own environment, which provided us with several immediate wins.
 
-### Flexible framework
+#### Flexible framework
 
 Since it is aligned with the OpenLineage framework, Marquez can process messages from ANY data producer that is publishing compliant events. The Marquez and OpenLineage communities have been doing an excellent job maturing the integration library, which allows you to tackle this challenge at the infrastructure level. This is the ultimate easy button approach and our own ideal state; configure an environment on behalf of your user base and sit back while it automatically detects and logs the activity within!
 
@@ -46,7 +46,7 @@ In the cases when an integration either does not exist or you need to address a 
 
 For example, our teams have been able to programmatically construct OpenLineage messages within code that pulls data from various on-premises database servers and publishes it into our Data Platform. Using the OpenLineage specification, we extract the actual table schema from the source system as part of the `Dataset` entity and log the executing SQL query as part of the `Job` entity. This code was simplistic and allowed us to meet our immediate needs around observing data movement and recording those event details.
 
-### Alignment with enterprise
+#### Alignment with enterprise
 
 Marquez already supported Kubernetes when we got involved, which provided us with many different deployment options. Our first contributions to the project were made to mature the [Helm chart](https://github.com/MarquezProject/marquez/tree/main/chart) and to enhance security around the base images and Kubernetes secrets usage.
 
@@ -54,13 +54,13 @@ These changes allowed us to fully automate our deployments using GitOps and inco
 
 The flexibility offered by the Marquez deployment architecture and our ability to customize its details allowed us to activate new production use cases in about a month. We were happy with this timeline, given the series of security checkpoints that were validated and the wealth of functionality we had just unlocked.
 
-### Collaborative working group
+#### Collaborative working group
 
 Both the Marquez and OpenLineage communities have been extremely welcoming, and that has been a huge factor in our success at Northwestern Mutual. Our feedback and ideas have been encouraged and heard, which is evidenced by evolving project roadmaps and accepted developer contributions.
 
 We have learned quite a bit from the community members and feel fortunate to be a part of this group. Monthly community meetings are informative yet have an amazingly informal feel to them.
 
-# Where are we headed?
+## Where are we headed?
 
 The Unified Data Platform at Northwestern Mutual relies on the OpenLineage standard to formulate technical metadata within our various platform services. Publishing these events into Marquez has provided us with an effortless way to understand our running jobs. We can easily trace a downstream dataset to the job that produced it, as well as examine individual runs of that job or any preceding ones.
 

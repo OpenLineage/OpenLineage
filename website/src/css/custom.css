@@ -253,87 +253,87 @@ code .token-line {
   @apply w-full;
 }
 
-#post-content p {
+article div p {
   @apply my-3;
 }
 
-#post-content h1, h2, h3, h4, h5, h6 {
+article div h1, h2, h3, h4, h5, h6 {
   @apply text-color-2 my-8;
 }
 
-#post-content h1 {
+article div h1 {
   @apply text-5xl;
 }
 
-#post-content h2 {
+article div h2 {
   @apply text-4xl;
 }
 
-#post-content h3 {
+article div h3 {
   @apply text-3xl;
 }
 
-#post-content h4 {
+article div h4 {
   @apply text-2xl;
 }
 
-#post-content h5 {
+article div h5 {
   @apply text-xl;
 }
 
-#post-content h5 {
+article div h5 {
   @apply text-lg;
 }
 
-#post-content hr {
+article div hr {
   @apply my-4 border-medium;
 }
 
-#post-content ul {
+article div ul {
   list-style: disc;
 }
 
-#post-content ol {
+article div ol {
   list-style: decimal;
 }
 
-#post-content ul, #post-content ol {
+article div ul, article div ol {
   @apply ml-4;
 }
 
-#post-content ul ul, #post-content ol ol {
+article div ul ul, article div ol ol {
   @apply ml-3;
 }
 
-#post-content li {
+article div li {
   @apply my-2;
   margin-left: 1.5rem;
 }
 
-#post-content table {
+article div table {
   @apply w-full my-6;
 }
 
-#post-content table tr {
+article div table tr {
   border-bottom: 2px solid #eee;
   @apply border-medium;
 }
 
-.theme-dark #post-content table tr  {
+.theme-dark article div table tr  {
   border-bottom: 2px solid #444;
 }
 
-#post-content table tr td, #post-content table tr th {
+article div table tr td, article div table tr th {
   @apply p-2 py-3 text-left;
 }
 
-#post-content blockquote{
+article div blockquote{
   @apply border-l-4 border-primary p-3;
   padding: 0rem 0.75rem;
   margin: 1.5rem 0;
 }
 
-#post-content iframe {
+article div iframe {
   max-width: 100%;
 }
 
@@ -368,11 +368,11 @@ code .token-line {
   }
 }
 
-#post-content a {
+article div a {
   @apply text-color-2 my-4;
 }
 
-#post-content pre {
+article div pre {
   padding: 1rem;
   margin: 1rem;
 }
