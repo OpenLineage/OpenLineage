@@ -14,7 +14,7 @@ while [ "$1" ]; do
   test_events=("spec/tests/$event_type"/*.json)
   if [ ${#test_events[@]} -gt 0 ]; then
     echo "Validating $test_events against $1"
-    jv $1 $test_events
+    jv $1 $test_events --assert-format
   fi
   shift
 done

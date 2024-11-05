@@ -103,6 +103,7 @@ repos:
         name: Verify spec changes committed to website
         language: script
         files: ^spec/
+        exclude: ".*tests.*"
         entry: .pre_commit/run-spec-snapshot.sh
       - id: pmd-client-java
         name: pmd-client-java
