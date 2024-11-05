@@ -4,7 +4,7 @@ title: Using the Airflow Integration
 ---
 
 :::caution
-This page is about Airflow's external integration that works mainly for Airflow versions <2.7. 
+This page is about Airflow's external integration that works mainly for Airflow versions \<2.7. 
 [If you're using Airflow 2.7+, look at native Airflow OpenLineage provider documentation.](https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/index.html)  <br /><br /> 
 
 The ongoing development and enhancements will be focused on the `apache-airflow-providers-openlineage` package, 
@@ -14,7 +14,7 @@ while the `openlineage-airflow` will primarily be updated for bug fixes. See [al
 #### PREREQUISITES
 
 - [Python 3.8](https://www.python.org/downloads)
-- [Airflow >= 2.1,<2.8](https://pypi.org/project/apache-airflow)
+- [Airflow >= 2.1,\<2.8](https://pypi.org/project/apache-airflow)
 
 To use the OpenLineage Airflow integration, you'll need a running [Airflow instance](https://airflow.apache.org/docs/apache-airflow/stable/start.html). You'll also need an OpenLineage-compatible [backend](https://github.com/OpenLineage/OpenLineage#scope).
 

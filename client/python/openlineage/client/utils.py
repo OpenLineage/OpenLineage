@@ -36,6 +36,25 @@ def get_only_specified_fields(clazz: type[Any], params: dict[str, Any]) -> dict[
     return {key: value for key, value in params.items() if key in field_keys}
 
 
+def deep_merge_dicts(dict1: dict[Any, Any], dict2: dict[Any, Any]) -> dict[Any, Any]:
+    """Deep merges two dictionaries.
+
+    This function merges two dictionaries while handling nested dictionaries.
+    For keys that exist in both dictionaries, the values from dict2 take precedence.
+    If a key exists in both dictionaries and the values are dictionaries themselves,
+    they are merged recursively.
+    This function merges only dictionaries. If key is of different type, e.g. list
+    it does not work properly.
+    """
+    merged = dict1.copy()
+    for k, v in dict2.items():
+        if k in merged and isinstance(v, dict):
+            merged[k] = deep_merge_dicts(merged.get(k, {}), v)
+        else:
+            merged[k] = v
+    return merged
+
+
 class RedactMixin:
     _skip_redact: ClassVar[list[str]] = []
 

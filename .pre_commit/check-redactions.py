@@ -35,6 +35,7 @@ if __name__ == "__main__":
         redact_module = next((m for m in REDACT_FIELDS if m["module"] == module_name), None)
         if not redact_module:
             not_found.extend([MissingClass(module_name, clazz) for clazz in classes])
+            continue
         for clazz in classes:
             # check if class is defined in yaml
             if not next((c for c in redact_module["classes"] if c["class_name"] == clazz), None):

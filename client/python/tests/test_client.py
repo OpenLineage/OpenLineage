@@ -9,7 +9,12 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
-from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions
+from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions, OpenLineageConfig
+from openlineage.client.facets import FacetsConfig
+from openlineage.client.generated.environment_variables_run import (
+    EnvironmentVariable,
+    EnvironmentVariablesRunFacet,
+)
 from openlineage.client.run import (
     SCHEMA_URL,
     Dataset,
@@ -351,22 +356,137 @@ def test_find_yaml_config_path_checks_all_paths(mock_is_file, mocker: MockerFixt
     assert result is None
 
 
+def test_ol_config_from_dict():
+    # Test with complete config
+    config_dict = {
+        "transport": {"url": "http://localhost:5050"},
+        "facets": {"environment_variables": ["VAR1", "VAR2"]},
+        "filters": [{"type": "exact", "match": "job_name"}],
+    }
+    config = OpenLineageConfig.from_dict(config_dict)
+    assert config.transport["url"] == "http://localhost:5050"
+    assert config.facets.environment_variables == ["VAR1", "VAR2"]
+    assert config.filters[0].type == "exact"
+    assert config.filters[0].match == "job_name"
+
+    # Test with missing keys
+    config_dict = {}
+    config = OpenLineageConfig.from_dict(config_dict)
+    assert config.transport == {}
+    assert config.facets == FacetsConfig()
+    assert config.filters == []
+
+    # Test with invalid data type
+    with pytest.raises(TypeError):
+        OpenLineageConfig.from_dict({"facets": "invalid_data"})
+
+
 @patch("yaml.safe_load", return_value=None)
 def test_config_file_content_empty_file(mock_yaml) -> None:  # noqa: ARG001
-    assert OpenLineageClient().config == {}
+    assert OpenLineageClient().config == OpenLineageConfig()
 
 
 def test_config(mocker: MockerFixture, root: Path) -> None:
     mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": str(root / "config" / "http.yml")})
-    assert OpenLineageClient().config == {
+    assert OpenLineageClient().config == OpenLineageConfig.from_dict(
+        {
+            "transport": {
+                "auth": {"apiKey": "random_token", "type": "api_key"},
+                "compression": "gzip",
+                "endpoint": "api/v1/lineage",
+                "type": "http",
+                "url": "http://localhost:5050",
+            }
+        }
+    )
+
+
+def test_openlineage_client_from_dict() -> None:
+    config_dict = {"transport": {"type": "http", "url": "http://localhost:5050"}}
+    client = OpenLineageClient.from_dict(config_dict)
+    assert client.transport.url == "http://localhost:5050"
+
+
+def test_openlineage_client_from_empty_dict() -> None:
+    client = OpenLineageClient.from_dict({})
+    assert isinstance(client.transport, ConsoleTransport)
+
+
+def test_openlineage_config_from_dict() -> None:
+    config_dict = {
         "transport": {
-            "auth": {"apiKey": "random_token", "type": "api_key"},
-            "compression": "gzip",
-            "endpoint": "api/v1/lineage",
             "type": "http",
             "url": "http://localhost:5050",
-        }
+            "auth": {"api_key": "random_token"},
+        },
+        "facets": {
+            "environment_variables": ["VAR1", "VAR2"],
+        },
+        "filters": [
+            {"type": "regex", "match": ".*"},
+        ],
     }
+    config = OpenLineageConfig.from_dict(config_dict)
+
+    assert config.transport == config_dict["transport"]
+    assert config.facets.environment_variables == config_dict["facets"]["environment_variables"]
+    assert len(config.filters) == 1
+    assert config.filters[0].type == "regex"
+    assert config.filters[0].match == ".*"
+
+
+def test_openlineage_config_default_values() -> None:
+    config = OpenLineageConfig()
+
+    assert config.transport == {}
+    assert isinstance(config.facets, FacetsConfig)
+    assert config.filters == []
+
+
+@patch.dict(os.environ, {"ENV_VAR_1": "value1", "ENV_VAR_2": "value2"})
+def test_collect_environment_variables():
+    client = OpenLineageClient()
+    client._config = OpenLineageConfig(  # noqa: SLF001
+        facets=FacetsConfig(environment_variables=["ENV_VAR_1", "ENV_VAR_2", "MISSING_VAR"])
+    )
+    env_vars = client._collect_environment_variables()  # noqa: SLF001
+    assert env_vars == {"ENV_VAR_1": "value1", "ENV_VAR_2": "value2"}
+
+
+@patch.dict(os.environ, {"ENV_VAR_1": "value1", "SENSITIVE_VAR": "PII"})
+def test_add_environment_facets():
+    client = OpenLineageClient()
+    client._config = OpenLineageConfig(  # noqa: SLF001
+        facets=FacetsConfig(environment_variables=["ENV_VAR_1"])
+    )
+    run = Run(runId=str(generate_new_uuid()))
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime="2021-11-03T10:53:52.427343",
+        run=run,
+        job=Job(name="name", namespace=""),
+        producer="",
+        schemaURL="",
+    )
+    event.run.facets = {}
+
+    modified_event = client.add_environment_facets(event)
+
+    assert "environmentVariables" in modified_event.run.facets
+    assert modified_event.run.facets["environmentVariables"] == EnvironmentVariablesRunFacet(
+        [EnvironmentVariable(name="ENV_VAR_1", value="value1")]
+    )
+
+
+@patch("openlineage.client.client.OpenLineageClient._find_yaml_config_path")
+@patch("openlineage.client.client.OpenLineageClient._get_config_file_content")
+def test_config_property_loads_yaml(mock_get_config_content, mock_find_yaml):
+    mock_find_yaml.return_value = "config.yml"
+    mock_get_config_content.return_value = {"transport": {"type": "http", "url": "http://localhost:5050"}}
+
+    config = OpenLineageClient().config
+    assert config.transport["type"] == "http"
+    assert config.transport["url"] == "http://localhost:5050"
 
 
 @patch.dict(
@@ -488,6 +608,155 @@ def test_kafka_transport_configured_with_aliased_message_key() -> None:
         "acks": "all",
         "retries": 3,
     }
+
+
+@patch.dict(
+    os.environ,
+    {
+        "CUSTOM_ENV_VAR": "custom_value",
+        "OPENLINEAGE__TRANSPORT__TYPE": "console",
+        "OPENLINEAGE__FACETS__ENVIRONMENT_VARIABLES": '["CUSTOM_ENV_VAR"]',
+    },
+)
+@patch("openlineage.client.client.OpenLineageClient._resolve_transport")
+def test_add_environment_facets_with_custom_env_var(mock_resolve_transport) -> None:
+    mock_resolve_transport.return_value = mock_transport = MagicMock()
+    client = OpenLineageClient()
+    run = Run(runId=str(generate_new_uuid()))
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime="2021-11-03T10:53:52.427343",
+        run=run,
+        job=Job(name="name", namespace=""),
+        producer="",
+        schemaURL="",
+    )
+
+    client.emit(event)
+    assert mock_transport.emit.call_args[0][0].run.facets[
+        "environmentVariables"
+    ] == EnvironmentVariablesRunFacet([EnvironmentVariable(name="CUSTOM_ENV_VAR", value="custom_value")])
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE__TRANSPORT__TYPE": "http",
+        "OPENLINEAGE__TRANSPORT__URL": "http://localhost:5050",
+        "OPENLINEAGE__TRANSPORT__AUTH__API_KEY": "random_token",
+    },
+)
+@patch("openlineage.client.client.OpenLineageClient._find_yaml_config_path")
+def test_config_property_loads_env_vars(mock_find_yaml) -> None:
+    mock_find_yaml.return_value = None
+    client = OpenLineageClient()
+    config = client.config
+    assert config.transport["type"] == "http"
+    assert config.transport["url"] == "http://localhost:5050"
+    assert config.transport["auth"]["api_key"] == "random_token"
+
+
+def test_config_property_loads_user_defined_config() -> None:
+    user_defined_config = {
+        "transport": {
+            "type": "http",
+            "url": "http://localhost:5050",
+            "auth": {"api_key": "random_token"},
+        }
+    }
+    client = OpenLineageClient(config=user_defined_config)
+    config = client.config
+    assert config.transport["type"] == "http"
+    assert config.transport["url"] == "http://localhost:5050"
+    assert config.transport["auth"]["api_key"] == "random_token"
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE__TRANSPORT__TYPE": "http",
+        "OPENLINEAGE__TRANSPORT__URL": "http://localhost:5050",
+    },
+)
+def test_client_from_empty_dict_with_dynamic_env_vars() -> None:
+    client = OpenLineageClient.from_dict({})
+    assert client.transport.url == "http://localhost:5050"
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+    },
+)
+def test_client_from_empty_dict_with_url_env_var() -> None:
+    client = OpenLineageClient.from_dict({})
+    assert client.transport.url == "http://example.com"
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE__TRANSPORT__TYPE": "http",
+        "OPENLINEAGE__TRANSPORT__URL": "http://localhost:5050",
+    },
+)
+def test_client_from_facets_config_in_dict_and_env_vars() -> None:
+    user_defined_config = {
+        "facets": {
+            "environment_variables": ["VAR1", "VAR2"],
+        }
+    }
+    client = OpenLineageClient.from_dict(user_defined_config)
+    assert client.config.facets.environment_variables == ["VAR1", "VAR2"]
+    assert client.transport.url == "http://localhost:5050"
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE__FACETS__ENVIRONMENT_VARIABLES": '["VAR1", "VAR2"]',
+    },
+)
+def test_client_from_facets_config_in_env_vars_and_transport_in_config() -> None:
+    user_defined_config = {
+        "transport": {
+            "type": "http",
+            "url": "http://localhost:5050",
+        }
+    }
+    client = OpenLineageClient.from_dict(user_defined_config)
+    assert client.config.facets.environment_variables == ["VAR1", "VAR2"]
+    assert client.transport.url == "http://localhost:5050"
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE__TRANSPORT__AUTH__API_KEY": "random_token",
+    },
+)
+@patch("openlineage.client.client.OpenLineageClient._find_yaml_config_path")
+@patch("openlineage.client.client.OpenLineageClient._get_config_file_content")
+def test_config_merge_precedence(mock_get_config_content, mock_find_yaml) -> None:
+    user_defined_config = {
+        "transport": {
+            "type": "http",
+            "url": "http://localhost:5050",
+        }
+    }
+    mock_find_yaml.return_value = "config.yml"
+    mock_get_config_content.return_value = {
+        "transport": {
+            "url": "http://another.host:5050",
+            "auth": {"api_key": "another_token"},
+        }
+    }
+    client = OpenLineageClient.from_dict(user_defined_config)
+    config = client.config
+    assert config.transport["type"] == "http"
+    assert config.transport["url"] == "http://localhost:5050"
+    assert config.transport["auth"]["api_key"] == "another_token"
 
 
 class TestOpenLineageConfigLoader:

@@ -5,10 +5,18 @@ from __future__ import annotations
 import re
 import typing
 
+import attr
 from openlineage.client.event_v2 import RunEvent as RunEvent_v2
 from openlineage.client.run import RunEvent
 
 RunEventType = typing.Union[RunEvent, RunEvent_v2]
+
+
+@attr.s
+class FilterConfig:
+    type: str | None = attr.ib(default=None)
+    match: str | None = attr.ib(default=None)
+    regex: str | None = attr.ib(default=None)
 
 
 class Filter:
@@ -36,12 +44,12 @@ class RegexFilter(Filter):
         return event
 
 
-def create_filter(conf: dict[str, str]) -> Filter | None:
-    if "type" not in conf:
+def create_filter(conf: FilterConfig) -> Filter | None:
+    if not conf.type:
         return None
     # Switch in 3.10 🙂
-    if conf["type"] == "exact":
-        return ExactMatchFilter(match=conf["match"])
-    if conf["type"] == "regex":
-        return RegexFilter(regex=conf["regex"])
+    if conf.type == "exact" and conf.match:
+        return ExactMatchFilter(match=conf.match)
+    if conf.type == "regex" and conf.regex:
+        return RegexFilter(regex=conf.regex)
     return None
