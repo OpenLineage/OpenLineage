@@ -24,14 +24,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-java</artifactId>
-    <version>${OPENLINEAGE_VERSION}</version>
+    <version>{{PREPROCESSOR:OPENLINEAGE_VERSION}}</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation("io.openlineage:openlineage-java:${OPENLINEAGE_VERSION}")
+implementation("io.openlineage:openlineage-java:{{PREPROCESSOR:OPENLINEAGE_VERSION}}")
 ```
 
 For more information on the available versions of the `openlineage-java`, 

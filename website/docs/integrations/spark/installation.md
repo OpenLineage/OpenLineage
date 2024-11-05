@@ -13,7 +13,7 @@ import TabItem from '@theme/TabItem';
 
 The above necessitates a change in the artifact identifier for `io.openlineage:openlineage-spark`.
 After version `1.8.0`, the artifact identifier has been updated. For subsequent versions, utilize:
-`io.openlineage:openlineage-spark_${SCALA_BINARY_VERSION}:${OPENLINEAGE_SPARK_VERSION}`.
+`io.openlineage:openlineage-spark_${SCALA_BINARY_VERSION}:{{PREPROCESSOR:OPENLINEAGE_VERSION}}`.
 :::
 
 To integrate OpenLineage Spark with your application, you can:
@@ -39,7 +39,7 @@ For Maven, add the following to your `pom.xml`:
 <dependency>
   <groupId>io.openlineage</groupId>
   <artifactId>openlineage-spark_${SCALA_BINARY_VERSION}</artifactId>
-  <version>${OPENLINEAGE_SPARK_VERSION}</version>
+  <version>{{PREPROCESSOR:OPENLINEAGE_VERSION}}</version>
 </dependency>
 ```
 
@@ -63,14 +63,14 @@ For Gradle, add this to your `build.gradle`:
 <TabItem value="after-1.8.0" label="After 1.8.0">
 
 ```groovy
-implementation("io.openlineage:openlineage-spark_${SCALA_BINARY_VERSION}:${OPENLINEAGE_SPARK_VERSION}")
+implementation("io.openlineage:openlineage-spark_${SCALA_BINARY_VERSION}:{{PREPROCESSOR:OPENLINEAGE_VERSION}}")
 ```
 
 </TabItem>
 <TabItem value="1.8.0-and-earlier" label="1.8.0 and earlier">
 
 ```groovy
-implementation("io.openlineage:openlineage-spark:${OPENLINEAGE_SPARK_VERSION}")
+implementation("io.openlineage:openlineage-spark:{{PREPROCESSOR:OPENLINEAGE_VERSION}}")
 ```
 
 </TabItem>
@@ -100,7 +100,7 @@ if [ -z "$SPARK_HOME" ]; then
     exit 1
 fi
 
-OPENLINEAGE_SPARK_VERSION='1.9.0'  # Example version
+OPENLINEAGE_SPARK_VERSION='{{PREPROCESSOR:OPENLINEAGE_VERSION}}'
 SCALA_BINARY_VERSION='2.13'        # Example Scala version
 ARTIFACT_ID="openlineage-spark_${SCALA_BINARY_VERSION}"
 JAR_NAME="${ARTIFACT_ID}-${OPENLINEAGE_SPARK_VERSION}.jar"
@@ -172,7 +172,7 @@ This script demonstrate this process:
 ```bash
 #!/usr/bin/env bash
 
-OPENLINEAGE_SPARK_VERSION='1.9.0'  # Example version
+OPENLINEAGE_SPARK_VERSION='{{PREPROCESSOR:OPENLINEAGE_VERSION}}'
 SCALA_BINARY_VERSION='2.13'        # Example Scala version
 ARTIFACT_ID="openlineage-spark_${SCALA_BINARY_VERSION}"
 JAR_NAME="${ARTIFACT_ID}-${OPENLINEAGE_SPARK_VERSION}.jar"
@@ -237,10 +237,10 @@ during runtime and adds it to the classpath of your Spark application.
 <TabItem value="after-1.8.0" label="After 1.8.0">
 
 ```bash
-OPENLINEAGE_SPARK_VERSION='1.9.0'  # Example version
+OPENLINEAGE_SPARK_VERSION='{{PREPROCESSOR:OPENLINEAGE_VERSION}}'
 SCALA_BINARY_VERSION='2.13'        # Example Scala version
 
-spark-submit --packages "io.openlineage:openlineage-spark_${SCALA_BINARY_VERSION}:${OPENLINEAGE_SPARK_VERSION}" \
+spark-submit --packages "io.openlineage:openlineage-spark_${SCALA_BINARY_VERSION}:{{PREPROCESSOR:OPENLINEAGE_VERSION}}" \
     # ... other options
 ```
 
@@ -250,7 +250,7 @@ spark-submit --packages "io.openlineage:openlineage-spark_${SCALA_BINARY_VERSION
 ```bash
 OPENLINEAGE_SPARK_VERSION='1.8.0'  # Example version
 
-spark-submit --packages "io.openlineage:openlineage-spark::${OPENLINEAGE_SPARK_VERSION}" \
+spark-submit --packages "io.openlineage:openlineage-spark::{{PREPROCESSOR:OPENLINEAGE_VERSION}}" \
     # ... other options
 ```
 
