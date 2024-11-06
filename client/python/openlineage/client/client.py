@@ -82,7 +82,7 @@ class OpenLineageClient:
         transport: Transport | None = None,
         factory: TransportFactory | None = None,
         *,
-        config: dict[str, str] | None = None,
+        config: dict[str, Any] | None = None,
     ) -> None:
         # Set parent's logging level if environment variable is present
         custom_logging_level = os.getenv("OPENLINEAGE_CLIENT_LOGGING", None)
@@ -126,7 +126,15 @@ class OpenLineageClient:
 
     @classmethod
     def from_dict(cls: type[_T], config: dict[str, str]) -> _T:
-        return cls(config=config)
+        warnings.warn(
+            message=(
+                "Using `from_dict` to set transport is deprecated. "
+                "Use `config` parameter to fully configure OpenLineageClient."
+            ),
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        return cls(transport=get_default_factory().create(config=config), config={"transport": config})
 
     def filter_event(
         self,

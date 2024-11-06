@@ -402,8 +402,8 @@ def test_config(mocker: MockerFixture, root: Path) -> None:
 
 
 def test_openlineage_client_from_dict() -> None:
-    config_dict = {"transport": {"type": "http", "url": "http://localhost:5050"}}
-    client = OpenLineageClient.from_dict(config_dict)
+    transport_dict = {"type": "http", "url": "http://localhost:5050"}
+    client = OpenLineageClient.from_dict(transport_dict)
     assert client.transport.url == "http://localhost:5050"
 
 
@@ -680,7 +680,7 @@ def test_config_property_loads_user_defined_config() -> None:
 )
 def test_client_from_empty_dict_with_dynamic_env_vars() -> None:
     client = OpenLineageClient.from_dict({})
-    assert client.transport.url == "http://localhost:5050"
+    assert client.transport.kind == ConsoleTransport.kind
 
 
 @patch.dict(
@@ -691,7 +691,7 @@ def test_client_from_empty_dict_with_dynamic_env_vars() -> None:
 )
 def test_client_from_empty_dict_with_url_env_var() -> None:
     client = OpenLineageClient.from_dict({})
-    assert client.transport.url == "http://example.com"
+    assert client.transport.kind == ConsoleTransport.kind
 
 
 @patch.dict(
@@ -701,15 +701,14 @@ def test_client_from_empty_dict_with_url_env_var() -> None:
         "OPENLINEAGE__TRANSPORT__URL": "http://localhost:5050",
     },
 )
-def test_client_from_facets_config_in_dict_and_env_vars() -> None:
-    user_defined_config = {
+def test_client_raises_from_wrong_dict() -> None:
+    config_without_transport = {
         "facets": {
             "environment_variables": ["VAR1", "VAR2"],
         }
     }
-    client = OpenLineageClient.from_dict(user_defined_config)
-    assert client.config.facets.environment_variables == ["VAR1", "VAR2"]
-    assert client.transport.url == "http://localhost:5050"
+    with pytest.raises(KeyError):
+        OpenLineageClient.from_dict(config_without_transport)
 
 
 @patch.dict(
@@ -719,13 +718,11 @@ def test_client_from_facets_config_in_dict_and_env_vars() -> None:
     },
 )
 def test_client_from_facets_config_in_env_vars_and_transport_in_config() -> None:
-    user_defined_config = {
-        "transport": {
-            "type": "http",
-            "url": "http://localhost:5050",
-        }
+    transport_config = {
+        "type": "http",
+        "url": "http://localhost:5050",
     }
-    client = OpenLineageClient.from_dict(user_defined_config)
+    client = OpenLineageClient.from_dict(transport_config)
     assert client.config.facets.environment_variables == ["VAR1", "VAR2"]
     assert client.transport.url == "http://localhost:5050"
 
@@ -739,11 +736,9 @@ def test_client_from_facets_config_in_env_vars_and_transport_in_config() -> None
 @patch("openlineage.client.client.OpenLineageClient._find_yaml_config_path")
 @patch("openlineage.client.client.OpenLineageClient._get_config_file_content")
 def test_config_merge_precedence(mock_get_config_content, mock_find_yaml) -> None:
-    user_defined_config = {
-        "transport": {
-            "type": "http",
-            "url": "http://localhost:5050",
-        }
+    transport_config = {
+        "type": "http",
+        "url": "http://localhost:5050",
     }
     mock_find_yaml.return_value = "config.yml"
     mock_get_config_content.return_value = {
@@ -752,7 +747,7 @@ def test_config_merge_precedence(mock_get_config_content, mock_find_yaml) -> Non
             "auth": {"api_key": "another_token"},
         }
     }
-    client = OpenLineageClient.from_dict(user_defined_config)
+    client = OpenLineageClient.from_dict(transport_config)
     config = client.config
     assert config.transport["type"] == "http"
     assert config.transport["url"] == "http://localhost:5050"
