@@ -13,7 +13,7 @@ This guide was developed using an **earlier version** of this integration and ma
 Adding OpenLineage to Spark is refreshingly uncomplicated, and this is thanks to Spark's SparkListener interface. OpenLineage integrates with Spark by implementing SparkListener and collecting information about jobs executed inside a Spark application. To activate the listener, add the following properties to your Spark configuration in your cluster's `spark-defaults.conf` file or, alternatively, add them to specific jobs on submission via the `spark-submit` command:
 
 ```
-spark.jars.packages     io.openlineage:openlineage-spark:1.23.0
+spark.jars.packages     io.openlineage:openlineage-spark:{{PREPROCESSOR:OPENLINEAGE_VERSION}}
 spark.extraListeners    io.openlineage.spark.agent.OpenLineageSparkListener
 ```
 
@@ -91,7 +91,7 @@ spark = (SparkSession.builder.master('local').appName('openlineage_spark_test')
         .config('spark.jars', ",".join(files))
         
         # Install and set up the OpenLineage listener
-        .config('spark.jars.packages', 'io.openlineage:openlineage-spark:1.23.0')
+        .config('spark.jars.packages', 'io.openlineage:openlineage-spark:{{PREPROCESSOR:OPENLINEAGE_VERSION}}')
         .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
         .config('spark.openlineage.transport.url', 'http://marquez-api:5000')
         .config('spark.openlineage.transport.type', 'http')

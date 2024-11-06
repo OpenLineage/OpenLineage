@@ -15,7 +15,7 @@ to be emitted correctly.
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>transports-s3</artifactId>
-    <version>YOUR_VERSION_HERE</version>
+    <version>{{PREPROCESSOR:OPENLINEAGE_VERSION}}</version>
 </dependency>
 ```
 
