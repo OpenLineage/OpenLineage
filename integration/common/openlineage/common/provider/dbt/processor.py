@@ -384,11 +384,19 @@ class DbtArtifactProcessor:
                 if node.startswith("model.") or node.startswith("source."):
                     model_node = node
 
+            if self.manifest_version >= 12:
+                name = test_node["name"]
+                node_columns = test_node
+
+            else:
+                name = test_node["test_manifest"]["name"]
+                node_columns = test_node["test_manifest"]
+
             assertions[model_node].append(
                 data_quality_assertions_dataset.Assertion(
-                    assertion=test_node["test_metadata"]["name"],
+                    assertion=name,
                     success=True if run["status"] == "pass" else False,
-                    column=get_from_nullable_chain(test_node["test_metadata"], ["kwargs", "column_name"]),
+                    column=get_from_nullable_chain(node_columns, ["kwargs", "column_name"]),
                 )
             )
 
