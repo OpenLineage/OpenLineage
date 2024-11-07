@@ -389,8 +389,8 @@ class DbtArtifactProcessor:
                 node_columns = test_node
 
             else:
-                name = test_node["test_manifest"]["name"]
-                node_columns = test_node["test_manifest"]
+                name = test_node["test_metadata"]["name"]
+                node_columns = test_node["test_metadata"]
 
             assertions[model_node].append(
                 data_quality_assertions_dataset.Assertion(
