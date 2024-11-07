@@ -70,9 +70,16 @@ def test_dbt_parse_and_compare_event(path, parent_run_metadata):
         assert match(json.load(f), events)
 
 
+@pytest.mark.parametrize(
+    "path",
+    [
+        "tests/dbt/test",
+        "tests/dbt/no_test_metadata",
+    ],
+)
 @mock.patch("openlineage.common.provider.dbt.processor.generate_new_uuid")
 @mock.patch("datetime.datetime")
-def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata):
+def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata, path):
     mock_datetime.now.return_value.isoformat.return_value = "2021-08-25T11:00:25.277467+00:00"
     mock_uuid.side_effect = [
         "6edf42ed-d8d0-454a-b819-d09b9067ff99",
@@ -85,7 +92,7 @@ def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata)
     processor = DbtLocalArtifactProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/test",
+        project_dir=path,
     )
     processor.dbt_run_metadata = parent_run_metadata
 
@@ -94,7 +101,7 @@ def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata)
         attr.asdict(event, value_serializer=serialize)
         for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
     ]
-    with open("tests/dbt/test/result.json") as f:
+    with open(f"{path}/result.json") as f:
         assert match(json.load(f), events)
 
 
