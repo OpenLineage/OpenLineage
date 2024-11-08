@@ -16,8 +16,16 @@
 package io.openlineage.hive.hooks;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetBuilder;
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFieldsAdditional;
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFieldsBuilder;
 import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.InputField;
+import io.openlineage.client.OpenLineage.InputFieldBuilder;
+import io.openlineage.client.OpenLineage.InputFieldTransformations;
+import io.openlineage.client.OpenLineage.InputFieldTransformationsBuilder;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunBuilder;
 import io.openlineage.client.OpenLineage.RunEvent;
@@ -28,12 +36,20 @@ import io.openlineage.client.OpenLineage.SymlinksDatasetFacetIdentifiers;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.hive.api.OpenLineageContext;
 import io.openlineage.hive.client.EventEmitter;
+import io.openlineage.hive.client.HiveOpenLineageConfigParser;
 import io.openlineage.hive.client.Versions;
 import io.openlineage.hive.facets.HivePropertiesFacetBuilder;
+import io.openlineage.hive.parsing.ColumnLineageCollector;
+import io.openlineage.hive.parsing.Parsing;
+import io.openlineage.hive.parsing.QueryExpr;
 import io.openlineage.hive.util.HiveUtils;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.hooks.Entity;
@@ -42,6 +58,7 @@ import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hive.common.util.HiveVersionInfo;
 
+@Slf4j
 public class Faceting {
 
   public static void sanitizeEntity(Configuration conf, Entity entity) {
@@ -56,7 +73,7 @@ public class Faceting {
   }
 
   public static List<InputDataset> getInputDatasets(OpenLineageContext olContext) {
-    List<InputDataset> inputs = new ArrayList<>();
+    List<InputDataset> inputs = Collections.emptyList();
     for (ReadEntity input : olContext.getReadEntities()) {
       Entity.Type entityType = input.getType();
       if ((entityType == Entity.Type.TABLE || entityType == Entity.Type.PARTITION)
@@ -97,6 +114,29 @@ public class Faceting {
         SymlinksDatasetFacet symlinksFacet = getSymlinkFacets(ol, di);
         DatasetFacetsBuilder datasetFacetsBuilder =
             ol.newDatasetFacetsBuilder().schema(schemaFacet).symlinks(symlinksFacet);
+        QueryExpr query =
+            Parsing.buildQueryTree(
+                olContext.getSemanticAnalyzer().getQB(), outputTable.getFullyQualifiedName());
+        OutputCLL outputCLL = ColumnLineageCollector.collectCLL(query, outputTable);
+        if (olContext
+                .getHadoopConf()
+                .get(HiveOpenLineageConfigParser.CONF_PREFIX + "datasetLineageEnabled")
+            != null) {
+          // See:
+          // https://github.com/OpenLineage/OpenLineage/blob/09bd1c83b4f0295a065c0220c5a12a0dab746f09/integration/spark/spark3/src/main/java/io/openlineage/spark3/agent/lifecycle/plan/column/ColumnLevelLineageUtils.java#L64-L67
+          log.warn(
+              "DEPRECATION WARNING: The `datasetLineageEnabled` will soon be removed (defaulting to true).");
+        }
+        boolean datasetLineageEnabled =
+            olContext
+                .getHadoopConf()
+                .getBoolean(
+                    HiveOpenLineageConfigParser.CONF_PREFIX + "datasetLineageEnabled", true);
+        ColumnLineageDatasetFacet columnsFacet =
+            getColumnFacets(ol, datasetLineageEnabled, inputDatasets, outputCLL);
+        if (!columnsFacet.getFields().getAdditionalProperties().isEmpty()) {
+          datasetFacetsBuilder.columnLineage(columnsFacet);
+        }
         outputs.add(
             ol.newOutputDatasetBuilder()
                 .namespace(di.getNamespace())
@@ -120,7 +160,95 @@ public class Faceting {
         return inputDataset;
       }
     }
-    throw new RuntimeException("Input dataset not found");
+    throw new IllegalArgumentException("Input dataset not found");
+  }
+
+  public static ColumnLineageDatasetFacet getColumnFacets(
+      OpenLineage ol,
+      boolean datasetLineageEnabled,
+      List<InputDataset> inputDatasets,
+      OutputCLL outputCLL) {
+    OpenLineage.ColumnLineageDatasetFacetFields cllFields =
+        getColumnInputFields(ol, datasetLineageEnabled, inputDatasets, outputCLL);
+    ColumnLineageDatasetFacetBuilder columnLineageFacetBuilder =
+        ol.newColumnLineageDatasetFacetBuilder();
+    columnLineageFacetBuilder.fields(cllFields);
+    if (datasetLineageEnabled) {
+      columnLineageFacetBuilder.dataset(
+          getInputFields(inputDatasets, outputCLL, outputCLL.getDatasetDependencies()));
+    } else {
+      columnLineageFacetBuilder.dataset(Collections.emptyList());
+    }
+    return columnLineageFacetBuilder.build();
+  }
+
+  public static OpenLineage.ColumnLineageDatasetFacetFields getColumnInputFields(
+      OpenLineage ol,
+      boolean datasetLineageEnabled,
+      List<InputDataset> inputDatasets,
+      OutputCLL outputCLL) {
+    ColumnLineageDatasetFacetFieldsBuilder inputFieldsFacetBuilder =
+        ol.newColumnLineageDatasetFacetFieldsBuilder();
+    List<InputField> datasetDependencies;
+    if (datasetLineageEnabled) {
+      datasetDependencies = Collections.emptyList();
+    } else {
+      datasetDependencies =
+          getInputFields(inputDatasets, outputCLL, outputCLL.getDatasetDependencies());
+    }
+    for (String outputColumn : outputCLL.getColumns()) {
+      List<InputField> olInputFields =
+          getInputFields(
+              inputDatasets, outputCLL, outputCLL.getColumnDependencies().get(outputColumn));
+      olInputFields.addAll(datasetDependencies);
+      ColumnLineageDatasetFacetFieldsAdditional value =
+          ol.newColumnLineageDatasetFacetFieldsAdditionalBuilder()
+              .inputFields(olInputFields)
+              .build();
+      if (!value.getInputFields().isEmpty()) {
+        inputFieldsFacetBuilder.put(outputColumn, value);
+      }
+    }
+    return inputFieldsFacetBuilder.build();
+  }
+
+  public static List<InputField> getInputFields(
+      List<InputDataset> inputDatasets,
+      OutputCLL outputCLL,
+      Map<String, Set<TransformationInfo>> inputs) {
+    List<InputField> olInputFields = Collections.emptyList();
+    for (Map.Entry<String, Set<TransformationInfo>> input : inputs.entrySet()) {
+      int lastDotIndex = input.getKey().lastIndexOf('.');
+      String inputTableFQN = input.getKey().substring(0, lastDotIndex);
+      String inputColumn = input.getKey().substring(lastDotIndex + 1);
+      Table inputTable = outputCLL.getInputTables().get(inputTableFQN);
+      InputDataset inputDataset = getInputDataset(inputTable, inputDatasets);
+      InputFieldBuilder olFieldBuilder =
+          new InputFieldBuilder()
+              .namespace(inputDataset.getNamespace())
+              .name(inputDataset.getName())
+              .field(inputColumn);
+      List<InputFieldTransformations> olTransformations = Collections.emptyList();
+      for (TransformationInfo transformation : input.getValue()) {
+        InputFieldTransformationsBuilder olTransformationBuilder =
+            getInputFieldTransformationsBuilder(transformation);
+        olTransformations.add(olTransformationBuilder.build());
+      }
+      olFieldBuilder.transformations(olTransformations);
+      olInputFields.add(olFieldBuilder.build());
+    }
+    return olInputFields;
+  }
+
+  public static InputFieldTransformationsBuilder getInputFieldTransformationsBuilder(
+      TransformationInfo transformation) {
+    InputFieldTransformationsBuilder olTransformationBuilder =
+        new InputFieldTransformationsBuilder();
+    olTransformationBuilder.type(transformation.getType().name());
+    olTransformationBuilder.description(transformation.getDescription());
+    olTransformationBuilder.subtype(transformation.getSubType().name());
+    olTransformationBuilder.masking(transformation.getMasking());
+    return olTransformationBuilder;
   }
 
   public static SymlinksDatasetFacet getSymlinkFacets(OpenLineage ol, DatasetIdentifier di) {
@@ -145,7 +273,7 @@ public class Faceting {
     List<FieldSchema> columns = table.getCols();
     SchemaDatasetFacet schemaFacet = null;
     if (columns != null && !columns.isEmpty()) {
-      List<SchemaDatasetFacetFields> fields = new ArrayList<>();
+      List<SchemaDatasetFacetFields> fields = Collections.emptyList();
       for (FieldSchema column : columns) {
         fields.add(
             olContext

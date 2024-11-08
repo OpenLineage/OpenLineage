@@ -44,8 +44,11 @@ public class Parsing {
     for (String tabAlias : qb.getTabAliases()) {
       QueryExpr tableQuery = new QueryExpr(tabAlias);
       Table table = qb.getMetaData().getSrcForAlias(tabAlias);
-      for (int i = 0; i < table.getCols().size(); i++) {
-        FieldSchema fieldSchema = table.getCols().get(i);
+      List<FieldSchema> allCols = new ArrayList<>();
+      allCols.addAll(table.getCols());
+      allCols.addAll(table.getPartCols());
+      for (int i = 0; i < allCols.size(); i++) {
+        FieldSchema fieldSchema = allCols.get(i);
         ColumnExpr column = new ColumnExpr(fieldSchema.getName().toLowerCase(Locale.ROOT));
         column.setIndex(i);
         column.setTable(table);
@@ -78,14 +81,18 @@ public class Parsing {
   @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
   public static String getClauseName(QB qb, String outputTable) {
     QBParseInfo parseInfo = qb.getParseInfo();
-    if (parseInfo.getClauseNames().size() == 1) {
-      return (String) parseInfo.getClauseNames().toArray()[0];
+    if (parseInfo.getClauseNamesForDest().isEmpty()) {
+      throw new IllegalArgumentException(
+          "The query doesn't have any clause name. There must have been a parsing issue.");
+    }
+    if (parseInfo.getClauseNamesForDest().size() == 1) {
+      return (String) parseInfo.getClauseNamesForDest().toArray()[0];
     }
     // There are multiple clause names. This happens with a query that
     // has multiple INSERT statements. So we try to find the statement
     // that corresponds to the given output table.
     List<Table> destTables = new ArrayList<>();
-    for (String clauseName : parseInfo.getClauseNames()) {
+    for (String clauseName : parseInfo.getClauseNamesForDest()) {
       Table destTable = qb.getMetaData().getNameToDestTable().get(clauseName);
       destTables.add(destTable);
       if (outputTable.equals(destTable.getFullyQualifiedName())) {

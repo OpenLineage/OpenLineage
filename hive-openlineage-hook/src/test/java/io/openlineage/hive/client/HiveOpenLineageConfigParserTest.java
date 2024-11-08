@@ -53,7 +53,7 @@ public class HiveOpenLineageConfigParserTest {
   @Test
   public void testDataplexTransportConfig() {
     Configuration conf = new Configuration();
-    conf.set("hive.openlineage.transport.type", "dataplex");
+    conf.set("hive.openlineage.transport.type", "gcplineage");
     conf.set("hive.openlineage.transport.projectId", "myproject");
     conf.set("hive.openlineage.transport.location", "mylocation");
     HiveOpenLineageConfig config = extractFromHadoopConf(conf);

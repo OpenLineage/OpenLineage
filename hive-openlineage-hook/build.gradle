@@ -196,7 +196,18 @@ shadowJar {
     [
             'com.google.common',
             'com.google.protobuf',
+            'com.google.longrunning',
             'com.fasterxml',
+            'io.grpc',
+
+            // FIXME: Temporary to avoid conflicts with Dataproc's built-in
+            //  OpenLineage and related libraries
+            'io.openlineage.client',
+            'io.openlineage.core',
+            'io.openlineage.server',
+            'io.micrometer',
+            'com.google.cloud.datalineage',
+            'com.google.cloud.datacatalog',
     ].each { pkg ->
         relocate pkg, "hive.openlineage.repackaged.${pkg}"
     }

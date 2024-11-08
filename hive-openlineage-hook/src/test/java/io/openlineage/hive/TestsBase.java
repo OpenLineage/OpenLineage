@@ -85,7 +85,7 @@ public abstract class TestsBase {
       if (e.getCode() == 409) {
         // The bucket already exists, which is okay.
       } else {
-        throw new RuntimeException(e);
+        throw new IllegalStateException(e);
       }
     }
 
@@ -208,7 +208,7 @@ public abstract class TestsBase {
     try {
       return GoogleCredentials.getApplicationDefault();
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new IllegalStateException(e);
     }
   }
 
@@ -233,8 +233,7 @@ public abstract class TestsBase {
     hive.setHiveConfValue("hive.openlineage.transport.type", "composite");
     hive.setHiveConfValue(
         "hive.openlineage.transport.transports",
-        "[{\"type\":\"dummy\"}, {\"type\":\"dataplex\",\"mode\":\"sync\"}]");
-
+        "[{\"type\":\"dummy\"}, {\"type\":\"gcplineage\",\"mode\":\"sync\"}]");
     // TODO: Check if this should instead be "hive.openlineage.job.namespace"
     hive.setHiveConfValue("hive.openlineage.namespace", olJobNamespace);
     hive.setHiveConfValue("hive.openlineage.job.name", olJobName);
@@ -272,7 +271,12 @@ public abstract class TestsBase {
   }
 
   public void createHiveTable(
-      String tableName, String hiveDDL, boolean isExternal, String properties, String comment) {
+      String tableName,
+      String hiveDDL,
+      boolean isExternal,
+      String properties,
+      String comment,
+      String partitionColumn) {
     runHiveQuery(
         String.join(
             "\n",
@@ -280,6 +284,7 @@ public abstract class TestsBase {
             hiveDDL,
             ")",
             comment != null ? "COMMENT \"" + comment + "\"" : "",
+            partitionColumn != null ? "PARTITIONED BY (" + partitionColumn + ")" : "",
             properties != null ? "TBLPROPERTIES (" + properties + ")" : ""));
   }
 
@@ -323,11 +328,11 @@ public abstract class TestsBase {
   }
 
   public void createManagedHiveTable(String tableName, String hiveDDL) {
-    createHiveTable(tableName, hiveDDL, false, null, null);
+    createHiveTable(tableName, hiveDDL, false, null, null, null);
   }
 
-  public void createExternalHiveTable(String tableName, String hiveDDL) {
-    createHiveTable(tableName, hiveDDL, true, null, null);
+  public void createPartitionedHiveTable(String tableName, String hiveDDL, String partitionColumn) {
+    createHiveTable(tableName, hiveDDL, true, null, null, partitionColumn);
   }
 
   public void createExternalHiveBigQueryTable(String tableName, String hiveDDL, String bqDDL) {
@@ -356,7 +361,7 @@ public abstract class TestsBase {
     try {
       return getBigQueryService().query(jobConfig);
     } catch (InterruptedException e) {
-      throw new RuntimeException(e);
+      throw new IllegalStateException(e);
     }
   }
 

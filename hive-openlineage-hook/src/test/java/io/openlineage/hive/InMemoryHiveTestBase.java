@@ -145,6 +145,11 @@ public abstract class InMemoryHiveTestBase {
   }
 
   public static void createTable(String table, String... fields) throws TException {
+    createPartitionedTable(table, null, fields);
+  }
+
+  public static void createPartitionedTable(String table, String partitionField, String... fields)
+      throws TException {
     try (HiveMetaStoreClient client = new HiveMetaStoreClient(hiveConf)) {
       Table hiveTable = new Table();
       hiveTable.setDbName("default");
@@ -158,6 +163,11 @@ public abstract class InMemoryHiveTestBase {
       serdeInfo.setSerializationLib("org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe");
       sd.setSerdeInfo(serdeInfo);
       hiveTable.setSd(sd);
+      if (partitionField != null) {
+        List<FieldSchema> partitionCols = new ArrayList<>();
+        partitionCols.add(getTableColumns(partitionField).get(0));
+        hiveTable.setPartitionKeys(partitionCols);
+      }
       client.createTable(hiveTable);
     }
   }
