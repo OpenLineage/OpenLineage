@@ -20,16 +20,19 @@ import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.Context;
 import org.apache.hadoop.hive.ql.QueryState;
+import org.apache.hadoop.hive.ql.lib.Node;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.ExplainConfiguration;
+import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.parse.ParseUtils;
 import org.apache.hadoop.hive.ql.parse.SemanticAnalyzer;
@@ -44,6 +47,42 @@ public class HiveUtils {
       return Hive.get(hiveConf).getTable(dbName, tableName);
     } catch (HiveException e) {
       throw new IllegalArgumentException(e);
+    }
+  }
+
+  /**
+   * Recursively processes an ASTNode and removes all TOK_IFNOTEXISTS nodes. This is needed because
+   * for a query like "CREATE TABLE IF EXISTS xxx", when the hook gets executed, the table would
+   * have already been created. And then, the SemanticAnalyzer would literally interpret the "IF NOT
+   * EXISTS" statement and not generate any query plan.
+   *
+   * @param node The root node to process
+   */
+  public static void removeIfNotExistsStatements(ASTNode node) {
+    if (node == null) {
+      return;
+    }
+
+    // Get children list
+    List<Node> children = node.getChildren();
+    if (children == null || children.isEmpty()) {
+      return;
+    }
+
+    // Traverse the children in reverse to avoid shifting the indexes
+    // as we might remove a child during traversal
+    for (int i = children.size() - 1; i >= 0; i--) {
+      Node child = children.get(i);
+      if (child instanceof ASTNode) {
+        ASTNode childNode = (ASTNode) child;
+        // Check if this child is TOK_IFNOTEXISTS
+        if (childNode.getType() == HiveParser.TOK_IFNOTEXISTS) {
+          node.deleteChild(i);
+        } else {
+          // Recursively process this child's children
+          removeIfNotExistsStatements(childNode);
+        }
+      }
     }
   }
 
@@ -78,6 +117,7 @@ public class HiveUtils {
     ASTNode tree;
     try {
       tree = ParseUtils.parse(queryString, context);
+      removeIfNotExistsStatements(tree);
       SemanticAnalyzer semanticAnalyzer =
           (SemanticAnalyzer) SemanticAnalyzerFactory.get(queryState, tree);
       semanticAnalyzer.analyze(tree, context);

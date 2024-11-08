@@ -22,16 +22,6 @@ import com.google.cloud.datacatalog.lineage.v1.DeleteProcessRequest;
 import com.google.cloud.datacatalog.lineage.v1.EntityReference;
 import com.google.cloud.datacatalog.lineage.v1.EventLink;
 import com.google.cloud.datacatalog.lineage.v1.LineageClient;
-import com.google.cloud.datacatalog.lineage.v1.LineageClient.BatchSearchLinkProcessesPage;
-import com.google.cloud.datacatalog.lineage.v1.LineageClient.BatchSearchLinkProcessesPagedResponse;
-import com.google.cloud.datacatalog.lineage.v1.LineageClient.ListLineageEventsPage;
-import com.google.cloud.datacatalog.lineage.v1.LineageClient.ListLineageEventsPagedResponse;
-import com.google.cloud.datacatalog.lineage.v1.LineageClient.ListProcessesPage;
-import com.google.cloud.datacatalog.lineage.v1.LineageClient.ListProcessesPagedResponse;
-import com.google.cloud.datacatalog.lineage.v1.LineageClient.ListRunsPage;
-import com.google.cloud.datacatalog.lineage.v1.LineageClient.ListRunsPagedResponse;
-import com.google.cloud.datacatalog.lineage.v1.LineageClient.SearchLinksPage;
-import com.google.cloud.datacatalog.lineage.v1.LineageClient.SearchLinksPagedResponse;
 import com.google.cloud.datacatalog.lineage.v1.LineageEvent;
 import com.google.cloud.datacatalog.lineage.v1.LineageSettings;
 import com.google.cloud.datacatalog.lineage.v1.Link;
@@ -41,11 +31,7 @@ import com.google.cloud.datacatalog.lineage.v1.ProcessLinks;
 import com.google.cloud.datacatalog.lineage.v1.Run;
 import com.google.cloud.datacatalog.lineage.v1.SearchLinksRequest;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class DataplexTestUtils {
 
@@ -65,9 +51,9 @@ public class DataplexTestUtils {
       if (target != null) {
         request.setTarget(EntityReference.newBuilder().setFullyQualifiedName(target).build());
       }
-      SearchLinksPagedResponse pagedResponse = client.searchLinks(request.build());
+      LineageClient.SearchLinksPagedResponse pagedResponse = client.searchLinks(request.build());
       List<Link> links = new ArrayList<>();
-      for (SearchLinksPage page : pagedResponse.iteratePages()) {
+      for (LineageClient.SearchLinksPage page : pagedResponse.iteratePages()) {
         links.addAll(page.getResponse().getLinksList());
       }
       return links;
@@ -106,9 +92,9 @@ public class DataplexTestUtils {
 
   public static List<Process> getProcessesForProject(LocationName locationName) throws IOException {
     try (LineageClient client = getClient()) {
-      ListProcessesPagedResponse pagedResponse = client.listProcesses(locationName);
+      LineageClient.ListProcessesPagedResponse pagedResponse = client.listProcesses(locationName);
       List<Process> processes = new ArrayList<>();
-      for (ListProcessesPage page : pagedResponse.iteratePages()) {
+      for (LineageClient.ListProcessesPage page : pagedResponse.iteratePages()) {
         processes.addAll(page.getResponse().getProcessesList());
       }
       return processes;
@@ -142,10 +128,10 @@ public class DataplexTestUtils {
               .setParent(locationName.toString())
               .addLinks(link)
               .build();
-      BatchSearchLinkProcessesPagedResponse pagedResponse =
+      LineageClient.BatchSearchLinkProcessesPagedResponse pagedResponse =
           client.batchSearchLinkProcesses(request);
       Set<String> processes = new HashSet<>();
-      for (BatchSearchLinkProcessesPage page : pagedResponse.iteratePages()) {
+      for (LineageClient.BatchSearchLinkProcessesPage page : pagedResponse.iteratePages()) {
         for (ProcessLinks links : page.getResponse().getProcessLinksList()) {
           processes.add(links.getProcess());
         }
@@ -176,9 +162,9 @@ public class DataplexTestUtils {
 
   public static List<Run> getRunsForProcess(String process) throws IOException {
     try (LineageClient client = getClient()) {
-      ListRunsPagedResponse pagedResponse = client.listRuns(process);
+      LineageClient.ListRunsPagedResponse pagedResponse = client.listRuns(process);
       List<Run> runs = new ArrayList<>();
-      for (ListRunsPage page : pagedResponse.iteratePages()) {
+      for (LineageClient.ListRunsPage page : pagedResponse.iteratePages()) {
         runs.addAll(page.getResponse().getRunsList());
       }
       return runs;
@@ -187,9 +173,9 @@ public class DataplexTestUtils {
 
   public static List<LineageEvent> getEventsForRun(String run) throws IOException {
     try (LineageClient client = getClient()) {
-      ListLineageEventsPagedResponse pagedResponse = client.listLineageEvents(run);
+      LineageClient.ListLineageEventsPagedResponse pagedResponse = client.listLineageEvents(run);
       List<LineageEvent> events = new ArrayList<>();
-      for (ListLineageEventsPage page : pagedResponse.iteratePages()) {
+      for (LineageClient.ListLineageEventsPage page : pagedResponse.iteratePages()) {
         events.addAll(page.getResponse().getLineageEventsList());
       }
       return events;

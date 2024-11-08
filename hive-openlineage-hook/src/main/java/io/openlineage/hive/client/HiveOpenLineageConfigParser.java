@@ -84,7 +84,7 @@ public class HiveOpenLineageConfigParser {
         } else if (parsedValue instanceof JsonNode) {
           nodePointer.set(leaf, (JsonNode) parsedValue);
         } else {
-          throw new RuntimeException("Unexpected value: " + value);
+          throw new IllegalArgumentException("Unexpected value: " + value);
         }
       }
     }
@@ -103,7 +103,7 @@ public class HiveOpenLineageConfigParser {
         // Combine both exceptions
         configException.addSuppressed(jsonException);
       }
-      throw new RuntimeException(errorMessage, configException);
+      throw new IllegalArgumentException(errorMessage, configException);
     }
   }
 

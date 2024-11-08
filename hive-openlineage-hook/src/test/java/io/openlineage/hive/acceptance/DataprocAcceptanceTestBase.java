@@ -234,7 +234,7 @@ public abstract class DataprocAcceptanceTestBase {
                                 String.format(
                                     "{\"type\":\"file\",\"location\":\"%s\"},", EVENTS_LOG_FILE),
                                 String.format(
-                                    "{\"type\":\"dataplex\",\"mode\":\"sync\",\"projectId\":\"%s\",\"location\":\"%s\"}",
+                                    "{\"type\":\"gcplineage\",\"mode\":\"sync\",\"projectId\":\"%s\",\"location\":\"%s\"}",
                                     TestsBase.getProject(), TestsBase.getGcpLocation()),
                                 "]"))))
         .build();
@@ -304,7 +304,7 @@ public abstract class DataprocAcceptanceTestBase {
             // Wait a second in between polling attempts.
             TimeUnit.SECONDS.sleep(1);
           } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
           }
       }
     }

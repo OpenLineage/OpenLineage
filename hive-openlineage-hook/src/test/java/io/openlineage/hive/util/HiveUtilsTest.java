@@ -27,12 +27,12 @@ public class HiveUtilsTest {
 
   @Test
   public void testDatasetIdentifierFromSimpleTable() {
-    org.apache.hadoop.hive.metastore.api.Table tTable =
+    org.apache.hadoop.hive.metastore.api.Table metastoreApiTable =
         new org.apache.hadoop.hive.metastore.api.Table();
-    tTable.setTableName("mytable");
-    tTable.setDbName("mydb");
-    tTable.setCatName("mycatalog");
-    Table table = new Table(tTable);
+    metastoreApiTable.setTableName("mytable");
+    metastoreApiTable.setDbName("mydb");
+    metastoreApiTable.setCatName("mycatalog");
+    Table table = new Table(metastoreApiTable);
     DatasetIdentifier datasetIdentifier = getDatasetIdentifierFromTable(table);
     assertThat(datasetIdentifier.getName()).isEqualTo("mydb.mytable");
     assertThat(datasetIdentifier.getNamespace()).isEqualTo("mycatalog");
@@ -41,13 +41,13 @@ public class HiveUtilsTest {
 
   @Test
   public void testDatasetIdentifierFromBigQueryTable() {
-    org.apache.hadoop.hive.metastore.api.Table tTable =
+    org.apache.hadoop.hive.metastore.api.Table metastoreApiTable =
         new org.apache.hadoop.hive.metastore.api.Table();
-    tTable.setTableName("mytable");
-    tTable.setDbName("mydb");
-    tTable.setCatName("mycatalog");
-    tTable.putToParameters("bq.table", "myproject.mydataset.mytable");
-    Table table = new Table(tTable);
+    metastoreApiTable.setTableName("mytable");
+    metastoreApiTable.setDbName("mydb");
+    metastoreApiTable.setCatName("mycatalog");
+    metastoreApiTable.putToParameters("bq.table", "myproject.mydataset.mytable");
+    Table table = new Table(metastoreApiTable);
     DatasetIdentifier datasetIdentifier = getDatasetIdentifierFromTable(table);
     assertThat(datasetIdentifier.getName()).isEqualTo("myproject.mydataset.mytable");
     assertThat(datasetIdentifier.getNamespace()).isEqualTo("bigquery");
@@ -56,15 +56,15 @@ public class HiveUtilsTest {
 
   @Test
   public void testDatasetIdentifierTableWithLocation() {
-    org.apache.hadoop.hive.metastore.api.Table tTable =
+    org.apache.hadoop.hive.metastore.api.Table metastoreApiTable =
         new org.apache.hadoop.hive.metastore.api.Table();
-    tTable.setTableName("mytable");
-    tTable.setDbName("mydb");
-    tTable.setCatName("mycatalog");
+    metastoreApiTable.setTableName("mytable");
+    metastoreApiTable.setDbName("mydb");
+    metastoreApiTable.setCatName("mycatalog");
     StorageDescriptor sd = new StorageDescriptor();
     sd.setLocation("/path/to/my/table");
-    tTable.setSd(sd);
-    Table table = new Table(tTable);
+    metastoreApiTable.setSd(sd);
+    Table table = new Table(metastoreApiTable);
     DatasetIdentifier datasetIdentifier = getDatasetIdentifierFromTable(table);
     assertThat(datasetIdentifier.getName()).isEqualTo("/path/to/my/table");
     assertThat(datasetIdentifier.getNamespace()).isEqualTo("file");

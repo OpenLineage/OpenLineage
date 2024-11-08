@@ -41,7 +41,7 @@ public class DummyTransport extends Transport {
       String prettyJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonObject);
       System.out.println(prettyJson);
     } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
+      throw new IllegalStateException(e);
     }
     events.add(event);
   }
@@ -72,7 +72,7 @@ public class DummyTransport extends Transport {
         return od;
       }
     }
-    throw new RuntimeException("Could not find output: " + output);
+    throw new IllegalArgumentException("Could not find output: " + output);
   }
 
   public static OpenLineage.ColumnLineageDatasetFacet getColumnLineage(String output) {

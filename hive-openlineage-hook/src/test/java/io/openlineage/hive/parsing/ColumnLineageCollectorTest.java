@@ -61,25 +61,51 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
   @Test
   void selectStar() throws TException {
     createTable("t1", "a;int", "b;string");
-    String queryString = "CREATE TABLE t2 AS SELECT * FROM t1";
-    OutputCLL outputCLL = getOutputCLL(queryString, "default.t2", "a;int", "b;string");
+    String queryString = "CREATE TABLE xxx AS SELECT * FROM t1";
+    OutputCLL outputCLL = getOutputCLL(queryString, "default.xxx", "a;int", "b;string");
     assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t1");
     assertCountColumnDependencies(outputCLL, 2);
     assertThat(outputCLL.getColumnDependencies().get("a").get("default.t1.a"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertThat(outputCLL.getColumnDependencies().get("b").get("default.t1.b"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
   }
 
   @Test
   void simpleQueryOnlyIdentity() throws TException {
     createTable("t1", "a;int");
-    String queryString = "CREATE TABLE xxx AS SELECT a FROM t1";
+    String queryString = "CREATE TABLE IF NOT EXISTS xxx AS SELECT a FROM t1";
     OutputCLL outputCLL = getOutputCLL(queryString, "default.xxx", "a;int");
     assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t1");
     assertCountColumnDependencies(outputCLL, 1);
     assertThat(outputCLL.getColumnDependencies().get("a").get("default.t1.a"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
+    assertCountDatasetDependencies(outputCLL, 0);
+  }
+
+  @Test
+  void ifNotExists() throws TException {
+    createTable("t1", "a;int");
+    String queryString = "CREATE TABLE IF NOT EXISTS xxx AS SELECT a FROM t1";
+    OutputCLL outputCLL = getOutputCLL(queryString, "default.xxx", "a;int");
+    assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t1");
+    assertCountColumnDependencies(outputCLL, 1);
+    assertThat(outputCLL.getColumnDependencies().get("a").get("default.t1.a"))
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
+    assertCountDatasetDependencies(outputCLL, 0);
+  }
+
+  @Test
+  void partitionedTable() throws TException {
+    createPartitionedTable("t1", "b;string", "a;int");
+    String queryString = "CREATE TABLE xxx AS SELECT * FROM t1";
+    OutputCLL outputCLL = getOutputCLL(queryString, "default.xxx", "a;int", "b;string");
+    assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t1");
+    assertCountColumnDependencies(outputCLL, 2);
+    assertThat(outputCLL.getColumnDependencies().get("a").get("default.t1.a"))
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
+    assertThat(outputCLL.getColumnDependencies().get("b").get("default.t1.b"))
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertCountDatasetDependencies(outputCLL, 0);
   }
 
@@ -91,11 +117,11 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
     assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t1");
     assertCountColumnDependencies(outputCLL, 3);
     assertThat(outputCLL.getColumnDependencies().get("a").get("default.t1.a"))
-        .containsExactly(TransformationInfo.transformation());
+        .containsExactlyInAnyOrder(TransformationInfo.transformation());
     assertThat(outputCLL.getColumnDependencies().get("b").get("default.t1.a"))
-        .containsExactly(TransformationInfo.transformation());
+        .containsExactlyInAnyOrder(TransformationInfo.transformation());
     assertThat(outputCLL.getColumnDependencies().get("b").get("default.t1.b"))
-        .containsExactly(TransformationInfo.transformation());
+        .containsExactlyInAnyOrder(TransformationInfo.transformation());
     assertCountDatasetDependencies(outputCLL, 0);
   }
 
@@ -107,7 +133,7 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
     assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t1");
     assertCountColumnDependencies(outputCLL, 1);
     assertThat(outputCLL.getColumnDependencies().get("a").get("default.t1.a"))
-        .containsExactly(TransformationInfo.aggregation(true));
+        .containsExactlyInAnyOrder(TransformationInfo.aggregation(true));
     assertCountDatasetDependencies(outputCLL, 0);
   }
 
@@ -119,10 +145,10 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
     assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t1");
     assertCountColumnDependencies(outputCLL, 1);
     assertThat(outputCLL.getColumnDependencies().get("a").get("default.t1.a"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertCountDatasetDependencies(outputCLL, 1);
     assertThat(outputCLL.getDatasetDependencies().get("default.t1.b"))
-        .containsExactly(TransformationInfo.indirect(FILTER));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(FILTER));
   }
 
   @Test
@@ -134,14 +160,14 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
     assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t1");
     assertCountColumnDependencies(outputCLL, 2);
     assertThat(outputCLL.getColumnDependencies().get("a").get("default.t1.a"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertThat(outputCLL.getColumnDependencies().get("c").get("default.t1.c"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertCountDatasetDependencies(outputCLL, 4);
     assertThat(outputCLL.getDatasetDependencies().get("default.t1.a"))
-        .containsExactly(TransformationInfo.indirect(GROUP_BY));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(GROUP_BY));
     assertThat(outputCLL.getDatasetDependencies().get("default.t1.b"))
-        .containsExactly(TransformationInfo.indirect(FILTER));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(FILTER));
     assertThat(outputCLL.getDatasetDependencies().get("default.t1.c"))
         .isEqualTo(
             new HashSet<>(
@@ -159,18 +185,18 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
     assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t1");
     assertCountColumnDependencies(outputCLL, 5);
     assertThat(outputCLL.getColumnDependencies().get("i").get("default.t1.a"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertThat(outputCLL.getColumnDependencies().get("t").get("default.t1.a"))
-        .containsExactly(TransformationInfo.transformation());
+        .containsExactlyInAnyOrder(TransformationInfo.transformation());
     assertThat(outputCLL.getColumnDependencies().get("a").get("default.t1.b"))
-        .containsExactly(TransformationInfo.aggregation());
+        .containsExactlyInAnyOrder(TransformationInfo.aggregation());
     assertThat(outputCLL.getColumnDependencies().get("ta").get("default.t1.b"))
-        .containsExactly(TransformationInfo.aggregation());
+        .containsExactlyInAnyOrder(TransformationInfo.aggregation());
     assertThat(outputCLL.getColumnDependencies().get("tat").get("default.t1.b"))
-        .containsExactly(TransformationInfo.aggregation());
+        .containsExactlyInAnyOrder(TransformationInfo.aggregation());
     assertCountDatasetDependencies(outputCLL, 1);
     assertThat(outputCLL.getDatasetDependencies().get("default.t1.a"))
-        .containsExactly(TransformationInfo.indirect(GROUP_BY));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(GROUP_BY));
   }
 
   @Test
@@ -190,18 +216,18 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
     assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t1");
     assertCountColumnDependencies(outputCLL, 5);
     assertThat(outputCLL.getColumnDependencies().get("i").get("default.t1.a"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertThat(outputCLL.getColumnDependencies().get("mt").get("default.t1.a"))
-        .containsExactly(TransformationInfo.transformation(true));
+        .containsExactlyInAnyOrder(TransformationInfo.transformation(true));
     assertThat(outputCLL.getColumnDependencies().get("t").get("default.t1.a"))
-        .containsExactly(TransformationInfo.transformation());
+        .containsExactlyInAnyOrder(TransformationInfo.transformation());
     assertThat(outputCLL.getColumnDependencies().get("a").get("default.t1.b"))
-        .containsExactly(TransformationInfo.aggregation());
+        .containsExactlyInAnyOrder(TransformationInfo.aggregation());
     assertThat(outputCLL.getColumnDependencies().get("ma").get("default.t1.b"))
-        .containsExactly(TransformationInfo.aggregation(true));
+        .containsExactlyInAnyOrder(TransformationInfo.aggregation(true));
     assertCountDatasetDependencies(outputCLL, 1);
     assertThat(outputCLL.getDatasetDependencies().get("default.t1.a"))
-        .containsExactly(TransformationInfo.indirect(GROUP_BY));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(GROUP_BY));
   }
 
   @Test
@@ -254,7 +280,7 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
     assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t1");
     assertCountColumnDependencies(outputCLL, 1);
     assertThat(outputCLL.getColumnDependencies().get("a").get("default.t1.a"))
-        .containsExactly(TransformationInfo.transformation());
+        .containsExactlyInAnyOrder(TransformationInfo.transformation());
     assertCountDatasetDependencies(outputCLL, 0);
   }
 
@@ -268,11 +294,11 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
     assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t1");
     assertCountColumnDependencies(outputCLL, 3);
     assertThat(outputCLL.getColumnDependencies().get("a").get("default.t1.a"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertThat(outputCLL.getColumnDependencies().get("rank").get("default.t1.b"))
-        .containsExactly(TransformationInfo.indirect(WINDOW));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(WINDOW));
     assertThat(outputCLL.getColumnDependencies().get("rank").get("default.t1.c"))
-        .containsExactly(TransformationInfo.indirect(WINDOW));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(WINDOW));
     assertCountDatasetDependencies(outputCLL, 0);
   }
 
@@ -285,11 +311,11 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
     assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t1");
     assertCountColumnDependencies(outputCLL, 3);
     assertThat(outputCLL.getColumnDependencies().get("s").get("default.t1.a"))
-        .containsExactly(TransformationInfo.aggregation());
+        .containsExactlyInAnyOrder(TransformationInfo.aggregation());
     assertThat(outputCLL.getColumnDependencies().get("s").get("default.t1.b"))
-        .containsExactly(TransformationInfo.indirect(WINDOW));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(WINDOW));
     assertThat(outputCLL.getColumnDependencies().get("s").get("default.t1.c"))
-        .containsExactly(TransformationInfo.indirect(WINDOW));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(WINDOW));
     assertCountDatasetDependencies(outputCLL, 0);
   }
 
@@ -303,11 +329,11 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
     assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t1");
     assertCountColumnDependencies(outputCLL, 3);
     assertThat(outputCLL.getColumnDependencies().get("l").get("default.t1.a"))
-        .containsExactly(TransformationInfo.transformation());
+        .containsExactlyInAnyOrder(TransformationInfo.transformation());
     assertThat(outputCLL.getColumnDependencies().get("l").get("default.t1.b"))
-        .containsExactly(TransformationInfo.indirect(WINDOW));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(WINDOW));
     assertThat(outputCLL.getColumnDependencies().get("l").get("default.t1.c"))
-        .containsExactly(TransformationInfo.indirect(WINDOW));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(WINDOW));
     assertCountDatasetDependencies(outputCLL, 0);
   }
 
@@ -328,26 +354,26 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
         .containsExactlyInAnyOrder("default.t1", "default.t2", "default.t3");
     assertCountColumnDependencies(outputCLL, 4);
     assertThat(outputCLL.getColumnDependencies().get("a").get("default.t1.a"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertThat(outputCLL.getColumnDependencies().get("b").get("default.t1.b"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertThat(outputCLL.getColumnDependencies().get("c").get("default.t2.c"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertThat(outputCLL.getColumnDependencies().get("d").get("default.t3.d"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertCountDatasetDependencies(outputCLL, 6);
     assertThat(outputCLL.getDatasetDependencies().get("default.t1.a"))
-        .containsExactly(TransformationInfo.indirect(JOIN));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(JOIN));
     assertThat(outputCLL.getDatasetDependencies().get("default.t2.a"))
-        .containsExactly(TransformationInfo.indirect(JOIN));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(JOIN));
     assertThat(outputCLL.getDatasetDependencies().get("default.t3.a"))
-        .containsExactly(TransformationInfo.indirect(JOIN));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(JOIN));
     assertThat(outputCLL.getDatasetDependencies().get("default.t1.b"))
-        .containsExactly(TransformationInfo.indirect(FILTER));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(FILTER));
     assertThat(outputCLL.getDatasetDependencies().get("default.t2.c"))
-        .containsExactly(TransformationInfo.indirect(FILTER));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(FILTER));
     assertThat(outputCLL.getDatasetDependencies().get("default.t3.d"))
-        .containsExactly(TransformationInfo.indirect(SORT));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(SORT));
   }
 
   @Test
@@ -367,13 +393,13 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
         .containsExactlyInAnyOrder("default.t1", "default.t2");
     assertCountColumnDependencies(outputCLL, 4);
     assertThat(outputCLL.getColumnDependencies().get("a").get("default.t1.a"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertThat(outputCLL.getColumnDependencies().get("a").get("default.t2.a"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertThat(outputCLL.getColumnDependencies().get("b").get("default.t1.b"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertThat(outputCLL.getColumnDependencies().get("b").get("default.t2.c"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertCountDatasetDependencies(outputCLL, 0);
   }
 
@@ -396,9 +422,9 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
     assertThat(outputCLL.getInputTables().keySet()).containsExactlyInAnyOrder("default.t2");
     assertCountColumnDependencies(outputCLL, 2);
     assertThat(outputCLL.getColumnDependencies().get("a").get("default.t2.a"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertThat(outputCLL.getColumnDependencies().get("b").get("default.t2.b"))
-        .containsExactly(TransformationInfo.transformation());
+        .containsExactlyInAnyOrder(TransformationInfo.transformation());
     assertCountDatasetDependencies(outputCLL, 0);
   }
 
@@ -422,14 +448,14 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
         .containsExactlyInAnyOrder("default.t1", "default.t2");
     assertCountColumnDependencies(outputCLL, 2);
     assertThat(outputCLL.getColumnDependencies().get("id").get("default.t1.id"))
-        .containsExactly(TransformationInfo.transformation());
+        .containsExactlyInAnyOrder(TransformationInfo.transformation());
     assertThat(outputCLL.getColumnDependencies().get("name").get("default.t2.name"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertCountDatasetDependencies(outputCLL, 2);
     assertThat(outputCLL.getDatasetDependencies().get("default.t1.id"))
-        .containsExactly(TransformationInfo.indirect(JOIN));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(JOIN));
     assertThat(outputCLL.getDatasetDependencies().get("default.t2.number"))
-        .containsExactly(TransformationInfo.indirect(JOIN));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(JOIN));
   }
 
   @Test
@@ -458,30 +484,30 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
         .containsExactlyInAnyOrder("default.t3", "default.t4");
     assertCountColumnDependencies(outputCLL1, 2);
     assertThat(outputCLL1.getColumnDependencies().get("id").get("default.t3.id"))
-        .containsExactly(TransformationInfo.transformation());
+        .containsExactlyInAnyOrder(TransformationInfo.transformation());
     assertThat(outputCLL1.getColumnDependencies().get("name").get("default.t4.name"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertCountDatasetDependencies(outputCLL1, 2);
     assertThat(outputCLL1.getDatasetDependencies().get("default.t3.id"))
-        .containsExactly(TransformationInfo.indirect(JOIN));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(JOIN));
     assertThat(outputCLL1.getDatasetDependencies().get("default.t4.id"))
-        .containsExactly(TransformationInfo.indirect(JOIN));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(JOIN));
 
     OutputCLL outputCLL2 = getOutputCLL(queryString, "default.t2", "id;int", "name;string");
     assertThat(outputCLL2.getInputTables().keySet())
         .containsExactlyInAnyOrder("default.t3", "default.t4");
     assertCountColumnDependencies(outputCLL2, 2);
     assertThat(outputCLL2.getColumnDependencies().get("id").get("default.t3.id"))
-        .containsExactly(TransformationInfo.aggregation());
+        .containsExactlyInAnyOrder(TransformationInfo.aggregation());
     assertThat(outputCLL2.getColumnDependencies().get("name").get("default.t4.name"))
-        .containsExactly(TransformationInfo.identity());
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertCountDatasetDependencies(outputCLL2, 3);
     assertThat(outputCLL2.getDatasetDependencies().get("default.t3.id"))
-        .containsExactly(TransformationInfo.indirect(JOIN));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(JOIN));
     assertThat(outputCLL2.getDatasetDependencies().get("default.t4.id"))
-        .containsExactly(TransformationInfo.indirect(JOIN));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(JOIN));
     assertThat(outputCLL2.getDatasetDependencies().get("default.t4.name"))
-        .containsExactly(TransformationInfo.indirect(GROUP_BY));
+        .containsExactlyInAnyOrder(TransformationInfo.indirect(GROUP_BY));
   }
 
   @Test
@@ -521,27 +547,29 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
         .containsExactlyInAnyOrder("default.transactions");
     assertCountColumnDependencies(outputCLL, 3);
     assertThat(
-        outputCLL
-            .getColumnDependencies()
-            .get("month")
-            .get("default.transactions.submissiondate"))
-        .containsExactly(TransformationInfo.transformation());
+            outputCLL
+                .getColumnDependencies()
+                .get("month")
+                .get("default.transactions.submissiondate"))
+        .containsExactlyInAnyOrder(TransformationInfo.transformation());
     assertThat(
-        outputCLL
-            .getColumnDependencies()
-            .get("transactiontype")
-            .get("default.transactions.transactiontype"))
-        .containsExactly(TransformationInfo.identity());
+            outputCLL
+                .getColumnDependencies()
+                .get("transactiontype")
+                .get("default.transactions.transactiontype"))
+        .containsExactlyInAnyOrder(TransformationInfo.identity());
     assertThat(
-        outputCLL
-            .getColumnDependencies()
-            .get("totalamount")
-            .get("default.transactions.transactionamount"))
-        .containsExactly(TransformationInfo.aggregation());
+            outputCLL
+                .getColumnDependencies()
+                .get("totalamount")
+                .get("default.transactions.transactionamount"))
+        .containsExactlyInAnyOrder(TransformationInfo.aggregation());
     assertCountDatasetDependencies(outputCLL, 4);
     assertThat(outputCLL.getDatasetDependencies().get("default.transactions.submissiondate"))
-        .containsExactly(TransformationInfo.indirect(GROUP_BY), TransformationInfo.indirect(SORT));
+        .containsExactlyInAnyOrder(
+            TransformationInfo.indirect(GROUP_BY), TransformationInfo.indirect(SORT));
     assertThat(outputCLL.getDatasetDependencies().get("default.transactions.transactiontype"))
-        .containsExactly(TransformationInfo.indirect(GROUP_BY), TransformationInfo.indirect(SORT));
+        .containsExactlyInAnyOrder(
+            TransformationInfo.indirect(GROUP_BY), TransformationInfo.indirect(SORT));
   }
 }

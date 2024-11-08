@@ -20,16 +20,13 @@ import io.openlineage.hive.api.OpenLineageContext;
 import io.openlineage.hive.client.EventEmitter;
 import io.openlineage.hive.client.HiveOpenLineageConfigParser;
 import io.openlineage.hive.client.Versions;
+import io.openlineage.hive.util.HiveUtils;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import org.apache.hadoop.hive.ql.QueryPlan;
-import org.apache.hadoop.hive.ql.hooks.Entity;
-import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
-import org.apache.hadoop.hive.ql.hooks.HookContext;
-import org.apache.hadoop.hive.ql.hooks.ReadEntity;
-import org.apache.hadoop.hive.ql.hooks.WriteEntity;
+import org.apache.hadoop.hive.ql.hooks.*;
+import org.apache.hadoop.hive.ql.parse.*;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 
@@ -82,10 +79,14 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext {
         || validOutputs.isEmpty()) {
       return;
     }
+    SemanticAnalyzer semanticAnalyzer =
+        HiveUtils.analyzeQuery(
+            hookContext.getConf(), hookContext.getQueryState(), queryPlan.getQueryString());
     OpenLineageContext olContext =
         OpenLineageContext.builder()
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryString(hookContext.getQueryPlan().getQueryString())
+            .semanticAnalyzer(semanticAnalyzer)
             .eventTime(Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.of("UTC")))
             .readEntities(validInputs)
             .writeEntities(validOutputs)
