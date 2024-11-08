@@ -68,8 +68,13 @@ const config = {
                 docs: {
                     sidebarPath: require.resolve('./sidebars.js'),
                     exclude: ['**/partials/**'],
-                    editUrl:
-                        'https://github.com/OpenLineage/OpenLineage/tree/main/website/',
+                    editUrl: ({versionDocsDirPath, docPath, version}) => {
+                        if (version === 'current') {
+                            return `https://github.com/OpenLineage/OpenLineage/tree/main/website/docs/${docPath}`;
+                        } else {
+                            return `https://github.com/OpenLineage/openlineage-site/tree/main/${versionDocsDirPath}/${docPath}`;
+                        }
+                    }
                 },
                 theme: {
                     customCss: require.resolve('./src/css/custom.css'),
