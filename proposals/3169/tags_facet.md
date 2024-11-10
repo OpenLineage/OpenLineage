@@ -117,7 +117,7 @@ Run Event Example with Tags
 ```
 **Proposed implementation**
 
-This implementation proposes a new TagFacet that can be applied to any job, run, or dataset field. The facet will have one property called tags. Tags is an array of objects holding key/value pairs and optional identifying information. While using key/value does not preserve the hierarchical nature of nested objects, it does allow us to collect all needed information supporting the vast majority of use cases.
+This implementation proposes new tags facets that can be applied to jobs, runs, or datasets. The facet will have one property called tags. Tags is an array of objects holding key/value pairs and optional identifying information. While using key/value does not preserve the hierarchical nature of nested objects, it does allow us to collect all needed information supporting the vast majority of use cases.
 
 This schema will include a TagFacet with four properties. 
 * key: Identifies the tag by name
