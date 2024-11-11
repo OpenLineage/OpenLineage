@@ -18,6 +18,7 @@ curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 echo "Installing uv"
 curl -LsSf https://astral.sh/uv/install.sh | sh
+source $HOME/.local/bin/env
 source $HOME/.cargo/env
 
 rustup target add aarch64-apple-darwin
