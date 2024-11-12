@@ -83,7 +83,7 @@ const Wall = ({ twoColumnWall = false, capitalizeTitleOnHome = false }) => {
         />
         <Button
           title="Slack"
-          to="http://bit.ly/OpenLineageSlack"
+          to="https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA"
           type="link"
           iconRight={<Slack />}
         />
