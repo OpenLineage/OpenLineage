@@ -19,7 +19,6 @@ public class CompositeTransport extends Transport {
   private final List<Transport> transports = new ArrayList<>();
 
   public CompositeTransport(@NonNull CompositeConfig config) {
-    super(Type.NOOP); // Type doesn't matter for CompositeTransport
     this.config = config;
     initializeTransports();
   }

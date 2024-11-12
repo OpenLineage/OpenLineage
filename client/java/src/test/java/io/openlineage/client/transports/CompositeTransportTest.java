@@ -24,10 +24,6 @@ import org.mockito.Mockito;
 abstract class FakeTransport extends Transport {
   private boolean emitted;
 
-  public FakeTransport() {
-    super(Type.NOOP); // Using NOOP or any placeholder type
-  }
-
   public boolean isEmitted() {
     return emitted;
   }
