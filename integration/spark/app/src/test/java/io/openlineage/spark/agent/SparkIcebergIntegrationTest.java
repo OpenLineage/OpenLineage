@@ -173,6 +173,8 @@ class SparkIcebergIntegrationTest {
               .hasSize(2)
               .containsExactly("b", "b");
         });
+
+    // TODO: include input outout statistics in this test
   }
 
   @Test

@@ -35,6 +35,20 @@ public class DataSourceV2RelationDatasetExtractor {
       OpenLineageContext context,
       DataSourceV2Relation relation,
       OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder) {
+    return extract(
+        datasetFactory,
+        context,
+        relation,
+        datasetFacetsBuilder,
+        context.getOpenLineage().newInputDatasetInputFacetsBuilder());
+  }
+
+  public static <D extends OpenLineage.Dataset> List<D> extract(
+      DatasetFactory<D> datasetFactory,
+      OpenLineageContext context,
+      DataSourceV2Relation relation,
+      OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder,
+      OpenLineage.InputDatasetInputFacetsBuilder inputFacetsBuilder) {
 
     OpenLineage openLineage = context.getOpenLineage();
     Optional<DatasetIdentifier> di = getDatasetIdentifierExtended(context, relation);

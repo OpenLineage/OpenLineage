@@ -94,6 +94,8 @@ public class JobMetricsHolder {
     Map<Metric, Number> result = new EnumMap<>(Metric.class);
 
     for (TaskMetrics taskMetric : jobMetrics) {
+      // TODO: collect input metrics
+
       OutputMetrics outputMetrics = taskMetric.outputMetrics();
       if (Objects.nonNull(outputMetrics)) {
         result.merge(
