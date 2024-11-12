@@ -6,7 +6,7 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.ExtensionLineageRelationHandler;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
@@ -130,17 +130,19 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     DatasetIdentifier di =
         PathUtils.fromCatalogTable(catalogTable, context.getSparkSession().get());
 
-    OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
-        context.getOpenLineage().newDatasetFacetsBuilder();
-    datasetFacetsBuilder.schema(PlanUtils.schemaFacet(context.getOpenLineage(), logRel.schema()));
-    datasetFacetsBuilder.dataSource(
-        PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()));
+    DatasetCompositeFacetsBuilder datasetFacetsBuilder =
+        datasetFactory.createCompositeFacetBuilder();
+    datasetFacetsBuilder
+        .getFacets()
+        .schema(PlanUtils.schemaFacet(context.getOpenLineage(), logRel.schema()))
+        .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()));
 
     getDatasetVersion(logRel)
         .map(
             version ->
-                datasetFacetsBuilder.version(
-                    context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
+                datasetFacetsBuilder
+                    .getFacets()
+                    .version(context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
 
     return Collections.singletonList(datasetFactory.getDataset(di, datasetFacetsBuilder));
   }
@@ -155,13 +157,17 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                 Configuration hadoopConfig =
                     session.sessionState().newHadoopConfWithOptions(relation.options());
 
-                DatasetFacetsBuilder datasetFacetsBuilder =
-                    context.getOpenLineage().newDatasetFacetsBuilder();
+                DatasetCompositeFacetsBuilder datasetFacetsBuilder =
+                    datasetFactory.createCompositeFacetBuilder();
                 getDatasetVersion(x)
                     .map(
                         version ->
-                            datasetFacetsBuilder.version(
-                                context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
+                            datasetFacetsBuilder
+                                .getFacets()
+                                .version(
+                                    context
+                                        .getOpenLineage()
+                                        .newDatasetVersionDatasetFacet(version)));
 
                 Collection<Path> rootPaths =
                     ScalaConversionUtils.fromSeq(relation.location().rootPaths());

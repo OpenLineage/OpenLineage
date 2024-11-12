@@ -41,7 +41,7 @@ public class SqlUtils {
                               new DatasetIdentifier(
                                   getName(defaultDatabase, defaultSchema, dbtm.qualifiedName()),
                                   namespace),
-                              new OpenLineage.DatasetFacetsBuilder());
+                              datasetFactory.createCompositeFacetBuilder());
                         })
                     .collect(Collectors.toList()))
         .orElse(Collections.emptyList());

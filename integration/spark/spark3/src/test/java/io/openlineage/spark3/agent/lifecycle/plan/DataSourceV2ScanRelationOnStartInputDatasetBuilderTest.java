@@ -11,6 +11,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
+import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -66,13 +68,13 @@ class DataSourceV2ScanRelationOnStartInputDatasetBuilderTest {
 
   @Test
   void testApply() {
-    OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
-        mock(OpenLineage.DatasetFacetsBuilder.class);
+    DatasetCompositeFacetsBuilder datasetFacetsBuilder =
+        new DatasetCompositeFacetsBuilder(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    when(factory.createCompositeFacetBuilder()).thenReturn(datasetFacetsBuilder);
     List<OpenLineage.InputDataset> datasets = mock(List.class);
     DataSourceV2ScanRelation scanRelation = mock(DataSourceV2ScanRelation.class);
     DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
 
-    when(openLineage.newDatasetFacetsBuilder()).thenReturn(datasetFacetsBuilder);
     when(context.getOpenLineage()).thenReturn(openLineage);
     when(scanRelation.relation()).thenReturn(relation);
     when(context.getSparkExtensionVisitorWrapper())
@@ -91,7 +93,7 @@ class DataSourceV2ScanRelationOnStartInputDatasetBuilderTest {
         facetUtilsMockedStatic.verify(
             () ->
                 DatasetVersionDatasetFacetUtils.includeDatasetVersion(
-                    context, datasetFacetsBuilder, relation),
+                    context, datasetFacetsBuilder.getFacets(), relation),
             times(1));
       }
     }

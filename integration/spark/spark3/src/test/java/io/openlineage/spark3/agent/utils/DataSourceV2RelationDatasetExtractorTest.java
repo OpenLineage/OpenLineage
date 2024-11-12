@@ -12,6 +12,8 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
@@ -44,8 +46,7 @@ class DataSourceV2RelationDatasetExtractorTest {
   SparkSession sparkSession = mock(SparkSession.class);
   DatasetFactory<OpenLineage.Dataset> datasetFactory = mock(DatasetFactory.class);
   DataSourceV2Relation dataSourceV2Relation = mock(DataSourceV2Relation.class);
-  OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
-      mock(OpenLineage.DatasetFacetsBuilder.class);
+  DatasetCompositeFacetsBuilder datasetFacetsBuilder = mock(DatasetCompositeFacetsBuilder.class);
   TableCatalog tableCatalog = mock(TableCatalog.class);
   Identifier identifier = mock(Identifier.class);
   StructType schema = mock(StructType.class);
@@ -58,12 +59,12 @@ class DataSourceV2RelationDatasetExtractorTest {
     tableProperties = new HashMap<>();
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(sparkSession));
     when(openLineageContext.getOpenLineage()).thenReturn(openLineage);
-    when(openLineage.newDatasetFacetsBuilder()).thenReturn(datasetFacetsBuilder);
     when(dataSourceV2Relation.catalog()).thenReturn(Option.apply(tableCatalog));
     when(dataSourceV2Relation.identifier()).thenReturn(Option.apply(identifier));
     when(dataSourceV2Relation.schema()).thenReturn(schema);
     when(dataSourceV2Relation.table()).thenReturn(table);
     when(table.properties()).thenReturn(tableProperties);
+    when(datasetFactory.createCompositeFacetBuilder()).thenReturn(datasetFacetsBuilder);
   }
 
   @Test
@@ -83,10 +84,13 @@ class DataSourceV2RelationDatasetExtractorTest {
         when(PlanUtils.schemaFacet(openLineage, schema)).thenReturn(schemaDatasetFacet);
         when(PlanUtils.datasourceFacet(openLineage, di.getNamespace()))
             .thenReturn(datasourceDatasetFacet);
-        when(datasetFacetsBuilder.schema(schemaDatasetFacet)).thenReturn(datasetFacetsBuilder);
-        when(datasetFacetsBuilder.dataSource(datasourceDatasetFacet))
-            .thenReturn(datasetFacetsBuilder);
-        when(datasetFacetsBuilder.build()).thenReturn(datasetFacets);
+
+        DatasetFacetsBuilder facetsBuilder = mock(DatasetFacetsBuilder.class);
+        when(datasetFacetsBuilder.getFacets()).thenReturn(facetsBuilder);
+
+        when(facetsBuilder.schema(schemaDatasetFacet)).thenReturn(facetsBuilder);
+        when(facetsBuilder.dataSource(datasourceDatasetFacet)).thenReturn(facetsBuilder);
+        when(facetsBuilder.build()).thenReturn(datasetFacets);
 
         when(CatalogUtils3.getDatasetIdentifier(
                 openLineageContext, tableCatalog, identifier, tableProperties))

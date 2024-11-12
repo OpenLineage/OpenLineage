@@ -6,6 +6,7 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
@@ -60,15 +61,17 @@ public class TableContentChangeDatasetBuilder
       includeOverwriteFacet = true;
     }
 
-    final OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
-        context.getOpenLineage().newDatasetFacetsBuilder();
+    final DatasetCompositeFacetsBuilder datasetFacetsBuilder =
+        new DatasetCompositeFacetsBuilder(context.getOpenLineage());
     if (includeOverwriteFacet) {
-      datasetFacetsBuilder.lifecycleStateChange(
-          context
-              .getOpenLineage()
-              .newLifecycleStateChangeDatasetFacet(
-                  OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE,
-                  null));
+      datasetFacetsBuilder
+          .getFacets()
+          .lifecycleStateChange(
+              context
+                  .getOpenLineage()
+                  .newLifecycleStateChangeDatasetFacet(
+                      OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE,
+                      null));
     }
 
     // FIXME: Use 'castToDataSourceV2Relation()' to safely cast 'DataSourceV2ScanRelation' to
@@ -81,7 +84,7 @@ public class TableContentChangeDatasetBuilder
             : (DataSourceV2Relation) table;
     if (includeDatasetVersion(event)) {
       DatasetVersionDatasetFacetUtils.includeDatasetVersion(
-          context, datasetFacetsBuilder, returnTable);
+          context, datasetFacetsBuilder.getFacets(), returnTable);
     }
 
     return DataSourceV2RelationDatasetExtractor.extract(

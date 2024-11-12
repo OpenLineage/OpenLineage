@@ -15,6 +15,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
@@ -140,8 +141,7 @@ class TableContentChangeDatasetBuilderTest {
     try (MockedStatic mockedPlanUtils3 = mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
       try (MockedStatic mockedVersions = mockStatic(CatalogUtils3.class)) {
         OpenLineage.Dataset dataset = mock(OpenLineage.OutputDataset.class);
-        OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
-            mock(OpenLineage.DatasetFacetsBuilder.class);
+        DatasetFacetsBuilder datasetFacetsBuilder = mock(DatasetFacetsBuilder.class);
         mock(OpenLineage.DatasetFacetsBuilder.class);
         OpenLineage.LifecycleStateChangeDatasetFacet lifecycleStateChangeDatasetFacet =
             mock(OpenLineage.LifecycleStateChangeDatasetFacet.class);
@@ -153,14 +153,14 @@ class TableContentChangeDatasetBuilderTest {
         when(dataSourceV2Relation.table()).thenReturn(table);
         when(table.properties()).thenReturn(tableProperties);
 
-        when(openLineage.newDatasetFacetsBuilder()).thenReturn(datasetFacetsBuilder);
         when(openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
             .thenReturn(lifecycleStateChangeDatasetFacet);
         when(openLineage.newDatasetVersionDatasetFacet("v2"))
             .thenReturn(datasetVersionDatasetFacet);
+        when(openLineage.newDatasetFacetsBuilder()).thenReturn(datasetFacetsBuilder);
 
         when(DataSourceV2RelationDatasetExtractor.extract(
-                any(), eq(openLineageContext), eq(dataSourceV2Relation), eq(datasetFacetsBuilder)))
+                any(), eq(openLineageContext), eq(dataSourceV2Relation), any()))
             .thenReturn(Collections.singletonList(dataset));
         when(CatalogUtils3.getDatasetVersion(any(), any(), any(), any()))
             .thenReturn(Optional.of("v2"));
