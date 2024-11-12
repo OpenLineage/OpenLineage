@@ -5,7 +5,7 @@
       "parent": {
         "job": {
           "namespace": "default",
-          "name": "cl_i_test_application"
+          "name": "cli_test_application"
         }
       },
       "spark_properties": {
