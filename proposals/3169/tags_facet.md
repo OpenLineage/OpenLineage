@@ -75,13 +75,14 @@ Run Event Example with Tags
         "eventTime": "2020-12-28T19:52:00.001+10:00",
         "run": {
           "runId": "0176a8c2-fe01-7439-87e6-56a1a1b4029f",
-          "tags": [
-            {"key": "project", "value": "myproject", "source": "DBT_CLOUD_INTEGRATION"},
-            {"key": "environment", "value": "production", "source": "DBT_CLOUD_INTEGRATION"},
-            {"key": "crr_pipeline", "value": true, "source": "USER"},
-            {"key": "is_adhoc", "value": true, "source": "DBT_CLOUD_INTEGRATION"}
-            
-          ]
+          "facets": {
+            "tags": [
+                {"key": "project", "value": "myproject", "source": "DBT_CLOUD_INTEGRATION"},
+                {"key": "environment", "value": "production", "source": "DBT_CLOUD_INTEGRATION"},
+                {"key": "crr_pipeline", "value": true, "source": "USER"},
+                {"key": "is_adhoc", "value": true, "source": "DBT_CLOUD_INTEGRATION"}
+            ]
+          }
         },
         "job": {
           "namespace": "my-namespace",
