@@ -62,7 +62,7 @@ public class TableContentChangeDatasetBuilder
     }
 
     final DatasetCompositeFacetsBuilder datasetFacetsBuilder =
-        new DatasetCompositeFacetsBuilder<>(context.getOpenLineage());
+        new DatasetCompositeFacetsBuilder(context.getOpenLineage());
     if (includeOverwriteFacet) {
       datasetFacetsBuilder
           .getFacets()

@@ -6,16 +6,16 @@
 package io.openlineage.client.dataset;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.OpenLineage.InputDatasetInputFacetsBuilder;
 import io.openlineage.client.OpenLineage.OutputDatasetOutputFacetsBuilder;
 import lombok.Getter;
+import lombok.Setter;
 
 /** Builder class to include both dataset and input/output facets in a single class. */
-public class DatasetCompositeFacetsBuilder<D extends Dataset> {
+public class DatasetCompositeFacetsBuilder {
   private OpenLineage openLineage;
 
-  @Getter private OpenLineage.DatasetFacetsBuilder facets;
+  @Setter @Getter private OpenLineage.DatasetFacetsBuilder facets;
 
   @Getter private InputDatasetInputFacetsBuilder inputFacets;
 

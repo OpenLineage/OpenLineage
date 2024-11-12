@@ -6,7 +6,12 @@
 package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.Builder;
+import io.openlineage.client.OpenLineage.DatasetFacets;
+import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
+import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
+import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.client.utils.DatasetIdentifier;
@@ -31,6 +36,9 @@ import org.apache.spark.sql.types.StructType;
  * provide two static factory methods - {@link #input(OpenLineageContext)} and {@link
  * #output(OpenLineageContext)}.
  *
+ * <p>{@link DatasetCompositeFacetsBuilder} should deprecate usage of {@link DatasetFacetsBuilder}
+ * in OpenLineage 1.28. Currently, both are supported.
+ *
  * @param <D> the implementation of {@link OpenLineage.Dataset} constructed by this factory
  */
 public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
@@ -44,6 +52,10 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
 
   abstract OpenLineage.Builder<D> datasetBuilder(
       String name, String namespace, DatasetCompositeFacetsBuilder facetsBuilder);
+
+  @Deprecated
+  abstract OpenLineage.Builder<D> datasetBuilder(
+      String name, String namespace, DatasetFacets facets);
 
   /**
    * Create a {@link DatasetFactory} that constructs only {@link OpenLineage.InputDataset}s.
@@ -63,6 +75,17 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
             .name(name)
             .inputFacets(facetsBuilder.getInputFacets().build())
             .facets(facetsBuilder.getFacets().build());
+      }
+
+      @Deprecated
+      @Override
+      Builder<InputDataset> datasetBuilder(String name, String namespace, DatasetFacets facets) {
+        return context
+            .getOpenLineage()
+            .newInputDatasetBuilder()
+            .namespace(namespaceResolver.resolve(namespace))
+            .name(name)
+            .facets(facets);
       }
     };
   }
@@ -86,6 +109,17 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
             .outputFacets(facetsBuilder.getOutputFacets().build())
             .facets(facetsBuilder.getFacets().build());
       }
+
+      @Deprecated
+      @Override
+      Builder<OutputDataset> datasetBuilder(String name, String namespace, DatasetFacets facets) {
+        return context
+            .getOpenLineage()
+            .newOutputDatasetBuilder()
+            .namespace(namespaceResolver.resolve(namespace))
+            .name(name)
+            .facets(facets);
+      }
     };
   }
 
@@ -108,6 +142,23 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
         .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema));
 
     return datasetBuilder(name, namespace, facetsBuilder).build();
+  }
+
+  /**
+   * Given a {@link URI}, construct a valid {@link OpenLineage.Dataset} following the expected
+   * naming conventions.
+   *
+   * @param outputPath
+   * @param schema
+   * @return
+   */
+  @Deprecated
+  public D getDataset(
+      URI outputPath, StructType schema, DatasetFacetsBuilder datasetFacetsBuilder) {
+    DatasetCompositeFacetsBuilder compositeFacetsBuilder =
+        new DatasetCompositeFacetsBuilder(context.openLineage);
+    compositeFacetsBuilder.setFacets(datasetFacetsBuilder);
+    return getDataset(outputPath, schema, compositeFacetsBuilder);
   }
 
   /**
