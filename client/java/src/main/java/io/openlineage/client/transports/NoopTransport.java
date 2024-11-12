@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class NoopTransport extends Transport {
   public NoopTransport() {
-    super(Type.NOOP);
     log.info("OpenLineage client is disabled");
   }
 

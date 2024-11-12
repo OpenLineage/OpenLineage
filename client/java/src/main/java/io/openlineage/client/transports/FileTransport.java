@@ -26,7 +26,6 @@ public class FileTransport extends Transport {
   File file;
 
   public FileTransport(@NonNull final FileConfig fileConfig) {
-    super(Type.FILE);
     file = new File(fileConfig.getLocation());
   }
 

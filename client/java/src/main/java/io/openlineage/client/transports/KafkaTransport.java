@@ -25,7 +25,6 @@ public final class KafkaTransport extends Transport {
   public KafkaTransport(
       @NonNull final KafkaProducer<String, String> kafkaProducer,
       @NonNull final KafkaConfig kafkaConfig) {
-    super(Type.KAFKA);
     this.topicName = kafkaConfig.getTopicName();
     this.messageKey = kafkaConfig.getMessageKey();
     this.producer = kafkaProducer;

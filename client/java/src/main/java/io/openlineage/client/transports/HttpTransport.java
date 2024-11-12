@@ -98,7 +98,6 @@ public final class HttpTransport extends Transport {
 
   public HttpTransport(
       @NonNull final CloseableHttpClient httpClient, @NonNull final HttpConfig httpConfig) {
-    super(Type.HTTP);
     this.http = httpClient;
     try {
       this.uri = getUri(httpConfig);
