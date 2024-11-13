@@ -12,6 +12,7 @@
       "ol:core:ErrorMessageRunFacet.json",
       "ol:core:ExternalQueryRunFacet.json",
       "ol:core:ExtractionErrorRunFacet.json",
+      "ol:core:InputStatisticsInputDatasetFacet.json",
       "ol:core:JobTypeJobFacet.json",
       "ol:core:LifecycleStateChangeDatasetFacet.json",
       "ol:core:NominalTimeRunFacet.json",

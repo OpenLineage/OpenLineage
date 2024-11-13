@@ -262,7 +262,11 @@ public class IcebergHandler implements CatalogHandler {
         SparkSessionCatalog sparkCatalog = (SparkSessionCatalog) tableCatalog;
         return Optional.ofNullable(sparkCatalog.icebergCatalog().loadTable(tableIdentifier));
       }
-    } catch (NoSuchTableException | ClassCastException e) {
+    } catch (NoSuchTableException e) {
+      // don't log stack trace for missing tables
+      log.warn("Failed to load table from catalog: {}", identifier);
+      return Optional.empty();
+    } catch (ClassCastException e) {
       log.error("Failed to load table from catalog: {}", identifier, e);
       return Optional.empty();
     }

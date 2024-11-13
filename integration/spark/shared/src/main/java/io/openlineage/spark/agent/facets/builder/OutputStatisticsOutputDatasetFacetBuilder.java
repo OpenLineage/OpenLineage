@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.facets.builder;
 
 import io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet;
 import io.openlineage.spark.agent.JobMetricsHolder;
+import io.openlineage.spark.agent.JobMetricsHolder.Metric;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Map;
@@ -60,6 +61,10 @@ public class OutputStatisticsOutputDatasetFacetBuilder
                       .orElse(null))
               .size(
                   Optional.of(metrics.get(JobMetricsHolder.Metric.WRITE_BYTES))
+                      .map(Number::longValue)
+                      .orElse(null))
+              .fileCount(
+                  Optional.of(metrics.get(Metric.FILES_WRITTEN))
                       .map(Number::longValue)
                       .orElse(null))
               .build());

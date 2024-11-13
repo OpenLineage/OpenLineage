@@ -168,6 +168,8 @@ An example of a valid name is `BigQueryStatisticsJobFacet` and key is `bigQuery_
   DataQuality library (row count, byte size, null count, distinct count, average, min, max, quantiles).
 
 - **dataQualityAssertions**: Captures the result of running data tests on a dataset or its columns.
+-
+- **inputStatistics**: Captures the size of the input dataset read (row count and byte size).
 
 #### Output Dataset Facets
 
