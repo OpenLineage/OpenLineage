@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -75,6 +76,15 @@ class DatabricksIntegrationTest {
     databricks.deleteEventsFile();
   }
 
+  /**
+   * The assumption that must be true before every test. It is necessary because we want to
+   * gracefully clean the resources and collect the cluster logs even if the initialization failed.
+   */
+  private void assumeClusterRunning() {
+    Assumptions.assumeTrue(
+        databricks.isInitializationSuccessful(), "Cluster not initialized, skipping test.");
+  }
+
   @AfterAll
   public static void shutdown() {
     databricks.fetchLogs();
@@ -84,6 +94,8 @@ class DatabricksIntegrationTest {
   @Test
   @SneakyThrows
   void testCreateTableAsSelect() {
+    assumeClusterRunning();
+
     List<RunEvent> runEvents = databricks.runScript("ctas.py");
     RunEvent lastEvent = runEvents.get(runEvents.size() - 1);
 
@@ -135,6 +147,8 @@ class DatabricksIntegrationTest {
   @Test
   @SneakyThrows
   void testNarrowTransformation() {
+    assumeClusterRunning();
+
     List<RunEvent> runEvents = databricks.runScript("narrow_transformation.py");
     assertThat(runEvents).isNotEmpty();
 
@@ -167,6 +181,8 @@ class DatabricksIntegrationTest {
   @Test
   @SneakyThrows
   void testWideTransformation() {
+    assumeClusterRunning();
+
     List<RunEvent> runEvents = databricks.runScript("wide_transformation.py");
     assertThat(runEvents).isNotEmpty();
 
@@ -192,6 +208,8 @@ class DatabricksIntegrationTest {
 
   @Test
   void testWriteReadFromTableWithLocation() {
+    assumeClusterRunning();
+
     List<RunEvent> runEvents = databricks.runScript("dataset_names.py");
 
     // find complete event with output dataset containing name
@@ -221,6 +239,8 @@ class DatabricksIntegrationTest {
   @Test
   @SneakyThrows
   void testMergeInto() {
+    assumeClusterRunning();
+
     List<RunEvent> runEvents = databricks.runScript("merge_into.py");
 
     RunEvent event =

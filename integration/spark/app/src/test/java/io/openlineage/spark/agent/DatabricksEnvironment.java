@@ -52,9 +52,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -81,6 +83,10 @@ public class DatabricksEnvironment implements AutoCloseable {
   private final Path clusterLogs;
   private final Path stdoutLogs;
   private final Path stdout;
+
+  @SuppressWarnings("PMD.UnusedAssignment")
+  @Getter
+  private boolean initializationSuccessful = true;
 
   @Builder
   @Getter
@@ -143,8 +149,11 @@ public class DatabricksEnvironment implements AutoCloseable {
       log.warn(
           "⚠️ The cluster must be restarted to apply changes if the OpenLineage jar has been updated. ⚠️");
       this.clusterId = resolvedClusterId;
+      this.initializationSuccessful = true;
     } else {
-      this.clusterId = prepareNewCluster();
+      ClusterInitialization clusterInitialization = prepareNewCluster();
+      this.initializationSuccessful = clusterInitialization.isSuccessful();
+      this.clusterId = clusterInitialization.getClusterId();
     }
 
     this.platformVersion =
@@ -156,7 +165,7 @@ public class DatabricksEnvironment implements AutoCloseable {
   }
 
   @SneakyThrows
-  private String prepareNewCluster() {
+  private ClusterInitialization prepareNewCluster() {
     uploadInitializationScript();
 
     // We may reuse the cluster name where there are existing old logs. This can happen if the
@@ -175,8 +184,13 @@ public class DatabricksEnvironment implements AutoCloseable {
 
     String clusterId = cluster.getResponse().getClusterId();
     log.info("Ensuring the new cluster [{}] with ID [{}] is running...", clusterName, clusterId);
-    cluster.get(Duration.ofMinutes(10));
-    return clusterId;
+    try {
+      cluster.get(Duration.ofMinutes(10));
+    } catch (TimeoutException e) {
+      log.error("Cluster [{}] failed to start within the specified time.", clusterName);
+      return new ClusterInitialization(clusterId, false);
+    }
+    return new ClusterInitialization(clusterId, true);
   }
 
   private void ensureClusterDoesntExist(String clusterName) {
@@ -444,13 +458,10 @@ public class DatabricksEnvironment implements AutoCloseable {
   private void saveEventsLocally(String scriptName, List<String> lines) throws IOException {
     // The source file path is reused and deleted before every test. As long as the tests are not
     // executed concurrently, it should contain the events from the current test.
+    String eventsFileLocation = properties.getDevelopment().getEventsFileLocation();
+    Files.createDirectories(Paths.get(eventsFileLocation));
     String eventsLocation =
-        properties.getDevelopment().getEventsFileLocation()
-            + "/"
-            + executionTimestamp
-            + "-"
-            + scriptName
-            + "-events.ndjson";
+        eventsFileLocation + "/" + executionTimestamp + "-" + scriptName + "-events.ndjson";
     log.info("Fetching events to [{}]", eventsLocation);
     writeLinesToFile(eventsLocation, lines);
     log.info("Events fetched.");
@@ -458,6 +469,7 @@ public class DatabricksEnvironment implements AutoCloseable {
 
   private static void writeLinesToFile(String eventsLocation, List<String> lines)
       throws IOException {
+    Files.createDirectories(Paths.get(eventsLocation).getParent());
     try (FileWriter fileWriter = new FileWriter(eventsLocation)) {
       lines.forEach(
           line -> {
@@ -468,5 +480,11 @@ public class DatabricksEnvironment implements AutoCloseable {
             }
           });
     }
+  }
+
+  @Data
+  private static class ClusterInitialization {
+    private final String clusterId;
+    private final boolean successful;
   }
 }
