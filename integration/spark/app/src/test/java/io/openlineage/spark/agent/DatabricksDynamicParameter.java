@@ -48,8 +48,8 @@ public enum DatabricksDynamicParameter implements DynamicParameter {
    * The location where the events should be stored for troubleshooting purposes. Each test has its
    * own file with execution timestamp as the prefix and the name of the script being executed.
    */
-  EventsFileLocation("development.eventsFileLocation", "./build"),
-  FetchEvents("development.fetchEvents", "./build"),
+  EventsFileLocation("development.eventsFileLocation", "./build/events"),
+  FetchEvents("development.fetchEvents", "true"),
 
   /**
    * When set to {@code true}, the given logs are fetched and stored under specified location. They
@@ -57,12 +57,12 @@ public enum DatabricksDynamicParameter implements DynamicParameter {
    * minutes for the logs to be available on DBFS, so you may consider keeping this function off if
    * you don't need them.
    */
-  FetchLog4jLogs("development.logs.log4j.enabled", "false"),
-  FetchStdout("development.logs.stdout.enabled", "false"),
-  FetchStderr("development.logs.stderr.enabled", "false"),
-  Log4jLogsLocation("development.logs.log4j.location", "./build"),
-  StdoutLocation("development.logs.stdout.location", "./build"),
-  StderrLocation("development.logs.stderr.location", "./build");
+  FetchLog4jLogs("development.logs.log4j.enabled", "true"),
+  FetchStdout("development.logs.stdout.enabled", "true"),
+  FetchStderr("development.logs.stderr.enabled", "true"),
+  Log4jLogsLocation("development.logs.log4j.location", "./build/logs"),
+  StdoutLocation("development.logs.stdout.location", "./build/logs"),
+  StderrLocation("development.logs.stderr.location", "./build/logs");
 
   private final String parameterName;
   private final String defaultValue;

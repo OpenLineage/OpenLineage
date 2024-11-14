@@ -865,6 +865,8 @@ jobs:
                 at: ~/
             - set_java_spark_scala_version:
                   env-variant: << parameters.env-variant >>
+            - run: mkdir -p app/build/logs
+            - run: mkdir -p app/build/events
             - run: ./gradlew --console=plain clean shadowJar -x test -Pjava.compile.home=${JAVA17_HOME}
             - run: ./gradlew --no-daemon --console=plain databricksIntegrationTest -x test -Pspark.version=${SPARK} -Pscala.binary.version=${SCALA} -Pjava.compile.home=${JAVA17_HOME} -Dopenlineage.tests.databricks.workspace.host=$DATABRICKS_HOST -Dopenlineage.tests.databricks.workspace.token=$DATABRICKS_TOKEN
             - store_test_results:
@@ -873,8 +875,11 @@ jobs:
                 path: app/build/reports/tests/databricksIntegrationTest
                 destination: test-report
             - store_artifacts:
-                path: app/build/cluster-log4j.log
-                destination: cluster-log4j.log
+                path: app/build/logs
+                destination: cluster-logs
+            - store_artifacts:
+                path: app/build/events
+                destination: events
             - save_cache:
                 key: v1-databricks-integration-spark-{{ checksum "/tmp/checksum.txt" }}
                 paths:
