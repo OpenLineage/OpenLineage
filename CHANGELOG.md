@@ -4,8 +4,10 @@
 
 ### Changed
 
+* **Spark: Exclude META-INF/\*TransportBuilder from Spark Extension Interfaces** [`#3244`](https://github.com/OpenLineage/OpenLineage/pull/3244) [@tnazarew](https://github.com/tnazarew)
+    *Excludes META-INF/\*TransportBuilder to avoid version conflicts*
 * **Spark: enables building input/output facets through `DatasetFactory`** [`#3207`](https://github.com/OpenLineage/OpenLineage/pull/3207) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-   *Adds extra capabilities into `DatasetFactory` class, marks some public developers' API methods as deprecated.*
+    *Adds extra capabilities into `DatasetFactory` class, marks some public developers' API methods as deprecated.*
 
 ## [1.24.0](https://github.com/OpenLineage/OpenLineage/compare/1.23.0...1.24.0) - 2024-11-05
 
