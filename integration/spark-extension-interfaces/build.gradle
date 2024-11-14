@@ -218,6 +218,7 @@ shadowJar {
         exclude 'io/openlineage/client/circuitBreaker/**'
         exclude 'io/openlineage/client/metrics/**'
         exclude 'io/openlineage/client/transports/**'
+        exclude 'META-INF/services/io.openlineage.client.transports.TransportBuilder'
     }
 
     relocate('io.openlineage.client', 'io.openlineage.spark.shade.client')
