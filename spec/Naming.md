@@ -328,11 +328,11 @@ Naming hierarchy:
 
 Identifier :
 
-- Namespace: hdfs://{workspace name}
-  - Scheme = hdfs
+- Namespace: dbfs://{workspace name}
+  - Scheme = dbfs
   - Authority = workspace name
 - Unique name: {path}
-  - URI = hdfs://{workspace name}{path}
+  - URI = dbfs://{workspace name}{path}
 
 #### GCS
 
