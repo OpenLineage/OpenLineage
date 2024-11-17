@@ -12,7 +12,7 @@ echo "END: Upload Spark Listener JARs"
 echo "BEGIN: Modify Spark config settings"
 cat << 'EOF' > /databricks/driver/conf/openlineage-spark-driver-defaults.conf
 [driver] {
-  "spark.extraListeners" = "io.openlineage.spark.agent.OpenLineageSparkListener"
+  "spark.extraListeners" = "com.databricks.backend.daemon.driver.DBCEventLoggingListener,io.openlineage.spark.agent.OpenLineageSparkListener"
 }
 EOF
 echo "END: Modify Spark config settings"

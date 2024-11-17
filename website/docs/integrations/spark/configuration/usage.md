@@ -7,7 +7,7 @@ title: Usage
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-Configuring the OpenLineage Spark integration is straightforward. It uses built-in Spark configuration mechanisms.
+Configuring the OpenLineage Spark integration is straightforward. It uses built-in Spark configuration mechanisms. However, for **Databricks users**, special considerations are required to ensure compatibility and avoid breaking the Spark UI after a cluster shutdown.
 
 Your options are:
 
@@ -27,6 +27,10 @@ The setting `config("spark.extraListeners", "io.openlineage.spark.agent.OpenLine
 the integration ineffective.
 :::
 
+:::note 
+Databricks For Databricks users, you must include `com.databricks.backend.daemon.driver.DBCEventLoggingListener` in addition to `io.openlineage.spark.agent.OpenLineageSparkListener` in the `spark.extraListeners` setting. Failure to do so will make the Spark UI inaccessible after a cluster shutdown.
+:::
+
 <Tabs groupId="spark-app-conf">
 <TabItem value="scala" label="Scala">
 
@@ -38,6 +42,27 @@ object OpenLineageExample extends App {
     .appName("OpenLineageExample")
     // This line is EXTREMELY important
     .config("spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener")
+    .config("spark.openlineage.transport.type", "http")
+    .config("spark.openlineage.transport.url", "http://localhost:5000")
+    .config("spark.openlineage.namespace", "spark_namespace")
+    .config("spark.openlineage.parentJobNamespace", "airflow_namespace")
+    .config("spark.openlineage.parentJobName", "airflow_dag.airflow_task")
+    .config("spark.openlineage.parentRunId", "xxxx-xxxx-xxxx-xxxx")
+    .getOrCreate()
+
+  // ... your code
+
+  spark.stop()
+}
+
+// For Databricks
+import org.apache.spark.sql.SparkSession
+
+object OpenLineageExample extends App {
+  val spark = SparkSession.builder()
+    .appName("OpenLineageExample")
+    // This line is EXTREMELY important
+    .config("spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener,com.databricks.backend.daemon.driver.DBCEventLoggingListener")
     .config("spark.openlineage.transport.type", "http")
     .config("spark.openlineage.transport.url", "http://localhost:5000")
     .config("spark.openlineage.namespace", "spark_namespace")
@@ -72,6 +97,24 @@ spark = SparkSession.builder
 # ... your code
 
 spark.stop()
+
+# For Databricks
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder
+    .appName("OpenLineageExample")
+    .config("spark.extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener,com.databricks.backend.daemon.driver.DBCEventLoggingListener")
+    .config("spark.openlineage.transport.type", "http")
+    .config("spark.openlineage.transport.url", "http://localhost:5000")
+    .config("spark.openlineage.namespace", "spark_namespace")
+    .config("spark.openlineage.parentJobNamespace", "airflow_namespace")
+    .config("spark.openlineage.parentJobName", "airflow_dag.airflow_task")
+    .config("spark.openlineage.parentRunId", "xxxx-xxxx-xxxx-xxxx")
+    .getOrCreate()
+
+# ... your code
+
+spark.stop()
 ```
 
 </TabItem>
@@ -81,9 +124,24 @@ spark.stop()
 
 The below example demonstrates how to use the `--conf` option with `spark-submit`.
 
+:::note 
+Databricks Remember to include `com.databricks.backend.daemon.driver.DBCEventLoggingListener` along with the OpenLineage listener. 
+:::
+
 ```bash
 spark-submit \
   --conf "spark.extraListeners=io.openlineage.spark.agent.OpenLineageSparkListener" \
+  --conf "spark.openlineage.transport.type=http" \
+  --conf "spark.openlineage.transport.url=http://localhost:5000" \
+  --conf "spark.openlineage.namespace=spark_namespace" \
+  --conf "spark.openlineage.parentJobNamespace=airflow_namespace" \
+  --conf "spark.openlineage.parentJobName=airflow_dag.airflow_task" \
+  --conf "spark.openlineage.parentRunId=xxxx-xxxx-xxxx-xxxx" \
+  # ... other options
+
+# For Databricks
+spark-submit \
+  --conf "spark.extraListeners=io.openlineage.spark.agent.OpenLineageSparkListener,com.databricks.backend.daemon.driver.DBCEventLoggingListener" \
   --conf "spark.openlineage.transport.type=http" \
   --conf "spark.openlineage.transport.url=http://localhost:5000" \
   --conf "spark.openlineage.namespace=spark_namespace" \
@@ -104,8 +162,20 @@ installation, particularly in a shared environment.
 
 The below example demonstrates how to add properties to the `spark-defaults.conf` file.
 
+:::note 
+Databricks For Databricks users, include `com.databricks.backend.daemon.driver.DBCEventLoggingListener` in the `spark.extraListeners` property.
+:::
+
 ```properties
 spark.extraListeners=io.openlineage.spark.agent.OpenLineageSparkListener
+spark.openlineage.transport.type=http
+spark.openlineage.transport.url=http://localhost:5000
+spark.openlineage.namespace=MyNamespace
+```
+
+For Databricks,
+```properties
+spark.extraListeners=io.openlineage.spark.agent.OpenLineageSparkListener,com.databricks.backend.daemon.driver.DBCEventLoggingListener
 spark.openlineage.transport.type=http
 spark.openlineage.transport.url=http://localhost:5000
 spark.openlineage.namespace=MyNamespace
