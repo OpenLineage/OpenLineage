@@ -41,7 +41,7 @@ public class Spark33DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new SaveIntoDataSourceCommandVisitor(context))
             .add(new AppendDataDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
-            .add(new TableContentChangeDatasetBuilder(context))
+            .add(new TableContentChangeDatasetBuilder(context, datasetFactory))
             .add(new SubqueryAliasOutputDatasetBuilder(context))
             .add(new SparkExtensionV1OutputDatasetBuilder(context))
             .add(new CreateReplaceDatasetBuilder(context))

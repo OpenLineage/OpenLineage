@@ -165,48 +165,4 @@ class DatasetVersionDatasetFacetUtilsTest {
         Optional.of("1"),
         DatasetVersionDatasetFacetUtils.extractVersionFromLogicalRelation(logicalRelation));
   }
-
-  @Test
-  void testIncludeDatasetVersion() {
-    OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder = new OpenLineage.DatasetFacetsBuilder();
-    DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
-
-    OpenLineage.DatasetVersionDatasetFacet datasetVersionDatasetFacet =
-        mock(OpenLineage.DatasetVersionDatasetFacet.class);
-    when(datasetVersionDatasetFacet.getDatasetVersion()).thenReturn("v2");
-    when(openLineage.newDatasetVersionDatasetFacet("v2")).thenReturn(datasetVersionDatasetFacet);
-    when(relation.identifier()).thenReturn(Option.apply(identifier));
-    when(relation.catalog()).thenReturn(Option.apply(tableCatalog));
-    when(relation.table()).thenReturn(table);
-    when(table.properties()).thenReturn(tableProperties);
-
-    try (MockedStatic mocked = mockStatic(CatalogUtils3.class)) {
-      when(CatalogUtils3.getDatasetVersion(
-              openLineageContext, tableCatalog, identifier, tableProperties))
-          .thenReturn(Optional.of("v2"));
-      DatasetVersionDatasetFacetUtils.includeDatasetVersion(
-          openLineageContext, datasetFacetsBuilder, relation);
-      assertEquals("v2", datasetFacetsBuilder.build().getVersion().getDatasetVersion());
-    }
-  }
-
-  @Test
-  void testIncludeDatasetVersionWhenNoDatasetVersion() {
-    OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder = new OpenLineage.DatasetFacetsBuilder();
-    DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
-
-    when(relation.identifier()).thenReturn(Option.apply(identifier));
-    when(relation.catalog()).thenReturn(Option.apply(tableCatalog));
-    when(relation.table()).thenReturn(table);
-    when(table.properties()).thenReturn(tableProperties);
-
-    try (MockedStatic mocked = mockStatic(CatalogUtils3.class)) {
-      when(CatalogUtils3.getDatasetVersion(
-              openLineageContext, tableCatalog, identifier, tableProperties))
-          .thenReturn(Optional.empty());
-      DatasetVersionDatasetFacetUtils.includeDatasetVersion(
-          openLineageContext, datasetFacetsBuilder, relation);
-      assertEquals(null, datasetFacetsBuilder.build().getVersion());
-    }
-  }
 }

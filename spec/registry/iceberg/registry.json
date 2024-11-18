@@ -1,0 +1,9 @@
+{
+  "producer": {
+    "root_doc_URL": "https://iceberg.apache.org/docs/latest/metrics-reporting/",
+    "produced_facets": [
+      "ol:iceberg:IcebergScanReportInputDatasetFacet.json",
+      "ol:iceberg:IcebergCommitReportOutputDatasetFacet.json"
+    ]
+  }
+}
