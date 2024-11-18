@@ -9,10 +9,12 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
@@ -20,6 +22,7 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.connector.catalog.V1Table;
+import org.apache.spark.sql.delta.Snapshot;
 import org.apache.spark.sql.delta.catalog.DeltaCatalog;
 import org.apache.spark.sql.delta.catalog.DeltaTableV2;
 
@@ -95,7 +98,38 @@ public class DeltaHandler implements CatalogHandler {
 
     if (table instanceof DeltaTableV2) {
       DeltaTableV2 deltaTable = (DeltaTableV2) table;
-      return Optional.of(Long.toString(deltaTable.snapshot().version()));
+      Optional<Snapshot> snapshot = getDeltaTableSnapshot(deltaTable);
+      if (snapshot.isPresent()) {
+        return Optional.of(Long.toString(snapshot.get().version()));
+      }
+    }
+    return Optional.empty();
+  }
+
+  /**
+   * Versions of Delta differ in implementation of {@link DeltaTableV2} class. This method retrieves
+   * the table snapshot regardless of the Delta version. Previously `snapshot` method was available
+   * in Scala class for Delta < 3. Recent changes in Delta 3+ changed the naming of this function to
+   * be 'initialSnapshot'. The developers wanted to indicate with this rename that the snapshot we
+   * are getting, is a lazy value that returns the initial version you read. If the table has been
+   * changed in the meantime, you will not get the latest snapshot but that initial version you
+   * read.
+   *
+   * @return Optional SnapShot of the deltaTable.
+   */
+  private Optional<Snapshot> getDeltaTableSnapshot(DeltaTableV2 deltaTable) {
+    if (MethodUtils.getAccessibleMethod(deltaTable.getClass(), "snapshot") != null) {
+      try {
+        return Optional.of((Snapshot) MethodUtils.invokeMethod(deltaTable, "snapshot"));
+      } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+        log.error("Could not invoke method", e);
+      }
+    } else if (MethodUtils.getAccessibleMethod(deltaTable.getClass(), "initialSnapshot") != null) {
+      try {
+        return Optional.of((Snapshot) MethodUtils.invokeMethod(deltaTable, "initialSnapshot"));
+      } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+        log.error("Could not invoke method", e);
+      }
     }
     return Optional.empty();
   }
