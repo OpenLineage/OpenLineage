@@ -58,7 +58,7 @@ public final class DataSourceV2ScanRelationOnEndInputDatasetBuilder
     DatasetCompositeFacetsBuilder datasetFacetsBuilder =
         new DatasetCompositeFacetsBuilder(context.getOpenLineage());
 
-    // input dataset facets builders on scan
+    // vendors' input dataset facets builders on scan
     Collection<OpenLineageEventHandlerFactory> handlerFactories =
         Optional.ofNullable(context.getVendors())
             .map(Vendors::getEventHandlerFactories)

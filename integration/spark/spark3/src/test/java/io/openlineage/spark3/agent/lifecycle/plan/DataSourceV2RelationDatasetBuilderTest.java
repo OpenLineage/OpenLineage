@@ -17,6 +17,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
+import io.openlineage.spark.agent.util.DatasetVersionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -24,6 +25,7 @@ import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
@@ -86,24 +88,34 @@ class DataSourceV2RelationDatasetBuilderTest {
         mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
       try (MockedStatic facetUtilsMockedStatic =
           mockStatic(DatasetVersionDatasetFacetUtils.class)) {
-        when(DataSourceV2RelationDatasetExtractor.extract(
-                factory, context, relation, datasetFacetsBuilder))
-            .thenReturn(datasets);
+        try (MockedStatic versionUtilsMockedStatic = mockStatic(DatasetVersionUtils.class)) {
+          when(DataSourceV2RelationDatasetExtractor.extract(
+                  factory, context, relation, datasetFacetsBuilder))
+              .thenReturn(datasets);
 
-        if (builder instanceof DataSourceV2RelationOutputDatasetBuilder) {
-          Assertions.assertEquals(
-              datasets,
-              ((DataSourceV2RelationOutputDatasetBuilder) builder)
-                  .apply(new SparkListenerSQLExecutionEnd(1L, 1L), relation));
-        } else {
-          Assertions.assertEquals(datasets, builder.apply(relation));
+          when(DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+                  context, relation))
+              .thenReturn(Optional.of("v2"));
+
+          if (builder instanceof DataSourceV2RelationOutputDatasetBuilder) {
+            Assertions.assertEquals(
+                datasets,
+                ((DataSourceV2RelationOutputDatasetBuilder) builder)
+                    .apply(new SparkListenerSQLExecutionEnd(1L, 1L), relation));
+
+            versionUtilsMockedStatic.verify(
+                () ->
+                    DatasetVersionUtils.buildVersionOutputFacets(
+                        context, datasetFacetsBuilder, "v2"),
+                times(1));
+          } else {
+            Assertions.assertEquals(datasets, builder.apply(relation));
+
+            versionUtilsMockedStatic.verify(
+                () -> DatasetVersionUtils.buildVersionFacets(context, datasetFacetsBuilder, "v2"),
+                times(1));
+          }
         }
-
-        facetUtilsMockedStatic.verify(
-            () ->
-                DatasetVersionDatasetFacetUtils.includeDatasetVersion(
-                    context, datasetFacetsBuilder.getFacets(), relation),
-            times(1));
       }
     }
   }

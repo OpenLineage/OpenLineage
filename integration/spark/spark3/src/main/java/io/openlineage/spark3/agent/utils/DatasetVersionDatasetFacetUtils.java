@@ -7,7 +7,6 @@ package io.openlineage.spark3.agent.utils;
 
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
-import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import java.util.Map;
@@ -78,16 +77,5 @@ public final class DatasetVersionDatasetFacetUtils {
       // swallow- we don't care
     }
     return false;
-  }
-
-  public static void includeDatasetVersion(
-      OpenLineageContext context,
-      OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder,
-      DataSourceV2Relation relation) {
-    DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(context, relation)
-        .ifPresent(
-            version ->
-                datasetFacetsBuilder.version(
-                    context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
   }
 }
