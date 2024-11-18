@@ -167,7 +167,7 @@ jobs:
   build-integration-sql-python-macos:
     working_directory: ~/openlineage/integration/sql
     macos:
-      xcode: 14.2.0
+      xcode: 16.1.0
     resource_class: macos.m1.medium.gen1
     steps:
       - *checkout_project_root
@@ -209,7 +209,7 @@ jobs:
         default: "macos.m1.medium.gen1"
     working_directory: ~/openlineage/integration/sql/iface-java
     macos:
-      xcode: 14.2.0
+      xcode: 16.1.0
     resource_class: << parameters.resource_class >>
     steps:
       - *checkout_project_root
@@ -389,11 +389,11 @@ jobs:
       - store_artifacts:
           path: airflow/tests/integration/tests/airflow/logs
           destination: airflow-logs
-          when: always
+          when: true
       - store_artifacts:
           path: airflow/tests/integration/tests/events
           destination: events
-          when: always
+          when: true
 
   integration-test-integration-airflow-failure:
     parameters:
