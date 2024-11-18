@@ -90,6 +90,8 @@ dependencies {
     implementation(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark40", configuration: "scala213RuntimeElements"))
+    implementation(project(path: ":iceberg"))
+
     implementation("org.apache.httpcomponents.client5:httpclient5:5.4.1")
 
     compileOnly("org.apache.spark:spark-core_${scala}:${spark}")
@@ -245,6 +247,7 @@ tasks.named("shadowJar", ShadowJar.class) {
         exclude(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
         exclude(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
         exclude(project(path: ":spark40", configuration: "scala213RuntimeElements"))
+        exclude(project(path: ":iceberg"))
     }
 
     dependencies {

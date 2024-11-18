@@ -1,0 +1,53 @@
+plugins {
+    id("java-library")
+    id("com.diffplug.spotless")
+    id("io.freefair.lombok")
+    id("io.openlineage.common-config")
+}
+
+ext {
+    assertjVersion = '3.26.3'
+    junit5Version = '5.11.3'
+    mockitoVersion = '4.11.0'
+    lombokVersion = '1.18.30'
+    micrometerVersion = '1.13.6'
+
+    icebergLookup = [
+            '3.1.3': '1.3.1',
+            '3.2.4': '1.4.3',
+            '3.3.4': '1.5.2',
+            '3.4.3': '1.6.0',
+            '3.5.2': '1.7.0',
+            '4.0.0': '1.7.0'
+    ]
+
+    sparkProp = project.findProperty('spark.version').toString()
+    // compile for unsupported iceberg versions
+    spark = (sparkProp == "2.4.8" || sparkProp.toString().startsWith("4")) ? "3.3.4" : sparkProp
+
+    series = spark.substring(0, 3)
+    scala = project.findProperty('scala.binary.version').toString()
+    scalaFmt = scala.replace(".", "")
+
+    icebergVersion = icebergLookup[spark]
+
+    activeRuntimeElementsConfiguration = "scala${scalaFmt}RuntimeElements"
+}
+
+dependencies {
+    compileOnly(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
+
+    compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")
+    compileOnly("org.apache.iceberg:iceberg-spark-runtime-${series}_${scala}:${icebergVersion}")
+
+    testImplementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
+    testImplementation(platform("org.junit:junit-bom:${junit5Version}"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
+    testImplementation("org.assertj:assertj-core:${assertjVersion}")
+    testImplementation("org.mockito:mockito-core:${mockitoVersion}")
+    testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
+    testImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
+    testImplementation("org.apache.spark:spark-sql_${scala}:${spark}")
+    testImplementation("org.apache.iceberg:iceberg-spark-runtime-${series}_${scala}:${icebergVersion}")
+}
