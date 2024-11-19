@@ -13,7 +13,7 @@ from typing import Optional
 
 from openlineage.client.client import OpenLineageClient
 from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
-from openlineage.client.facet_v2 import job_type_job
+from openlineage.client.facet_v2 import column_lineage_dataset, job_type_job
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt import (
     DbtLocalArtifactProcessor,
@@ -21,6 +21,7 @@ from openlineage.common.provider.dbt import (
     UnsupportedDbtCommand,
 )
 from openlineage.common.utils import parse_multiple_args, parse_single_arg
+from openlineage_sql import parse as parse_sql
 from tqdm import tqdm
 
 __version__ = "1.25.0"
@@ -104,6 +105,33 @@ logger = logging.getLogger("dbtol")
 for handler in openlineage_logger.handlers:
     logger.addHandler(handler)
     logger.setLevel(openlineage_logger.level)
+
+
+def get_column_lineage(
+    namespace, compiled_sql: str
+) -> Optional[column_lineage_dataset.ColumnLineageDatasetFacet]:
+    """Parse SQL and extract column-level lineage information"""
+    try:
+        parsed = parse_sql([compiled_sql])
+        if parsed and parsed.column_lineage:
+            fields = {}
+            for cll_item in parsed.column_lineage:
+                fields[cll_item.descendant.name] = column_lineage_dataset.Fields(
+                    inputFields=[
+                        column_lineage_dataset.InputField(
+                            namespace=namespace,
+                            name=f"{column_meta.origin.database}.{column_meta.origin.schema}.{column_meta.origin.name}",
+                            field=column_meta.name,
+                        )
+                        for column_meta in cll_item.lineage
+                    ],
+                    transformationType="",
+                    transformationDescription="",
+                )
+            return column_lineage_dataset.ColumnLineageDatasetFacet(fields=fields)
+    except Exception as e:
+        logger.warning(f"Failed to parse column lineage: {e}")
+    return None
 
 
 def main():
@@ -195,6 +223,16 @@ def main():
 
     try:
         events = processor.parse().events()
+        # Enhance events with column lineage
+        for event in events:
+            if hasattr(event, "outputs") and event.outputs:
+                for output in event.outputs:
+                    model_name = output.name
+                    compiled_sql = processor.get_compiled_sql(model_name)
+                    if compiled_sql:
+                        column_lineage = get_column_lineage(output.namespace, compiled_sql)
+                        if column_lineage:
+                            output.facets.update({"columnLineage": column_lineage})
     except UnsupportedDbtCommand as e:
         # log exception message
         logger.info(e)

@@ -262,3 +262,14 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         profile = profile["outputs"][self.target]
 
         return manifest, run_result, profile, catalog
+
+    def get_compiled_sql(self, model_name: str) -> Optional[str]:
+        """Get compiled SQL for a given model from the manifest"""
+        try:
+            run_results = self.load_metadata(self.run_result_path, [2, 3, 4, 5, 6, 7], self.logger)
+            for node in run_results["results"]:
+                if node["relation_name"].replace('"', "").replace("`", "") == model_name:
+                    return node["compiled_code"]
+        except Exception as e:
+            self.logger.warning(f"Failed to get compiled SQL for model {model_name}: {e}")
+        return None

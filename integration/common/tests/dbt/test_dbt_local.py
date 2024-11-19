@@ -268,3 +268,88 @@ def test_build_target_path(test_name, dbt_project, expected):
         job_namespace="ol-namespace",
     )
     assert processor.build_target_path(dbt_project) == expected
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "tests/dbt/compiled_code",
+    ],
+)
+def test_dbt_column_lineage(path, parent_run_metadata):
+    """
+    Test that column-level lineage is correctly extracted from dbt artifacts
+    """
+    processor = DbtLocalArtifactProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="job-namespace",
+        project_dir=path,
+    )
+    processor.dbt_run_metadata = parent_run_metadata
+    dbt_events = processor.parse()
+    events = [
+        attr.asdict(event, value_serializer=serialize)
+        for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
+    ]
+    with open(f"{path}/result.json") as f:
+        assert match(json.load(f), events)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "tests/dbt/compiled_code",
+    ],
+)
+def test_dbt_compiled_sql(path, parent_run_metadata):
+    """
+    Test that compiled SQL is correctly extracted from dbt artifacts
+    """
+    processor = DbtLocalArtifactProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="job-namespace",
+        project_dir=path,
+    )
+    processor.dbt_run_metadata = parent_run_metadata
+    dbt_events = processor.parse()
+    events = [
+        attr.asdict(event, value_serializer=serialize)
+        for event in dbt_events.starts + dbt_events.completes + dbt_events.fails
+    ]
+    with open(f"{path}/result.json") as f:
+        assert match(json.load(f), events)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "tests/dbt/compiled_code",
+    ],
+)
+def test_missing_column_lineage(path, parent_run_metadata):
+    """
+    Test handling of models without column lineage information
+    """
+    processor = DbtLocalArtifactProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="job-namespace",
+        project_dir=path,
+    )
+    processor.dbt_run_metadata = parent_run_metadata
+
+    path = "tests/dbt/compiled_code/target/manifest.json"
+    logger = mock.Mock()
+    manifest = DbtLocalArtifactProcessor.load_metadata(path, [1], logger)
+
+    for node in manifest["nodes"].values():
+        if "columns" in node:
+            del node["columns"]
+
+    dbt_events = processor.parse()
+    events = dbt_events.starts + dbt_events.completes + dbt_events.fails
+    assert len(events) > 0
+
+    # Verify no column lineage facet is present
+    for event in events:
+        for output in event.outputs:
+            assert output.facets.get("columnLineage") is None
