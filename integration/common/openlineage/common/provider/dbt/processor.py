@@ -191,7 +191,7 @@ class DbtArtifactProcessor:
         manifest, run_result, profile, catalog = self.get_dbt_metadata()
         self.manifest_version = self.get_schema_version(manifest)
 
-        self.run_metadata = run_result["metadata"]
+        self.run_metadata = run_result["metadata"] # the version of the manifest is not managed
         self.command = run_result["args"]["which"]
 
         self.extract_adapter_type(profile)
@@ -199,10 +199,12 @@ class DbtArtifactProcessor:
 
         nodes = {}
         # Filter nodes
+        # only care about models/tests/snapshots nodes
         for name, node in manifest["nodes"].items():
             if any(name.startswith(prefix) for prefix in ("model.", "test.", "snapshot.")):
                 nodes[name] = node
 
+        # the run result is not available when emitting the ol events in-line
         context = DbtRunContext(manifest, run_result, catalog)
 
         events = DbtEvents()
@@ -214,7 +216,7 @@ class DbtArtifactProcessor:
                 )
             else:
                 return events
-
+        # build command are go over those two conditions
         if self.command in ["run", "build", "seed", "snapshot"]:
             events += self.parse_execution(context, nodes)
         if self.command in ["test", "build"]:
@@ -234,6 +236,29 @@ class DbtArtifactProcessor:
         return int(file.split(".")[0][1:])
 
     def parse_execution(self, context: DbtRunContext, nodes: Dict) -> DbtEvents:
+        """
+        the run result is checked first
+        model/source and snapshots are the only one taken care of
+        skipped ones are ignored
+        the manifest is used to get the parent map
+        nodes var only contains model/test and snapshots
+        todo:
+        1. see what info is in the result.json
+        one event per run result entry.
+
+        for the execution, we need:
+        1. run result entries.
+            1. unique_id
+            2. status
+            3. execution timing
+        2. manifest to get the deps upstream /downstream, to get
+            1. parent
+            2. compiled code/sql
+        3. catalog to get
+            1. node/source metadata (schemas, columns...)
+
+
+        """
         events = DbtEvents()
         for run in context.run_results["results"]:
             name = run["unique_id"]
@@ -243,6 +268,7 @@ class DbtArtifactProcessor:
                 continue
 
             output_node = nodes[name]
+            # return the same timing if the run failed. Only the execution time is counted not the compile one
             started_at, completed_at = self.get_timings(run["timing"])
 
             inputs = []
@@ -313,7 +339,7 @@ class DbtArtifactProcessor:
                     run["status"],
                     started_at,
                     completed_at,
-                    self.get_run(run_id),
+                    self.get_run(run_id), # setup parent Run here
                     Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
                     [self.node_to_dataset(node, has_facets=True) for node in inputs],
                     output_dataset,
@@ -323,6 +349,7 @@ class DbtArtifactProcessor:
 
     def parse_test(self, context: DbtRunContext, nodes: Dict) -> DbtEvents:
         # The tests can have different timings, so just take current time
+        # the start and completed time are the same -> bad !
         started_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
         completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
 

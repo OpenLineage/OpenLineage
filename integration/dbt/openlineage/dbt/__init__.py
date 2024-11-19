@@ -150,7 +150,8 @@ def main():
         job_namespace=job_namespace,
         parent_run_metadata=parent_run_metadata,
     )
-    dbt_run_metadata = ParentRunMetadata(
+    # this is common for all the subsequent runs
+    dbt_run_metadata = ParentRunMetadata( # it's rum Metadata, why name it parent ?
         run_id=start_event.run.runId,
         job_name=start_event.job.name,
         job_namespace=start_event.job.namespace,
