@@ -3,7 +3,7 @@
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.24.0...HEAD)
 
 ### Added
-* **Spark: Add input and output statistics about datasets read and written.** [`#3240`](https://github.com/OpenLineage/OpenLineage/pull/3240) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* **Spark: Add input and output statistics about datasets read and written.** [`#3240`](https://github.com/OpenLineage/OpenLineage/pull/3240)[`#3263`](https://github.com/OpenLineage/OpenLineage/pull/3263) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
   *Fix issues related to existing output statistics collection mechanism and fetch input statistics. Output statistics contain now amount of files written, bytes size as well as records written. Input statistics contain bytes size and number of files read, while record count is collected only for DataSourceV2 sources.*
 
 

@@ -35,6 +35,7 @@ dependencies {
     implementation(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark40", configuration: "scala213RuntimeElements"))
     implementation(project(path: ":snowflake"))
+    implementation(project(path: ":iceberg"))
 }
 
 task sourceJar(type: Jar) {
@@ -162,6 +163,7 @@ shadowJar {
         exclude(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
         exclude(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
         exclude(project(path: ":snowflake"))
+        exclude(project(path: ":iceberg"))
     }
 
     dependencies {
