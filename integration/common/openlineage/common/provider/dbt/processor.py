@@ -277,7 +277,7 @@ class DbtArtifactProcessor:
                     + (".build.run" if self.command == "build" else "")
                 )
 
-            if self.manifest_version >= 7:
+            if self.manifest_version >= 7:  # type: ignore
                 sql = output_node.get("compiled_code", None)
             else:
                 sql = output_node["compiled_sql"]
@@ -305,7 +305,7 @@ class DbtArtifactProcessor:
             if sql:
                 column_lineage = self.get_column_lineage(output_dataset.namespace, sql)
                 if column_lineage:
-                    output_dataset.facets["columnLineage"] = column_lineage
+                    output_dataset.facets["columnLineage"] = column_lineage  # type: ignore
 
             events.add(
                 self.to_openlineage_events(
@@ -395,7 +395,7 @@ class DbtArtifactProcessor:
                 if node.startswith("model.") or node.startswith("source."):
                     model_node = node
 
-            if self.manifest_version >= 12:
+            if self.manifest_version >= 12:  # type: ignore
                 name = test_node["name"]
                 node_columns = test_node
 
@@ -700,7 +700,7 @@ class DbtArtifactProcessor:
                         inputFields=[
                             column_lineage_dataset.InputField(
                                 namespace=namespace,
-                                name=f"{column_meta.origin.database}.{column_meta.origin.schema}.{column_meta.origin.name}",
+                                name=f"{column_meta.origin.database}.{column_meta.origin.schema}.{column_meta.origin.name}",  # type: ignore
                                 field=column_meta.name,
                             )
                             for column_meta in cll_item.lineage
