@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.InputStatisticsInputDatasetFacetBuilder;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.ExtensionLineageRelationHandler;
@@ -27,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.sql.catalyst.catalog.CatalogStatistics;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
@@ -137,6 +139,20 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         .schema(PlanUtils.schemaFacet(context.getOpenLineage(), logRel.schema()))
         .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()));
 
+    InputStatisticsInputDatasetFacetBuilder statsBuilder =
+        context.getOpenLineage().newInputStatisticsInputDatasetFacetBuilder();
+    ScalaConversionUtils.asJavaOptional(catalogTable.stats())
+        .map(CatalogStatistics::sizeInBytes)
+        .ifPresent(
+            bytes -> {
+              statsBuilder.size(bytes.longValue());
+              if (catalogTable.ignoredProperties().contains("numFiles")) {
+                statsBuilder.fileCount(
+                    Long.valueOf(catalogTable.ignoredProperties().get("numFiles").get()));
+              }
+              datasetFacetsBuilder.getInputFacets().inputStatistics(statsBuilder.build());
+            });
+
     getDatasetVersion(logRel)
         .map(
             version ->
@@ -168,6 +184,22 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                                     context
                                         .getOpenLineage()
                                         .newDatasetVersionDatasetFacet(version)));
+
+                if (relation.inputFiles() != null) {
+                  datasetFacetsBuilder
+                      .getInputFacets()
+                      .inputStatistics(
+                          context
+                              .getOpenLineage()
+                              .newInputStatisticsInputDatasetFacetBuilder()
+                              .size(relation.sizeInBytes())
+                              .fileCount(
+                                  Optional.of(relation.inputFiles())
+                                      .map(l -> l.length)
+                                      .map(Long::valueOf)
+                                      .orElse(0L))
+                              .build());
+                }
 
                 Collection<Path> rootPaths =
                     ScalaConversionUtils.fromSeq(relation.location().rootPaths());

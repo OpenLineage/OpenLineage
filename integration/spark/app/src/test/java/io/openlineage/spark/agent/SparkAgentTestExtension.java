@@ -68,6 +68,7 @@ public class SparkAgentTestExtension
   @Override
   public void beforeEach(ExtensionContext context) throws Exception {
     Mockito.reset(EVENT_EMITTER);
+    JobMetricsHolder.getInstance().cleanUpAll();
     when(SparkAgentTestExtension.EVENT_EMITTER.getJobNamespace()).thenReturn("ns_name");
     when(SparkAgentTestExtension.EVENT_EMITTER.getParentJobName())
         .thenReturn(Optional.of("parent_name"));

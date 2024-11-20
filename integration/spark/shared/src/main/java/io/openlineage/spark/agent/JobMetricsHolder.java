@@ -17,8 +17,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.executor.OutputMetrics;
 import org.apache.spark.executor.TaskMetrics;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerTaskEnd;
@@ -32,7 +32,7 @@ import org.apache.spark.scheduler.SparkListenerTaskEnd;
 @Slf4j
 public class JobMetricsHolder {
   private final Map<Integer, Set<Integer>> jobStages = new ConcurrentHashMap<>();
-  private final Map<Integer, TaskMetrics> stageMetrics = new ConcurrentHashMap<>();
+  private final Map<Integer, TaskMetricsAggregate> stageMetrics = new ConcurrentHashMap<>();
 
   /**
    * Aggregated job metrics (jobId is key of the parent map). Can be used to access job's metrics
@@ -52,7 +52,11 @@ public class JobMetricsHolder {
 
   public void addMetrics(int stage, TaskMetrics taskMetrics) {
     if (taskMetrics != null) {
-      stageMetrics.put(stage, taskMetrics);
+      if (stageMetrics.containsKey(stage)) {
+        stageMetrics.get(stage).add(taskMetrics);
+      } else {
+        stageMetrics.put(stage, new TaskMetricsAggregate(taskMetrics));
+      }
     }
   }
 
@@ -90,22 +94,39 @@ public class JobMetricsHolder {
     stages.forEach(stageMetrics::remove);
   }
 
-  private Map<Metric, Number> mapOutputMetrics(List<TaskMetrics> jobMetrics) {
+  @VisibleForTesting
+  void cleanUpAll() {
+    jobMetrics.clear();
+    jobStages.clear();
+    stageMetrics.clear();
+  }
+
+  private Map<Metric, Number> mapOutputMetrics(List<TaskMetricsAggregate> jobMetrics) {
     Map<Metric, Number> result = new EnumMap<>(Metric.class);
 
-    for (TaskMetrics taskMetric : jobMetrics) {
-      OutputMetrics outputMetrics = taskMetric.outputMetrics();
-      if (Objects.nonNull(outputMetrics)) {
+    for (TaskMetricsAggregate aggregate : jobMetrics) {
+      if (Objects.nonNull(aggregate)) {
         result.merge(
             Metric.WRITE_BYTES,
-            outputMetrics.bytesWritten(),
+            aggregate.getBytesWritten(),
             (m, b) -> m.longValue() + b.longValue());
         result.merge(
             Metric.WRITE_RECORDS,
-            outputMetrics.recordsWritten(),
+            aggregate.getRecordsWritten(),
+            (m, b) -> m.longValue() + b.longValue());
+        result.merge(
+            Metric.FILES_WRITTEN,
+            aggregate.getFilesWritten(),
             (m, b) -> m.longValue() + b.longValue());
       }
     }
+
+    if (result.get(Metric.WRITE_BYTES).longValue() == 0
+        && result.get(Metric.WRITE_RECORDS).longValue() == 0) {
+      // no output metrics, return empty map
+      return Collections.emptyMap();
+    }
+
     return result;
   }
 
@@ -126,14 +147,40 @@ public class JobMetricsHolder {
    * @return A deep copy of the stage metrics map
    */
   @VisibleForTesting
-  Map<Integer, TaskMetrics> getStageMetrics() {
+  Map<Integer, TaskMetricsAggregate> getStageMetrics() {
     return stageMetrics.entrySet().stream()
         .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
   }
 
   public enum Metric {
     WRITE_BYTES,
-    WRITE_RECORDS
+    WRITE_RECORDS,
+    FILES_WRITTEN
+  }
+
+  @VisibleForTesting
+  @Getter
+  private static class TaskMetricsAggregate {
+    private long bytesWritten;
+    private long recordsWritten;
+
+    /** estimated based on amount of tasks with bytesWritten > 0 */
+    private long filesWritten;
+
+    public TaskMetricsAggregate(TaskMetrics taskMetrics) {
+      this.bytesWritten = taskMetrics.outputMetrics().bytesWritten();
+      this.recordsWritten = taskMetrics.outputMetrics().recordsWritten();
+      this.filesWritten = taskMetrics.outputMetrics().bytesWritten() > 0 ? 1 : 0;
+    }
+
+    public void add(TaskMetrics taskMetrics) {
+      this.bytesWritten += taskMetrics.outputMetrics().bytesWritten();
+      this.recordsWritten += taskMetrics.outputMetrics().recordsWritten();
+
+      if (taskMetrics.outputMetrics().bytesWritten() > 0) {
+        filesWritten += 1;
+      }
+    }
   }
 
   private static class SingletonHolder {

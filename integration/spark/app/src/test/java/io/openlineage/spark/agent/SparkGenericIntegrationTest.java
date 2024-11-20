@@ -7,16 +7,26 @@ package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.MockServerUtils.getEventsEmitted;
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
+import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.InputDatasetInputFacets;
+import io.openlineage.client.OpenLineage.InputStatisticsInputDatasetFacet;
+import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineage.OutputDatasetOutputFacets;
+import io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet;
 import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.lifecycle.UnknownEntryFacetListener;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.Dataset;
@@ -33,6 +43,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.integration.ClientAndServer;
 
 /**
@@ -93,7 +104,7 @@ class SparkGenericIntegrationTest {
 
   @Test
   void sparkEmitsEventsWithFacets() {
-    Dataset<Row> df = createTempDataset();
+    Dataset<Row> df = createTempDataset(3);
 
     Dataset<Row> agg = df.groupBy("a").count();
     agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
@@ -190,7 +201,7 @@ class SparkGenericIntegrationTest {
   @SneakyThrows
   @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void sparkEmitsDebugFacet() {
-    Dataset<Row> df = createTempDataset();
+    Dataset<Row> df = createTempDataset(3);
 
     Dataset<Row> agg = df.groupBy("a").count();
     agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
@@ -225,8 +236,81 @@ class SparkGenericIntegrationTest {
   }
 
   @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "([34].*)") // Spark version >= 3.*
+  void sparkEmitsInputAndOutputStatistics() {
+    String inputPath1 = "/tmp/test_data/test_input1";
+    String inputPath2 = "/tmp/test_data/test_input2";
+    String outputPath = "/tmp/test_data/test_output";
+
+    // write 100 rows to test_input1
+    createTempDataset(100).write().mode("overwrite").parquet(inputPath1);
+
+    // write 50 rows to test_input2
+    createTempDataset(50).write().mode("overwrite").parquet(inputPath2);
+
+    // write a union of both inputs
+    spark
+        .read()
+        .parquet(inputPath1)
+        .unionAll(spark.read().parquet(inputPath2))
+        .repartition(7)
+        .write()
+        .mode("overwrite")
+        .parquet(outputPath);
+    spark.stop();
+    List<RunEvent> events = getEventsEmitted(mockServer);
+
+    // verify output statistics facet
+    Optional<OutputStatisticsOutputDatasetFacet> outputStatistics =
+        events.stream()
+            .filter(e -> !e.getOutputs().isEmpty())
+            .map(e -> e.getOutputs().get(0))
+            .filter(e -> e.getName().endsWith("test_output"))
+            .map(OutputDataset::getOutputFacets)
+            .map(OutputDatasetOutputFacets::getOutputStatistics)
+            .filter(Objects::nonNull)
+            .findFirst();
+
+    assertThat(outputStatistics).isPresent();
+    assertThat(outputStatistics.get().getRowCount()).isEqualTo(50 + 100);
+    assertThat(outputStatistics.get().getSize()).isGreaterThan(0);
+    assertThat(outputStatistics.get().getFileCount()).isEqualTo(7); // repartitioned
+
+    // verify input1 statistics facet
+    Optional<InputStatisticsInputDatasetFacet> inputStatistics1 =
+        events.stream()
+            .flatMap(e -> e.getInputs().stream())
+            .filter(e -> e.getName().endsWith("test_input1"))
+            .filter(e -> e.getInputFacets() != null)
+            .map(InputDataset::getInputFacets)
+            .map(InputDatasetInputFacets::getInputStatistics)
+            .findAny();
+
+    assertThat(inputStatistics1).isPresent();
+    // Row count is not working for non V2 relations
+    assertThat(inputStatistics1.get().getSize()).isGreaterThan(0);
+    assertThat(inputStatistics1.get().getFileCount()).isEqualTo(1); // repartitioned
+
+    // verify input2 statistics facet
+    Optional<InputStatisticsInputDatasetFacet> inputStatistics2 =
+        events.stream()
+            .flatMap(e -> e.getInputs().stream())
+            .filter(e -> e.getName().endsWith("test_input2"))
+            .filter(e -> e.getInputFacets() != null)
+            .map(InputDataset::getInputFacets)
+            .map(InputDatasetInputFacets::getInputStatistics)
+            .filter(Objects::nonNull)
+            .findFirst();
+
+    assertThat(inputStatistics2).isPresent();
+    // Row count is not working for non V2 relations
+    assertThat(inputStatistics2.get().getSize()).isGreaterThan(0);
+    assertThat(inputStatistics2.get().getFileCount()).isEqualTo(1);
+  }
+
+  @Test
   void sparkEmitsJobOwnershipFacet() {
-    Dataset<Row> df = createTempDataset();
+    Dataset<Row> df = createTempDataset(3);
     Dataset<Row> agg = df.groupBy("a").count();
     agg.write().mode("overwrite").csv("/tmp/test_data/test_output/");
 
@@ -252,10 +336,15 @@ class SparkGenericIntegrationTest {
             .isPresent());
   }
 
-  private Dataset<Row> createTempDataset() {
+  private Dataset<Row> createTempDataset(int rows) {
+    List<Row> rowList =
+        Arrays.stream(IntStream.rangeClosed(1, rows).toArray())
+            .mapToObj(i -> RowFactory.create((long) i, (long) i + 1))
+            .collect(Collectors.toList());
+
     return spark
         .createDataFrame(
-            ImmutableList.of(RowFactory.create(1L, 2L), RowFactory.create(3L, 4L)),
+            rowList,
             new StructType(
                 new StructField[] {
                   new StructField("a", LongType$.MODULE$, false, Metadata.empty()),

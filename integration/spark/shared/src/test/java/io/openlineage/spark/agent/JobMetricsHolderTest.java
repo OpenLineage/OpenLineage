@@ -134,6 +134,27 @@ class JobMetricsHolderTest {
     assertThat(underTest.pollMetrics(0)).isEmpty();
   }
 
+  @Test
+  void testEmptyMetrics() {
+    underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
+    underTest.addMetrics(1, outputTaskMetrics(0, 0));
+
+    assertThat(underTest.pollMetrics(0)).isEmpty();
+  }
+
+  @Test
+  void testMultipleTasksPerStage() {
+    // add some stage and metric
+    underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
+    underTest.addMetrics(1, outputTaskMetrics(100, 10));
+    underTest.addMetrics(1, outputTaskMetrics(100, 10));
+    underTest.addMetrics(1, outputTaskMetrics(100, 10));
+
+    Map<Metric, Number> metrics = underTest.pollMetrics(0);
+    assertThat(metrics.get(Metric.WRITE_RECORDS)).isEqualTo(30L);
+    assertThat(metrics.get(Metric.WRITE_BYTES)).isEqualTo(300L);
+  }
+
   private TaskMetrics outputTaskMetrics(int bytes, int records) {
     TaskMetrics taskMetrics = new TaskMetrics();
     taskMetrics.outputMetrics()._bytesWritten().add(bytes);
