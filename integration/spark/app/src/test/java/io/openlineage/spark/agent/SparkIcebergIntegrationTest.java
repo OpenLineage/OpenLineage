@@ -5,21 +5,13 @@
 
 package io.openlineage.spark.agent;
 
-import static io.openlineage.spark.agent.MockServerUtils.getEventsEmitted;
 import static io.openlineage.spark.agent.MockServerUtils.getEventsEmittedWithJobName;
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
-import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
-import io.openlineage.client.OpenLineage.InputDataset;
-import io.openlineage.client.OpenLineage.InputDatasetInputFacets;
-import io.openlineage.client.OpenLineage.InputStatisticsInputDatasetFacet;
-import io.openlineage.client.OpenLineage.OutputDataset;
-import io.openlineage.client.OpenLineage.OutputDatasetOutputFacets;
-import io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineageClientUtils;
@@ -29,10 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +40,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpRequest;
 
@@ -147,7 +135,7 @@ class SparkIcebergIntegrationTest {
   @Test
   void testCreateTableAsSelect() {
     clearTables("temp", "source1", "source2", "target");
-    createTempDataset(2).createOrReplaceTempView("temp");
+    createTempDataset().createOrReplaceTempView("temp");
 
     spark.sql("CREATE TABLE source1 USING iceberg AS SELECT * FROM temp");
     spark.sql("CREATE TABLE source2 USING iceberg AS SELECT * FROM temp");
@@ -190,7 +178,7 @@ class SparkIcebergIntegrationTest {
   @Test
   void testOverwriteByExpression() {
     clearTables("tbl", "temp");
-    createTempDataset(2).createOrReplaceTempView("temp");
+    createTempDataset().createOrReplaceTempView("temp");
 
     spark.sql("CREATE TABLE tbl USING iceberg AS SELECT * FROM temp");
     spark.sql("INSERT OVERWRITE tbl VALUES (5,6),(7,8)");
@@ -232,7 +220,7 @@ class SparkIcebergIntegrationTest {
   @Test
   void testReplaceTable() {
     clearTables("tbl_replace", "temp");
-    createTempDataset(2).createOrReplaceTempView("temp");
+    createTempDataset().createOrReplaceTempView("temp");
 
     spark.sql("CREATE TABLE tbl_replace USING iceberg");
     spark.sql("REPLACE TABLE tbl_replace USING iceberg AS SELECT * FROM temp");
@@ -246,7 +234,7 @@ class SparkIcebergIntegrationTest {
   @Test
   void testDelete() {
     clearTables("tbl_delete", "temp");
-    createTempDataset(2).createOrReplaceTempView("temp");
+    createTempDataset().createOrReplaceTempView("temp");
 
     spark.sql("CREATE TABLE tbl_delete USING iceberg AS SELECT * FROM temp");
     spark.sql("DELETE FROM tbl_delete WHERE a=1");
@@ -257,7 +245,7 @@ class SparkIcebergIntegrationTest {
   @Test
   void testUpdate() {
     clearTables("tbl_update", "temp");
-    createTempDataset(2).createOrReplaceTempView("temp");
+    createTempDataset().createOrReplaceTempView("temp");
 
     spark.sql("CREATE TABLE tbl_update USING iceberg AS SELECT * FROM temp");
     spark.sql("UPDATE tbl_update SET b=5 WHERE a=1");
@@ -308,7 +296,7 @@ class SparkIcebergIntegrationTest {
   @Test
   void testAppend() {
     clearTables("append_source1", "append_source2", "append_table");
-    createTempDataset(2).createOrReplaceTempView("temp");
+    createTempDataset().createOrReplaceTempView("temp");
 
     spark.sql("CREATE TABLE append_source1 USING iceberg AS SELECT a FROM temp");
     spark.sql("CREATE TABLE append_source2 USING iceberg AS SELECT a FROM temp");
@@ -325,7 +313,7 @@ class SparkIcebergIntegrationTest {
   @Test
   void testRemovePathPattern() throws InterruptedException {
     clearTables("tbl_remove_path_666", "temp", "input_table_666");
-    createTempDataset(2).createOrReplaceTempView("temp");
+    createTempDataset().createOrReplaceTempView("temp");
 
     spark.sql("CREATE TABLE input_table_666 USING iceberg AS SELECT * FROM temp");
     spark.sql("CREATE TABLE tbl_remove_path_666 USING iceberg AS SELECT a FROM input_table_666");
@@ -349,7 +337,7 @@ class SparkIcebergIntegrationTest {
   @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void testDebugFacet() {
     clearTables("iceberg_temp", "temp");
-    createTempDataset(2).createOrReplaceTempView("temp");
+    createTempDataset().createOrReplaceTempView("temp");
     spark.sql("CREATE TABLE iceberg_temp USING iceberg AS SELECT * FROM temp");
 
     HttpRequest[] httpRequests =
@@ -414,90 +402,10 @@ class SparkIcebergIntegrationTest {
         .containsKeys("type", "url", "endpoint");
   }
 
-  @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "([34].*)") // Spark version >= 3.*
-  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
-  void sparkEmitsInputAndOutputStatistics() {
-    clearTables("test_input1", "test_input2", "stats_source1", "stats_source2", "test_output");
-
-    // write 100 rows to test_input1
-    createTempDataset(100).createOrReplaceTempView("test_input1");
-    spark.sql("CREATE TABLE stats_source1 USING iceberg AS SELECT * FROM test_input1");
-
-    // write 50 rows to test_input2
-    createTempDataset(50).createOrReplaceTempView("test_input2");
-    spark.sql("CREATE TABLE stats_source2 USING iceberg AS SELECT * FROM test_input2");
-
-    // write a union of both inputs
-    spark
-        .read()
-        .table("stats_source1")
-        .unionAll(spark.read().table("stats_source2"))
-        .repartition(7)
-        .write()
-        .mode("overwrite")
-        .saveAsTable("test_output");
-    spark.stop();
-    List<RunEvent> events = getEventsEmitted(mockServer);
-
-    // verify output statistics facet
-    Optional<OutputStatisticsOutputDatasetFacet> outputStatistics =
-        events.stream()
-            .filter(e -> !e.getOutputs().isEmpty())
-            .map(e -> e.getOutputs().get(0))
-            .filter(e -> e.getName().endsWith("test_output"))
-            .map(OutputDataset::getOutputFacets)
-            .map(OutputDatasetOutputFacets::getOutputStatistics)
-            .filter(Objects::nonNull)
-            .findFirst();
-
-    assertThat(outputStatistics).isPresent();
-    assertThat(outputStatistics.get().getRowCount()).isEqualTo(50 + 100);
-    assertThat(outputStatistics.get().getSize()).isGreaterThan(0);
-    assertThat(outputStatistics.get().getFileCount()).isEqualTo(7); // repartitioned
-
-    // verify input1 statistics facet
-    Optional<InputStatisticsInputDatasetFacet> inputStatistics1 =
-        events.stream()
-            .flatMap(e -> e.getInputs().stream())
-            .filter(e -> e.getName().endsWith("stats_source1"))
-            .filter(e -> e.getInputFacets() != null)
-            .map(InputDataset::getInputFacets)
-            .map(InputDatasetInputFacets::getInputStatistics)
-            .filter(Objects::nonNull)
-            .findFirst();
-
-    assertThat(inputStatistics1).isPresent();
-    assertThat(inputStatistics1.get().getRowCount()).isGreaterThan(100);
-    assertThat(inputStatistics1.get().getSize()).isGreaterThan(0);
-    assertThat(inputStatistics1.get().getFileCount()).isEqualTo(1); // repartitioned
-
-    // verify input2 statistics facet
-    Optional<InputStatisticsInputDatasetFacet> inputStatistics2 =
-        events.stream()
-            .flatMap(e -> e.getInputs().stream())
-            .filter(e -> e.getName().endsWith("stats_source2"))
-            .filter(e -> e.getInputFacets() != null)
-            .map(InputDataset::getInputFacets)
-            .map(InputDatasetInputFacets::getInputStatistics)
-            .filter(Objects::nonNull)
-            .findFirst();
-
-    assertThat(inputStatistics2).isPresent();
-    assertThat(inputStatistics2.get().getRowCount()).isGreaterThan(50);
-    assertThat(inputStatistics2.get().getSize()).isGreaterThan(0);
-    assertThat(inputStatistics2.get().getFileCount()).isEqualTo(1);
-  }
-
-  private Dataset<Row> createTempDataset(int rows) {
-    List<Row> rowList =
-        Arrays.stream(IntStream.rangeClosed(1, rows).toArray())
-            .mapToObj(i -> RowFactory.create((long) i, (long) i + 1))
-            .collect(Collectors.toList());
-
+  private Dataset<Row> createTempDataset() {
     return spark
         .createDataFrame(
-            rowList,
+            ImmutableList.of(RowFactory.create(1L, 2L), RowFactory.create(3L, 4L)),
             new StructType(
                 new StructField[] {
                   new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
