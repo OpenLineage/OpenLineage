@@ -10,6 +10,7 @@ from unittest import mock
 import attr
 import pytest
 from openlineage.client import set_producer
+from openlineage.client.facet_v2 import column_lineage_dataset
 from openlineage.common.provider.dbt.local import (
     DbtLocalArtifactProcessor,
     LazyJinjaLoadDict,
@@ -268,3 +269,50 @@ def test_build_target_path(test_name, dbt_project, expected):
         job_namespace="ol-namespace",
     )
     assert processor.build_target_path(dbt_project) == expected
+
+
+def test_column_lineage():
+    """Test that column lineage is correctly parsed and added to output dataset facets"""
+    sql = """
+    SELECT
+        users.id as user_id,
+        users.name as user_name,
+        orders.amount as order_amount
+    FROM users
+    JOIN orders ON users.id = orders.user_id
+    """
+    processor = DbtLocalArtifactProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        project_dir="tests/dbt/env_vars",
+        target="prod",
+        job_namespace="ol-namespace",
+    )
+
+    # Test column lineage parsing
+    column_lineage = processor.get_column_lineage("test_namespace", sql)
+
+    # Verify the column lineage facet was created
+    assert column_lineage is not None
+    assert isinstance(column_lineage, column_lineage_dataset.ColumnLineageDatasetFacet)
+
+    # Check the parsed fields
+    assert "user_id" in column_lineage.fields
+    assert "user_name" in column_lineage.fields
+    assert "order_amount" in column_lineage.fields
+    assert len(column_lineage.fields) == 3
+
+    # Verify field lineage details
+    user_id_field = column_lineage.fields["user_id"]
+    assert len(user_id_field.inputFields) == 1
+    assert user_id_field.inputFields[0].field == "id"
+    assert "users" in user_id_field.inputFields[0].name
+
+    user_name_field = column_lineage.fields["user_name"]
+    assert len(user_name_field.inputFields) == 1
+    assert user_name_field.inputFields[0].field == "name"
+    assert "users" in user_name_field.inputFields[0].name
+
+    order_amount_field = column_lineage.fields["order_amount"]
+    assert len(order_amount_field.inputFields) == 1
+    assert order_amount_field.inputFields[0].field == "amount"
+    assert "orders" in order_amount_field.inputFields[0].name
