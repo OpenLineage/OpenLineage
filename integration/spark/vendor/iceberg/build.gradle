@@ -13,12 +13,12 @@ ext {
     micrometerVersion = '1.13.6'
 
     icebergLookup = [
-            '3.1.3': '1.3.1',
-            '3.2.4': '1.4.3',
-            '3.3.4': '1.5.2',
-            '3.4.3': '1.6.0',
-            '3.5.2': '1.7.0',
-            '4.0.0': '1.7.0'
+            '3.1': '1.3.1',
+            '3.2': '1.4.3',
+            '3.3': '1.5.2',
+            '3.4': '1.6.0',
+            '3.5': '1.7.0',
+            '4.0': '1.7.0'
     ]
 
     sparkProp = project.findProperty('spark.version').toString()
@@ -29,7 +29,7 @@ ext {
     scala = project.findProperty('scala.binary.version').toString()
     scalaFmt = scala.replace(".", "")
 
-    icebergVersion = icebergLookup[spark]
+    icebergVersion = icebergLookup[series]
 
     activeRuntimeElementsConfiguration = "scala${scalaFmt}RuntimeElements"
 }
