@@ -150,7 +150,7 @@ perl -i -pe"s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./client/jav
 perl -i -pe"s/openlineage-java:[[:alnum:]\.-]*/openlineage-java:${RELEASE_VERSION}/g" ./client/java/README.md
 
 # (4) Prepare release commit
-git commit -sam "Prepare for release ${RELEASE_VERSION}"
+git commit --no-verify -sam "Prepare for release ${RELEASE_VERSION}"
 
 # (5) Pull latest tags, then prepare release tag
 git fetch --all --tags
@@ -183,7 +183,7 @@ echo "version ${NEXT_VERSION}" > integration/flink/shared/src/test/resources/io/
 echo "version ${NEXT_VERSION}" > integration/flink/app/src/test/resources/io/openlineage/flink/client/version.properties
 
 # (7) Prepare next development version commit
-git commit -sam "Prepare next development version ${NEXT_VERSION}"
+git commit --no-verify -sam "Prepare next development version ${NEXT_VERSION}"
 
 # (8) Check for commits in log
 COMMITS=false
