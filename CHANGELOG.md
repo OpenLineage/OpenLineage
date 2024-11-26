@@ -1,20 +1,30 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.24.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.25.0...HEAD)
+
+
+## [1.25.0](https://github.com/OpenLineage/OpenLineage/compare/1.24.2...1.25.0) - 2024-11-25
 
 ### Added
 * **Spark: Add input and output statistics about datasets read and written.** [`#3240`](https://github.com/OpenLineage/OpenLineage/pull/3240)[`#3263`](https://github.com/OpenLineage/OpenLineage/pull/3263) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
-  *Fix issues related to existing output statistics collection mechanism and fetch input statistics. Output statistics contain now amount of files written, bytes size as well as records written. Input statistics contain bytes size and number of files read, while record count is collected only for DataSourceV2 sources.*
-
+    *Fix issues related to existing output statistics collection mechanism and fetch input statistics. Output statistics contain now amount of files written, bytes size as well as records written. Input statistics contain bytes size and number of files read, while record count is collected only for DataSourceV2 sources.*
+* **Introduced InputStatisticsInputDatasetFacet** [`#3238`](https://github.com/OpenLineage/OpenLineage/pull/3238) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Extend spec with a new facet InputStatisticsInputDatasetFacet modelled after a similar OutputStatisticsOutputDatasetFacet to contain statistics about input dataset read by a job.*
 
 ### Changed
-
 * **Spark: Exclude META-INF/\*TransportBuilder from Spark Extension Interfaces** [`#3244`](https://github.com/OpenLineage/OpenLineage/pull/3244) [@tnazarew](https://github.com/tnazarew)
     *Excludes META-INF/\*TransportBuilder to avoid version conflicts*
 * **Spark: enables building input/output facets through `DatasetFactory`** [`#3207`](https://github.com/OpenLineage/OpenLineage/pull/3207) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Adds extra capabilities into `DatasetFactory` class, marks some public developers' API methods as deprecated.*
 
-## [1.24.0](https://github.com/OpenLineage/OpenLineage/compare/1.23.0...1.24.0) - 2024-11-05
+### Fixed
+
+* **dbt: fix compatibility with dbt v1.8** [`#3228`](https://github.com/OpenLineage/OpenLineage/pull/3228) [@NJA010](https://github.com/NJA010)
+    *dbt integration now takes into account modified `test_metadata` field*
+* **Spark: enabled Delta 3.x version compatibility** [`#3253`](https://github.com/OpenLineage/OpenLineage/pull/3253) [@Jorricks](https://github.com/Jorricks)  
+    *Take into account modified initialSnapshot name*
+
+## [1.24.2](https://github.com/OpenLineage/OpenLineage/compare/1.23.0...1.24.2) - 2024-11-05
 
 ### Added
 * **Spark: Add Dataproc run facet to include jobType property** [`#3167`](https://github.com/OpenLineage/OpenLineage/pull/3167) [@codelixir](https://github.com/codelixir)  
