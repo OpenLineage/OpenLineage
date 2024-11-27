@@ -195,8 +195,8 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
                 if schema_version > max(desired_schema_versions):
                     logger.warning(
                         f"Artifact schema version: {str_schema_version} is above dbt-ol "
-                        f"supported version {max(desired_schema_versions)}. "
-                        f"This might cause errors."
+                        f"tested version {max(desired_schema_versions)}. "
+                        f"Newer versions have not been tested and may not be compatible."
                     )
                 else:
                     raise ValueError(
@@ -243,9 +243,9 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
     def get_dbt_metadata(
         self,
     ) -> Tuple[Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Optional[Dict[Any, Any]]]:
-        manifest = self.load_metadata(self.manifest_path, [2, 3, 4, 5, 6, 7], self.logger)
+        manifest = self.load_metadata(self.manifest_path, list(range(2, 13)), self.logger)
 
-        run_result = self.load_metadata(self.run_result_path, [2, 3, 4, 5, 6], self.logger)
+        run_result = self.load_metadata(self.run_result_path, list(range(2, 7)), self.logger)
 
         try:
             catalog: Optional[Dict[Any, Any]] = self.load_metadata(self.catalog_path, [1], self.logger)
