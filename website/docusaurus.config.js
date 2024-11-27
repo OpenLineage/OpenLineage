@@ -28,7 +28,6 @@ const links = [
     {to: '/community', label: 'Community', position: 'left'},
     {to: '/blog', label: 'Blog', position: 'left'},
     {to: '/docs', label: 'Docs', position: 'left'},
-    {to: '/survey', label: 'Ecosystem Survey 2023', position: 'left'},
 ]
 
 const linksSocial = [
