@@ -63,7 +63,7 @@ public class ColumnLevelLineageUtils {
             .isDatasetLineageEnabled();
     if (!datasetLineageEnabled) {
       log.warn(
-          "DEPRECATION WARNING: The columnLineage.datasetLineageEnabled configuration is set to false. This flag will default to false in the future versions and soon will be removed (defaulting to true).");
+          "DEPRECATION WARNING: The columnLineage.datasetLineageEnabled configuration is set to false. This flag will default to true in the future versions. To avoid this warning, explicitly set it to true. This warning will automatically be removed once the default is switched to true.");
     }
     facetBuilder.fields(context.getBuilder().buildFields(datasetLineageEnabled));
     context
