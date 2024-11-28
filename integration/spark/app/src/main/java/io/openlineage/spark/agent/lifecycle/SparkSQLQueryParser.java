@@ -35,6 +35,8 @@ public class SparkSQLQueryParser {
   String resolveParserClass(String version) {
     if (version.startsWith("2.")) {
       return SPARK_3_2_OR_BELOW;
+    } else if (version.startsWith("3.0")) {
+      return SPARK_3_2_OR_BELOW;
     } else if (version.startsWith("3.1")) {
       return SPARK_3_2_OR_BELOW;
     } else if (version.startsWith("3.2")) {
