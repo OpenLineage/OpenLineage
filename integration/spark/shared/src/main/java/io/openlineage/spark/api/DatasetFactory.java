@@ -171,15 +171,16 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    */
   public D getDataset(
       URI outputPath, StructType schema, DatasetCompositeFacetsBuilder datasetFacetsBuilder) {
-    String namespace = PlanUtils.namespaceUri(outputPath);
+    DatasetIdentifier datasetIdentifier = PathUtils.fromURI(outputPath);
     datasetFacetsBuilder
         .getFacets()
         .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
         .dataSource(
             PlanUtils.datasourceFacet(
-                context.getOpenLineage(), namespaceResolver.resolve(namespace)));
+                context.getOpenLineage(),
+                namespaceResolver.resolve(datasetIdentifier.getNamespace())));
 
-    return getDataset(new DatasetIdentifier(outputPath.getPath(), namespace), datasetFacetsBuilder);
+    return getDataset(datasetIdentifier, datasetFacetsBuilder);
   }
 
   /**

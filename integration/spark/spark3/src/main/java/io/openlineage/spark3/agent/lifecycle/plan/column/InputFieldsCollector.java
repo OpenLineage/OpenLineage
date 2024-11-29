@@ -105,10 +105,10 @@ public class InputFieldsCollector {
     } else if (node instanceof DataSourceV2ScanRelation) {
       return extractDatasetIdentifier(context, ((DataSourceV2ScanRelation) node).relation());
     } else if (node instanceof HiveTableRelation) {
-      return extractDatasetIdentifier(((HiveTableRelation) node).tableMeta());
+      return extractDatasetIdentifier(context, ((HiveTableRelation) node).tableMeta());
     } else if (node instanceof LogicalRelation
         && ((LogicalRelation) node).catalogTable().isDefined()) {
-      return extractDatasetIdentifier(((LogicalRelation) node).catalogTable().get());
+      return extractDatasetIdentifier(context, ((LogicalRelation) node).catalogTable().get());
     } else if (node instanceof LogicalRelation
         && (((LogicalRelation) node).relation() instanceof HadoopFsRelation)) {
       HadoopFsRelation relation = (HadoopFsRelation) ((LogicalRelation) node).relation();
@@ -180,14 +180,21 @@ public class InputFieldsCollector {
         .orElse(Collections.emptyList());
   }
 
-  private static List<DatasetIdentifier> extractDatasetIdentifier(CatalogTable catalogTable) {
+  private static List<DatasetIdentifier> extractDatasetIdentifier(
+      ColumnLevelLineageContext context, CatalogTable catalogTable) {
     URI location = catalogTable.location();
     if (location == null) {
       return Collections.emptyList();
     } else {
       return Collections.singletonList(
-          new DatasetIdentifier(
-              catalogTable.location().getPath(), PlanUtils.namespaceUri(catalogTable.location())));
+          context
+              .getOlContext()
+              .getSparkSession()
+              .map(s -> PathUtils.fromCatalogTable(catalogTable, s))
+              .orElse(
+                  new DatasetIdentifier(
+                      catalogTable.location().getPath(),
+                      PlanUtils.namespaceUri(catalogTable.location()))));
     }
   }
 
@@ -202,8 +209,7 @@ public class InputFieldsCollector {
             .collect(Collectors.toList());
 
     for (Path p : paths) {
-      String namespace = PlanUtils.namespaceUri(p.toUri());
-      inputDatasets.add(new DatasetIdentifier(p.toUri().getPath(), namespace));
+      inputDatasets.add(PathUtils.fromURI(p.toUri()));
     }
 
     return inputDatasets;
