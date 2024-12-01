@@ -15,7 +15,7 @@ plugins {
     id 'com.diffplug.spotless' version '6.13.0'
     id "com.gradleup.shadow" version "8.3.5"
     id "pmd"
-    id "io.freefair.lombok" version "8.10.2"
+    id "io.freefair.lombok" version "8.11"
 }
 
 ext {
@@ -23,9 +23,9 @@ ext {
 }
 
 dependencies {
-    implementation('com.google.cloud:google-cloud-storage:2.44.1')
+    implementation('com.google.cloud:google-cloud-storage:2.45.0')
 
-    testImplementation('com.google.cloud:google-cloud-nio:0.127.26')
+    testImplementation('com.google.cloud:google-cloud-nio:0.127.27')
 }
 
 shadowJar {
