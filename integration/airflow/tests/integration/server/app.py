@@ -13,7 +13,8 @@ from flask import Flask, g, jsonify, request
 
 app = Flask(__name__)
 
-DATABASE = "/app/tmp.db"
+
+DATABASE = os.getenv("DATABASE_FILE", "/app/tmp.db")
 
 logging.basicConfig(
     format="[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s",
