@@ -48,9 +48,9 @@ pub fn get_dialect(name: &str) -> &'static dyn CanonicalDialect {
     }
 }
 
-pub fn get_generic_dialect(name: Option<&str>) -> &'static dyn CanonicalDialect {
+pub fn get_generic_dialect(name: Option<String>) -> &'static dyn CanonicalDialect {
     if let Some(d) = name {
-        get_dialect(d)
+        get_dialect(d.as_str())
     } else {
         &GenericDialect
     }
