@@ -219,7 +219,7 @@ def test_logging_handler_warns():
 
     logger.warning.assert_called_once_with(
         "Artifact schema version: https://schemas.getdbt.com/dbt/manifest/v2.json is above "
-        "dbt-ol supported version 1. This might cause errors."
+        "dbt-ol tested version 1. Newer versions have not been tested and may not be compatible."
     )
 
 
