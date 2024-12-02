@@ -34,7 +34,7 @@ ext {
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
             testDir      : project.findProperty('test.dir') ?: System.getProperty('test.dir')
     ]
-    micrometerVersion = '1.13.6'
+    micrometerVersion = '1.14.1'
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
