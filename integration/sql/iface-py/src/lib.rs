@@ -19,6 +19,7 @@ pub struct QuoteStyle(rust_impl::QuoteStyle);
 #[pymethods]
 impl QuoteStyle {
     #[new]
+    #[pyo3(signature = (database=None, schema=None, name=None))]
     pub fn py_new(database: Option<char>, schema: Option<char>, name: Option<char>) -> Self {
         QuoteStyle(rust_impl::QuoteStyle {
             database,
@@ -150,6 +151,7 @@ pub struct ColumnMeta(rust_impl::ColumnMeta);
 #[pymethods]
 impl ColumnMeta {
     #[new]
+    #[pyo3(signature = (name, origin=None))]
     pub fn py_new(name: String, origin: Option<DbTableMeta>) -> Self {
         Self(rust_impl::ColumnMeta::new(name, origin.map(|x| x.0)))
     }
@@ -398,8 +400,12 @@ impl SqlMeta {
 }
 
 // Parses SQL.
-#[pyfunction]
-fn parse(sql: Vec<&str>, dialect: Option<&str>, default_schema: Option<String>) -> Result<SqlMeta> {
+#[pyfunction(signature = (sql, dialect=None, default_schema=None))]
+fn parse(
+    sql: Vec<String>,
+    dialect: Option<String>,
+    default_schema: Option<String>,
+) -> Result<SqlMeta> {
     parse_multiple_statements(sql, get_generic_dialect(dialect), default_schema).map(SqlMeta::new)
 }
 
@@ -410,7 +416,7 @@ fn provider() -> String {
 
 /// A Python module implemented in Rust.
 #[pymodule]
-fn openlineage_sql(_py: Python, m: &PyModule) -> PyResult<()> {
+fn openlineage_sql(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse, m)?)?;
     m.add_function(wrap_pyfunction!(provider, m)?)?;
     m.add_class::<SqlMeta>()?;
@@ -455,8 +461,7 @@ fn pycolumn_with_origin(column: &str, table: &str) -> ColumnMeta {
 #[test]
 fn test_python_conversion() {
     let x = parse(
-        vec![
-            "WITH cte1 AS (
+        vec!["WITH cte1 AS (
                 SELECT col1, col2
                 FROM table1
                 WHERE col1 = 'value1'
@@ -467,8 +472,8 @@ fn test_python_conversion() {
             )
             SELECT cte1.col1, cte2.col3
             FROM cte1
-            JOIN cte2 ON cte1.col2 = cte2.col4",
-        ],
+            JOIN cte2 ON cte1.col2 = cte2.col4"
+            .to_string()],
         None,
         None,
     )
