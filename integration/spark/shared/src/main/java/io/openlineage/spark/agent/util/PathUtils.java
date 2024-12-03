@@ -8,6 +8,8 @@ package io.openlineage.spark.agent.util;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import java.io.File;
+import io.openlineage.client.utils.filesystem.gvfs.GVFSUtils;
+import io.openlineage.client.utils.gravitino.GravitinoInfoProviderImpl;
 import java.net.URI;
 import java.util.Optional;
 import lombok.SneakyThrows;
@@ -33,6 +35,10 @@ public class PathUtils {
   }
 
   public static DatasetIdentifier fromURI(URI location) {
+    if (GravitinoInfoProviderImpl.getInstance().useGravitinoIdentifier()
+        && !GVFSUtils.isGVFS(location)) {
+      return GravitinoUtils.getGravitinoDatasetIdentifier(location);
+    }
     return FilesystemDatasetUtils.fromLocation(location);
   }
 
@@ -42,6 +48,10 @@ public class PathUtils {
    */
   public static DatasetIdentifier fromCatalogTable(
       CatalogTable catalogTable, SparkSession sparkSession) {
+    if (GravitinoInfoProviderImpl.getInstance().useGravitinoIdentifier()) {
+      return GravitinoUtils.getGravitinoDatasetIdentifier(catalogTable.identifier());
+    }
+
     URI locationUri;
     locationUri = getLocationUri(catalogTable, sparkSession);
     return fromCatalogTable(catalogTable, sparkSession, locationUri);
