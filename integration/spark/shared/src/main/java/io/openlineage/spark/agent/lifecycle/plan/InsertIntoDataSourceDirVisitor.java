@@ -7,9 +7,11 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.filesystem.gvfs.GVFSUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -30,7 +32,8 @@ public class InsertIntoDataSourceDirVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoDataSourceDirCommand command = (InsertIntoDataSourceDirCommand) x;
     // URI is required by the InsertIntoDataSourceDirCommand
-    DatasetIdentifier di = PathUtils.fromURI(command.storage().locationUri().get());
+    URI location = command.storage().locationUri().get();
+    DatasetIdentifier di = PathUtils.fromURI(location);
 
     OpenLineage.OutputDataset outputDataset;
     if (command.overwrite()) {
@@ -42,6 +45,10 @@ public class InsertIntoDataSourceDirVisitor
                   OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
     } else {
       outputDataset = outputDataset().getDataset(di, command.schema());
+    }
+
+    if (GVFSUtils.isGVFS(location)) {
+      outputDataset = GVFSUtils.injectGVFSFacets(context.getOpenLineage(), outputDataset, location);
     }
 
     return Collections.singletonList(outputDataset);

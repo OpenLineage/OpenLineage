@@ -14,7 +14,8 @@ public class FilesystemDatasetUtils {
     new LocalFilesystemDatasetExtractor(),
     new ObjectStorageDatasetExtractor("s3"),
     new ObjectStorageDatasetExtractor("gs"),
-    new ObjectStorageDatasetExtractor("wasbs")
+    new ObjectStorageDatasetExtractor("wasbs"),
+    new GVFSFilesystemDatasetExtractor()
   };
 
   private static FilesystemDatasetExtractor getExtractor(URI location) {
