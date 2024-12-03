@@ -90,7 +90,8 @@ public class ContextFactory {
   public Optional<ExecutionContext> createSparkSQLExecutionContext(long executionId) {
     QueryExecution queryExecution = SQLExecution.getQueryExecution(executionId);
     if (queryExecution == null) {
-      log.error("Query execution is null: can't emit event for executionId {}", executionId);
+      // Spark 3.3 and Spark 3.4 couldn't find the executionId
+      log.info("Query execution is null: can't emit event for executionId {}", executionId);
       return Optional.empty();
     }
     SparkSession sparkSession = Spark4CompatUtils.getSparkSession(queryExecution);
