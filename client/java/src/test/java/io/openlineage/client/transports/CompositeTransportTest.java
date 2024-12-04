@@ -204,8 +204,8 @@ class CompositeTransportTest {
       config.put("myFakeA", fakeTransportAConfig);
       config.put("myFakeB", fakeTransportBConfig);
       CompositeConfig compositeConfig = new CompositeConfig(config, true);
-      assertEquals(compositeConfig.getTransports().get(1).getName(), "myFakeA");
-      assertEquals(compositeConfig.getTransports().get(0).getName(), "myFakeB");
+      assertEquals(compositeConfig.getTransports().get(0).getName(), "myFakeA");
+      assertEquals(compositeConfig.getTransports().get(1).getName(), "myFakeB");
     }
   }
 }

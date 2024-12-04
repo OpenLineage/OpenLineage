@@ -26,10 +26,13 @@ import io.openlineage.client.transports.CompositeTransport;
 import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.client.transports.ConsoleTransport;
 import io.openlineage.client.transports.HttpConfig;
+import io.openlineage.client.transports.HttpConfig.Compression;
 import io.openlineage.client.transports.HttpTransport;
 import io.openlineage.client.transports.NoopTransport;
+import io.openlineage.client.transports.TransformTransport;
 import io.openlineage.client.transports.Transport;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -71,7 +74,32 @@ class ConfigTest {
     List<Transport> target = (List<Transport>) transportsField.get(compositeTransport);
     assertThat(target).hasSize(2);
     assertThat(target.get(0)).isInstanceOf(HttpTransport.class);
-    assertThat(target.get(1)).isInstanceOf(ConsoleTransport.class);
+
+    assertThat(target.get(1)).isInstanceOf(TransformTransport.class);
+    assertThat(((TransformTransport) target.get(1)).getTransport())
+        .isInstanceOf(ConsoleTransport.class);
+  }
+
+  @Test
+  @SneakyThrows
+  void testLoadTransformTransportConfigFromYaml() {
+    OpenLineageClient client =
+        Clients.newClient(new TestConfigPathProvider("config/transform.yaml"));
+
+    assertThat(client.transport).isInstanceOf(TransformTransport.class);
+    TransformTransport transformTransport = (TransformTransport) client.transport;
+
+    assertThat(transformTransport.getTransformer())
+        .isInstanceOf(TestingEventTransformer.class)
+        .extracting("properties")
+        .extracting("key1", "key2")
+        .isEqualTo(Arrays.asList("value1", "value2"));
+
+    assertThat(transformTransport.getTransport())
+        .isInstanceOf(HttpTransport.class)
+        .extracting("compression", "uri")
+        .isEqualTo(
+            Arrays.asList(Compression.GZIP, new URI("http://localhost:5050/api/v1/lineage")));
   }
 
   @Test
@@ -111,16 +139,26 @@ class ConfigTest {
                   "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TYPE",
                   "console",
                   "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TYPE",
+                  "transform",
+                  "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TRANSFORMER_CLASS",
+                  TestingEventTransformer.class.getName(),
+                  "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TRANSPORT__TYPE",
                   "http",
-                  "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__URL",
+                  "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TRANSPORT__URL",
                   "local"));
 
       OpenLineageClient client = Clients.newClient();
       assertThat(client.transport).isInstanceOf(CompositeTransport.class);
+
       assertThat(((CompositeTransport) client.transport).getTransports().get(0))
-          .isInstanceOf(HttpTransport.class);
-      assertThat(((CompositeTransport) client.transport).getTransports().get(1))
           .isInstanceOf(ConsoleTransport.class);
+
+      Transport second = ((CompositeTransport) client.transport).getTransports().get(1);
+      assertThat(second).isInstanceOf(TransformTransport.class);
+      assertThat(((TransformTransport) second).getTransport())
+          .isInstanceOf(HttpTransport.class)
+          .extracting("uri")
+          .isEqualTo(new URI("local"));
     }
   }
 
