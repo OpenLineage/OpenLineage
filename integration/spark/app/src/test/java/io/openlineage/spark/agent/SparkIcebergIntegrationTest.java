@@ -46,6 +46,8 @@ import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.assertj.core.api.AbstractObjectAssert;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,6 +68,8 @@ class SparkIcebergIntegrationTest {
 
   private static ClientAndServer mockServer;
   private static SparkSession spark;
+
+  private static final String JAVA_VERSION = System.getProperty("java.version");
 
   @BeforeAll
   @SneakyThrows
@@ -418,6 +422,12 @@ class SparkIcebergIntegrationTest {
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "([34].*)") // Spark version >= 3.*
   @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void sparkEmitsInputAndOutputStatistics() {
+    if (JAVA_VERSION.startsWith("1.8") && System.getProperty(SPARK_VERSION).startsWith("3.5")) {
+      // Assertion below will not work as Iceberg classes used are Java 11
+      assertThat(true).isTrue();
+      return;
+    }
+
     clearTables("test_input1", "test_input2", "stats_source1", "stats_source2", "test_output");
 
     // write 100 rows to test_input1
@@ -437,7 +447,10 @@ class SparkIcebergIntegrationTest {
         .write()
         .mode("overwrite")
         .saveAsTable("test_output");
-    spark.stop();
+    // TODO: this test does not write to Iceberg table
+
+    // wait first for the last job to be emitted
+    getEventsEmittedWithJobName(mockServer, "test_output");
     List<RunEvent> events = getEventsEmitted(mockServer);
 
     // verify output statistics facet
@@ -487,6 +500,21 @@ class SparkIcebergIntegrationTest {
     assertThat(inputStatistics2.get().getRowCount()).isGreaterThan(50);
     assertThat(inputStatistics2.get().getSize()).isGreaterThan(0);
     assertThat(inputStatistics2.get().getFileCount()).isEqualTo(1);
+
+    // verify input1 statistics facet contains ScanReport facet
+    assertThat(
+            events.stream()
+                .flatMap(e -> e.getInputs().stream())
+                .filter(e -> e.getName().endsWith("stats_source1"))
+                .filter(e -> e.getInputFacets() != null)
+                .map(i -> i.getInputFacets())
+                .filter(Objects::nonNull)
+                .map(i -> i.getAdditionalProperties())
+                .filter(Objects::nonNull)
+                .filter(f -> f.containsKey("icebergScanReport"))
+                .filter(Objects::nonNull)
+                .findFirst())
+        .isPresent();
   }
 
   private Dataset<Row> createTempDataset(int rows) {
@@ -504,6 +532,139 @@ class SparkIcebergIntegrationTest {
                   new StructField("b", LongType$.MODULE$, false, Metadata.empty())
                 }))
         .repartition(1);
+  }
+
+  @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
+  void testScanReportFacet() {
+    if (JAVA_VERSION.startsWith("1.8") && System.getProperty(SPARK_VERSION).startsWith("3.5")) {
+      // This test will not work as Iceberg classes used are Java 11
+      assertThat(true).isTrue();
+      return;
+    }
+
+    clearTables("temp", "scan_source1", "scan_target");
+    createTempDataset(3).createOrReplaceTempView("temp");
+
+    spark.sql("CREATE TABLE scan_source1 USING iceberg AS SELECT * FROM temp");
+    spark.sql("CREATE TABLE scan_target USING iceberg AS SELECT * FROM scan_source1");
+
+    // make sure all event wer generated
+    List<RunEvent> runEvents = getEventsEmittedWithJobName(mockServer, "scan_target");
+
+    List<InputDatasetInputFacets> inputFacets =
+        runEvents.stream()
+            .flatMap(e -> e.getInputs().stream())
+            .filter(e -> e.getName().endsWith("scan_source1"))
+            .map(InputDataset::getInputFacets)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+    // get scan report facet
+    AbstractObjectAssert<?, ?> icebergScanReport =
+        assertThat(inputFacets.stream())
+            .map(l -> l.getAdditionalProperties())
+            .filteredOn(Objects::nonNull)
+            .filteredOn(e -> e.containsKey("icebergScanReport"))
+            .isNotEmpty()
+            .map(e -> e.get("icebergScanReport"))
+            .map(
+                e -> {
+                  log.info(
+                      "Additional properties from {} {}",
+                      e.getClass(),
+                      OpenLineageClientUtils.toJson(e));
+                  return e.getAdditionalProperties();
+                })
+            .singleElement();
+
+    icebergScanReport
+        .extracting("filterDescription", "projectedFieldNames")
+        .doesNotContainNull()
+        .contains("", new ArrayList<>(Arrays.asList("a", "b")));
+
+    icebergScanReport
+        .extracting("snapshotId")
+        .asInstanceOf(InstanceOfAssertFactories.LONG)
+        .isGreaterThan(0);
+
+    icebergScanReport
+        .extracting("scanMetrics")
+        .asInstanceOf(InstanceOfAssertFactories.MAP)
+        .containsEntry("resultDataFiles", 1)
+        .containsEntry("totalDataManifests", 1);
+
+    icebergScanReport
+        .extracting("metadata")
+        .asInstanceOf(InstanceOfAssertFactories.MAP)
+        .containsEntry("engine-name", "spark");
+  }
+
+  @Test
+  @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
+  void testCommitReportFacet() {
+    if (JAVA_VERSION.startsWith("1.8") && System.getProperty(SPARK_VERSION).startsWith("3.5")) {
+      // This test will not work as Iceberg classes used are Java 11
+      assertThat(true).isTrue();
+      return;
+    }
+
+    clearTables("temp", "commit_source1", "commit_target");
+    createTempDataset(3).createOrReplaceTempView("temp");
+
+    spark.sql("CREATE TABLE commit_source1 USING iceberg AS SELECT * FROM temp");
+    spark.sql("CREATE TABLE commit_target USING iceberg AS SELECT * FROM commit_source1");
+    spark.sql("INSERT INTO commit_target VALUES (4, 5)");
+
+    // get scan report facet
+    List<RunEvent> runEvents =
+        getEventsEmittedWithJobName(
+            mockServer, "iceberg_integration_test.append_data.spark_catalog_default_commit_target");
+
+    List<OutputDatasetOutputFacets> outputFacets =
+        runEvents.stream()
+            .flatMap(e -> e.getOutputs().stream())
+            .map(o -> o.getOutputFacets())
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+    AbstractObjectAssert<?, ?> icebergCommitReport =
+        assertThat(outputFacets.stream())
+            .map(l -> l.getAdditionalProperties())
+            .filteredOn(Objects::nonNull)
+            .filteredOn(e -> e.containsKey("icebergCommitReport"))
+            .isNotEmpty()
+            .map(e -> e.get("icebergCommitReport"))
+            .map(
+                e -> {
+                  log.info(
+                      "Additional properties from {} {}",
+                      e.getClass(),
+                      OpenLineageClientUtils.toJson(e.getAdditionalProperties()));
+                  return e.getAdditionalProperties();
+                })
+            .singleElement();
+
+    icebergCommitReport
+        .extracting("operation", "sequenceNumber")
+        .doesNotContainNull()
+        .contains("append", 2);
+
+    icebergCommitReport
+        .extracting("snapshotId")
+        .asInstanceOf(InstanceOfAssertFactories.LONG)
+        .isGreaterThan(0);
+
+    icebergCommitReport
+        .extracting("metadata")
+        .asInstanceOf(InstanceOfAssertFactories.MAP)
+        .containsEntry("engine-name", "spark");
+
+    icebergCommitReport
+        .extracting("commitMetrics")
+        .asInstanceOf(InstanceOfAssertFactories.MAP)
+        .containsEntry("addedRecords", 1)
+        .containsEntry("addedDataFiles", 1);
   }
 
   private void clearTables(String... tables) {

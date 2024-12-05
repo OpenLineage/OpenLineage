@@ -16,6 +16,8 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
+import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
@@ -54,13 +56,17 @@ class TableContentChangeDatasetBuilderTest {
   Map<String, String> tableProperties = new HashMap<>();
   OpenLineage openLineage;
   TableContentChangeDatasetBuilder builder;
+  DatasetCompositeFacetsBuilder compositeFacetsBuilder = mock(DatasetCompositeFacetsBuilder.class);
 
   @BeforeEach
   @SneakyThrows
   public void setUp() {
     openLineage = mock(OpenLineage.class);
+    when(openLineage.newDatasetFacetsBuilder()).thenReturn(new DatasetFacetsBuilder());
     when(openLineageContext.getOpenLineage()).thenReturn(openLineage);
-    builder = new TableContentChangeDatasetBuilder(openLineageContext);
+    DatasetFactory datasetFactory = mock(DatasetFactory.class);
+    when(datasetFactory.createCompositeFacetBuilder()).thenReturn(compositeFacetsBuilder);
+    builder = new TableContentChangeDatasetBuilder(openLineageContext, datasetFactory);
   }
 
   @Test
@@ -142,7 +148,7 @@ class TableContentChangeDatasetBuilderTest {
       try (MockedStatic mockedVersions = mockStatic(CatalogUtils3.class)) {
         OpenLineage.Dataset dataset = mock(OpenLineage.OutputDataset.class);
         DatasetFacetsBuilder datasetFacetsBuilder = mock(DatasetFacetsBuilder.class);
-        mock(OpenLineage.DatasetFacetsBuilder.class);
+        when(compositeFacetsBuilder.getFacets()).thenReturn(datasetFacetsBuilder);
         OpenLineage.LifecycleStateChangeDatasetFacet lifecycleStateChangeDatasetFacet =
             mock(OpenLineage.LifecycleStateChangeDatasetFacet.class);
         OpenLineage.DatasetVersionDatasetFacet datasetVersionDatasetFacet =
@@ -157,13 +163,14 @@ class TableContentChangeDatasetBuilderTest {
             .thenReturn(lifecycleStateChangeDatasetFacet);
         when(openLineage.newDatasetVersionDatasetFacet("v2"))
             .thenReturn(datasetVersionDatasetFacet);
-        when(openLineage.newDatasetFacetsBuilder()).thenReturn(datasetFacetsBuilder);
 
         when(DataSourceV2RelationDatasetExtractor.extract(
                 any(), eq(openLineageContext), eq(dataSourceV2Relation), any()))
             .thenReturn(Collections.singletonList(dataset));
         when(CatalogUtils3.getDatasetVersion(any(), any(), any(), any()))
             .thenReturn(Optional.of("v2"));
+        when(datasetFacetsBuilder.version(eq(datasetVersionDatasetFacet)))
+            .thenReturn(datasetFacetsBuilder);
 
         List<OpenLineage.OutputDataset> datasetList =
             builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
