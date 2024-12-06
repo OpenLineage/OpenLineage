@@ -53,6 +53,7 @@ def serialize(inst, field, value):
         "tests/dbt/spark/odbc",
         "tests/dbt/postgres",
         "tests/dbt/snapshot",
+        "tests/dbt/duckdb",
     ],
 )
 def test_dbt_parse_and_compare_event(path, parent_run_metadata):

@@ -44,6 +44,7 @@ class Adapter(Enum):
     SQLSERVER = "sqlserver"
     DREMIO = "dremio"
     ATHENA = "athena"
+    DUCKDB = "duckdb"
 
     @staticmethod
     def adapters() -> str:
@@ -625,6 +626,8 @@ class DbtArtifactProcessor:
             return f"dremio://{profile['software_host']}:{profile['port']}"
         elif self.adapter_type == Adapter.ATHENA:
             return f"awsathena://athena.{profile['region_name']}.amazonaws.com"
+        elif self.adapter_type == Adapter.DUCKDB:
+            return f"duckdb://{profile['path']}"
         elif self.adapter_type == Adapter.SPARK:
             port = ""
 
