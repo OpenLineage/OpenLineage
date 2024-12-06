@@ -121,6 +121,10 @@ class ConfigTest {
           .isInstanceOf(HttpTransport.class);
       assertThat(((CompositeTransport) client.transport).getTransports().get(1))
           .isInstanceOf(ConsoleTransport.class);
+      assertThat((CompositeTransport) client.transport)
+          .extracting("config")
+          .extracting("continueOnFailure")
+          .isEqualTo(true);
     }
   }
 

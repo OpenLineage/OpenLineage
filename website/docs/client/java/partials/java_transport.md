@@ -480,13 +480,14 @@ The `CompositeTransport` is designed to combine multiple transports, allowing ev
 
 - `type` - string, must be "composite". Required.
 - `transports` - a list or a map of transport configurations. Required.
-- `continueOnFailure` - boolean flag, determines if the process should continue even when one of the transports fails. Default is `false`.
+- `continueOnFailure` - boolean flag, determines if the process should continue even when one of the transports fails. Default is `true`.
+- `threadPoolActive` - boolean flag, determines if a thread pool for parallel event emission should be kept between event emissions. Default is `true`.
 
 #### Behavior
 
-- The configured transports will be initialized and used in sequence to emit OpenLineage events.
-- If `continueOnFailure` is set to `false`, a failure in one transport will stop the event emission process, and an exception will be raised.
-- If `continueOnFailure` is `true`, the failure will be logged, but the remaining transports will still attempt to send the event.
+- The configured transports will be initialized and used to emit OpenLineage events.
+- If `continueOnFailure` is set to `false`, transports in sequence will be used and a failure in one transport will stop the event emission process, and an exception will be raised.
+- If `continueOnFailure` is `true`, events will be emitted in parallel. In case of failure, the failure will be logged, but the remaining transports will still attempt to send the event.
 
 #### Notes for Multiple Transports
 The composite transport can be used with any OpenLineage transport (e.g. `HttpTransport`, `KafkaTransport`, etc).
