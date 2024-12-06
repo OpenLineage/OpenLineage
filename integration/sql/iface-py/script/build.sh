@@ -18,7 +18,7 @@ python -m pip install maturin
 
 # Install Rust
 curl https://sh.rustup.rs -sSf | sh -s -- -y
-source $HOME/.cargo/env
+source "$HOME"/.cargo/env
 
 # Disable incremental compilation, since it causes issues.
 export CARGO_INCREMENTAL=0

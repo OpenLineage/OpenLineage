@@ -9,7 +9,6 @@ set -e
 
 # Change working directory to integration
 project_root=$(git rev-parse --show-toplevel)
-current_dir=$(pwd)
 
 YAML_LOCATION="${project_root}"/integration/airflow/tests/integration/tests
 
@@ -37,8 +36,8 @@ function help() {
 function set_write_permissions () {
   mkdir -p airflow/logs
   chmod a+rw -R airflow/logs
-  chmod a+w -R $project_root/integration
-  chmod a+w -R $project_root/client/python
+  chmod a+w -R "$project_root"/integration
+  chmod a+w -R "$project_root"/client/python
 }
 
 function compose_up() {
@@ -50,9 +49,13 @@ function compose_up() {
   AIRFLOW_VERSION=${AIRFLOW_IMAGE##*:}
 
   # Remove -python3.7 from the tag
-  export AIRFLOW_VERSION=${AIRFLOW_VERSION::-10}
-  export BIGQUERY_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
-  export DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
+  AIRFLOW_VERSION=${AIRFLOW_VERSION::-10}
+  export AIRFLOW_VERSION
+
+  BIGQUERY_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
+  export BIGQUERY_PREFIX
+  DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
+  export DBT_DATASET_PREFIX
   export DAGS_ARE_PAUSED_AT_CREATION=True
 
   # Add commit ID to the BIGQUERY_PREFIX variable
@@ -66,7 +69,8 @@ function compose_up() {
     set_write_permissions
     export AIRFLOW_UID=50000
   else
-    export AIRFLOW_UID=$(id -u)
+    AIRFLOW_UID=$(id -u)
+    export AIRFLOW_UID
   fi
 
   UP_ARGS=""
@@ -78,8 +82,8 @@ function compose_up() {
     UP_ARGS+="-d"
   fi
 
-  docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml down
-  docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml --profile dev up $UP_ARGS
+  docker-compose -f "$YAML_LOCATION"/docker-compose.yml -f "$YAML_LOCATION"/docker-compose-dev.yml down
+  docker-compose -f "$YAML_LOCATION"/docker-compose.yml -f "$YAML_LOCATION"/docker-compose-dev.yml --profile dev up "$UP_ARGS"
 }
 
 while [[ $# -gt 0 ]]
@@ -100,20 +104,20 @@ do
        RUN_DEFAULT="true"
        ;;
     --shutdown)
-      docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml down
+      docker-compose -f "$YAML_LOCATION"/docker-compose.yml -f "$YAML_LOCATION"/docker-compose-dev.yml down
       exit
       ;;
     --compose-exec)
       shift
-      docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml "$@"
+      docker-compose -f "$YAML_LOCATION"/docker-compose.yml -f "$YAML_LOCATION"/docker-compose-dev.yml "$@"
       exit
       ;;
     -i|--attach-integration)
-      docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml exec integration /bin/bash
+      docker-compose -f "$YAML_LOCATION"/docker-compose.yml -f "$YAML_LOCATION"/docker-compose-dev.yml exec integration /bin/bash
       exit
       ;;
     -a|--attach-worker)
-      docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml exec --workdir /app/openlineage/integration/airflow airflow_worker /bin/bash
+      docker-compose -f "$YAML_LOCATION"/docker-compose.yml -f "$YAML_LOCATION"/docker-compose-dev.yml exec --workdir /app/openlineage/integration/airflow airflow_worker /bin/bash
       exit
       ;;
      *) echo "Unknown argument: $1"
