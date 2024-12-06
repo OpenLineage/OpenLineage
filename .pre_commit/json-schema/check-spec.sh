@@ -9,6 +9,6 @@ set -e
 
 while [ "$1" ]; do
   echo "Checking $1 schema"
-  jv $1
+  jv "$1"
   shift
 done

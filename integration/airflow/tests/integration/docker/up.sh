@@ -15,7 +15,7 @@ if [[ ! -f gcloud/gcloud-service-key.json ]]; then
   mkdir -p gcloud
 fi
 if [[ -n "$CI" ]]; then
-  echo $GCLOUD_SERVICE_KEY > gcloud/gcloud-service-key.json
+  echo "$GCLOUD_SERVICE_KEY" > gcloud/gcloud-service-key.json
   chmod 644 gcloud/gcloud-service-key.json
 fi
 
@@ -34,9 +34,12 @@ AIRFLOW_VERSION=${AIRFLOW_IMAGE##*:}
 
 # Remove -python3.7 from the tag
 export AIRFLOW_VERSION=${AIRFLOW_VERSION::-10}
-export AWS_ATHENA_SUFFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
-export BIGQUERY_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
-export DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
+AWS_ATHENA_SUFFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
+export AWS_ATHENA_SUFFIX
+BIGQUERY_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
+export BIGQUERY_PREFIX
+DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
+export DBT_DATASET_PREFIX
 # just a hack to have same docker-compose for dev and CI env
 export PWD='.'
 

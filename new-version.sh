@@ -47,9 +47,10 @@ usage() {
 # We do this check because bumpversion screws up the search/replace if the current_version and
 # new_version are the same
 function update_py_version_if_needed() {
-  export $(bump2version manual --new-version $1 --allow-dirty --list --dry-run | grep version | xargs)
+  export "$(bump2version manual --new-version "$1" --allow-dirty --list --dry-run | grep version | xargs)"
+  # shellcheck disable=SC2154
   if [ "$new_version" != "$current_version" ]; then
-    bump2version manual --new-version $1 --allow-dirty
+    bump2version manual --new-version "$1" --allow-dirty
   fi
 }
 
@@ -108,7 +109,7 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]] ; then
 fi
 
 # Ensure valid versions
-VERSIONS=($RELEASE_VERSION $NEXT_VERSION)
+VERSIONS=("$RELEASE_VERSION" "$NEXT_VERSION")
 for VERSION in "${VERSIONS[@]}"; do
   if [[ ! "${VERSION}" =~ ${SEMVER_REGEX} ]]; then
     echo "Error: Version '${VERSION}' must match '${SEMVER_REGEX}'"
@@ -201,7 +202,7 @@ fi
 if [[ $COMMITS = "true" ]] && [[ ! ${PUSH} = "false" ]]; then
   git push origin main && git push origin "${RELEASE_VERSION}"
 else
-  echo "...skipping push; to push manually, use 'git push origin main && git push origin "${RELEASE_VERSION}"'"
+  echo "...skipping push; to push manually, use 'git push origin main && git push origin \"${RELEASE_VERSION}\"'"
 fi
 
 echo "DONE!"

@@ -16,11 +16,11 @@ fi
 
 # If user does not supply config file or plugins, use the default
 if [ "$1" = "fluentd" ]; then
-    if ! echo $@ | grep -e ' \-c' -e ' \-\-config' ; then
-       set -- "$@" --config /fluentd/etc/${FLUENTD_CONF}
+    if ! echo "$@" | grep -e ' \-c' -e ' \-\-config' ; then
+       set -- "$@" --config /fluentd/etc/"${FLUENTD_CONF}"
     fi
 
-    if ! echo $@ | grep -e ' \-p' -e ' \-\-plugin' ; then
+    if ! echo "$@" | grep -e ' \-p' -e ' \-\-plugin' ; then
        set -- "$@" --plugin /fluentd/plugins
     fi
 fi
