@@ -40,7 +40,10 @@ public final class CompositeConfig implements TransportConfig, MergeConfig<Compo
       // Handle List<Map<String, Object>> case
       this.transports =
           ((List<Map<String, Object>>) transports)
-              .stream().map(this::createTransportConfig).collect(Collectors.toList());
+              .stream()
+                  .map(this::createTransportConfig)
+                  .sorted(TransportConfig::compareTo)
+                  .collect(Collectors.toList());
     } else if (transports instanceof Map) {
       // Handle Map<String, Object> case
       Map<String, Object> transportMap = (Map<String, Object>) transports;
@@ -54,6 +57,7 @@ public final class CompositeConfig implements TransportConfig, MergeConfig<Compo
                     return nestedMap;
                   })
               .map(this::createTransportConfig)
+              .sorted(TransportConfig::compareTo)
               .collect(Collectors.toList());
     } else {
       throw new IllegalArgumentException("Invalid transports type");

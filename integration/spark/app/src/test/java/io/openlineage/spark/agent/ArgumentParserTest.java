@@ -165,8 +165,8 @@ class ArgumentParserTest {
       CompositeConfig transportConfig = (CompositeConfig) config.getTransportConfig();
       assertEquals(
           "http://your-openlineage-endpoint/api/v1/lineage",
-          ((HttpConfig) transportConfig.getTransports().get(0)).getUrl().toString());
-      KafkaConfig kafkaConfig = (KafkaConfig) transportConfig.getTransports().get(1);
+          ((HttpConfig) transportConfig.getTransports().get(1)).getUrl().toString());
+      KafkaConfig kafkaConfig = (KafkaConfig) transportConfig.getTransports().get(0);
       assertEquals("test", kafkaConfig.getTopicName());
       assertEquals("explicit-key", kafkaConfig.getMessageKey());
       assertEquals("test1", kafkaConfig.getProperties().get("test1"));

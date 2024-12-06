@@ -10,4 +10,8 @@ transport:
         apiKey: random_token
       compression: gzip
     second:
-      type: console
+      type: transform
+      transformerClass: io.openlineage.client.TestingEventTransformer
+      transport:
+        type: console
+

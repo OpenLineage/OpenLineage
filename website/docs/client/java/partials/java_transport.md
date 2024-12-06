@@ -484,7 +484,7 @@ The `CompositeTransport` is designed to combine multiple transports, allowing ev
 
 #### Behavior
 
-- The configured transports will be initialized and used in sequence to emit OpenLineage events.
+- The configured transports will be initialized and used in sequence (sorted by transport name) to emit OpenLineage events.
 - If `continueOnFailure` is set to `false`, a failure in one transport will stop the event emission process, and an exception will be raised.
 - If `continueOnFailure` is `true`, the failure will be logged, but the remaining transports will still attempt to send the event.
 
@@ -612,6 +612,109 @@ OpenLineageClient client = OpenLineageClient.builder()
   .transport(
     new CompositeTransport(compositeConfig))
   .build();
+```
+
+</TabItem>
+</Tabs>
+
+### [Transform](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports/transform/TransformTransport.java)
+
+The `TransformTransport` is designed to enable event manipulation before emitting the event. Together with `CompositeTransport`, it can be used to
+send different events into multiple backends.
+
+#### Configuration
+
+- `type` - string, must be "transform". Required.
+- `transformerClass` - class name of the event transformer. Class has to implement `io.openlineage.client.transports.transform.EventTransformer` interface and provide public no-arg constructor. Class needs to be available on the classpath. Required.
+- `transformerProperties` - Extra properties that can be passed into `transformerClass` based on the configuration. Optional.
+- `transport` - Transport configuration to emit modified events. Required.
+
+#### Behavior
+
+- The configured `transformerClass` will be used to alter events before the emission.
+- Modified events will be passed into the configured `transport` for further processing.
+
+#### `EventTransformer` interface
+
+```java
+public class CustomEventTransformer implements EventTransformer {
+  @Override
+  public void initialize(Map<String, String> properties) { ... }
+
+  @Override
+  public RunEvent transform(RunEvent event) { ... }
+
+  @Override
+  public DatasetEvent transform(DatasetEvent event) { .. }
+
+  @Override
+  public JobEvent transform(JobEvent event) { ... }
+}
+```
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: transport
+  transformerClass: io.openlineage.CustomEventTransformer
+  transformerProperties:
+    key1: value1
+    key2: value2
+  transport:
+    type: http
+    url: http://example.com/api
+    name: my_http
+```
+
+</TabItem>
+<TabItem value="spark" label="Spark Config">
+
+```ini
+spark.openlineage.transport.type=transform
+spark.openlineage.transport.transformerClass=io.openlineage.CustomEventTransformer
+spark.openlineage.transport.transformerProperties.key1=value1
+spark.openlineage.transport.transformerProperties.key2=value2
+spark.openlineage.transport.transport.type=http
+spark.openlineage.transport.transport.url=http://example.com/api
+```
+
+</TabItem>
+<TabItem value="flink" label="Flink Config">
+
+```ini
+openlineage.transport.type=transform
+openlineage.transport.transformerClass=io.openlineage.CustomEventTransformer
+openlineage.transport.transformerProperties.key1=value1
+openlineage.transport.transformerProperties.key2=value2
+openlineage.transport.transport.type=http
+openlineage.transport.transport.url=http://example.com/api
+```
+
+</TabItem>
+<TabItem value="java" label="Java Code">
+
+```java
+import java.util.Arrays;
+import io.openlineage.client.OpenLineageClient;
+import io.openlineage.client.transports.TransformConfig;
+import io.openlineage.client.transports.HttpConfig;
+import io.openlineage.client.transports.HttpTransport;
+
+HttpConfig httpConfig = new HttpConfig();
+httpConfig.setUrl(URI.create("http://example.com/api"));
+
+TransformConfig transformConfig = new TransformConfig();
+transformConfig.setTransformerClass(CustomEventTransformer.class.getName());
+transformConfig.setTransport(httpConfig);
+
+OpenLineageClient client = OpenLineageClient
+    .builder()
+    .transport(new TransformTransport(transformConfig))
+    .build();
 ```
 
 </TabItem>
