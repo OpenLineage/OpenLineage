@@ -159,6 +159,10 @@ class ConfigTest {
           .isInstanceOf(HttpTransport.class)
           .extracting("uri")
           .isEqualTo(new URI("local"));
+      assertThat((CompositeTransport) client.transport)
+          .extracting("config")
+          .extracting("continueOnFailure")
+          .isEqualTo(true);
     }
   }
 
