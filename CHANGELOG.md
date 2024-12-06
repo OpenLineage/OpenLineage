@@ -2,6 +2,9 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.25.0...HEAD)
 
+* **Java: Parallel event emitting for composite transport.** [`#3305`](https://github.com/OpenLineage/OpenLineage/pull/3240)[`#3305`] [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Emit events in parallel for composite transport. Running in parallel is a default behaviour `continueOnFailure` set to `true`. Default value of `continueOnFailure` got changed from `false` to `true`.*
+
 
 ## [1.25.0](https://github.com/OpenLineage/OpenLineage/compare/1.24.2...1.25.0) - 2024-11-25
 
