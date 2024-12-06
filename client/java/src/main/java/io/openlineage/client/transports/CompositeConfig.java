@@ -28,13 +28,16 @@ public final class CompositeConfig implements TransportConfig, MergeConfig<Compo
 
   @Getter @Setter private List<TransportConfig> transports;
 
-  @Getter @Setter private boolean continueOnFailure;
+  @Getter @Setter private Boolean continueOnFailure;
+
+  @Getter @Setter private Boolean withThreadPool;
 
   @JsonCreator
   @SuppressWarnings("unchecked")
   public CompositeConfig(
       @JsonProperty("transports") Object transports,
-      @JsonProperty("continueOnFailure") boolean continueOnFailure) {
+      @JsonProperty("continueOnFailure") Boolean continueOnFailure,
+      @JsonProperty("withThreadPool") Boolean withThreadPool) {
 
     if (transports instanceof List) {
       // Handle List<Map<String, Object>> case
@@ -63,14 +66,16 @@ public final class CompositeConfig implements TransportConfig, MergeConfig<Compo
       throw new IllegalArgumentException("Invalid transports type");
     }
 
-    this.continueOnFailure = continueOnFailure;
+    this.continueOnFailure = (continueOnFailure == null) ? true : continueOnFailure;
+    this.withThreadPool = (withThreadPool == null) ? true : withThreadPool;
   }
 
   public static CompositeConfig createFromTransportConfigs(
-      List<TransportConfig> transports, boolean continueOnFailure) {
+      List<TransportConfig> transports, boolean continueOnFailure, boolean withThreadPool) {
     CompositeConfig compositeConfig = new CompositeConfig();
     compositeConfig.setTransports(transports);
     compositeConfig.setContinueOnFailure(continueOnFailure);
+    compositeConfig.setWithThreadPool(withThreadPool);
     return compositeConfig;
   }
 
@@ -90,9 +95,10 @@ public final class CompositeConfig implements TransportConfig, MergeConfig<Compo
   public CompositeConfig mergeWithNonNull(CompositeConfig other) {
     // Merge the transports and continueOnFailure fields from both configs
     List<TransportConfig> mergedTransports = mergePropertyWith(transports, other.getTransports());
-    boolean mergedContinueOnFailure =
-        mergePropertyWith(continueOnFailure, other.isContinueOnFailure());
+    Boolean mergedContinueOnFailure = mergePropertyWith(continueOnFailure, other.continueOnFailure);
+    Boolean mergedWithThreadPool = mergePropertyWith(withThreadPool, other.withThreadPool);
 
-    return createFromTransportConfigs(mergedTransports, mergedContinueOnFailure);
+    return createFromTransportConfigs(
+        mergedTransports, mergedContinueOnFailure, mergedWithThreadPool);
   }
 }

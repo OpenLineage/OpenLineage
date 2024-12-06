@@ -480,7 +480,8 @@ The `CompositeTransport` is designed to combine multiple transports, allowing ev
 
 - `type` - string, must be "composite". Required.
 - `transports` - a list or a map of transport configurations. Required.
-- `continueOnFailure` - boolean flag, determines if the process should continue even when one of the transports fails. Default is `false`.
+- `continueOnFailure` - boolean flag, determines if the process should continue even when one of the transports fails. Default is `true`.
+- `withThreadPool` - boolean flag, determines if a thread pool for parallel event emission should be kept between event emissions. Default is `true`.
 
 #### Behavior
 
