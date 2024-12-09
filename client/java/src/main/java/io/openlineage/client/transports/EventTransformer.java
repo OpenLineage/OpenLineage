@@ -31,7 +31,9 @@ public interface EventTransformer {
    * @param event
    * @return
    */
-  RunEvent transform(RunEvent event);
+  default RunEvent transform(RunEvent event) {
+    return event;
+  }
 
   /**
    * Transforms the DatasetEvent into a new DatasetEvent.
@@ -39,7 +41,9 @@ public interface EventTransformer {
    * @param event
    * @return
    */
-  DatasetEvent transform(DatasetEvent event);
+  default DatasetEvent transform(DatasetEvent event) {
+    return event;
+  }
 
   /**
    * Transforms the JobEvent into a new JobEvent.
@@ -47,5 +51,7 @@ public interface EventTransformer {
    * @param event
    * @return
    */
-  JobEvent transform(JobEvent event);
+  default JobEvent transform(JobEvent event) {
+    return event;
+  }
 }

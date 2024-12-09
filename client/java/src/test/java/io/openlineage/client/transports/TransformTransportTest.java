@@ -5,16 +5,20 @@
 
 package io.openlineage.client.transports;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetEvent;
 import io.openlineage.client.OpenLineage.JobEvent;
 import io.openlineage.client.OpenLineage.RunEvent;
+import java.net.URI;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -127,14 +131,41 @@ class TransformTransportTest {
     transformTransport.emit(datasetEvent);
     transformTransport.emit(jobEvent);
 
-    verify(runEvent, times(1)).getProducer();
-    verify(subTransport, times(1)).emit(runEvent);
+    verify(subTransport, times(1))
+        .emit(
+            (RunEvent)
+                argThat(
+                    event -> {
+                      assertThat(event).isInstanceOf(RunEvent.class);
+                      assertThat(((RunEvent) event).getJob())
+                          .extracting("namespace", "name")
+                          .isEqualTo(Arrays.asList("modified-namespace", "modified-name"));
+                      return true;
+                    }));
 
-    verify(datasetEvent, times(1)).getProducer();
-    verify(subTransport, times(1)).emit(datasetEvent);
+    verify(subTransport, times(1))
+        .emit(
+            (DatasetEvent)
+                argThat(
+                    event -> {
+                      assertThat(event).isInstanceOf(DatasetEvent.class);
+                      assertThat(((DatasetEvent) event).getDataset())
+                          .extracting("namespace", "name")
+                          .isEqualTo(Arrays.asList("modified-namespace", "modified-name"));
+                      return true;
+                    }));
 
-    verify(jobEvent, times(1)).getProducer();
-    verify(subTransport, times(1)).emit(jobEvent);
+    verify(subTransport, times(1))
+        .emit(
+            (JobEvent)
+                argThat(
+                    event -> {
+                      assertThat(event).isInstanceOf(JobEvent.class);
+                      assertThat(((JobEvent) event).getJob())
+                          .extracting("namespace", "name")
+                          .isEqualTo(Arrays.asList("modified-namespace", "modified-name"));
+                      return true;
+                    }));
   }
 
   public static class EventTransformerNotImplementingInterface {
@@ -143,9 +174,6 @@ class TransformTransportTest {
 
   public static class EventTransformerWithoutDefaultConstructor implements EventTransformer {
     private EventTransformerWithoutDefaultConstructor() {}
-
-    @Override
-    public void initialize(Map<String, String> properties) {}
 
     @Override
     public RunEvent transform(RunEvent event) {
@@ -166,9 +194,6 @@ class TransformTransportTest {
   public static class EventTransformerThrowingException implements EventTransformer {
 
     public EventTransformerThrowingException() {}
-
-    @Override
-    public void initialize(Map<String, String> properties) {}
 
     @Override
     @SneakyThrows
@@ -192,9 +217,6 @@ class TransformTransportTest {
   public static class EventTransformerReturningNull implements EventTransformer {
 
     @Override
-    public void initialize(Map<String, String> properties) {}
-
-    @Override
     public RunEvent transform(RunEvent event) {
       return null;
     }
@@ -212,25 +234,31 @@ class TransformTransportTest {
 
   public static class SuccessfulEventTransformer implements EventTransformer {
 
-    @Override
-    public void initialize(Map<String, String> properties) {}
+    OpenLineage openLineage = new OpenLineage(URI.create("producer"));
 
     @Override
     public RunEvent transform(RunEvent event) {
-      event.getProducer();
-      return event;
+      return openLineage
+          .newRunEventBuilder()
+          .job(openLineage.newJob("modified-namespace", "modified-name", null))
+          .eventType(event.getEventType())
+          .build();
     }
 
     @Override
     public DatasetEvent transform(DatasetEvent event) {
-      event.getProducer();
-      return event;
+      return openLineage
+          .newDatasetEventBuilder()
+          .dataset(openLineage.newStaticDataset("modified-namespace", "modified-name", null))
+          .build();
     }
 
     @Override
     public JobEvent transform(JobEvent event) {
-      event.getProducer();
-      return event;
+      return openLineage
+          .newJobEventBuilder()
+          .job(openLineage.newJob("modified-namespace", "modified-name", null))
+          .build();
     }
   }
 }
