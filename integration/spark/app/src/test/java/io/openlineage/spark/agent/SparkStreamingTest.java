@@ -147,7 +147,6 @@ class SparkStreamingTest {
 
     SparkSession spark =
         createSparkSession(server.getAddress().getPort(), "testKafkaSourceToKafkaSink");
-    spark.sparkContext().setLogLevel("ERROR");
 
     String userDirProperty = System.getProperty("user.dir");
     Path userDirPath = Paths.get(userDirProperty);
