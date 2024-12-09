@@ -47,11 +47,6 @@ for (( i=1; i <= "$#"; i++ )); do
     fi
 done
 
-# add default ruleset if not specified
-if [[ ! $pc_args == *"-R "* ]]; then
-  pc_args="$pc_args -R ../${RULESET_FILE}"
-fi
-
 # populate list of files to analyse
 files=""
 prefix="../"
@@ -64,4 +59,4 @@ files="${files:1}"
 eol=$'\n'
 echo "${files// /$eol}" > /tmp/list
 
-./pmd/bin/run.sh pmd -f textcolor -min 5 --file-list /tmp/list $pc_args
+./pmd/bin/run.sh pmd -f textcolor -min 5 --file-list /tmp/list -R ../"${RULESET_FILE}"

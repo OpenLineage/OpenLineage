@@ -8,12 +8,12 @@ CHANGE_DONE=0
 # Use process substitution to avoid subshell problem
 while read -r LINE; do
   # Ignore registry files
-  if [[ $LINE =~ "registry.json" ]]; then
+  if [[ $LINE =~ registry.json ]]; then
     continue
   fi
 
   # Extract target file name from $id field in spec files using jq
-  URL=$(cat "$LINE" | jq -r '.["$id"]')
+  URL=$(jq -r '.["$id"]' < "$LINE")
 
   # Extract target location in website repo
   LOC="website/static/${URL#*//*/}"
@@ -22,7 +22,7 @@ while read -r LINE; do
   # Create dir if necessary, and copy files
   mkdir -p "$LOC_DIR"
   cp "$LINE" "$LOC"
-  echo $LOC
+  echo "$LOC"
   # Check if the file is tracked by Git
   if git ls-files --error-unmatch "$LOC" &>/dev/null; then
     # The file is tracked by Git

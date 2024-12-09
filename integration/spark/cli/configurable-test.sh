@@ -70,10 +70,8 @@ while [ $# -gt 0 ]; do
           ;;
     -h|--help)
        usage
-       exit 0
        ;;
     *) usage
-       exit 1
        ;;
   esac
   shift
@@ -115,31 +113,31 @@ NETWORK_NAME=openlineage
 echo "Spark version is '$SPARK_VERSION'"
 
 # (5) Remove container if exists
-if [ "$(docker ps -a | grep $CONTAINER_NAME 2> /dev/null)" ]; then
+if docker ps -a | grep -q "$CONTAINER_NAME" 2> /dev/null; then
     echo "Removing container: $CONTAINER_NAME"
-    docker rm -f $CONTAINER_NAME
+    docker rm -f "$CONTAINER_NAME"
 fi
 
 # (6) Clear docker image
 if [[ ${CLEAN} = "true" ]]; then
   echo "Clearing docker image: $DOCKER_IMAGE_TAG";
-  docker image rm $DOCKER_IMAGE_TAG
+  docker image rm "$DOCKER_IMAGE_TAG"
   docker volume rm cargo
   docker volume rm gradle-cache
   docker volume rm m2-cache
-  docker network rm $NETWORK_NAME
+  docker network rm "$NETWORK_NAME"
 fi
 
 # (7) Build docker images if not present
-if [ -z "$(docker images -q $DOCKER_IMAGE_TAG 2> /dev/null)" ]; then
+if [ -z "$(docker images -q "$DOCKER_IMAGE_TAG" 2> /dev/null)" ]; then
   echo "Building new image: $DOCKER_IMAGE_TAG";
-  docker build -f ./integration/spark/cli/Dockerfile . --tag $DOCKER_IMAGE_TAG
+  docker build -f ./integration/spark/cli/Dockerfile . --tag "$DOCKER_IMAGE_TAG"
 else
    echo "Reusing existing image: $DOCKER_IMAGE_TAG";
 fi
 
 # (8) Make sure network is created
-if [ -z $(docker network ls --filter name=^${NETWORK_NAME}$ --format="{{ .Name }}") ] ; then
+if [ -z "$(docker network ls --filter name=^${NETWORK_NAME}$ --format="{{ .Name }}")" ]; then
     echo "Creating network: $NETWORK_NAME"
     docker network create ${NETWORK_NAME} ;
 else
@@ -148,7 +146,7 @@ fi
 
 # (9) Run docker
 prefix="./integration/spark/"
-docker run --name $CONTAINER_NAME \
+docker run --name "$CONTAINER_NAME" \
  --mount=type=bind,source=./integration/spark,target=/usr/lib/openlineage/integration/spark \
  -v gradle-cache:/root/.gradle \
  -v cargo:/root/.cargo \
@@ -157,10 +155,10 @@ docker run --name $CONTAINER_NAME \
  --network openlineage \
  -it \
  --rm \
- --env SCALA_BINARY_VERSION=$SCALA_BINARY_VERSION \
- --env SPARK_VERSION=$SPARK_VERSION \
- --env SPARK_CONF_YML=/usr/lib/openlineage/integration/spark/${SPARK_CONF_YML#"$prefix"} \
- --env TEST_DIR=/usr/lib/openlineage/integration/spark/${TEST_DIR#"$prefix"} \
- --env HOST_DIR=$(pwd) \
+ --env SCALA_BINARY_VERSION="$SCALA_BINARY_VERSION" \
+ --env SPARK_VERSION="$SPARK_VERSION" \
+ --env SPARK_CONF_YML=/usr/lib/openlineage/integration/spark/"${SPARK_CONF_YML#"$prefix"}" \
+ --env TEST_DIR=/usr/lib/openlineage/integration/spark/"${TEST_DIR#"$prefix"}" \
+ --env HOST_DIR="$(pwd)" \
  --add-host=host.docker.internal:host-gateway \
- $DOCKER_IMAGE_TAG
+ "$DOCKER_IMAGE_TAG"

@@ -17,7 +17,7 @@ if [[ ! $(command -v cargo) ]]
 then
   echo "Installing Rust"
   curl https://sh.rustup.rs -sSf | sh -s -- -y
-  source $HOME/.cargo/env
+  source "$HOME"/.cargo/env
 fi
 
 echo "Checking for uv"
@@ -25,7 +25,7 @@ if [[ ! $(command -v uv) ]]
 then
   echo "Installing uv"
   curl -LsSf https://astral.sh/uv/install.sh | sh
-  source $HOME/.local/bin/env
+  source "$HOME"/.local/bin/env
 fi
 
 rustup target add aarch64-apple-darwin

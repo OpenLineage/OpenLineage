@@ -5,7 +5,6 @@
 
 # jv cli from: https://github.com/santhosh-tekuri/jsonschema
 
-
 set -e
 
 while [ "$1" ]; do
@@ -13,8 +12,10 @@ while [ "$1" ]; do
   shopt -s nullglob
   test_events=("spec/tests/$event_type"/*.json)
   if [ ${#test_events[@]} -gt 0 ]; then
-    echo "Validating $test_events against $1"
-    jv $1 $test_events --assert-format
+    for event in "${test_events[@]}"; do
+      echo "Validating ${event} against $1"
+      jv "$1" "${event}" --assert-format
+    done
   fi
   shift
 done
