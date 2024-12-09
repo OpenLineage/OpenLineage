@@ -1,0 +1,14 @@
+transport:
+  type: transform
+  transformerClass: io.openlineage.client.TestingEventTransformer
+  transformerProperties:
+    key1: value1
+    key2: value2
+  transport:
+    type: http
+    url: http://localhost:5050
+    endpoint: api/v1/lineage
+    auth:
+      type: api_key
+      apiKey: random_token
+    compression: gzip
