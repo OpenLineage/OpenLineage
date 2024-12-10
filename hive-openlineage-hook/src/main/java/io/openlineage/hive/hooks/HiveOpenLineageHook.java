@@ -23,13 +23,20 @@ import io.openlineage.hive.client.Versions;
 import io.openlineage.hive.util.HiveUtils;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.hive.ql.QueryPlan;
-import org.apache.hadoop.hive.ql.hooks.*;
-import org.apache.hadoop.hive.ql.parse.*;
+import org.apache.hadoop.hive.ql.hooks.Entity;
+import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
+import org.apache.hadoop.hive.ql.hooks.HookContext;
+import org.apache.hadoop.hive.ql.hooks.ReadEntity;
+import org.apache.hadoop.hive.ql.hooks.WriteEntity;
+import org.apache.hadoop.hive.ql.parse.SemanticAnalyzer;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 
+@Slf4j
 public class HiveOpenLineageHook implements ExecuteWithHookContext {
 
   private static final Set<HiveOperation> SUPPORTED_OPERATIONS = new HashSet<>();
@@ -65,39 +72,44 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext {
 
   @Override
   public void run(HookContext hookContext) throws Exception {
-    QueryPlan queryPlan = hookContext.getQueryPlan();
-    Set<ReadEntity> validInputs = getValidInputs(queryPlan);
-    Set<WriteEntity> validOutputs = getValidOutputs(queryPlan);
-    if (hookContext.getHookType() != HookContext.HookType.POST_EXEC_HOOK
-        || SessionState.get() == null
-        || hookContext.getIndex() == null
-        || !SUPPORTED_OPERATIONS.contains(queryPlan.getOperation())
-        || queryPlan.isExplain()
-        || queryPlan.getInputs().isEmpty()
-        || queryPlan.getOutputs().isEmpty()
-        || validInputs.isEmpty()
-        || validOutputs.isEmpty()) {
-      return;
-    }
-    SemanticAnalyzer semanticAnalyzer =
-        HiveUtils.analyzeQuery(
-            hookContext.getConf(), hookContext.getQueryState(), queryPlan.getQueryString());
-    OpenLineageContext olContext =
-        OpenLineageContext.builder()
-            .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-            .queryString(hookContext.getQueryPlan().getQueryString())
-            .semanticAnalyzer(semanticAnalyzer)
-            .eventTime(Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.of("UTC")))
-            .readEntities(validInputs)
-            .writeEntities(validOutputs)
-            .hadoopConf(hookContext.getConf())
-            .openlineageHiveIntegrationVersion(Versions.getVersion())
-            .openLineageConfig(
-                HiveOpenLineageConfigParser.extractFromHadoopConf(hookContext.getConf()))
-            .build();
-    try (EventEmitter emitter = new EventEmitter(olContext)) {
-      OpenLineage.RunEvent runEvent = Faceting.getRunEvent(emitter, olContext);
-      emitter.emit(runEvent);
+    try {
+      QueryPlan queryPlan = hookContext.getQueryPlan();
+      Set<ReadEntity> validInputs = getValidInputs(queryPlan);
+      Set<WriteEntity> validOutputs = getValidOutputs(queryPlan);
+      if (hookContext.getHookType() != HookContext.HookType.POST_EXEC_HOOK
+          || SessionState.get() == null
+          || hookContext.getIndex() == null
+          || !SUPPORTED_OPERATIONS.contains(queryPlan.getOperation())
+          || queryPlan.isExplain()
+          || queryPlan.getInputs().isEmpty()
+          || queryPlan.getOutputs().isEmpty()
+          || validInputs.isEmpty()
+          || validOutputs.isEmpty()) {
+        return;
+      }
+      SemanticAnalyzer semanticAnalyzer =
+          HiveUtils.analyzeQuery(
+              hookContext.getConf(), hookContext.getQueryState(), queryPlan.getQueryString());
+      OpenLineageContext olContext =
+          OpenLineageContext.builder()
+              .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+              .queryString(hookContext.getQueryPlan().getQueryString())
+              .semanticAnalyzer(semanticAnalyzer)
+              .eventTime(Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.of("UTC")))
+              .readEntities(validInputs)
+              .writeEntities(validOutputs)
+              .hadoopConf(hookContext.getConf())
+              .openlineageHiveIntegrationVersion(Versions.getVersion())
+              .openLineageConfig(
+                  HiveOpenLineageConfigParser.extractFromHadoopConf(hookContext.getConf()))
+              .build();
+      try (EventEmitter emitter = new EventEmitter(olContext)) {
+        OpenLineage.RunEvent runEvent = Faceting.getRunEvent(emitter, olContext);
+        emitter.emit(runEvent);
+      }
+    } catch (Exception e) {
+      // Don't let the query fail. Just log the error.
+      log.error("Error occurred during lineage creation:", e);
     }
   }
 }
