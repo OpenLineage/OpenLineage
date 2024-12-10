@@ -16,6 +16,8 @@ from typing import Any, Dict, List, Optional, Tuple, TypeVar
 #from jinja2 import Environment, Undefined
 import tempfile
 
+from openlineage.common.provider.dbt.processor import ModelNode
+from openlineage.common.utils import get_from_nullable_chain
 #from mypyc.irbuild.format_str_tokenizer import unique
 
 #from integration.common.tests.dbt.test_dbt_local import parent_run_metadata
@@ -91,8 +93,8 @@ def generate_run_event(
         run_id: str,
         job_name: str,
         job_namespace: str,
-        inputs: Optional[list[InputDataset]] = None,
-        outputs: Optional[list[InputDataset]] = None,
+        inputs: Optional[List[InputDataset]] = None,
+        outputs: Optional[List[OutputDataset]] = None,
         job_facets: Optional[Dict] = None,
         run_facets: Optional[Dict] = None,
 ) -> RunEvent:
@@ -143,6 +145,11 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
         # node_id -> SQL OL event Start, do we need the same for node lifecycle events
         self.node_id_to_sql_start_event = {}
 
+        # node_id -> list of ModelNodes only useful for node start/finish events
+        self.node_id_to_inputs = {}
+        # node_id -> list of dataset output
+        self.node_id_to_output = {}
+
 
 
     @cached_property
@@ -175,6 +182,7 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
             ...
 
         self.extract_adapter_type(self.profile)
+
         self.extract_dataset_namespace(self.profile)
 
         self._compile_manifest()
@@ -317,6 +325,9 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
             producer=self.producer,
         )}
 
+        inputs = [self.node_to_dataset(node=model_input, has_facets=True) for model_input in self._get_model_inputs(node_unique_id)]
+        outputs = [self.node_to_output_dataset(node=self._get_model_node(node_unique_id), has_facets=True)]
+
         return generate_run_event(
             event_type=RunState.START,
             event_time=node_start_time,
@@ -324,7 +335,9 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
             run_facets=run_facets,
             job_name=job_name,
             job_namespace=self.job_namespace,
-            job_facets=job_facets
+            job_facets=job_facets,
+            inputs=inputs,
+            outputs=outputs
         )
 
     def _parse_node_finish_event(self, event):
@@ -355,6 +368,8 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
                 message=error_message, programmingLanguage="sql"
             )
 
+        inputs = [self.node_to_dataset(node=model_input, has_facets=True) for model_input in self._get_model_inputs(node_unique_id)]
+        outputs = [self.node_to_output_dataset(node=self._get_model_node(node_unique_id), has_facets=True)]
 
         return generate_run_event(
             event_type=event_type,
@@ -363,7 +378,9 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
             run_facets=run_facets,
             job_name=job_name,
             job_namespace=self.job_namespace,
-            job_facets=job_facets
+            job_facets=job_facets,
+            inputs=inputs,
+            outputs=outputs
         )
 
     def _get_sql_query_id(self, node_id):
@@ -619,6 +636,32 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
     def _execute_dbt_cmd(self):
         ...
 
+    def _get_model_node(self, node_id) -> ModelNode:
+        all_nodes = {**self.compiled_manifest["nodes"], **self.compiled_manifest["sources"]}
+        manifest_node = all_nodes[node_id]
+        catalog_node = get_from_nullable_chain(self.catalog, ["nodes", node_id])
+        return ModelNode(
+            metadata_node=manifest_node,
+            catalog_node=catalog_node
+        )
+
+    def _get_model_inputs(self, node_id) -> List[ModelNode]:
+        if node_id in self.node_id_to_inputs:
+            return self.node_id_to_inputs[node_id]
+
+        input_node_ids = self.compiled_manifest["parent_map"][node_id]
+        inputs = [self._get_model_node(input_node_id) for input_node_id in input_node_ids]
+        self.node_id_to_inputs[node_id] = inputs
+
+        return inputs
+
+    def _get_model_output(self, node_id) -> ModelNode:
+        if node_id in self.node_id_to_output:
+            return self.node_id_to_output[node_id]
+        model_node = self._get_model_node(node_id)
+        self.node_id_to_output[node_id] = model_node
+
+        return model_node
 
 
     @cached_property
@@ -629,20 +672,21 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
 
     @cached_property
     def profile(self):
+        logger.info(f"##### profile_name={self.profile_name}")
         profile_dict = self.load_yaml_with_jinja(os.path.join(self.profiles_dir, "profiles.yml"))[self.profile_name]
         if not self.target:
             self.target = profile_dict["target"]
 
-        return profile_dict["outputs"][self.target]
+        ze_profile = profile_dict["outputs"][self.target]
+        logger.info(f"##### profile={ze_profile}")
+        return ze_profile
 
     @cached_property
     def compiled_manifest(self):
         """
         gets the compiled manifest for the the dbt command
         """
-        if not os.path.isfile(self.compile_manifest_path):
-            self._compile_manifest()
-
+        self._compile_manifest()
         return self.load_metadata(self.compile_manifest_path, [2, 3, 4, 5, 6, 7], self.logger)
 
 
