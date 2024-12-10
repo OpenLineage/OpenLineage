@@ -392,7 +392,7 @@ class DbtArtifactProcessor:
 
             model_node = None
             for node in context.manifest["parent_map"][run["unique_id"]]:
-                if node.startswith("model.") or node.startswith("source."):
+                if any(node.startswith(prefix) for prefix in ["model.", "source.", "seed."]):
                     model_node = node
 
             if self.manifest_version >= 12:  # type: ignore
@@ -412,7 +412,7 @@ class DbtArtifactProcessor:
             )
 
             if not model_node:
-                raise ValueError(f"Model node connected to test {nodes[run['unique_id']]} not found")
+                self.logger.warning(f"Model node connected to test {nodes[run['unique_id']]} not found")
         return assertions  # type: ignore
 
     def to_openlineage_events(self, *args, **kwargs) -> Optional[DbtRunResult]:
