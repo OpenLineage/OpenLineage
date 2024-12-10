@@ -21,7 +21,8 @@ set_java_version_macos() {
   echo "Setting Java version to $version on macOS..."
 
   # Find the JAVA_HOME path for the specified version
-  local java_home_path=$(/usr/libexec/java_home -v "$version" 2>/dev/null)
+  local java_home_path
+  java_home_path=$(/usr/libexec/java_home -v "$version" 2>/dev/null)
 
   if [[ -z "$java_home_path" ]]; then
     echo "Java version $version is not installed on your macOS system."
