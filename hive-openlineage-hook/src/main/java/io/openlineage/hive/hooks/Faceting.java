@@ -73,7 +73,7 @@ public class Faceting {
   }
 
   public static List<InputDataset> getInputDatasets(OpenLineageContext olContext) {
-    List<InputDataset> inputs = Collections.emptyList();
+    List<InputDataset> inputs = new ArrayList<>();
     for (ReadEntity input : olContext.getReadEntities()) {
       Entity.Type entityType = input.getType();
       if ((entityType == Entity.Type.TABLE || entityType == Entity.Type.PARTITION)
@@ -216,7 +216,7 @@ public class Faceting {
       List<InputDataset> inputDatasets,
       OutputCLL outputCLL,
       Map<String, Set<TransformationInfo>> inputs) {
-    List<InputField> olInputFields = Collections.emptyList();
+    List<InputField> olInputFields = new ArrayList<>();
     for (Map.Entry<String, Set<TransformationInfo>> input : inputs.entrySet()) {
       int lastDotIndex = input.getKey().lastIndexOf('.');
       String inputTableFQN = input.getKey().substring(0, lastDotIndex);
@@ -228,7 +228,7 @@ public class Faceting {
               .namespace(inputDataset.getNamespace())
               .name(inputDataset.getName())
               .field(inputColumn);
-      List<InputFieldTransformations> olTransformations = Collections.emptyList();
+      List<InputFieldTransformations> olTransformations = new ArrayList<>();
       for (TransformationInfo transformation : input.getValue()) {
         InputFieldTransformationsBuilder olTransformationBuilder =
             getInputFieldTransformationsBuilder(transformation);
@@ -273,7 +273,7 @@ public class Faceting {
     List<FieldSchema> columns = table.getCols();
     SchemaDatasetFacet schemaFacet = null;
     if (columns != null && !columns.isEmpty()) {
-      List<SchemaDatasetFacetFields> fields = Collections.emptyList();
+      List<SchemaDatasetFacetFields> fields = new ArrayList<>();
       for (FieldSchema column : columns) {
         fields.add(
             olContext
@@ -308,20 +308,18 @@ public class Faceting {
                     .build());
     List<InputDataset> inputDatasets = getInputDatasets(olContext);
     List<OutputDataset> outputDatasets = getOutputDatasets(olContext, inputDatasets);
-    RunEvent runEvent =
-        ol.newRunEventBuilder()
-            .eventType(RunEvent.EventType.COMPLETE)
-            .eventTime(olContext.getEventTime())
-            .run(runBuilder.build())
-            .job(
-                ol.newJobBuilder()
-                    .namespace(emitter.getJobNamespace())
-                    .name(emitter.getJobName())
-                    // TODO: Add job facets
-                    .build())
-            .inputs(inputDatasets)
-            .outputs(outputDatasets)
-            .build();
-    return runEvent;
+    return ol.newRunEventBuilder()
+        .eventType(RunEvent.EventType.COMPLETE)
+        .eventTime(olContext.getEventTime())
+        .run(runBuilder.build())
+        .job(
+            ol.newJobBuilder()
+                .namespace(emitter.getJobNamespace())
+                .name(emitter.getJobName())
+                // TODO: Add job facets
+                .build())
+        .inputs(inputDatasets)
+        .outputs(outputDatasets)
+        .build();
   }
 }

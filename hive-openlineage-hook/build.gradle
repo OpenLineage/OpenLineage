@@ -1,17 +1,17 @@
 ext {
-    openLineageVersion = '1.24.0-SNAPSHOT'
-    cloudDataLineageVersion = '0.39.0'
+    openLineageVersion = '1.24.2'
+    cloudDataLineageVersion = '0.46.0'
     producerClientVersion = '1.0.0'
-    cloudStorageVersion = '2.36.1'
-    gcsConnectorVersion = 'hadoop2-2.2.21'
-    lombokVersion = '1.18.32'
-    guaveVersion = '33.1.0-jre'
-    bigqueryVersion = '2.40.2'
+    cloudStorageVersion = '2.45.0'
+    gcsConnectorVersion = 'hadoop2-2.2.25'
+    lombokVersion = '1.18.36'
+    guavaVersion = '33.3.1-jre'
+    bigqueryVersion = '2.44.0'
     hiveBigqueryConnectorVersion = '2.0.3'
-    assertjVersion = '3.25.3'
+    assertjVersion = '3.26.3'
     hiverunnerVersion = '6.1.0'
-    jupiterVersion = '5.11.0'
-    jacksonVersion = '2.17.1'
+    jupiterVersion = '5.11.3'
+    jacksonVersion = '2.18.1'
     mockitoVersion = '4.11.0'
 }
 
@@ -52,7 +52,7 @@ tasks.register('acceptanceTest', Test) {
     useJUnitPlatform()
 
     filter {
-        includeTestsMatching "*Acceptance*"
+        includeTestsMatching "*acceptance*"
     }
 
     // Create the shaded jar before an acceptance test is run.
@@ -64,18 +64,18 @@ tasks.register('acceptanceTest', Test) {
 tasks.register('unitTest', Test) {
     useJUnitPlatform()
     filter {
-        excludeTestsMatching "*Acceptance*"
-        excludeTestsMatching "*Integration*"
+        excludeTestsMatching "*acceptance*"
+        excludeTestsMatching "*integration*"
     }
 }
 
 tasks.register('integrationTest', Test) {
     useJUnitPlatform()
     filter {
-        includeTestsMatching "*Integration*"
+        includeTestsMatching "*integration*"
     }
 
-    // TODO: Check if this is in fact needed for the integration tests
+    // Needed to run the integration without running out of memory
     forkEvery = 1
     maxParallelForks = 1
     maxHeapSize = "2g"
@@ -84,7 +84,7 @@ tasks.register('integrationTest', Test) {
 test {
     useJUnitPlatform()
 
-    // TODO: Check if this is in fact needed for the integration tests
+    // Needed to run the integration without running out of memory
     forkEvery = 1
     maxParallelForks = 1
     maxHeapSize = "2g"
@@ -105,7 +105,7 @@ test {
 dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     implementation "org.projectlombok:lombok:${lombokVersion}"
-    implementation "com.google.guava:guava:${guaveVersion}"
+    implementation "com.google.guava:guava:${guavaVersion}"
     compileOnly project(path: ':shaded-integration-test-dependencies', configuration: 'shadow')
     implementation ("io.openlineage:openlineage-java:${openLineageVersion}") {
         exclude group: 'com.fasterxml.jackson.core', module: '*'
@@ -113,6 +113,7 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     // TODO: We might not want this to be included in the shaded JAR and instead rely on Dataproc including it?
     implementation ("io.openlineage:transports-gcplineage:${openLineageVersion}")
+    implementation ("io.openlineage:transports-gcs:${openLineageVersion}")
 
     // Test dependencies ---------------------------------------------------------------------
 

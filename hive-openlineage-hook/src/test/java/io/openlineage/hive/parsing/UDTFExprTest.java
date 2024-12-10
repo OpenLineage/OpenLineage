@@ -32,7 +32,6 @@ class UDTFExprTest {
     UDTFExpr udtfExpr = new UDTFExpr(function, children);
     assertThat(udtfExpr.getFunction()).isEqualTo(function);
     assertThat(udtfExpr.getChildren()).isEqualTo(children);
-    assertThat(udtfExpr.toString())
-        .isEqualTo("UDTF (GenericUDTFExplode): [Column[array_column], Const string 5]");
+    assertThat(udtfExpr.toString()).isEqualTo("UDTF[explode]([Column[array_column], Constant[5]])");
   }
 }

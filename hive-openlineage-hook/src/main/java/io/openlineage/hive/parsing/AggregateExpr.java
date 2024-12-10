@@ -32,6 +32,6 @@ public class AggregateExpr extends BaseExpr {
 
   @Override
   public String toString() {
-    return String.format("Aggregation (%s) : [%s]", function, getChildren());
+    return String.format("Aggregation[%s](%s)", function, getChildren());
   }
 }

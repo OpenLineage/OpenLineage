@@ -32,7 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-public class TableLevelLineageIntegrationTests extends TestsBase {
+public class TableLevelLineageTests extends TestsBase {
 
   public static final String TEST_TABLE_NAME = "mytable";
   public static final String ANOTHER_TEST_TABLE_NAME = "anothertable";
@@ -138,7 +138,7 @@ public class TableLevelLineageIntegrationTests extends TestsBase {
     // Check that the Dataplex links were correctly created
     List<Link> links = getBigQueryLinks(null, TEST_TABLE_NAME);
     assertThat(links).hasSize(1);
-    assertThat(links.get(0).getSource().getFullyQualifiedName()).startsWith("custom:file/");
+    assertThat(links.get(0).getSource().getFullyQualifiedName()).startsWith("filesystem:");
     assertThat(links.get(0).getSource().getFullyQualifiedName()).endsWith("/" + localHiveTable);
     assertThat(links.get(0).getTarget().getFullyQualifiedName())
         .isEqualTo(String.format("bigquery:%s.%s.%s", getProject(), dataset, TEST_TABLE_NAME));

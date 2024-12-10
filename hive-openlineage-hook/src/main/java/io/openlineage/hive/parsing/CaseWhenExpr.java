@@ -28,6 +28,6 @@ public class CaseWhenExpr extends BaseExpr {
 
   @Override
   public String toString() {
-    return String.format("CaseWhen: [%s]", getChildren());
+    return String.format("CaseWhen: %s", getChildren());
   }
 }

@@ -28,6 +28,6 @@ public class WindowExpr extends BaseExpr {
 
   @Override
   public String toString() {
-    return String.format("Window: [%s]", getChildren());
+    return String.format("Window(%s)", getChildren());
   }
 }
