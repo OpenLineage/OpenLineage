@@ -21,8 +21,10 @@ import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.iceberg.CachingCatalog;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.spark.SparkCatalog;
+import org.apache.spark.sql.catalyst.plans.logical.BinaryCommand;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.connector.catalog.TableCatalog;
+import org.apache.spark.sql.catalyst.plans.logical.UnaryCommand;
+import org.apache.spark.sql.connector.catalog.CatalogPlugin;
 
 /**
  * Declared as a QueryPlanVisitor to be able to inject the InMemoryMetricsReporter into the Iceberg
@@ -44,7 +46,6 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     // if this is called, then Iceberg classes are on the classpath
-
     if (Optional.ofNullable(context.getOpenLineageConfig())
         .map(SparkOpenLineageConfig::getVendors)
         .map(VendorsConfig::getAdditionalProperties)
@@ -55,7 +56,7 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
       return false;
     }
 
-    Optional<TableCatalog> catalog = getCatalog(plan);
+    Optional<CatalogPlugin> catalog = getCatalog(plan);
 
     // check if plan has a catalog field
     if (!catalog.isPresent()) {
@@ -66,24 +67,46 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
     return catalog.get().getClass().getCanonicalName().startsWith("org.apache.iceberg");
   }
 
-  private Optional<TableCatalog> getCatalog(LogicalPlan plan) {
+  /**
+   * @param plan
+   * @return
+   */
+  private Optional<CatalogPlugin> getCatalog(LogicalPlan plan) {
+    Optional<CatalogPlugin> catalog = getCatalogFromCaseClass(plan);
+    if (catalog.isPresent()) {
+      return catalog;
+    }
+
+    if (plan instanceof UnaryCommand) {
+      return getCatalogFromCaseClass(((UnaryCommand) plan).child());
+    } else if (plan instanceof BinaryCommand) {
+      return getCatalogFromCaseClass(((BinaryCommand) plan).left());
+    }
+
+    return Optional.empty();
+  }
+
+  /**
+   * Runs catalog method on LogicalPlan class. This is done through reflection as the case class
+   * with catalog property differs across different Spark versions. For example,
+   * `ResolvedDBObjectName` is available only for Spark 3.3.
+   *
+   * <p>For this method, reflection is used for: -
+   * org.apache.spark.sql.catalyst.plans.logical.CreateV2Table (3.2.4) -
+   * org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect (3.2.4) -
+   * org.apache.spark.sql.catalyst.analysis.ResolvedTable (3.2.4) -
+   * org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect (3.2.4) -
+   * org.apache.spark.sql.catalyst.analysis.ResolvedDBObjectName (3.3.4) -
+   * org.apache.spark.sql.catalyst.analysis.ResolvedTable (3.3.4, 3.4.3, 3.5.2) -
+   * org.apache.spark.sql.catalyst.analysis.ResolvedIdentifier (3.4.3, 3.5.2)
+   *
+   * @param plan
+   * @return
+   */
+  private Optional<CatalogPlugin> getCatalogFromCaseClass(LogicalPlan plan) {
     try {
-      if (MethodUtils.getAccessibleMethod(plan.getClass(), "name") == null) {
-        // try calling catalog method directly
-        return Optional.ofNullable(
-            (TableCatalog) MethodUtils.invokeMethod(plan, "catalog", (Object[]) null));
-      } else {
-        // call catalog method on name LogicalPlan
-        LogicalPlan namePlan =
-            (LogicalPlan) MethodUtils.invokeMethod(plan, "name", (Object[]) null);
-
-        if (MethodUtils.getAccessibleMethod(namePlan.getClass(), "catalog") == null) {
-          return Optional.empty();
-        }
-
-        return Optional.ofNullable(
-            (TableCatalog) MethodUtils.invokeMethod(namePlan, "catalog", (Object[]) null));
-      }
+      return Optional.ofNullable(
+          (CatalogPlugin) MethodUtils.invokeMethod(plan, "catalog", (Object[]) null));
     } catch (NoSuchMethodException e) {
       // do nothing, don't log
       return Optional.empty();
@@ -93,6 +116,13 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
     }
   }
 
+  /**
+   * Injects the IcebergMetricsReporter into the Iceberg catalog. Uses reflection as the catalog
+   * does not provide public methods to register a metrics reporter after it is initialized.
+   *
+   * @param x
+   * @return
+   */
   @Override
   public List<D> apply(LogicalPlan x) {
     SparkCatalog catalog = (SparkCatalog) getCatalog(x).get();

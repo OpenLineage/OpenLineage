@@ -16,8 +16,8 @@ import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;
@@ -38,9 +38,9 @@ public class TableContentChangeDatasetBuilder
   private final DatasetFactory<OutputDataset> factory;
 
   public TableContentChangeDatasetBuilder(
-      OpenLineageContext context, DatasetFactory<OutputDataset> factory) {
+      OpenLineageContext context, @NonNull DatasetFactory<OutputDataset> factory) {
     super(context, false);
-    this.factory = Objects.requireNonNull(factory, "parameter: factory");
+    this.factory = factory;
   }
 
   @Override
