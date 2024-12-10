@@ -184,6 +184,8 @@ class DbtArtifactProcessor:
     def get_dbt_metadata(self):
         ...
 
+    #todo why do we need it to be a DbtEvents ???
+    # it can yield events in streaming
     def parse(self) -> DbtEvents:
         """
         Parse dbt manifest and run_result and produce OpenLineage events.
@@ -291,14 +293,14 @@ class DbtArtifactProcessor:
             run_id = str(generate_new_uuid())
             if name.startswith("snapshot."):
                 jobType = "SNAPSHOT"
-                job_name = (
+                job_name = ( # todo this should be in a function
                     f"{output_node['database']}.{output_node['schema']}"
                     f".{self.removeprefix(run['unique_id'], 'snapshot.')}"
                     + (".build.snapshot" if self.command == "build" else ".snapshot")
                 )
             else:
                 jobType = "MODEL"
-                job_name = (
+                job_name = ( # todo this should be in a function
                     f"{output_node['database']}.{output_node['schema']}"
                     f".{self.removeprefix(run['unique_id'], 'model.')}"
                     + (".build.run" if self.command == "build" else "")
@@ -469,7 +471,7 @@ class DbtArtifactProcessor:
             producer=self.producer,
             inputs=inputs,
             outputs=[output] if output else [],
-        )
+        ) #todo where is this used ? why do we need the start/(complete/error...)
         if status == "success":
             return DbtRunResult(
                 start,
