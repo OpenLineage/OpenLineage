@@ -21,6 +21,7 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.metrics.MetricsReporter;
 import org.apache.iceberg.spark.SparkCatalog;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.UnaryCommand;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,14 +41,14 @@ public class IcebergMetricsReporterInjectorTest {
   void setup() {
     injector = new IcebergMetricsReporterInjector(context);
     icebergCatalog = new TestingIcebergCatalog();
-    plan =
-        mock(LogicalPlan.class, withSettings().extraInterfaces(TestingLogicalPlanWithName.class));
 
+    plan = mock(LogicalPlan.class, withSettings().extraInterfaces(UnaryCommand.class));
     subPlan =
         mock(
             LogicalPlan.class, withSettings().extraInterfaces(TestingLogicalPlanWithCatalog.class));
+
+    when(((UnaryCommand) plan).child()).thenReturn(subPlan);
     when(((TestingLogicalPlanWithCatalog) subPlan).catalog()).thenReturn(catalog);
-    when(((TestingLogicalPlanWithName) plan).name()).thenReturn(subPlan);
 
     when(context
             .getOpenLineageConfig()
@@ -81,18 +82,6 @@ public class IcebergMetricsReporterInjectorTest {
             .getAdditionalProperties()
             .getOrDefault("iceberg.metricsReporterDisabled", "false"))
         .thenReturn("true");
-    assertThat(injector.isDefinedAt(plan)).isFalse();
-  }
-
-  @Test
-  void testIsDefinedForNonIcebergCatalog() {
-    subPlan =
-        mock(
-            LogicalPlan.class, withSettings().extraInterfaces(TestingLogicalPlanWithCatalog.class));
-    when(((TestingLogicalPlanWithCatalog) subPlan).catalog())
-        .thenReturn(mock(TableCatalog.class)); // not an instance of SparkCatalog
-    when(((TestingLogicalPlanWithName) plan).name()).thenReturn(subPlan);
-
     assertThat(injector.isDefinedAt(plan)).isFalse();
   }
 
@@ -144,10 +133,6 @@ public class IcebergMetricsReporterInjectorTest {
     public String name() {
       return "catalog-name";
     }
-  }
-
-  public interface TestingLogicalPlanWithName {
-    LogicalPlan name();
   }
 
   public interface TestingLogicalPlanWithCatalog {

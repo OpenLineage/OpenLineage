@@ -7,22 +7,23 @@ package io.openlineage.spark.agent.facets;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonGetter;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import lombok.Getter;
 
+@Getter
 public class IcebergCommitReportOutputDatasetFacet implements OpenLineage.OutputDatasetFacet {
 
-  private final URI _producer;
-  private final URI _schemaURL;
-  private final Long snapshotId;
-  private final Long sequenceNumber;
-  private final String operation;
-  private final IcebergCommitMetrics commitMetrics;
-  private final Map<String, String> metadata;
+  @JsonAnyGetter private final URI _producer;
+  @JsonAnyGetter private final URI _schemaURL;
+  @JsonAnyGetter private final Long snapshotId;
+  @JsonAnyGetter private final Long sequenceNumber;
+  @JsonAnyGetter private final String operation;
+  @JsonAnyGetter private final IcebergCommitMetrics commitMetrics;
+  @JsonAnyGetter private final Map<String, String> metadata;
   @JsonAnySetter private final Map<String, Object> additionalProperties;
 
   public IcebergCommitReportOutputDatasetFacet(
@@ -58,30 +59,5 @@ public class IcebergCommitReportOutputDatasetFacet implements OpenLineage.Output
   @Override
   public Map<String, Object> getAdditionalProperties() {
     return this.additionalProperties;
-  }
-
-  @JsonGetter
-  public IcebergCommitMetrics getCommitMetrics() {
-    return commitMetrics;
-  }
-
-  @JsonGetter
-  public Map<String, String> getMetadata() {
-    return metadata;
-  }
-
-  @JsonGetter
-  public Long getSnapshotId() {
-    return snapshotId;
-  }
-
-  @JsonGetter
-  public Long getSequenceNumber() {
-    return sequenceNumber;
-  }
-
-  @JsonGetter
-  public String getOperation() {
-    return operation;
   }
 }

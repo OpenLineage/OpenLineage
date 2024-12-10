@@ -7,23 +7,24 @@ package io.openlineage.spark.agent.facets;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonGetter;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import lombok.Getter;
 
+@Getter
 public class IcebergScanReportInputDatasetFacet implements OpenLineage.InputDatasetFacet {
 
   private final URI _producer;
   private final URI _schemaURL;
-  private final Long snapshotId;
-  private final String filterDescription;
-  private final String[] projectedFieldNames;
-  private final IcebergScanMetrics scanMetrics;
-  private final Map<String, String> metadata;
+  @JsonAnySetter private final Long snapshotId;
+  @JsonAnySetter private final String filterDescription;
+  @JsonAnySetter private final String[] projectedFieldNames;
+  @JsonAnySetter private final IcebergScanMetrics scanMetrics;
+  @JsonAnyGetter private final Map<String, String> metadata;
   @JsonAnySetter private final Map<String, Object> additionalProperties;
 
   public IcebergScanReportInputDatasetFacet(
@@ -59,30 +60,5 @@ public class IcebergScanReportInputDatasetFacet implements OpenLineage.InputData
   @Override
   public Map<String, Object> getAdditionalProperties() {
     return this.additionalProperties;
-  }
-
-  @JsonGetter
-  public IcebergScanMetrics getScanMetrics() {
-    return scanMetrics;
-  }
-
-  @JsonGetter
-  public Map<String, String> getMetadata() {
-    return metadata;
-  }
-
-  @JsonGetter
-  public Long getSnapshotId() {
-    return snapshotId;
-  }
-
-  @JsonGetter
-  public String getFilterDescription() {
-    return filterDescription;
-  }
-
-  @JsonGetter
-  public String[] getProjectedFieldNames() {
-    return Arrays.copyOf(projectedFieldNames, projectedFieldNames.length);
   }
 }

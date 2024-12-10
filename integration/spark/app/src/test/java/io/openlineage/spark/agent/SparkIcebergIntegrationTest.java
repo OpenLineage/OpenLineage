@@ -424,6 +424,9 @@ class SparkIcebergIntegrationTest {
   void sparkEmitsInputAndOutputStatistics() {
     if (JAVA_VERSION.startsWith("1.8") && System.getProperty(SPARK_VERSION).startsWith("3.5")) {
       // Assertion below will not work as Iceberg classes used are Java 11
+      // This is however not related to OpenLineage implementation itself but rather to the Iceberg
+      // classes compatibility. For Spark 3.5, we use Iceberg 1.7.0. We want to run OpenLineage
+      // tests with Spark 3.5 and Java 8, but Iceberg 1.7.0 requires Java 11. This is why we skip
       assertThat(true).isTrue();
       return;
     }
