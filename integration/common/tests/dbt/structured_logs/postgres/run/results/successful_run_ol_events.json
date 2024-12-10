@@ -42,8 +42,50 @@
       }
     },
     "eventType":"START",
-    "inputs":[ ],
-    "outputs":[ ]
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.raw_customers",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_customers",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"customer_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
   },
   {
     "eventTime":"2024-11-20T19:45:51.957829Z",
@@ -481,8 +523,50 @@
       }
     },
     "eventType":"COMPLETE",
-    "inputs":[ ],
-    "outputs":[ ]
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.raw_customers",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_customers",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"customer_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
   },
   {
     "eventTime":"2024-11-20T19:45:52.465203",
@@ -512,8 +596,56 @@
       }
     },
     "eventType":"START",
-    "inputs":[ ],
-    "outputs":[ ]
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.raw_orders",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_orders",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"order_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"status",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
   },
   {
     "eventTime":"2024-11-20T19:45:52.588215Z",
@@ -951,8 +1083,56 @@
       }
     },
     "eventType":"COMPLETE",
-    "inputs":[ ],
-    "outputs":[ ]
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.raw_orders",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_orders",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"order_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"status",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
   },
   {
     "eventTime":"2024-11-20T19:45:52.897197",
@@ -982,8 +1162,56 @@
       }
     },
     "eventType":"START",
-    "inputs":[ ],
-    "outputs":[ ]
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.raw_payments",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_payments",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"payment_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"payment_method",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
   },
   {
     "eventTime":"2024-11-20T19:45:53.017343Z",
@@ -1421,8 +1649,56 @@
       }
     },
     "eventType":"COMPLETE",
-    "inputs":[ ],
-    "outputs":[ ]
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.raw_payments",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_payments",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"payment_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"payment_method",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
   },
   {
     "eventTime":"2024-11-20T19:45:53.409256",
@@ -1452,8 +1728,151 @@
       }
     },
     "eventType":"START",
-    "inputs":[ ],
-    "outputs":[ ]
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_customers",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"customer_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      },
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_orders",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"order_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"status",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      },
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_payments",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"payment_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"payment_method",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.customers",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"customer_id",
+                "type":"",
+                "description":"This is a unique identifier for a customer",
+                "fields":[ ]
+              },
+              {
+                "name":"first_name",
+                "type":"",
+                "description":"Customer's first name. PII.",
+                "fields":[ ]
+              },
+              {
+                "name":"last_name",
+                "type":"",
+                "description":"Customer's last name. PII.",
+                "fields":[ ]
+              },
+              {
+                "name":"first_order",
+                "type":"",
+                "description":"Date (UTC) of a customer's first order",
+                "fields":[ ]
+              },
+              {
+                "name":"most_recent_order",
+                "type":"",
+                "description":"Date (UTC) of a customer's most recent order",
+                "fields":[ ]
+              },
+              {
+                "name":"number_of_orders",
+                "type":"",
+                "description":"Count of the number of orders a customer has placed",
+                "fields":[ ]
+              },
+              {
+                "name":"total_order_amount",
+                "type":"",
+                "description":"Total value (AUD) of a customer's orders",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":"This table has basic information about a customer, as well as some derived facts based on a customer's orders"
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
   },
   {
     "eventTime":"2024-11-20T19:45:53.652936Z",
@@ -1891,8 +2310,151 @@
       }
     },
     "eventType":"COMPLETE",
-    "inputs":[ ],
-    "outputs":[ ]
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_customers",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"customer_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      },
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_orders",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"order_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"status",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      },
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_payments",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"payment_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"payment_method",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.customers",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"customer_id",
+                "type":"",
+                "description":"This is a unique identifier for a customer",
+                "fields":[ ]
+              },
+              {
+                "name":"first_name",
+                "type":"",
+                "description":"Customer's first name. PII.",
+                "fields":[ ]
+              },
+              {
+                "name":"last_name",
+                "type":"",
+                "description":"Customer's last name. PII.",
+                "fields":[ ]
+              },
+              {
+                "name":"first_order",
+                "type":"",
+                "description":"Date (UTC) of a customer's first order",
+                "fields":[ ]
+              },
+              {
+                "name":"most_recent_order",
+                "type":"",
+                "description":"Date (UTC) of a customer's most recent order",
+                "fields":[ ]
+              },
+              {
+                "name":"number_of_orders",
+                "type":"",
+                "description":"Count of the number of orders a customer has placed",
+                "fields":[ ]
+              },
+              {
+                "name":"total_order_amount",
+                "type":"",
+                "description":"Total value (AUD) of a customer's orders",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":"This table has basic information about a customer, as well as some derived facts based on a customer's orders"
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
   },
   {
     "eventTime":"2024-11-20T19:45:54.031262",
@@ -1922,8 +2484,140 @@
       }
     },
     "eventType":"START",
-    "inputs":[ ],
-    "outputs":[ ]
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_orders",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"order_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"status",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      },
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_payments",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"payment_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"payment_method",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.orders",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"order_id",
+                "type":"",
+                "description":"This is a unique identifier for an order",
+                "fields":[ ]
+              },
+              {
+                "name":"customer_id",
+                "type":"",
+                "description":"Foreign key to the customers table",
+                "fields":[ ]
+              },
+              {
+                "name":"order_date",
+                "type":"",
+                "description":"Date (UTC) that the order was placed",
+                "fields":[ ]
+              },
+              {
+                "name":"status",
+                "type":"",
+                "description":"Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |",
+                "fields":[ ]
+              },
+              {
+                "name":"amount",
+                "type":"",
+                "description":"Total amount (AUD) of the order",
+                "fields":[ ]
+              },
+              {
+                "name":"credit_card_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by credit card",
+                "fields":[ ]
+              },
+              {
+                "name":"coupon_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by coupon",
+                "fields":[ ]
+              },
+              {
+                "name":"bank_transfer_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by bank transfer",
+                "fields":[ ]
+              },
+              {
+                "name":"gift_card_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by gift card",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":"This table has basic information about orders, as well as some derived facts based on payments"
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
   },
   {
     "eventTime":"2024-11-20T19:45:54.171715Z",
@@ -2361,13 +3055,145 @@
       }
     },
     "eventType":"COMPLETE",
-    "inputs":[ ],
-    "outputs":[ ]
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_orders",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"order_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"status",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      },
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_payments",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"payment_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"payment_method",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.orders",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"order_id",
+                "type":"",
+                "description":"This is a unique identifier for an order",
+                "fields":[ ]
+              },
+              {
+                "name":"customer_id",
+                "type":"",
+                "description":"Foreign key to the customers table",
+                "fields":[ ]
+              },
+              {
+                "name":"order_date",
+                "type":"",
+                "description":"Date (UTC) that the order was placed",
+                "fields":[ ]
+              },
+              {
+                "name":"status",
+                "type":"",
+                "description":"Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |",
+                "fields":[ ]
+              },
+              {
+                "name":"amount",
+                "type":"",
+                "description":"Total amount (AUD) of the order",
+                "fields":[ ]
+              },
+              {
+                "name":"credit_card_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by credit card",
+                "fields":[ ]
+              },
+              {
+                "name":"coupon_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by coupon",
+                "fields":[ ]
+              },
+              {
+                "name":"bank_transfer_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by bank transfer",
+                "fields":[ ]
+              },
+              {
+                "name":"gift_card_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by gift card",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":"This table has basic information about orders, as well as some derived facts based on payments"
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
   },
   {
     "eventTime":"2024-11-20T19:45:55.112200Z",
     "run":{
-      "runId": "{{ any(result) }}",
+      "runId":"{{ any(result) }}",
       "facets":{ }
     },
     "job":{
