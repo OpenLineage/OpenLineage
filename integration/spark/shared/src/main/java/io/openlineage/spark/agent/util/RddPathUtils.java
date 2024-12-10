@@ -121,7 +121,9 @@ public class RddPathUtils {
       try {
         Object data = FieldUtils.readField(rdd, "data", true);
         log.debug("ParallelCollectionRDD data: {}", data);
-        if ((data instanceof Seq) && ((Seq) data).head() instanceof Tuple2) {
+        if ((data instanceof Seq)
+            && (!((Seq<?>) data).isEmpty())
+            && ((Seq) data).head() instanceof Tuple2) {
           // exit if the first element is invalid
           Seq data_slice = (Seq) ((Seq) data).slice(0, SEQ_LIMIT);
           return ScalaConversionUtils.fromSeq(data_slice).stream()

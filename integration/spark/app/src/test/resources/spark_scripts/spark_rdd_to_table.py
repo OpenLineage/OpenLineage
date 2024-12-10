@@ -4,6 +4,7 @@
 import random
 import shutil
 import string
+import time
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import IntegerType, StringType, StructField, StructType
@@ -19,6 +20,7 @@ def rand_word():
 
 
 def tuple_to_csv(x):
+    time.sleep(0.01)  # catching active job won't work for super fast RDD operations
     return ",".join([str(i) for i in x])
 
 

@@ -12,6 +12,7 @@ class NameNormalizerTest {
   @Test
   @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void testNormalize() {
+    assertEquals("", NameNormalizer.normalize(null));
     assertEquals("", NameNormalizer.normalize(""));
     assertEquals("word", NameNormalizer.normalize("word"));
     assertEquals("more_than_one_words", NameNormalizer.normalize("@ more than one     words !"));
