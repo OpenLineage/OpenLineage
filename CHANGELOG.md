@@ -4,6 +4,8 @@
 
 * **Java: Add `transform` transport to allow event modification.** [`#3301`](https://github.com/OpenLineage/OpenLineage/pull/3301) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
   *New transport type allows to modify the event based on the specified transformer class.*
+* **Java: Parallel event emitting for composite transport.** [`#3305`](https://github.com/OpenLineage/OpenLineage/pull/3240)[`#3305`] [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Emit events in parallel for composite transport. Running in parallel is a default behaviour `continueOnFailure` set to `true`. Default value of `continueOnFailure` got changed from `false` to `true`.*
 
 ## [1.25.0](https://github.com/OpenLineage/OpenLineage/compare/1.24.2...1.25.0) - 2024-11-25
 
