@@ -9,7 +9,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, List
 
 from openlineage.client.client import OpenLineageClient
 from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
@@ -25,6 +25,8 @@ from tqdm import tqdm
 
 __version__ = "1.26.0"
 
+from client.python.docs.conf import project
+from integration.common.openlineage.common.provider.dbt.local_structured_logging import DbtStructuredLoggingProcessor
 
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
 JOB_TYPE_FACET = job_type_job.JobTypeJobFacet(
@@ -95,7 +97,7 @@ def dbt_run_event_failed(
         parent=parent_run_metadata,
     )
 
-
+# todo factorize
 openlineage_logger = logging.getLogger("openlineage.dbt")
 openlineage_logger.setLevel(os.getenv("OPENLINEAGE_DBT_LOGGING", "INFO"))
 openlineage_logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -116,13 +118,53 @@ def main():
     profile_name = parse_single_arg(args, ["--profile"])
     model_selector = parse_single_arg(args, ["--selector"])
     models = parse_multiple_args(args, ["-m", "-s", "--model", "--models", "--select"])
+    # this is not a dbt option
+    consume_structured_logs = parse_single_arg(args, ["--consume-structured-logs"], default="false") # todo naming
+    consume_structured_logs = consume_structured_logs.lower() == "true"
 
-    # We can get this if we have been orchestrated by an external system like airflow
+    if consume_structured_logs:
+        return consume_logs(
+            target=target, project_dir=project_dir, profile_name=profile_name,model_selector=model_selector,
+            models=models
+        )
+    else:
+        return consume_local_artifacts(
+            target=target, project_dir=project_dir, profile_name=profile_name,model_selector=model_selector,
+            models=models
+        )
+
+
+def consume_logs(target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]):
     parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
     parent_run_metadata = None
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
 
+    dbt_command = sys.argv[:]
+
+    processor = DbtStructuredLoggingProcessor(
+        project_dir=project_dir,
+        dbt_command=dbt_command,
+        # todo are below necessary ?
+        producer=PRODUCER,
+        target=target,
+        job_namespace=job_namespace,
+        profile_name=profile_name,
+        logger=logger,
+        models=models,
+        selector=model_selector,
+    )
+
     client = OpenLineageClient()
+
+    for event in processor.parse():
+        client.emit(event)
+
+
+def consume_local_artifacts(target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]):
+    # We can get this if we have been orchestrated by an external system like airflow
+    parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
+    parent_run_metadata = None
+    job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
 
     if parent_id:
         parent_namespace, parent_job_name, parent_run_id = parent_id.split("/")
@@ -131,6 +173,8 @@ def main():
             job_name=parent_job_name,
             job_namespace=parent_namespace,
         )
+
+    client = OpenLineageClient()
 
     processor = DbtLocalArtifactProcessor(
         producer=PRODUCER,
@@ -217,10 +261,10 @@ def main():
         )
 
     for event in tqdm(
-        events + [last_event],
-        desc="Emitting OpenLineage events",
-        initial=1,
-        total=len(events) + 2,
+            events + [last_event],
+            desc="Emitting OpenLineage events",
+            initial=1,
+            total=len(events) + 2,
     ):
         try:
             client.emit(event)
