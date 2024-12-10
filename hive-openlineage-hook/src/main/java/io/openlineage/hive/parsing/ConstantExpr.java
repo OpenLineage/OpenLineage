@@ -25,4 +25,9 @@ public class ConstantExpr extends BaseExpr {
   public ConstantExpr(Object value) {
     this.value = value;
   }
+
+  @Override
+  public String toString() {
+    return String.format("Constant[%s]", value);
+  }
 }

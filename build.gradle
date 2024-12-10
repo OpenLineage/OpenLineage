@@ -56,7 +56,6 @@ subprojects {
             target("src/**/*.java")
             googleJavaFormat()
             removeUnusedImports()
-            // FIXME: Which copyright? Google Inc.?
             licenseHeader("""/*
  * Copyright \$YEAR Google Inc. All Rights Reserved.
  *

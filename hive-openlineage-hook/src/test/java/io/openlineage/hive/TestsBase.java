@@ -134,10 +134,10 @@ public abstract class TestsBase {
 
   public List<Link> getBigQueryLinks(String sourceTable, String targetTable)
       throws IOException, InterruptedException {
-    // FIXME: The Links are created asynchronously in the Dataplex backend so there might be a
+    // TODO: The Links are created asynchronously in the Dataplex backend so there might be a
     //  small delay before we can retrieve them.
-    // TODO: Replace with a more robust retry strategy
-    Thread.sleep(2000);
+    //  Replace with a more robust retry strategy
+    Thread.sleep(3000);
     String source = null;
     String target = null;
     if (sourceTable != null) {
@@ -213,7 +213,8 @@ public abstract class TestsBase {
   }
 
   /** Add the given hook to the appropriate configuration's pre/post/failure hooks property. */
-  public void addExecHooks(
+  @SafeVarargs
+  public final void addExecHooks(
       HiveConf.ConfVars hookType, Class<? extends ExecuteWithHookContext>... hooks) {
     String hooksStr = Arrays.stream(hooks).map(Class::getName).collect(Collectors.joining(","));
     hive.setHiveConfValue(hookType.varname, hooksStr);
@@ -234,7 +235,6 @@ public abstract class TestsBase {
     hive.setHiveConfValue(
         "hive.openlineage.transport.transports",
         "[{\"type\":\"dummy\"}, {\"type\":\"gcplineage\",\"mode\":\"sync\"}]");
-    // TODO: Check if this should instead be "hive.openlineage.job.namespace"
     hive.setHiveConfValue("hive.openlineage.namespace", olJobNamespace);
     hive.setHiveConfValue("hive.openlineage.job.name", olJobName);
     hive.setHiveConfValue("hive.tez.container.size", "1024");

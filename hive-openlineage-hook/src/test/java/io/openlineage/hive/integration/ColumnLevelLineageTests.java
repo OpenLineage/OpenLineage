@@ -31,7 +31,6 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.hive.TestsBase;
 import io.openlineage.hive.hooks.TransformationInfo;
 import io.openlineage.hive.transport.DummyTransport;
-import org.apache.thrift.TException;
 import org.junit.jupiter.api.Test;
 
 public class ColumnLevelLineageTests extends TestsBase {
@@ -39,11 +38,11 @@ public class ColumnLevelLineageTests extends TestsBase {
   private static final String FILE = "file";
 
   @Test
-  void selectStar() throws TException {
+  void selectStar() {
     createManagedHiveTable("t1", "a int, b string");
     runHiveQuery("CREATE TABLE xxx AS SELECT * FROM t1");
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
-    ColumnLevelLineageTestUtils.assertCountColumnDependencies(facet, 1);
+    ColumnLevelLineageTestUtils.assertCountColumnDependencies(facet, 2);
     assertColumnDependsOnType(facet, "a", FILE, "t1", "a", TransformationInfo.identity());
     assertColumnDependsOnType(facet, "b", FILE, "t1", "b", TransformationInfo.identity());
     ColumnLevelLineageTestUtils.assertCountDatasetDependencies(facet, 0);

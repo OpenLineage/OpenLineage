@@ -31,6 +31,6 @@ public class UDTFExpr extends BaseExpr {
 
   @Override
   public String toString() {
-    return String.format("UDTF (%s): [%s]", function, getChildren());
+    return String.format("UDTF[%s](%s)", function, getChildren());
   }
 }

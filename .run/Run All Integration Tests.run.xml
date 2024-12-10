@@ -10,7 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value=":hive-openlineage-hook:integrationTest" />
+          <option value="integrationTest" />
         </list>
       </option>
       <option name="vmOptions" />
