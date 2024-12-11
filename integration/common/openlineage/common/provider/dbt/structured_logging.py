@@ -8,7 +8,7 @@ import os
 import sys
 import subprocess
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Tuple, TypeVar
+from typing import Any, Dict, List, Optional, Tuple
 
 import tempfile
 
@@ -20,13 +20,16 @@ from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
 from openlineage.client.event_v2 import InputDataset, Job, OutputDataset, Run, RunEvent, RunState
 from openlineage.common.utils import parse_single_arg
+from openlineage.common.provider.dbt.processor import ParentRunMetadata
+from openlineage.common.provider.dbt.utils import PRODUCER
+
 from openlineage.client.facet_v2 import (
     job_type_job,
     sql_job,
     error_message_run
 )
 
-from openlineage.common.provider.dbt.processor import ParentRunMetadata
+
 
 openlineage_logger = logging.getLogger("openlineage.dbt")
 openlineage_logger.setLevel(os.getenv("OPENLINEAGE_DBT_LOGGING", "INFO"))
@@ -52,92 +55,6 @@ HANDLED_COMMANDS = [
 RELEVANT_EVENTS = [
     "MainReportVersion", "NodeStart", "SQLQuery", "SQLQueryStatus", "NodeFinished", "CatchableExceptionOnRun"
 ]
-
-__version__ = "1.25.0"
-
-
-def get_dbt_command(dbt_command: List[str]) -> Optional[str]:
-    dbt_command_tokens = set(dbt_command)
-    for command in HANDLED_COMMANDS:
-        if command in dbt_command_tokens:
-            return command
-    return None
-
-def generate_run_event(
-        event_type: RunState,
-        event_time: str,
-        run_id: str,
-        job_name: str,
-        job_namespace: str,
-        inputs: Optional[List[InputDataset]] = None,
-        outputs: Optional[List[OutputDataset]] = None,
-        job_facets: Optional[Dict] = None,
-        run_facets: Optional[Dict] = None,
-) -> RunEvent:
-    inputs = inputs or []
-    outputs = outputs or []
-    job_facets = job_facets or {}
-    run_facets = run_facets or {}
-    return RunEvent(
-        eventType=event_type,
-        eventTime=event_time,
-        run=Run(runId=run_id, facets=run_facets),
-        job=Job(
-            namespace=job_namespace,
-            name=job_name,
-            facets=job_facets,
-        ),
-        inputs=inputs,
-        outputs=outputs,
-        producer=f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
-    )
-
-def get_dbt_profiles_dir(command: List[str]) -> str:
-    """
-    based on this https://docs.getdbt.com/docs/core/connect-data-platform/connection-profiles#advanced-customizing-a-profile-directory
-    gets the profiles directory
-    """
-    from_command = parse_single_arg(command, ["--profiles-dir"])
-    from_env_var = os.getenv("DBT_PROFILES_DIR")
-    default_dir = "~/.dbt/"
-    return (
-        from_command or
-        from_env_var or
-        default_dir
-    )
-
-def get_parent_run_metadata():
-    """
-    the parent job that started the dbt command. Usually the scheduler (Airflow, ...etc) 
-    """
-    parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
-    parent_run_metadata = None
-    if parent_id:
-        parent_namespace, parent_job_name, parent_run_id = parent_id.split("/")
-        parent_run_metadata = ParentRunMetadata(
-            run_id=parent_run_id,
-            job_name=parent_job_name,
-            job_namespace=parent_namespace)
-    return parent_run_metadata
-
-
-def get_node_unique_id(event):
-    return event["data"]["node_info"]["unique_id"]
-
-
-def get_job_type(event) -> Optional[str]:
-    """
-    gets the Run Event's job type
-    """
-    node_unique_id = get_node_unique_id(event)
-    node_type = event["info"]["name"]
-    if node_type == "SQLQuery":
-        return "SQL"
-    elif node_unique_id.startswith("model."):
-        return "MODEL"
-    elif node_unique_id.startswith("snapshot."):
-        return "SNAPSHOT"
-    return None
 
 class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
     should_raise_on_unsupported_command = True
@@ -636,3 +553,92 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
         replaced by cached properties
         """
         pass
+
+
+
+############
+# helpers
+############
+
+def get_dbt_command(dbt_command: List[str]) -> Optional[str]:
+    dbt_command_tokens = set(dbt_command)
+    for command in HANDLED_COMMANDS:
+        if command in dbt_command_tokens:
+            return command
+    return None
+
+def generate_run_event(
+        event_type: RunState,
+        event_time: str,
+        run_id: str,
+        job_name: str,
+        job_namespace: str,
+        inputs: Optional[List[InputDataset]] = None,
+        outputs: Optional[List[OutputDataset]] = None,
+        job_facets: Optional[Dict] = None,
+        run_facets: Optional[Dict] = None,
+) -> RunEvent:
+    inputs = inputs or []
+    outputs = outputs or []
+    job_facets = job_facets or {}
+    run_facets = run_facets or {}
+    return RunEvent(
+        eventType=event_type,
+        eventTime=event_time,
+        run=Run(runId=run_id, facets=run_facets),
+        job=Job(
+            namespace=job_namespace,
+            name=job_name,
+            facets=job_facets,
+        ),
+        inputs=inputs,
+        outputs=outputs,
+        producer=PRODUCER
+    )
+
+def get_dbt_profiles_dir(command: List[str]) -> str:
+    """
+    based on this https://docs.getdbt.com/docs/core/connect-data-platform/connection-profiles#advanced-customizing-a-profile-directory
+    gets the profiles directory
+    """
+    from_command = parse_single_arg(command, ["--profiles-dir"])
+    from_env_var = os.getenv("DBT_PROFILES_DIR")
+    default_dir = "~/.dbt/"
+    return (
+            from_command or
+            from_env_var or
+            default_dir
+    )
+
+def get_parent_run_metadata():
+    """
+    the parent job that started the dbt command. Usually the scheduler (Airflow, ...etc)
+    """
+    parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
+    parent_run_metadata = None
+    if parent_id:
+        parent_namespace, parent_job_name, parent_run_id = parent_id.split("/")
+        parent_run_metadata = ParentRunMetadata(
+            run_id=parent_run_id,
+            job_name=parent_job_name,
+            job_namespace=parent_namespace)
+    return parent_run_metadata
+
+
+def get_node_unique_id(event):
+    return event["data"]["node_info"]["unique_id"]
+
+
+def get_job_type(event) -> Optional[str]:
+    """
+    gets the Run Event's job type
+    """
+    node_unique_id = get_node_unique_id(event)
+    node_type = event["info"]["name"]
+    if node_type == "SQLQuery":
+        return "SQL"
+    elif node_unique_id.startswith("model."):
+        return "MODEL"
+    elif node_unique_id.startswith("snapshot."):
+        return "SNAPSHOT"
+    return None

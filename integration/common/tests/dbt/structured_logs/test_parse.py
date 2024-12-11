@@ -2,8 +2,8 @@ import pytest
 import attr
 from enum import Enum
 import json
-from openlineage.common.provider.dbt.local_structured_logging import DbtStructuredLoggingProcessor
 
+from openlineage.common.provider.dbt.structured_logging import DbtStructuredLoggingProcessor
 from openlineage.common.test import match
 
 
@@ -13,7 +13,7 @@ from openlineage.common.test import match
         # successful pg run
         (
             "postgres",
-            "./tests/dbt/structured_logs/postgres/run/logs/successful_run.log",
+            "./tests/dbt/structured_logs/postgres/run/logs/successful_run_logs.jsonl",
             "./tests/dbt/structured_logs/postgres/run/results/successful_run_ol_events.json",
             "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
         ),
@@ -21,7 +21,7 @@ from openlineage.common.test import match
         # failed pg run. Model has SQL error in it
         (
             "postgres",
-            "./tests/dbt/structured_logs/postgres/run/logs/failed_run.log",
+            "./tests/dbt/structured_logs/postgres/run/logs/failed_run_logs.jsonl",
             "./tests/dbt/structured_logs/postgres/run/results/failed_run_ol_events.json",
             "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
         ),
@@ -29,14 +29,14 @@ from openlineage.common.test import match
         # successful Snowflake run
         (
             "snowflake",
-            "./tests/dbt/structured_logs/snowflake/run/logs/successful_run.log",
+            "./tests/dbt/structured_logs/snowflake/run/logs/successful_run_logs.jsonl",
             "./tests/dbt/structured_logs/snowflake/run/results/successful_run_ol_events.json",
             "./tests/dbt/structured_logs/snowflake/run/target/manifest.json"
         ),
         # failed snowflake run
         (
             "snowflake",
-            "./tests/dbt/structured_logs/snowflake/run/logs/failed_run.log",
+            "./tests/dbt/structured_logs/snowflake/run/logs/failed_run_logs.jsonl",
             "./tests/dbt/structured_logs/snowflake/run/results/failed_run_ol_events.json",
             "./tests/dbt/structured_logs/snowflake/run/target/manifest.json"
         ),
@@ -48,7 +48,7 @@ def test_parse(target, logs_path, expected_ol_events_path, manifest_path, monkey
         return open(logs_path).readlines()
 
     monkeypatch.setattr(
-        "openlineage.common.provider.dbt.local_structured_logging.DbtStructuredLoggingProcessor._run_dbt_command",
+        "openlineage.common.provider.dbt.structured_logging.DbtStructuredLoggingProcessor._run_dbt_command",
         dummy_run_dbt_command
     )
 
