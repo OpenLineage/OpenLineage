@@ -12,6 +12,9 @@ import lombok.experimental.UtilityClass;
 public class NameNormalizer {
   /** Normalizes the input stream into the version_with_underscores_only. */
   public static String normalize(String input) {
+    if (input == null) {
+      return "";
+    }
     /*
     First, trim non-letters on both ends.
      */
