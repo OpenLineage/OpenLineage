@@ -340,8 +340,6 @@
           }
         },
         "errorMessage":{
-          "_producer":"https://github.com/OpenLineage/OpenLineage/tree/1.25.0/client/python",
-          "_schemaURL":"https://openlineage.io/spec/facets/1-0-1/ErrorMessageRunFacet.json#/$defs/ErrorMessageRunFacet",
           "message":"Database Error in model orders (models/orders.sql)\n  syntax error at or near \"final\"\n  LINE 43: final as (\n           ^\n  compiled code at target/run/jaffle_shop/models/orders.sql",
           "programmingLanguage":"sql",
           "stackTrace":null
@@ -502,8 +500,6 @@
       "runId":"{{ any(result) }}",
       "facets":{
         "errorMessage":{
-          "_producer":"https://github.com/OpenLineage/OpenLineage/tree/1.25.0/client/python",
-          "_schemaURL":"https://openlineage.io/spec/facets/1-0-1/ErrorMessageRunFacet.json#/$defs/ErrorMessageRunFacet",
           "message":"Command `dbt run` failed at 15:58:09.771069 after 6.60 seconds",
           "programmingLanguage":"python",
           "stackTrace":null
