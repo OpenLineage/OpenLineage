@@ -91,15 +91,14 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         super().__init__(*args, **kwargs)
         self.jinja_environment: Optional[Environment] = None
 
-        self.absolute_dir = os.path.abspath(project_dir)
-        # this doesn't really work when macros are used
+        absolute_dir = os.path.abspath(project_dir)
         dbt_project = self.load_yaml_with_jinja(os.path.join(project_dir, "dbt_project.yml"))
         self.target_path = target_path
         target_path = self.build_target_path(dbt_project)
 
-        self.manifest_path = os.path.join(self.absolute_dir, target_path, "manifest.json")
-        self.run_result_path = os.path.join(self.absolute_dir, target_path, "run_results.json")
-        self.catalog_path = os.path.join(self.absolute_dir, target_path, "catalog.json")
+        self.manifest_path = os.path.join(absolute_dir, target_path, "manifest.json")
+        self.run_result_path = os.path.join(absolute_dir, target_path, "run_results.json")
+        self.catalog_path = os.path.join(absolute_dir, target_path, "catalog.json")
 
         self.target = target
         self.project_name = dbt_project["name"]
@@ -153,7 +152,6 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         if not self._use_extended_job_name:
             return job_name
 
-        # components need to be separated using __ or --
         if self.profile_name:
             job_name = f"{job_name}-{self.profile_name}"
         if self.models:
