@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.vendor.iceberg.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.InputDatasetFacet;
+import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OutputDatasetFacet;
 import io.openlineage.spark.agent.vendor.iceberg.metrics.IcebergMetricsReporterInjector;
 import io.openlineage.spark.api.CustomFacetBuilder;
@@ -32,6 +33,12 @@ public class IcebergEventHandlerFactory implements OpenLineageEventHandlerFactor
   public Collection<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>
       createOutputDatasetFacetBuilders(OpenLineageContext context) {
     return Arrays.asList(new IcebergCommitReportOutputDatasetFacetBuilder(context));
+  }
+
+  @Override
+  public Collection<PartialFunction<LogicalPlan, List<OutputDataset>>>
+      createOutputDatasetQueryPlanVisitors(OpenLineageContext context) {
+    return Arrays.asList(new IcebergMetricsReporterInjector(context));
   }
 
   @Override

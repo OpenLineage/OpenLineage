@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.vendor.iceberg.metrics;
 import com.google.common.annotations.VisibleForTesting;
 import io.openlineage.spark.agent.facets.IcebergCommitReportOutputDatasetFacet;
 import io.openlineage.spark.agent.facets.IcebergScanReportInputDatasetFacet;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -39,15 +40,15 @@ public class OpenLineageMetricsReporter implements MetricsReporter {
   public OpenLineageMetricsReporter(MetricsReporter delegate) {
     log.debug("Creating OpenLineageMetricsReporter with delegate: {}", delegate);
     this.delegate = Optional.of(delegate);
-    this.commitReportFacets = new LinkedList<>();
-    this.scanReportFacets = new LinkedList<>();
+    this.commitReportFacets = Collections.synchronizedList(new LinkedList<>());
+    this.scanReportFacets = Collections.synchronizedList(new LinkedList<>());
   }
 
   public OpenLineageMetricsReporter() {
     log.debug("Creating OpenLineageMetricsReporter without delegate");
     this.delegate = Optional.empty();
-    this.commitReportFacets = new LinkedList<>();
-    this.scanReportFacets = new LinkedList<>();
+    this.commitReportFacets = Collections.synchronizedList(new LinkedList<>());
+    this.scanReportFacets = Collections.synchronizedList(new LinkedList<>());
   }
 
   @Override
@@ -58,26 +59,28 @@ public class OpenLineageMetricsReporter implements MetricsReporter {
 
   @Override
   public void report(MetricsReport metricsReport) {
-    log.debug("Reporting metrics: {} to {}", metricsReport, this);
-    delegate.ifPresent(delegate -> delegate.report(metricsReport));
-
     if (metricsReport instanceof CommitReport) {
-      commitReportFacets.add(CommitReportsFacetBuilder.from((CommitReport) metricsReport));
+      synchronized (commitReportFacets) {
+        commitReportFacets.add(CommitReportsFacetBuilder.from((CommitReport) metricsReport));
+        if (commitReportFacets.size() > MAX_FACETS_STORED) {
+          log.debug("Removing oldest commit report facet");
+          commitReportFacets.remove(0);
+        }
+      }
       log.debug("CommitReportFacet added to OpenLineageMetricsReporter {}", this);
     } else if (metricsReport instanceof ScanReport) {
+      synchronized (scanReportFacets) {
+        scanReportFacets.add(ScanReportsFacetBuilder.from((ScanReport) metricsReport));
+        if (scanReportFacets.size() > MAX_FACETS_STORED) {
+          log.debug("Removing oldest scan report facet");
+          scanReportFacets.remove(0);
+        }
+      }
       log.debug("ScanReportFacet added to OpenLineageMetricsReporter");
-      scanReportFacets.add(ScanReportsFacetBuilder.from((ScanReport) metricsReport));
     }
 
-    if (scanReportFacets.size() > MAX_FACETS_STORED) {
-      log.debug("Removing oldest scan report facet");
-      scanReportFacets.remove(0);
-    }
-
-    if (commitReportFacets.size() > MAX_FACETS_STORED) {
-      log.debug("Removing oldest commit report facet");
-      commitReportFacets.remove(0);
-    }
+    log.debug("Reported metrics: {} to {}", metricsReport, this);
+    delegate.ifPresent(delegate -> delegate.report(metricsReport));
   }
 
   @VisibleForTesting

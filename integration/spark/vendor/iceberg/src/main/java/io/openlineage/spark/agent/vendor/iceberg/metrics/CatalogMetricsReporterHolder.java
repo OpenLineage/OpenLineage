@@ -8,6 +8,8 @@ package io.openlineage.spark.agent.vendor.iceberg.metrics;
 import com.google.common.annotations.VisibleForTesting;
 import io.openlineage.spark.agent.facets.IcebergCommitReportOutputDatasetFacet;
 import io.openlineage.spark.agent.facets.IcebergScanReportInputDatasetFacet;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.VendorsContext;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,13 +31,28 @@ import org.apache.iceberg.metrics.MetricsReporter;
 @EqualsAndHashCode
 public class CatalogMetricsReporterHolder {
 
+  public static final String VENDOR_CONTEXT_KEY = "iceberg.catalogMetricsReporterHolder";
+
   private final Map<String, OpenLineageMetricsReporter> catalogMetricsReporter = new HashMap<>();
-  ;
 
   private CatalogMetricsReporterHolder() {}
 
-  public void register(Catalog catalog) {
-    if (catalogMetricsReporter.containsKey(catalog.name())) {
+  public static void register(OpenLineageContext context, Catalog catalog) {
+    VendorsContext vendorsContext = context.getVendors().getVendorsContext();
+
+    if (!vendorsContext.contains(VENDOR_CONTEXT_KEY)) {
+      log.debug("Creating new catalog metrics reporter holder");
+      vendorsContext.register(VENDOR_CONTEXT_KEY, new CatalogMetricsReporterHolder());
+    }
+
+    CatalogMetricsReporterHolder holder =
+        vendorsContext
+            .fromVendorsContext(VENDOR_CONTEXT_KEY)
+            .map(CatalogMetricsReporterHolder.class::cast)
+            .get();
+
+    if (holder.catalogMetricsReporter.containsKey(catalog.name())) {
+      log.debug("Catalog already registered: {}", catalog);
       return;
     }
     log.debug("Registering catalog: {}", catalog);
@@ -54,27 +71,32 @@ public class CatalogMetricsReporterHolder {
       OpenLineageMetricsReporter openLineageMetricsReporter;
       if (existing instanceof OpenLineageMetricsReporter) {
         // in case the metrics reporter is manually set to OpenLineageMetricsReporter
-        catalogMetricsReporter.put(catalog.name(), (OpenLineageMetricsReporter) existing);
+        holder.catalogMetricsReporter.putIfAbsent(
+            catalog.name(), (OpenLineageMetricsReporter) existing);
         log.debug(
-            "Existing OpenLineageMetricsReporter found, replacing metrics reporter map with: {}",
-            existing);
+            "Existing OpenLineageMetricsReporter found, replacing metrics reporter map with: {} for runId {}",
+            existing,
+            context.getRunUuid());
         return;
       }
 
       if (existing != null) {
         log.debug("Existing metrics reporter found: {}", existing.getClass().getName());
         openLineageMetricsReporter = new OpenLineageMetricsReporter(existing);
+      } else if (holder.catalogMetricsReporter.containsKey(catalog.name())) {
+        log.debug("Use reporter available in the holder");
+        openLineageMetricsReporter = holder.catalogMetricsReporter.get(catalog.name());
       } else {
         log.debug("No existing metrics reporter found");
         openLineageMetricsReporter = new OpenLineageMetricsReporter();
       }
 
       // set metrics reporter in context
-      catalogMetricsReporter.put(catalog.name(), openLineageMetricsReporter);
+      holder.catalogMetricsReporter.put(catalog.name(), openLineageMetricsReporter);
 
       // set metrics reporter in catalog
       metricsReporterField.set(catalog, openLineageMetricsReporter);
-      log.info("Injected metrics reporter into Iceberg catalog");
+      log.info("Injected metrics reporter into Iceberg catalog and runId {}", context.getRunUuid());
     } catch (IllegalAccessException e) {
       log.warn("Unable to inject metrics reporter", e);
     }
@@ -87,19 +109,29 @@ public class CatalogMetricsReporterHolder {
    * @param snapshotId snapshot id
    */
   public Optional<IcebergScanReportInputDatasetFacet> getScanReportFacet(long snapshotId) {
-    Optional<IcebergScanReportInputDatasetFacet> scanReportInputDatasetFacet =
-        catalogMetricsReporter.values().stream()
-            .flatMap(reporter -> reporter.getScanReportFacets().stream())
-            .filter(report -> report.getSnapshotId() == snapshotId)
-            .findFirst();
-
-    if (scanReportInputDatasetFacet.isPresent()) {
-      log.debug("Returning scan report facet for snapshot id: {}", snapshotId);
-    } else {
-      log.debug("No scan report facet found for snapshot id: {}", snapshotId);
+    Optional<IcebergScanReportInputDatasetFacet> scanReport = Optional.empty();
+    for (OpenLineageMetricsReporter reporter : catalogMetricsReporter.values()) {
+      synchronized (reporter.getCommitReportFacets()) {
+        scanReport =
+            reporter.getScanReportFacets().stream()
+                .filter(facet -> facet.getSnapshotId() == snapshotId)
+                .findAny();
+      }
     }
 
-    return scanReportInputDatasetFacet;
+    if (log.isDebugEnabled()) {
+      if (catalogMetricsReporter.isEmpty()) {
+        log.debug("Catalog metrics reporter is empty");
+      }
+
+      if (scanReport.isPresent()) {
+        log.debug("Returning commit report facet for snapshot id: {}", snapshotId);
+      } else {
+        log.debug("No commit report facet found for snapshot id: {}", snapshotId);
+      }
+    }
+
+    return scanReport;
   }
 
   /**
@@ -109,25 +141,29 @@ public class CatalogMetricsReporterHolder {
    * @param snapshotId snapshot id
    */
   public Optional<IcebergCommitReportOutputDatasetFacet> getCommitReportFacet(long snapshotId) {
-    Optional<IcebergCommitReportOutputDatasetFacet> commitReportOutputDatasetFacet =
-        catalogMetricsReporter.values().stream()
-            .flatMap(reporter -> reporter.getCommitReportFacets().stream())
-            .filter(facet -> facet.getSnapshotId() == snapshotId)
-            .findFirst();
+    Optional<IcebergCommitReportOutputDatasetFacet> commitReport = Optional.empty();
+    for (OpenLineageMetricsReporter reporter : catalogMetricsReporter.values()) {
+      synchronized (reporter.getCommitReportFacets()) {
+        commitReport =
+            reporter.getCommitReportFacets().stream()
+                .filter(facet -> facet.getSnapshotId() == snapshotId)
+                .findAny();
+      }
+    }
 
     if (log.isDebugEnabled()) {
       if (catalogMetricsReporter.isEmpty()) {
         log.debug("Catalog metrics reporter is empty");
       }
 
-      if (commitReportOutputDatasetFacet.isPresent()) {
+      if (commitReport.isPresent()) {
         log.debug("Returning commit report facet for snapshot id: {}", snapshotId);
       } else {
         log.debug("No commit report facet found for snapshot id: {}", snapshotId);
       }
     }
 
-    return commitReportOutputDatasetFacet;
+    return commitReport;
   }
 
   @VisibleForTesting
@@ -138,13 +174,5 @@ public class CatalogMetricsReporterHolder {
   @VisibleForTesting
   void clear() {
     catalogMetricsReporter.clear();
-  }
-
-  private static class SingletonHolder {
-    public static final CatalogMetricsReporterHolder instance = new CatalogMetricsReporterHolder();
-  }
-
-  public static CatalogMetricsReporterHolder getInstance() {
-    return CatalogMetricsReporterHolder.SingletonHolder.instance;
   }
 }

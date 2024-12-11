@@ -25,6 +25,8 @@ import org.apache.spark.sql.catalyst.plans.logical.BinaryCommand;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.UnaryCommand;
 import org.apache.spark.sql.connector.catalog.CatalogPlugin;
+import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
+import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 
 /**
  * Declared as a QueryPlanVisitor to be able to inject the InMemoryMetricsReporter into the Iceberg
@@ -72,6 +74,12 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
    * @return
    */
   private Optional<CatalogPlugin> getCatalog(LogicalPlan plan) {
+    if (plan instanceof DataSourceV2Relation) {
+      return Optional.ofNullable(((DataSourceV2Relation) plan).catalog().get());
+    } else if (plan instanceof DataSourceV2ScanRelation) {
+      return Optional.ofNullable(((DataSourceV2ScanRelation) plan).relation().catalog().get());
+    }
+
     Optional<CatalogPlugin> catalog = getCatalogFromCaseClass(plan);
     if (catalog.isPresent()) {
       return catalog;
@@ -138,7 +146,7 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
           return Collections.emptyList();
         }
 
-        CatalogMetricsReporterHolder.getInstance().register(rootCatalog);
+        CatalogMetricsReporterHolder.register(context, rootCatalog);
         return Collections.emptyList();
       } catch (IllegalAccessException e) {
         // do nothing

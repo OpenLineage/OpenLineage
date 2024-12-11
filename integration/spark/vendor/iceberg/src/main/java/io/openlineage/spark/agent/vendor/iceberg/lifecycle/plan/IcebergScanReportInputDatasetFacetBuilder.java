@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent.vendor.iceberg.lifecycle.plan;
 
+import static io.openlineage.spark.agent.vendor.iceberg.metrics.CatalogMetricsReporterHolder.VENDOR_CONTEXT_KEY;
+
 import io.openlineage.client.OpenLineage.InputDatasetFacet;
 import io.openlineage.spark.agent.vendor.iceberg.metrics.CatalogMetricsReporterHolder;
 import io.openlineage.spark.api.CustomFacetBuilder;
@@ -20,8 +22,11 @@ import org.apache.spark.sql.connector.read.Scan;
 public class IcebergScanReportInputDatasetFacetBuilder
     extends CustomFacetBuilder<Scan, InputDatasetFacet> {
 
+  private final OpenLineageContext context;
+
   public IcebergScanReportInputDatasetFacetBuilder(OpenLineageContext context) {
     super();
+    this.context = context;
   }
 
   @Override
@@ -45,8 +50,12 @@ public class IcebergScanReportInputDatasetFacetBuilder
       }
 
       long snapshotId = table.currentSnapshot().snapshotId();
-      CatalogMetricsReporterHolder.getInstance()
-          .getScanReportFacet(snapshotId)
+      context
+          .getVendors()
+          .getVendorsContext()
+          .fromVendorsContext(VENDOR_CONTEXT_KEY)
+          .map(CatalogMetricsReporterHolder.class::cast)
+          .flatMap(c -> c.getScanReportFacet(snapshotId))
           .ifPresent(f -> consumer.accept("icebergScanReport", f));
     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
       // something got wrong

@@ -6,12 +6,14 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.AppendData;
@@ -43,12 +45,14 @@ public class AppendDataDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
     // Needs to cast to logical plan despite IntelliJ claiming otherwise.
     LogicalPlan logicalPlan = (LogicalPlan) ((AppendData) x).table();
 
-    if (logicalPlan instanceof DataSourceV2Relation) {
-      return new DataSourceV2RelationOutputDatasetBuilder(context, factory)
-          .apply(event, (DataSourceV2Relation) logicalPlan);
-    } else {
-      return Collections.emptyList();
-    }
+    return delegate(
+            context.getOutputDatasetQueryPlanVisitors(), context.getOutputDatasetBuilders(), event)
+        .applyOrElse(
+            logicalPlan,
+            ScalaConversionUtils.toScalaFn(
+                (lp) -> Collections.<OpenLineage.OutputDataset>emptyList()))
+        .stream()
+        .collect(Collectors.toList());
   }
 
   @Override

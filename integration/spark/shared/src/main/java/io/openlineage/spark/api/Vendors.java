@@ -55,7 +55,7 @@ public interface Vendors {
     // and the app
     // https://github.com/OpenLineage/OpenLineage/issues/1860
     // ServiceLoader<Vendor> serviceLoader = ServiceLoader.load(Vendor.class);
-    return new VendorsImpl(vendors);
+    return new VendorsImpl(vendors, new VendorsContext());
   }
 
   static Vendors empty() {
@@ -70,10 +70,17 @@ public interface Vendors {
       public Collection<OpenLineageEventHandlerFactory> getEventHandlerFactories() {
         return Collections.emptyList();
       }
+
+      @Override
+      public VendorsContext getVendorsContext() {
+        return new VendorsContext();
+      }
     };
   }
 
   Collection<VisitorFactory> getVisitorFactories();
 
   Collection<OpenLineageEventHandlerFactory> getEventHandlerFactories();
+
+  VendorsContext getVendorsContext();
 }

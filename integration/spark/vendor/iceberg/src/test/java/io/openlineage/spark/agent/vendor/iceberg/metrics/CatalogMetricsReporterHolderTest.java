@@ -5,10 +5,14 @@
 
 package io.openlineage.spark.agent.vendor.iceberg.metrics;
 
+import static io.openlineage.spark.agent.vendor.iceberg.metrics.CatalogMetricsReporterHolder.VENDOR_CONTEXT_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.VendorsContext;
 import java.util.List;
 import org.apache.iceberg.Table;
 import org.apache.iceberg.catalog.Catalog;
@@ -22,22 +26,24 @@ import org.junit.jupiter.api.Test;
 
 public class CatalogMetricsReporterHolderTest {
 
+  public static final String CATALOG_NAME = "catalog-name";
   TestingIcebergCatalog icebergCatalog = new TestingIcebergCatalog();
+  OpenLineageContext context = mock(OpenLineageContext.class, RETURNS_DEEP_STUBS);
 
   @BeforeEach
   public void setup() {
-    CatalogMetricsReporterHolder.getInstance().clear();
+    when(context.getVendors().getVendorsContext()).thenReturn(new VendorsContext());
   }
 
   @Test
   void testRegister() {
-    CatalogMetricsReporterHolder.getInstance().register(icebergCatalog);
+    CatalogMetricsReporterHolder.register(context, icebergCatalog);
 
     assertThat(icebergCatalog.metricsReporter)
         .isNotNull()
         .isInstanceOf(OpenLineageMetricsReporter.class);
 
-    assertThat(CatalogMetricsReporterHolder.getInstance().getReporterFor("catalog-name"))
+    assertThat(getMetricHolder().getReporterFor(CATALOG_NAME))
         .isEqualTo(icebergCatalog.metricsReporter);
   }
 
@@ -45,8 +51,8 @@ public class CatalogMetricsReporterHolderTest {
   void testRegisterRunsOnce() {
     TestingIcebergCatalog anotherCatalog = new TestingIcebergCatalog();
 
-    CatalogMetricsReporterHolder.getInstance().register(icebergCatalog);
-    CatalogMetricsReporterHolder.getInstance().register(anotherCatalog);
+    CatalogMetricsReporterHolder.register(context, icebergCatalog);
+    CatalogMetricsReporterHolder.register(context, anotherCatalog);
 
     assertThat(anotherCatalog.metricsReporter).isNull();
   }
@@ -56,10 +62,9 @@ public class CatalogMetricsReporterHolderTest {
     MetricsReporter existingReporter = mock(MetricsReporter.class);
     icebergCatalog.metricsReporter = existingReporter;
 
-    CatalogMetricsReporterHolder.getInstance().register(icebergCatalog);
+    CatalogMetricsReporterHolder.register(context, icebergCatalog);
 
-    assertThat(
-            CatalogMetricsReporterHolder.getInstance().getReporterFor("catalog-name").getDelegate())
+    assertThat(getMetricHolder().getReporterFor(CATALOG_NAME).getDelegate())
         .isEqualTo(existingReporter);
   }
 
@@ -68,10 +73,9 @@ public class CatalogMetricsReporterHolderTest {
     MetricsReporter existingReporter = mock(OpenLineageMetricsReporter.class);
     icebergCatalog.metricsReporter = existingReporter;
 
-    CatalogMetricsReporterHolder.getInstance().register(icebergCatalog);
+    CatalogMetricsReporterHolder.register(context, icebergCatalog);
 
-    assertThat(CatalogMetricsReporterHolder.getInstance().getReporterFor("catalog-name"))
-        .isEqualTo(existingReporter);
+    assertThat(getMetricHolder().getReporterFor(CATALOG_NAME)).isEqualTo(existingReporter);
   }
 
   @Test
@@ -79,13 +83,12 @@ public class CatalogMetricsReporterHolderTest {
     ScanReport scanReport = mock(ScanReport.class);
     when(scanReport.snapshotId()).thenReturn(1L);
 
-    CatalogMetricsReporterHolder.getInstance().register(icebergCatalog);
-    icebergCatalog.metricsReporter =
-        CatalogMetricsReporterHolder.getInstance().getReporterFor("catalog-name");
+    CatalogMetricsReporterHolder.register(context, icebergCatalog);
+    icebergCatalog.metricsReporter = getMetricHolder().getReporterFor(CATALOG_NAME);
 
     icebergCatalog.metricsReporter.report(scanReport);
 
-    assertThat(CatalogMetricsReporterHolder.getInstance().getScanReportFacet(1L))
+    assertThat(getMetricHolder().getScanReportFacet(1L))
         .isPresent()
         .get()
         .extracting("snapshotId")
@@ -97,17 +100,21 @@ public class CatalogMetricsReporterHolderTest {
     CommitReport commitReport = mock(CommitReport.class);
     when(commitReport.snapshotId()).thenReturn(1L);
 
-    CatalogMetricsReporterHolder.getInstance().register(icebergCatalog);
-    icebergCatalog.metricsReporter =
-        CatalogMetricsReporterHolder.getInstance().getReporterFor("catalog-name");
+    CatalogMetricsReporterHolder.register(context, icebergCatalog);
+    icebergCatalog.metricsReporter = getMetricHolder().getReporterFor(CATALOG_NAME);
 
     icebergCatalog.metricsReporter.report(commitReport);
 
-    assertThat(CatalogMetricsReporterHolder.getInstance().getCommitReportFacet(1L))
+    assertThat(getMetricHolder().getCommitReportFacet(1L))
         .isPresent()
         .get()
         .extracting("snapshotId")
         .isEqualTo(1L);
+  }
+
+  private CatalogMetricsReporterHolder getMetricHolder() {
+    return ((CatalogMetricsReporterHolder)
+        context.getVendors().getVendorsContext().fromVendorsContext(VENDOR_CONTEXT_KEY).get());
   }
 
   private static class TestingIcebergCatalog implements Catalog {
@@ -133,7 +140,7 @@ public class CatalogMetricsReporterHolderTest {
     }
 
     public String name() {
-      return "catalog-name";
+      return CATALOG_NAME;
     }
   }
 }
