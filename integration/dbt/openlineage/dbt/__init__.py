@@ -21,14 +21,13 @@ from openlineage.common.provider.dbt import (
     UnsupportedDbtCommand,
 )
 from openlineage.common.utils import parse_multiple_args, parse_single_arg
+from openlineage.common.provider.dbt.structured_logging import DbtStructuredLoggingProcessor
+from openlineage.common.provider.dbt.utils import PRODUCER
 from tqdm import tqdm
 
 __version__ = "1.26.0"
 
-from client.python.docs.conf import project
-from integration.common.openlineage.common.provider.dbt.local_structured_logging import DbtStructuredLoggingProcessor
 
-PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
 JOB_TYPE_FACET = job_type_job.JobTypeJobFacet(
     jobType="JOB",
     integration="DBT",
@@ -97,7 +96,6 @@ def dbt_run_event_failed(
         parent=parent_run_metadata,
     )
 
-# todo factorize
 openlineage_logger = logging.getLogger("openlineage.dbt")
 openlineage_logger.setLevel(os.getenv("OPENLINEAGE_DBT_LOGGING", "INFO"))
 openlineage_logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -119,11 +117,11 @@ def main():
     model_selector = parse_single_arg(args, ["--selector"])
     models = parse_multiple_args(args, ["-m", "-s", "--model", "--models", "--select"])
     # this is not a dbt option
-    consume_structured_logs = parse_single_arg(args, ["--consume-structured-logs"], default="false") # todo naming
-    consume_structured_logs = consume_structured_logs.lower() == "true"
+    consume_structured_logs_option = parse_single_arg(args, ["--consume-structured-logs"], default="false")
+    consume_structured_logs_option = consume_structured_logs_option.lower() == "true"
 
-    if consume_structured_logs:
-        return consume_logs(
+    if consume_structured_logs_option:
+        return consume_structured_logs(
             target=target, project_dir=project_dir, profile_name=profile_name,model_selector=model_selector,
             models=models
         )
@@ -134,9 +132,7 @@ def main():
         )
 
 
-def consume_logs(target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]):
-    parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
-    parent_run_metadata = None
+def consume_structured_logs(target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]):
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
 
     dbt_command = sys.argv[:]
@@ -144,7 +140,6 @@ def consume_logs(target: str, project_dir: str, profile_name: str, model_selecto
     processor = DbtStructuredLoggingProcessor(
         project_dir=project_dir,
         dbt_command=dbt_command,
-        # todo are below necessary ?
         producer=PRODUCER,
         target=target,
         job_namespace=job_namespace,
@@ -161,7 +156,6 @@ def consume_logs(target: str, project_dir: str, profile_name: str, model_selecto
 
 
 def consume_local_artifacts(target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]):
-    # We can get this if we have been orchestrated by an external system like airflow
     parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
     parent_run_metadata = None
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
