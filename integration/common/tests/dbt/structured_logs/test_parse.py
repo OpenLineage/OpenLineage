@@ -51,10 +51,7 @@ def test_parse(target, logs_path, expected_ol_events_path, manifest_path, monkey
         "openlineage.common.provider.dbt.local_structured_logging.DbtStructuredLoggingProcessor._run_dbt_command",
         dummy_run_dbt_command
     )
-    monkeypatch.setattr(
-        "openlineage.common.provider.dbt.local_structured_logging.DbtStructuredLoggingProcessor.compile_manifest_path",
-        manifest_path
-    )
+
 
     processor = DbtStructuredLoggingProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -64,6 +61,8 @@ def test_parse(target, logs_path, expected_ol_events_path, manifest_path, monkey
         dbt_command=f"dbt --log-format json run --profiles-dir {get_profiles_dir()} --target snowflake".split(" ")
     )
 
+    processor.manifest_path = manifest_path
+
 
     actual_ol_events = list(ol_event_to_dict(event) for event in processor.parse())
     expected_ol_events = json.load(open(expected_ol_events_path))
@@ -72,26 +71,6 @@ def test_parse(target, logs_path, expected_ol_events_path, manifest_path, monkey
         f.write(json.dumps(actual_ol_events))
 
     assert match(expected=expected_ol_events, result=actual_ol_events)
-
-
-#todo test when there are errors that are triggered as well
-############
-# fixtures
-############
-
-
-@pytest.fixture(autouse=True)
-def patch_functions(monkeypatch):
-    def do_nothing(*args, **kwargs):
-        pass
-
-    monkeypatch.setattr(
-        "openlineage.common.provider.dbt.local_structured_logging.DbtStructuredLoggingProcessor._compile_manifest",
-        do_nothing
-    )
-
-
-# todo test the parent/child relationships for the events
 
 
 ############

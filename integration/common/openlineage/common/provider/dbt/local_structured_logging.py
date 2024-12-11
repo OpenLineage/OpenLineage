@@ -4,46 +4,26 @@
 import json
 import logging
 import os
-import itertools
-#import re
+
 import sys
-import hashlib, base64
 import subprocess
 from functools import cached_property
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple, TypeVar
 
-#from jinja2 import Environment, Undefined
 import tempfile
 
 from openlineage.common.provider.dbt.processor import ModelNode
 from openlineage.common.utils import get_from_nullable_chain
-#from mypyc.irbuild.format_str_tokenizer import unique
 
-#from integration.common.tests.dbt.test_dbt_local import parent_run_metadata
-#from mypyc.ir.ops import Value
-#from openlineage.common.utils import get_from_nullable_chain
 
-from openlineage.client.uuid import generate_static_uuid, generate_new_uuid
+from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
-from openlineage.client.event_v2 import Dataset, InputDataset, Job, OutputDataset, Run, RunEvent, RunState
+from openlineage.client.event_v2 import InputDataset, Job, OutputDataset, Run, RunEvent, RunState
 from openlineage.common.utils import parse_single_arg
 from openlineage.client.facet_v2 import (
-    #BaseFacet,
-    #DatasetFacet,
-    #InputDatasetFacet,
-    #JobFacet,
-    #OutputDatasetFacet,
-    #data_quality_assertions_dataset,
-    #datasource_dataset,
-    #documentation_dataset,
     job_type_job,
     sql_job,
     error_message_run
-    #output_statistics_output_dataset,
-    #parent_run,
-    #schema_dataset,
-    #sql_job,
 )
 
 from openlineage.common.provider.dbt.processor import ParentRunMetadata
@@ -51,7 +31,7 @@ from openlineage.common.provider.dbt.processor import ParentRunMetadata
 openlineage_logger = logging.getLogger("openlineage.dbt")
 openlineage_logger.setLevel(os.getenv("OPENLINEAGE_DBT_LOGGING", "INFO"))
 openlineage_logger.addHandler(logging.StreamHandler(sys.stdout))
-# deprecated dbtol logger
+# deprecated dbt-ol logger
 logger = logging.getLogger("dbtol")
 for handler in openlineage_logger.handlers:
     logger.addHandler(handler)
@@ -68,18 +48,14 @@ HANDLED_COMMANDS = [
     "run", "build", "test", "seed", "snapshot"
 ]
 
-# when executing models
-# Full list of adapter events here https://github.com/dbt-labs/dbt-adapters/blob/d56ca3494c51cbb9c1546e207626f3444be468cc/dbt/adapters/events/types.py#L4
-# And for dbt core events here https://github.com/dbt-labs/dbt-core/blob/fd6ec71dabae91f4f243362acbcda6dc1beccec6/core/dbt/events/types.py#L1349
-#NON_RELEVANT_EVENTS = [
-#    "LogStartLine", "NodeCompiling", "WritingInjectedSQLForNode", "JinjaLogDebug",
-#    "ConnectionUsed", "NewConnectionOpening", "LogModelResult", "SQLCommit"
-#]
-#
+#todo not used
 RELEVANT_EVENTS = [
     "MainReportVersion", "NodeStart", "SQLQuery", "SQLQueryStatus", "NodeFinished", "CatchableExceptionOnRun"
 ]
-    
+
+__version__ = "1.25.0"
+
+
 def get_dbt_command(dbt_command: List[str]) -> Optional[str]:
     dbt_command_tokens = set(dbt_command)
     for command in HANDLED_COMMANDS:
@@ -112,10 +88,56 @@ def generate_run_event(
             facets=job_facets,
         ),
         inputs=inputs,
-        outputs=outputs
-        # producer=PRODUCER, #todo common to all dbt
+        outputs=outputs,
+        producer=f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
     )
 
+def get_dbt_profiles_dir(command: List[str]) -> str:
+    """
+    based on this https://docs.getdbt.com/docs/core/connect-data-platform/connection-profiles#advanced-customizing-a-profile-directory
+    gets the profiles directory
+    """
+    from_command = parse_single_arg(command, ["--profiles-dir"])
+    from_env_var = os.getenv("DBT_PROFILES_DIR")
+    default_dir = "~/.dbt/"
+    return (
+        from_command or
+        from_env_var or
+        default_dir
+    )
+
+def get_parent_run_metadata():
+    """
+    the parent job that started the dbt command. Usually the scheduler (Airflow, ...etc) 
+    """
+    parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
+    parent_run_metadata = None
+    if parent_id:
+        parent_namespace, parent_job_name, parent_run_id = parent_id.split("/")
+        parent_run_metadata = ParentRunMetadata(
+            run_id=parent_run_id,
+            job_name=parent_job_name,
+            job_namespace=parent_namespace)
+    return parent_run_metadata
+
+
+def get_node_unique_id(event):
+    return event["data"]["node_info"]["unique_id"]
+
+
+def get_job_type(event) -> Optional[str]:
+    """
+    gets the Run Event's job type
+    """
+    node_unique_id = get_node_unique_id(event)
+    node_type = event["info"]["name"]
+    if node_type == "SQLQuery":
+        return "SQL"
+    elif node_unique_id.startswith("model."):
+        return "MODEL"
+    elif node_unique_id.startswith("snapshot."):
+        return "SNAPSHOT"
+    return None
 
 class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
     should_raise_on_unsupported_command = True
@@ -129,84 +151,49 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
         super().__init__(*args, **kwargs)
 
         self.dbt_command = dbt_command
-        # todo the full location is given by https://docs.getdbt.com/docs/core/connect-data-platform/connection-profiles#advanced-customizing-a-profile-directory
-        # below we just rely on the cli. #todo maybe put in the script entrypoint
-        self.profiles_dir = parse_single_arg(self.dbt_command, ["--profiles-dir"])
+        self.profiles_dir = get_dbt_profiles_dir(command=self.dbt_command)
 
-
-        # below can be replaced with lru_cache functions
-        # for online ol events
-        # example dim.foo -> ol run 1234-1234-1234
         self.node_id_to_ol_run_id = {}
-        # sql hash -> ol run 1234-1234-1234
+
+        # sql query ids are incremented sequentially per node_id
         self.node_id_to_sql_query_id = {}
-        # The SQL events are reported by a givena thread. What happens when multiple threads execute the command ?
-        # a node_id is executed by a single thread only
-        # node_id -> SQL OL event Start, do we need the same for node lifecycle events
         self.node_id_to_sql_start_event = {}
 
-        # node_id -> list of ModelNodes only useful for node start/finish events
         self.node_id_to_inputs = {}
-        # node_id -> list of dataset output
         self.node_id_to_output = {}
 
+        # will be populated as soon as the manifest is generated
+        self._compiled_manifest = None
 
 
     @cached_property
-    def compile_manifest_path(self):
-        ol_compile_target = f"ol-compile-target-{str(generate_new_uuid())}" #todo can be deterministic
-        return os.path.join(self.absolute_dir, ol_compile_target, "manifest.json")
-
-    @cached_property
-    def command(self):
-        """
-        should it be property ?
-        naming ?
-        """
+    def dbt_command(self):
         return get_dbt_command(self.dbt_command)
 
-    # list of RunEvents instead
+
     def parse(self) -> List[RunEvent]:
         """
-        alternative:
-        1. report on the execution of ol events and send the manifest info at the end. W'll lose the realtime monitoring
-
-        algo:
-        1. compile manifest
-        2. run the command
-        3. consume the logs and send the events
+        todo update
         """
 
-        if self.command not in HANDLED_COMMANDS:
+        if self.dbt_command not in HANDLED_COMMANDS:
             # do nothing
+            # todo add logs 
             ...
 
         self.extract_adapter_type(self.profile)
 
         self.extract_dataset_namespace(self.profile)
 
-        self._compile_manifest()
-
         for line in self._run_dbt_command():
             logger.info(line)
             ol_event = self._parse_structured_log_event(line)
-            logger.info(f"### ol_event={ol_event}")
             if ol_event:
                 yield ol_event
 
-    def _get_parent_run_metadata(self):
-        parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
-        parent_run_metadata = None
-        if parent_id:
-            parent_namespace, parent_job_name, parent_run_id = parent_id.split("/")
-            parent_run_metadata = ParentRunMetadata(
-                run_id=parent_run_id,
-                job_name=parent_job_name,
-                job_namespace=parent_namespace)
-        return parent_run_metadata
 
     def _parse_dbt_start_command_event(self, event):
-        parent_run_metadata = self._get_parent_run_metadata()
+        parent_run_metadata = get_parent_run_metadata()
         event_time = event["info"]["ts"]
         run_facets = {}
         if parent_run_metadata:
@@ -227,15 +214,16 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
 
     def _setup_dbt_run_metadata(self, start_event):
         """
-        For the subsequent ol events
+        the dbt command defines the parent run metadata of all subsequent ol events (node start, node finish ...)
         """
-        self.dbt_run_metadata = ParentRunMetadata( # it's run Metadata, why name it parent ?
+        self.dbt_run_metadata = ParentRunMetadata(
             run_id=start_event.run.runId,
             job_name=start_event.job.name,
             job_namespace=start_event.job.namespace,
         )
 
 
+    #todo is this used ??? legacy from the parent class. Try to remove this
     @cached_property
     def dbt_version(self):
         """
@@ -247,6 +235,7 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
 
     def _parse_structured_log_event(self, line: str):
         """
+        #todo rephrase and
         let's start with the dbt run scenario
 
         There is only one NodeStart event from dbt
@@ -269,26 +258,28 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
         try:
             dbt_event = json.loads(line)
         except ValueError:
-            return None # do something else. Log the exception
+            # log that we can't be consumed
+            return None
 
         dbt_event_name = dbt_event["info"]["name"]
 
         # only happens once
         if dbt_event_name == "MainReportVersion":
+            # dbt command is started
             start_event = self._parse_dbt_start_command_event(dbt_event)
             self._setup_dbt_run_metadata(start_event)
             return start_event
 
         elif dbt_event_name == "CommandCompleted":
+            # dbt command finishes
             end_event = self._parse_command_completed_event(dbt_event)
             return end_event
 
         try:
-            dbt_event["data"]["node_info"]["unique_id"]
+            get_node_unique_id(dbt_event)
         except KeyError:
             return None
 
-        logger.info(f"##### dbt_event_name={dbt_event_name}")
         ol_event = None
 
         if dbt_event_name == "NodeStart":
@@ -304,22 +295,20 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
 
 
     def _parse_node_start_event(self, event: Dict) -> RunEvent:
-        node_unique_id = event["data"]["node_info"]["unique_id"]
+        node_unique_id = get_node_unique_id(event)
         if node_unique_id not in self.node_id_to_ol_run_id:
             self.node_id_to_ol_run_id[node_unique_id] = str(generate_new_uuid())
 
         run_id = self.node_id_to_ol_run_id[node_unique_id]
         node_start_time = event["data"]["node_info"]["node_started_at"]
 
-        #todo what if it's null ??
         parent_run_metadata = self.dbt_run_metadata.to_openlineage()
         run_facets = {"parent": parent_run_metadata}
 
 
         job_name = self._get_job_name(event)
-        # todo define types of vars (int, str ...)
         job_facets = { "jobType": job_type_job.JobTypeJobFacet(
-            jobType=self._get_job_type(event),
+            jobType=get_job_type(event),
             integration="DBT",
             processingType="BATCH",
             producer=self.producer,
@@ -341,26 +330,25 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
         )
 
     def _parse_node_finish_event(self, event):
-        node_unique_id = event["data"]["node_info"]["unique_id"]
+        node_unique_id = get_node_unique_id(event)
         node_finished_at = event["data"]["node_info"]["node_finished_at"]
         node_status = event["data"]["node_info"]["node_status"]
         run_id = self.node_id_to_ol_run_id[node_unique_id]
 
-        #todo what if it's None ???
         parent_run_metadata = self.dbt_run_metadata.to_openlineage()
         run_facets = {"parent": parent_run_metadata}
 
         job_name = self._get_job_name(event)
 
         job_facets = { "jobType": job_type_job.JobTypeJobFacet(
-            jobType=self._get_job_type(event),
+            jobType=get_job_type(event),
             integration="DBT",
             processingType="BATCH",
             producer=self.producer,
         )}
 
-
         event_type = RunState.COMPLETE
+
         if node_status != "success":
             event_type = RunState.FAIL
             error_message = event["data"]["run_result"]["message"]
@@ -383,37 +371,16 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
             outputs=outputs
         )
 
-    def _get_sql_query_id(self, node_id):
-        """
-        not all adapters have the sql id defined in the dbt event.
-        a node is executed by a single thread which means that sql queries of a single node are executed
-        sequentially and their status is also reported sequentially.
-        this function gives us a surrogate query id
-        """
-        query_id = None
-        if node_id not in self.node_id_to_sql_query_id:
-            self.node_id_to_sql_query_id[node_id] = 1
-
-        query_id = self.node_id_to_sql_query_id[node_id]
-        self.node_id_to_sql_query_id[node_id] += 1
-        return query_id
-
-
 
     def _parse_sql_query_event(self, event):
-        """
-        #todo how do we distinguish two successive same SQL queries ?? a node is executed by a single thread at a time
-        # a node_id is executed by a single node and SQL queries are executed sequentially
-        """
-        node_unique_id = self._get_node_unique_id(event)
-        parent_run_id = self.node_id_to_ol_run_id[node_unique_id]
+        node_unique_id = get_node_unique_id(event)
+        node_start_run_id = self.node_id_to_ol_run_id[node_unique_id]
         sql_ol_run_id = str(generate_new_uuid())
         sql_start_at = event["info"]["ts"]
 
 
-        # run of the NodeStart event
         parent_run = ParentRunMetadata(
-            run_id=parent_run_id,
+            run_id=node_start_run_id,
             job_name= self._get_job_name(event),
             job_namespace=self.job_namespace
         )
@@ -421,7 +388,7 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
         run_facets = {"parent": parent_run.to_openlineage()}
 
         job_facets = { "jobType": job_type_job.JobTypeJobFacet(
-            jobType=self._get_job_type(event),
+            jobType=get_job_type(event),
             integration="DBT",
             processingType="BATCH",
             producer=self.producer,
@@ -434,50 +401,52 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
             event_time=sql_start_at,
             run_id=sql_ol_run_id,
             run_facets=run_facets,
-            job_name=self._get_sql_job_name(event), # added sql to this. We may want to change it.
+            job_name=self._get_sql_job_name(event),
             job_namespace=self.job_namespace,
             job_facets=job_facets
         )
 
-        # to get the status after
-        # todo we should have the query_id here !!!! Snowflake adapter has it but not the postgress one.
-        # snowflake has it only for the query of the model. not for all queries.
-        # We should have an upstream dbt PR to add the query_id in all responses
         self.node_id_to_sql_start_event[node_unique_id] = sql_event
 
         return sql_event
 
+
+    def _get_sql_query_id(self, node_id):
+        """
+        not all adapters have the sql id defined in the dbt event.
+        A node is executed by a single thread which means that sql queries of a single node are executed
+        sequentially and their status is also reported sequentially
+        this function gives us a surrogate query id. it's auto-incremented
+        """
+        query_id = None
+        if node_id not in self.node_id_to_sql_query_id:
+            self.node_id_to_sql_query_id[node_id] = 1
+
+        query_id = self.node_id_to_sql_query_id[node_id]
+        self.node_id_to_sql_query_id[node_id] += 1
+        return query_id
+
+
     def _parse_sql_query_status_event(self, event):
         """
-        we need to find the start event of this sql status event
-        there are no multiple SQLs that are executed for the same node
-
-        we need to have the last SQL run event sent
-        this will read different types of nodes
-        1. SQLStatus
-        2. CatchableExceptionOnRun
-        3. LogMessages
-
-        This will get ignored if there is no active dbt model running
+        if the sql query is successful a SQLQueryStatus is generated by dbt
+        in case of failure a CatchableExceptionOnRun is generated instead
         """
-        # todo we still need to ensure that there is a SQLQuery Node being processed
-
-        node_unique_id = self._get_node_unique_id(event)
-        sql_ol_run_event = self.node_id_to_sql_start_event[node_unique_id] # todo are we sure this corresponds to the same query ? Yes
+        node_unique_id = get_node_unique_id(event)
+        sql_ol_run_event = self.node_id_to_sql_start_event[node_unique_id]
 
         dbt_node_type = event["info"]["name"]
         run_state = RunState.OTHER
-        event_time = event["info"]["ts"] # todo is it always UTC here ?
+        event_time = event["info"]["ts"]
         run_facets = sql_ol_run_event.run.facets
+
         if dbt_node_type == "CatchableExceptionOnRun":
             run_state = RunState.FAIL
-            # get the error message
             error_message = event["data"]["exc"]
             stacktrace = event["data"]["exc_info"]
             run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
                     message=error_message, programmingLanguage="python", stackTrace=stacktrace
                 )
-
         elif dbt_node_type == "SQLQueryStatus":
             run_state = RunState.COMPLETE
 
@@ -486,8 +455,8 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
             event_type=run_state,
             event_time=event_time,
             run_id=sql_ol_run_event.run.runId,
-            run_facets=run_facets, #todo is it necessary to have the same run facets/job facets ??
-            job_name=sql_ol_run_event.job.name, # added sql to this. We may want to change it.
+            run_facets=run_facets,
+            job_name=sql_ol_run_event.job.name,
             job_namespace=sql_ol_run_event.job.namespace,
             job_facets=sql_ol_run_event.job.facets
         )
@@ -506,7 +475,7 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
                 message=error_message, programmingLanguage="python"
             )
 
-        parent_run_metadata = self._get_parent_run_metadata()
+        parent_run_metadata = get_parent_run_metadata()
 
         if parent_run_metadata:
             run_facets["parent"] = parent_run_metadata
@@ -520,33 +489,29 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
             run_facets=run_facets,
         )
 
-    def _get_node_unique_id(self, event):
-        return event["data"]["node_info"]["unique_id"]
-
     def _get_sql_job_name(self, event):
         """
-        #todo subject to change or we can send executing events of the same node with only sql facets
-        # executing events <==> RunEvent.execute
+        the name of the sql job is as follows
+        {node_job_name}.sql.{incremental_id}
         """
         node_job_name = self._get_job_name(event)
-        sql_query = event["data"]["sql"]
-        node_started_at = event["data"]["node_info"]["node_started_at"]
-        node_unique_id = node_unique_id = event["data"]["node_info"]["unique_id"]
+        node_unique_id = get_node_unique_id(event)
         query_id = self._get_sql_query_id(node_unique_id)
         job_name = f"{node_job_name}.sql.{query_id}"
+        
         return job_name
 
     def _get_job_name(self, event):
         database = event["data"]["node_info"]["node_relation"]["database"]
         schema = event["data"]["node_info"]["node_relation"]["schema"]
-        node_unique_id = event["data"]["node_info"]["unique_id"]
+        node_unique_id = get_node_unique_id(event)
         node_id = self.removeprefix(node_unique_id, "model.") # todo remove prefix for "snapshot." as well
-        suffix = ".build.run" if self.command == "build" else "" #todo why do we have this ?
+        suffix = ".build.run" if self.dbt_command == "build" else "" #todo why do we have this ?
 
         return f"{database}.{schema}.{node_id}{suffix}"
 
-    def _get_job_type(self, event):
-        node_unique_id = event["data"]["node_info"]["unique_id"]
+    def _get_job_type(self, event) -> Optional[str]:
+        node_unique_id = get_node_unique_id(event)
         node_type = event["info"]["name"]
         if node_type == "SQLQuery":
             return "SQL"
@@ -559,84 +524,43 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
 
     def _run_dbt_command(self):
         """
-        This is a generator, it returns log lines
-        :return:
+        this is a generator, it returns log lines
         """
-        # add the --log format
-        dbt_command = self.dbt_command + ["--log-format", "json"]
+        # log in json and generated the artifacts
+
+        dbt_command = self.dbt_command + ["--log-format", "json", "--write-json"]
         stdout_file = tempfile.NamedTemporaryFile(delete=False)
         stderr_file = tempfile.NamedTemporaryFile(delete=False)
         stdout_reader = open(stdout_file.name, mode="r")
         stderr_reader = open(stderr_file.name, mode="r")
-        process = subprocess.Popen(dbt_command, stdout=stdout_reader, stderr=stderr_reader)
+
+        process = subprocess.Popen(dbt_command, stdout=stdout_file, stderr=stderr_file)
+
         while process.poll() is None:
-            for line in stdout_reader.readlines():
+            stdout_lines = stdout_reader.readlines()
+            stderr_lines = stderr_reader.readlines()
+
+            if len(stdout_lines) > 0:
+                self._load_manifest()
+
+            for line in stdout_lines:
                 line = line.strip()
                 if line:
                     yield line
-            # do something else : continue / stop in case of error
-            for line in stderr_reader.readlines():
+
+            for line in stderr_lines:
                 line = line.strip()
                 if line:
                     logger.error(line)
 
+        stdout_reader.close()
+        stderr_reader.close()
 
-
-    def _compile_manifest(self) -> str:
-        """
-        only need to compile the manifest to get the inputs/outputs
-        we get the manifest in some cases
-        todo: only in certain command the manifest is produced
-        """
-        if not os.path.isfile(self.compile_manifest_path) and self._produces_run_result_file():
-            compile_command = self._get_compile_command()
-            process = subprocess.Popen(compile_command, stdout=sys.stdout, stderr=sys.stderr)
-            process.wait()
-            #todo add logging ?
-
-
-
-    def _produces_run_result_file(self):
-        """
-        True if the command produces a run_result.json file
-        https://docs.getdbt.com/reference/artifacts/run-results-json
-        """
-        dbt_command = set(self.dbt_command)
-        for command in RUN_RESULT_COMMANDS:
-            if command in dbt_command:
-                return True
-        return False
-
-
-
-    def _get_compile_command(self):
-        """
-        get a run command and gives us the compile command to generate the manifest.
-        :param dbt_command:
-        :return:
-        """
-        if not self._produces_run_result_file():
-            raise ValueError("This command is not a command that produces a run_result.json file")
-
-        # in a different target
-        compile_command = None
-        for i, token, run_command in itertools.product(enumerate(self.dbt_command), RUN_RESULT_COMMANDS):
-            if token == run_command:
-                compile_command = list(self.dbt_command)
-                compile_command[i] = "compile"
-                break
-
-        # change the target
-        ol_compile_target = self.compile_manifest_path.split("/")[-2]
-        compile_command = compile_command + ["--target-path", ol_compile_target] # overrides previous value
-
-        return compile_command
-
-
-    def _execute_dbt_cmd(self):
-        ...
 
     def _get_model_node(self, node_id) -> ModelNode:
+        """
+        builds a ModelNode of a given node_id
+        """
         all_nodes = {**self.compiled_manifest["nodes"], **self.compiled_manifest["sources"]}
         manifest_node = all_nodes[node_id]
         catalog_node = get_from_nullable_chain(self.catalog, ["nodes", node_id])
@@ -646,6 +570,9 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
         )
 
     def _get_model_inputs(self, node_id) -> List[ModelNode]:
+        """
+        build the model's upstream inputs
+        """
         if node_id in self.node_id_to_inputs:
             return self.node_id_to_inputs[node_id]
 
@@ -654,6 +581,7 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
         self.node_id_to_inputs[node_id] = inputs
 
         return inputs
+
 
     def _get_model_output(self, node_id) -> ModelNode:
         if node_id in self.node_id_to_output:
@@ -672,29 +600,39 @@ class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
 
     @cached_property
     def profile(self):
-        logger.info(f"##### profile_name={self.profile_name}")
         profile_dict = self.load_yaml_with_jinja(os.path.join(self.profiles_dir, "profiles.yml"))[self.profile_name]
         if not self.target:
             self.target = profile_dict["target"]
 
         ze_profile = profile_dict["outputs"][self.target]
-        logger.info(f"##### profile={ze_profile}")
         return ze_profile
 
-    @cached_property
-    def compiled_manifest(self):
-        """
-        gets the compiled manifest for the the dbt command
-        """
-        self._compile_manifest()
-        return self.load_metadata(self.compile_manifest_path, [2, 3, 4, 5, 6, 7], self.logger)
 
+    def _load_manifest(self):
+        """
+        load the manifest as soon as it exists
+        """
+        self.compiled_manifest
+
+
+    @property
+    def compiled_manifest(self) -> Optional[Dict]:
+        """
+        manifest is loaded and cached
+        """
+        if self._compiled_manifest is not None:
+            return self._compiled_manifest
+        elif os.path.isfile(self.manifest_path):
+            self._compiled_manifest = self.load_metadata(self.manifest_path, [2, 3, 4, 5, 6, 7], self.logger)
+            return self._compiled_manifest
+        else:
+            return None
 
 
     def get_dbt_metadata(
             self,
     ) -> Tuple[Dict[Any, Any], Optional[Dict[Any, Any]], Dict[Any, Any], Optional[Dict[Any, Any]]]:
         """
-        replaced by the other cached properties
+        replaced by cached properties
         """
         pass
