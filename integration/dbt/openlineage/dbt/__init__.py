@@ -25,8 +25,6 @@ from openlineage.common.provider.dbt.structured_logging import DbtStructuredLogg
 from openlineage.common.provider.dbt.utils import PRODUCER
 from tqdm import tqdm
 
-__version__ = "1.26.0"
-
 
 JOB_TYPE_FACET = job_type_job.JobTypeJobFacet(
     jobType="JOB",
