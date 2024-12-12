@@ -1,4 +1,4 @@
-openlineage/common/provider/dbt/structured_logs.py# Copyright 2018-2024 contributors to the OpenLineage project
+# Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 import json
@@ -19,7 +19,7 @@ from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
 from openlineage.client.event_v2 import InputDataset, Job, OutputDataset, Run, RunEvent, RunState
 from openlineage.common.utils import parse_single_arg
-from openlineage.common.provider.dbt.processor import ParentRunMetadata, UnsupportedDbtCommand
+from openlineage.common.provider.dbt.processor import ParentRunMetadata, UnsupportedDbtCommand, DbtVersionRunFacet
 from openlineage.common.provider.dbt.utils import PRODUCER
 
 from openlineage.client.facet_v2 import (
@@ -80,8 +80,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.node_id_to_inputs = {}
         self.node_id_to_output = {}
 
-        # will be populated as soon as the manifest is generated
+        # will be populated when some dbt events are collected
         self._compiled_manifest = None
+        self._dbt_version = None
 
 
     @cached_property
@@ -113,9 +114,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     def _parse_dbt_start_command_event(self, event):
         parent_run_metadata = get_parent_run_metadata()
         event_time = event["info"]["ts"]
-        run_facets = {}
+        run_facets = self.dbt_version_facet()
         if parent_run_metadata:
-            run_facets = {"parent": parent_run_metadata}
+            run_facets["parent"] = parent_run_metadata
+
 
         start_event_run_id = str(generate_new_uuid())
 
@@ -141,15 +143,15 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         )
 
 
-    #todo is this used ??? legacy from the parent class. Try to remove this
-    @cached_property
+    @property
     def dbt_version(self):
         """
-        1. rely on dbt --version
-        2. rely on compile manifest
-        3. rely on first log
+        extracted from the first structured log MainReportVersion
         """
-        return self.compiled_manifest["metadata"]["dbt_version"]
+        return self._dbt_version
+
+    def dbt_version_facet(self):
+        return {"dbt_version": DbtVersionRunFacet(version=self.dbt_version)}
 
     def _parse_structured_log_event(self, line: str):
         """
@@ -183,10 +185,14 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         # only happens once
         if dbt_event_name == "MainReportVersion":
-            # dbt command is started
+            # dbt version
+            self._dbt_version = dbt_event["data"]["version"][1:]
+            # start event
             start_event = self._parse_dbt_start_command_event(dbt_event)
             self._setup_dbt_run_metadata(start_event)
             return start_event
+
+
 
         elif dbt_event_name == "CommandCompleted":
             # dbt command finishes
@@ -221,7 +227,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         node_start_time = event["data"]["node_info"]["node_started_at"]
 
         parent_run_metadata = self.dbt_run_metadata.to_openlineage()
-        run_facets = {"parent": parent_run_metadata}
+        run_facets = {"parent": parent_run_metadata, **self.dbt_version_facet()}
 
 
         job_name = self._get_job_name(event)
@@ -254,7 +260,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         run_id = self.node_id_to_ol_run_id[node_unique_id]
 
         parent_run_metadata = self.dbt_run_metadata.to_openlineage()
-        run_facets = {"parent": parent_run_metadata}
+        run_facets = {"parent": parent_run_metadata, **self.dbt_version_facet()}
 
         job_name = self._get_job_name(event)
 
@@ -303,7 +309,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             job_namespace=self.job_namespace
         )
 
-        run_facets = {"parent": parent_run.to_openlineage()}
+        run_facets = {"parent": parent_run.to_openlineage(), **self.dbt_version_facet()}
 
         job_facets = { "jobType": job_type_job.JobTypeJobFacet(
             jobType=get_job_type(event),
@@ -382,8 +388,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     def _parse_command_completed_event(self, event):
         success = event["data"]["success"]
         event_time = event["data"]["completed_at"]
-        run_facets = {}
-        run_state = None
+        run_facets = self.dbt_version_facet()
         if success:
             run_state = RunState.COMPLETE
         else:
@@ -554,7 +559,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         replaced by cached properties
         """
         pass
-
 
 
 ############

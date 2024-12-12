@@ -3,7 +3,11 @@
     "eventTime":"2024-11-20T19:45:47.102778Z",
     "run":{
       "runId":"{{ any(result) }}",
-      "facets":{ }
+      "facets":{
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
     },
     "job":{
       "namespace":"dbt-test-namespace",
@@ -27,6 +31,9 @@
             "namespace":"dbt-test-namespace",
             "name":"dbt-run-jaffle_shop"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -100,6 +107,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -134,6 +144,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -168,6 +181,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -202,6 +218,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -236,6 +255,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -270,6 +292,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -304,6 +329,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -338,6 +366,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -372,6 +403,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -406,6 +440,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -440,6 +477,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -474,6 +514,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -508,6 +551,9 @@
             "namespace":"dbt-test-namespace",
             "name":"dbt-run-jaffle_shop"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -581,6 +627,9 @@
             "namespace":"dbt-test-namespace",
             "name":"dbt-run-jaffle_shop"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -660,6 +709,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -694,6 +746,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -728,6 +783,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -762,6 +820,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -796,6 +857,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -830,6 +894,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -864,6 +931,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -898,6 +968,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -932,6 +1005,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -966,6 +1042,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1000,6 +1079,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1034,6 +1116,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1068,6 +1153,9 @@
             "namespace":"dbt-test-namespace",
             "name":"dbt-run-jaffle_shop"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1147,6 +1235,9 @@
             "namespace":"dbt-test-namespace",
             "name":"dbt-run-jaffle_shop"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1226,6 +1317,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_payments"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1260,6 +1354,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_payments"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1294,6 +1391,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_payments"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1328,6 +1428,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_payments"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1362,6 +1465,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_payments"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1396,6 +1502,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_payments"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1430,6 +1539,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_payments"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1464,6 +1576,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_payments"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1498,6 +1613,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_payments"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1532,6 +1650,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_payments"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1566,6 +1687,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_payments"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1600,6 +1724,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.stg_payments"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1634,6 +1761,9 @@
             "namespace":"dbt-test-namespace",
             "name":"dbt-run-jaffle_shop"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1713,6 +1843,9 @@
             "namespace":"dbt-test-namespace",
             "name":"dbt-run-jaffle_shop"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1887,6 +2020,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1921,6 +2057,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1955,6 +2094,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -1989,6 +2131,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2023,6 +2168,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2057,6 +2205,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2091,6 +2242,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2125,6 +2279,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2159,6 +2316,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2193,6 +2353,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2227,6 +2390,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2261,6 +2427,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.customers"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2295,6 +2464,9 @@
             "namespace":"dbt-test-namespace",
             "name":"dbt-run-jaffle_shop"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2469,6 +2641,9 @@
             "namespace":"dbt-test-namespace",
             "name":"dbt-run-jaffle_shop"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2632,6 +2807,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2666,6 +2844,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2700,6 +2881,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2734,6 +2918,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2768,6 +2955,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2802,6 +2992,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2836,6 +3029,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2870,6 +3066,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2904,6 +3103,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2938,6 +3140,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -2972,6 +3177,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -3006,6 +3214,9 @@
             "namespace":"dbt-test-namespace",
             "name":"postgres.public.jaffle_shop.orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -3040,6 +3251,9 @@
             "namespace":"dbt-test-namespace",
             "name":"dbt-run-jaffle_shop"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -3194,7 +3408,11 @@
     "eventTime":"2024-11-20T19:45:55.112200Z",
     "run":{
       "runId":"{{ any(result) }}",
-      "facets":{ }
+      "facets":{
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
     },
     "job":{
       "namespace":"dbt-test-namespace",
