@@ -14,31 +14,32 @@ datasources.
 
 A dataset, or `table`, is organized according to a producer, namespace, database and (optionally) schema.
 
-| Data Store                    | Type                                 | Namespace                                                      | Name                                                       |
-|:------------------------------|:-------------------------------------|:---------------------------------------------------------------|:-----------------------------------------------------------|
-| Athena                        | Warehouse                            | `awsathena://athena.{region_name}.amazonaws.com`               | `{catalog}.{database}.{table}`                             |
-| AWS Glue                      | Data catalog                         | `arn:aws:glue:{region}:{account id}`                           | `table/{database name}/{table name}`                       |
-| Azure Cosmos DB               | Warehouse                            | `azurecosmos://{host}/dbs/{database}`                          | `colls/{table}`                                            |
-| Azure Data Explorer           | Warehouse                            | `azurekusto://{host}.kusto.windows.net`                        | `{database}/{table}`                                       |
-| Azure Synapse                 | Warehouse                            | `sqlserver://{host}:{port}`                                    | `{schema}.{table}`                                         |
-| BigQuery                      | Warehouse                            | `bigquery://`                                                  | `{project id}.{dataset name}.{table name}`                 |
-| Cassandra                     | Warehouse                            | `cassandra://{host}:{port}`                                    | `{keyspace}.{table}`                                       |
-| MySQL                         | Warehouse                            | `mysql://{host}:{port}`                                        | `{database}.{table}`                                       |
-| Oracle                        | Warehouse                            | `oracle://{host}:{port}`                                       | `{serviceName}.{schema}.{table} or {sid}.{schema}.{table}` |
-| Postgres                      | Warehouse                            | `postgres://{host}:{port}`                                     | `{database}.{schema}.{table}`                              |
-| Teradata                      | Warehouse                            | `teradata://{host}:{port}`                                     | `{database}.{table}`                                       |
-| Redshift                      | Warehouse                            | `redshift://{cluster_identifier}.{region_name}:{port}`         | `{database}.{schema}.{table}`                              |
-| Snowflake                     | Warehouse                            | `snowflake://{organization name}-{account name}`               | `{database}.{schema}.{table}`                              |
-| Trino                         | Warehouse                            | `trino://{host}:{port}`                                        | `{catalog}.{schema}.{table}`                               |
-| ABFSS (Azure Data Lake Gen2)  | Data lake                            | `abfss://{container name}@{service name}.dfs.core.windows.net` | `{path}`                                                   |
-| DBFS (Databricks File System) | Distributed file system              | `dbfs://{workspace name}`                                      | `{path}`                                                   |
-| GCS                           | Blob storage                         | `gs://{bucket name}`                                           | `{object key}`                                             |
-| HDFS                          | Distributed file system              | `hdfs://{namenode host}:{namenode port}`                       | `{path}`                                                   |
-| Kafka                         | distributed event streaming platform | `kafka://{bootstrap server host}:{port}`                       | `{topic}`                                                  |
-| Local file system             | File system                          | `file`                                                         | `{path}`                                                   |
-| Remote file system            | File system                          | `file://{host}`                                                | `{path}`                                                   |
-| S3                            | Blob Storage                         | `s3://{bucket name}`                                           | `{object key}`                                             |
-| WASBS (Azure Blob Storage)    | Blob Storage                         | `wasbs://{container name}@{service name}.dfs.core.windows.net` | `{object key}`                                             |
+| Data Store                    | Type                                 | Namespace                                                      | Name                                                                         |
+|:------------------------------|:-------------------------------------|:---------------------------------------------------------------|:-----------------------------------------------------------------------------|
+| Athena                        | Warehouse                            | `awsathena://athena.{region_name}.amazonaws.com`               | `{catalog}.{database}.{table}`                                               |
+| AWS Glue                      | Data catalog                         | `arn:aws:glue:{region}:{account id}`                           | `table/{database name}/{table name}`                                         |
+| Azure Cosmos DB               | Warehouse                            | `azurecosmos://{host}/dbs/{database}`                          | `colls/{table}`                                                              |
+| Azure Data Explorer           | Warehouse                            | `azurekusto://{host}.kusto.windows.net`                        | `{database}/{table}`                                                         |
+| Azure Synapse                 | Warehouse                            | `sqlserver://{host}:{port}`                                    | `{schema}.{table}`                                                           |
+| BigQuery                      | Warehouse                            | `bigquery://`                                                  | `{project id}.{dataset name}.{table name}`                                   |
+| Cassandra                     | Warehouse                            | `cassandra://{host}:{port}`                                    | `{keyspace}.{table}`                                                         |
+| MySQL                         | Warehouse                            | `mysql://{host}:{port}`                                        | `{database}.{table}`                                                         |
+| Oracle                        | Warehouse                            | `oracle://{host}:{port}`                                       | `{serviceName}.{schema}.{table} or {sid}.{schema}.{table}`                   |
+| Postgres                      | Warehouse                            | `postgres://{host}:{port}`                                     | `{database}.{schema}.{table}`                                                |
+| Teradata                      | Warehouse                            | `teradata://{host}:{port}`                                     | `{database}.{table}`                                                         |
+| Redshift                      | Warehouse                            | `redshift://{cluster_identifier}.{region_name}:{port}`         | `{database}.{schema}.{table}`                                                |
+| Snowflake                     | Warehouse                            | `snowflake://{organization name}-{account name}`               | `{database}.{schema}.{table}`                                                |
+| Trino                         | Warehouse                            | `trino://{host}:{port}`                                        | `{catalog}.{schema}.{table}`                                                 |
+| ABFSS (Azure Data Lake Gen2)  | Data lake                            | `abfss://{container name}@{service name}.dfs.core.windows.net` | `{path}`                                                                     |
+| DBFS (Databricks File System) | Distributed file system              | `dbfs://{workspace name}`                                      | `{path}`                                                                     |
+| GCS                           | Blob storage                         | `gs://{bucket name}`                                           | `{object key}`                                                               |
+| HDFS                          | Distributed file system              | `hdfs://{namenode host}:{namenode port}`                       | `{path}`                                                                     |
+| Kafka                         | Distributed event streaming platform | `kafka://{bootstrap server host}:{port}`                       | `{topic}`                                                                    |
+| Local file system             | File system                          | `file`                                                         | `{path}`                                                                     |
+| Remote file system            | File system                          | `file://{host}`                                                | `{path}`                                                                     |
+| S3                            | Blob Storage                         | `s3://{bucket name}`                                           | `{object key}`                                                               |
+| WASBS (Azure Blob Storage)    | Blob Storage                         | `wasbs://{container name}@{service name}.dfs.core.windows.net` | `{object key}`                                                               |
+| PubSub                        | Distributed event streaming platform | `pubsub`                                                       | `topic:{projectId}:{topicId}` or `subscription:{projectId}:{subscriptionId}` |
 
 ## Job Naming
 
