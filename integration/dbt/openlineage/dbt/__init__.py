@@ -155,11 +155,13 @@ def consume_structured_logs(target: str, project_dir: str, profile_name: str, mo
 
     client = OpenLineageClient()
     last_event = None
+    emitted_events = 0
     try:
         for event in processor.parse():
             try:
                 last_event = event
                 client.emit(event)
+                emitted_events += 1
             except Exception as e:
                 logger.warning(
                     "OpenLineage client failed to emit event %s runId %s. Exception: %s",
@@ -175,12 +177,14 @@ def consume_structured_logs(target: str, project_dir: str, profile_name: str, mo
     if last_event and last_event.eventType != RunState.COMPLETE:
         return_code = 1
 
+    logger.info("Emitted %d OpenLineage events", emitted_events)
     return return_code
 
 
 def consume_local_artifacts(target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]):
     parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
     parent_run_metadata = None
+    # We can get this if we have been orchestrated by an external system like airflow
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
 
     if parent_id:
