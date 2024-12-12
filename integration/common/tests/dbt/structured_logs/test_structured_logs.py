@@ -1,8 +1,9 @@
+# Copyright 2018-2024 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 import pytest
 import attr
 from enum import Enum
 import json
-import yaml
 from typing import Dict
 
 from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
