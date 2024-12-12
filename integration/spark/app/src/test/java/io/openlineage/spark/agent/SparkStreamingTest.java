@@ -248,7 +248,6 @@ class SparkStreamingTest {
 
     SparkSession spark =
         createSparkSession(server.getAddress().getPort(), "testKafkaSourceToBatchSink");
-    spark.sparkContext().setLogLevel("ERROR");
 
     Dataset<Row> sourceStream =
         readKafkaTopic(spark, kafkaContainer.sourceTopic, bootstrapServers)
@@ -319,7 +318,6 @@ class SparkStreamingTest {
 
     SparkSession spark =
         createSparkSession(server.getAddress().getPort(), "testKafkaSourceToJdbcBatchSink");
-    spark.sparkContext().setLogLevel("ERROR");
 
     Dataset<Row> sourceStream =
         readKafkaTopic(spark, kafkaContainer.sourceTopic, bootstrapServers)
@@ -390,8 +388,6 @@ class SparkStreamingTest {
     SparkSession spark =
         createSparkSession(httpServer.getAddress().getPort(), "testKafkaClusterResolveNamespace");
 
-    spark.sparkContext().setLogLevel("WARN");
-
     spark
         .readStream()
         .format("kafka")
@@ -433,8 +429,6 @@ class SparkStreamingTest {
 
     SparkSession spark =
         createSparkSession(server.getAddress().getPort(), "testReadFromCsvFilesInAStreamingMode");
-
-    spark.sparkContext().setLogLevel("INFO");
 
     spark
         .readStream()
