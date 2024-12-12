@@ -1,4 +1,4 @@
-# Copyright 2018-2024 contributors to the OpenLineage project
+openlineage/common/provider/dbt/structured_logs.py# Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 import json
@@ -15,12 +15,11 @@ import tempfile
 from openlineage.common.provider.dbt.processor import ModelNode
 from openlineage.common.utils import get_from_nullable_chain
 
-
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
 from openlineage.client.event_v2 import InputDataset, Job, OutputDataset, Run, RunEvent, RunState
 from openlineage.common.utils import parse_single_arg
-from openlineage.common.provider.dbt.processor import ParentRunMetadata
+from openlineage.common.provider.dbt.processor import ParentRunMetadata, UnsupportedDbtCommand
 from openlineage.common.provider.dbt.utils import PRODUCER
 
 from openlineage.client.facet_v2 import (
@@ -31,6 +30,7 @@ from openlineage.client.facet_v2 import (
 
 
 
+#todo logger is used in the Processor and not outside based on other processors
 openlineage_logger = logging.getLogger("openlineage.dbt")
 openlineage_logger.setLevel(os.getenv("OPENLINEAGE_DBT_LOGGING", "INFO"))
 openlineage_logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -47,8 +47,9 @@ RUN_RESULT_COMMANDS = [
 ]
 
 # where we can use the ol wrapper
+# todo add test and build
 HANDLED_COMMANDS = [
-    "run", "build", "test", "seed", "snapshot"
+    "run", "seed", "snapshot"
 ]
 
 #todo not used
@@ -61,14 +62,14 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def __init__(
             self,
-            dbt_command: List[str],
+            dbt_command_line: List[str],
             *args,
             **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
-        self.dbt_command = dbt_command
-        self.profiles_dir = get_dbt_profiles_dir(command=self.dbt_command)
+        self.dbt_command_line = dbt_command_line
+        self.profiles_dir = get_dbt_profiles_dir(command=self.dbt_command_line)
 
         self.node_id_to_ol_run_id = {}
 
@@ -85,18 +86,18 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     @cached_property
     def dbt_command(self):
-        return get_dbt_command(self.dbt_command)
+        return get_dbt_command(self.dbt_command_line)
 
 
     def parse(self) -> List[RunEvent]:
         """
-        todo update
+
         """
 
         if self.dbt_command not in HANDLED_COMMANDS:
-            # do nothing
-            # todo add logs 
-            ...
+            raise UnsupportedDbtCommand(
+                f"dbt integration for structured logs doesn't recognize dbt command " f"{self.command} - should be one of {HANDLED_COMMANDS}"
+            )
 
         self.extract_adapter_type(self.profile)
 
@@ -560,10 +561,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 # helpers
 ############
 
-def get_dbt_command(dbt_command: List[str]) -> Optional[str]:
-    dbt_command_tokens = set(dbt_command)
+def get_dbt_command(dbt_command_line: List[str]) -> Optional[str]:
+    dbt_command_line_tokens = set(dbt_command_line)
     for command in HANDLED_COMMANDS:
-        if command in dbt_command_tokens:
+        if command in dbt_command_line_tokens:
             return command
     return None
 

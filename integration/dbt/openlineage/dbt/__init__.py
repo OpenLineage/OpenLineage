@@ -114,14 +114,15 @@ def main():
     profile_name = parse_single_arg(args, ["--profile"])
     model_selector = parse_single_arg(args, ["--selector"])
     models = parse_multiple_args(args, ["-m", "-s", "--model", "--models", "--select"])
-    # this is not a dbt option
+
+    # dbt-ol option and not a dbt option
     consume_structured_logs_option = parse_single_arg(args, ["--consume-structured-logs"], default="false")
     consume_structured_logs_option = consume_structured_logs_option.lower() == "true"
 
     if consume_structured_logs_option:
         return consume_structured_logs(
             target=target, project_dir=project_dir, profile_name=profile_name,model_selector=model_selector,
-            models=models
+            models=models,
         )
     else:
         return consume_local_artifacts(
@@ -131,13 +132,18 @@ def main():
 
 
 def consume_structured_logs(target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]):
+    return_code = 0
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
 
-    dbt_command = sys.argv[:]
+    args = list(sys.argv)
+    structured_logs_option_index = args.index("--consume-structured-logs")
+    args.pop(structured_logs_option_index)
+    args.pop(structured_logs_option_index)
+    dbt_command_line = ["dbt"] + args[1:]
 
     processor = DbtStructuredLogsProcessor(
         project_dir=project_dir,
-        dbt_command=dbt_command,
+        dbt_command_line=dbt_command_line,
         producer=PRODUCER,
         target=target,
         job_namespace=job_namespace,
@@ -148,9 +154,28 @@ def consume_structured_logs(target: str, project_dir: str, profile_name: str, mo
     )
 
     client = OpenLineageClient()
+    last_event = None
+    try:
+        for event in processor.parse():
+            try:
+                last_event = event
+                client.emit(event)
+            except Exception as e:
+                logger.warning(
+                    "OpenLineage client failed to emit event %s runId %s. Exception: %s",
+                    event.eventType.value,
+                    event.run.runId,
+                    e,
+                    exc_info=True,
+                )
+    except UnsupportedDbtCommand as e:
+        logger.error(e)
+        return_code = 1
 
-    for event in processor.parse():
-        client.emit(event)
+    if last_event and last_event.eventType != RunState.COMPLETE:
+        return_code = 1
+
+    return return_code
 
 
 def consume_local_artifacts(target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]):
