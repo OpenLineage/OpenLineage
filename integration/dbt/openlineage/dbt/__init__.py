@@ -21,8 +21,8 @@ from openlineage.common.provider.dbt import (
     UnsupportedDbtCommand,
 )
 from openlineage.common.utils import parse_multiple_args, parse_single_arg
-from openlineage.common.provider.dbt.structured_logging import DbtStructuredLoggingProcessor
-from openlineage.common.provider.dbt.utils import PRODUCER
+from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
+from openlineage.common.provider.dbt.utils import PRODUCER, __version__
 from tqdm import tqdm
 
 
@@ -135,7 +135,7 @@ def consume_structured_logs(target: str, project_dir: str, profile_name: str, mo
 
     dbt_command = sys.argv[:]
 
-    processor = DbtStructuredLoggingProcessor(
+    processor = DbtStructuredLogsProcessor(
         project_dir=project_dir,
         dbt_command=dbt_command,
         producer=PRODUCER,

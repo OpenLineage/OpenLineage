@@ -56,7 +56,7 @@ RELEVANT_EVENTS = [
     "MainReportVersion", "NodeStart", "SQLQuery", "SQLQueryStatus", "NodeFinished", "CatchableExceptionOnRun"
 ]
 
-class DbtStructuredLoggingProcessor(DbtLocalArtifactProcessor):
+class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     should_raise_on_unsupported_command = True
 
     def __init__(
