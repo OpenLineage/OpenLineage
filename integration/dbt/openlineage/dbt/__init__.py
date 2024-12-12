@@ -211,8 +211,8 @@ def consume_local_artifacts(target: str, project_dir: str, profile_name: str, mo
         job_namespace=job_namespace,
         parent_run_metadata=parent_run_metadata,
     )
-    # this is common for all the subsequent runs
-    dbt_run_metadata = ParentRunMetadata( # it's rum Metadata, why name it parent ?
+
+    dbt_run_metadata = ParentRunMetadata(
         run_id=start_event.run.runId,
         job_name=start_event.job.name,
         job_namespace=start_event.job.namespace,
@@ -278,10 +278,10 @@ def consume_local_artifacts(target: str, project_dir: str, profile_name: str, mo
         )
 
     for event in tqdm(
-            events + [last_event],
-            desc="Emitting OpenLineage events",
-            initial=1,
-            total=len(events) + 2,
+        events + [last_event],
+        desc="Emitting OpenLineage events",
+        initial=1,
+        total=len(events) + 2,
     ):
         try:
             client.emit(event)
