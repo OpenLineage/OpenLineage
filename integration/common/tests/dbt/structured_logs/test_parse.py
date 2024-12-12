@@ -3,7 +3,7 @@ import attr
 from enum import Enum
 import json
 
-from openlineage.common.provider.dbt.structured_logging import DbtStructuredLoggingProcessor
+from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
 from openlineage.common.test import match
 
 
@@ -48,12 +48,12 @@ def test_parse(target, logs_path, expected_ol_events_path, manifest_path, monkey
         return open(logs_path).readlines()
 
     monkeypatch.setattr(
-        "openlineage.common.provider.dbt.structured_logging.DbtStructuredLoggingProcessor._run_dbt_command",
+        "openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._run_dbt_command",
         dummy_run_dbt_command
     )
 
 
-    processor = DbtStructuredLoggingProcessor(
+    processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
         project_dir="tests/dbt/structured_logs",
