@@ -3,7 +3,11 @@
     "eventTime":"2024-12-09T14:12:43.144255Z",
     "run":{
       "runId":"{{ any(result) }}",
-      "facets":{ }
+      "facets":{
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
     },
     "job":{
       "namespace":"dbt-test-namespace",
@@ -27,6 +31,9 @@
             "namespace":"dbt-test-namespace",
             "name":"dbt-run-jaffle_shop"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -190,6 +197,9 @@
             "namespace":"dbt-test-namespace",
             "name":"REPORTING.TEST_GENERAL.jaffle_shop.orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -224,6 +234,9 @@
             "namespace":"dbt-test-namespace",
             "name":"REPORTING.TEST_GENERAL.jaffle_shop.orders"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -258,6 +271,9 @@
             "namespace":"dbt-test-namespace",
             "name":"dbt-run-jaffle_shop"
           }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
         }
       }
     },
@@ -412,7 +428,11 @@
     "eventTime":"2024-12-09T14:12:59.423388Z",
     "run":{
       "runId":"{{ any(result) }}",
-      "facets":{ }
+      "facets":{
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
     },
     "job":{
       "namespace":"dbt-test-namespace",
