@@ -84,11 +84,21 @@ def patch_get_dbt_profiles_dir(monkeypatch):
                 "./tests/dbt/structured_logs/postgres/seed/results/seed_ol_events.json",
                 "./tests/dbt/structured_logs/postgres/seed/target/manifest.json"
         ),
+        # snowflake seed
+        (
+                "snowflake",
+                ["dbt", "seed", "..."],
+                "./tests/dbt/structured_logs/snowflake/seed/logs/seed_logs.jsonl",
+                "./tests/dbt/structured_logs/snowflake/seed/results/seed_ol_events.json",
+                "./tests/dbt/structured_logs/snowflake/seed/target/manifest.json"
+        )
     ],
     ids=[
+        # run command
         "postgres_successful_dbt_run", "postgres_failed_dbt_run",
         "snowflake_successful_dbt_run", "snowflake_failed_dbt_run",
-        "postgres_dbt_seed"
+        # seed command
+        "postgres_dbt_seed",  "snowflake_dbt_seed",
 
     ]
 )
