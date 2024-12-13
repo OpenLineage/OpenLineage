@@ -163,9 +163,7 @@ For an easy path to standing up a local Airflow instance, see this Airflow [Quic
 
 In this step, you will create two new Airflow DAGs that perform simple tasks and add them to your existing Airflow instance. The `counter` DAG adds 1 to a column every minute, while the `sum` DAG calculates a sum every five minutes. This will result in a simple pipeline containing two jobs and two datasets.
 
-1. Create a `counter` DAG
-
-    In `dags/`, create a file named `counter.py` and add the following code:
+1. In `dags/`, create a file named `counter.py` and add the following code:
 
     ```python
     import pendulum
@@ -206,9 +204,7 @@ In this step, you will create two new Airflow DAGs that perform simple tasks and
 
     ```
 
-2. Create a `sum` DAG
-
-    In `dags/`, create a file named `sum.py` and add the following code:
+2. In `dags/`, create a file named `sum.py` and add the following code:
 
     ```python
     import pendulum
