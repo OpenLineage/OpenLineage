@@ -91,6 +91,22 @@ def patch_get_dbt_profiles_dir(monkeypatch):
                 "./tests/dbt/structured_logs/snowflake/seed/logs/seed_logs.jsonl",
                 "./tests/dbt/structured_logs/snowflake/seed/results/seed_ol_events.json",
                 "./tests/dbt/structured_logs/snowflake/seed/target/manifest.json"
+        ),
+        # postgres snapshot
+        (
+                "postgres",
+                ["dbt", "snapshot", "..."],
+                "./tests/dbt/structured_logs/postgres/snapshot/logs/snapshot_logs.jsonl",
+                "./tests/dbt/structured_logs/postgres/snapshot/results/snapshot_ol_events.json",
+                "./tests/dbt/structured_logs/postgres/snapshot/target/manifest.json"
+        ),
+        # snowflake snapshot
+        (
+                "snowflake",
+                ["dbt", "snapshot", "..."],
+                "./tests/dbt/structured_logs/snowflake/snapshot/logs/snapshot_logs.jsonl",
+                "./tests/dbt/structured_logs/snowflake/snapshot/results/snapshot_ol_events.json",
+                "./tests/dbt/structured_logs/snowflake/snapshot/target/manifest.json"
         )
     ],
     ids=[
@@ -99,6 +115,8 @@ def patch_get_dbt_profiles_dir(monkeypatch):
         "snowflake_successful_dbt_run", "snowflake_failed_dbt_run",
         # seed command
         "postgres_dbt_seed",  "snowflake_dbt_seed",
+        # snapshot command
+        "postgres_dbt_snapshot", "snowflake_dbt_snapshot"
 
     ]
 )
@@ -125,9 +143,6 @@ def test_parse(target, command_line, logs_path, expected_ol_events_path, manifes
 
     actual_ol_events = list(ol_event_to_dict(event) for event in processor.parse())
     expected_ol_events = json.load(open(expected_ol_events_path))
-
-    with open("foo.json", "w") as f:
-        json.dump(actual_ol_events, f)
 
     assert match(expected=expected_ol_events, result=actual_ol_events)
 
