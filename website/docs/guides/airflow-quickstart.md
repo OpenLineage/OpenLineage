@@ -163,169 +163,173 @@ For an easy path to standing up a local Airflow instance, see this Airflow [Quic
 
 In this step, you will create two new Airflow DAGs that perform simple tasks and add them to your existing Airflow instance. The `counter` DAG adds 1 to a column every minute, while the `sum` DAG calculates a sum every five minutes. This will result in a simple pipeline containing two jobs and two datasets.
 
-### Create a `counter` DAG
+1. Create a `counter` DAG
 
-In `dags/`, create a file named `counter.py` and add the following code:
+    In `dags/`, create a file named `counter.py` and add the following code:
 
-```python
-import pendulum
-from airflow.decorators import dag, task
-from airflow.providers.postgres.operators.postgres import PostgresOperator
-from airflow.utils.dates import days_ago
+    ```python
+    import pendulum
+    from airflow.decorators import dag, task
+    from airflow.providers.postgres.operators.postgres import PostgresOperator
+    from airflow.utils.dates import days_ago
 
-@dag(
-    schedule='*/1 * * * *',
-    start_date=days_ago(1),
-    catchup=False,
-    is_paused_upon_creation=False,
-    max_active_runs=1,
-    description='DAG that generates a new count value equal to 1.'
-)
-
-def counter():
-
-    query1 = PostgresOperator(
-        task_id='if_not_exists',
-        postgres_conn_id='postgres_default',
-        sql='''
-        CREATE TABLE IF NOT EXISTS counts (value INTEGER);
-        ''',
+    @dag(
+        schedule='*/1 * * * *',
+        start_date=days_ago(1),
+        catchup=False,
+        is_paused_upon_creation=False,
+        max_active_runs=1,
+        description='DAG that generates a new count value equal to 1.'
     )
 
-    query2 = PostgresOperator(
-        task_id='inc',
-        postgres_conn_id='postgres_default',
-        sql='''
-        INSERT INTO "counts" (value) VALUES (1);
-        ''',
+    def counter():
+
+        query1 = PostgresOperator(
+            task_id='if_not_exists',
+            postgres_conn_id='postgres_default',
+            sql='''
+            CREATE TABLE IF NOT EXISTS counts (value INTEGER);
+            ''',
+        )
+
+        query2 = PostgresOperator(
+            task_id='inc',
+            postgres_conn_id='postgres_default',
+            sql='''
+            INSERT INTO "counts" (value) VALUES (1);
+            ''',
+        )
+
+        query1 >> query2
+
+    counter()
+
+    ```
+
+2. Create a `sum` DAG
+
+    In `dags/`, create a file named `sum.py` and add the following code:
+
+    ```python
+    import pendulum
+    from airflow.decorators import dag, task
+    from airflow.providers.postgres.operators.postgres import PostgresOperator
+    from airflow.utils.dates import days_ago
+
+    @dag(
+        start_date=days_ago(1),
+        schedule='*/5 * * * *',
+        catchup=False,
+        is_paused_upon_creation=False,
+        max_active_runs=1,
+        description='DAG that sums the total of generated count values.'
     )
 
-    query1 >> query2
+    def sum():
 
-counter()
+        query1 = PostgresOperator(
+            task_id='if_not_exists',
+            postgres_conn_id='postgres_default',
+            sql='''
+            CREATE TABLE IF NOT EXISTS sums (
+                value INTEGER
+            );'''
+        )
 
-```
+        query2 = PostgresOperator(
+            task_id='total',
+            postgres_conn_id='postgres_default',
+            sql='''
+            INSERT INTO sums (value)
+                SELECT SUM(value) FROM counts;
+            '''
+        )
 
-### Create a `sum` DAG
+        query1 >> query2
 
-In `dags/`, create a file named `sum.py` and add the following code:
+    sum()
 
-```python
-import pendulum
-from airflow.decorators import dag, task
-from airflow.providers.postgres.operators.postgres import PostgresOperator
-from airflow.utils.dates import days_ago
+    ```
 
-@dag(
-    start_date=days_ago(1),
-    schedule='*/5 * * * *',
-    catchup=False,
-    is_paused_upon_creation=False,
-    max_active_runs=1,
-    description='DAG that sums the total of generated count values.'
-)
-
-def sum():
-
-    query1 = PostgresOperator(
-        task_id='if_not_exists',
-        postgres_conn_id='postgres_default',
-        sql='''
-        CREATE TABLE IF NOT EXISTS sums (
-            value INTEGER
-        );'''
-    )
-
-    query2 = PostgresOperator(
-        task_id='total',
-        postgres_conn_id='postgres_default',
-        sql='''
-        INSERT INTO sums (value)
-            SELECT SUM(value) FROM counts;
-        '''
-    )
-
-    query1 >> query2
-
-sum()
-
-```
+3. Restart Airflow to apply the changes.
 
 ## View Collected Lineage in Marquez
 
-To view lineage collected by Marquez from Airflow, browse to the Marquez UI by visiting [http://localhost:3000](http://localhost:3000). Then, use the _search_ bar in the upper right-side of the page and search for the `counter.inc` job. To view lineage metadata for `counter.inc`, click on the job from the drop-down list:
+1. To view lineage collected by Marquez from Airflow, browse to the Marquez UI by visiting [http://localhost:3000](http://localhost:3000). Then, use the _search_ bar in the upper right-side of the page and search for the `counter.inc` job. To view lineage metadata for `counter.inc`, click on the job from the drop-down list:
 
 <p align="center">
   <img src={require("./docs/marquez-search.png").default} />
 </p>
 
-If you take a look at the lineage graph for `counter.inc`, you should see `<database>.public.counts` as an output dataset and `sum.total` as a downstream job:
+2. Look at the lineage graph for `counter.inc`, where you should see `<database>.public.counts` as an output dataset and `sum.total` as a downstream job:
 
-![](./docs/counter-inc-graph.png)
+    ![](./docs/counter-inc-graph.png)
 
 ## Troubleshoot a Failing DAG with Marquez
 
-In this step, you'll simulate a pipeline outage due to a cross-DAG dependency change and see how the enhanced lineage from OpenLineage+Marquez makes breaking schema changes easy to troubleshoot.
+1. In this step, you'll simulate a pipeline outage due to a cross-DAG dependency change and see how the enhanced lineage from OpenLineage+Marquez makes breaking schema changes easy to troubleshoot.
 
-Let's say team `A` owns the DAG `counter`. `Team A` updates `counter` to rename the `values` column in the `counts` table to `value_1_to_10`, without properly communicating the schema change to the team that owns `sum`:
+    Say `Team A` owns the DAG `counter`. `Team A` updates `counter` to rename the `values` column in the `counts` table to `value_1_to_10` without properly communicating the schema change to the team that owns `sum`.
 
-```diff
-query1 = PostgresOperator(
--   task_id='if_not_exists',
-+   task_id='alter_name_of_column',
-    postgres_conn_id='example_db',
-    sql='''
--   CREATE TABLE IF NOT EXISTS counts (
--     value INTEGER
--   );''',
-+   ALTER TABLE "counts" RENAME COLUMN "value" TO "value_1_to_10";
-+   '''
-)
-```
+    Apply the following changes to `counter` to simulate the breaking change:
 
-```diff
-query2 = PostgresOperator(
-    task_id='inc',
-    postgres_conn_id='example_db',
-    sql='''
--    INSERT INTO counts (value)
-+    INSERT INTO counts (value_1_to_10)
-         VALUES (1)
-    ''',
-)
-```
+    ```diff
+    query1 = PostgresOperator(
+    -   task_id='if_not_exists',
+    +   task_id='alter_name_of_column',
+        postgres_conn_id='example_db',
+        sql='''
+    -   CREATE TABLE IF NOT EXISTS counts (
+    -     value INTEGER
+    -   );''',
+    +   ALTER TABLE "counts" RENAME COLUMN "value" TO "value_1_to_10";
+    +   '''
+    )
+    ```
 
-The owner of `sum`, `Team B`, begins to see failed runs in the DataOps view in Marquez:
+    ```diff
+    query2 = PostgresOperator(
+        task_id='inc',
+        postgres_conn_id='example_db',
+        sql='''
+    -    INSERT INTO counts (value)
+    +    INSERT INTO counts (value_1_to_10)
+             VALUES (1)
+        ''',
+    )
+    ```
 
-![](./docs/sum-data-ops.png)
+    Like the owner of `sum`, `Team B`, would do, note the failed runs in the DataOps view in Marquez:
 
-`Team B` can only guess what might have caused the DAG failure as no recent changes have been made to the DAG. So, the team decides to check Marquez. Looking at the graph, `Team B` can see the schema on the node:
+    ![](./docs/sum-data-ops.png)
 
-![](./docs/counts-graph-new-schema.png)
+    `Team B` can only guess what might have caused the DAG failure as no recent changes have been made to the DAG. So, the team decides to check Marquez.
 
-The schema doesn't look familiar, but, to make sure, they click on the node and view the detail drawer. There, using the version history, they discover the change along with the run in which it occurred:
+2. In Marquez, navigate to the Datasets view and select your Postgres instance from the namespace dropdown menu in the top-right corner. Then, click on the `<database>.public.counts` dataset and inspect the graph. You'll find the schema on the node:
 
-![](./docs/counts-detail.png)
+    ![](./docs/counts-graph-new-schema.png)
 
-To fix the DAG, the team updates the task that calculates the count total to use the new column name:
+3. Imagine you don't recognize the column and want to know what it was originally and when it changed. Clicking on the node will open the detail drawer. There, using the version history, find the run in which the schema changed:
 
-```diff
-query2 = PostgresOperator(
-    task_id='total',
-    postgres_conn_id='example_db',
-    sql='''
--    INSERT INTO sums (value)
--       SELECT SUM(value) FROM counts;
-+       SELECT SUM(value_1_to_10) FROM counts;
-    '''
-)
-```
+    ![](./docs/counts-detail.png)
 
-With the code change, the DAG `sum` begins to run successfully, as seen from the run history in Marquez:
+4. In Airflow, fix the downstream DAG that broke by updating the task that calculates the count total to use the new column name:
 
-![](./docs/sum-history.png)
+    ```diff
+    query2 = PostgresOperator(
+        task_id='total',
+        postgres_conn_id='example_db',
+        sql='''
+    -    INSERT INTO sums (value)
+    -       SELECT SUM(value) FROM counts;
+    +       SELECT SUM(value_1_to_10) FROM counts;
+        '''
+    )
+    ```
 
-You successfully stepped through a troubleshooting scenario of a failing DAG using metadata collected with Marquez!
+5. Rerun the DAG. In Marquez, verify the fix by looking at the recent run history in the DataOps view:
+
+    ![](./docs/sum-history.png)
 
 ## Next Steps
 
