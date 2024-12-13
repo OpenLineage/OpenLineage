@@ -265,7 +265,7 @@ If you take a look at the lineage graph for `counter.inc`, you should see `<data
 
 ## Troubleshoot a Failing DAG with Marquez
 
-In this step, you'll simulate a pipeline outage due to a cross-DAG depedency change and see how the enhanced lineage from OpenLineage+Marquez makes breaking schema changes easy to troubleshoot.
+In this step, you'll simulate a pipeline outage due to a cross-DAG dependency change and see how the enhanced lineage from OpenLineage+Marquez makes breaking schema changes easy to troubleshoot.
 
 Let's say team `A` owns the DAG `counter`. `Team A` updates `counter` to rename the `values` column in the `counts` table to `value_1_to_10`, without properly communicating the schema change to the team that owns `sum`:
 
