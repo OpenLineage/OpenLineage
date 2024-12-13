@@ -121,4 +121,7 @@ def get_job_type(event) -> Optional[str]:
         return "MODEL"
     elif node_unique_id.startswith("snapshot."):
         return "SNAPSHOT"
+    elif node_unique_id.startswith("seed."):
+        return "SEED"
+
     return None
