@@ -118,7 +118,6 @@ def main():
     # dbt-ol option and not a dbt option
     consume_structured_logs_option = parse_single_arg(args, ["--consume-structured-logs"], default="false")
     consume_structured_logs_option = consume_structured_logs_option.lower() == "true"
-
     if consume_structured_logs_option:
         return consume_structured_logs(
             target=target, project_dir=project_dir, profile_name=profile_name,model_selector=model_selector,
@@ -162,6 +161,7 @@ def consume_structured_logs(target: str, project_dir: str, profile_name: str, mo
                 last_event = event
                 client.emit(event)
                 emitted_events += 1
+                logger.info(f"### sending event {event}")
             except Exception as e:
                 logger.warning(
                     "OpenLineage client failed to emit event %s runId %s. Exception: %s",

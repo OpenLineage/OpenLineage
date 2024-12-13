@@ -19,7 +19,7 @@
     "outputs":[ ]
   },
   {
-    "eventTime":"2024-11-22T15:58:08.383825",
+    "eventTime":"2024-11-22T15:58:08.383825Z",
     "run":{
       "runId":"{{ any(result) }}",
       "facets":{
@@ -345,7 +345,7 @@
     "outputs":[ ]
   },
   {
-    "eventTime":"2024-11-22T15:58:08.958993",
+    "eventTime":"2024-11-22T15:58:08.958993Z",
     "run":{
       "runId":"{{ any(result) }}",
       "facets":{
