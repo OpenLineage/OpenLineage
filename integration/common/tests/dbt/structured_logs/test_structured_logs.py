@@ -23,20 +23,29 @@ def serialize(inst, field, value):
         return value.value
     return value
 
-def get_profiles_dir() -> str:
-    return "./tests/dbt/structured_logs"
 
+##################
+# fixtures
+##################
+
+@pytest.fixture(autouse=True)
+def patch_get_dbt_profiles_dir(monkeypatch):
+    monkeypatch.setattr(
+        "openlineage.common.provider.dbt.structured_logs.get_dbt_profiles_dir",
+        lambda *args, **kwargs: "./tests/dbt/structured_logs"
+    )
 
 ##################
 # test functions
 ##################
 
 @pytest.mark.parametrize(
-    "target, logs_path, expected_ol_events_path, manifest_path",
+    "target, command_line, logs_path, expected_ol_events_path, manifest_path",
     [
         # successful postgres run
         (
             "postgres",
+            ["dbt", "run", "..."],
             "./tests/dbt/structured_logs/postgres/run/logs/successful_run_logs.jsonl",
             "./tests/dbt/structured_logs/postgres/run/results/successful_run_ol_events.json",
             "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
@@ -45,6 +54,7 @@ def get_profiles_dir() -> str:
         # failed postgres run. Model has SQL error in it
         (
             "postgres",
+            ["dbt", "run", "..."],
             "./tests/dbt/structured_logs/postgres/run/logs/failed_run_logs.jsonl",
             "./tests/dbt/structured_logs/postgres/run/results/failed_run_ol_events.json",
             "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
@@ -53,6 +63,7 @@ def get_profiles_dir() -> str:
         # successful snowflake run
         (
             "snowflake",
+            ["dbt", "run", "..."],
             "./tests/dbt/structured_logs/snowflake/run/logs/successful_run_logs.jsonl",
             "./tests/dbt/structured_logs/snowflake/run/results/successful_run_ol_events.json",
             "./tests/dbt/structured_logs/snowflake/run/target/manifest.json"
@@ -60,14 +71,28 @@ def get_profiles_dir() -> str:
         # failed snowflake run
         (
             "snowflake",
+            ["dbt", "run", "..."],
             "./tests/dbt/structured_logs/snowflake/run/logs/failed_run_logs.jsonl",
             "./tests/dbt/structured_logs/snowflake/run/results/failed_run_ol_events.json",
             "./tests/dbt/structured_logs/snowflake/run/target/manifest.json"
         ),
+        # postgres seed
+        (
+                "postgres",
+                ["dbt", "seed", "..."],
+                "./tests/dbt/structured_logs/postgres/seed/logs/seed_logs.jsonl",
+                "./tests/dbt/structured_logs/postgres/seed/results/seed_ol_events.json",
+                "./tests/dbt/structured_logs/postgres/seed/target/manifest.json"
+        ),
     ],
-    ids=["postgres_successful_dbt_run", "postgres_failed_dbt_run", "snowflake_successful_dbt_run", "snowflake_failed_dbt_run"]
+    ids=[
+        "postgres_successful_dbt_run", "postgres_failed_dbt_run",
+        "snowflake_successful_dbt_run", "snowflake_failed_dbt_run",
+        "postgres_dbt_seed"
+
+    ]
 )
-def test_parse(target, logs_path, expected_ol_events_path, manifest_path, monkeypatch):
+def test_parse(target, command_line, logs_path, expected_ol_events_path, manifest_path, monkeypatch):
     def dummy_run_dbt_command(self):
         return open(logs_path).readlines()
 
@@ -82,7 +107,7 @@ def test_parse(target, logs_path, expected_ol_events_path, manifest_path, monkey
         job_namespace="dbt-test-namespace",
         project_dir="tests/dbt/structured_logs",
         target=target,
-        dbt_command_line=f"dbt --log-format json run --profiles-dir {get_profiles_dir()} --target snowflake".split(" ")
+        dbt_command_line=command_line,
     )
 
     processor.manifest_path = manifest_path
@@ -90,6 +115,9 @@ def test_parse(target, logs_path, expected_ol_events_path, manifest_path, monkey
 
     actual_ol_events = list(ol_event_to_dict(event) for event in processor.parse())
     expected_ol_events = json.load(open(expected_ol_events_path))
+
+    with open("foo.json", "w") as f:
+        json.dump(actual_ol_events, f)
 
     assert match(expected=expected_ol_events, result=actual_ol_events)
 
@@ -114,7 +142,7 @@ def test_adapter_type(target, expected_adapter_type, monkeypatch):
         job_namespace="dbt-test-namespace",
         project_dir="tests/dbt/structured_logs",
         target=target,
-        dbt_command_line=f"dbt --log-format json run --profiles-dir {get_profiles_dir()} --target snowflake".split(" ")
+        dbt_command_line=["dbt", "run", "..."]
     )
 
     try:
@@ -145,7 +173,7 @@ def test_dataset_namespace(target, expected_dataset_namespace, monkeypatch):
         job_namespace="dbt-test-namespace",
         project_dir="tests/dbt/structured_logs",
         target=target,
-        dbt_command_line=f"dbt --log-format json run --profiles-dir {get_profiles_dir()} --target snowflake".split(" ")
+        dbt_command_line=["dbt", "run", "..."]
     )
 
     try:
