@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 import json
 import os
-from datetime import datetime
 
 import subprocess
 from functools import cached_property
@@ -11,36 +10,19 @@ from typing import Any, Dict, List, Optional, Tuple
 import tempfile
 
 from openlineage.common.provider.dbt.processor import ModelNode
-from openlineage.common.utils import get_from_nullable_chain
+from openlineage.common.utils import get_from_nullable_chain, add_or_replace_command_line_option, add_command_line_arg, stream_has_lines
 
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
-from openlineage.client.event_v2 import InputDataset, Job, OutputDataset, Run, RunEvent, RunState
-from openlineage.common.utils import parse_single_arg
+from openlineage.client.event_v2 import RunEvent, RunState
 from openlineage.common.provider.dbt.processor import ParentRunMetadata, UnsupportedDbtCommand, DbtVersionRunFacet
-from openlineage.common.provider.dbt.utils import PRODUCER
+from openlineage.common.provider.dbt.utils import HANDLED_COMMANDS, PRODUCER, get_event_timestamp, get_dbt_command, generate_run_event, get_dbt_profiles_dir, get_parent_run_metadata, get_node_unique_id, get_job_type
 
 from openlineage.client.facet_v2 import (
     job_type_job,
     sql_job,
     error_message_run
 )
-
-# list of commands that produce a run_result.json file
-RUN_RESULT_COMMANDS = [
-    "build", "compile", "docs generate", "run", "seed", "snapshot", "test", "run-operation"
-]
-
-# where we can use the ol wrapper
-# todo add test and build
-HANDLED_COMMANDS = [
-    "run", "seed", "snapshot"
-]
-
-#todo not used
-RELEVANT_EVENTS = [
-    "MainReportVersion", "NodeStart", "SQLQuery", "SQLQueryStatus", "NodeFinished", "CatchableExceptionOnRun"
-]
 
 class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     should_raise_on_unsupported_command = True
@@ -69,20 +51,55 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self._compiled_manifest = None
         self._dbt_version = None
 
-    #todo for the local processor it's taken from the run_result.json file
     @cached_property
     def dbt_command(self):
         return get_dbt_command(self.dbt_command_line)
 
+    @property
+    def dbt_version(self):
+        """
+        Extracted from the first structured log MainReportVersion
+        """
+        return self._dbt_version
+
+    @cached_property
+    def catalog(self):
+        if os.path.isfile(self.catalog_path):
+            return self.load_metadata(self.catalog_path, [1], self.logger)
+        return None
+
+    @cached_property
+    def profile(self):
+        profile_dict = self.load_yaml_with_jinja(os.path.join(self.profiles_dir, "profiles.yml"))[self.profile_name]
+        if not self.target:
+            self.target = profile_dict["target"]
+
+        ze_profile = profile_dict["outputs"][self.target]
+        return ze_profile
+
+    @property
+    def compiled_manifest(self) -> Optional[Dict]:
+        """
+        Manifest is loaded and cached.
+        It's loaded when the dbt structured logs are generated and processed.
+        """
+        if self._compiled_manifest is not None:
+            return self._compiled_manifest
+        elif os.path.isfile(self.manifest_path):
+            self._compiled_manifest = self.load_metadata(self.manifest_path, [2, 3, 4, 5, 6, 7], self.logger)
+            return self._compiled_manifest
+        else:
+            return None
+
 
     def parse(self) -> List[RunEvent]:
         """
-
+        This executes the dbt command and parses the structured log events emitted.
+        OL events are sent when relevant dbt structured events are generated example (NodeStart, NodeFinish, ...).
         """
-        #todo error message
         if self.dbt_command not in HANDLED_COMMANDS:
             raise UnsupportedDbtCommand(
-                f"dbt integration for structured logs doesn't recognize dbt command " f"{self.command} - should be one of {HANDLED_COMMANDS}"
+                f"dbt integration for structured logs doesn't recognize dbt command " f"{self.dbt_command_line} - operation should be one of {HANDLED_COMMANDS}"
             )
 
         self.extract_adapter_type(self.profile)
@@ -94,49 +111,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             ol_event = self._parse_structured_log_event(line)
             if ol_event:
                 yield ol_event
-
-
-    def _parse_dbt_start_command_event(self, event):
-        parent_run_metadata = get_parent_run_metadata()
-        event_time = get_event_timestamp(event["info"]["ts"])
-        run_facets = self.dbt_version_facet()
-        if parent_run_metadata:
-            run_facets["parent"] = parent_run_metadata
-
-
-        start_event_run_id = str(generate_new_uuid())
-
-        start_event = generate_run_event(
-            event_type=RunState.START,
-            event_time=event_time,
-            run_id=start_event_run_id,
-            job_name=self.job_name,
-            job_namespace=self.job_namespace,
-            run_facets=run_facets
-        )
-
-        return start_event
-
-    def _setup_dbt_run_metadata(self, start_event):
-        """
-        the dbt command defines the parent run metadata of all subsequent ol events (node start, node finish ...)
-        """
-        self.dbt_run_metadata = ParentRunMetadata(
-            run_id=start_event.run.runId,
-            job_name=start_event.job.name,
-            job_namespace=start_event.job.namespace,
-        )
-
-
-    @property
-    def dbt_version(self):
-        """
-        extracted from the first structured log MainReportVersion
-        """
-        return self._dbt_version
-
-    def dbt_version_facet(self):
-        return {"dbt_version": DbtVersionRunFacet(version=self.dbt_version)}
 
     def _parse_structured_log_event(self, line: str):
         """
@@ -202,6 +176,26 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         return ol_event
 
+    def _parse_dbt_start_command_event(self, event):
+        parent_run_metadata = get_parent_run_metadata()
+        event_time = get_event_timestamp(event["info"]["ts"])
+        run_facets = self.dbt_version_facet()
+        if parent_run_metadata:
+            run_facets["parent"] = parent_run_metadata
+
+
+        start_event_run_id = str(generate_new_uuid())
+
+        start_event = generate_run_event(
+            event_type=RunState.START,
+            event_time=event_time,
+            run_id=start_event_run_id,
+            job_name=self.job_name,
+            job_namespace=self.job_namespace,
+            run_facets=run_facets
+        )
+
+        return start_event
 
     def _parse_node_start_event(self, event: Dict) -> RunEvent:
         node_unique_id = get_node_unique_id(event)
@@ -280,7 +274,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             outputs=outputs
         )
 
-
     def _parse_sql_query_event(self, event):
         node_unique_id = get_node_unique_id(event)
         node_start_run_id = self.node_id_to_ol_run_id[node_unique_id]
@@ -319,27 +312,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         return sql_event
 
-
-    def _get_sql_query_id(self, node_id):
-        """
-        not all adapters have the sql id defined in the dbt event.
-        A node is executed by a single thread which means that sql queries of a single node are executed
-        sequentially and their status is also reported sequentially
-        this function gives us a surrogate query id. it's auto-incremented
-        """
-        query_id = None
-        if node_id not in self.node_id_to_sql_query_id:
-            self.node_id_to_sql_query_id[node_id] = 1
-
-        query_id = self.node_id_to_sql_query_id[node_id]
-        self.node_id_to_sql_query_id[node_id] += 1
-        return query_id
-
-
     def _parse_sql_query_status_event(self, event):
         """
-        if the sql query is successful a SQLQueryStatus is generated by dbt
-        in case of failure a CatchableExceptionOnRun is generated instead
+        If the sql query is successful a SQLQueryStatus is generated by dbt.
+        In case of failure a CatchableExceptionOnRun is generated instead
         """
         node_unique_id = get_node_unique_id(event)
         sql_ol_run_event = self.node_id_to_sql_start_event[node_unique_id]
@@ -354,8 +330,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             error_message = event["data"]["exc"]
             stacktrace = event["data"]["exc_info"]
             run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
-                    message=error_message, programmingLanguage="python", stackTrace=stacktrace
-                )
+                message=error_message, programmingLanguage="python", stackTrace=stacktrace
+            )
         elif dbt_node_type == "SQLQueryStatus":
             run_state = RunState.COMPLETE
 
@@ -397,9 +373,36 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             run_facets=run_facets,
         )
 
+    def _setup_dbt_run_metadata(self, start_event):
+        """
+        The dbt command defines the parent run metadata of all subsequent OL events (NodeStart, NodeFinish ...)
+        """
+        self.dbt_run_metadata = ParentRunMetadata(
+            run_id=start_event.run.runId,
+            job_name=start_event.job.name,
+            job_namespace=start_event.job.namespace,
+        )
+
+    def dbt_version_facet(self):
+        return {"dbt_version": DbtVersionRunFacet(version=self.dbt_version)}
+
+    def _get_sql_query_id(self, node_id):
+        """
+        Not all adapters have the sql id defined in their dbt event.
+        A node is executed by a single thread which means that sql queries of a single node are executed
+        sequentially and their status is also reported sequentially.
+        This function gives us a surrogate query id. It's auto-incremented
+        """
+        if node_id not in self.node_id_to_sql_query_id:
+            self.node_id_to_sql_query_id[node_id] = 1
+
+        query_id = self.node_id_to_sql_query_id[node_id]
+        self.node_id_to_sql_query_id[node_id] += 1
+        return query_id
+
     def _get_sql_job_name(self, event):
         """
-        the name of the sql job is as follows
+        The name of the sql job is as follows
         {node_job_name}.sql.{incremental_id}
         """
         node_job_name = self._get_job_name(event)
@@ -410,6 +413,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         return job_name
 
     def _get_job_name(self, event):
+        """
+        The job name of models, snapshots, seeds ...
+        """
         database = event["data"]["node_info"]["node_relation"]["database"]
         schema = event["data"]["node_info"]["node_relation"]["schema"]
         node_unique_id = get_node_unique_id(event)
@@ -427,18 +433,16 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             return "MODEL"
         elif node_unique_id.startswith("snapshot."):
             return "SNAPSHOT"
-        return None
-
+        return None #todo what about seeds ?
 
     def _run_dbt_command(self):
         """
-        this is a generator, it returns log lines
+        This is a generator, it returns log lines
         """
         # log in json and generated the artifacts
-        #todo add log format if necessary, add write-json is necessary as well
         dbt_command_line = add_command_line_arg(self.dbt_command_line, arg_name="--log-format", arg_value="json")
         dbt_command_line = add_or_replace_command_line_option(self.dbt_command_line, option="--write-json", replace_option="--no-write-json")
-        #dbt_command_line = add_command_line_arg(self.dbt_command_line + ["--log-format", "json", "--write-json"]
+
         stdout_file = tempfile.NamedTemporaryFile(delete=False)
         stderr_file = tempfile.NamedTemporaryFile(delete=False)
         stdout_reader = open(stdout_file.name, mode="r")
@@ -447,8 +451,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         process = subprocess.Popen(dbt_command_line, stdout=stdout_file, stderr=stderr_file)
 
         while process.poll() is None:
-            if self._stream_has_lines(stdout_reader):
-                self._load_manifest()
+            if stream_has_lines(stdout_reader):
+                # Load the manifest as soon as it exists
+                self.compiled_manifest
 
             yield from self._consume_dbt_logs(stdout_reader, stderr_reader)
 
@@ -470,19 +475,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             if line:
                 self.logger.error(line)
 
-    #todo static or in a utils file
-    def _stream_has_lines(self, stream):
-        cursor = stream.tell()
-        has_lines = len(stream.readlines()) > 0
-        stream.seek(cursor)
-        return has_lines
-
-
-
-
     def _get_model_node(self, node_id) -> ModelNode:
         """
-        builds a ModelNode of a given node_id
+        Builds a ModelNode of a given node_id
         """
         all_nodes = {**self.compiled_manifest["nodes"], **self.compiled_manifest["sources"]}
         manifest_node = all_nodes[node_id]
@@ -494,7 +489,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _get_model_inputs(self, node_id) -> List[ModelNode]:
         """
-        build the model's upstream inputs
+        Builds the model's upstream inputs
         """
         if node_id in self.node_id_to_inputs:
             return self.node_id_to_inputs[node_id]
@@ -505,7 +500,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         return inputs
 
-
     def _get_model_output(self, node_id) -> ModelNode:
         if node_id in self.node_id_to_output:
             return self.node_id_to_output[node_id]
@@ -514,191 +508,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         return model_node
 
-
-    @cached_property
-    def catalog(self):
-        if os.path.isfile(self.catalog_path):
-            return self.load_metadata(self.catalog_path, [1], self.logger)
-        return None
-
-    @cached_property
-    def profile(self):
-        profile_dict = self.load_yaml_with_jinja(os.path.join(self.profiles_dir, "profiles.yml"))[self.profile_name]
-        if not self.target:
-            self.target = profile_dict["target"]
-
-        ze_profile = profile_dict["outputs"][self.target]
-        return ze_profile
-
-
-    def _load_manifest(self):
-        """
-        load the manifest as soon as it exists
-        """
-        self.compiled_manifest
-
-
-    @property
-    def compiled_manifest(self) -> Optional[Dict]:
-        """
-        manifest is loaded and cached
-        """
-        if self._compiled_manifest is not None:
-            return self._compiled_manifest
-        elif os.path.isfile(self.manifest_path):
-            self._compiled_manifest = self.load_metadata(self.manifest_path, [2, 3, 4, 5, 6, 7], self.logger)
-            return self._compiled_manifest
-        else:
-            return None
-
-
     def get_dbt_metadata(
             self,
     ) -> Tuple[Dict[Any, Any], Optional[Dict[Any, Any]], Dict[Any, Any], Optional[Dict[Any, Any]]]:
         """
-        replaced by properties
+        Replaced by properties
         """
         pass
-
-
-############
-# helpers
-############
-#todo move them to an appropriate file
-def add_command_line_arg(command_line: List[str], arg_name: str, arg_value: str):
-    command_line = list(command_line)
-    arg_name_index = None
-    try:
-        arg_name_index = command_line.index(arg_name)
-    except ValueError:
-        # arg_name is not in list
-        pass
-
-    if arg_name_index is not None:
-        if arg_name_index + 1 >= len(command_line):
-            command_line.append(arg_value)
-        else:
-            command_line[arg_name_index + 1] = arg_value
-    else:
-        command_line.append(arg_name)
-        if arg_value:
-            command_line.append(arg_value)
-
-    return command_line
-
-def add_or_replace_command_line_option(command_line: List[str], option: str, replace_option: Optional[str]=None) -> List[str]:
-    """
-    if replace_option is ignored then the option is simply added
-    """
-    command_line = list(command_line)
-    if replace_option:
-        try:
-            replace_option_index = command_line.index(replace_option)
-            command_line[replace_option_index] = option
-        except ValueError:
-            command_line.append(option)
-    else:
-        command_line.append(option)
-
-    return command_line
-
-def get_event_timestamp(timestamp: str):
-    """
-    dbt events have a discrepancy in their timestamp formats
-    this converts a given timestamp string to %Y-%m-%dT%H:%M:%S.%fZ
-    it returns the given timestamp if it couldn't do the conversion
-    """
-    output_format = "%Y-%m-%dT%H:%M:%S.%fZ"
-    input_formats = ["%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%S.%f"]
-    for input_format in input_formats:
-        try:
-            iso_timestamp = datetime.strptime(timestamp, input_format).strftime(output_format)
-            return iso_timestamp
-        except ValueError:
-            pass # ignore and pass to the other format
-
-    return timestamp
-
-
-def get_dbt_command(dbt_command_line: List[str]) -> Optional[str]:
-    dbt_command_line_tokens = set(dbt_command_line)
-    for command in HANDLED_COMMANDS:
-        if command in dbt_command_line_tokens:
-            return command
-    return None
-
-def generate_run_event(
-        event_type: RunState,
-        event_time: str,
-        run_id: str,
-        job_name: str,
-        job_namespace: str,
-        inputs: Optional[List[InputDataset]] = None,
-        outputs: Optional[List[OutputDataset]] = None,
-        job_facets: Optional[Dict] = None,
-        run_facets: Optional[Dict] = None,
-) -> RunEvent:
-    inputs = inputs or []
-    outputs = outputs or []
-    job_facets = job_facets or {}
-    run_facets = run_facets or {}
-    return RunEvent(
-        eventType=event_type,
-        eventTime=event_time,
-        run=Run(runId=run_id, facets=run_facets),
-        job=Job(
-            namespace=job_namespace,
-            name=job_name,
-            facets=job_facets,
-        ),
-        inputs=inputs,
-        outputs=outputs,
-        producer=PRODUCER
-    )
-
-def get_dbt_profiles_dir(command: List[str]) -> str:
-    """
-    based on this https://docs.getdbt.com/docs/core/connect-data-platform/connection-profiles#advanced-customizing-a-profile-directory
-    gets the profiles directory
-    """
-    from_command = parse_single_arg(command, ["--profiles-dir"])
-    from_env_var = os.getenv("DBT_PROFILES_DIR")
-    default_dir = "~/.dbt/"
-    return (
-            from_command or
-            from_env_var or
-            default_dir
-    )
-
-def get_parent_run_metadata():
-    """
-    the parent job that started the dbt command. Usually the scheduler (Airflow, ...etc)
-    """
-    parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
-    parent_run_metadata = None
-    if parent_id:
-        parent_namespace, parent_job_name, parent_run_id = parent_id.split("/")
-        parent_run_metadata = ParentRunMetadata(
-            run_id=parent_run_id,
-            job_name=parent_job_name,
-            job_namespace=parent_namespace)
-    return parent_run_metadata
-
-
-def get_node_unique_id(event):
-    return event["data"]["node_info"]["unique_id"]
-
-
-def get_job_type(event) -> Optional[str]:
-    """
-    gets the Run Event's job type
-    """
-    node_unique_id = get_node_unique_id(event)
-    node_type = event["info"]["name"]
-    if node_type == "SQLQuery":
-        return "SQL"
-    elif node_unique_id.startswith("model."):
-        return "MODEL"
-    elif node_unique_id.startswith("snapshot."):
-        return "SNAPSHOT"
-    return None

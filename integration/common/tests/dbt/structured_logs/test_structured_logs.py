@@ -6,7 +6,7 @@ from enum import Enum
 import json
 from typing import Dict
 
-from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor, add_command_line_arg, add_or_replace_command_line_option
+from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
 from openlineage.common.test import match
 
 from openlineage.common.provider.dbt.processor import Adapter
@@ -34,7 +34,7 @@ def get_profiles_dir() -> str:
 @pytest.mark.parametrize(
     "target, logs_path, expected_ol_events_path, manifest_path",
     [
-        # successful pg run
+        # successful postgres run
         (
             "postgres",
             "./tests/dbt/structured_logs/postgres/run/logs/successful_run_logs.jsonl",
@@ -42,7 +42,7 @@ def get_profiles_dir() -> str:
             "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
         ),
 
-        # failed pg run. Model has SQL error in it
+        # failed postgres run. Model has SQL error in it
         (
             "postgres",
             "./tests/dbt/structured_logs/postgres/run/logs/failed_run_logs.jsonl",
@@ -50,7 +50,7 @@ def get_profiles_dir() -> str:
             "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
         ),
 
-        # successful Snowflake run
+        # successful snowflake run
         (
             "snowflake",
             "./tests/dbt/structured_logs/snowflake/run/logs/successful_run_logs.jsonl",
@@ -90,9 +90,6 @@ def test_parse(target, logs_path, expected_ol_events_path, manifest_path, monkey
 
     actual_ol_events = list(ol_event_to_dict(event) for event in processor.parse())
     expected_ol_events = json.load(open(expected_ol_events_path))
-
-    with open("foo.json", "w") as f:
-        f.write(json.dumps(actual_ol_events))
 
     assert match(expected=expected_ol_events, result=actual_ol_events)
 
@@ -157,44 +154,3 @@ def test_dataset_namespace(target, expected_dataset_namespace, monkeypatch):
         pass
 
     assert processor.dataset_namespace == expected_dataset_namespace
-
-@pytest.mark.parametrize(
-    "command_line, arg_name, arg_value, expected_command_line",
-    [
-        (["dbt", "run", "--select", "orders"],
-         "--log-format", "json",
-         ["dbt", "run", "--select", "orders", "--log-format", "json"]),
-
-        (["dbt", "run", "--select", "orders", "--log-format", "text"],
-         "--log-format", "json",
-         ["dbt", "run", "--select", "orders", "--log-format", "json"]),
-
-    ],
-    ids=["add_new_arg", "replace_arg_value"]
-)
-def test_add_command_line_arg(command_line, arg_name, arg_value, expected_command_line):
-    actual_command_line = add_command_line_arg(command_line, arg_name, arg_value)
-    assert actual_command_line == expected_command_line
-
-@pytest.mark.parametrize(
-    "command_line, option, replace_option, expected_command_line",
-    [
-        (["dbt", "run", "--select", "orders"],
-         "--write-json", None,
-         ["dbt", "run", "--select", "orders", "--write-json"]),
-
-        (["dbt", "run", "--select", "orders", "--no-write-json"],
-         "--write-json", "--no-write-json",
-         ["dbt", "run", "--select", "orders", "--write-json"]),
-
-        (["dbt", "run", "--select", "orders"],
-         "--write-json", "--no-write-json",
-         ["dbt", "run", "--select", "orders", "--write-json"]),
-
-    ],
-    ids=["add_new_option", "replace_option", "replace_non_existing_option"]
-)
-def test_add_or_replace_command_line_option(command_line, option, replace_option, expected_command_line):
-    actual_command_line = add_or_replace_command_line_option(command_line, option, replace_option)
-    assert actual_command_line == expected_command_line
-

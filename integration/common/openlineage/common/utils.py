@@ -89,3 +89,52 @@ def parse_multiple_args(args, keys: List[str], default=None) -> List[str]:
                 parsed_values.append(cur_value)
 
     return parsed_values or default or []
+
+
+def add_command_line_arg(command_line: List[str], arg_name: str, arg_value: str):
+    command_line = list(command_line)
+    arg_name_index = None
+    try:
+        arg_name_index = command_line.index(arg_name)
+    except ValueError:
+        # arg_name is not in list
+        pass
+
+    if arg_name_index is not None:
+        if arg_name_index + 1 >= len(command_line):
+            command_line.append(arg_value)
+        else:
+            command_line[arg_name_index + 1] = arg_value
+    else:
+        command_line.append(arg_name)
+        if arg_value:
+            command_line.append(arg_value)
+
+    return command_line
+
+
+def add_or_replace_command_line_option(command_line: List[str], option: str, replace_option: Optional[str]=None) -> List[str]:
+    """
+    If replace_option is ignored then the option is simply added
+    """
+    command_line = list(command_line)
+    if replace_option:
+        try:
+            replace_option_index = command_line.index(replace_option)
+            command_line[replace_option_index] = option
+        except ValueError:
+            command_line.append(option)
+    else:
+        command_line.append(option)
+
+    return command_line
+
+
+def stream_has_lines(stream):
+    """
+    Checks if the given stream has lines or not
+    """
+    current_position = stream.tell()
+    has_lines = len(stream.readlines()) > 0
+    stream.seek(current_position)
+    return has_lines
