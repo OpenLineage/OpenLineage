@@ -32,7 +32,7 @@ For an easy path to standing up a local Airflow instance, see this Airflow [Quic
 
 ## Get and start Marquez {#get-marquez}
 
-1. To checkout the Marquez source code, run:
+1. Create a directory for Marquez. Then, check out the Marquez source code by running:
 
     <Tabs groupId="os">
     <TabItem value="macos" label="MacOS/Linux">
@@ -81,7 +81,7 @@ For an easy path to standing up a local Airflow instance, see this Airflow [Quic
 
 ## Configure Airflow to send OpenLineage events to Marquez {#configure-airflow}
 
-1. To configure Airflow to emit OpenLineage events to Marquez, you need to define an OpenLineage transport. One way you can do this is by using an environment variable. To use `http` and send events to the Marquez API running locally on port `5000`, run:
+1. To configure Airflow to emit OpenLineage events to Marquez, you need to modify your local Airflow environment and add a dependency. First, define an OpenLineage transport. One way you can do this is by using an environment variable. To use `http` and send events to the Marquez API running locally on port `5000`, run:
 
     <Tabs groupId="os">
     <TabItem value="macos" label="MacOS/Linux">
@@ -138,7 +138,7 @@ For an easy path to standing up a local Airflow instance, see this Airflow [Quic
     </TabItem>
     </Tabs>
 
-4. To enable adding a Postgres connection for this tutorial, run:
+4. To complete this tutorial, you also need to enable local Postgres operations in Airflow. To do this, run:
 
     <Tabs groupId="os">
     <TabItem value="macos" label="MacOS/Linux">
