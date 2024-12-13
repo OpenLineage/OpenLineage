@@ -161,7 +161,6 @@ def consume_structured_logs(target: str, project_dir: str, profile_name: str, mo
                 last_event = event
                 client.emit(event)
                 emitted_events += 1
-                logger.info(f"### sending event {event}")
             except Exception as e:
                 logger.warning(
                     "OpenLineage client failed to emit event %s runId %s. Exception: %s",

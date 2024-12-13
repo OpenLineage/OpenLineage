@@ -17,7 +17,7 @@ from openlineage.common.provider.dbt.processor import ParentRunMetadata
 __version__ = "1.26.0"
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
 
-# for which we can use the structured logs
+# for which structured logs consumption is implemented
 HANDLED_COMMANDS = [
     "run", "seed", "snapshot"
 ]
@@ -25,8 +25,8 @@ HANDLED_COMMANDS = [
 def get_event_timestamp(timestamp: str):
     """
     dbt events have a discrepancy in their timestamp formats
-    this converts a given timestamp string to %Y-%m-%dT%H:%M:%S.%fZ
-    it returns the given timestamp if it couldn't do the conversion
+    This converts a given timestamp string to %Y-%m-%dT%H:%M:%S.%fZ
+    It returns the given timestamp if it couldn't do the conversion
     """
     output_format = "%Y-%m-%dT%H:%M:%S.%fZ"
     input_formats = ["%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%S.%f"]
@@ -78,8 +78,8 @@ def generate_run_event(
 
 def get_dbt_profiles_dir(command: List[str]) -> str:
     """
-    based on this https://docs.getdbt.com/docs/core/connect-data-platform/connection-profiles#advanced-customizing-a-profile-directory
-    gets the profiles directory
+    Based on https://docs.getdbt.com/docs/core/connect-data-platform/connection-profiles#advanced-customizing-a-profile-directory
+    Gets the profiles directory
     """
     from_command = parse_single_arg(command, ["--profiles-dir"])
     from_env_var = os.getenv("DBT_PROFILES_DIR")
@@ -92,7 +92,7 @@ def get_dbt_profiles_dir(command: List[str]) -> str:
 
 def get_parent_run_metadata():
     """
-    the parent job that started the dbt command. Usually the scheduler (Airflow, ...etc)
+    The parent job that started the dbt command. Usually the scheduler (Airflow, ...etc)
     """
     parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
     parent_run_metadata = None
@@ -111,7 +111,7 @@ def get_node_unique_id(event):
 
 def get_job_type(event) -> Optional[str]:
     """
-    gets the Run Event's job type
+    Gets the Run Event's job type
     """
     node_unique_id = get_node_unique_id(event)
     node_type = event["info"]["name"]
