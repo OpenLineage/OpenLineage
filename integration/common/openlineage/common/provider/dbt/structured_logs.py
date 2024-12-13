@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import tempfile
 
+from mypyc.irbuild.format_str_tokenizer import unique
 from openlineage.common.provider.dbt.processor import ModelNode
 from openlineage.common.utils import get_from_nullable_chain, add_or_replace_command_line_option, add_command_line_arg, stream_has_lines
 
@@ -395,26 +396,22 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _get_job_name(self, event):
         """
-        The job name of models, snapshots, seeds ...
+        The job name of models, snapshots ...
         """
         database = event["data"]["node_info"]["node_relation"]["database"]
         schema = event["data"]["node_info"]["node_relation"]["schema"]
         node_unique_id = get_node_unique_id(event)
-        node_id = self.removeprefix(node_unique_id, "model.") # todo remove prefix for "snapshot." as well
-        suffix = ".build.run" if self.dbt_command == "build" else "" #todo why do we have this ?
+        if node_unique_id.startswith("model"):
+            node_id = self.removeprefix(node_unique_id, "model.")
+            suffix = ".build.run" if self.dbt_command == "build" else ""
+        elif node_unique_id.startswith("snapshot"):
+            node_id = self.removeprefix(node_unique_id, "snapshot.")
+            suffix = ".build.snapshot" if self.dbt_command == "build" else ".snapshot"
+        else:
+            node_id = node_unique_id
+            suffix = ".build.run" if self.dbt_command == "build" else ""
 
         return f"{database}.{schema}.{node_id}{suffix}"
-
-    def _get_job_type(self, event) -> Optional[str]:
-        node_unique_id = get_node_unique_id(event)
-        node_type = event["info"]["name"]
-        if node_type == "SQLQuery":
-            return "SQL"
-        elif node_unique_id.startswith("model."):
-            return "MODEL"
-        elif node_unique_id.startswith("snapshot."):
-            return "SNAPSHOT"
-        return None #todo what about seeds ?
 
     def _run_dbt_command(self):
         """
