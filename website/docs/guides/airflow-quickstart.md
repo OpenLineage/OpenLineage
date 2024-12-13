@@ -303,7 +303,7 @@ The owner of `sum`, `Team B`, begins to see failed runs in the DataOps view in M
 
 ![](./docs/counts-graph-new-schema.png)
 
-The schema doesn't look familiar, but, to make sure, they click on the node and view the detail drawer. There, they find the run in which the schema changed using the version history:
+The schema doesn't look familiar, but, to make sure, they click on the node and view the detail drawer. There, using the version history, they discover the change along with the run in which it occurred:
 
 ![](./docs/counts-detail.png)
 
