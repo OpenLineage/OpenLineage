@@ -114,47 +114,29 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _parse_structured_log_event(self, line: str):
         """
-        #todo rephrase and
-        let's start with the dbt run scenario
-
-        There is only one NodeStart event from dbt
-        for a NodeStart
-        we have a map from unique_id -> run_uuid
-
-        For a single unique_id node
-        1. create a facet for the parent dbt command
-        2. for event NodeStart create a Start OL
-           a. add the input and output from the manifest
-        3. for SQLQuery create a Start OL event with the NodeStart parent run _id
-        4. for SQLQueryStatus create either running/completed/failed event
-
-        SQLQueryStatus refer the last query executed.
-        lists of events
-        "NodeStart", "SQLQuery", "SQLQueryStatus", "NodeFinished", "CatchableExceptionOnRun", "CommandCompleted"
+        dbt generates structured events https://docs.getdbt.com/reference/events-logging
+        relevant events are consumed to generate OL events.
+        They are usually composed of start/finish events:
+        1. NodeStart/NodeFinish for node lifecycle events
+        2. MainReportVersion/CommandCompleted for dbt command lifecycle events
+        3. SQLQuery/SQLQueryStatus/CatchableExceptionOnRun For SQL query lifecycle events
         """
-
         dbt_event = None
         try:
             dbt_event = json.loads(line)
         except ValueError:
-            # log that we can't be consumed
+            # log that can't be consumed
             return None
 
         dbt_event_name = dbt_event["info"]["name"]
 
-        # only happens once
         if dbt_event_name == "MainReportVersion":
-            # dbt version
             self._dbt_version = dbt_event["data"]["version"][1:]
-            # start event
             start_event = self._parse_dbt_start_command_event(dbt_event)
             self._setup_dbt_run_metadata(start_event)
             return start_event
 
-
-
         elif dbt_event_name == "CommandCompleted":
-            # dbt command finishes
             end_event = self._parse_command_completed_event(dbt_event)
             return end_event
 
@@ -182,7 +164,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         run_facets = self.dbt_version_facet()
         if parent_run_metadata:
             run_facets["parent"] = parent_run_metadata
-
 
         start_event_run_id = str(generate_new_uuid())
 
