@@ -1,0 +1,65 @@
+---
+title: OpenLineage for Streaming Jobs
+date: 2024-12-13
+authors: [Obuchowski]
+description: A deep dive onto how OpenLineage thinks about streaming jobs.
+---
+
+## OpenLineage for Streaming Jobs
+Despite  appearing to fit mostly batch processing jobs, OpenLineage provides comprehensive lineage tracking for both batch and streaming job models.
+In fact, the streaming model can be seen as an extension of the batch model and works effectively with systems like Apache Flink or Apache Spark.
+However, there are some core differences between how those jobs are typically executed, and OpenLineage integration has to take into account those major differences.
+
+### Understanding Batch and Streaming Job Lineage Differences
+For batch jobs, OpenLineage typically aims to answer questions like:
+ - Which datasets are read, written to, or updated, and what are their properties?
+ - When does the job start and end, and did it succeed?
+ - What actual transformations do happen? For instance, which input columns are used to produce which output columns?
+
+In contrast, streaming jobs raise some additional questions:
+ - When does an unbounded job end?
+ - When are datasets updated?
+ - Does the transformation change during execution?
+
+### When Does the Unbounded Job End?
+
+Isn’t streaming supposed to be continuous?
+Streaming data is generally defined as being continuously generated, with a clear beginning but no defined end. However, most streaming jobs, even those considered unbounded, do eventually end. For instance:
+ - Jobs might need to be upgraded - whether it’s the underlying system or the job itself.
+ - Schema changes in the data may necessitate restarting a job.
+In such cases, the original run, which refers to a single execution instance of a streaming job, ends, and a new run of the same job begins.
+OpenLineage recommends modeling these scenarios as distinct runs, where one run ends and the next begins.
+This approach enables OpenLineage consumers to capture key insights.
+For example, after weeks of continuous operation, it becomes clear that a streaming job failed to send new data for 30 minutes following a deployment of a new version.
+Such visibility is necessary for diagnosing issues and assessing impacts, such as identifying the root cause of delayed data processing.
+
+### When Are Datasets Updated?
+Only at the start or end of a job?
+Dataset versioning is critical for tasks like debugging and ensuring data freshness. OpenLineage handles dataset updates for batch jobs using two mechanisms:
+ - Implicit versioning: The “last update timestamp” corresponds to the end of a run modifying the dataset.
+ - Explicit versioning: The DatasetVersionDatasetFacet allows events to provide explicit version details for datasets being read or written.
+However, explicit versioning is currently provided only by new “table formats” like Apache Iceberg or Delta Lake, as most systems lack native versioning support in their data storage schemes.
+For streaming jobs, OpenLineage offers additional capabilities, as OpenLineage’s RUNNING event type captures information that's available during job execution.
+This is particularly evident in OpenLineage's Flink integration, where events are emitted continuously at configurable intervals, including details about completed Flink checkpoints.
+Unfortunately some integrations, like Apache Spark one, do not provide detailed updates while the job is still running.
+
+### Does the Transformation Change During Execution?
+Certain scenarios in Apache Flink show how transformations can evolve mid-execution.
+For example, a KafkaSource configured with a wildcard pattern can dynamically pick up additional topics or partitions during the job’s runtime.
+This capability is often used to scale jobs:
+In a consumer group, a single partition can be processed by only one consumer, so increasing partitions can address scalability limits.
+New topics, representing distinct datasets in OpenLineage, may also be discovered and processed.
+If OpenLineage were restricted to emitting events only at the start or end of a job, these new datasets would remain “unclaimed” until the job concluded.
+This approach would be an impractical limitation for streaming jobs. With RUNNING events, OpenLineage can transmit updates about new datasets in near real-time, significantly reducing latency.
+
+### Other Concerns
+There are other differences between streaming and batch jobs, but in practice, those are often system-specific rather than general.
+OpenLineage facilitates capturing system-specific information by custom facets, which allow you to attach any atomic piece of metadata to OpenLineage core objects.
+This provides users with the flexibility to capture unique metadata, system-specific nuances, or operational details.
+
+### Conclusion
+In summary, while OpenLineage was initially perceived as a tool primarily for batch job tracking, its robust support for streaming jobs demonstrates its adaptability.
+By addressing key challenges such as run boundaries, dataset updates, and dynamic transformations, OpenLineage offers comprehensive lineage tracking for streaming models.
+The inclusion of continuous RUNNING events and support for custom facets further enhances its utility in complex streaming environments.
+This allows OpenLineage consumers to effectively use events from streaming jobs to achieve greater visibility, traceability, and control over their streaming workflows.
+It also facilitates more efficient debugging, impact analysis, and operational awareness.
