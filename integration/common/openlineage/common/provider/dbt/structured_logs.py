@@ -1,10 +1,9 @@
 # Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 import json
-import logging
 import os
+from datetime import datetime
 
-import sys
 import subprocess
 from functools import cached_property
 from typing import Any, Dict, List, Optional, Tuple
@@ -26,19 +25,6 @@ from openlineage.client.facet_v2 import (
     sql_job,
     error_message_run
 )
-
-
-
-#todo logger is used in the Processor and not outside based on other processors
-openlineage_logger = logging.getLogger("openlineage.dbt")
-openlineage_logger.setLevel(os.getenv("OPENLINEAGE_DBT_LOGGING", "INFO"))
-openlineage_logger.addHandler(logging.StreamHandler(sys.stdout))
-# deprecated dbt-ol logger
-logger = logging.getLogger("dbtol")
-for handler in openlineage_logger.handlers:
-    logger.addHandler(handler)
-    logger.setLevel(openlineage_logger.level)
-
 
 # list of commands that produce a run_result.json file
 RUN_RESULT_COMMANDS = [
@@ -83,7 +69,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self._compiled_manifest = None
         self._dbt_version = None
 
-
+    #todo for the local processor it's taken from the run_result.json file
     @cached_property
     def dbt_command(self):
         return get_dbt_command(self.dbt_command_line)
@@ -93,7 +79,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         """
 
         """
-
+        #todo error message
         if self.dbt_command not in HANDLED_COMMANDS:
             raise UnsupportedDbtCommand(
                 f"dbt integration for structured logs doesn't recognize dbt command " f"{self.command} - should be one of {HANDLED_COMMANDS}"
@@ -104,7 +90,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.extract_dataset_namespace(self.profile)
 
         for line in self._run_dbt_command():
-            logger.info(line)
+            self.logger.info(line)
             ol_event = self._parse_structured_log_event(line)
             if ol_event:
                 yield ol_event
@@ -112,7 +98,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _parse_dbt_start_command_event(self, event):
         parent_run_metadata = get_parent_run_metadata()
-        event_time = event["info"]["ts"]
+        event_time = get_event_timestamp(event["info"]["ts"])
         run_facets = self.dbt_version_facet()
         if parent_run_metadata:
             run_facets["parent"] = parent_run_metadata
@@ -223,7 +209,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             self.node_id_to_ol_run_id[node_unique_id] = str(generate_new_uuid())
 
         run_id = self.node_id_to_ol_run_id[node_unique_id]
-        node_start_time = event["data"]["node_info"]["node_started_at"]
+        node_start_time = get_event_timestamp(event["data"]["node_info"]["node_started_at"])
 
         parent_run_metadata = self.dbt_run_metadata.to_openlineage()
         run_facets = {"parent": parent_run_metadata, **self.dbt_version_facet()}
@@ -254,7 +240,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _parse_node_finish_event(self, event):
         node_unique_id = get_node_unique_id(event)
-        node_finished_at = event["data"]["node_info"]["node_finished_at"]
+        node_finished_at = get_event_timestamp(event["data"]["node_info"]["node_finished_at"])
         node_status = event["data"]["node_info"]["node_status"]
         run_id = self.node_id_to_ol_run_id[node_unique_id]
 
@@ -360,7 +346,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         dbt_node_type = event["info"]["name"]
         run_state = RunState.OTHER
-        event_time = event["info"]["ts"]
+        event_time = get_event_timestamp(event["info"]["ts"])
         run_facets = sql_ol_run_event.run.facets
 
         if dbt_node_type == "CatchableExceptionOnRun":
@@ -386,7 +372,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _parse_command_completed_event(self, event):
         success = event["data"]["success"]
-        event_time = event["data"]["completed_at"]
+        event_time = get_event_timestamp(event["data"]["completed_at"])
         run_facets = self.dbt_version_facet()
         if success:
             run_state = RunState.COMPLETE
@@ -449,34 +435,49 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         this is a generator, it returns log lines
         """
         # log in json and generated the artifacts
-
-        dbt_command = self.dbt_command + ["--log-format", "json", "--write-json"]
+        #todo add log format if necessary, add write-json is necessary as well
+        dbt_command_line = add_command_line_arg(self.dbt_command_line, arg_name="--log-format", arg_value="json")
+        dbt_command_line = add_or_replace_command_line_option(self.dbt_command_line, option="--write-json", replace_option="--no-write-json")
+        #dbt_command_line = add_command_line_arg(self.dbt_command_line + ["--log-format", "json", "--write-json"]
         stdout_file = tempfile.NamedTemporaryFile(delete=False)
         stderr_file = tempfile.NamedTemporaryFile(delete=False)
         stdout_reader = open(stdout_file.name, mode="r")
         stderr_reader = open(stderr_file.name, mode="r")
 
-        process = subprocess.Popen(dbt_command, stdout=stdout_file, stderr=stderr_file)
+        process = subprocess.Popen(dbt_command_line, stdout=stdout_file, stderr=stderr_file)
 
         while process.poll() is None:
-            stdout_lines = stdout_reader.readlines()
-            stderr_lines = stderr_reader.readlines()
-
-            if len(stdout_lines) > 0:
+            if self._stream_has_lines(stdout_reader):
                 self._load_manifest()
 
-            for line in stdout_lines:
-                line = line.strip()
-                if line:
-                    yield line
+            yield from self._consume_dbt_logs(stdout_reader, stderr_reader)
 
-            for line in stderr_lines:
-                line = line.strip()
-                if line:
-                    logger.error(line)
+        yield from self._consume_dbt_logs(stdout_reader, stderr_reader)
 
         stdout_reader.close()
         stderr_reader.close()
+
+    def _consume_dbt_logs(self, stdout_reader, stderr_reader):
+        stdout_lines = stdout_reader.readlines()
+        stderr_lines = stderr_reader.readlines()
+        for line in stdout_lines:
+            line = line.strip()
+            if line:
+                yield line
+
+        for line in stderr_lines:
+            line = line.strip()
+            if line:
+                self.logger.error(line)
+
+    #todo static or in a utils file
+    def _stream_has_lines(self, stream):
+        cursor = stream.tell()
+        has_lines = len(stream.readlines()) > 0
+        stream.seek(cursor)
+        return has_lines
+
+
 
 
     def _get_model_node(self, node_id) -> ModelNode:
@@ -555,7 +556,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             self,
     ) -> Tuple[Dict[Any, Any], Optional[Dict[Any, Any]], Dict[Any, Any], Optional[Dict[Any, Any]]]:
         """
-        replaced by cached properties
+        replaced by properties
         """
         pass
 
@@ -563,6 +564,61 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 ############
 # helpers
 ############
+#todo move them to an appropriate file
+def add_command_line_arg(command_line: List[str], arg_name: str, arg_value: str):
+    command_line = list(command_line)
+    arg_name_index = None
+    try:
+        arg_name_index = command_line.index(arg_name)
+    except ValueError:
+        # arg_name is not in list
+        pass
+
+    if arg_name_index is not None:
+        if arg_name_index + 1 >= len(command_line):
+            command_line.append(arg_value)
+        else:
+            command_line[arg_name_index + 1] = arg_value
+    else:
+        command_line.append(arg_name)
+        if arg_value:
+            command_line.append(arg_value)
+
+    return command_line
+
+def add_or_replace_command_line_option(command_line: List[str], option: str, replace_option: Optional[str]=None) -> List[str]:
+    """
+    if replace_option is ignored then the option is simply added
+    """
+    command_line = list(command_line)
+    if replace_option:
+        try:
+            replace_option_index = command_line.index(replace_option)
+            command_line[replace_option_index] = option
+        except ValueError:
+            command_line.append(option)
+    else:
+        command_line.append(option)
+
+    return command_line
+
+def get_event_timestamp(timestamp: str):
+    """
+    dbt events have a discrepancy in their timestamp formats
+    this converts a given timestamp string to %Y-%m-%dT%H:%M:%S.%fZ
+    it returns the given timestamp if it couldn't do the conversion
+    """
+    output_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+    input_formats = ["%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%S.%f"]
+    for input_format in input_formats:
+        try:
+            iso_timestamp = datetime.strptime(timestamp, input_format).strftime(output_format)
+            return iso_timestamp
+        except ValueError:
+            pass # ignore and pass to the other format
+
+    return timestamp
+
 
 def get_dbt_command(dbt_command_line: List[str]) -> Optional[str]:
     dbt_command_line_tokens = set(dbt_command_line)

@@ -6,11 +6,10 @@ from enum import Enum
 import json
 from typing import Dict
 
-from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
+from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor, add_command_line_arg, add_or_replace_command_line_option
 from openlineage.common.test import match
 
 from openlineage.common.provider.dbt.processor import Adapter
-
 
 ###########
 # helpers
@@ -158,3 +157,44 @@ def test_dataset_namespace(target, expected_dataset_namespace, monkeypatch):
         pass
 
     assert processor.dataset_namespace == expected_dataset_namespace
+
+@pytest.mark.parametrize(
+    "command_line, arg_name, arg_value, expected_command_line",
+    [
+        (["dbt", "run", "--select", "orders"],
+         "--log-format", "json",
+         ["dbt", "run", "--select", "orders", "--log-format", "json"]),
+
+        (["dbt", "run", "--select", "orders", "--log-format", "text"],
+         "--log-format", "json",
+         ["dbt", "run", "--select", "orders", "--log-format", "json"]),
+
+    ],
+    ids=["add_new_arg", "replace_arg_value"]
+)
+def test_add_command_line_arg(command_line, arg_name, arg_value, expected_command_line):
+    actual_command_line = add_command_line_arg(command_line, arg_name, arg_value)
+    assert actual_command_line == expected_command_line
+
+@pytest.mark.parametrize(
+    "command_line, option, replace_option, expected_command_line",
+    [
+        (["dbt", "run", "--select", "orders"],
+         "--write-json", None,
+         ["dbt", "run", "--select", "orders", "--write-json"]),
+
+        (["dbt", "run", "--select", "orders", "--no-write-json"],
+         "--write-json", "--no-write-json",
+         ["dbt", "run", "--select", "orders", "--write-json"]),
+
+        (["dbt", "run", "--select", "orders"],
+         "--write-json", "--no-write-json",
+         ["dbt", "run", "--select", "orders", "--write-json"]),
+
+    ],
+    ids=["add_new_option", "replace_option", "replace_non_existing_option"]
+)
+def test_add_or_replace_command_line_option(command_line, option, replace_option, expected_command_line):
+    actual_command_line = add_or_replace_command_line_option(command_line, option, replace_option)
+    assert actual_command_line == expected_command_line
+
