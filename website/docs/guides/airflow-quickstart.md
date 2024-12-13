@@ -1,225 +1,209 @@
 ---
 sidebar_position: 2
 ---
+
+import Tabs from '@theme/Tabs'; import TabItem from '@theme/TabItem';
+
 # Getting Started with Airflow and OpenLineage+Marquez
 
-In this example, we'll walk you through how to enable Airflow DAGs to send lineage metadata to [Marquez](https://marquezproject.ai/) using OpenLineage. 
-
-### You’ll Learn How To:
-
-* configure Airflow to send OpenLineage events to Marquez
-* write OpenLineage-enabled DAGs
-* troubleshoot a failing DAG using Marquez
+In this tutorial, you'll configure Airflow to send OpenLineage events to [Marquez](https://marquezproject.ai/) and explore a realistic troubleshooting scenario. 
 
 ### Table of Contents
 
-1. [Step 1: Configure Your Astro Project](#configure-your-astro-project)
-2. [Step 2: Add Marquez Services Using Docker Compose](#add-marquez-services-using-docker-compose)
-3. [Step 3: Start Airflow with Marquez](#start-airflow-with-marquez)
-4. [Step 4: Write Airflow DAGs](#write-airflow-dags)
-5. [Step 5: View Collected Metadata](#view-collected-metadata)
-6. [Step 6: Troubleshoot a Failing DAG with Marquez](#troubleshoot-a-failing-dag-with-marquez)
+1. [Prerequisites](#prerequisites)
+2. [Get and start Marquez](#get-marquez)
+3. [Configure Apache Airflow to send OpenLineage events to Marquez](#configure-airflow)
+4. [Write Airflow DAGs](#write-airflow-dags)
+5. [View Collected Lineage in Marquez](#view-collected-metadata)
+6. [Troubleshoot a Failing DAG with Marquez](#troubleshoot-a-failing-dag-with-marquez)
 
-## Prerequisites
+## Prerequisites {#prerequisites}
 
 Before you begin, make sure you have installed:
 
 * [Docker 17.05](https://docs.docker.com/install)+
-* [Astro CLI](https://docs.astronomer.io/astro/cli/overview)
-* [curl](https://curl.se/)
+* [Airflow 2.8+](https://airflow.apache.org/docs/apache-airflow/stable/start.html) running locally
 
-> **Note:** We recommend that you have allocated at least **2 CPUs** and **8 GB** of memory to Docker.
+:::tip
 
-## Configure Your Astro Project
+For an easy path to standing up a local Airflow instance, see this Airflow [Quick Start](https://airflow.apache.org/docs/apache-airflow/2.10.3/start.html). 
 
-Use the Astro CLI to create and run an Airflow project locally that will integrate with Marquez.
+:::
 
-1. In your project directory, create a new Astro project:
+## Get and start Marquez {#get-marquez}
 
-    ```sh
-    $ ..
-    $ mkdir astro-marquez-tutorial && cd astro-marquez-tutorial
-    $ astro dev init
+1. To checkout the Marquez source code, run:
+
+    <Tabs groupId="os">
+    <TabItem value="macos" label="MacOS/Linux">
+
+    ```bash
+    $ git clone https://github.com/MarquezProject/marquez && cd marquez
     ```
 
-2. Using curl, change into new directory `docker` and download some scripts required by Marquez services:
+    </TabItem>
+    <TabItem value="windows" label="Windows">
 
-    ```sh
-    $ mkdir docker && cd docker
-    $ curl -O "https://raw.githubusercontent.com/MarquezProject/marquez/main/docker/{entrypoint.sh,wait-for-it.sh}"
-    $ ..
+    ```bash
+    $ git config --global core.autocrlf false
+    $ git clone https://github.com/MarquezProject/marquez && cd marquez
     ```
 
-    After executing the above, your project directory should look like this:
+    </TabItem>
+    </Tabs>
 
-    ```sh
-    $ ls -a
-    .                     Dockerfile            packages.txt
-    ..                    README.md             plugins
-    .astro                airflow_settings.yaml requirements.txt
-    .dockerignore         dags                  tests
-    .env                  docker
-    .gitignore            include
+2. Both Airflow and Marquez require port 5432 for their metastores, but the Marquez services are easier to configure. You can also assign the database service to a new port on the fly. To start Marquez using port 2345 for the database, run:
+
+    <Tabs groupId="os">
+    <TabItem value="macos" label="MacOS/Linux">
+
+    ```bash
+    $ ./docker/up.sh --db-port 2345
     ```
 
-3. Add the OpenLineage Airflow Provider and the Common SQL Provider to the requirements.txt file:
+    </TabItem>
+    <TabItem value="windows" label="Windows">
 
-    ```txt
-    apache-airflow-providers-common-sql==1.7.2
-    apache-airflow-providers-openlineage==1.1.0
+    Verify that Postgres and Bash are in your `PATH`, then run:
+
+    ```bash
+    $ sh ./docker/up.sh --db-port 2345
     ```
 
-    For details about the Provider and its minimum requirements, see the Airflow [docs](https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/index.html).
+    </TabItem>
+    </Tabs>
 
-4. To configure Astro to send lineage metadata to Marquez, add the following environment variables below to your Astro project's `.env` file:
+3. To view the Marquez UI and verify it's running, open [http://localhost:3000](http://localhost:3000). The UI allows you to: 
 
-    ```env
-    OPENLINEAGE_URL=http://host.docker.internal:5000
-    OPENLINEAGE_NAMESPACE=example
-    AIRFLOW_CONN_EXAMPLE_DB=postgres://example:example@host.docker.internal:7654/example
+    - view cross-platform dependencies, meaning you can see the jobs across the tools in your ecosystem that produce or consume a critical table.
+    - view run-level metadata of current and previous job runs, enabling you to see the latest status of a job and the update history of a dataset.
+    - get a high-level view of resource usage, allowing you to see trends in your operations.
+
+## Configure Airflow to send OpenLineage events to Marquez {#configure-airflow}
+
+1. To configure Airflow to emit OpenLineage events to Marquez, you need to define an OpenLineage transport. One way you can do this is by using an environment variable. To use `http` and send events to the Marquez API running locally on port `5000`, run:
+
+    <Tabs groupId="os">
+    <TabItem value="macos" label="MacOS/Linux">
+
+    ```bash
+    $ export AIRFLOW__OPENLINEAGE__TRANSPORT='{"type": "http", "url": "http://localhost:5000", "endpoint": "api/v1/lineage"}'
     ```
 
-    These variables allow Airflow to connect with the OpenLineage API and send events to Marquez.
+    </TabItem>
+    <TabItem value="windows" label="Windows">
 
-5. It is a good idea to have Airflow use a different port for Postgres than the default 5432, so run the following command to use port 5678 instead:
-
-    ```sh
-    astro config set postgres.port 5678
+    ```bash
+    $ set AIRFLOW__OPENLINEAGE__TRANSPORT='{"type": "http", "url": "http://localhost:5000", "endpoint": "api/v1/lineage"}'
     ```
 
-6. Check the Dockerfile to verify that your installed version of the Astro Runtime is 9.0.0+ (to ensure that you will be using Airflow 2.7.0+).
+    </TabItem>
+    </Tabs>
 
-    For example:
+2. You also need to define a namespace for Airflow jobs. It can be any string. Run:
 
-    ```txt
-    FROM quay.io/astronomer/astro-runtime:9.1.0
+    <Tabs groupId="os">
+    <TabItem value="macos" label="MacOS/Linux">
+
+    ```bash
+    $ export AIRFLOW__OPENLINEAGE__NAMESPACE='my-team-airflow-instance'
     ```
 
-## Add Marquez and Database Services Using Docker Compose
+    </TabItem>
+    <TabItem value="windows" label="Windows">
 
-Astro supports manual configuration of services via Docker Compose using YAML.
+    ```bash
+    $ set AIRFLOW__OPENLINEAGE__NAMESPACE='my-team-airflow-instance'
+    ```
 
-Create new file `docker-compose.override.yml` in your project and copy/paste the following into the file:
+    </TabItem>
+    </Tabs>
 
-```yml
-version: "3.1"
-services:
-  web:
-    image: marquezproject/marquez-web:latest
-    container_name: marquez-web
-    environment:
-      - MARQUEZ_HOST=api
-      - MARQUEZ_PORT=5000
-      - WEB_PORT=3000
-    ports:
-      - "3000:3000"
-    depends_on:
-      - api
+3. To add the required Airflow OpenLineage Provider package to your Airflow environment, run:
 
-  db:
-    image: postgres:14.9
-    container_name: marquez-db
-    ports:
-      - "6543:6543"
-    environment:
-      - POSTGRES_USER=marquez
-      - POSTGRES_PASSWORD=marquez
-      - POSTGRES_DB=marquez
+    <Tabs groupId="os">
+    <TabItem value="macos" label="MacOS/Linux">
 
-  example-db:
-    image: postgres:14.9
-    container_name: example-db
-    ports:
-      - "7654:5432"
-    environment:
-      - POSTGRES_USER=example
-      - POSTGRES_PASSWORD=example
-      - POSTGRES_DB=example
-  
-  api:
-    image: marquezproject/marquez:latest
-    container_name: marquez-api
-    environment:
-      - MARQUEZ_PORT=5000
-      - MARQUEZ_ADMIN_PORT=5001
-    ports:
-      - "5000:5000"
-      - "5001:5001"
-    volumes:
-       - ./docker/wait-for-it.sh:/usr/src/app/wait-for-it.sh
-    links:
-      - "db:postgres"
-    depends_on:
-      - db
-    entrypoint: ["/bin/bash", "./wait-for-it.sh", "db:6543", "--", "./entrypoint.sh"]
+    ```bash
+    $ pip install apache-airflow-providers-openlineage
+    ```
 
-  redis:
-    image: bitnami/redis:6.0.6
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
-```
+    </TabItem>
+    <TabItem value="windows" label="Windows">
 
-The above adds the Marquez API, database and Web UI, along with an additional Postgres database for the DAGs used in this example, to Astro's Docker container and configures them to use the scripts in the `docker` directory you previously downloaded from Marquez.
+    ```bash
+    $ pip install apache-airflow-providers-openlineage
+    ```
 
-## Start Airflow with Marquez
+    </TabItem>
+    </Tabs>
 
-Now you can start all services. To do so, execute the following:
+4. To enable adding a Postgres connection for this tutorial, run:
 
-```bash
-$ astro dev start
-```
+    <Tabs groupId="os">
+    <TabItem value="macos" label="MacOS/Linux">
 
-**The above command will:**
+    ```bash
+    $ pip install apache-airflow-providers-postgres
+    ```
 
-* start Airflow
-* start Marquez, including its API, database and UI
-* create and start a Postgres server for DAG tasks
+    </TabItem>
+    <TabItem value="windows" label="Windows">
 
-To view the Airflow UI and verify it's running, open [http://localhost:8080](http://localhost:8080). Then, log in using the username and password `admin` / `admin`. You can also browse to [http://localhost:3000](http://localhost:3000) to view the Marquez UI.
+    ```bash
+    $ pip install apache-airflow-providers-postgres
+    ```
+
+    </TabItem>
+    </Tabs>
+
+5. Create a database in your local Postgres instance and create an Airflow Postgres connection using the default ID (`postgres_default`). For help with the former, see: [Postgres Documentation](https://www.postgresql.org/docs/). For help with the latter, see: [Managing Connections](https://airflow.apache.org/docs/apache-airflow/stable/howto/connection.html#managing-connections).
 
 ## Write Airflow DAGs
 
-In this step, you will create two new Airflow DAGs that perform simple tasks. The `counter` DAG adds 1 to a column every minute, while the `sum` DAG calculates a sum every five minutes. This will result in a simple pipeline containing two jobs and two datasets.
+In this step, you will create two new Airflow DAGs that perform simple tasks and add them to your existing Airflow instance. The `counter` DAG adds 1 to a column every minute, while the `sum` DAG calculates a sum every five minutes. This will result in a simple pipeline containing two jobs and two datasets.
 
 ### Create a `counter` DAG
 
 In `dags/`, create a file named `counter.py` and add the following code:
 
 ```python
-from airflow import DAG
-from airflow.decorators import task
+import pendulum
+from airflow.decorators import dag, task
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.dates import days_ago
 
-with DAG(
-    'counter',
-    start_date=days_ago(1),
+@dag(
     schedule='*/1 * * * *',
+    start_date=days_ago(1),
     catchup=False,
     is_paused_upon_creation=False,
     max_active_runs=1,
     description='DAG that generates a new count value equal to 1.'
-):
+)
+
+def counter():
 
     query1 = PostgresOperator(
         task_id='if_not_exists',
-        postgres_conn_id='example_db',
+        postgres_conn_id='postgres_default',
         sql='''
-        CREATE TABLE IF NOT EXISTS counts (
-            value INTEGER
-        );'''
+        CREATE TABLE IF NOT EXISTS counts (value INTEGER);
+        ''',
     )
 
     query2 = PostgresOperator(
         task_id='inc',
-        postgres_conn_id='example_db',
+        postgres_conn_id='postgres_default',
         sql='''
-        INSERT INTO counts (value)
-            VALUES (1) 
-        '''
+        INSERT INTO "counts" (value) VALUES (1);
+        ''',
     )
 
-query1 >> query2
+    query1 >> query2
+
+counter()
+
 ```
 
 ### Create a `sum` DAG
@@ -227,23 +211,25 @@ query1 >> query2
 In `dags/`, create a file named `sum.py` and add the following code:
 
 ```python
-from airflow import DAG
+import pendulum
+from airflow.decorators import dag, task
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.dates import days_ago
 
-with DAG(
-    'sum',
+@dag(
     start_date=days_ago(1),
     schedule='*/5 * * * *',
     catchup=False,
     is_paused_upon_creation=False,
     max_active_runs=1,
     description='DAG that sums the total of generated count values.'
-):
+)
+
+def sum():
 
     query1 = PostgresOperator(
         task_id='if_not_exists',
-        postgres_conn_id='example_db',
+        postgres_conn_id='postgres_default',
         sql='''
         CREATE TABLE IF NOT EXISTS sums (
             value INTEGER
@@ -252,41 +238,36 @@ with DAG(
 
     query2 = PostgresOperator(
         task_id='total',
-        postgres_conn_id='example_db',
+        postgres_conn_id='postgres_default',
         sql='''
         INSERT INTO sums (value)
             SELECT SUM(value) FROM counts;
         '''
     )
 
-query1 >> query2
+    query1 >> query2
+
+sum()
+
 ```
 
-## View Collected Metadata
+## View Collected Lineage in Marquez
 
-To ensure that Airflow is executing `counter` and `sum`, navigate to the DAGs tab in Airflow and verify that they are both enabled and are in a _running_ state:
-
-![](./docs/astro-view-dags.png)
-
-To view DAG metadata collected by Marquez from Airflow, browse to the Marquez UI by visiting [http://localhost:3000](http://localhost:3000). Then, use the _search_ bar in the upper right-side of the page and search for the `counter.inc` job. To view lineage metadata for `counter.inc`, click on the job from the drop-down list:
-
-> **Note:** If the `counter.inc` job is not in the drop-down list, check to see if Airflow has successfully executed the DAG.
+To view lineage collected by Marquez from Airflow, browse to the Marquez UI by visiting [http://localhost:3000](http://localhost:3000). Then, use the _search_ bar in the upper right-side of the page and search for the `counter.inc` job. To view lineage metadata for `counter.inc`, click on the job from the drop-down list:
 
 <p align="center">
-  <img src={require("./docs/current-search-count.png").default} />
+  <img src={require("./docs/marquez-search.png").default} />
 </p>
 
-If you take a quick look at the lineage graph for `counter.inc`, you should see `example.public.counts` as an output dataset and `sum.total` as a downstream job!
+If you take a look at the lineage graph for `counter.inc`, you should see `<database>.public.counts` as an output dataset and `sum.total` as a downstream job:
 
-![](./docs/astro-current-lineage-view-job.png)
+![](./docs/counter-inc-graph.png)
 
 ## Troubleshoot a Failing DAG with Marquez
 
-In this step, let's quickly walk through a simple troubleshooting scenario where the DAG `sum` begins to fail as the result of an upstream schema change for table `counts`.
+In this step, you'll simulate a pipeline outage due to a cross-DAG depedency change and see how the enhanced lineage from OpenLineage+Marquez makes breaking schema changes easy to troubleshoot.
 
-> **Tip:** It's helpful to apply the same code changes outlined below to your Airflow DAGs defined in **Step 6**.
-
-Let's say team `A` owns the DAG `counter`. Team `A` decides to update the tasks in `counter` to rename the `values` column in the `counts` table to `value_1_to_10` (without properly communicating the schema change!):
+Let's say team `A` owns the DAG `counter`. `Team A` updates `counter` to rename the `values` column in the `counts` table to `value_1_to_10`, without properly communicating the schema change to the team that owns `sum`:
 
 ```diff
 query1 = PostgresOperator(
@@ -314,38 +295,42 @@ query2 = PostgresOperator(
 )
 ```
 
-Team `B`, unaware of the schema change, owns the DAG `sum` and begins to see DAG run metadata with _failed_ run states:
+The owner of `sum`, `Team B`, begins to see failed runs in the DataOps view in Marquez:
 
-![](./docs/astro-job-failure.png)
+![](./docs/sum-data-ops.png)
 
-But, team `B` is not sure what might have caused the DAG failure as no recent code changes have been made to the DAG. So, team `B` decides to check the schema of the input dataset:
+`Team B` can only guess what might have caused the DAG failure as no recent changes have been made to the DAG. So, the team decides to check Marquez. Looking at the graph, `Team B` can see the schema on the node:
 
-![](./docs/astro-lineage-view-dataset.png)
+![](./docs/counts-graph-new-schema.png)
 
-Team `B` soon realizes that the schema has changed recently for the `counts` table! To fix the DAG, team `B` updates the `t2` task that calculates the count total to use the new column name:
+The schema doesn't look familiar, but, to make sure, they click on the node and view the detail drawer. There, they find the run in which the schema changed using the version history:
+
+![](./docs/counts-detail.png)
+
+To fix the DAG, the team updates the task that calculates the count total to use the new column name:
 
 ```diff
 query2 = PostgresOperator(
     task_id='total',
     postgres_conn_id='example_db',
     sql='''
-    INSERT INTO sums (value)
+-    INSERT INTO sums (value)
 -       SELECT SUM(value) FROM counts;
 +       SELECT SUM(value_1_to_10) FROM counts;
     '''
 )
 ```
 
-With the code change, the DAG `sum` begins to run successfully:
+With the code change, the DAG `sum` begins to run successfully, as seen from the run history in Marquez:
 
-![](./docs/astro-lineage-view-job-successful.png)
+![](./docs/sum-history.png)
 
-_Congrats_! You successfully step through a troubleshooting scenario of a failing DAG using metadata collected with Marquez! You can now add your own DAGs to `dags/` to build more complex data lineage graphs.
+You successfully stepped through a troubleshooting scenario of a failing DAG using metadata collected with Marquez!
 
 ## Next Steps
 
 * Review the Marquez [HTTP API](https://marquezproject.github.io/marquez/openapi.html) used to collect Airflow DAG metadata and learn how to build your own integrations using OpenLineage.
-* Take a look at [`openlineage-spark`](https://openlineage.io/docs/integrations/spark/) integration that can be used with Airflow.
+* Take a look at the [`openlineage-spark`](https://openlineage.io/docs/integrations/spark/) integration that can be used with Airflow.
 
 ## Feedback
 
