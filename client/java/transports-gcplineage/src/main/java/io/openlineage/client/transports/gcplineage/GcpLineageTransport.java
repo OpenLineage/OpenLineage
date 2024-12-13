@@ -21,6 +21,7 @@ import com.google.cloud.datalineage.producerclient.v1.AsyncLineageProducerClient
 import com.google.cloud.datalineage.producerclient.v1.SyncLineageClient;
 import com.google.cloud.datalineage.producerclient.v1.SyncLineageProducerClient;
 import com.google.cloud.datalineage.producerclient.v1.SyncLineageProducerClientSettings;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.protobuf.Struct;
 import io.openlineage.client.OpenLineage;
@@ -32,6 +33,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.ServiceLoader;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -162,7 +166,8 @@ public class GcpLineageTransport extends Transport {
       return createSettings(config, builder).build();
     }
 
-    private static <T extends LineageSettings.Builder> T createSettings(
+    @VisibleForTesting
+    static <T extends LineageSettings.Builder> T createSettings(
         GcpLineageTransportConfig config, T builder) throws IOException {
       if (config.getEndpoint() != null) {
         builder.setEndpoint(config.getEndpoint());
@@ -177,7 +182,14 @@ public class GcpLineageTransport extends Transport {
           builder.setCredentialsProvider(FixedCredentialsProvider.create(googleCredentials));
         }
       }
+      getExtensions().forEach(extension -> extension.updateSettings(builder));
       return builder;
+    }
+
+    private static Iterable<GCPLineageTransportExtension> getExtensions() {
+      ServiceLoader<GCPLineageTransportExtension> loader =
+          ServiceLoader.load(GCPLineageTransportExtension.class);
+      return StreamSupport.stream(loader.spliterator(), false).collect(Collectors.toList());
     }
 
     private static String getProjectId(GcpLineageTransportConfig config, LineageSettings settings)
