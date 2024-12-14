@@ -251,7 +251,7 @@ In this step, you will create two new Airflow DAGs that perform simple tasks and
 
 ## View Collected Lineage in Marquez
 
-1. To view lineage collected by Marquez from Airflow, browse to the Marquez UI by visiting [http://localhost:3000](http://localhost:3000). Then, use the _search_ bar in the upper right-side of the page and search for the `counter.inc` job. To view lineage metadata for `counter.inc`, click on the job from the drop-down list:
+1. To view lineage collected by Marquez from Airflow, browse to the Marquez UI by visiting [http://localhost:3000](http://localhost:3000). Then, use the _search_ bar in the upper left to search for the `counter.inc` job. To view lineage metadata for `counter.inc`, click on the job from the drop-down list:
 
 <p align="center">
   <img src={require("./docs/marquez-search.png").default} />
