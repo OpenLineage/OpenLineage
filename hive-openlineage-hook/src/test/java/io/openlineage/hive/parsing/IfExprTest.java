@@ -33,7 +33,7 @@ class IfExprTest {
             new ConstantExpr("lesser or equal value"));
     IfExpr ifExpr = new IfExpr(children);
     String expected =
-        "If: [Function[GenericUDFOPGreaterThan]([Column[x], Column[y]]), Constant[greater value], Constant[lesser or equal value]]";
+        "If: [Function[greater_than]([Column[x], Column[y]]), Constant[greater value], Constant[lesser or equal value]]";
     assertThat(ifExpr.toString()).isEqualTo(expected);
   }
 }
