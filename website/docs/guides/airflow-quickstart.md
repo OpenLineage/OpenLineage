@@ -26,7 +26,7 @@ Before you begin, make sure you have installed:
 
 :::tip
 
-For an easy path to standing up a local Airflow instance, see: [Quick Start](https://airflow.apache.org/docs/apache-airflow/2.10.3/start.html). 
+For an easy path to installing and running Airflow locally for development purposes, see: [Quick Start](https://airflow.apache.org/docs/apache-airflow/2.10.3/start.html). 
 
 :::
 
