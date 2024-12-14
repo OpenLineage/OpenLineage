@@ -4,9 +4,9 @@ sidebar_position: 2
 
 import Tabs from '@theme/Tabs'; import TabItem from '@theme/TabItem';
 
-# Getting Started with Airflow and OpenLineage+Marquez
+# Getting Started with Apache Airflow® and OpenLineage+Marquez
 
-In this tutorial, you'll configure Airflow to send OpenLineage events to [Marquez](https://marquezproject.ai/) and explore a realistic troubleshooting scenario. 
+In this tutorial, you'll configure Apache Airflow® to send OpenLineage events to [Marquez](https://marquezproject.ai/) and explore a realistic troubleshooting scenario. 
 
 ### Table of Contents
 
@@ -22,11 +22,11 @@ In this tutorial, you'll configure Airflow to send OpenLineage events to [Marque
 Before you begin, make sure you have installed:
 
 * [Docker 17.05](https://docs.docker.com/install)+
-* [Airflow 2.8+](https://airflow.apache.org/docs/apache-airflow/stable/start.html) running locally
+* [Apache Airflow 2.8+](https://airflow.apache.org/docs/apache-airflow/stable/start.html) running locally.
 
 :::tip
 
-For an easy path to standing up a local Airflow instance, see this Airflow [Quick Start](https://airflow.apache.org/docs/apache-airflow/2.10.3/start.html). 
+For an easy path to standing up a local Airflow instance, see: [Quick Start](https://airflow.apache.org/docs/apache-airflow/2.10.3/start.html). 
 
 :::
 
