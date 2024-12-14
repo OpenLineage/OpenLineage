@@ -23,14 +23,16 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 @Getter
 public class FunctionExpr extends BaseExpr {
   private final GenericUDF function;
+  private final String name;
 
-  public FunctionExpr(@NonNull GenericUDF function, @NonNull List<BaseExpr> children) {
+  public FunctionExpr(@NonNull String name, GenericUDF function, @NonNull List<BaseExpr> children) {
     super(children);
+    this.name = name;
     this.function = function;
   }
 
   @Override
   public String toString() {
-    return String.format("Function (%s): [%s]", function, getChildren());
+    return String.format("Function[%s](%s)", name, getChildren());
   }
 }

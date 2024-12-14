@@ -23,6 +23,6 @@ public class ParsingTestUtils {
 
   public static BaseExpr createGreaterThanExpr(String leftCol, String rightCol) {
     List<BaseExpr> children = Arrays.asList(new ColumnExpr(leftCol), new ColumnExpr(rightCol));
-    return new FunctionExpr(new GenericUDFOPGreaterThan(), children);
+    return new FunctionExpr("greater_than", new GenericUDFOPGreaterThan(), children);
   }
 }

@@ -34,10 +34,8 @@ public class ColumnExpr extends BaseExpr {
     this.name = name;
   }
 
-  public ColumnExpr(String name, int index, List<QueryExpr> queries, Table table) {
-    this.name = name;
-    this.index = index;
-    this.queries = queries;
-    this.table = table;
+  @Override
+  public String toString() {
+    return String.format("Column[%s]", name);
   }
 }

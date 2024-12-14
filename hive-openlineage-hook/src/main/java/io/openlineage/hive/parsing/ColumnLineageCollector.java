@@ -191,18 +191,20 @@ public class ColumnLineageCollector {
       String outputColumn,
       FunctionExpr func,
       TransformationInfo transformationInfo) {
-    Class<?> funcClass;
-    if (func.getFunction() instanceof GenericUDFBridge) {
-      funcClass = ((GenericUDFBridge) func.getFunction()).getUdfClass();
+    boolean funcIsMasking;
+    if (func.getFunction() == null) {
+      funcIsMasking = false;
+    } else if (func.getFunction() instanceof GenericUDFBridge) {
+      funcIsMasking = isMasking(((GenericUDFBridge) func.getFunction()).getUdfClass());
     } else {
-      funcClass = func.getFunction().getClass();
+      funcIsMasking = isMasking(func.getFunction().getClass());
     }
     for (BaseExpr child : func.getChildren()) {
       traverseExpression(
           outputCLL,
           outputColumn,
           child,
-          transformationInfo.merge(TransformationInfo.transformation(isMasking(funcClass))));
+          transformationInfo.merge(TransformationInfo.transformation(funcIsMasking)));
     }
   }
 

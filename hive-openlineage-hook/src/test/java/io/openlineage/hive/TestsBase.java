@@ -230,6 +230,7 @@ public abstract class TestsBase {
 
   public void initHive(String engine) {
     addExecHooks(HiveConf.ConfVars.POSTEXECHOOKS, HiveOpenLineageHook.class);
+    addExecHooks(HiveConf.ConfVars.ONFAILUREHOOKS, HiveOpenLineageHook.class);
     hive.setHiveConfValue(HiveConf.ConfVars.HIVE_EXECUTION_ENGINE.varname, engine);
     hive.setHiveConfValue("hive.openlineage.transport.type", "composite");
     hive.setHiveConfValue(

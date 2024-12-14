@@ -326,6 +326,12 @@ public class Parsing {
 
   public static BaseExpr handleFunction(QueryExpr query, ASTNode node) {
     String functionName = node.getChild(0).getText().toLowerCase(Locale.ROOT);
+    FunctionInfo functionInfo;
+    try {
+      functionInfo = FunctionRegistry.getFunctionInfo(functionName);
+    } catch (SemanticException e) {
+      throw new IllegalStateException(e);
+    }
     ArrayList<BaseExpr> childrenExpressions = new ArrayList<>();
     for (int i = 1; i < node.getChildCount(); i++) {
       ASTNode child = (ASTNode) node.getChild(i);
@@ -335,14 +341,8 @@ public class Parsing {
       }
       childrenExpressions.add(childExpr);
     }
-    FunctionInfo functionInfo;
-    try {
-      functionInfo = FunctionRegistry.getFunctionInfo(functionName);
-    } catch (SemanticException e) {
-      throw new IllegalStateException(e);
-    }
     if (functionInfo == null) {
-      throw new IllegalStateException("Unknown function: " + functionName);
+      return new FunctionExpr(functionName, null, childrenExpressions);
     }
     if (functionInfo.isGenericUDAF()) {
       return new AggregateExpr(functionInfo.getGenericUDAFResolver(), childrenExpressions);
@@ -353,10 +353,10 @@ public class Parsing {
       if (functionInfo.getGenericUDF().getClass().equals(GenericUDFIf.class)) {
         return new CaseWhenExpr(childrenExpressions);
       }
-      return new FunctionExpr(functionInfo.getGenericUDF(), childrenExpressions);
+      return new FunctionExpr(functionName, functionInfo.getGenericUDF(), childrenExpressions);
     } else if (functionInfo.isGenericUDTF()) {
       return new UDTFExpr(functionInfo.getGenericUDTF(), childrenExpressions.get(0).getChildren());
     }
-    throw new IllegalStateException("Unknown function: " + functionInfo.getDisplayName());
+    return new FunctionExpr(functionName, null, childrenExpressions);
   }
 }
