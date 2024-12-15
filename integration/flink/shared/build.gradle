@@ -67,14 +67,14 @@ test {
 ext {
     flinkVersion = project.getProperty('flink.shared.version')
     flinkVersionShort = flinkVersion.substring(0,4)
-    assertjVersion = '3.25.3'
-    junit5Version = '5.10.2'
-    lombokVersion = '1.18.30'
+    assertjVersion = '3.26.3'
+    junit5Version = '5.11.3'
+    lombokVersion = '1.18.36'
     mockitoVersion = '5.2.0'
-    testcontainersVersion = '1.19.6'
+    testcontainersVersion = '1.20.4'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
     icebergVersion = "1.3.0"
-    micrometerVersion = "1.14.1"
+    micrometerVersion = "1.14.2"
 
     versionsMap = [
             "1.15": ["cassandra": "1.15.4", "kafka": flinkVersion, "jdbc": "1.15.4", "iceberg": "1.3.0", "alternativeShort": "1.15"],
@@ -122,14 +122,14 @@ dependencies {
     testImplementation "org.apache.flink:flink-avro:$flinkVersion"
     testImplementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     testImplementation "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:${versions.iceberg}"
-    testImplementation platform('org.junit:junit-bom:5.11.0')
-    testImplementation 'org.hamcrest:hamcrest-library:2.2'
+    testImplementation platform('org.junit:junit-bom:5.11.3')
+    testImplementation 'org.hamcrest:hamcrest-library:3.0'
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
-    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.2.0'
+    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.2.2'
     testImplementation 'com.github.tomakehurst:wiremock:3.0.1'
-    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.23.1'
+    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.24.3'
     testImplementation "io.micrometer:micrometer-core:${micrometerVersion}"
 
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
