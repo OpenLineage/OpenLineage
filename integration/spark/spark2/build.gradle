@@ -28,7 +28,7 @@ ext {
     junit5Version = "5.11.3"
     mockitoVersion = "4.11.0"
     postgresqlVersion = "42.7.4"
-    micrometerVersion = '1.14.1'
+    micrometerVersion = '1.14.2'
 
     sparkVersion = project.findProperty("spark2.spark.version")
     scalaBinaryVersion = "2.11"
