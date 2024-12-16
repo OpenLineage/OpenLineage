@@ -64,7 +64,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.node_id_to_output: Dict[str, ModelNode] = {}
 
         # will be populated when some dbt events are collected
-        self._compiled_manifest: Optional[Dict] = None
+        self._compiled_manifest: Dict = {}
         self._dbt_version: Optional[str] = None
 
     @cached_property
@@ -96,20 +96,20 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         return ze_profile
 
     @property
-    def compiled_manifest(self) -> Optional[Dict]:
+    def compiled_manifest(self) -> Dict:
         """
         Manifest is loaded and cached.
         It's loaded when the dbt structured logs are generated and processed.
         """
-        if self._compiled_manifest is not None:
+        if self._compiled_manifest != {}:
             return self._compiled_manifest
         elif os.path.isfile(self.manifest_path):
             self._compiled_manifest = self.load_metadata(self.manifest_path, [2, 3, 4, 5, 6, 7], self.logger)
             return self._compiled_manifest
         else:
-            return None
+            return {}
 
-    def parse(self) -> Generator[RunEvent]:
+    def parse(self) -> Generator[RunEvent, None, None]:
         """
         This executes the dbt command and parses the structured log events emitted.
         OL events are sent when relevant.
@@ -438,7 +438,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         return f"{database}.{schema}.{node_id}{suffix}"
 
-    def _run_dbt_command(self) -> Generator[str]:
+    def _run_dbt_command(self) -> Generator[str, None, None]:
         """
         This is a generator, it returns log lines
         """
@@ -469,7 +469,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         stdout_reader.close()
         stderr_reader.close()
 
-    def _consume_dbt_logs(self, stdout_reader, stderr_reader) -> Generator[str]:
+    def _consume_dbt_logs(self, stdout_reader, stderr_reader) -> Generator[str, None, None]:
         stdout_lines = stdout_reader.readlines()
         stderr_lines = stderr_reader.readlines()
         for line in stdout_lines:
