@@ -52,7 +52,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.node_id_to_ol_run_id: Dict[str, str] = {}
 
         # sql query ids are incremented sequentially per node_id
-        self.node_id_to_sql_query_id: Dict[str, str] = {}
+        self.node_id_to_sql_query_id: Dict[str, int] = {}
         self.node_id_to_sql_start_event: Dict[str, RunEvent] = {}
 
         self.node_id_to_inputs: Dict[str, List[ModelNode]] = {}
@@ -67,7 +67,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         return get_dbt_command(self.dbt_command_line)
 
     @property
-    def dbt_version(self) -> str:
+    def dbt_version(self) -> Optional[str]:
         """
         Extracted from the first structured log MainReportVersion
         """
@@ -125,7 +125,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             if ol_event:
                 yield ol_event
 
-    def _parse_structured_log_event(self, line: str) -> RunEvent:
+    def _parse_structured_log_event(self, line: str) -> Optional[RunEvent]:
         """
         dbt generates structured events https://docs.getdbt.com/reference/events-logging
         relevant events are consumed to generate OL events.
@@ -387,7 +387,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     def dbt_version_facet(self) -> DbtVersionRunFacet:
         return {"dbt_version": DbtVersionRunFacet(version=self.dbt_version)}
 
-    def _get_sql_query_id(self, node_id) -> str:
+    def _get_sql_query_id(self, node_id) -> int:
         """
         Not all adapters have the sql id defined in their dbt event.
         A node is executed by a single thread which means that sql queries of a single node are executed
