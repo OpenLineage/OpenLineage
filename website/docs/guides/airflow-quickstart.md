@@ -21,8 +21,8 @@ In this tutorial, you'll configure Apache Airflow® to send OpenLineage events t
 
 Before you begin, make sure you have installed:
 
-* [Docker 17.05](https://docs.docker.com/install)+
-* [Apache Airflow 2.8+](https://airflow.apache.org/docs/apache-airflow/stable/start.html) running locally.
+* [Docker 17.05+](https://docs.docker.com/install)
+* [Apache Airflow 2.7+](https://airflow.apache.org/docs/apache-airflow/stable/start.html) running locally.
 
 :::tip
 
@@ -334,4 +334,4 @@ In this step, you will create two new Airflow DAGs that perform simple tasks and
 
 ## Feedback
 
-What did you think of this example? Let us know in the [OpenLineage Slack](https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA) or the [Marquez Slack](https://join.slack.com/t/marquezproject/shared_invite/zt-2iylxasbq-GG_zXNcJdNrhC9uUMr3B7A). You can also propose changes directly by [opening a pull request](https://github.com/MarquezProject/marquez/blob/main/CONTRIBUTING.md#submitting-a-pull-request).
+What did you think of this guide? Let us know in the [OpenLineage Slack](https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA) or the [Marquez Slack](https://join.slack.com/t/marquezproject/shared_invite/zt-2iylxasbq-GG_zXNcJdNrhC9uUMr3B7A). You can also propose changes directly by [opening a pull request](https://github.com/MarquezProject/marquez/blob/main/CONTRIBUTING.md#submitting-a-pull-request).
