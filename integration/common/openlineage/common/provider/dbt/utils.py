@@ -12,15 +12,12 @@ from openlineage.common.utils import parse_single_arg
 from openlineage.common.provider.dbt.processor import ParentRunMetadata
 
 
-
-
 __version__ = "1.26.0"
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
 
 # for which structured logs consumption is implemented
-HANDLED_COMMANDS = [
-    "run", "seed", "snapshot"
-]
+HANDLED_COMMANDS = ["run", "seed", "snapshot"]
+
 
 def get_event_timestamp(timestamp: str):
     """
@@ -35,7 +32,7 @@ def get_event_timestamp(timestamp: str):
             iso_timestamp = datetime.strptime(timestamp, input_format).strftime(output_format)
             return iso_timestamp
         except ValueError:
-            pass # ignore and pass to the other format
+            pass  # ignore and pass to the other format
 
     return timestamp
 
@@ -47,16 +44,17 @@ def get_dbt_command(dbt_command_line: List[str]) -> Optional[str]:
             return command
     return None
 
+
 def generate_run_event(
-        event_type: RunState,
-        event_time: str,
-        run_id: str,
-        job_name: str,
-        job_namespace: str,
-        inputs: Optional[List[InputDataset]] = None,
-        outputs: Optional[List[OutputDataset]] = None,
-        job_facets: Optional[Dict] = None,
-        run_facets: Optional[Dict] = None,
+    event_type: RunState,
+    event_time: str,
+    run_id: str,
+    job_name: str,
+    job_namespace: str,
+    inputs: Optional[List[InputDataset]] = None,
+    outputs: Optional[List[OutputDataset]] = None,
+    job_facets: Optional[Dict] = None,
+    run_facets: Optional[Dict] = None,
 ) -> RunEvent:
     inputs = inputs or []
     outputs = outputs or []
@@ -73,8 +71,9 @@ def generate_run_event(
         ),
         inputs=inputs,
         outputs=outputs,
-        producer=PRODUCER
+        producer=PRODUCER,
     )
+
 
 def get_dbt_profiles_dir(command: List[str]) -> str:
     """
@@ -84,11 +83,8 @@ def get_dbt_profiles_dir(command: List[str]) -> str:
     from_command = parse_single_arg(command, ["--profiles-dir"])
     from_env_var = os.getenv("DBT_PROFILES_DIR")
     default_dir = "~/.dbt/"
-    return (
-            from_command or
-            from_env_var or
-            default_dir
-    )
+    return from_command or from_env_var or default_dir
+
 
 def get_parent_run_metadata():
     """
@@ -99,9 +95,8 @@ def get_parent_run_metadata():
     if parent_id:
         parent_namespace, parent_job_name, parent_run_id = parent_id.split("/")
         parent_run_metadata = ParentRunMetadata(
-            run_id=parent_run_id,
-            job_name=parent_job_name,
-            job_namespace=parent_namespace)
+            run_id=parent_run_id, job_name=parent_job_name, job_namespace=parent_namespace
+        )
     return parent_run_metadata
 
 
