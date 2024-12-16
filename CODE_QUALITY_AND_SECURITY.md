@@ -26,9 +26,8 @@ The specific security and analysis methodologies that we employ include but are 
 
 For more information about our approach to quality and security, feel free to reach out to the OpenLineage development team:
 
-- Slack: [OpenLineage.slack.com](http://bit.ly/OpenLineageSlack)
+- Slack: [OpenLineage.slack.com](https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA)
 - Twitter: [@OpenLineage](https://twitter.com/OpenLineage)
-- Google group: [openlineage@googlegroups.com](https://groups.google.com/g/openlineage)
 - LinkedIn group: [https://www.linkedin.com/groups/13927795](https://www.linkedin.com/groups/13927795)
 
 ----
