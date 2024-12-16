@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 import pytest
 from openlineage.common.utils import (
+    add_command_line_arg,
+    add_or_replace_command_line_option,
     get_from_nullable_chain,
     parse_multiple_args,
     parse_single_arg,
-    add_or_replace_command_line_option,
-    add_command_line_arg,
 )
 
 

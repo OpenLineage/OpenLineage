@@ -1,15 +1,14 @@
 # Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-import pytest
-import attr
-from enum import Enum
 import json
+from enum import Enum
 from typing import Dict
 
+import attr
+import pytest
+from openlineage.common.provider.dbt.processor import Adapter
 from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
 from openlineage.common.test import match
-
-from openlineage.common.provider.dbt.processor import Adapter
 
 ###########
 # helpers

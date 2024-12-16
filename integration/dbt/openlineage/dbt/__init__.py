@@ -9,7 +9,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
-from typing import Optional, List
+from typing import List, Optional
 
 from openlineage.client.client import OpenLineageClient
 from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
@@ -20,11 +20,10 @@ from openlineage.common.provider.dbt import (
     ParentRunMetadata,
     UnsupportedDbtCommand,
 )
-from openlineage.common.utils import parse_multiple_args, parse_single_arg
 from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
 from openlineage.common.provider.dbt.utils import PRODUCER, __version__
+from openlineage.common.utils import parse_multiple_args, parse_single_arg
 from tqdm import tqdm
-
 
 JOB_TYPE_FACET = job_type_job.JobTypeJobFacet(
     jobType="JOB",
