@@ -88,4 +88,11 @@ export const Consumers: Array<Partner> = [
     docs_url: "https://github.com/open-metadata/OpenMetadata/pull/15317",
     org_url: "https://open-metadata.org/"
   }, 
+  {
+    image: "AWS_logo_RGB.svg",
+    org: "AWS",
+    description: "Amazon DataZone and the next generation of Amazon SageMaker helps customers visualize lineage events from OpenLineage-enabled systems or through API to trace data movement from source to consumption.",
+    docs_url: "https://aws.amazon.com/sagemaker/data-ai-governance/",
+    org_url: "https://aws.amazon.com/"
+  },
   ]
