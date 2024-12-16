@@ -12,7 +12,7 @@ from openlineage.common.utils import parse_single_arg
 __version__ = "1.26.0"
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
 
-# for which structured logs consumption is implemented
+# for which command structured logs consumption is implemented
 HANDLED_COMMANDS = ["run", "seed", "snapshot"]
 
 

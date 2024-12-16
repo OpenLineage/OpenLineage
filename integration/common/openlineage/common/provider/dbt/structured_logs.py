@@ -46,8 +46,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     ):
         super().__init__(*args, **kwargs)
 
-        self.dbt_command_line = dbt_command_line
-        self.profiles_dir = get_dbt_profiles_dir(command=self.dbt_command_line)
+        self.dbt_command_line: List[str] = dbt_command_line
+        self.profiles_dir: str = get_dbt_profiles_dir(command=self.dbt_command_line)
 
         self.node_id_to_ol_run_id: Dict[str, str] = {}
 
@@ -87,8 +87,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         if not self.target:
             self.target = profile_dict["target"]
 
-        ze_profile = profile_dict["outputs"][self.target]
-        return ze_profile
+        current_profile = profile_dict["outputs"][self.target]
+        return current_profile
 
     @property
     def compiled_manifest(self) -> Dict:
@@ -107,8 +107,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     def parse(self) -> Generator[RunEvent, None, None]:
         """
         This executes the dbt command and parses the structured log events emitted.
-        OL events are sent when relevant.
-        dbt structured events are generated example (NodeStart, NodeFinish, ...).
+        OL events are generated and yielded when relevant.
         """
         if self.dbt_command not in HANDLED_COMMANDS:
             raise UnsupportedDbtCommand(
@@ -168,7 +167,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         elif dbt_event_name in ("SQLQueryStatus", "CatchableExceptionOnRun"):
             ol_event = self._parse_sql_query_status_event(dbt_event)
         elif dbt_event_name == "NodeFinished":
-            ol_event = self._parse_node_finish_event(dbt_event)
+            ol_event = self.parse_node_finished_event(dbt_event)
 
         return ol_event
 
@@ -231,7 +230,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             outputs=outputs,
         )
 
-    def _parse_node_finish_event(self, event):
+    def parse_node_finished_event(self, event):
         node_unique_id = get_node_unique_id(event)
         node_finished_at = get_event_timestamp(event["data"]["node_info"]["node_finished_at"])
         node_status = event["data"]["node_info"]["node_status"]
@@ -437,7 +436,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         """
         This is a generator, it returns log lines
         """
-        # log in json and generated the artifacts
+        # log in json and generate the artifacts
         dbt_command_line = add_command_line_arg(
             self.dbt_command_line, arg_name="--log-format", arg_value="json"
         )
