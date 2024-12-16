@@ -41,7 +41,8 @@ Dataset versioning is critical for tasks like debugging and ensuring data freshn
 However, explicit versioning is currently provided only by new “table formats” like Apache Iceberg or Delta Lake, as most systems lack native versioning support in their data storage schemes.
 For streaming jobs, OpenLineage offers additional capabilities, as OpenLineage’s RUNNING event type captures information that's available during job execution.
 This is particularly evident in OpenLineage's Flink integration, where events are emitted continuously at configurable intervals, including details about completed Flink checkpoints.
-Unfortunately some integrations, like Apache Spark one, do not provide detailed updates while the job is still running.
+Unfortunately, some frameworks
+ such as Apache Spark, do not provide detailed updates while the job is still running.
 
 ### Does the Transformation Change During Execution?
 Certain scenarios in Apache Flink show how transformations can evolve mid-execution.
