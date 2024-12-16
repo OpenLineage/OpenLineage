@@ -43,6 +43,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   private String testExtensionProvider;
   private JobNameConfig jobName;
   private JobConfig job;
+  private VendorsConfig vendors;
 
   @JsonProperty("columnLineage")
   private ColumnLineageConfig columnLineageConfig;
@@ -61,7 +62,8 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       DatasetConfig datasetConfig,
       CircuitBreakerConfig circuitBreaker,
       Map<String, Object> metricsConfig,
-      ColumnLineageConfig columnLineageConfig) {
+      ColumnLineageConfig columnLineageConfig,
+      VendorsConfig vendors) {
     super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig);
     this.namespace = namespace;
     this.parentJobName = parentJobName;
@@ -72,6 +74,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.jobName = jobName;
     this.job = job;
     this.columnLineageConfig = columnLineageConfig;
+    this.vendors = vendors;
   }
 
   @Override
@@ -139,6 +142,14 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     private final Map<String, String> additionalProperties = new HashMap<>();
   }
 
+  @Getter
+  @Setter
+  @ToString
+  public static class VendorsConfig {
+    @JsonAnySetter @NonNull
+    private final Map<String, String> additionalProperties = new HashMap<>();
+  }
+
   @Override
   public SparkOpenLineageConfig mergeWithNonNull(SparkOpenLineageConfig other) {
     return new SparkOpenLineageConfig(
@@ -155,6 +166,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(datasetConfig, other.datasetConfig),
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
         mergePropertyWith(metricsConfig, other.metricsConfig),
-        mergePropertyWith(columnLineageConfig, other.columnLineageConfig));
+        mergePropertyWith(columnLineageConfig, other.columnLineageConfig),
+        mergePropertyWith(vendors, other.vendors));
   }
 }

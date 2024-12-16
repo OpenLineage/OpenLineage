@@ -6,14 +6,18 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
+import io.openlineage.spark.agent.util.DatasetVersionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
+import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.List;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;
@@ -31,9 +35,12 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 @Slf4j
 public class TableContentChangeDatasetBuilder
     extends AbstractQueryPlanOutputDatasetBuilder<LogicalPlan> {
+  private final DatasetFactory<OutputDataset> factory;
 
-  public TableContentChangeDatasetBuilder(OpenLineageContext context) {
+  public TableContentChangeDatasetBuilder(
+      OpenLineageContext context, @NonNull DatasetFactory<OutputDataset> factory) {
     super(context, false);
+    this.factory = factory;
   }
 
   @Override
@@ -62,7 +69,7 @@ public class TableContentChangeDatasetBuilder
     }
 
     final DatasetCompositeFacetsBuilder datasetFacetsBuilder =
-        new DatasetCompositeFacetsBuilder(context.getOpenLineage());
+        factory.createCompositeFacetBuilder();
     if (includeOverwriteFacet) {
       datasetFacetsBuilder
           .getFacets()
@@ -83,8 +90,9 @@ public class TableContentChangeDatasetBuilder
             ? castToDataSourceV2Relation(x, table)
             : (DataSourceV2Relation) table;
     if (includeDatasetVersion(event)) {
-      DatasetVersionDatasetFacetUtils.includeDatasetVersion(
-          context, datasetFacetsBuilder.getFacets(), returnTable);
+      DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(context, returnTable)
+          .ifPresent(
+              s -> DatasetVersionUtils.buildVersionOutputFacets(context, datasetFacetsBuilder, s));
     }
 
     return DataSourceV2RelationDatasetExtractor.extract(

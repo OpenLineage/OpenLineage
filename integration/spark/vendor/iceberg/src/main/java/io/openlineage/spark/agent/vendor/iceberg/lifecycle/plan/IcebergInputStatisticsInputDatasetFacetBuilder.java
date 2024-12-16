@@ -38,9 +38,9 @@ public class IcebergInputStatisticsInputDatasetFacetBuilder
 
   private final OpenLineageContext context;
 
-  public IcebergInputStatisticsInputDatasetFacetBuilder(OpenLineageContext context1) {
+  public IcebergInputStatisticsInputDatasetFacetBuilder(OpenLineageContext context) {
     super();
-    this.context = context1;
+    this.context = context;
   }
 
   @Override

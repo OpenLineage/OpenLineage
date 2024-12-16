@@ -73,7 +73,7 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new SaveIntoDataSourceCommandVisitor(context))
             .add(new AppendDataDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
-            .add(new TableContentChangeDatasetBuilder(context))
+            .add(new TableContentChangeDatasetBuilder(context, datasetFactory))
             .add(new CreateReplaceDatasetBuilder(context))
             .add(new SubqueryAliasOutputDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context))
