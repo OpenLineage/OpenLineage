@@ -113,7 +113,9 @@ def add_command_line_arg(command_line: List[str], arg_name: str, arg_value: str)
     return command_line
 
 
-def add_or_replace_command_line_option(command_line: List[str], option: str, replace_option: Optional[str]=None) -> List[str]:
+def add_or_replace_command_line_option(
+    command_line: List[str], option: str, replace_option: Optional[str] = None
+) -> List[str]:
     """
     If replace_option is ignored then the option is simply added
     """

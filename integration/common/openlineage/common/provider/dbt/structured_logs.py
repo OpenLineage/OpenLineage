@@ -9,30 +9,45 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import tempfile
 
-from mypyc.irbuild.format_str_tokenizer import unique
 from openlineage.common.provider.dbt.processor import ModelNode
-from openlineage.common.utils import get_from_nullable_chain, add_or_replace_command_line_option, add_command_line_arg, stream_has_lines
+from openlineage.common.utils import (
+    get_from_nullable_chain,
+    add_or_replace_command_line_option,
+    add_command_line_arg,
+    stream_has_lines,
+)
 
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
 from openlineage.client.event_v2 import RunEvent, RunState
-from openlineage.common.provider.dbt.processor import ParentRunMetadata, UnsupportedDbtCommand, DbtVersionRunFacet
-from openlineage.common.provider.dbt.utils import HANDLED_COMMANDS, PRODUCER, get_event_timestamp, get_dbt_command, generate_run_event, get_dbt_profiles_dir, get_parent_run_metadata, get_node_unique_id, get_job_type
-
-from openlineage.client.facet_v2 import (
-    job_type_job,
-    sql_job,
-    error_message_run
+from openlineage.common.provider.dbt.processor import (
+    ParentRunMetadata,
+    UnsupportedDbtCommand,
+    DbtVersionRunFacet,
 )
+from openlineage.common.provider.dbt.utils import (
+    HANDLED_COMMANDS,
+    PRODUCER,
+    get_event_timestamp,
+    get_dbt_command,
+    generate_run_event,
+    get_dbt_profiles_dir,
+    get_parent_run_metadata,
+    get_node_unique_id,
+    get_job_type,
+)
+
+from openlineage.client.facet_v2 import job_type_job, sql_job, error_message_run
+
 
 class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     should_raise_on_unsupported_command = True
 
     def __init__(
-            self,
-            dbt_command_line: List[str],
-            *args,
-            **kwargs,
+        self,
+        dbt_command_line: List[str],
+        *args,
+        **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
@@ -71,7 +86,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     @cached_property
     def profile(self):
-        profile_dict = self.load_yaml_with_jinja(os.path.join(self.profiles_dir, "profiles.yml"))[self.profile_name]
+        profile_dict = self.load_yaml_with_jinja(os.path.join(self.profiles_dir, "profiles.yml"))[
+            self.profile_name
+        ]
         if not self.target:
             self.target = profile_dict["target"]
 
@@ -92,7 +109,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         else:
             return None
 
-
     def parse(self) -> List[RunEvent]:
         """
         This executes the dbt command and parses the structured log events emitted.
@@ -100,7 +116,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         """
         if self.dbt_command not in HANDLED_COMMANDS:
             raise UnsupportedDbtCommand(
-                f"dbt integration for structured logs doesn't recognize dbt command " f"{self.dbt_command_line} - operation should be one of {HANDLED_COMMANDS}"
+                f"dbt integration for structured logs doesn't recognize dbt command "
+                f"{self.dbt_command_line} - operation should be one of {HANDLED_COMMANDS}"
             )
 
         self.extract_adapter_type(self.profile)
@@ -174,7 +191,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             run_id=start_event_run_id,
             job_name=self.job_name,
             job_namespace=self.job_namespace,
-            run_facets=run_facets
+            run_facets=run_facets,
         )
 
         return start_event
@@ -190,16 +207,20 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         parent_run_metadata = self.dbt_run_metadata.to_openlineage()
         run_facets = {"parent": parent_run_metadata, **self.dbt_version_facet()}
 
-
         job_name = self._get_job_name(event)
-        job_facets = { "jobType": job_type_job.JobTypeJobFacet(
-            jobType=get_job_type(event),
-            integration="DBT",
-            processingType="BATCH",
-            producer=self.producer,
-        )}
+        job_facets = {
+            "jobType": job_type_job.JobTypeJobFacet(
+                jobType=get_job_type(event),
+                integration="DBT",
+                processingType="BATCH",
+                producer=self.producer,
+            )
+        }
 
-        inputs = [self.node_to_dataset(node=model_input, has_facets=True) for model_input in self._get_model_inputs(node_unique_id)]
+        inputs = [
+            self.node_to_dataset(node=model_input, has_facets=True)
+            for model_input in self._get_model_inputs(node_unique_id)
+        ]
         outputs = [self.node_to_output_dataset(node=self._get_model_node(node_unique_id), has_facets=True)]
 
         return generate_run_event(
@@ -211,7 +232,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             job_namespace=self.job_namespace,
             job_facets=job_facets,
             inputs=inputs,
-            outputs=outputs
+            outputs=outputs,
         )
 
     def _parse_node_finish_event(self, event):
@@ -225,12 +246,14 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         job_name = self._get_job_name(event)
 
-        job_facets = { "jobType": job_type_job.JobTypeJobFacet(
-            jobType=get_job_type(event),
-            integration="DBT",
-            processingType="BATCH",
-            producer=self.producer,
-        )}
+        job_facets = {
+            "jobType": job_type_job.JobTypeJobFacet(
+                jobType=get_job_type(event),
+                integration="DBT",
+                processingType="BATCH",
+                producer=self.producer,
+            )
+        }
 
         event_type = RunState.COMPLETE
 
@@ -241,7 +264,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 message=error_message, programmingLanguage="sql"
             )
 
-        inputs = [self.node_to_dataset(node=model_input, has_facets=True) for model_input in self._get_model_inputs(node_unique_id)]
+        inputs = [
+            self.node_to_dataset(node=model_input, has_facets=True)
+            for model_input in self._get_model_inputs(node_unique_id)
+        ]
         outputs = [self.node_to_output_dataset(node=self._get_model_node(node_unique_id), has_facets=True)]
 
         return generate_run_event(
@@ -253,7 +279,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             job_namespace=self.job_namespace,
             job_facets=job_facets,
             inputs=inputs,
-            outputs=outputs
+            outputs=outputs,
         )
 
     def _parse_sql_query_event(self, event):
@@ -262,32 +288,30 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         sql_ol_run_id = str(generate_new_uuid())
         sql_start_at = event["info"]["ts"]
 
-
         parent_run = ParentRunMetadata(
-            run_id=node_start_run_id,
-            job_name= self._get_job_name(event),
-            job_namespace=self.job_namespace
+            run_id=node_start_run_id, job_name=self._get_job_name(event), job_namespace=self.job_namespace
         )
 
         run_facets = {"parent": parent_run.to_openlineage(), **self.dbt_version_facet()}
 
-        job_facets = { "jobType": job_type_job.JobTypeJobFacet(
-            jobType=get_job_type(event),
-            integration="DBT",
-            processingType="BATCH",
-            producer=self.producer,
-        ),
-            "sql": sql_job.SQLJobFacet(query=event["data"]["sql"])
+        job_facets = {
+            "jobType": job_type_job.JobTypeJobFacet(
+                jobType=get_job_type(event),
+                integration="DBT",
+                processingType="BATCH",
+                producer=self.producer,
+            ),
+            "sql": sql_job.SQLJobFacet(query=event["data"]["sql"]),
         }
 
-        sql_event =  generate_run_event(
+        sql_event = generate_run_event(
             event_type=RunState.START,
             event_time=sql_start_at,
             run_id=sql_ol_run_id,
             run_facets=run_facets,
             job_name=self._get_sql_job_name(event),
             job_namespace=self.job_namespace,
-            job_facets=job_facets
+            job_facets=job_facets,
         )
 
         self.node_id_to_sql_start_event[node_unique_id] = sql_event
@@ -317,7 +341,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         elif dbt_node_type == "SQLQueryStatus":
             run_state = RunState.COMPLETE
 
-
         return generate_run_event(
             event_type=run_state,
             event_time=event_time,
@@ -325,7 +348,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             run_facets=run_facets,
             job_name=sql_ol_run_event.job.name,
             job_namespace=sql_ol_run_event.job.namespace,
-            job_facets=sql_ol_run_event.job.facets
+            job_facets=sql_ol_run_event.job.facets,
         )
 
     def _parse_command_completed_event(self, event):
@@ -391,7 +414,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         node_unique_id = get_node_unique_id(event)
         query_id = self._get_sql_query_id(node_unique_id)
         job_name = f"{node_job_name}.sql.{query_id}"
-        
+
         return job_name
 
     def _get_job_name(self, event):
@@ -418,8 +441,12 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         This is a generator, it returns log lines
         """
         # log in json and generated the artifacts
-        dbt_command_line = add_command_line_arg(self.dbt_command_line, arg_name="--log-format", arg_value="json")
-        dbt_command_line = add_or_replace_command_line_option(self.dbt_command_line, option="--write-json", replace_option="--no-write-json")
+        dbt_command_line = add_command_line_arg(
+            self.dbt_command_line, arg_name="--log-format", arg_value="json"
+        )
+        dbt_command_line = add_or_replace_command_line_option(
+            self.dbt_command_line, option="--write-json", replace_option="--no-write-json"
+        )
 
         stdout_file = tempfile.NamedTemporaryFile(delete=False)
         stderr_file = tempfile.NamedTemporaryFile(delete=False)
@@ -460,10 +487,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         all_nodes = {**self.compiled_manifest["nodes"], **self.compiled_manifest["sources"]}
         manifest_node = all_nodes[node_id]
         catalog_node = get_from_nullable_chain(self.catalog, ["nodes", node_id])
-        return ModelNode(
-            metadata_node=manifest_node,
-            catalog_node=catalog_node
-        )
+        return ModelNode(metadata_node=manifest_node, catalog_node=catalog_node)
 
     def _get_model_inputs(self, node_id) -> List[ModelNode]:
         """
@@ -487,7 +511,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         return model_node
 
     def get_dbt_metadata(
-            self,
+        self,
     ) -> Tuple[Dict[Any, Any], Optional[Dict[Any, Any]], Dict[Any, Any], Optional[Dict[Any, Any]]]:
         """
         Replaced by properties

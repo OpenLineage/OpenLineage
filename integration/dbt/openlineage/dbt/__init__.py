@@ -94,6 +94,7 @@ def dbt_run_event_failed(
         parent=parent_run_metadata,
     )
 
+
 openlineage_logger = logging.getLogger("openlineage.dbt")
 openlineage_logger.setLevel(os.getenv("OPENLINEAGE_DBT_LOGGING", "INFO"))
 openlineage_logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -120,17 +121,25 @@ def main():
     consume_structured_logs_option = consume_structured_logs_option.lower() == "true"
     if consume_structured_logs_option:
         return consume_structured_logs(
-            target=target, project_dir=project_dir, profile_name=profile_name,model_selector=model_selector,
+            target=target,
+            project_dir=project_dir,
+            profile_name=profile_name,
+            model_selector=model_selector,
             models=models,
         )
     else:
         return consume_local_artifacts(
-            target=target, project_dir=project_dir, profile_name=profile_name,model_selector=model_selector,
-            models=models
+            target=target,
+            project_dir=project_dir,
+            profile_name=profile_name,
+            model_selector=model_selector,
+            models=models,
         )
 
 
-def consume_structured_logs(target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]):
+def consume_structured_logs(
+    target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]
+):
     return_code = 0
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
 
@@ -180,7 +189,9 @@ def consume_structured_logs(target: str, project_dir: str, profile_name: str, mo
     return return_code
 
 
-def consume_local_artifacts(target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]):
+def consume_local_artifacts(
+    target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]
+):
     parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
     parent_run_metadata = None
     # We can get this if we have been orchestrated by an external system like airflow
