@@ -677,6 +677,8 @@ jobs:
           submodule: spark35
       - store_submodule_tests:
           submodule: spark40
+      - store_submodule_tests:
+          submodule: vendor/iceberg
       - store_artifacts:
           path: build/reports/tests/pmd
           destination: pmd-report

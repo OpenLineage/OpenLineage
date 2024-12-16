@@ -9,7 +9,7 @@
 
 [![CircleCI](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main.svg?style=shield)](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main)
 [![status](https://img.shields.io/badge/status-active-brightgreen.svg)](#status)
-[![Slack](https://img.shields.io/badge/slack-chat-blue.svg)](http://bit.ly/OpenLineageSlack)
+[![Slack](https://img.shields.io/badge/slack-chat-blue.svg)](https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvAk)
 [![license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](https://github.com/OpenLineage/OpenLineage/blob/main/LICENSE)
 [![maven](https://img.shields.io/maven-central/v/io.openlineage/openlineage-java.svg)](https://search.maven.org/search?q=g:io.openlineage)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4888/badge)](https://bestpractices.coreinfrastructure.org/projects/4888)
@@ -76,8 +76,7 @@ The OpenLineage repository contains integrations with several systems.
 
 ## Community
 - Website: [openlineage.io](http://openlineage.io)
-- Slack: [OpenLineage.slack.com](http://bit.ly/OpenLineageSlack)
-  - Not a member? Join [here](https://bit.ly/lineageslack).
+- Slack: [OpenLineage.slack.com](https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA)
 - Twitter: [@OpenLineage](https://twitter.com/OpenLineage)
 - Mailing list: [openlineage-tsc](https://lists.lfaidata.foundation/g/openlineage-tsc)
 - Wiki: [OpenLineage+Home](https://wiki.lfaidata.foundation/display/OpenLineage/OpenLineage+Home)

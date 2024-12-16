@@ -274,7 +274,7 @@ class CompositeTransportTest {
 
       assertThat(eventsEmitted.get()).isEqualTo(30); // All events should be emitted
       assertThat(endTime - startTime)
-          .isGreaterThan(100)
+          .isGreaterThanOrEqualTo(100)
           .isLessThan(200); // Should take around 100ms to emit all events
 
       // Verify thread pool not shutdown

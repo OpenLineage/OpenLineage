@@ -34,6 +34,21 @@ ext {
     activeRuntimeElementsConfiguration = "scala${scalaFmt}RuntimeElements"
 }
 
+sourceSets {
+    // Iceberg 1.7 classes are compatible with Java 11 and above, while we run tests for Spark 3.5 and Java 8
+    // For this particular combination, tests shall be skipped
+    if (icebergVersion >= '1.7' && JavaVersion.current() == JavaVersion.VERSION_1_8) {
+        println "Skipping tests for Spark 3.5 and Java 8"
+        main {
+            java { srcDirs = [  ] }
+        }
+        test {
+            java { srcDirs = [ ] }
+        }
+    }
+
+}
+
 dependencies {
     compileOnly(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
 

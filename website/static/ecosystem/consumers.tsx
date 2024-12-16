@@ -87,5 +87,19 @@ export const Consumers: Array<Partner> = [
     description: "An OpenLineage connector collects OpenLineage events via a KafkaConsumer and transforms them into OpenMetadata Lineage edges.",
     docs_url: "https://github.com/open-metadata/OpenMetadata/pull/15317",
     org_url: "https://open-metadata.org/"
+  },
+  {
+    image: "Logocombo_SnapLogic_RGB.svg",
+    org: "SnapLogic",
+    description: "SnapLogic's Data Lineage feature supports automated collection of data lineage metadata from SnapLogic Pipelines. This metadata is made available in Open Lineage format to the consumers.",
+    docs_url: "https://www.snaplogic.com/blog/snaplogic-loves-openlineage",
+    org_url: "https://www.snaplogic.com/"
   }, 
+  {
+    image: "AWS_logo_RGB.svg",
+    org: "AWS",
+    description: "Amazon DataZone and the next generation of Amazon SageMaker helps customers visualize lineage events from OpenLineage-enabled systems or through API to trace data movement from source to consumption.",
+    docs_url: "https://aws.amazon.com/sagemaker/data-ai-governance/",
+    org_url: "https://aws.amazon.com/"
+  },
   ]

@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.util.DatasetVersionUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractOnCompleteOutputDatasetBuilder;
@@ -157,11 +158,9 @@ public class CreateReplaceDatasetBuilder
         .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
 
     if (includeDatasetVersion(event)) {
-      Optional<String> datasetVersion =
-          CatalogUtils3.getDatasetVersion(context, catalog, identifier, tableProperties);
-      datasetVersion.ifPresent(
-          version ->
-              builder.getFacets().version(openLineage.newDatasetVersionDatasetFacet(version)));
+      CatalogUtils3.getDatasetVersion(context, catalog, identifier, tableProperties)
+          .ifPresent(
+              version -> DatasetVersionUtils.buildVersionOutputFacets(context, builder, version));
     }
 
     CatalogUtils3.getStorageDatasetFacet(context, catalog, tableProperties)
