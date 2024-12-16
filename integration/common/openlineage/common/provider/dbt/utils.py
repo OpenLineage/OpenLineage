@@ -3,14 +3,11 @@
 
 import os
 from datetime import datetime
-
 from typing import Dict, List, Optional
 
-
-from openlineage.client.event_v2 import InputDataset, OutputDataset, Run, Job, RunEvent, RunState
-from openlineage.common.utils import parse_single_arg
+from openlineage.client.event_v2 import InputDataset, Job, OutputDataset, Run, RunEvent, RunState
 from openlineage.common.provider.dbt.processor import ParentRunMetadata
-
+from openlineage.common.utils import parse_single_arg
 
 __version__ = "1.26.0"
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"

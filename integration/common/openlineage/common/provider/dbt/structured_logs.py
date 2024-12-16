@@ -2,42 +2,37 @@
 # SPDX-License-Identifier: Apache-2.0
 import json
 import os
-
 import subprocess
-from functools import cached_property
-from typing import Dict, List, Optional, Generator
-
 import tempfile
+from functools import cached_property
+from typing import Dict, Generator, List, Optional
 
-from openlineage.common.provider.dbt.processor import ModelNode
-from openlineage.common.utils import (
-    get_from_nullable_chain,
-    add_or_replace_command_line_option,
-    add_command_line_arg,
-    stream_has_lines,
-)
-
+from openlineage.client.event_v2 import RunEvent, RunState
+from openlineage.client.facet_v2 import error_message_run, job_type_job, sql_job
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
-from openlineage.client.event_v2 import RunEvent, RunState
 from openlineage.common.provider.dbt.processor import (
+    DbtVersionRunFacet,
+    ModelNode,
     ParentRunMetadata,
     UnsupportedDbtCommand,
-    DbtVersionRunFacet,
 )
 from openlineage.common.provider.dbt.utils import (
     HANDLED_COMMANDS,
-    PRODUCER,
-    get_event_timestamp,
-    get_dbt_command,
     generate_run_event,
+    get_dbt_command,
     get_dbt_profiles_dir,
-    get_parent_run_metadata,
-    get_node_unique_id,
+    get_event_timestamp,
     get_job_type,
+    get_node_unique_id,
+    get_parent_run_metadata,
 )
-
-from openlineage.client.facet_v2 import job_type_job, sql_job, error_message_run
+from openlineage.common.utils import (
+    add_command_line_arg,
+    add_or_replace_command_line_option,
+    get_from_nullable_chain,
+    stream_has_lines,
+)
 
 
 class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
