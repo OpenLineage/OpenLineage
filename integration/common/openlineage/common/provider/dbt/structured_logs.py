@@ -5,7 +5,7 @@ import os
 
 import subprocess
 from functools import cached_property
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Generator
 
 import tempfile
 
@@ -54,18 +54,18 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.dbt_command_line = dbt_command_line
         self.profiles_dir = get_dbt_profiles_dir(command=self.dbt_command_line)
 
-        self.node_id_to_ol_run_id = {}
+        self.node_id_to_ol_run_id: Dict[str, str] = {}
 
         # sql query ids are incremented sequentially per node_id
-        self.node_id_to_sql_query_id = {}
-        self.node_id_to_sql_start_event = {}
+        self.node_id_to_sql_query_id: Dict[str, str] = {}
+        self.node_id_to_sql_start_event: Dict[str, RunEvent] = {}
 
-        self.node_id_to_inputs = {}
-        self.node_id_to_output = {}
+        self.node_id_to_inputs: Dict[str, List[ModelNode]] = {}
+        self.node_id_to_output: Dict[str, ModelNode] = {}
 
         # will be populated when some dbt events are collected
-        self._compiled_manifest = None
-        self._dbt_version = None
+        self._compiled_manifest: Optional[Dict] = None
+        self._dbt_version: Optional[str] = None
 
     @cached_property
     def dbt_command(self):
@@ -96,7 +96,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         return ze_profile
 
     @property
-    def compiled_manifest(self) -> Optional[Dict]:
+    def compiled_manifest(self) -> Opxtional[Dict]:
         """
         Manifest is loaded and cached.
         It's loaded when the dbt structured logs are generated and processed.
@@ -109,7 +109,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         else:
             return None
 
-    def parse(self) -> List[RunEvent]:
+    def parse(self) -> Generator[RunEvent]:
         """
         This executes the dbt command and parses the structured log events emitted.
         OL events are sent when relevant dbt structured events are generated example (NodeStart, NodeFinish, ...).
@@ -436,7 +436,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         return f"{database}.{schema}.{node_id}{suffix}"
 
-    def _run_dbt_command(self):
+    def _run_dbt_command(self) -> Generator[str]:
         """
         This is a generator, it returns log lines
         """
@@ -467,7 +467,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         stdout_reader.close()
         stderr_reader.close()
 
-    def _consume_dbt_logs(self, stdout_reader, stderr_reader):
+    def _consume_dbt_logs(self, stdout_reader, stderr_reader) -> Generator[str]:
         stdout_lines = stdout_reader.readlines()
         stderr_lines = stderr_reader.readlines()
         for line in stdout_lines:
@@ -512,7 +512,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def get_dbt_metadata(
         self,
-    ) -> Tuple[Dict[Any, Any], Optional[Dict[Any, Any]], Dict[Any, Any], Optional[Dict[Any, Any]]]:
+    ):
         """
         Replaced by properties
         """
