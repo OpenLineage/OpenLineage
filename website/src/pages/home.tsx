@@ -188,7 +188,7 @@ const Participate = () => {
               </p>
               <Button
                   title="Slack"
-                  to='https://bit.ly/OpenLineageSlack'
+                  to='https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA'
                   type="extbutton"
                   iconRight={<Slack />}
               />
