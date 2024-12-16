@@ -96,7 +96,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         return ze_profile
 
     @property
-    def compiled_manifest(self) -> Opxtional[Dict]:
+    def compiled_manifest(self) -> Optional[Dict]:
         """
         Manifest is loaded and cached.
         It's loaded when the dbt structured logs are generated and processed.
@@ -112,7 +112,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     def parse(self) -> Generator[RunEvent]:
         """
         This executes the dbt command and parses the structured log events emitted.
-        OL events are sent when relevant dbt structured events are generated example (NodeStart, NodeFinish, ...).
+        OL events are sent when relevant.
+        dbt structured events are generated example (NodeStart, NodeFinish, ...).
         """
         if self.dbt_command not in HANDLED_COMMANDS:
             raise UnsupportedDbtCommand(
@@ -380,7 +381,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _setup_dbt_run_metadata(self, start_event):
         """
-        The dbt command defines the parent run metadata of all subsequent OL events (NodeStart, NodeFinish ...)
+        The dbt command defines the parent run metadata of
+        all subsequent OL events (NodeStart, NodeFinish ...)
         """
         self.dbt_run_metadata = ParentRunMetadata(
             run_id=start_event.run.runId,
