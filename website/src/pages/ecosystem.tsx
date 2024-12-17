@@ -129,7 +129,7 @@ export default function Ecosystem(): JSX.Element {
         </h3>
       </div>
       <div className="eco-grid-div">
-        {FillGrid(Consumers)}
+        {FillGrid(Consumers.sort((a, b) => a.full_name.localeCompare(b.full_name)))}
       </div>
       <div className="title pt-12 pb-8 text-center">
         <h3 className="text-4xl text-color-1">
@@ -137,7 +137,7 @@ export default function Ecosystem(): JSX.Element {
         </h3>
       </div>
       <div className="eco-grid-div">
-        {FillGrid(Producers)}
+        {FillGrid(Producers.sort((a, b) => a.full_name.localeCompare(b.full_name)))}
       </div>
       <div className="bg-bg">
         <Footer />
