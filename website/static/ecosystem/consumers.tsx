@@ -4,6 +4,13 @@ export type Partner = Record<
 >
 
 export const Consumers: Array<Partner> = [
+  {
+    image: "AWS_logo_RGB.svg",
+    org: "AWS",
+    description: "Amazon DataZone and the next generation of Amazon SageMaker helps customers visualize lineage events from OpenLineage-enabled systems or through API to trace data movement from source to consumption.",
+    docs_url: "https://aws.amazon.com/sagemaker/data-ai-governance/",
+    org_url: "https://aws.amazon.com/"
+  },
   {  
     image: "amundsen_logo_1.svg",
     org: "Amundsen",
@@ -95,11 +102,4 @@ export const Consumers: Array<Partner> = [
     docs_url: "https://www.snaplogic.com/blog/snaplogic-loves-openlineage",
     org_url: "https://www.snaplogic.com/"
   }, 
-  {
-    image: "AWS_logo_RGB.svg",
-    org: "AWS",
-    description: "Amazon DataZone and the next generation of Amazon SageMaker helps customers visualize lineage events from OpenLineage-enabled systems or through API to trace data movement from source to consumption.",
-    docs_url: "https://aws.amazon.com/sagemaker/data-ai-governance/",
-    org_url: "https://aws.amazon.com/"
-  },
   ]

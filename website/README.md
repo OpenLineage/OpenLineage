@@ -22,8 +22,8 @@ If you are familiar with the GitHub pull request process, it is easy to propose 
 
 ### New ecosystem partners for the Ecosystem page
 
-- Add a rectangular logo in SVG format twice as wide as it is tall to static/img.
-- Add a record to the appropriate file and array in static/ecosystem, using simply the filename of the logo for the image value.
+- Add a rectangular logo in SVG format with the dimensions 300px x 150px to static/img.
+- Add a record to the appropriate file and array in static/ecosystem, using the filename of the logo for the image value.
 
 ### Changes to basepages
 
