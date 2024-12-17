@@ -4,9 +4,11 @@ date: 2024-12-13
 authors: [Obuchowski]
 description: A deep dive into how OpenLineage thinks about streaming jobs.
 ---
+Despite appearing to fit mostly batch processing jobs, OpenLineage provides comprehensive lineage tracking for both batch and streaming job models.
+
+<!--truncate-->
 
 ## OpenLineage for Streaming Jobs
-Despite appearing to fit mostly batch processing jobs, OpenLineage provides comprehensive lineage tracking for both batch and streaming job models.
 In fact, the streaming model can be seen as an extension of the batch model and works effectively with systems like Apache Flink or Apache Spark.
 However, there are some core differences between how those jobs are typically executed, and OpenLineage integration has to take into account those differences.
 
