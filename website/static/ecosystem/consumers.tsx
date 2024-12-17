@@ -101,14 +101,6 @@ export const Consumers: Array<Partner> = [
     org_url: "https://open-metadata.org/"
   },
   {
-    image: "Logocombo_SnapLogic_RGB.svg",
-    org: "SnapLogic",
-    full_name: "SnapLogic",
-    description: "SnapLogic's Data Lineage feature supports automated collection of data lineage metadata from SnapLogic Pipelines. This metadata is made available in Open Lineage format to the consumers.",
-    docs_url: "https://www.snaplogic.com/blog/snaplogic-loves-openlineage",
-    org_url: "https://www.snaplogic.com/"
-  },
-  {
     image: "AWS_logo_RGB.svg",
     org: "AWS",
     full_name: "Amazon",
