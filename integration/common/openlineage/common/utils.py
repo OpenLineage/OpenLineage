@@ -130,13 +130,3 @@ def add_or_replace_command_line_option(
         command_line.append(option)
 
     return command_line
-
-
-def stream_has_lines(stream):
-    """
-    Checks if the given stream has lines or not
-    """
-    current_position = stream.tell()
-    has_lines = len(stream.readlines()) > 0
-    stream.seek(current_position)
-    return has_lines
