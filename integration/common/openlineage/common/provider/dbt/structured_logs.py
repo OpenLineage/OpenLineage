@@ -3,10 +3,9 @@
 import json
 import os
 import subprocess
-import tempfile
+from collections import defaultdict
 from functools import cached_property
 from typing import Dict, Generator, List, Optional
-from collections import defaultdict
 
 from openlineage.client.event_v2 import RunEvent, RunState
 from openlineage.client.facet_v2 import error_message_run, job_type_job, sql_job
@@ -438,7 +437,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             self.dbt_command_line, option="--write-json", replace_option="--no-write-json"
         )
 
-        process = subprocess.Popen(dbt_command_line, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
+        process = subprocess.Popen(
+            dbt_command_line, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1
+        )
         stdout_lines = []
         stderr_lines = []
         while process.poll() is None:
@@ -452,8 +453,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         yield from self._consume_dbt_logs(stdout_lines, stderr_lines)
 
-
-    def _consume_dbt_logs(self, stdout_lines: List[str], stderr_lines: List[str]) -> Generator[str, None, None]:
+    def _consume_dbt_logs(
+        self, stdout_lines: List[str], stderr_lines: List[str]
+    ) -> Generator[str, None, None]:
         for line in stdout_lines:
             line = line.strip()
             if line:
