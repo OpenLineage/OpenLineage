@@ -8,8 +8,14 @@ from collections import defaultdict
 from functools import cached_property
 from typing import Dict, Generator, List, Optional, TextIO
 
-from openlineage.client.event_v2 import RunEvent, RunState
-from openlineage.client.facet_v2 import error_message_run, job_type_job, sql_job
+from openlineage.client.event_v2 import Dataset, RunEvent, RunState
+from openlineage.client.facet_v2 import (
+    data_quality_assertions_dataset,
+    error_message_run,
+    job_type_job,
+    sql_job,
+)
+from openlineage.client.run import InputDataset
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
 from openlineage.common.provider.dbt.processor import (
@@ -232,6 +238,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         )
 
     def parse_node_finished_event(self, event) -> RunEvent:
+        resource_type = event["data"]["node_info"]["resource_type"]
         node_unique_id = get_node_unique_id(event)
         node_finished_at = get_event_timestamp(event["data"]["node_info"]["node_finished_at"])
         node_status = event["data"]["node_info"]["node_status"]
@@ -253,7 +260,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         event_type = RunState.COMPLETE
 
-        if node_status != "success":
+        if node_status not in ("success", "pass"):
             event_type = RunState.FAIL
             error_message = event["data"]["run_result"]["message"]
             run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
@@ -265,6 +272,20 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             for model_input in self._get_model_inputs(node_unique_id)
         ]
         outputs = [self.node_to_output_dataset(node=self._get_model_node(node_unique_id), has_facets=True)]
+        if resource_type == "test":
+            success = node_status == "pass"
+            assertion = self._get_assertion(node_unique_id, success)
+            assertion_facet = data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet(
+                assertions=[assertion]
+            )
+            attached_dataset = self._get_attached_dataset(node_unique_id)
+            dataset_facets = attached_dataset.facets
+            dataset_facets["dataQualityAssertions"] = assertion_facet
+            inputs = [
+                Dataset(
+                    name=attached_dataset.name, namespace=attached_dataset.namespace, facets=dataset_facets
+                )
+            ]
 
         return generate_run_event(
             event_type=event_type,
@@ -276,6 +297,25 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             job_facets=job_facets,
             inputs=inputs,
             outputs=outputs,
+        )
+
+    def _get_attached_dataset(self, test_node_id: str) -> InputDataset:
+        """
+        gets the input the data test is attached to
+        """
+        all_nodes = {**self.compiled_manifest["nodes"], **self.compiled_manifest["sources"]}
+        test_node = all_nodes[test_node_id]
+        attached_node_id = test_node["attached_node"]
+        attached_model_node = self._get_model_node(attached_node_id)
+        return self.node_to_dataset(node=attached_model_node, has_facets=True)
+
+    def _get_assertion(self, node_id: str, success: bool) -> data_quality_assertions_dataset.Assertion:
+        manifest_test_node = self.compiled_manifest["nodes"][node_id]
+        name = manifest_test_node["test_metadata"]["name"]
+        return data_quality_assertions_dataset.Assertion(
+            assertion=name,
+            success=success,
+            column=get_from_nullable_chain(manifest_test_node["test_metadata"], ["kwargs", "column_name"]),
         )
 
     def _parse_sql_query_event(self, event) -> RunEvent:
@@ -413,7 +453,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _get_job_name(self, event) -> str:
         """
-        The job name of models, snapshots ...
+        The job name of models, snapshots, tests and others
         """
         database = event["data"]["node_info"]["node_relation"]["database"]
         schema = event["data"]["node_info"]["node_relation"]["schema"]
@@ -424,6 +464,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         elif node_unique_id.startswith("snapshot"):
             node_id = self.removeprefix(node_unique_id, "snapshot.")
             suffix = ".build.snapshot" if self.dbt_command == "build" else ".snapshot"
+        elif node_unique_id.startswith("test"):
+            node_id = self.removeprefix(node_unique_id, "test.")
+            suffix = ".build.test" if self.dbt_command == "build" else ""
         else:
             node_id = node_unique_id
             suffix = ".build.run" if self.dbt_command == "build" else ""

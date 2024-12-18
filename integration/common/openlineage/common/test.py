@@ -80,7 +80,7 @@ def setup_jinja() -> Environment:
 env = setup_jinja()
 
 
-def match(expected, result) -> bool:
+def match(expected, result, ordered_list=False) -> bool:
     """
     Check if result is "equal" to expected value.
     """
@@ -90,7 +90,7 @@ def match(expected, result) -> bool:
             if k not in result:
                 log.error(f"Key {k} not in received event {result}\nExpected {expected}")
                 return False
-            if not match(v, result[k]):
+            if not match(v, result[k], ordered_list):
                 log.error(
                     f"For key {k}, expected value {v} not equals received {result[k]}"
                     f"\nExpected {expected}, request {result}"
@@ -101,35 +101,48 @@ def match(expected, result) -> bool:
             log.error(f"Length does not match: expected {len(expected)} result: {len(result)}")
             return False
 
-        # Try to resolve case where we have wrongly sorted lists by looking at name attr
-        # If name is not present then assume that lists are sorted
-        for i, x in enumerate(expected):
-            if "name" in x:
-                matched = False
-                for y in result:
-                    if "name" in y:
-                        expected_name = env.from_string(x["name"]).render()
-                        result_name = env.from_string(y["name"]).render()
-                        if expected_name == result_name:
-                            if not match(x, y):
-                                log.error(f"List not matched {x} where {y}")
-                                return False
-                    matched = True
-                    break
-                if not matched:
+        if ordered_list:
+            for index, expected_elem, result_elem in zip(range(len(result)), expected, result):
+                if not match(expected_elem, result_elem, ordered_list):
                     log.error(
-                        f"List not matched - no same stuff for {x} "
-                        f"in expected: {expected} result {result}"
+                        f"Elements in list don't match at index {index} - "
+                        f"expected element={expected_elem} VS actual result = {result_elem}"
                     )
                     return False
-            else:
-                if not match(x, result[i]):
-                    log.error(
-                        f"List not matched at {i}\n"
-                        + f"  expected:\n{json.dumps(x)}\n"
-                        + f"  result: \n{json.dumps(result[i])}"
-                    )
-                    return False
+
+            return True
+
+        else:
+            # Try to resolve case where we have wrongly sorted lists by looking at name attr
+            # If name is not present then assume that lists are sorted
+
+            for i, x in enumerate(expected):
+                if "name" in x:
+                    matched = False
+                    for y in result:
+                        if "name" in y:
+                            expected_name = env.from_string(x["name"]).render()
+                            result_name = env.from_string(y["name"]).render()
+                            if expected_name == result_name:
+                                if not match(x, y, ordered_list):
+                                    log.error(f"List not matched {x} where {y}")
+                                    return False
+                        matched = True
+                        break
+                    if not matched:
+                        log.error(
+                            f"List not matched - no same stuff for {x} "
+                            f"in expected: {expected} result {result}"
+                        )
+                        return False
+                else:
+                    if not match(x, result[i], ordered_list):
+                        log.error(
+                            f"List not matched at {i}\n"
+                            + f"  expected:\n{json.dumps(x)}\n"
+                            + f"  result: \n{json.dumps(result[i])}"
+                        )
+                        return False
     elif isinstance(expected, str):
         if "{{" in expected:
             # Evaluate jinja: in some cases, we want to check only if key exists, or if

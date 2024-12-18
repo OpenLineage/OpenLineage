@@ -112,6 +112,22 @@ def patch_get_dbt_profiles_dir(monkeypatch):
             "./tests/dbt/structured_logs/snowflake/snapshot/results/snapshot_ol_events.json",
             "./tests/dbt/structured_logs/snowflake/snapshot/target/manifest.json",
         ),
+        # postgres test
+        (
+            "postgres",
+            ["dbt", "test", "..."],
+            "./tests/dbt/structured_logs/postgres/test/logs/test_logs.jsonl",
+            "./tests/dbt/structured_logs/postgres/test/results/test_ol_events.json",
+            "./tests/dbt/structured_logs/postgres/test/target/manifest.json",
+        ),
+        # postgres build
+        (
+            "postgres",
+            ["dbt", "build", "..."],
+            "./tests/dbt/structured_logs/postgres/build_command/logs/build_logs.jsonl",
+            "./tests/dbt/structured_logs/postgres/build_command/results/build_ol_events.json",
+            "./tests/dbt/structured_logs/postgres/build_command/target/manifest.json",
+        ),
     ],
     ids=[
         # run command
@@ -125,6 +141,10 @@ def patch_get_dbt_profiles_dir(monkeypatch):
         # snapshot command
         "postgres_dbt_snapshot",
         "snowflake_dbt_snapshot",
+        # test command
+        "postgres_dbt_test",
+        # build command
+        "postgres_dbt_build",
     ],
 )
 def test_parse(target, command_line, logs_path, expected_ol_events_path, manifest_path, monkeypatch):
@@ -149,7 +169,7 @@ def test_parse(target, command_line, logs_path, expected_ol_events_path, manifes
     actual_ol_events = list(ol_event_to_dict(event) for event in processor.parse())
     expected_ol_events = json.load(open(expected_ol_events_path))
 
-    assert match(expected=expected_ol_events, result=actual_ol_events)
+    assert match(expected=expected_ol_events, result=actual_ol_events, ordered_list=True)
 
 
 @pytest.mark.parametrize(
@@ -213,52 +233,73 @@ def test_dataset_namespace(target, expected_dataset_namespace, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "dbt_log_events, expected_ol_events, dbt_event_type",
+    "dbt_log_events, expected_ol_events, dbt_event_type, manifest_path",
     [
         (
             "./tests/dbt/structured_logs/postgres/events/logs/MainReportVersion.yaml",
             "./tests/dbt/structured_logs/postgres/events/results/MainReportVersion_OL.yaml",
             "MainReportVersion",
+            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
         ),
         (
             "./tests/dbt/structured_logs/postgres/events/logs/successful_CommandCompleted.yaml",
             "./tests/dbt/structured_logs/postgres/events/results/successful_CommandCompleted_OL.yaml",
             "CommandCompleted",
+            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
         ),
         (
             "./tests/dbt/structured_logs/postgres/events/logs/failed_CommandCompleted.yaml",
             "./tests/dbt/structured_logs/postgres/events/results/failed_CommandCompleted_OL.yaml",
             "CommandCompleted",
+            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
         ),
         (
             "./tests/dbt/structured_logs/postgres/events/logs/NodeStart.yaml",
             "./tests/dbt/structured_logs/postgres/events/results/NodeStart_OL.yaml",
             "NodeStart",
+            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
         ),
         (
             "./tests/dbt/structured_logs/postgres/events/logs/successful_NodeFinished.yaml",
             "./tests/dbt/structured_logs/postgres/events/results/successful_NodeFinished_OL.yaml",
             "NodeFinished",
+            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
         ),
         (
             "./tests/dbt/structured_logs/postgres/events/logs/failed_NodeFinished.yaml",
             "./tests/dbt/structured_logs/postgres/events/results/failed_NodeFinished_OL.yaml",
             "NodeFinished",
+            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
         ),
         (
             "./tests/dbt/structured_logs/postgres/events/logs/SQLQuery.yaml",
             "./tests/dbt/structured_logs/postgres/events/results/SQLQuery_OL.yaml",
             "SQLQuery",
+            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
         ),
         (
             "./tests/dbt/structured_logs/postgres/events/logs/successful_SQLQueryStatus.yaml",
             "./tests/dbt/structured_logs/postgres/events/results/successful_SQLQueryStatus_OL.yaml",
             "SQLQueryStatus",
+            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
         ),
         (
             "./tests/dbt/structured_logs/postgres/events/logs/failed_SQLQueryStatus.yaml",
             "./tests/dbt/structured_logs/postgres/events/results/failed_SQLQueryStatus_OL.yaml",
             "SQLQueryStatus",
+            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
+        ),
+        (
+            "./tests/dbt/structured_logs/postgres/events/logs/failed_test_NodeFinished.yaml",
+            "./tests/dbt/structured_logs/postgres/events/results/failed_test_NodeFinished_OL.yaml",
+            "NodeFinished",
+            "./tests/dbt/structured_logs/postgres/test/target/manifest.json",
+        ),
+        (
+            "./tests/dbt/structured_logs/postgres/events/logs/successful_test_NodeFinished.yaml",
+            "./tests/dbt/structured_logs/postgres/events/results/successful_test_NodeFinished_OL.yaml",
+            "NodeFinished",
+            "./tests/dbt/structured_logs/postgres/test/target/manifest.json",
         ),
     ],
     ids=[
@@ -271,11 +312,13 @@ def test_dataset_namespace(target, expected_dataset_namespace, monkeypatch):
         "SQLQuery",
         "successful_SQLQueryStatus",
         "failed_SQLQueryStatus",
+        "failed_test_NodeFinished",
+        "successful_test_NodeFinished",
     ],
 )
-def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, monkeypatch):
+def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, manifest_path, monkeypatch):
     """
-    This tests
+    This tests:
     1. the parent/child relationship of OL events
     2. the runId remains the same for the START/COMPLETE/FAIL OL events
     """
@@ -291,10 +334,11 @@ def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, mo
         target="postgres",
         dbt_command_line=["dbt", "run", "..."],
     )
-    processor.manifest_path = "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
+    processor.manifest_path = manifest_path
     actual_ol_events = list(ol_event_to_dict(event) for event in processor.parse())
+    expected_ol_events = yaml.safe_load(open(expected_ol_events))
 
-    match(expected=expected_ol_events, result=actual_ol_events)
+    assert match(expected=expected_ol_events, result=actual_ol_events, ordered_list=True)
 
     command_start_event = actual_ol_events[0]
 
@@ -333,3 +377,151 @@ def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, mo
         assert node_start_event["run"]["runId"] == get_from_nullable_chain(
             sql_query_status_event, "run.facets.parent.run.runId".split(".")
         )
+
+
+@pytest.mark.parametrize(
+    "dbt_event, expected_job_name, dbt_command",
+    [
+        # model
+        (
+            {
+                "data": {
+                    "node_info": {
+                        "node_relation": {"alias": "orders", "database": "postgres", "schema": "public"},
+                        "resource_type": "model",
+                        "unique_id": "model.jaffle_shop.orders",
+                    }
+                }
+            },
+            "postgres.public.jaffle_shop.orders",
+            "run",
+        ),
+        (
+            {
+                "data": {
+                    "node_info": {
+                        "node_relation": {"alias": "orders", "database": "postgres", "schema": "public"},
+                        "resource_type": "model",
+                        "unique_id": "model.jaffle_shop.orders",
+                    }
+                }
+            },
+            "postgres.public.jaffle_shop.orders.build.run",
+            "build",
+        ),
+        # snapshot
+        (
+            {
+                "data": {
+                    "node_info": {
+                        "node_relation": {"alias": "orders", "database": "postgres", "schema": "public"},
+                        "resource_type": "snapshot",
+                        "unique_id": "snapshot.jaffle_shop.orders",
+                    }
+                }
+            },
+            "postgres.public.jaffle_shop.orders.snapshot",
+            "snapshot",
+        ),
+        (
+            {
+                "data": {
+                    "node_info": {
+                        "node_relation": {"alias": "orders", "database": "postgres", "schema": "public"},
+                        "resource_type": "snapshot",
+                        "unique_id": "snapshot.jaffle_shop.orders",
+                    }
+                }
+            },
+            "postgres.public.jaffle_shop.orders.build.snapshot",
+            "build",
+        ),
+        # test
+        (
+            {
+                "data": {
+                    "node_info": {
+                        "node_relation": {
+                            "alias": "not_null_customers_customer_id",
+                            "database": "postgres",
+                            "schema": "public_dbt_test__audit",
+                        },
+                        "resource_type": "test",
+                        "unique_id": "test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
+                    }
+                }
+            },
+            "postgres.public_dbt_test__audit.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
+            "test",
+        ),
+        (
+            {
+                "data": {
+                    "node_info": {
+                        "node_relation": {
+                            "alias": "not_null_customers_customer_id",
+                            "database": "postgres",
+                            "schema": "public_dbt_test__audit",
+                        },
+                        "resource_type": "test",
+                        "unique_id": "test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
+                    }
+                }
+            },
+            "postgres.public_dbt_test__audit.jaffle_shop.not_null_customers_customer_id.5c9bf9911d.build.test",
+            "build",
+        ),
+        # seeds
+        (
+            {
+                "data": {
+                    "node_info": {
+                        "node_relation": {
+                            "alias": "raw_customers",
+                            "database": "postgres",
+                            "schema": "public",
+                        },
+                        "resource_type": "seed",
+                        "unique_id": "seed.jaffle_shop.raw_customers",
+                    }
+                }
+            },
+            "postgres.public.seed.jaffle_shop.raw_customers",
+            "seed",
+        ),
+        (
+            {
+                "data": {
+                    "node_info": {
+                        "node_relation": {
+                            "alias": "raw_customers",
+                            "database": "postgres",
+                            "schema": "public",
+                        },
+                        "resource_type": "seed",
+                        "unique_id": "seed.jaffle_shop.raw_customers",
+                    }
+                }
+            },
+            "postgres.public.seed.jaffle_shop.raw_customers.build.run",
+            "build",
+        ),
+    ],
+    ids=["run_mode", "build_model", "snapshot", "build_snapshot", "test", "build_test", "seed", "build_seed"],
+)
+def test_node_job_name(dbt_event, expected_job_name, dbt_command):
+    """
+    Tests the OL job name given to every dbt node type
+    """
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir="tests/dbt/structured_logs",
+        target="postgres",
+        dbt_command_line=["dbt", "run", "..."],
+    )
+    processor.dbt_command = dbt_command
+
+    actual_job_name = processor._get_job_name(dbt_event)
+
+    assert expected_job_name == actual_job_name
