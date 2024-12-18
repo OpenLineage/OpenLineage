@@ -41,7 +41,7 @@ public class IcebergCommitReportOutputDatasetFacet implements OpenLineage.Output
     this._producer = Versions.OPEN_LINEAGE_PRODUCER_URI;
     this._schemaURL =
         URI.create(
-            "https://openlineage.io/spec/facets/1-0-0/IcebergCommitReportInputDatasetFacet.json");
+            "https://openlineage.io/spec/facets/1-0-0/IcebergCommitReportOutputDatasetFacet.json");
     this.additionalProperties = new LinkedHashMap<>(properties);
   }
 
