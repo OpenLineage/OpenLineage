@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 from functools import cached_property
 from typing import Dict, Generator, List, Optional
+from collections import defaultdict
 
 from openlineage.client.event_v2 import RunEvent, RunState
 from openlineage.client.facet_v2 import error_message_run, job_type_job, sql_job
@@ -49,10 +50,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.dbt_command_line: List[str] = dbt_command_line
         self.profiles_dir: str = get_dbt_profiles_dir(command=self.dbt_command_line)
 
-        self.node_id_to_ol_run_id: Dict[str, str] = {}
+        self.node_id_to_ol_run_id: Dict[str, str] = defaultdict(lambda: str(generate_new_uuid()))
 
         # sql query ids are incremented sequentially per node_id
-        self.node_id_to_sql_query_id: Dict[str, int] = {}
+        self.node_id_to_sql_query_id: Dict[str, int] = defaultdict(lambda: 1)
         self.node_id_to_sql_start_event: Dict[str, RunEvent] = {}
 
         self.node_id_to_inputs: Dict[str, List[ModelNode]] = {}
@@ -193,9 +194,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _parse_node_start_event(self, event: Dict) -> RunEvent:
         node_unique_id = get_node_unique_id(event)
-        if node_unique_id not in self.node_id_to_ol_run_id:
-            self.node_id_to_ol_run_id[node_unique_id] = str(generate_new_uuid())
-
         run_id = self.node_id_to_ol_run_id[node_unique_id]
         node_start_time = get_event_timestamp(event["data"]["node_info"]["node_started_at"])
 
@@ -394,9 +392,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         sequentially and their status is also reported sequentially.
         This function gives us a surrogate query id. It's auto-incremented
         """
-        if node_id not in self.node_id_to_sql_query_id:
-            self.node_id_to_sql_query_id[node_id] = 1
-
         query_id = self.node_id_to_sql_query_id[node_id]
         self.node_id_to_sql_query_id[node_id] += 1
         return query_id
