@@ -15,17 +15,24 @@ import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.DefaultJobFacet;
+import io.openlineage.client.OpenLineage.DefaultRunFacet;
+import io.openlineage.client.OpenLineage.JobFacet;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
+import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
+import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.sql.SparkSession;
@@ -43,11 +50,11 @@ class SparkApplicationExecutionContextTest {
   private final OpenLineageContext olContext = mock(OpenLineageContext.class);
   private final OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
   private final EventEmitter eventEmitter = mock(EventEmitter.class);
-  private final SparkApplicationExecutionContext context =
+  private final OpenLineageEventHandlerFactory eventHandlerFactory =
+      mock(OpenLineageEventHandlerFactory.class);
+  private SparkApplicationExecutionContext context =
       new SparkApplicationExecutionContext(
-          eventEmitter,
-          olContext,
-          new OpenLineageRunEventBuilder(olContext, mock(OpenLineageEventHandlerFactory.class)));
+          eventEmitter, olContext, new OpenLineageRunEventBuilder(olContext, eventHandlerFactory));
 
   @AfterEach
   void reset() {
@@ -111,14 +118,16 @@ class SparkApplicationExecutionContextTest {
       context.start(mock(SparkListenerApplicationStart.class));
       context.end(mock(SparkListenerApplicationEnd.class));
     }
+    verify(eventEmitter, times(2)).emit(lineageEvent.capture());
 
     for (RunEvent runEvent : lineageEvent.getAllValues()) {
       OpenLineage.Run run = runEvent.getRun();
       OpenLineage.Job job = runEvent.getJob();
-      assertThat(job.getName()).isEqualTo("app_name");
+      assertThat(job.getName()).isEqualTo("setup"); // spark agent extension caller
       assertThat(job.getNamespace()).isEqualTo("ns_name");
       assertThat(run.getRunId()).isEqualTo(UUID.fromString("993426b3-1ca7-44af-8473-8e58c757ebd1"));
     }
+    assertThat(lineageEvent.getAllValues()).isNotEmpty();
   }
 
   @Test
@@ -130,6 +139,7 @@ class SparkApplicationExecutionContextTest {
       context.start(mock(SparkListenerApplicationStart.class));
       context.end(mock(SparkListenerApplicationEnd.class));
     }
+    verify(eventEmitter, times(2)).emit(lineageEvent.capture());
 
     for (RunEvent runEvent : lineageEvent.getAllValues()) {
       OpenLineage.ParentRunFacet parentRunFacet = runEvent.getRun().getFacets().getParent();
@@ -140,6 +150,7 @@ class SparkApplicationExecutionContextTest {
       assertThat(parentRun.getRunId())
           .isEqualTo(UUID.fromString("4e948e60-1639-4796-950e-cdc6d45915f4"));
     }
+    assertThat(lineageEvent.getAllValues()).isNotEmpty();
   }
 
   @Test
@@ -151,6 +162,7 @@ class SparkApplicationExecutionContextTest {
       context.start(mock(SparkListenerApplicationStart.class));
       context.end(mock(SparkListenerApplicationEnd.class));
     }
+    verify(eventEmitter, times(2)).emit(lineageEvent.capture());
 
     for (RunEvent runEvent : lineageEvent.getAllValues()) {
       OpenLineage.Job job = runEvent.getJob();
@@ -159,5 +171,59 @@ class SparkApplicationExecutionContextTest {
       assertThat(jobTypeFacet.getProcessingType()).isEqualTo("NONE");
       assertThat(jobTypeFacet.getIntegration()).isEqualTo("SPARK");
     }
+    assertThat(lineageEvent.getAllValues()).isNotEmpty();
+  }
+
+  @Test
+  void testCustomFacetBuildersAreCalled(SparkSession spark) {
+    when(eventHandlerFactory.createJobFacetBuilders(olContext))
+        .thenReturn(
+            Collections.singletonList(
+                new CustomFacetBuilder<Object, JobFacet>() {
+                  @Override
+                  protected void build(
+                      Object event, BiConsumer<String, ? super JobFacet> consumer) {
+                    consumer.accept(
+                        "custom_job_facet",
+                        new DefaultJobFacet(Versions.OPEN_LINEAGE_PRODUCER_URI, false));
+                  }
+                }));
+
+    when(eventHandlerFactory.createRunFacetBuilders(olContext))
+        .thenReturn(
+            Collections.singletonList(
+                new CustomFacetBuilder<Object, RunFacet>() {
+                  @Override
+                  protected void build(
+                      Object event, BiConsumer<String, ? super RunFacet> consumer) {
+                    consumer.accept(
+                        "custom_run_facet",
+                        new DefaultRunFacet(Versions.OPEN_LINEAGE_PRODUCER_URI));
+                  }
+                }));
+
+    // need to new context to inject eventHandlerFactory
+    SparkApplicationExecutionContext context =
+        new SparkApplicationExecutionContext(
+            eventEmitter,
+            olContext,
+            new OpenLineageRunEventBuilder(olContext, eventHandlerFactory));
+
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+
+      context.start(mock(SparkListenerApplicationStart.class));
+      context.end(mock(SparkListenerApplicationEnd.class));
+    }
+    verify(eventEmitter, times(2)).emit(lineageEvent.capture());
+
+    for (RunEvent runEvent : lineageEvent.getAllValues()) {
+      assertThat(runEvent.getRun().getFacets().getAdditionalProperties())
+          .containsKey("custom_run_facet");
+      assertThat(runEvent.getJob().getFacets().getAdditionalProperties())
+          .containsKey("custom_job_facet");
+    }
+    assertThat(lineageEvent.getAllValues()).isNotEmpty();
   }
 }

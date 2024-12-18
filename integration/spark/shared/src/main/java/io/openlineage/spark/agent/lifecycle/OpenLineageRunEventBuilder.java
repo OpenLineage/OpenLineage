@@ -42,6 +42,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.rdd.RDD;
@@ -140,8 +141,12 @@ class OpenLineageRunEventBuilder {
   private final Collection<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>
       outputDatasetFacetBuilders;
 
-  @NonNull private final Collection<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders;
-  @NonNull private final Collection<CustomFacetBuilder<?, ? extends JobFacet>> jobFacetBuilders;
+  @NonNull @Getter
+  private final Collection<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders;
+
+  @NonNull @Getter
+  private final Collection<CustomFacetBuilder<?, ? extends JobFacet>> jobFacetBuilders;
+
   @NonNull private final Collection<ColumnLevelLineageVisitor> columnLineageVisitors;
 
   private final UnknownEntryFacetListener unknownEntryFacetListener =
@@ -421,7 +426,10 @@ class OpenLineageRunEventBuilder {
                         .timer(
                             "openlineage.spark.facets.job.execution.time",
                             "facet.builder",
-                            fn.getClass().getCanonicalName())
+                            Optional.ofNullable(fn)
+                                .map(Object::getClass)
+                                .map(Class::getCanonicalName)
+                                .orElse(""))
                         .record(() -> fn.accept(event, jobFacetsBuilder::put))));
     return jobFacetsBuilder.build();
   }
@@ -439,7 +447,10 @@ class OpenLineageRunEventBuilder {
                         .timer(
                             "openlineage.spark.facets.run.execution.time",
                             "facet.builder",
-                            fn.getClass().getCanonicalName())
+                            Optional.ofNullable(fn)
+                                .map(Object::getClass)
+                                .map(Class::getCanonicalName)
+                                .orElse(""))
                         .record(() -> fn.accept(event, runFacetsBuilder::put))));
     return runFacetsBuilder.build();
   }
