@@ -20,15 +20,18 @@ public abstract class ExecutorCircuitBreaker implements CircuitBreaker {
 
   private Integer circuitCheckIntervalInMillis;
   protected Optional<Duration> timeout;
+  private ExecutorService executor;
 
   public ExecutorCircuitBreaker(Integer circuitCheckIntervalInMillis) {
     this.circuitCheckIntervalInMillis = circuitCheckIntervalInMillis;
     this.timeout = Optional.empty();
+    executor = Executors.newCachedThreadPool();
   }
 
   public ExecutorCircuitBreaker(Integer circuitCheckIntervalInMillis, Duration timeout) {
     this.circuitCheckIntervalInMillis = circuitCheckIntervalInMillis;
     this.timeout = Optional.of(timeout);
+    executor = Executors.newCachedThreadPool();
   }
 
   @Override
@@ -38,7 +41,6 @@ public abstract class ExecutorCircuitBreaker implements CircuitBreaker {
       return null;
     }
 
-    ExecutorService executor = Executors.newCachedThreadPool();
     long startTime = System.currentTimeMillis();
     Future<T> futureOpenLineage = executor.submit(callable);
     Future<T> futureCircuitBreaker =
@@ -78,10 +80,7 @@ public abstract class ExecutorCircuitBreaker implements CircuitBreaker {
       futureOpenLineage.cancel(true);
       futureCircuitBreaker.cancel(true);
       log.warn("Got error in run callable: {}", e.getMessage(), e.getCause());
-      executor.shutdownNow();
       return null;
-    } finally {
-      executor.shutdownNow();
     }
     return result;
   }
