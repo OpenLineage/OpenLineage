@@ -97,4 +97,12 @@ export const Producers: Array<Partner> = [
         docs_url: "https://trino.io/docs/current/admin/event-listeners-openlineage.html",
         org_url: "https://trino.io/"
     },
+    {
+        image: "Logocombo_SnapLogic_RGB.svg",
+        org: "SnapLogic",
+        full_name: "SnapLogic",
+        description: "SnapLogic's Data Lineage feature supports automated collection of data lineage metadata from SnapLogic Pipelines. This metadata is made available in Open Lineage format to the consumers.",
+        docs_url: "https://www.snaplogic.com/blog/snaplogic-loves-openlineage",
+        org_url: "https://www.snaplogic.com/"
+    },
 ]
