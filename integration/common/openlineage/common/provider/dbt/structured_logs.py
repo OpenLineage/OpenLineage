@@ -328,7 +328,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             error_message = event["data"]["exc"]
             stacktrace = event["data"]["exc_info"]
             run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
-                message=error_message, programmingLanguage="python", stackTrace=stacktrace
+                message=error_message, programmingLanguage="sql", stackTrace=stacktrace
             )
         elif dbt_node_type == "SQLQueryStatus":
             run_state = RunState.COMPLETE
@@ -353,7 +353,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             run_state = RunState.FAIL
             error_message = event["info"]["msg"]
             run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
-                message=error_message, programmingLanguage="python"
+                message=error_message, programmingLanguage="sql"
             )
 
         parent_run_metadata = get_parent_run_metadata()

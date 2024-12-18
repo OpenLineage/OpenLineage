@@ -147,6 +147,9 @@ def test_parse(target, command_line, logs_path, expected_ol_events_path, manifes
     actual_ol_events = list(ol_event_to_dict(event) for event in processor.parse())
     expected_ol_events = json.load(open(expected_ol_events_path))
 
+    with open("foo.json", "w") as f:
+        json.dump(actual_ol_events, f)
+
     assert match(expected=expected_ol_events, result=actual_ol_events)
 
 
