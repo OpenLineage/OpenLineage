@@ -32,7 +32,6 @@ from openlineage.common.utils import (
     add_command_line_arg,
     add_or_replace_command_line_option,
     get_from_nullable_chain,
-    stream_has_lines,
 )
 
 
@@ -439,28 +438,22 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             self.dbt_command_line, option="--write-json", replace_option="--no-write-json"
         )
 
-        stdout_file = tempfile.NamedTemporaryFile(delete=False)
-        stderr_file = tempfile.NamedTemporaryFile(delete=False)
-        stdout_reader = open(stdout_file.name, mode="r")
-        stderr_reader = open(stderr_file.name, mode="r")
-
-        process = subprocess.Popen(dbt_command_line, stdout=stdout_file, stderr=stderr_file)
-
+        process = subprocess.Popen(dbt_command_line, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
+        stdout_lines = []
+        stderr_lines = []
         while process.poll() is None:
-            if stream_has_lines(stdout_reader):
+            stdout_lines = process.stdout.readlines()
+            stderr_lines = process.stderr.readlines()
+            if len(stdout_lines) > 0:
                 # Load the manifest as soon as it exists
                 self.compiled_manifest
 
-            yield from self._consume_dbt_logs(stdout_reader, stderr_reader)
+            yield from self._consume_dbt_logs(stdout_lines, stderr_lines)
 
-        yield from self._consume_dbt_logs(stdout_reader, stderr_reader)
+        yield from self._consume_dbt_logs(stdout_lines, stderr_lines)
 
-        stdout_reader.close()
-        stderr_reader.close()
 
-    def _consume_dbt_logs(self, stdout_reader, stderr_reader) -> Generator[str, None, None]:
-        stdout_lines = stdout_reader.readlines()
-        stderr_lines = stderr_reader.readlines()
+    def _consume_dbt_logs(self, stdout_lines: List[str], stderr_lines: List[str]) -> Generator[str, None, None]:
         for line in stdout_lines:
             line = line.strip()
             if line:
@@ -470,6 +463,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             line = line.strip()
             if line:
                 self.logger.error(line)
+
+        stderr_lines.clear()
+        stdout_lines.clear()
 
     def _get_model_node(self, node_id) -> ModelNode:
         """
