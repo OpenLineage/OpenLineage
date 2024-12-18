@@ -105,4 +105,12 @@ export const Producers: Array<Partner> = [
         docs_url: "https://www.snaplogic.com/blog/snaplogic-loves-openlineage",
         org_url: "https://www.snaplogic.com/"
     },
+    {
+        image: "csvpath-logo.svg",
+        org: "CsvPath",
+        full_name: "CsvPath",
+        description: "CsvPath generates OpenLineage events at each step in a delimited-file validation and canonicalization flow. This metadata is made available in Marquez or another OpenLineage enabled server.",
+        docs_url: "https://www.csvpath.org/getting-started/getting-started-with-csvpath-+-openlineage",
+        org_url: "https://www.csvpath.org/"
+    },
 ]
