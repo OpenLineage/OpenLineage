@@ -660,7 +660,7 @@ public class CustomEventTransformer implements EventTransformer {
 
 ```yaml
 transport:
-  type: transport
+  type: transform
   transformerClass: io.openlineage.CustomEventTransformer
   transformerProperties:
     key1: value1
