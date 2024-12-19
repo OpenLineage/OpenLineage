@@ -106,7 +106,6 @@ for handler in openlineage_logger.handlers:
 
 def main():
     logger.info("Running OpenLineage dbt wrapper version %s", __version__)
-    logger.info("This wrapper will send OpenLineage events at the end of dbt execution.")
 
     args = sys.argv[1:]
     target = parse_single_arg(args, ["-t", "--target"])
@@ -139,6 +138,7 @@ def main():
 def consume_structured_logs(
     target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]
 ):
+    logger.info("This wrapper will send OpenLineage events while the models are executing.")
     return_code = 0
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
 
@@ -191,6 +191,7 @@ def consume_structured_logs(
 def consume_local_artifacts(
     target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]
 ):
+    logger.info("This wrapper will send OpenLineage events at the end of dbt execution.")
     parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
     parent_run_metadata = None
     # We can get this if we have been orchestrated by an external system like airflow

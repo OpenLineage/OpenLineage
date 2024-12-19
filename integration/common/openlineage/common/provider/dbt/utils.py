@@ -83,6 +83,32 @@ def get_dbt_profiles_dir(command: List[str]) -> str:
     return from_command or from_env_var or default_dir
 
 
+def get_dbt_log_path(command: List[str]) -> str:
+    """
+    Based on this https://docs.getdbt.com/reference/global-configs/logs
+    Gets the path of the dbt log file
+    """
+    project_dir = parse_single_arg(command, ["--project-dir"], default="./")
+    default_log_path = os.path.join(project_dir, "logs")
+    from_command = parse_single_arg(command, ["--log-path"], default=None)
+    from_env_var = os.getenv("DBT_LOG_PATH")
+    logs_dir = from_command or from_env_var or default_log_path
+    return os.path.expanduser(os.path.join(logs_dir, "dbt.log"))
+
+
+def clear_log_file(log_path: str) -> None:
+    """
+    If the log file already exists when the dbt command is executed logs are appended.
+    This function can be used to clear the content of the log file
+    before the next dbt command appends to it.
+    """
+    if not os.path.exists(log_path):
+        return  # do nothing
+    with open(log_path, "w"):
+        # clear the text file
+        pass
+
+
 def get_parent_run_metadata():
     """
     The parent job that started the dbt command. Usually the scheduler (Airflow, ...etc)

@@ -1,7 +1,7 @@
 # Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Generator, List, Optional, TextIO
 
 
 def get_from_nullable_chain(source: Any, chain: List[str]) -> Optional[Any]:
@@ -113,6 +113,14 @@ def add_command_line_arg(command_line: List[str], arg_name: str, arg_value: str)
     return command_line
 
 
+def add_command_line_args(command_line: List[str], arg_names: List[str], arg_values: List[str]):
+    for i in range(len(arg_names)):
+        arg_name = arg_names[i]
+        arg_value = arg_values[i]
+        command_line = add_command_line_arg(command_line, arg_name, arg_value)
+    return command_line
+
+
 def add_or_replace_command_line_option(
     command_line: List[str], option: str, replace_option: Optional[str] = None
 ) -> List[str]:
@@ -130,3 +138,18 @@ def add_or_replace_command_line_option(
         command_line.append(option)
 
     return command_line
+
+
+def has_lines(text_file: TextIO):
+    current_cursor = text_file.tell()
+    lines = text_file.readlines()
+    text_file.seek(current_cursor)
+    return len(lines) > 0
+
+
+def get_next_lines(text_file: TextIO) -> Generator[str, None, None]:
+    lines = text_file.readlines()
+    for line in lines:
+        line = line.strip()
+        if line:
+            yield line
