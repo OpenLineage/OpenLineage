@@ -3,9 +3,10 @@
 import json
 import os
 import subprocess
+import sys
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, Generator, List, Optional
+from typing import Dict, Generator, List, Optional, TextIO
 
 from openlineage.client.event_v2 import RunEvent, RunState
 from openlineage.client.facet_v2 import error_message_run, job_type_job, sql_job
@@ -19,8 +20,10 @@ from openlineage.common.provider.dbt.processor import (
 )
 from openlineage.common.provider.dbt.utils import (
     HANDLED_COMMANDS,
+    clear_log_file,
     generate_run_event,
     get_dbt_command,
+    get_dbt_log_path,
     get_dbt_profiles_dir,
     get_event_timestamp,
     get_job_type,
@@ -28,9 +31,11 @@ from openlineage.common.provider.dbt.utils import (
     get_parent_run_metadata,
 )
 from openlineage.common.utils import (
-    add_command_line_arg,
+    add_command_line_args,
     add_or_replace_command_line_option,
     get_from_nullable_chain,
+    get_next_lines,
+    has_lines,
 )
 
 
@@ -47,6 +52,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         self.dbt_command_line: List[str] = dbt_command_line
         self.profiles_dir: str = get_dbt_profiles_dir(command=self.dbt_command_line)
+        self.dbt_log_file_path: str = get_dbt_log_path(command=self.dbt_command_line)
 
         self.node_id_to_ol_run_id: Dict[str, str] = defaultdict(lambda: str(generate_new_uuid()))
 
@@ -60,6 +66,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         # will be populated when some dbt events are collected
         self._compiled_manifest: Dict = {}
         self._dbt_version: Optional[str] = None
+        self._dbt_log_file: Optional[TextIO] = None
 
     @cached_property
     def dbt_command(self) -> str:
@@ -80,9 +87,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     @cached_property
     def profile(self):
-        profile_dict = self.load_yaml_with_jinja(os.path.join(self.profiles_dir, "profiles.yml"))[
-            self.profile_name
-        ]
+        profile_dict = self.load_yaml_with_jinja(
+            os.path.expanduser(os.path.join(self.profiles_dir, "profiles.yml"))
+        )[self.profile_name]
         if not self.target:
             self.target = profile_dict["target"]
 
@@ -119,7 +126,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.extract_dataset_namespace(self.profile)
 
         for line in self._run_dbt_command():
-            self.logger.info(line)
             ol_event = self._parse_structured_log_event(line)
             if ol_event:
                 yield ol_event
@@ -427,47 +433,44 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _run_dbt_command(self) -> Generator[str, None, None]:
         """
-        This is a generator, it returns log lines
+        This executes the dbt command.
+        Logs from the dbt log file are consumed in json format.
         """
-        # log in json and generate the artifacts
-        dbt_command_line = add_command_line_arg(
-            self.dbt_command_line, arg_name="--log-format", arg_value="json"
+        dbt_command_line = add_command_line_args(
+            self.dbt_command_line,
+            arg_names=["--log-format-file", "--log-level-file"],
+            arg_values=["json", "debug"],
         )
         dbt_command_line = add_or_replace_command_line_option(
-            self.dbt_command_line, option="--write-json", replace_option="--no-write-json"
+            dbt_command_line, option="--write-json", replace_option="--no-write-json"
         )
 
-        process = subprocess.Popen(
-            dbt_command_line, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1
-        )
-        stdout_lines = []
-        stderr_lines = []
-        while process.poll() is None:
-            stdout_lines = process.stdout.readlines()
-            stderr_lines = process.stderr.readlines()
-            if len(stdout_lines) > 0:
-                # Load the manifest as soon as it exists
-                self.compiled_manifest
+        clear_log_file(self.dbt_log_file_path)
 
-            yield from self._consume_dbt_logs(stdout_lines, stderr_lines)
+        process = subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr, text=True)
 
-        yield from self._consume_dbt_logs(stdout_lines, stderr_lines)
+        try:
+            while process.poll() is None:
+                self._open_dbt_log_file()
+                if self._dbt_log_file is None:
+                    continue  # wait for the log file to be created
 
-    def _consume_dbt_logs(
-        self, stdout_lines: List[str], stderr_lines: List[str]
-    ) -> Generator[str, None, None]:
-        for line in stdout_lines:
-            line = line.strip()
-            if line:
-                yield line
+                if has_lines(self._dbt_log_file) > 0:
+                    # Load the manifest as soon as it exists
+                    self.compiled_manifest
 
-        for line in stderr_lines:
-            line = line.strip()
-            if line:
-                self.logger.error(line)
+                yield from get_next_lines(self._dbt_log_file)
 
-        stderr_lines.clear()
-        stdout_lines.clear()
+            if self._dbt_log_file is not None:
+                yield from get_next_lines(self._dbt_log_file)
+
+        except Exception as e:
+            process.kill()
+            raise e
+
+    def _open_dbt_log_file(self):
+        if os.path.exists(self.dbt_log_file_path) and self._dbt_log_file is None:
+            self._dbt_log_file = open(self.dbt_log_file_path)
 
     def _get_model_node(self, node_id) -> ModelNode:
         """
