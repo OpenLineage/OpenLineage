@@ -18,8 +18,6 @@ import io.openlineage.spark.agent.facets.builder.CustomEnvironmentFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.DatabricksEnvironmentFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.DebugRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.ErrorFacetBuilder;
-import io.openlineage.spark.agent.facets.builder.GcpJobFacetBuilder;
-import io.openlineage.spark.agent.facets.builder.GcpRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.OutputStatisticsOutputDatasetFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.OwnershipJobFacetBuilder;
@@ -28,7 +26,6 @@ import io.openlineage.spark.agent.facets.builder.SparkJobDetailsFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkPropertyFacetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
-import io.openlineage.spark.agent.util.GCPUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
@@ -214,8 +211,6 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                 new SparkJobDetailsFacetBuilder());
     if (DatabricksEnvironmentFacetBuilder.isDatabricksRuntime()) {
       listBuilder.add(new DatabricksEnvironmentFacetBuilder(context));
-    } else if (GCPUtils.isDataprocRuntime()) {
-      listBuilder.add(new GcpRunFacetBuilder(context));
     } else if (context.getCustomEnvironmentVariables() != null) {
       listBuilder.add(new CustomEnvironmentFacetBuilder(context));
     }
@@ -233,9 +228,6 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                     eventHandlerFactories, factory -> factory.createJobFacetBuilders(context)));
 
     listBuilder.add(new OwnershipJobFacetBuilder(context));
-    if (GCPUtils.isDataprocRuntime()) {
-      listBuilder.add(new GcpJobFacetBuilder(context));
-    }
     return listBuilder.build();
   }
 
