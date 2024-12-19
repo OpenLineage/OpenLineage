@@ -247,7 +247,7 @@ In this step, you will create two new Airflow DAGs that perform simple tasks and
 
     ```
 
-3. Restart Airflow to apply the changes.
+3. Restart Airflow to apply the changes. Then, unpause both DAGs.
 
 ## View Collected Lineage in Marquez
 
