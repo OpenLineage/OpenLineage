@@ -27,8 +27,8 @@ OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects
 
 ### With OpenLineage
 
-- Effort of integration is shared
-- Integration can be pushed in each project: no need to play catch up
+- The effort of integration is shared
+- An integration can be pushed in each project: no need to play catch up
 
 ![With OpenLineage](doc/with-ol.svg)
 
