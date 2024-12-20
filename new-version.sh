@@ -47,10 +47,12 @@ usage() {
 # We do this check because bumpversion screws up the search/replace if the current_version and
 # new_version are the same
 function update_py_version_if_needed() {
-  export "$(bump2version manual --new-version "$1" --allow-dirty --list --dry-run | grep version | xargs)"
+  # shellcheck disable=SC2086,SC2046
+  export $(bump2version manual --new-version $1 --allow-dirty --list --dry-run | grep version | xargs)
   # shellcheck disable=SC2154
   if [ "$new_version" != "$current_version" ]; then
-    bump2version manual --new-version "$1" --allow-dirty
+    # shellcheck disable=SC2086
+    bump2version manual --new-version $1 --allow-dirty
   fi
 }
 
@@ -109,7 +111,8 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]] ; then
 fi
 
 # Ensure valid versions
-VERSIONS=("$RELEASE_VERSION" "$NEXT_VERSION")
+# shellcheck disable=SC2086,SC2206
+VERSIONS=($RELEASE_VERSION $NEXT_VERSION)
 for VERSION in "${VERSIONS[@]}"; do
   if [[ ! "${VERSION}" =~ ${SEMVER_REGEX} ]]; then
     echo "Error: Version '${VERSION}' must match '${SEMVER_REGEX}'"
