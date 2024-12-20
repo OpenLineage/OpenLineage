@@ -6,7 +6,7 @@
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4888/badge)](https://bestpractices.coreinfrastructure.org/projects/4888)
 
 <div align="center">
-  <img src="./doc/openlineage-lfai-logo.png" />
+  <img src="./doc/openlineage-lfai-logo.png" width="800px"/>
 </div>
 
 ## Overview
