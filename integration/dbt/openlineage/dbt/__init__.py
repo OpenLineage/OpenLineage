@@ -151,7 +151,7 @@ def consume_structured_logs(
     return_code = 0
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
     dbt_command_line = remove_command_line_option(sys.argv, CONSUME_STRUCTURED_LOGS_COMMAND_OPTION)
-
+    dbt_command_line = ["dbt"] + dbt_command_line[1:]
     processor = DbtStructuredLogsProcessor(
         project_dir=project_dir,
         dbt_command_line=dbt_command_line,

@@ -97,19 +97,6 @@ def get_dbt_log_path(command: List[str]) -> str:
     return os.path.expanduser(os.path.join(logs_dir, "dbt.log"))
 
 
-def clear_log_file(log_path: str) -> None:
-    """
-    If the log file already exists when the dbt command is executed logs are appended.
-    This function can be used to clear the content of the log file
-    before the next dbt command appends to it.
-    """
-    if not os.path.exists(log_path):
-        return  # do nothing
-    with open(log_path, "w"):
-        # clear the text file
-        pass
-
-
 def get_parent_run_metadata():
     """
     The parent job that started the dbt command. Usually the scheduler (Airflow, ...etc)

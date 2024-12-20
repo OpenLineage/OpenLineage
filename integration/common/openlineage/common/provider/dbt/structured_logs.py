@@ -20,7 +20,6 @@ from openlineage.common.provider.dbt.processor import (
 )
 from openlineage.common.provider.dbt.utils import (
     HANDLED_COMMANDS,
-    clear_log_file,
     generate_run_event,
     get_dbt_command,
     get_dbt_log_path,
@@ -445,8 +444,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             dbt_command_line, option="--write-json", replace_option="--no-write-json"
         )
 
-        clear_log_file(self.dbt_log_file_path)
-
         process = subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr, text=True)
 
         try:
@@ -467,10 +464,18 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         except Exception as e:
             process.kill()
             raise e
+        finally:
+            self._dbt_log_file.close()
 
     def _open_dbt_log_file(self):
+        """
+        If the log file already exists when the dbt command is executed logs are appended.
+        This reads all the lines on first (and only) open to get rid of those previous lines.
+        """
         if os.path.exists(self.dbt_log_file_path) and self._dbt_log_file is None:
             self._dbt_log_file = open(self.dbt_log_file_path)
+            while self._dbt_log_file.readlines():
+                pass
 
     def _get_model_node(self, node_id) -> ModelNode:
         """
