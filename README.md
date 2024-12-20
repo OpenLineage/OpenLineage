@@ -5,9 +5,9 @@
 [![maven](https://img.shields.io/maven-central/v/io.openlineage/openlineage-java.svg)](https://search.maven.org/search?q=g:io.openlineage)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4888/badge)](https://bestpractices.coreinfrastructure.org/projects/4888)
 
-<div margin-top="25px" align-content="center">
-  <img src="./doc/openlineage-logo.png" width="375px"/>
-  <img src="./doc/lfaidata-project-badge-graduate-color.png" width="225px"/>
+<div align="center">
+  <img src="./doc/openlineage-logo.png" width="400px"/>
+  <img src="./doc/lfaidata-project-badge-graduate-color.png" width="275px"/>
 </div>
 
 ## Overview
