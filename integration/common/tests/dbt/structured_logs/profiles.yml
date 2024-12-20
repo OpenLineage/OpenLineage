@@ -1,0 +1,28 @@
+config:
+  send_anonymous_usage_stats: False
+  use_colors: False
+
+jaffle_shop:
+  target: postgres
+  outputs:
+    postgres:
+      type: postgres
+      host: postgres
+      user: postgres
+      password: postgres
+      port: 5432
+      dbname: postgres
+      schema: public
+      threads: 1
+
+    snowflake:
+      type: snowflake
+      account: mysnowflakeaccount.us-east-1
+
+      user: "jane.doe@mycompany.com"
+      authenticator: externalbrowser
+
+      role: "JANE_DOE_USER_ROLE"
+      database: MY_DATABASE
+      warehouse: MY_EXTRA_SMALL_WAREHOUSE
+      schema: MY_SCHEMA
