@@ -3,11 +3,11 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.facets.builder;
+package io.openlineage.spark.agent.vendor.gcp.facets.builder;
 
 import io.openlineage.client.OpenLineage.JobFacet;
 import io.openlineage.spark.agent.facets.GcpLineageJobFacet;
-import io.openlineage.spark.agent.util.GCPUtils;
+import io.openlineage.spark.agent.vendor.gcp.util.GCPUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.HashMap;
