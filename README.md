@@ -5,8 +5,9 @@
 [![maven](https://img.shields.io/maven-central/v/io.openlineage/openlineage-java.svg)](https://search.maven.org/search?q=g:io.openlineage)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4888/badge)](https://bestpractices.coreinfrastructure.org/projects/4888)
 
-<div align="center">
+<div margin-top="25px" align-content="center">
   <img src="./doc/openlineage-logo.png" width="375px"/>
+  <img src="./doc/lfaidata-project-badge-graduate-color.png" width="225px"/>
 </div>
 
 ## Overview
@@ -14,8 +15,7 @@ OpenLineage is an Open standard for metadata and lineage collection designed to 
 It defines a generic model of run, job, and dataset entities identified using consistent naming strategies.
 The core lineage model is extensible by defining specific facets to enrich those entities.
 
-|---|---|
-|<div align="center"><a href="https://lfaidata.foundation/projects"><img src="./doc/lfaidata-project-badge-graduate-color.png" width="225px" /></a></div>|OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) Graduation project under active development, and we welcome contributions.|
+OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) Graduation project under active development, and we welcome contributions.
 
 ## Problem
 
