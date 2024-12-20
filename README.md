@@ -15,7 +15,7 @@ It defines a generic model of run, job, and dataset entities identified using co
 The core lineage model is extensible by defining specific facets to enrich those entities.
 
 |||
-|-|-|
+|---|---|
 |<div align="center">
   <a href="https://lfaidata.foundation/projects">
   <img src="./doc/lfaidata-project-badge-graduate-color.png" width="115px" />
