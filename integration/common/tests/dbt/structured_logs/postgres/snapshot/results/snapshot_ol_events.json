@@ -1,0 +1,548 @@
+[
+  {
+    "eventTime":"2024-12-13T13:45:10.554247Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"dbt-run-jaffle_shop",
+      "facets":{ }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T13:45:24.292967Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SNAPSHOT"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.raw_orders",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.snapshots.orders_snapshot",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
+  },
+  {
+    "eventTime":"2024-12-13T13:45:24.793067Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.1",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\nselect * from (\n        \n    \n\n    select *,\n        md5(coalesce(cast(id as varchar ), '')\n         || '|' || coalesce(cast(order_date as varchar ), '')\n        ) as dbt_scd_id,\n        order_date as dbt_updated_at,\n        order_date as dbt_valid_from,\n        \n  \n  coalesce(nullif(order_date, order_date), null)\n  as dbt_valid_to\n\n    from (\n        \n\n    \n\n     select * from \"postgres\".\"public\".\"raw_orders\"\n\n    ) sbq\n\n\n\n    ) as __dbt_sbq\n    where false\n    limit 0\n"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T13:45:24.880021Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.1",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\nselect * from (\n        \n    \n\n    select *,\n        md5(coalesce(cast(id as varchar ), '')\n         || '|' || coalesce(cast(order_date as varchar ), '')\n        ) as dbt_scd_id,\n        order_date as dbt_updated_at,\n        order_date as dbt_valid_from,\n        \n  \n  coalesce(nullif(order_date, order_date), null)\n  as dbt_valid_to\n\n    from (\n        \n\n    \n\n     select * from \"postgres\".\"public\".\"raw_orders\"\n\n    ) sbq\n\n\n\n    ) as __dbt_sbq\n    where false\n    limit 0\n"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T13:45:24.925730Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.2",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\nselect * from (\n        select now()::timestamp without time zone as dbt_snapshot_time\n    ) as __dbt_sbq\n    where false\n    limit 0\n"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T13:45:24.934167Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.2",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\nselect * from (\n        select now()::timestamp without time zone as dbt_snapshot_time\n    ) as __dbt_sbq\n    where false\n    limit 0\n"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T13:45:25.022556Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.3",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"BEGIN"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T13:45:25.035619Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.3",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"BEGIN"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T13:45:25.049582Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.4",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\n\n      \n  \n    \n\n  create  table \"postgres\".\"snapshots\".\"orders_snapshot\"\n  \n  \n    as\n  \n  (\n    \n    \n\n    select *,\n        md5(coalesce(cast(id as varchar ), '')\n         || '|' || coalesce(cast(order_date as varchar ), '')\n        ) as dbt_scd_id,\n        order_date as dbt_updated_at,\n        order_date as dbt_valid_from,\n        \n  \n  coalesce(nullif(order_date, order_date), null)\n  as dbt_valid_to\n\n    from (\n        \n\n    \n\n     select * from \"postgres\".\"public\".\"raw_orders\"\n\n    ) sbq\n\n\n\n  );\n  \n  "
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T13:45:25.062558Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.4",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\n\n      \n  \n    \n\n  create  table \"postgres\".\"snapshots\".\"orders_snapshot\"\n  \n  \n    as\n  \n  (\n    \n    \n\n    select *,\n        md5(coalesce(cast(id as varchar ), '')\n         || '|' || coalesce(cast(order_date as varchar ), '')\n        ) as dbt_scd_id,\n        order_date as dbt_updated_at,\n        order_date as dbt_valid_from,\n        \n  \n  coalesce(nullif(order_date, order_date), null)\n  as dbt_valid_to\n\n    from (\n        \n\n    \n\n     select * from \"postgres\".\"public\".\"raw_orders\"\n\n    ) sbq\n\n\n\n  );\n  \n  "
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T13:45:25.200106Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.5",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"COMMIT"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T13:45:25.218183Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.5",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"COMMIT"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T13:45:25.241354Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.snapshots.jaffle_shop.orders_snapshot.snapshot",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SNAPSHOT"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.raw_orders",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.snapshots.orders_snapshot",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
+  },
+  {
+    "eventTime":"2024-12-13T13:45:26.105203Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"dbt-run-jaffle_shop",
+      "facets":{ }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  }
+]

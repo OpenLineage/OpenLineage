@@ -16,6 +16,9 @@ project(":snowflake").projectDir = file("./vendor/snowflake")
 include 'iceberg'
 project(":iceberg").projectDir = file("./vendor/iceberg")
 
+include 'gcp'
+project(":gcp").projectDir = file("./vendor/gcp")
+
 buildCache {
     local {
         directory = new File(rootDir, 'build-cache')
