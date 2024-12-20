@@ -21,8 +21,17 @@ from openlineage.common.provider.dbt import (
     UnsupportedDbtCommand,
 )
 from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
-from openlineage.common.provider.dbt.utils import PRODUCER, __version__
-from openlineage.common.utils import parse_multiple_args, parse_single_arg
+from openlineage.common.provider.dbt.utils import (
+    CONSUME_STRUCTURED_LOGS_COMMAND_OPTION,
+    PRODUCER,
+    __version__,
+)
+from openlineage.common.utils import (
+    has_command_line_option,
+    parse_multiple_args,
+    parse_single_arg,
+    remove_command_line_option,
+)
 from tqdm import tqdm
 
 JOB_TYPE_FACET = job_type_job.JobTypeJobFacet(
@@ -115,8 +124,8 @@ def main():
     models = parse_multiple_args(args, ["-m", "-s", "--model", "--models", "--select"])
 
     # dbt-ol option and not a dbt option
-    consume_structured_logs_option = parse_single_arg(args, ["--consume-structured-logs"], default="false")
-    consume_structured_logs_option = consume_structured_logs_option.lower() == "true"
+    consume_structured_logs_option = has_command_line_option(args, CONSUME_STRUCTURED_LOGS_COMMAND_OPTION)
+
     if consume_structured_logs_option:
         return consume_structured_logs(
             target=target,
@@ -141,12 +150,7 @@ def consume_structured_logs(
     logger.info("This wrapper will send OpenLineage events while the models are executing.")
     return_code = 0
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
-
-    args = list(sys.argv)
-    structured_logs_option_index = args.index("--consume-structured-logs")
-    args.pop(structured_logs_option_index)
-    args.pop(structured_logs_option_index)
-    dbt_command_line = ["dbt"] + args[1:]
+    dbt_command_line = remove_command_line_option(sys.argv, CONSUME_STRUCTURED_LOGS_COMMAND_OPTION)
 
     processor = DbtStructuredLogsProcessor(
         project_dir=project_dir,

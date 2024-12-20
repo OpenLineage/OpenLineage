@@ -1,12 +1,14 @@
 # Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 import pytest
+from openlineage.common.provider.dbt.utils import CONSUME_STRUCTURED_LOGS_COMMAND_OPTION
 from openlineage.common.utils import (
     add_command_line_arg,
     add_or_replace_command_line_option,
     get_from_nullable_chain,
     parse_multiple_args,
     parse_single_arg,
+    remove_command_line_option,
 )
 
 
@@ -119,4 +121,34 @@ def test_add_command_line_arg(command_line, arg_name, arg_value, expected_comman
 )
 def test_add_or_replace_command_line_option(command_line, option, replace_option, expected_command_line):
     actual_command_line = add_or_replace_command_line_option(command_line, option, replace_option)
+    assert actual_command_line == expected_command_line
+
+
+@pytest.mark.parametrize(
+    "command_line, command_option, expected_command_line",
+    [
+        (
+            ["dbt", "--foo", "run", "--select", "orders"],
+            "--foo",
+            ["dbt", "run", "--select", "orders"],
+        ),
+        (
+            ["dbt", "run", "--select", "orders"],
+            "--bar",
+            ["dbt", "run", "--select", "orders"],
+        ),
+        (
+            ["dbt", CONSUME_STRUCTURED_LOGS_COMMAND_OPTION, "run", "--select", "orders"],
+            CONSUME_STRUCTURED_LOGS_COMMAND_OPTION,
+            ["dbt", "run", "--select", "orders"],
+        ),
+    ],
+    ids=[
+        "remove_existing_command_option",
+        "remove_absent_command_option",
+        "remove_consume_structured_logs_command_option",
+    ],
+)
+def test_remove_command_line_option(command_line, command_option, expected_command_line):
+    actual_command_line = remove_command_line_option(command_line, command_option)
     assert actual_command_line == expected_command_line

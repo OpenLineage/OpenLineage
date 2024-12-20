@@ -140,6 +140,20 @@ def add_or_replace_command_line_option(
     return command_line
 
 
+def has_command_line_option(command_line: List[str], command_option: str) -> bool:
+    return command_option in command_line
+
+
+def remove_command_line_option(command_line: List[str], command_option: str) -> List[str]:
+    if not has_command_line_option(command_line, command_option):
+        return command_line
+
+    command_line = list(command_line)
+    command_option_index = command_line.index(command_option)
+    command_line.pop(command_option_index)
+    return command_line
+
+
 def has_lines(text_file: TextIO):
     current_cursor = text_file.tell()
     lines = text_file.readlines()

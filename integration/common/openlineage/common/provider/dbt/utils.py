@@ -14,6 +14,7 @@ PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integ
 
 # for which command structured logs consumption is implemented
 HANDLED_COMMANDS = ["run", "seed", "snapshot"]
+CONSUME_STRUCTURED_LOGS_COMMAND_OPTION = "--consume-structured-logs"
 
 
 def get_event_timestamp(timestamp: str):
