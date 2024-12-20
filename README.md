@@ -14,9 +14,8 @@ OpenLineage is an Open standard for metadata and lineage collection designed to 
 It defines a generic model of run, job, and dataset entities identified using consistent naming strategies.
 The core lineage model is extensible by defining specific facets to enrich those entities.
 
-|||
 |---|---|
-|<div align="center"><a href="https://lfaidata.foundation/projects"><img src="./doc/lfaidata-project-badge-graduate-color.png" width="115px" /></a></div>|OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) Graduation project under active development, and we welcome contributions.|
+|<div align="center"><a href="https://lfaidata.foundation/projects"><img src="./doc/lfaidata-project-badge-graduate-color.png" width="225px" /></a></div>|OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) Graduation project under active development, and we welcome contributions.|
 
 ## Problem
 
