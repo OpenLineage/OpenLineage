@@ -4,9 +4,6 @@
 
 ## Badges
 
-<a href="https://lfaidata.foundation/projects">
-    <img src="./doc/lfaidata-project-badge-graduate-color.png" width="50px" />
-</a>
 [![CircleCI](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main.svg?style=shield)](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main)
 [![status](https://img.shields.io/badge/status-active-brightgreen.svg)](#status)
 [![Slack](https://img.shields.io/badge/slack-chat-blue.svg)](https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvAk)
@@ -26,6 +23,7 @@ The core lineage model is extensible by defining specific facets to enrich those
       <img src="./doc/lfaidata-project-badge-graduate-color.png" width="375px" />
   </a>
 </div>
+
 OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) Graduation project under active development, and we'd love your help!
 
 ## Problem
