@@ -18,10 +18,10 @@ The core lineage model is extensible by defining specific facets to enrich those
 |-|-|
 |<div align="center">
   <a href="https://lfaidata.foundation/projects">
-      <img src="./doc/lfaidata-project-badge-graduate-color.png" width="115px" />
+  <img src="./doc/lfaidata-project-badge-graduate-color.png" width="115px" />
   </a>
 </div>|
-OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) Graduation project under active development, and we'd love your help!|
+OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) Graduation project under active development, and we welcome contributions.|
 
 ## Problem
 
