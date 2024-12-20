@@ -5,7 +5,7 @@
 [![maven](https://img.shields.io/maven-central/v/io.openlineage/openlineage-java.svg)](https://search.maven.org/search?q=g:io.openlineage)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4888/badge)](https://bestpractices.coreinfrastructure.org/projects/4888)
 
-<div align="center">
+<div align="center" margin-top="25px">
   <img src="./doc/openlineage-logo.png" width="375px" />
 </div>
 
