@@ -1,7 +1,7 @@
 <div align="center">
   <img src="./doc/openlineage-logo.png" width="375px" />
   <a href="https://lfaidata.foundation/projects">
-      <img src="./doc/lfaidata-project-badge-sandbox-black.png" width="115px" />
+      <img src="./doc/lfaidata-stacked-color.png" width="115px" />
   </a>
 </div>
 
