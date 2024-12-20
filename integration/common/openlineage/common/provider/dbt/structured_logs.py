@@ -465,7 +465,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             process.kill()
             raise e
         finally:
-            self._dbt_log_file.close()
+            if self._dbt_log_file is not None:
+                self._dbt_log_file.close()
 
     def _open_dbt_log_file(self):
         """
