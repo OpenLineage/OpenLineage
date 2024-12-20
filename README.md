@@ -1,4 +1,4 @@
-<div align="center">
+<div align="center" markdown="1">
 [![CircleCI](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main.svg?style=shield)](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main)
 [![status](https://img.shields.io/badge/status-active-brightgreen.svg)](#status)
 [![Slack](https://img.shields.io/badge/slack-chat-blue.svg)](https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvAk)
