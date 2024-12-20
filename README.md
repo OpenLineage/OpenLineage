@@ -78,12 +78,16 @@ The OpenLineage repository contains integrations with several systems.
 - Mastodon: [@openlineage@fostodon.org](openlineage@fosstodon.org)
 
 ## Talks
+- [Flink Forward, October 2024. Data Lineage for Apache Flink with OpenLineage](https://www.flink-forward.org/berlin-2024/agenda#data-lineage-for-apache-flink-with-openlineage)
+- [Airflow Summit, September 2024. Activating operational metadata with Airflow, Atlan and OpenLineage](https://airflowsummit.org/sessions/2024/activating-operational-metadata-with-airflow-atlan-and-openlineage/)
+- [Kafka Summit, March 2024. OpenLineage for Stream Processing](https://www.confluent.io/events/kafka-summit-london-2024/openlineage-for-stream-processing/)
+- [Data Council Austin, March 2024. Data Lineage: We've Come a Long Way](https://www.youtube.com/watch?v=OE1o4D_iWfw)
 - [Data+AI Summit June 2023. Cross-Platform Data Lineage with OpenLineage](https://www.databricks.com/dataaisummit/session/cross-platform-data-lineage-openlineage/)
-- [Berlin Buzzwords June 2023. Column-Level Lineage is Coming to the Rescue](https://youtu.be/xFVSZCCbZlY)
-- [Berlin Buzzwords June 2022. Cross-Platform Data Lineage with OpenLineage](https://www.youtube.com/watch?v=pLBVGIPuwEo)
-- [Berlin Buzzwords June 2021. Observability for Data Pipelines with OpenLineage](https://2021.berlinbuzzwords.de/member/julien-le-dem)
-- [Data Driven NYC February 2021. Data Observability and Pipelines: OpenLineage and Marquez](https://mattturck.com/datakin/)
-- [Big Data Technology Warsaw Summit February 2021. Data lineage and Observability with Marquez and OpenLineage](https://bigdatatechwarsaw.eu/edition-2021/)
+- [Berlin Buzzwords, June 2023. Column-Level Lineage is Coming to the Rescue](https://youtu.be/xFVSZCCbZlY)
+- [Berlin Buzzwords, June 2022. Cross-Platform Data Lineage with OpenLineage](https://www.youtube.com/watch?v=pLBVGIPuwEo)
+- [Berlin Buzzwords, June 2021. Observability for Data Pipelines with OpenLineage](https://2021.berlinbuzzwords.de/member/julien-le-dem)
+- [Data Driven NYC, February 2021. Data Observability and Pipelines: OpenLineage and Marquez](https://mattturck.com/datakin/)
+- [Big Data Technology Warsaw Summit, February 2021. Data lineage and Observability with Marquez and OpenLineage](https://bigdatatechwarsaw.eu/edition-2021/)
 - [Metadata Day 2020. OpenLineage Lightning Talk](https://www.youtube.com/watch?v=anlV5Er_BpM)
 - [Open Core Summit 2020. Observability for Data Pipelines: OpenLineage Project Launch](https://www.coss.community/coss/ocs-2020-breakout-julien-le-dem-3eh4)
 
