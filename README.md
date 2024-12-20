@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="./doc/lfaidata-horizontal-color.png"/>
+</div>
+
 [![CircleCI](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main.svg?style=shield)](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main)
 [![status](https://img.shields.io/badge/status-active-brightgreen.svg)](#status)
 [![Slack](https://img.shields.io/badge/slack-chat-blue.svg)](https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvAk)
@@ -7,7 +11,6 @@
 
 <div align="center">
   <img src="./doc/openlineage-logo.png" width="400px"/>
-  <img src="./doc/lfaidata-project-badge-graduate-color.png" width="275px"/>
 </div>
 
 ## Overview
