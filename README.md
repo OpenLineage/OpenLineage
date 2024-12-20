@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./doc/lfaidata-horizontal-color.png"/>
+  <img src="./doc/lfaidata-horizontal-color.png" height="125px"/>
 </div>
 
 [![CircleCI](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main.svg?style=shield)](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main)
