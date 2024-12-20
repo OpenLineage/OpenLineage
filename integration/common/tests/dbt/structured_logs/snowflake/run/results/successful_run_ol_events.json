@@ -1,0 +1,446 @@
+[
+  {
+    "eventTime":"2024-12-09T14:12:43.144255Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"dbt-run-jaffle_shop",
+      "facets":{ }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-09T14:12:55.603128Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.jaffle_shop.orders",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"MODEL"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[
+      {
+        "namespace":"snowflake://mysnowflakeaccount.us-east-1.aws",
+        "name":"REPORTING.TEST_GENERAL.stg_orders",
+        "facets":{
+          "dataSource":{
+            "name":"snowflake://mysnowflakeaccount.us-east-1.aws",
+            "uri":"snowflake://mysnowflakeaccount.us-east-1.aws"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"order_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"status",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      },
+      {
+        "namespace":"snowflake://mysnowflakeaccount.us-east-1.aws",
+        "name":"REPORTING.TEST_GENERAL.stg_payments",
+        "facets":{
+          "dataSource":{
+            "name":"snowflake://mysnowflakeaccount.us-east-1.aws",
+            "uri":"snowflake://mysnowflakeaccount.us-east-1.aws"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"payment_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"payment_method",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"snowflake://mysnowflakeaccount.us-east-1.aws",
+        "name":"REPORTING.TEST_GENERAL.orders",
+        "facets":{
+          "dataSource":{
+            "name":"snowflake://mysnowflakeaccount.us-east-1.aws",
+            "uri":"snowflake://mysnowflakeaccount.us-east-1.aws"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"order_id",
+                "type":"",
+                "description":"This is a unique identifier for an order",
+                "fields":[ ]
+              },
+              {
+                "name":"customer_id",
+                "type":"",
+                "description":"Foreign key to the customers table",
+                "fields":[ ]
+              },
+              {
+                "name":"order_date",
+                "type":"",
+                "description":"Date (UTC) that the order was placed",
+                "fields":[ ]
+              },
+              {
+                "name":"status",
+                "type":"",
+                "description":"Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |",
+                "fields":[ ]
+              },
+              {
+                "name":"amount",
+                "type":"",
+                "description":"Total amount (AUD) of the order",
+                "fields":[ ]
+              },
+              {
+                "name":"credit_card_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by credit card",
+                "fields":[ ]
+              },
+              {
+                "name":"coupon_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by coupon",
+                "fields":[ ]
+              },
+              {
+                "name":"bank_transfer_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by bank transfer",
+                "fields":[ ]
+              },
+              {
+                "name":"gift_card_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by gift card",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":"This table has basic information about orders, as well as some derived facts based on payments"
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
+  },
+  {
+    "eventTime":"2024-12-09T14:12:56.007355Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"REPORTING.TEST_GENERAL.jaffle_shop.orders"
+          }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.jaffle_shop.orders.sql.1",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"snowflake\", \"node_id\": \"model.jaffle_shop.orders\"} */\ncreate or replace transient table REPORTING.TEST_GENERAL.orders\n         as\n        (\n\nwith orders as (\n\n    select * from REPORTING.TEST_GENERAL.stg_orders\n\n),\n\npayments as (\n\n    select * from REPORTING.TEST_GENERAL.stg_payments\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final\n        );"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-09T14:12:58.122853Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"REPORTING.TEST_GENERAL.jaffle_shop.orders"
+          }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.jaffle_shop.orders.sql.1",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"snowflake\", \"node_id\": \"model.jaffle_shop.orders\"} */\ncreate or replace transient table REPORTING.TEST_GENERAL.orders\n         as\n        (\n\nwith orders as (\n\n    select * from REPORTING.TEST_GENERAL.stg_orders\n\n),\n\npayments as (\n\n    select * from REPORTING.TEST_GENERAL.stg_payments\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final\n        );"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-09T14:12:58.784548Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.jaffle_shop.orders",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"MODEL"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[
+      {
+        "namespace":"snowflake://mysnowflakeaccount.us-east-1.aws",
+        "name":"REPORTING.TEST_GENERAL.stg_orders",
+        "facets":{
+          "dataSource":{
+            "name":"snowflake://mysnowflakeaccount.us-east-1.aws",
+            "uri":"snowflake://mysnowflakeaccount.us-east-1.aws"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"order_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"status",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      },
+      {
+        "namespace":"snowflake://mysnowflakeaccount.us-east-1.aws",
+        "name":"REPORTING.TEST_GENERAL.stg_payments",
+        "facets":{
+          "dataSource":{
+            "name":"snowflake://mysnowflakeaccount.us-east-1.aws",
+            "uri":"snowflake://mysnowflakeaccount.us-east-1.aws"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"payment_id",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              },
+              {
+                "name":"payment_method",
+                "type":"",
+                "description":"",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"snowflake://mysnowflakeaccount.us-east-1.aws",
+        "name":"REPORTING.TEST_GENERAL.orders",
+        "facets":{
+          "dataSource":{
+            "name":"snowflake://mysnowflakeaccount.us-east-1.aws",
+            "uri":"snowflake://mysnowflakeaccount.us-east-1.aws"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"order_id",
+                "type":"",
+                "description":"This is a unique identifier for an order",
+                "fields":[ ]
+              },
+              {
+                "name":"customer_id",
+                "type":"",
+                "description":"Foreign key to the customers table",
+                "fields":[ ]
+              },
+              {
+                "name":"order_date",
+                "type":"",
+                "description":"Date (UTC) that the order was placed",
+                "fields":[ ]
+              },
+              {
+                "name":"status",
+                "type":"",
+                "description":"Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |",
+                "fields":[ ]
+              },
+              {
+                "name":"amount",
+                "type":"",
+                "description":"Total amount (AUD) of the order",
+                "fields":[ ]
+              },
+              {
+                "name":"credit_card_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by credit card",
+                "fields":[ ]
+              },
+              {
+                "name":"coupon_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by coupon",
+                "fields":[ ]
+              },
+              {
+                "name":"bank_transfer_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by bank transfer",
+                "fields":[ ]
+              },
+              {
+                "name":"gift_card_amount",
+                "type":"",
+                "description":"Amount of the order (AUD) paid for by gift card",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":"This table has basic information about orders, as well as some derived facts based on payments"
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
+  },
+  {
+    "eventTime":"2024-12-09T14:12:59.423388Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"dbt-run-jaffle_shop",
+      "facets":{ }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  }
+]

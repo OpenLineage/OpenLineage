@@ -9,7 +9,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
-from typing import Optional
+from typing import List, Optional
 
 from openlineage.client.client import OpenLineageClient
 from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
@@ -20,13 +20,20 @@ from openlineage.common.provider.dbt import (
     ParentRunMetadata,
     UnsupportedDbtCommand,
 )
-from openlineage.common.utils import parse_multiple_args, parse_single_arg
+from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
+from openlineage.common.provider.dbt.utils import (
+    CONSUME_STRUCTURED_LOGS_COMMAND_OPTION,
+    PRODUCER,
+    __version__,
+)
+from openlineage.common.utils import (
+    has_command_line_option,
+    parse_multiple_args,
+    parse_single_arg,
+    remove_command_line_option,
+)
 from tqdm import tqdm
 
-__version__ = "1.26.0"
-
-
-PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
 JOB_TYPE_FACET = job_type_job.JobTypeJobFacet(
     jobType="JOB",
     integration="DBT",
@@ -108,7 +115,6 @@ for handler in openlineage_logger.handlers:
 
 def main():
     logger.info("Running OpenLineage dbt wrapper version %s", __version__)
-    logger.info("This wrapper will send OpenLineage events at the end of dbt execution.")
 
     args = sys.argv[1:]
     target = parse_single_arg(args, ["-t", "--target"])
@@ -117,12 +123,83 @@ def main():
     model_selector = parse_single_arg(args, ["--selector"])
     models = parse_multiple_args(args, ["-m", "-s", "--model", "--models", "--select"])
 
-    # We can get this if we have been orchestrated by an external system like airflow
-    parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
-    parent_run_metadata = None
+    # dbt-ol option and not a dbt option
+    consume_structured_logs_option = has_command_line_option(args, CONSUME_STRUCTURED_LOGS_COMMAND_OPTION)
+
+    if consume_structured_logs_option:
+        return consume_structured_logs(
+            target=target,
+            project_dir=project_dir,
+            profile_name=profile_name,
+            model_selector=model_selector,
+            models=models,
+        )
+    else:
+        return consume_local_artifacts(
+            target=target,
+            project_dir=project_dir,
+            profile_name=profile_name,
+            model_selector=model_selector,
+            models=models,
+        )
+
+
+def consume_structured_logs(
+    target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]
+):
+    logger.info("This wrapper will send OpenLineage events while the models are executing.")
+    return_code = 0
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
+    dbt_command_line = remove_command_line_option(sys.argv, CONSUME_STRUCTURED_LOGS_COMMAND_OPTION)
+    dbt_command_line = ["dbt"] + dbt_command_line[1:]
+    processor = DbtStructuredLogsProcessor(
+        project_dir=project_dir,
+        dbt_command_line=dbt_command_line,
+        producer=PRODUCER,
+        target=target,
+        job_namespace=job_namespace,
+        profile_name=profile_name,
+        logger=logger,
+        models=models,
+        selector=model_selector,
+    )
 
     client = OpenLineageClient()
+    last_event = None
+    emitted_events = 0
+    try:
+        for event in processor.parse():
+            try:
+                last_event = event
+                client.emit(event)
+                emitted_events += 1
+            except Exception as e:
+                logger.warning(
+                    "OpenLineage client failed to emit event %s runId %s. Exception: %s",
+                    event.eventType.value,
+                    event.run.runId,
+                    e,
+                    exc_info=True,
+                )
+    except UnsupportedDbtCommand as e:
+        logger.error(e)
+        return_code = 1
+
+    if last_event and last_event.eventType != RunState.COMPLETE:
+        return_code = 1
+
+    logger.info("Emitted %d OpenLineage events", emitted_events)
+    return return_code
+
+
+def consume_local_artifacts(
+    target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]
+):
+    logger.info("This wrapper will send OpenLineage events at the end of dbt execution.")
+    parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
+    parent_run_metadata = None
+    # We can get this if we have been orchestrated by an external system like airflow
+    job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
 
     if parent_id:
         parent_namespace, parent_job_name, parent_run_id = parent_id.split("/")
@@ -131,6 +208,8 @@ def main():
             job_name=parent_job_name,
             job_namespace=parent_namespace,
         )
+
+    client = OpenLineageClient()
 
     processor = DbtLocalArtifactProcessor(
         producer=PRODUCER,
@@ -150,6 +229,7 @@ def main():
         job_namespace=job_namespace,
         parent_run_metadata=parent_run_metadata,
     )
+
     dbt_run_metadata = ParentRunMetadata(
         run_id=start_event.run.runId,
         job_name=start_event.job.name,
