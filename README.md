@@ -1,8 +1,8 @@
+<a href="https://lfaidata.foundation/projects">
+    <img src="./doc/lfaidata-project-badge-graduate-color.png" width="275px" />
+</a>
 <div align="center">
   <img src="./doc/openlineage-logo.png" width="375px" />
-  <a href="https://lfaidata.foundation/projects">
-      <img src="./doc/lfaidata-project-badge-graduate-color.png" width="275px" />
-  </a>
 </div>
 
 ## Badges
