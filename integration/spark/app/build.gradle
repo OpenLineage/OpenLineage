@@ -91,6 +91,7 @@ dependencies {
     implementation(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark40", configuration: "scala213RuntimeElements"))
     implementation(project(path: ":iceberg"))
+    implementation(project(path: ":gcp"))
 
     implementation("org.apache.httpcomponents.client5:httpclient5:5.4.1")
 
