@@ -3,28 +3,29 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.util;
+package io.openlineage.spark.agent.vendor.gcp.util;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.io.CharStreams;
 import io.openlineage.client.Environment;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.naming.NameNormalizer;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.http.Consts;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.util.Timeout;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.execution.SparkPlan;
 import org.apache.spark.sql.execution.WholeStageCodegenExec;
@@ -62,13 +63,19 @@ public class GCPUtils {
   }
 
   static {
-    RequestConfig config =
-        RequestConfig.custom()
-            .setConnectTimeout(100)
-            .setConnectionRequestTimeout(100)
-            .setSocketTimeout(100)
+    ConnectionConfig connectionConfig =
+        ConnectionConfig.custom()
+            .setConnectTimeout(Timeout.ofMilliseconds(100))
+            .setSocketTimeout(Timeout.ofMilliseconds(100))
             .build();
-    HTTP_CLIENT = HttpClients.custom().setDefaultRequestConfig(config).build();
+    PoolingHttpClientConnectionManager connMan =
+        PoolingHttpClientConnectionManagerBuilder.create()
+            .setDefaultConnectionConfig(connectionConfig)
+            .build();
+    RequestConfig config =
+        RequestConfig.custom().setConnectionRequestTimeout(Timeout.ofMilliseconds(100)).build();
+    HTTP_CLIENT =
+        HttpClients.custom().setDefaultRequestConfig(config).setConnectionManager(connMan).build();
   }
 
   public static boolean isDataprocRuntime() {
@@ -131,6 +138,7 @@ public class GCPUtils {
   private static Optional<String> getDriverHost(SparkContext context) {
     return Optional.ofNullable(context.getConf().get(SPARK_DRIVER_HOST));
   }
+
   /* sample hostname:
    * sample-cluster-m.us-central1-a.c.hadoop-cloud-dev.google.com.internal */
   private static Optional<String> getClusterName(SparkContext context) {
@@ -230,22 +238,25 @@ public class GCPUtils {
     String httpURI = baseUri + httpEndpoint;
     HttpGet httpGet = new HttpGet(httpURI);
     httpGet.addHeader(METADATA_FLAVOUR, GOOGLE);
-    try (CloseableHttpResponse response = HTTP_CLIENT.execute(httpGet)) {
-      handleError(response);
-      return Optional.of(
-          CharStreams.toString(new InputStreamReader(response.getEntity().getContent(), UTF_8)));
+    try {
+      return HTTP_CLIENT.execute(
+          httpGet,
+          response -> {
+            handleError(response);
+            return Optional.of(EntityUtils.toString(response.getEntity()));
+          });
     } catch (IOException e) {
       return Optional.empty();
     }
   }
 
-  private static void handleError(HttpResponse response) throws IOException {
-    final int statusCode = response.getStatusLine().getStatusCode();
+  private static void handleError(ClassicHttpResponse response) throws IOException, ParseException {
+    final int statusCode = response.getCode();
     if (statusCode < 400 || statusCode >= 600) return;
     String message =
         String.format(
             "code: %d, response: %s",
-            statusCode, EntityUtils.toString(response.getEntity(), Consts.UTF_8));
+            statusCode, EntityUtils.toString(response.getEntity(), UTF_8));
     throw new IOException(message);
   }
 }

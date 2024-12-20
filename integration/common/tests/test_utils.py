@@ -1,10 +1,14 @@
 # Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
+import pytest
+from openlineage.common.provider.dbt.utils import CONSUME_STRUCTURED_LOGS_COMMAND_OPTION
 from openlineage.common.utils import (
+    add_command_line_arg,
+    add_or_replace_command_line_option,
     get_from_nullable_chain,
     parse_multiple_args,
     parse_single_arg,
+    remove_command_line_option,
 )
 
 
@@ -66,3 +70,85 @@ def test_parse_multiple_args():
             ["-m", "--model", "--models"],
         )
     ) == ["model1", "model2", "model3", "model4"]
+
+
+@pytest.mark.parametrize(
+    "command_line, arg_name, arg_value, expected_command_line",
+    [
+        (
+            ["dbt", "run", "--select", "orders"],
+            "--log-format",
+            "json",
+            ["dbt", "run", "--select", "orders", "--log-format", "json"],
+        ),
+        (
+            ["dbt", "run", "--select", "orders", "--log-format", "text"],
+            "--log-format",
+            "json",
+            ["dbt", "run", "--select", "orders", "--log-format", "json"],
+        ),
+    ],
+    ids=["add_new_arg", "replace_arg_value"],
+)
+def test_add_command_line_arg(command_line, arg_name, arg_value, expected_command_line):
+    actual_command_line = add_command_line_arg(command_line, arg_name, arg_value)
+    assert actual_command_line == expected_command_line
+
+
+@pytest.mark.parametrize(
+    "command_line, option, replace_option, expected_command_line",
+    [
+        (
+            ["dbt", "run", "--select", "orders"],
+            "--write-json",
+            None,
+            ["dbt", "run", "--select", "orders", "--write-json"],
+        ),
+        (
+            ["dbt", "run", "--select", "orders", "--no-write-json"],
+            "--write-json",
+            "--no-write-json",
+            ["dbt", "run", "--select", "orders", "--write-json"],
+        ),
+        (
+            ["dbt", "run", "--select", "orders"],
+            "--write-json",
+            "--no-write-json",
+            ["dbt", "run", "--select", "orders", "--write-json"],
+        ),
+    ],
+    ids=["add_new_option", "replace_option", "replace_non_existing_option"],
+)
+def test_add_or_replace_command_line_option(command_line, option, replace_option, expected_command_line):
+    actual_command_line = add_or_replace_command_line_option(command_line, option, replace_option)
+    assert actual_command_line == expected_command_line
+
+
+@pytest.mark.parametrize(
+    "command_line, command_option, expected_command_line",
+    [
+        (
+            ["dbt", "--foo", "run", "--select", "orders"],
+            "--foo",
+            ["dbt", "run", "--select", "orders"],
+        ),
+        (
+            ["dbt", "run", "--select", "orders"],
+            "--bar",
+            ["dbt", "run", "--select", "orders"],
+        ),
+        (
+            ["dbt", CONSUME_STRUCTURED_LOGS_COMMAND_OPTION, "run", "--select", "orders"],
+            CONSUME_STRUCTURED_LOGS_COMMAND_OPTION,
+            ["dbt", "run", "--select", "orders"],
+        ),
+    ],
+    ids=[
+        "remove_existing_command_option",
+        "remove_absent_command_option",
+        "remove_consume_structured_logs_command_option",
+    ],
+)
+def test_remove_command_line_option(command_line, command_option, expected_command_line):
+    actual_command_line = remove_command_line_option(command_line, command_option)
+    assert actual_command_line == expected_command_line

@@ -47,10 +47,12 @@ usage() {
 # We do this check because bumpversion screws up the search/replace if the current_version and
 # new_version are the same
 function update_py_version_if_needed() {
-  export "$(bump2version manual --new-version "$1" --allow-dirty --list --dry-run | grep version | xargs)"
+  # shellcheck disable=SC2086,SC2046
+  export $(bump2version manual --new-version $1 --allow-dirty --list --dry-run | grep version | xargs)
   # shellcheck disable=SC2154
   if [ "$new_version" != "$current_version" ]; then
-    bump2version manual --new-version "$1" --allow-dirty
+    # shellcheck disable=SC2086
+    bump2version manual --new-version $1 --allow-dirty
   fi
 }
 
@@ -109,7 +111,8 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]] ; then
 fi
 
 # Ensure valid versions
-VERSIONS=("$RELEASE_VERSION" "$NEXT_VERSION")
+# shellcheck disable=SC2086,SC2206
+VERSIONS=($RELEASE_VERSION $NEXT_VERSION)
 for VERSION in "${VERSIONS[@]}"; do
   if [[ ! "${VERSION}" =~ ${SEMVER_REGEX} ]]; then
     echo "Error: Version '${VERSION}' must match '${SEMVER_REGEX}'"
@@ -128,7 +131,7 @@ fi
 # the same version as what was expected the last time we released. E.g., if the next expected
 # release was a patch version, but a new minor version is being released, we need to update to the
 # actual release version prior to committing/tagging
-PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/dagster/ integration/sql/iface-py/)
+PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/dagster/ integration/sql/)
 for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
   (cd "${PYTHON_MODULE}" && update_py_version_if_needed "${PYTHON_RELEASE_VERSION}")
 done
@@ -158,7 +161,7 @@ git fetch --all --tags
 git tag -a "${RELEASE_VERSION}" -m "openlineage ${RELEASE_VERSION}"
 
 # (6) Prepare next development version
-PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/dagster/ integration/sql/iface-py/)
+PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/ integration/dagster/ integration/sql/)
 for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
   (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${NEXT_VERSION}" --allow-dirty)
 done

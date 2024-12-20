@@ -1,0 +1,588 @@
+[
+  {
+    "eventTime":"2024-12-13T11:46:27.516537Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"dbt-run-jaffle_shop",
+      "facets":{ }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:23.007811Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SEED"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[
+      {
+        "namespace":"snowflake://mysnowflakeaccount.us-east-1.aws",
+        "name":"REPORTING.TEST_GENERAL.raw_customers",
+        "facets":{
+          "dataSource":{
+            "name":"snowflake://mysnowflakeaccount.us-east-1.aws",
+            "uri":"snowflake://mysnowflakeaccount.us-east-1.aws"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:23.395196Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers.sql.1",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"snowflake\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\nBEGIN"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:24.481180Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers.sql.1",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"snowflake\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\nBEGIN"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:24.502231Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers.sql.2",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"snowflake\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\ntruncate table \"REPORTING\".\"TEST_GENERAL\".\"RAW_CUSTOMERS\"\n  ;"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:25.048002Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers.sql.2",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"snowflake\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\ntruncate table \"REPORTING\".\"TEST_GENERAL\".\"RAW_CUSTOMERS\"\n  ;"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:25.071549Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers.sql.3",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"snowflake\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\nCOMMIT"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:25.730419Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers.sql.3",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"snowflake\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\nCOMMIT"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:25.860426Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers.sql.4",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"snowflake\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\nBEGIN"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:26.161889Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers.sql.4",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"snowflake\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\nBEGIN"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:26.191164Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers.sql.5",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"snowflake\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\ninsert into REPORTING.TEST_GENERAL.raw_customers (id, first_name, last_name) values\n            (%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s..."
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:27.161576Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers.sql.5",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"snowflake\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\ninsert into REPORTING.TEST_GENERAL.raw_customers (id, first_name, last_name) values\n            (%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s..."
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:27.191830Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers.sql.6",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"snowflake\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\nCOMMIT"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:27.743590Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers.sql.6",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"snowflake\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\nCOMMIT"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:28.510772Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"REPORTING.TEST_GENERAL.seed.jaffle_shop.raw_customers",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SEED"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[
+      {
+        "namespace":"snowflake://mysnowflakeaccount.us-east-1.aws",
+        "name":"REPORTING.TEST_GENERAL.raw_customers",
+        "facets":{
+          "dataSource":{
+            "name":"snowflake://mysnowflakeaccount.us-east-1.aws",
+            "uri":"snowflake://mysnowflakeaccount.us-east-1.aws"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
+  },
+  {
+    "eventTime":"2024-12-13T11:47:29.287958Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"dbt-run-jaffle_shop",
+      "facets":{ }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  }
+]

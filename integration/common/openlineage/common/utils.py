@@ -1,7 +1,7 @@
 # Copyright 2018-2024 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Generator, List, Optional, TextIO
 
 
 def get_from_nullable_chain(source: Any, chain: List[str]) -> Optional[Any]:
@@ -89,3 +89,81 @@ def parse_multiple_args(args, keys: List[str], default=None) -> List[str]:
                 parsed_values.append(cur_value)
 
     return parsed_values or default or []
+
+
+def add_command_line_arg(command_line: List[str], arg_name: str, arg_value: str):
+    command_line = list(command_line)
+    arg_name_index = None
+    try:
+        arg_name_index = command_line.index(arg_name)
+    except ValueError:
+        # arg_name is not in list
+        pass
+
+    if arg_name_index is not None:
+        if arg_name_index + 1 >= len(command_line):
+            command_line.append(arg_value)
+        else:
+            command_line[arg_name_index + 1] = arg_value
+    else:
+        command_line.append(arg_name)
+        if arg_value:
+            command_line.append(arg_value)
+
+    return command_line
+
+
+def add_command_line_args(command_line: List[str], arg_names: List[str], arg_values: List[str]):
+    for i in range(len(arg_names)):
+        arg_name = arg_names[i]
+        arg_value = arg_values[i]
+        command_line = add_command_line_arg(command_line, arg_name, arg_value)
+    return command_line
+
+
+def add_or_replace_command_line_option(
+    command_line: List[str], option: str, replace_option: Optional[str] = None
+) -> List[str]:
+    """
+    If replace_option is ignored then the option is simply added
+    """
+    command_line = list(command_line)
+    if replace_option:
+        try:
+            replace_option_index = command_line.index(replace_option)
+            command_line[replace_option_index] = option
+        except ValueError:
+            command_line.append(option)
+    else:
+        command_line.append(option)
+
+    return command_line
+
+
+def has_command_line_option(command_line: List[str], command_option: str) -> bool:
+    return command_option in command_line
+
+
+def remove_command_line_option(command_line: List[str], command_option: str) -> List[str]:
+    if not has_command_line_option(command_line, command_option):
+        return command_line
+
+    command_line = list(command_line)
+    command_option_index = command_line.index(command_option)
+    command_line.pop(command_option_index)
+    return command_line
+
+
+def has_lines(text_file: TextIO):
+    current_cursor = text_file.tell()
+    lines = text_file.readlines()
+    text_file.seek(current_cursor)
+    return len(lines) > 0
+
+
+def get_next_lines(text_file: TextIO) -> Generator[str, None, None]:
+    lines = text_file.readlines()
+    for line in lines:
+        line = line.strip()
+        if line:
+            yield line

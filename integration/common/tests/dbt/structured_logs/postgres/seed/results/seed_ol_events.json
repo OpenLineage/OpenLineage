@@ -1,0 +1,460 @@
+[
+  {
+    "eventTime":"2024-12-13T11:16:35.618584Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"dbt-run-jaffle_shop",
+      "facets":{ }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:16:47.087308Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.public.seed.jaffle_shop.raw_customers",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SEED"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.raw_customers",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
+  },
+  {
+    "eventTime":"2024-12-13T11:16:47.325649Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.public.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.public.seed.jaffle_shop.raw_customers.sql.1",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"BEGIN"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:16:47.419150Z",
+    "producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/integration/dbt",
+    "schemaURL":"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.public.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.public.seed.jaffle_shop.raw_customers.sql.1",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"BEGIN"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:16:47.434173Z",
+    "producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/integration/dbt",
+    "schemaURL":"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.public.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.public.seed.jaffle_shop.raw_customers.sql.2",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\ntruncate table \"postgres\".\"public\".\"raw_customers\""
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:16:47.443836Z",
+    "producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/integration/dbt",
+    "schemaURL":"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "_producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/client/python",
+          "_schemaURL":"https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.public.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.public.seed.jaffle_shop.raw_customers.sql.2",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\ntruncate table \"postgres\".\"public\".\"raw_customers\""
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:16:47.760713Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.public.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.public.seed.jaffle_shop.raw_customers.sql.3",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"\n          insert into \"postgres\".\"public\".\"raw_customers\" (\"id\", \"first_name\", \"last_name\") values\n          (%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s..."
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:16:47.772563Z",
+    "producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/integration/dbt",
+    "schemaURL":"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.public.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.public.seed.jaffle_shop.raw_customers.sql.3",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"\n          insert into \"postgres\".\"public\".\"raw_customers\" (\"id\", \"first_name\", \"last_name\") values\n          (%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s..."
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:16:47.982973Z",
+    "producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/integration/dbt",
+    "schemaURL":"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "_producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/client/python",
+          "_schemaURL":"https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.public.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.public.seed.jaffle_shop.raw_customers.sql.4",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"COMMIT"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:16:47.990842Z",
+    "producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/integration/dbt",
+    "schemaURL":"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "_producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/client/python",
+          "_schemaURL":"https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.public.seed.jaffle_shop.raw_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.public.seed.jaffle_shop.raw_customers.sql.4",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"COMMIT"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-13T11:16:48.013713Z",
+    "producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/integration/dbt",
+    "schemaURL":"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.public.seed.jaffle_shop.raw_customers",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SEED"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.raw_customers",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
+  },
+  {
+    "eventTime":"2024-12-13T11:16:48.736907Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"dbt-run-jaffle_shop",
+      "facets":{ }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  }
+]
