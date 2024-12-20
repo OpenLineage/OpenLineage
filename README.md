@@ -1,9 +1,11 @@
+<div align="center">
 [![CircleCI](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main.svg?style=shield)](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main)
 [![status](https://img.shields.io/badge/status-active-brightgreen.svg)](#status)
 [![Slack](https://img.shields.io/badge/slack-chat-blue.svg)](https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvAk)
 [![license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](https://github.com/OpenLineage/OpenLineage/blob/main/LICENSE)
 [![maven](https://img.shields.io/maven-central/v/io.openlineage/openlineage-java.svg)](https://search.maven.org/search?q=g:io.openlineage)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4888/badge)](https://bestpractices.coreinfrastructure.org/projects/4888)
+</div>
 
 <div align="center">
   <img src="./doc/openlineage-lfai-logo.png" width="754px"/>
