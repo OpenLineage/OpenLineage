@@ -25,11 +25,11 @@ javadoc {
 }
 
 ext {
-    assertjVersion = "3.26.3"
+    assertjVersion = "3.27.0"
     awaitilityVersion = "4.2.2"
-    bigqueryVersion = "0.41.0"
+    bigqueryVersion = "0.41.1"
     databricksVersion = "0.1.4"
-    junit5Version = "5.11.3"
+    junit5Version = "5.11.4"
     kafkaClientsVersion = "3.9.0"
     micrometerVersion = '1.14.2'
     mockitoVersion = "4.11.0"
@@ -37,7 +37,7 @@ ext {
     postgresqlVersion = "42.7.4"
     sqlLiteVersion = "3.47.1.0"
     testcontainersVersion = "1.19.3"
-    awsSdkVersion = '2.29.34'
+    awsSdkVersion = '2.29.39'
 
     sparkVersion = project.findProperty("shared.spark.version")
     sparkSeries = sparkVersion.substring(0, 3)
