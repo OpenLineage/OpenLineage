@@ -16,6 +16,8 @@ In this tutorial, you'll configure Apache Airflow® to send OpenLineage events t
 4. [Write Airflow DAGs](#write-airflow-dags)
 5. [View Collected Lineage in Marquez](#view-collected-metadata)
 6. [Troubleshoot a Failing DAG with Marquez](#troubleshoot-a-failing-dag-with-marquez)
+7. [Next Steps](#next-steps)
+8. [Feedback?](#feedback)
 
 ## Prerequisites {#prerequisites}
 
@@ -247,7 +249,7 @@ In this step, you will create two new Airflow DAGs that perform simple tasks and
 
     ```
 
-3. Restart Airflow to apply the changes.
+3. Restart Airflow to apply the changes. Then, unpause both DAGs.
 
 ## View Collected Lineage in Marquez
 
@@ -327,11 +329,11 @@ In this step, you will create two new Airflow DAGs that perform simple tasks and
 
     ![](./docs/sum-history.png)
 
-## Next Steps
+## Next Steps {#next-steps}
 
 * Review the Marquez [HTTP API](https://marquezproject.github.io/marquez/openapi.html) used to collect Airflow DAG metadata and learn how to build your own integrations using OpenLineage.
 * Take a look at the [`openlineage-spark`](https://openlineage.io/docs/integrations/spark/) integration that can be used with Airflow.
 
-## Feedback
+## Feedback? {#feedback}
 
 What did you think of this guide? Let us know in the [OpenLineage Slack](https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA) or the [Marquez Slack](https://join.slack.com/t/marquezproject/shared_invite/zt-2iylxasbq-GG_zXNcJdNrhC9uUMr3B7A). You can also propose changes directly by [opening a pull request](https://github.com/MarquezProject/marquez/blob/main/CONTRIBUTING.md#submitting-a-pull-request).
