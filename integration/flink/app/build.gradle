@@ -21,8 +21,8 @@ archivesBaseName='openlineage-flink-app'
 ext {
     flinkVersion = project.getProperty('flink.version')
     flinkVersionShort = flinkVersion.substring(0,4)
-    assertjVersion = '3.26.3'
-    junit5Version = '5.11.3'
+    assertjVersion = '3.27.0'
+    junit5Version = '5.11.4'
     lombokVersion = '1.18.36'
     jacksonVersion = "2.15.3"
     mockitoVersion = '5.2.0'
@@ -49,7 +49,7 @@ dependencies {
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.4.1'
     testImplementation "org.apache.flink:flink-java:$flinkVersion"
     testImplementation "org.apache.flink:flink-streaming-java:$flinkVersion"
-    testImplementation platform('org.junit:junit-bom:5.11.3')
+    testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
