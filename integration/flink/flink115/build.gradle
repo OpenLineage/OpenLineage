@@ -39,8 +39,8 @@ test {
 ext {
     flinkVersion = project.getProperty('flink.flink115.version')
     flinkVersionShort = flinkVersion.substring(0,4)
-    assertjVersion = '3.26.3'
-    junit5Version = '5.11.3'
+    assertjVersion = '3.27.0'
+    junit5Version = '5.11.4'
     mockitoVersion = '5.2.0'
 }
 
@@ -55,7 +55,7 @@ dependencies {
     testImplementation "org.apache.flink:flink-connector-base:$flinkVersion"
     testImplementation "org.apache.flink:flink-connector-jdbc:${flinkVersion}"
     testImplementation "org.apache.flink:flink-table-common:$flinkVersion"
-    testImplementation platform('org.junit:junit-bom:5.11.3')
+    testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
     testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.2.2'
