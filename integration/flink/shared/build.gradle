@@ -67,8 +67,8 @@ test {
 ext {
     flinkVersion = project.getProperty('flink.shared.version')
     flinkVersionShort = flinkVersion.substring(0,4)
-    assertjVersion = '3.26.3'
-    junit5Version = '5.11.3'
+    assertjVersion = '3.27.0'
+    junit5Version = '5.11.4'
     lombokVersion = '1.18.36'
     mockitoVersion = '5.2.0'
     testcontainersVersion = '1.20.4'
@@ -122,7 +122,7 @@ dependencies {
     testImplementation "org.apache.flink:flink-avro:$flinkVersion"
     testImplementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     testImplementation "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:${versions.iceberg}"
-    testImplementation platform('org.junit:junit-bom:5.11.3')
+    testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
