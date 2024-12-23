@@ -23,9 +23,9 @@ ext {
     scala = project.findProperty('scala.binary.version').toString()
     activeRuntimeElementsConfiguration = "scala" + scala.replace(".", "") + "RuntimeElements"
 
-    assertjVersion = '3.26.3'
+    assertjVersion = '3.27.0'
     bigqueryVersion = '0.35.1'
-    junit5Version = '5.11.3'
+    junit5Version = '5.11.4'
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.4'
     testcontainersVersion = '1.20.4'
@@ -127,7 +127,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.module'
     }
 
-    testImplementation(platform("software.amazon.awssdk:bom:2.29.34"))
+    testImplementation(platform("software.amazon.awssdk:bom:2.29.39"))
     testImplementation("software.amazon.awssdk:auth")
     testImplementation("software.amazon.awssdk:emr")
     testImplementation("software.amazon.awssdk:s3")
