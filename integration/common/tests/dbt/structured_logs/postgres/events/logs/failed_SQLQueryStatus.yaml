@@ -1,0 +1,127 @@
+[
+  # Command started dbt event
+  {
+    "data": {
+      "log_version": 3,
+      "version": "=1.8.2"
+    },
+    "info": {
+      "category": "",
+      "code": "A001",
+      "extra": { },
+      "invocation_id": "b0ed168e-1926-42da-aa25-6b3eb826074b",
+      "level": "info",
+      "msg": "Running with dbt=1.8.2",
+      "name": "MainReportVersion",
+      "pid": 278,
+      "thread": "MainThread",
+      "ts": "2024-11-22T15:58:03.518877Z"
+    }
+  },
+  # Node started dbt event
+  {
+    "data": {
+      "node_info": {
+        "materialized": "view",
+        "meta": { },
+        "node_finished_at": "",
+        "node_name": "stg_customers",
+        "node_path": "staging/stg_customers.sql",
+        "node_relation": {
+          "alias": "stg_customers",
+          "database": "postgres",
+          "relation_name": "\"postgres\".\"public\".\"stg_customers\"",
+          "schema": "public"
+        },
+        "node_started_at": "2024-11-20T19:45:51.614844",
+        "node_status": "started",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_customers"
+      }
+    },
+    "info": {
+      "category": "",
+      "code": "Q024",
+      "extra": { },
+      "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d",
+      "level": "debug",
+      "msg": "Began running node model.jaffle_shop.stg_customers",
+      "name": "NodeStart",
+      "pid": 248,
+      "thread": "Thread-1 (worker)",
+      "ts": "2024-11-20T19:45:51.616078Z"
+    }
+  },
+  # SQL Query started dbt event
+  {
+    "data": {
+      "conn_name": "model.jaffle_shop.stg_customers",
+      "node_info": {
+        "materialized": "view",
+        "meta": { },
+        "node_finished_at": "",
+        "node_name": "stg_customers",
+        "node_path": "staging/stg_customers.sql",
+        "node_relation": {
+          "alias": "stg_customers",
+          "database": "postgres",
+          "relation_name": "\"postgres\".\"public\".\"stg_customers\"",
+          "schema": "public"
+        },
+        "node_started_at": "2024-11-20T19:45:51.614844",
+        "node_status": "executing",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_customers"
+      },
+      "sql": "BEGIN"
+    },
+    "info": {
+      "category": "",
+      "code": "E016",
+      "extra": { },
+      "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d",
+      "level": "debug",
+      "msg": "On model.jaffle_shop.stg_customers: BEGIN",
+      "name": "SQLQuery",
+      "pid": 248,
+      "thread": "Thread-1 (worker)",
+      "ts": "2024-11-20T19:45:51.957829Z"
+    }
+  },
+  # SQL Query status event
+  {
+    "data":{
+      "exc":"Database Error in model stg_customers (models/staging/stg_customers.sql)\n  syntax error at or near \"renamed\"\n  LINE 12: renamed as (\n           ^\n  compiled code at target/run/jaffle_shop/models/staging/stg_customers.sql",
+      "exc_info":"Traceback (most recent call last):\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/postgres/connections.py\", line 74, in exception_handler\n    yield\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/sql/connections.py\", line 93, in add_query\n    cursor.execute(sql, bindings)\npsycopg2.errors.SyntaxError: syntax error at or near \"renamed\"\nLINE 12: renamed as (\n         ^\n\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/base.py\", line 368, in safe_run\n    result = self.compile_and_execute(manifest, ctx)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/base.py\", line 314, in compile_and_execute\n    result = self.run(ctx.node, manifest)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/base.py\", line 415, in run\n    return self.execute(compiled_node, manifest)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/run.py\", line 298, in execute\n    result = MacroGenerator(\n  File \"/usr/local/lib/python3.10/site-packages/dbt/clients/jinja.py\", line 84, in __call__\n    return self.call_macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt_common/clients/jinja.py\", line 322, in call_macro\n    return macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 768, in __call__\n    return self._invoke(arguments, autoescape)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 782, in _invoke\n    rv = self._func(*arguments)\n  File \"<template>\", line 81, in macro\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/sandbox.py\", line 394, in call\n    return __context.call(__obj, *args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 303, in call\n    return __obj(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/clients/jinja.py\", line 84, in __call__\n    return self.call_macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt_common/clients/jinja.py\", line 322, in call_macro\n    return macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 768, in __call__\n    return self._invoke(arguments, autoescape)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 782, in _invoke\n    rv = self._func(*arguments)\n  File \"<template>\", line 52, in macro\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/sandbox.py\", line 394, in call\n    return __context.call(__obj, *args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 303, in call\n    return __obj(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/base/impl.py\", line 390, in execute\n    return self.connections.execute(sql=sql, auto_begin=auto_begin, fetch=fetch, limit=limit)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/sql/connections.py\", line 157, in execute\n    _, cursor = self.add_query(sql, auto_begin)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/sql/connections.py\", line 76, in add_query\n    with self.exception_handler(sql):\n  File \"/usr/local/lib/python3.10/contextlib.py\", line 153, in __exit__\n    self.gen.throw(typ, value, traceback)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/postgres/connections.py\", line 85, in exception_handler\n    raise DbtDatabaseError(str(e).strip()) from e\ndbt_common.exceptions.base.DbtDatabaseError: Database Error in model stg_customers (models/staging/stg_customers.sql)\n  syntax error at or near \"renamed\"\n  LINE 12: renamed as (\n           ^\n  compiled code at target/run/jaffle_shop/models/staging/stg_customers.sql\n",
+      "node_info":{
+        "materialized":"view",
+        "meta":{ },
+        "node_finished_at":"",
+        "node_name":"stg_customers",
+        "node_path":"staging/stg_customers.sql",
+        "node_relation":{
+          "alias":"stg_customers",
+          "database":"postgres",
+          "relation_name":"\"postgres\".\"public\".\"stg_customers\"",
+          "schema":"public"
+        },
+        "node_started_at":"2024-12-23T15:26:34.117532",
+        "node_status":"executing",
+        "resource_type":"model",
+        "unique_id":"model.jaffle_shop.stg_customers"
+      }
+    },
+    "info":{
+      "category":"",
+      "code":"W002",
+      "extra":{ },
+      "invocation_id":"4a93eca8-2ed0-4e91-95fc-e8d27dd775a6",
+      "level":"debug",
+      "msg":"Database Error in model stg_customers (models/staging/stg_customers.sql)\n  syntax error at or near \"renamed\"\n  LINE 12: renamed as (\n           ^\n  compiled code at target/run/jaffle_shop/models/staging/stg_customers.sql",
+      "name":"CatchableExceptionOnRun",
+      "pid":966,
+      "thread":"Thread-1 (worker)",
+      "ts":"2024-12-23T15:26:34.673602Z"
+    }
+  }
+]
