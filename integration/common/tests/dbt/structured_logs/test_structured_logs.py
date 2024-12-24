@@ -6,9 +6,11 @@ from typing import Dict
 
 import attr
 import pytest
+import yaml
 from openlineage.common.provider.dbt.processor import Adapter
 from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
 from openlineage.common.test import match
+from openlineage.common.utils import get_from_nullable_chain
 
 ###########
 # helpers
@@ -208,3 +210,126 @@ def test_dataset_namespace(target, expected_dataset_namespace, monkeypatch):
         pass
 
     assert processor.dataset_namespace == expected_dataset_namespace
+
+
+@pytest.mark.parametrize(
+    "dbt_log_events, expected_ol_events, dbt_event_type",
+    [
+        (
+            "./tests/dbt/structured_logs/postgres/events/logs/MainReportVersion.yaml",
+            "./tests/dbt/structured_logs/postgres/events/results/MainReportVersion_OL.yaml",
+            "MainReportVersion",
+        ),
+        (
+            "./tests/dbt/structured_logs/postgres/events/logs/successful_CommandCompleted.yaml",
+            "./tests/dbt/structured_logs/postgres/events/results/successful_CommandCompleted_OL.yaml",
+            "CommandCompleted",
+        ),
+        (
+            "./tests/dbt/structured_logs/postgres/events/logs/failed_CommandCompleted.yaml",
+            "./tests/dbt/structured_logs/postgres/events/results/failed_CommandCompleted_OL.yaml",
+            "CommandCompleted",
+        ),
+        (
+            "./tests/dbt/structured_logs/postgres/events/logs/NodeStart.yaml",
+            "./tests/dbt/structured_logs/postgres/events/results/NodeStart_OL.yaml",
+            "NodeStart",
+        ),
+        (
+            "./tests/dbt/structured_logs/postgres/events/logs/successful_NodeFinished.yaml",
+            "./tests/dbt/structured_logs/postgres/events/results/successful_NodeFinished_OL.yaml",
+            "NodeFinished",
+        ),
+        (
+            "./tests/dbt/structured_logs/postgres/events/logs/failed_NodeFinished.yaml",
+            "./tests/dbt/structured_logs/postgres/events/results/failed_NodeFinished_OL.yaml",
+            "NodeFinished",
+        ),
+        (
+            "./tests/dbt/structured_logs/postgres/events/logs/SQLQuery.yaml",
+            "./tests/dbt/structured_logs/postgres/events/results/SQLQuery_OL.yaml",
+            "SQLQuery",
+        ),
+        (
+            "./tests/dbt/structured_logs/postgres/events/logs/successful_SQLQueryStatus.yaml",
+            "./tests/dbt/structured_logs/postgres/events/results/successful_SQLQueryStatus_OL.yaml",
+            "SQLQueryStatus",
+        ),
+        (
+            "./tests/dbt/structured_logs/postgres/events/logs/failed_SQLQueryStatus.yaml",
+            "./tests/dbt/structured_logs/postgres/events/results/failed_SQLQueryStatus_OL.yaml",
+            "SQLQueryStatus",
+        ),
+    ],
+    ids=[
+        "MainReportVersion",
+        "successful_CommandCompleted",
+        "failed_CommandCompleted",
+        "NodeStart",
+        "successful_NodeFinished",
+        "failed_NodeFinished",
+        "SQLQuery",
+        "successful_SQLQueryStatus",
+        "failed_SQLQueryStatus",
+    ],
+)
+def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, monkeypatch):
+    """
+    This tests
+    1. the parent/child relationship of OL events
+    2. the runId remains the same for the START/COMPLETE/FAIL OL events
+    """
+    monkeypatch.setattr(
+        "openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._run_dbt_command",
+        lambda self: [json.dumps(dbt_event) for dbt_event in yaml.safe_load(open(dbt_log_events))],
+    )
+
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir="tests/dbt/structured_logs",
+        target="postgres",
+        dbt_command_line=["dbt", "run", "..."],
+    )
+    processor.manifest_path = "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
+    actual_ol_events = list(ol_event_to_dict(event) for event in processor.parse())
+
+    match(expected=expected_ol_events, result=actual_ol_events)
+
+    command_start_event = actual_ol_events[0]
+
+    if dbt_event_type == "CommandCompleted":
+        command_completed_event = actual_ol_events[1]
+
+        assert command_start_event["run"]["runId"] == command_completed_event["run"]["runId"]
+
+    elif dbt_event_type == "NodeStart":
+        node_start_event = actual_ol_events[1]
+
+        assert command_start_event["run"]["runId"] == get_from_nullable_chain(
+            node_start_event, "run.facets.parent.run.runId".split(".")
+        )
+
+    elif dbt_event_type == "NodeFinished":
+        node_start_event = actual_ol_events[1]
+        node_finished_event = actual_ol_events[2]
+
+        assert node_start_event["run"]["runId"] == node_finished_event["run"]["runId"]
+
+    elif dbt_event_type == "SQLQuery":
+        node_start_event = actual_ol_events[1]
+        sql_query_start_event = actual_ol_events[2]
+
+        assert node_start_event["run"]["runId"] == get_from_nullable_chain(
+            sql_query_start_event, "run.facets.parent.run.runId".split(".")
+        )
+
+    elif dbt_event_type == "SQLQueryStatus":
+        node_start_event = actual_ol_events[1]
+        sql_query_start_event = actual_ol_events[2]
+        sql_query_status_event = actual_ol_events[3]
+
+        assert sql_query_start_event["run"]["runId"] == sql_query_status_event["run"]["runId"]
+        assert node_start_event["run"]["runId"] == get_from_nullable_chain(
+            sql_query_status_event, "run.facets.parent.run.runId".split(".")
+        )

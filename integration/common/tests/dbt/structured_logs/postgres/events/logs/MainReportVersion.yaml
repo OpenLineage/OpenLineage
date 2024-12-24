@@ -1,0 +1,20 @@
+[
+  {
+    "data":{
+      "log_version":3,
+      "version":"=1.8.2"
+    },
+    "info":{
+      "category":"",
+      "code":"A001",
+      "extra":{ },
+      "invocation_id":"b0ed168e-1926-42da-aa25-6b3eb826074b",
+      "level":"info",
+      "msg":"Running with dbt=1.8.2",
+      "name":"MainReportVersion",
+      "pid":278,
+      "thread":"MainThread",
+      "ts":"2024-11-22T15:58:03.518877Z"
+    }
+  }
+]

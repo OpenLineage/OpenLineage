@@ -1,0 +1,42 @@
+[
+  # Command started dbt event
+  {
+    "data":{
+      "log_version":3,
+      "version":"=1.8.2"
+    },
+    "info":{
+      "category":"",
+      "code":"A001",
+      "extra":{ },
+      "invocation_id":"b0ed168e-1926-42da-aa25-6b3eb826074b",
+      "level":"info",
+      "msg":"Running with dbt=1.8.2",
+      "name":"MainReportVersion",
+      "pid":278,
+      "thread":"MainThread",
+      "ts":"2024-11-22T15:58:03.518877Z"
+    }
+  },
+  # Command finished dbt event
+  {
+    "data": {
+      "command": "dbt run",
+      "completed_at": "2024-11-20T19:45:55.112200Z",
+      "elapsed": 8.384022,
+      "success": true
+    },
+    "info": {
+      "category": "",
+      "code": "Q039",
+      "extra": { },
+      "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d",
+      "level": "debug",
+      "msg": "Command `dbt run` succeeded at 19:45:55.112200 after 8.38 seconds",
+      "name": "CommandCompleted",
+      "pid": 248,
+      "thread": "MainThread",
+      "ts": "2024-11-20T19:45:55.113359Z"
+    }
+  }
+]
