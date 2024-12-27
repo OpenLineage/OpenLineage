@@ -1,0 +1,10 @@
+{
+  "tags": [
+    {
+      "key": "pii",
+      "value": "true"
+    }
+  ],
+  "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+  "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/TagDatasetFacet.json"
+}

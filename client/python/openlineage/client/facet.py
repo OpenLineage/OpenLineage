@@ -420,3 +420,20 @@ class ExtractionErrorRunFacet(BaseFacet):
     @staticmethod
     def _get_schema() -> str:
         return SCHEMA_URI + "#/definitions/ExtractionErrorRunFacet"
+
+
+@attr.s
+class Tag(RedactMixin):
+    key: str = attr.ib()
+    value: str = attr.ib()
+    source: Optional[str] = attr.ib(default=None)
+    field: Optional[str] = attr.ib(default=None)
+
+
+@attr.s
+class TagsDatasetFacet(BaseFacet):
+    tags: List[Tag] = attr.ib()
+
+    @staticmethod
+    def _get_schema():
+        return SCHEMA_URI + "#/definitions/TagsDatasetFacet"

@@ -25,6 +25,7 @@ from openlineage.client.facet import (
     StorageDatasetFacet,
     SymlinksDatasetFacet,
     SymlinksDatasetFacetIdentifiers,
+    TagsDatasetFacet,
 )
 from openlineage.client.run import SCHEMA_URL, Dataset, Job, Run, RunEvent, RunState
 
@@ -463,5 +464,60 @@ def test_job_type_job_facet(event: dict[str, Any]) -> None:
     expected_event["outputs"] = []
     expected_event["job"]["facets"] = {}
     expected_event["job"]["facets"]["jobType"] = job_type_facet
+
+    assert expected_event == event_sent
+
+
+def test_tags_dataset_facet(event: dict[str, Any]) -> None:
+    session = MagicMock()
+    client = OpenLineageClient(url="http://example.com", session=session)
+
+    tags_dataset_facet = {
+        "tags": [
+            {"key": "pii", "valule": "true", "source": "SNOWFLAKE", "field": "email_address"},
+            {"key": "slack_channel", "value": "#data-engineering-alerts"},
+        ],
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/TagsDatasetFacet",
+    }
+
+    client.emit(
+        RunEvent(
+            RunState.START,
+            "2021-11-03T10:53:52.427343",
+            Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
+            Job(
+                "openlineage",
+                "job",
+            ),
+            "some-producer",
+            [],
+            [
+                Dataset(
+                    namespace="some-namespace",
+                    name="input-dataset",
+                    facets={
+                        "tags": TagsDatasetFacet(
+                            tags=[
+                                {
+                                    "key": "pii",
+                                    "valule": "true",
+                                    "source": "SNOWFLAKE",
+                                    "field": "email_address",
+                                },
+                                {"key": "slack_channel", "value": "#data-engineering-alerts"},
+                            ]
+                        ),
+                    },
+                ),
+            ],
+        ),
+    )
+
+    event_sent = json.loads(session.post.call_args.kwargs["data"])
+
+    expected_event = copy.deepcopy(event)
+    expected_event["outputs"] = []
+    expected_event["inputs"][0]["facets"] = tags_dataset_facet
 
     assert expected_event == event_sent
