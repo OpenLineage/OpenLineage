@@ -473,12 +473,12 @@ def test_tags_dataset_facet(event: dict[str, Any]) -> None:
     client = OpenLineageClient(url="http://example.com", session=session)
 
     tags_dataset_facet = {
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/TagsDatasetFacet",
         "tags": [
             {"key": "pii", "valule": "true", "source": "SNOWFLAKE", "field": "email_address"},
             {"key": "slack_channel", "value": "#data-engineering-alerts"},
         ],
-        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
-        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/TagsDatasetFacet",
     }
 
     client.emit(
@@ -517,7 +517,7 @@ def test_tags_dataset_facet(event: dict[str, Any]) -> None:
     event_sent = json.loads(session.post.call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
-    expected_event["outputs"] = []
-    expected_event["inputs"][0]["facets"] = tags_dataset_facet
+    expected_event["outputs"][0]["facets"] = {}
+    expected_event["outputs"][0]["facets"]["tags"] = tags_dataset_facet
 
     assert expected_event == event_sent
