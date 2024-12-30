@@ -1,6 +1,5 @@
 [
   {
-    "eventTime":"2024-12-13T11:16:35.618584Z",
     "run":{
       "runId":"{{ any(result) }}",
       "facets":{
@@ -19,7 +18,6 @@
     "outputs":[ ]
   },
   {
-    "eventTime":"2024-12-13T11:16:47.087308Z",
     "run":{
       "runId":"{{ any(result) }}",
       "facets":{
@@ -71,7 +69,6 @@
     ]
   },
   {
-    "eventTime":"2024-12-13T11:16:47.325649Z",
     "run":{
       "runId":"{{ any(result) }}",
       "facets":{
@@ -108,9 +105,6 @@
     "outputs":[ ]
   },
   {
-    "eventTime":"2024-12-13T11:16:47.419150Z",
-    "producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/integration/dbt",
-    "schemaURL":"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
     "run":{
       "runId":"{{ any(result) }}",
       "facets":{
@@ -147,9 +141,6 @@
     "outputs":[ ]
   },
   {
-    "eventTime":"2024-12-13T11:16:47.434173Z",
-    "producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/integration/dbt",
-    "schemaURL":"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
     "run":{
       "runId":"{{ any(result) }}",
       "facets":{
@@ -186,15 +177,10 @@
     "outputs":[ ]
   },
   {
-    "eventTime":"2024-12-13T11:16:47.443836Z",
-    "producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/integration/dbt",
-    "schemaURL":"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
     "run":{
       "runId":"{{ any(result) }}",
       "facets":{
         "parent":{
-          "_producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/client/python",
-          "_schemaURL":"https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
           "run":{
             "runId":"{{ any(result) }}"
           },
@@ -227,7 +213,6 @@
     "outputs":[ ]
   },
   {
-    "eventTime":"2024-12-13T11:16:47.760713Z",
     "run":{
       "runId":"{{ any(result) }}",
       "facets":{
@@ -264,9 +249,6 @@
     "outputs":[ ]
   },
   {
-    "eventTime":"2024-12-13T11:16:47.772563Z",
-    "producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/integration/dbt",
-    "schemaURL":"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
     "run":{
       "runId":"{{ any(result) }}",
       "facets":{
@@ -303,15 +285,10 @@
     "outputs":[ ]
   },
   {
-    "eventTime":"2024-12-13T11:16:47.982973Z",
-    "producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/integration/dbt",
-    "schemaURL":"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
     "run":{
       "runId":"{{ any(result) }}",
       "facets":{
         "parent":{
-          "_producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/client/python",
-          "_schemaURL":"https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
           "run":{
             "runId":"{{ any(result) }}"
           },
@@ -344,15 +321,10 @@
     "outputs":[ ]
   },
   {
-    "eventTime":"2024-12-13T11:16:47.990842Z",
-    "producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/integration/dbt",
-    "schemaURL":"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
     "run":{
       "runId":"{{ any(result) }}",
       "facets":{
         "parent":{
-          "_producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/client/python",
-          "_schemaURL":"https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
           "run":{
             "runId":"{{ any(result) }}"
           },
@@ -385,9 +357,6 @@
     "outputs":[ ]
   },
   {
-    "eventTime":"2024-12-13T11:16:48.013713Z",
-    "producer":"https://github.com/OpenLineage/OpenLineage/tree/1.26.0/integration/dbt",
-    "schemaURL":"https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
     "run":{
       "runId":"{{ any(result) }}",
       "facets":{
@@ -439,7 +408,6 @@
     ]
   },
   {
-    "eventTime":"2024-12-13T11:16:48.736907Z",
     "run":{
       "runId":"{{ any(result) }}",
       "facets":{
