@@ -1,0 +1,180 @@
+[
+  # OL event for command start
+  {
+    "eventTime": "2024-11-22T15:58:03.518877Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "dbt-run-jaffle_shop",
+      "facets": { }
+    },
+    "eventType": "START",
+    "inputs": [ ],
+    "outputs": [ ]
+  },
+  # OL event for Node start
+  {
+    "eventTime": "2024-11-20T19:45:51.614844Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "postgres.public.jaffle_shop.stg_customers",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "MODEL"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [
+      {
+        "namespace": "postgres://postgres:5432",
+        "name": "postgres.public.raw_customers",
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432"
+          },
+          "schema": {
+            "fields": [ ]
+          },
+          "documentation": {
+            "description": ""
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "postgres://postgres:5432",
+        "name": "postgres.public.stg_customers",
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "customer_id",
+                "type": "",
+                "description": "",
+                "fields": [ ]
+              }
+            ]
+          },
+          "documentation": {
+            "description": ""
+          }
+        },
+        "outputFacets": { }
+      }
+    ]
+  },
+  # OL event for SQL Start
+  {
+    "eventTime": "2024-11-20T19:45:51.957829Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "postgres.public.jaffle_shop.stg_customers"
+          }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "postgres.public.jaffle_shop.stg_customers.sql.1",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "BEGIN"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [ ],
+    "outputs": [ ]
+  },
+  # OL event for SQL Status
+  {
+    "eventTime":"2024-12-23T15:26:34.673602Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"postgres.public.jaffle_shop.stg_customers"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        },
+        "errorMessage":{
+          "message":"Database Error in model stg_customers (models/staging/stg_customers.sql)\n  syntax error at or near \"renamed\"\n  LINE 12: renamed as (\n           ^\n  compiled code at target/run/jaffle_shop/models/staging/stg_customers.sql",
+          "programmingLanguage":"sql",
+          "stackTrace":"Traceback (most recent call last):\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/postgres/connections.py\", line 74, in exception_handler\n    yield\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/sql/connections.py\", line 93, in add_query\n    cursor.execute(sql, bindings)\npsycopg2.errors.SyntaxError: syntax error at or near \"renamed\"\nLINE 12: renamed as (\n         ^\n\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/base.py\", line 368, in safe_run\n    result = self.compile_and_execute(manifest, ctx)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/base.py\", line 314, in compile_and_execute\n    result = self.run(ctx.node, manifest)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/base.py\", line 415, in run\n    return self.execute(compiled_node, manifest)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/run.py\", line 298, in execute\n    result = MacroGenerator(\n  File \"/usr/local/lib/python3.10/site-packages/dbt/clients/jinja.py\", line 84, in __call__\n    return self.call_macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt_common/clients/jinja.py\", line 322, in call_macro\n    return macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 768, in __call__\n    return self._invoke(arguments, autoescape)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 782, in _invoke\n    rv = self._func(*arguments)\n  File \"<template>\", line 81, in macro\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/sandbox.py\", line 394, in call\n    return __context.call(__obj, *args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 303, in call\n    return __obj(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/clients/jinja.py\", line 84, in __call__\n    return self.call_macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt_common/clients/jinja.py\", line 322, in call_macro\n    return macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 768, in __call__\n    return self._invoke(arguments, autoescape)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 782, in _invoke\n    rv = self._func(*arguments)\n  File \"<template>\", line 52, in macro\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/sandbox.py\", line 394, in call\n    return __context.call(__obj, *args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 303, in call\n    return __obj(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/base/impl.py\", line 390, in execute\n    return self.connections.execute(sql=sql, auto_begin=auto_begin, fetch=fetch, limit=limit)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/sql/connections.py\", line 157, in execute\n    _, cursor = self.add_query(sql, auto_begin)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/sql/connections.py\", line 76, in add_query\n    with self.exception_handler(sql):\n  File \"/usr/local/lib/python3.10/contextlib.py\", line 153, in __exit__\n    self.gen.throw(typ, value, traceback)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/postgres/connections.py\", line 85, in exception_handler\n    raise DbtDatabaseError(str(e).strip()) from e\ndbt_common.exceptions.base.DbtDatabaseError: Database Error in model stg_customers (models/staging/stg_customers.sql)\n  syntax error at or near \"renamed\"\n  LINE 12: renamed as (\n           ^\n  compiled code at target/run/jaffle_shop/models/staging/stg_customers.sql\n"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"postgres.public.jaffle_shop.stg_customers.sql.1",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"BEGIN"
+        }
+      }
+    },
+    "eventType":"FAIL",
+    "inputs":[ ],
+    "outputs":[ ]
+  }
+]

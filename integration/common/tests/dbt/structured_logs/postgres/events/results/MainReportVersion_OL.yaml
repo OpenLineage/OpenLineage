@@ -1,0 +1,21 @@
+[
+  {
+    "eventTime":"2024-11-22T15:58:03.518877Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"dbt-run-jaffle_shop",
+      "facets":{ }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  }
+]
