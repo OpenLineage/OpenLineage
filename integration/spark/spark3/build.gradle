@@ -21,13 +21,13 @@ idea {
 }
 
 ext {
-    assertjVersion = "3.26.3"
-    bigqueryVersion = "0.41.0"
+    assertjVersion = "3.27.0"
+    bigqueryVersion = "0.41.1"
     databricksVersion = "0.1.4"
     deltaVersion = "1.1.0"
     icebergVersion = "1.4.3"
     jacksonVersion = "2.15.3"
-    junit5Version = "5.11.3"
+    junit5Version = "5.11.4"
     lombokVersion = "1.18.30"
     mockitoVersion = "4.11.0"
     micrometerVersion = "1.14.2"
