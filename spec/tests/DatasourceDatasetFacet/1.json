@@ -1,7 +1,8 @@
 {
-  "version": {
-    "datasetVersion": "2",
-    "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
-    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/DatasetVersionDatasetFacet.json"
+  "dataSource": {
+    "_producer": "https://some.producer.com/version/1.0",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/DatasourceDatasetFacet.json",
+    "name": "datasource_one",
+    "uri": "https://some.location.com/datsource/one"
   }
 }
