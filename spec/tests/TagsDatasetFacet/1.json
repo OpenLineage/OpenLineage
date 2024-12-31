@@ -1,0 +1,16 @@
+{
+  "tags": [
+    {
+      "key": "pii",
+      "value": "true",
+      "source": "SNOWFLAKE",
+      "field": "email_address"
+    },
+    {
+      "key": "slack_channel",
+      "value": "#data-engineering-alerts"
+    }
+  ],
+  "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+  "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/TagsDatasetFacet.json"
+}
