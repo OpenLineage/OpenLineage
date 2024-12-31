@@ -37,7 +37,7 @@ class TagsDatasetFacet(DatasetFacet):
 
 
 @attr.define
-class TagsJobFacetFields(JobFacet):
+class TagsJobFacet(JobFacet):
     tags: list[Tag] | None = attr.field(factory=list)
 
     @staticmethod
@@ -46,7 +46,7 @@ class TagsJobFacetFields(JobFacet):
 
 
 @attr.define
-class TagsRunFacetFields(RunFacet):
+class TagsRunFacet(RunFacet):
     tags: list[Tag] | None = attr.field(factory=list)
 
     @staticmethod
