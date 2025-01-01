@@ -4,22 +4,42 @@ repos:
     hooks:
       - id: insert-license
         name: Add license for all Python files
-        files: \.py$|\.pyi$
+        files: \.py$|\.pyi$|\.sh$
         args:
           - --comment-style
           - "#"
           - --license-filepath
-          - .pre_commit/license-python.txt
+          - LICENSE.insert.txt
           - --fuzzy-match-generates-todo
           - --use-current-year
       - id: insert-license
         name: Add license for all Java files
-        files: \.java$
+        files: \.java$|\.groovy$|\.gradle$
         args:
           - --comment-style
-          - ""
+          - "/*|/*|*/"
           - --license-filepath
-          - .pre_commit/license-java.txt
+          - LICENSE.insert.txt
+          - --fuzzy-match-generates-todo
+          - --use-current-year
+      - id: insert-license
+        name: Add license for all Scala files
+        files: \.kt$|\.scala$
+        args:
+          - --comment-style
+          - "/** | *| */"
+          - --license-filepath
+          - LICENSE.insert.txt
+          - --fuzzy-match-generates-todo
+          - --use-current-year
+      - id: insert-license
+        name: Add license for all Rust files
+        files: \.rs$
+        args:
+          - --comment-style
+          - "//"
+          - --license-filepath
+          - LICENSE.insert.txt
           - --fuzzy-match-generates-todo
           - --use-current-year
   - repo: https://github.com/pre-commit/pre-commit-hooks

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright 2018-2025 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 # This script generates an expected C header that our Rust API
 # should adhere to.
 

@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright 2018-2025 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 set -e
 
 cqlsh cassandra-server 9042 -e "CREATE KEYSPACE IF NOT EXISTS flink WITH replication = {'class':'SimpleStrategy','replication_factor':'1'};"
