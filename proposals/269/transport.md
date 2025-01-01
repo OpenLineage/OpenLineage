@@ -100,4 +100,4 @@ More details on `ProxyBackend` should be on [it's own github issue](https://gith
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2024 contributors to the OpenLineage project
+Copyright 2018-2025 contributors to the OpenLineage project

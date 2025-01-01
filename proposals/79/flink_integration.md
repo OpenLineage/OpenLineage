@@ -138,6 +138,6 @@ We have to find a way to read Source/Sink related metadate (e.g. Kafka - topic, 
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2024 contributors to the OpenLineage project
+Copyright 2018-2025 contributors to the OpenLineage project
 
 
