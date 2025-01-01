@@ -137,6 +137,12 @@ impl Visit for TableFactor {
                 // We can skip them as we don't support extracting lineage from functions
                 Ok(())
             }
+            TableFactor::Function { .. } => {
+                // https://github.com/apache/datafusion-sqlparser-rs/pull/1026/files#r1373705587
+                // This variant provides distinct functionality from TableFunction but can be
+                // treated the same here
+                Ok(())
+            }
             _ => Err(anyhow!(
                 "TableFactor other than table or subquery not implemented: {self}"
             )),
