@@ -1,3 +1,6 @@
+// Copyright 2018-2025 contributors to the OpenLineage project
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::test_utils::*;
 use openlineage_sql::{ColumnLineage, ColumnMeta, ExtractionError, SqlMeta, TableLineage};
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2018-2024 contributors to the OpenLineage project
+# Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 from setuptools import find_namespace_packages, setup

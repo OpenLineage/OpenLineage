@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright 2018-2025 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 # Function to set Java version on Ubuntu
 set_java_version_ubuntu() {
   local version="$1"

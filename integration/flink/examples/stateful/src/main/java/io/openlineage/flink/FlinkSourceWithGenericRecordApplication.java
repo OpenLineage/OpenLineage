@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -23,10 +23,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.NewTopic;
 
-/*
-/* Copyright 2018-2024 contributors to the OpenLineage project
-/* SPDX-License-Identifier: Apache-2.0
-*/
+
 public class FlinkSourceWithGenericRecordApplication {
 
   public static void main(String[] args) throws Exception {

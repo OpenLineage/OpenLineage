@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Copyright 2018-2025 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 # Copy changed spec JSON files to website static folder
 # This is necessary to keep within repo history of all the spec versions
 # Initialize CHANGE_DONE to 0 (no changes detected by default)
