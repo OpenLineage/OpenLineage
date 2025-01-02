@@ -204,3 +204,15 @@
       redact_fields: []
     - class_name: SymlinksDatasetFacet
       redact_fields: []
+- module: tags
+  classes:
+    - class_name: Tag
+      redact_fields: []
+    - class_name: TagDataset
+      redact_fields: []
+    - class_name: TagsDatasetFacet
+      redact_fields: []
+    - class_name: TagsJobFacet
+      redact_fields: []
+    - class_name: TagsRunFacet
+      redact_fields: []
