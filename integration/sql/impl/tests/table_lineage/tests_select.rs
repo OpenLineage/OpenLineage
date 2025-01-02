@@ -218,3 +218,25 @@ fn select_identifier_function() {
         }
     }
 }
+
+#[test]
+fn select_snowflake_lateral() {
+    assert_eq!(
+        test_sql_dialect(
+            "SELECT id as ID,
+        f.value AS Contact,
+        f1.value:type AS Type,
+        f1.value:content AS Details
+        FROM my_snowflake_schema.persons p,
+        lateral flatten(input => p.c, path => 'contact') f,
+        lateral flatten(input => f.value:business) f1;",
+            "snowflake"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: vec![table("my_snowflake_schema.persons")],
+            out_tables: vec![],
+        }
+    )
+}
