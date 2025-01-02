@@ -18,10 +18,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.lineage.LineageDataset;
 import org.apache.flink.streaming.api.lineage.LineageGraph;
 
 /** Class used to extract datasets from Flink lineage graph. */
+@Slf4j
 class OpenLineageDatasetExtractor {
   private final OpenLineageContext context;
   private final Collection<DatasetFacetVisitor> facetVisitors;
