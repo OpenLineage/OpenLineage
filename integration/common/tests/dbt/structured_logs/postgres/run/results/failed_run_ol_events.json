@@ -39,7 +39,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public.jaffle_shop.orders",
+      "name":"model.jaffle_shop.orders",
       "facets":{
         "jobType":{
           "_deleted":null,
@@ -196,7 +196,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public.jaffle_shop.orders"
+            "name":"model.jaffle_shop.orders"
           }
         },
         "dbt_version": {
@@ -206,7 +206,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public.jaffle_shop.orders.sql.1",
+      "name":"model.jaffle_shop.orders.sql.1",
       "facets":{
         "jobType":{
           "_deleted":null,
@@ -235,7 +235,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public.jaffle_shop.orders"
+            "name":"model.jaffle_shop.orders"
           }
         },
         "dbt_version": {
@@ -245,7 +245,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public.jaffle_shop.orders.sql.1",
+      "name":"model.jaffle_shop.orders.sql.1",
       "facets":{
         "jobType":{
           "_deleted":null,
@@ -274,7 +274,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public.jaffle_shop.orders"
+            "name":"model.jaffle_shop.orders"
           }
         },
         "dbt_version": {
@@ -284,7 +284,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public.jaffle_shop.orders.sql.2",
+      "name":"model.jaffle_shop.orders.sql.2",
       "facets":{
         "jobType":{
           "_deleted":null,
@@ -313,7 +313,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public.jaffle_shop.orders"
+            "name":"model.jaffle_shop.orders"
           }
         },
         "errorMessage":{
@@ -328,7 +328,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public.jaffle_shop.orders.sql.2",
+      "name":"model.jaffle_shop.orders.sql.2",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -370,7 +370,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public.jaffle_shop.orders",
+      "name":"model.jaffle_shop.orders",
       "facets":{
         "jobType":{
           "_deleted":null,
