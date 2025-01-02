@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -10,6 +10,7 @@ import static io.openlineage.flink.testutils.KafkaTestBase.deleteTestTopic;
 import static org.apache.flink.configuration.DeploymentOptions.JOB_STATUS_CHANGED_LISTENERS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
@@ -233,8 +234,8 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
 
       // we always use a different topic name for each parameterized topic,
       // in order to make sure the topic can be created.
-      final String inputTopic = "tstopic_" + "_" + UUID.randomUUID();
-      final String outputTopic = "tstopic_" + "_" + UUID.randomUUID();
+      final String inputTopic = "tstopic_" + UUID.randomUUID();
+      final String outputTopic = "tstopic_" + UUID.randomUUID();
       createTestTopic(inputTopic, 1, 1);
 
       // ---------- Produce an event time stream into Kafka -------------------
@@ -352,8 +353,7 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
 
       Optional<OutputDataset> output =
           events.stream()
-              .filter(e -> e.getOutputs() != null)
-              .filter(e -> e.getOutputs().size() > 0)
+              .filter(e -> e.getOutputs().get(0).getName().equals(outputTopic))
               .map(e -> e.getOutputs().get(0))
               .findAny();
       assertThat(output.get().getNamespace()).startsWith("kafka://localhost:");
@@ -372,6 +372,17 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
           .hasFieldOrPropertyWithValue("name", "default_catalog.default_database.kafka_output");
       assertThat(output.get().getFacets().getSymlinks().getIdentifiers().get(0).getNamespace())
           .startsWith("kafka://localhost:");
+
+
+      // TODO: verify column level lineage for Kafka
+//      ColumnLineageDatasetFacet columnLineage = output.get().getFacets().getColumnLineage();
+//      assertThat(columnLineage).isNotNull();
+//      assertThat(columnLineage.getFields().getAdditionalProperties().get("max_price").getInputFields())
+//          .hasSize(1)
+//          .element(0)
+//          .hasFieldOrPropertyWithValue("name", inputTopic)
+//          .hasFieldOrPropertyWithValue("field", "price");
+
 
       // ------------- cleanup -------------------
       deleteTestTopic(inputTopic);

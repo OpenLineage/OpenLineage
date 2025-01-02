@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -12,6 +12,7 @@ import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.transports.TransportFactory;
 import io.openlineage.client.utils.UUIDUtils;
+import io.openlineage.flink.column.QueryOperationListener;
 import io.openlineage.flink.client.EventEmitter;
 import io.openlineage.flink.client.OpenLineageContext;
 import io.openlineage.flink.client.OpenLineageContext.JobIdentifier;
@@ -27,6 +28,7 @@ import org.apache.flink.core.execution.JobStatusChangedEvent;
 import org.apache.flink.core.execution.JobStatusChangedListener;
 import org.apache.flink.core.execution.JobStatusChangedListenerFactory.Context;
 import org.apache.flink.streaming.runtime.execution.JobCreatedEvent;
+import org.apache.flink.table.runtime.execution.QueryOperationEvent;
 
 @Slf4j
 public class OpenLineageFlinkListener implements JobStatusChangedListener {
@@ -35,6 +37,7 @@ public class OpenLineageFlinkListener implements JobStatusChangedListener {
   private final OpenLineageClient client;
 
   private final LineageGraphConverter graphConverter;
+  private final QueryOperationListener queryOperationListener;
 
   public OpenLineageFlinkListener(Context context, VisitorFactory visitorFactory) {
     openLineageContext =
@@ -45,6 +48,7 @@ public class OpenLineageFlinkListener implements JobStatusChangedListener {
             .build();
 
     graphConverter = new LineageGraphConverter(openLineageContext, visitorFactory);
+    queryOperationListener = new QueryOperationListener();
 
     if (openLineageContext.getConfig().getTransportConfig() != null) {
       // build emitter client based on flink configuration
@@ -70,6 +74,12 @@ public class OpenLineageFlinkListener implements JobStatusChangedListener {
       log.debug("triggered onEvent for JobCreatedEvent: {}", event);
       try {
         client.emit(graphConverter.convert(createdEvent.lineageGraph(), EventType.START));
+      } catch (Throwable e) {
+        log.error("Triggering event caused an exception", e);
+      }
+    } else if (event instanceof QueryOperationEvent) {
+      try {
+        queryOperationListener.notify(((QueryOperationEvent)event).queryOperation());
       } catch (Throwable e) {
         log.error("Triggering event caused an exception", e);
       }
