@@ -41,7 +41,7 @@
     },
     "job": {
       "namespace": "dbt-test-namespace",
-      "name": "postgres.public.jaffle_shop.stg_customers",
+      "name": "model.jaffle_shop.stg_customers",
       "facets": {
         "jobType": {
           "processingType": "BATCH",
@@ -117,7 +117,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public.jaffle_shop.stg_customers",
+      "name":"model.jaffle_shop.stg_customers",
       "facets":{
         "jobType":{
           "processingType":"BATCH",

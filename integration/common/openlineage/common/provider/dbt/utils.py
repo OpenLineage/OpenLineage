@@ -13,7 +13,7 @@ __version__ = "1.27.0"
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
 
 # for which command structured logs consumption is implemented
-HANDLED_COMMANDS = ["run", "seed", "snapshot"]
+HANDLED_COMMANDS = ["run", "seed", "snapshot", "test", "build"]
 CONSUME_STRUCTURED_LOGS_COMMAND_OPTION = "--consume-structured-logs"
 
 
@@ -129,5 +129,7 @@ def get_job_type(event) -> Optional[str]:
         return "SNAPSHOT"
     elif node_unique_id.startswith("seed."):
         return "SEED"
+    elif node_unique_id.startswith("test."):
+        return "TEST"
 
     return None

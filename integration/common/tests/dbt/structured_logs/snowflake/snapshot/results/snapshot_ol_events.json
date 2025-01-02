@@ -39,7 +39,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot",
+      "name":"snapshot.jaffle_shop.orders_snapshot",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -98,7 +98,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -108,7 +108,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.1",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.1",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -135,7 +135,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -145,7 +145,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.1",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.1",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -172,7 +172,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -182,7 +182,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.2",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.2",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -209,7 +209,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -219,7 +219,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.2",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.2",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -246,7 +246,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -256,7 +256,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.3",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.3",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -283,7 +283,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -293,7 +293,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.3",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.3",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -320,7 +320,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -330,7 +330,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.4",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.4",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -357,7 +357,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -367,7 +367,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.4",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.4",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -394,7 +394,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -404,7 +404,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.5",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.5",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -431,7 +431,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -441,7 +441,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.5",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.5",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -468,7 +468,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -478,7 +478,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.6",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.6",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -505,7 +505,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -515,7 +515,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.6",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.6",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -542,7 +542,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -552,7 +552,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.7",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.7",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -579,7 +579,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -589,7 +589,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.7",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.7",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -616,7 +616,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -626,7 +626,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.8",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.8",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -653,7 +653,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -663,7 +663,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.8",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.8",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -690,7 +690,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -700,7 +700,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.9",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.9",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -727,7 +727,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -737,7 +737,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.9",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.9",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -764,7 +764,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -774,7 +774,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.10",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.10",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -801,7 +801,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -811,7 +811,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.10",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.10",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -838,7 +838,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -848,7 +848,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.11",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.11",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -875,7 +875,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -885,7 +885,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.11",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.11",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -912,7 +912,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -922,7 +922,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.12",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.12",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -949,7 +949,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot"
+            "name":"snapshot.jaffle_shop.orders_snapshot"
           }
         },
         "dbt_version":{
@@ -959,7 +959,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot.sql.12",
+      "name":"snapshot.jaffle_shop.orders_snapshot.sql.12",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -996,7 +996,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"REPORTING.snapshots.jaffle_shop.orders_snapshot.snapshot",
+      "name":"snapshot.jaffle_shop.orders_snapshot",
       "facets":{
         "jobType":{
           "processingType":"BATCH",

@@ -1,0 +1,113 @@
+[
+  # Command started dbt event
+  {
+    "data": {
+      "log_version": 3,
+      "version": "=1.8.2"
+    },
+    "info": {
+      "category": "",
+      "code": "A001",
+      "extra": { },
+      "invocation_id": "b0ed168e-1926-42da-aa25-6b3eb826074b",
+      "level": "info",
+      "msg": "Running with dbt=1.8.2",
+      "name": "MainReportVersion",
+      "pid": 278,
+      "thread": "MainThread",
+      "ts": "2024-11-22T15:58:03.518877Z"
+    }
+  },
+  # Test Node started dbt event
+  {
+    "data": {
+      "node_info": {
+        "materialized": "test",
+        "meta": { },
+        "node_finished_at": "",
+        "node_name": "not_null_customers_customer_id",
+        "node_path": "not_null_customers_customer_id.sql",
+        "node_relation": {
+          "alias": "not_null_customers_customer_id",
+          "database": "postgres",
+          "relation_name": "",
+          "schema": "public_dbt_test__audit"
+        },
+        "node_started_at": "2024-12-17T10:03:22.816610",
+        "node_status": "started",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d"
+      }
+    },
+    "info": {
+      "category": "",
+      "code": "Q024",
+      "extra": { },
+      "invocation_id": "899a81ce-1512-451a-b34a-480863ac4005",
+      "level": "debug",
+      "msg": "Began running node test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
+      "name": "NodeStart",
+      "pid": 841,
+      "thread": "Thread-1 (worker)",
+      "ts": "2024-12-17T10:03:22.817702Z"
+    }
+  },
+  # Test Node finished dbt event
+  {
+    "data": {
+      "node_info": {
+        "materialized": "test",
+        "meta": { },
+        "node_finished_at": "2024-12-17T10:03:23.168349",
+        "node_name": "not_null_customers_customer_id",
+        "node_path": "not_null_customers_customer_id.sql",
+        "node_relation": {
+          "alias": "not_null_customers_customer_id",
+          "database": "postgres",
+          "relation_name": "",
+          "schema": "public_dbt_test__audit"
+        },
+        "node_started_at": "2024-12-17T10:03:22.816610",
+        "node_status": "pass",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d"
+      },
+      "run_result": {
+        "adapter_response": {
+          "_message": "SELECT 1",
+          "code": "SELECT",
+          "rows_affected": 1
+        },
+        "execution_time": 0.33287334,
+        "message": "",
+        "num_failures": 0,
+        "status": "pass",
+        "thread": "Thread-1 (worker)",
+        "timing_info": [
+          {
+            "completed_at": "2024-12-17T10:03:22.905288Z",
+            "name": "compile",
+            "started_at": "2024-12-17T10:03:22.850614Z"
+          },
+          {
+            "completed_at": "2024-12-17T10:03:23.148913Z",
+            "name": "execute",
+            "started_at": "2024-12-17T10:03:22.914850Z"
+          }
+        ]
+      }
+    },
+    "info": {
+      "category": "",
+      "code": "Q025",
+      "extra": { },
+      "invocation_id": "899a81ce-1512-451a-b34a-480863ac4005",
+      "level": "debug",
+      "msg": "Finished running node test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
+      "name": "NodeFinished",
+      "pid": 841,
+      "thread": "Thread-1 (worker)",
+      "ts": "2024-12-17T10:03:23.186546Z"
+    }
+  }
+]
