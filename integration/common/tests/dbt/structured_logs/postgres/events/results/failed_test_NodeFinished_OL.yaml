@@ -41,7 +41,7 @@
     },
     "job": {
       "namespace": "dbt-test-namespace",
-      "name": "postgres.public_dbt_test__audit.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312",
+      "name": "test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312",
       "facets": {
         "jobType": {
           "processingType": "BATCH",
@@ -159,7 +159,7 @@
     },
     "job": {
       "namespace": "dbt-test-namespace",
-      "name": "postgres.public_dbt_test__audit.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312",
+      "name": "test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312",
       "facets": {
         "jobType": {
           "processingType": "BATCH",

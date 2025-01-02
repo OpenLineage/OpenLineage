@@ -39,7 +39,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312",
+      "name":"test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -141,7 +141,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312"
+            "name":"test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312"
           }
         },
         "dbt_version":{
@@ -151,7 +151,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312.sql.1",
+      "name":"test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312.sql.1",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -178,7 +178,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312"
+            "name":"test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312"
           }
         },
         "dbt_version":{
@@ -188,7 +188,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312.sql.1",
+      "name":"test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312.sql.1",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -215,7 +215,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312"
+            "name":"test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312"
           }
         },
         "dbt_version":{
@@ -225,7 +225,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312.sql.2",
+      "name":"test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312.sql.2",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -252,7 +252,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312"
+            "name":"test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312"
           }
         },
         "dbt_version":{
@@ -262,7 +262,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312.sql.2",
+      "name":"test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312.sql.2",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -304,7 +304,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312",
+      "name":"test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -425,7 +425,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
+      "name":"test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -527,7 +527,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.not_null_customers_customer_id.5c9bf9911d"
+            "name":"test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d"
           }
         },
         "dbt_version":{
@@ -537,7 +537,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.not_null_customers_customer_id.5c9bf9911d.sql.1",
+      "name":"test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d.sql.1",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -564,7 +564,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.not_null_customers_customer_id.5c9bf9911d"
+            "name":"test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d"
           }
         },
         "dbt_version":{
@@ -574,7 +574,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.not_null_customers_customer_id.5c9bf9911d.sql.1",
+      "name":"test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d.sql.1",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -601,7 +601,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.not_null_customers_customer_id.5c9bf9911d"
+            "name":"test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d"
           }
         },
         "dbt_version":{
@@ -611,7 +611,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.not_null_customers_customer_id.5c9bf9911d.sql.2",
+      "name":"test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d.sql.2",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -638,7 +638,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.not_null_customers_customer_id.5c9bf9911d"
+            "name":"test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d"
           }
         },
         "dbt_version":{
@@ -648,7 +648,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.not_null_customers_customer_id.5c9bf9911d.sql.2",
+      "name":"test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d.sql.2",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -685,7 +685,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
+      "name":"test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -806,7 +806,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2",
+      "name":"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -979,7 +979,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2"
+            "name":"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2"
           }
         },
         "dbt_version":{
@@ -989,7 +989,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2.sql.1",
+      "name":"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2.sql.1",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -1016,7 +1016,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2"
+            "name":"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2"
           }
         },
         "dbt_version":{
@@ -1026,7 +1026,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2.sql.1",
+      "name":"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2.sql.1",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -1053,7 +1053,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2"
+            "name":"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2"
           }
         },
         "dbt_version":{
@@ -1063,7 +1063,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2.sql.2",
+      "name":"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2.sql.2",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -1090,7 +1090,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2"
+            "name":"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2"
           }
         },
         "dbt_version":{
@@ -1100,7 +1100,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2.sql.2",
+      "name":"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2.sql.2",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -1137,7 +1137,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2",
+      "name":"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -1270,7 +1270,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.unique_customers_customer_id.c5af1ff4b1",
+      "name":"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -1372,7 +1372,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.unique_customers_customer_id.c5af1ff4b1"
+            "name":"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1"
           }
         },
         "dbt_version":{
@@ -1382,7 +1382,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.unique_customers_customer_id.c5af1ff4b1.sql.1",
+      "name":"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1.sql.1",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -1409,7 +1409,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.unique_customers_customer_id.c5af1ff4b1"
+            "name":"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1"
           }
         },
         "dbt_version":{
@@ -1419,7 +1419,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.unique_customers_customer_id.c5af1ff4b1.sql.1",
+      "name":"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1.sql.1",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -1446,7 +1446,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.unique_customers_customer_id.c5af1ff4b1"
+            "name":"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1"
           }
         },
         "dbt_version":{
@@ -1456,7 +1456,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.unique_customers_customer_id.c5af1ff4b1.sql.2",
+      "name":"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1.sql.2",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -1483,7 +1483,7 @@
           },
           "job":{
             "namespace":"dbt-test-namespace",
-            "name":"postgres.public_dbt_test__audit.jaffle_shop.unique_customers_customer_id.c5af1ff4b1"
+            "name":"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1"
           }
         },
         "dbt_version":{
@@ -1493,7 +1493,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.unique_customers_customer_id.c5af1ff4b1.sql.2",
+      "name":"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1.sql.2",
       "facets":{
         "jobType":{
           "processingType":"BATCH",
@@ -1530,7 +1530,7 @@
     },
     "job":{
       "namespace":"dbt-test-namespace",
-      "name":"postgres.public_dbt_test__audit.jaffle_shop.unique_customers_customer_id.c5af1ff4b1",
+      "name":"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1",
       "facets":{
         "jobType":{
           "processingType":"BATCH",

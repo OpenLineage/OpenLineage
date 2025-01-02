@@ -453,25 +453,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _get_job_name(self, event) -> str:
         """
-        The job name of models, snapshots, tests and others
+        The job name of models, snapshots, tests and others.
         """
-        database = event["data"]["node_info"]["node_relation"]["database"]
-        schema = event["data"]["node_info"]["node_relation"]["schema"]
-        node_unique_id = get_node_unique_id(event)
-        if node_unique_id.startswith("model"):
-            node_id = self.removeprefix(node_unique_id, "model.")
-            suffix = ".build.run" if self.dbt_command == "build" else ""
-        elif node_unique_id.startswith("snapshot"):
-            node_id = self.removeprefix(node_unique_id, "snapshot.")
-            suffix = ".build.snapshot" if self.dbt_command == "build" else ".snapshot"
-        elif node_unique_id.startswith("test"):
-            node_id = self.removeprefix(node_unique_id, "test.")
-            suffix = ".build.test" if self.dbt_command == "build" else ""
-        else:
-            node_id = node_unique_id
-            suffix = ".build.run" if self.dbt_command == "build" else ""
-
-        return f"{database}.{schema}.{node_id}{suffix}"
+        return get_node_unique_id(event)
 
     def _run_dbt_command(self) -> Generator[str, None, None]:
         """

@@ -393,7 +393,7 @@ def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, ma
                     }
                 }
             },
-            "postgres.public.jaffle_shop.orders",
+            "model.jaffle_shop.orders",
             "run",
         ),
         (
@@ -406,7 +406,7 @@ def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, ma
                     }
                 }
             },
-            "postgres.public.jaffle_shop.orders.build.run",
+            "model.jaffle_shop.orders",
             "build",
         ),
         # snapshot
@@ -420,7 +420,7 @@ def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, ma
                     }
                 }
             },
-            "postgres.public.jaffle_shop.orders.snapshot",
+            "snapshot.jaffle_shop.orders",
             "snapshot",
         ),
         (
@@ -433,7 +433,7 @@ def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, ma
                     }
                 }
             },
-            "postgres.public.jaffle_shop.orders.build.snapshot",
+            "snapshot.jaffle_shop.orders",
             "build",
         ),
         # test
@@ -451,7 +451,7 @@ def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, ma
                     }
                 }
             },
-            "postgres.public_dbt_test__audit.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
+            "test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
             "test",
         ),
         (
@@ -468,7 +468,7 @@ def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, ma
                     }
                 }
             },
-            "postgres.public_dbt_test__audit.jaffle_shop.not_null_customers_customer_id.5c9bf9911d.build.test",
+            "test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
             "build",
         ),
         # seeds
@@ -486,7 +486,7 @@ def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, ma
                     }
                 }
             },
-            "postgres.public.seed.jaffle_shop.raw_customers",
+            "seed.jaffle_shop.raw_customers",
             "seed",
         ),
         (
@@ -503,7 +503,7 @@ def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, ma
                     }
                 }
             },
-            "postgres.public.seed.jaffle_shop.raw_customers.build.run",
+            "seed.jaffle_shop.raw_customers",
             "build",
         ),
     ],
