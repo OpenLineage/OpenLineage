@@ -44,6 +44,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   private JobNameConfig jobName;
   private JobConfig job;
   private VendorsConfig vendors;
+  private String customConfigProviderClass; // TODO: requires documentation
 
   @JsonProperty("columnLineage")
   private ColumnLineageConfig columnLineageConfig;
@@ -63,7 +64,8 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       CircuitBreakerConfig circuitBreaker,
       Map<String, Object> metricsConfig,
       ColumnLineageConfig columnLineageConfig,
-      VendorsConfig vendors) {
+      VendorsConfig vendors,
+      String customConfigProviderClass) {
     super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig);
     this.namespace = namespace;
     this.parentJobName = parentJobName;
@@ -75,6 +77,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.job = job;
     this.columnLineageConfig = columnLineageConfig;
     this.vendors = vendors;
+    this.customConfigProviderClass = customConfigProviderClass;
   }
 
   @Override
@@ -167,6 +170,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
         mergePropertyWith(metricsConfig, other.metricsConfig),
         mergePropertyWith(columnLineageConfig, other.columnLineageConfig),
-        mergePropertyWith(vendors, other.vendors));
+        mergePropertyWith(vendors, other.vendors),
+        mergePropertyWith(customConfigProviderClass, other.customConfigProviderClass));
   }
 }
