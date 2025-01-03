@@ -43,8 +43,10 @@ dependencies {
     compileOnly "org.apache.flink:flink-core:$flinkVersion"
     compileOnly "org.apache.flink:flink-runtime:$flinkVersion"
     compileOnly "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-api-java:$flinkVersion"
     compileOnly "org.apache.flink:flink-connector-kafka:3.4-SNAPSHOT"
     compileOnly "org.apache.flink:flink-connector-test-utils:$flinkVersion"
+    compileOnly "org.apache.calcite:calcite-core:1.34.0"
 
 
     testImplementation "org.scala-lang:scala-library:$scalaLibraryVersion"
