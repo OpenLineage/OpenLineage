@@ -16,8 +16,10 @@ import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark.api.SparkOpenLineageConfigProvider;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -93,7 +95,46 @@ public class ArgumentParser {
     }
 
     extractSparkSpecificConfigEntriesFromSparkConf(conf, targetConfig);
+
+    // CHECK IF CUSTOM CONFIGURATION IS PROVIDED
+    // TODO: requires extra test in ArgumentParserTest
+    if (targetConfig.getCustomConfigProviderClass() != null) {
+      Optional<SparkOpenLineageConfig> customConfig =
+          extractCustomOpenLineageConf(targetConfig.getCustomConfigProviderClass());
+
+      if (customConfig.isPresent()) {
+        targetConfig = targetConfig.mergeWith(customConfig.get());
+      } else {
+        log.warn(
+            "Unable to read configuration from {} not found",
+            targetConfig.getCustomConfigProviderClass());
+      }
+    }
     return targetConfig;
+  }
+
+  private static Optional<SparkOpenLineageConfig> extractCustomOpenLineageConf(
+      String customConfigClass) {
+    try {
+      Object customConfig = Class.forName(customConfigClass).getDeclaredConstructor().newInstance();
+
+      if (customConfig instanceof SparkOpenLineageConfigProvider) {
+        return Optional.of(
+            ((SparkOpenLineageConfigProvider) customConfig).getSparkOpenLineageConfig());
+      } else {
+        log.error(
+            "Custom config class {} does not implement SparkOpenLineageConfigProvider",
+            customConfigClass);
+        return Optional.empty();
+      }
+    } catch (ClassNotFoundException
+        | InvocationTargetException
+        | InstantiationException
+        | IllegalAccessException
+        | NoSuchMethodException e) {
+      log.info("Couldn't log config from file, will read it from SparkConf");
+      return Optional.empty();
+    }
   }
 
   private static Optional<SparkOpenLineageConfig> extractOpenLineageConfFromEnvVars() {
