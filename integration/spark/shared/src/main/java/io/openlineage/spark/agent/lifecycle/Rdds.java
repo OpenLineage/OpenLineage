@@ -24,18 +24,23 @@ import org.apache.spark.storage.RDDInfo;
 
 public class Rdds {
 
-  public static Set<RDD<?>> flattenRDDs(RDD<?> rdd) {
+  public static Set<RDD<?>> flattenRDDs(RDD<?> rdd, Set<Integer> visitedRdds) {
     Set<RDD<?>> rdds = new HashSet<>();
-    rdds.add(rdd);
-    if (rdd instanceof ShuffledRowRDD) {
-      rdds.addAll(flattenRDDs(((ShuffledRowRDD) rdd).dependency().rdd()));
-    }
+    if (visitedRdds.contains(rdd.id())) {
+      return rdds;
+    } else {
+      rdds.add(rdd);
+      visitedRdds.add(rdd.id());
+      if (rdd instanceof ShuffledRowRDD) {
+        rdds.addAll(flattenRDDs(((ShuffledRowRDD) rdd).dependency().rdd(), visitedRdds));
+      }
 
-    Collection<Dependency<?>> deps = ScalaConversionUtils.fromSeq(rdd.dependencies());
-    for (Dependency<?> dep : deps) {
-      rdds.addAll(flattenRDDs(dep.rdd()));
+      Collection<Dependency<?>> deps = ScalaConversionUtils.fromSeq(rdd.dependencies());
+      for (Dependency<?> dep : deps) {
+        rdds.addAll(flattenRDDs(dep.rdd(), visitedRdds));
+      }
+      return rdds;
     }
-    return rdds;
   }
 
   static String toString(SparkListenerJobStart jobStart) {
@@ -60,7 +65,7 @@ public class Rdds {
   public static List<RDD<?>> findFileLikeRdds(RDD<?> rdd) {
     List<RDD<?>> ret = new ArrayList<>();
     Stack<RDD<?>> deps = new Stack<>();
-    deps.add(rdd);
+    if (rdd != null) deps.add(rdd);
     while (!deps.isEmpty()) {
       RDD<?> cur = deps.pop();
       if (cur.getDependencies() != null) {
@@ -76,5 +81,11 @@ public class Rdds {
       }
     }
     return ret;
+  }
+
+  public static List<RDD<?>> findFileLikeRdds(Set<RDD<?>> rdds) {
+    return rdds.stream()
+        .filter(r -> r instanceof HadoopRDD || r instanceof FileScanRDD)
+        .collect(Collectors.toList());
   }
 }
