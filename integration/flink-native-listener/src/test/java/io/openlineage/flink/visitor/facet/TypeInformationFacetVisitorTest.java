@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -13,6 +13,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.flink.client.OpenLineageContext;
 import io.openlineage.flink.client.Versions;
+import io.openlineage.flink.converter.LineageDatasetWithIdentifier;
 import java.util.List;
 import java.util.Map;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -31,19 +32,21 @@ class TypeInformationFacetVisitorTest {
   TypeInformationFacetVisitor facetVisitor = new TypeInformationFacetVisitor(context);
   OpenLineage.DatasetFacetsBuilder builder =
       new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI).newDatasetFacetsBuilder();
-  LineageDataset dataset = mock(LineageDataset.class);
+  LineageDataset flinkDataset = mock(LineageDataset.class);
+  LineageDatasetWithIdentifier dataset = mock(LineageDatasetWithIdentifier.class);
 
   @BeforeEach
   public void beforeEach() {
+    when(dataset.getFlinkDataset()).thenReturn(flinkDataset);
     when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
   }
 
   @Test
   void testTestIsDefined() {
-    when(dataset.facets()).thenReturn(Map.of("f1", mock(LineageDatasetFacet.class)));
+    when(flinkDataset.facets()).thenReturn(Map.of("f1", mock(LineageDatasetFacet.class)));
     assertThat(facetVisitor.isDefinedAt(dataset)).isFalse();
 
-    when(dataset.facets()).thenReturn(Map.of("kafka", mock(KafkaDatasetFacet.class)));
+    when(flinkDataset.facets()).thenReturn(Map.of("kafka", mock(KafkaDatasetFacet.class)));
     assertThat(facetVisitor.isDefinedAt(dataset)).isTrue();
   }
 
@@ -51,7 +54,7 @@ class TypeInformationFacetVisitorTest {
   void testFieldsExtractedFromGenericTypeInfo() {
     GenericTypeInfo genericTypeInfo = new GenericTypeInfo(TestingTypeClass.class);
     TypeDatasetFacet facet = new DefaultTypeDatasetFacet(genericTypeInfo);
-    when(dataset.facets()).thenReturn(Map.of("type", facet));
+    when(flinkDataset.facets()).thenReturn(Map.of("type", facet));
 
     facetVisitor.apply(dataset, builder);
     List<SchemaDatasetFacetFields> fields = builder.build().getSchema().getFields();
@@ -68,7 +71,7 @@ class TypeInformationFacetVisitorTest {
   void testNothingHappensForUnsupportedTypeInfo() {
     TypeDatasetFacet facet = new DefaultTypeDatasetFacet(mock(TypeInformation.class));
 
-    when(dataset.facets()).thenReturn(Map.of("type", facet));
+    when(flinkDataset.facets()).thenReturn(Map.of("type", facet));
 
     facetVisitor.apply(dataset, builder);
     assertThat(builder.build().getSchema()).isNull();

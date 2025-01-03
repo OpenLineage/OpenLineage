@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -45,8 +45,8 @@ class OpenLineageDatasetExtractor {
                 context
                     .getOpenLineage()
                     .newInputDatasetBuilder()
-                    .namespace(d.datasetIdentifier.getNamespace())
-                    .name(d.datasetIdentifier.getName())
+                    .namespace(d.getDatasetIdentifier().getNamespace())
+                    .name(d.getDatasetIdentifier().getName())
                     .facets(convert(d))
                     .build())
         .collect(Collectors.toList());
@@ -65,22 +65,22 @@ class OpenLineageDatasetExtractor {
                 context
                     .getOpenLineage()
                     .newOutputDatasetBuilder()
-                    .namespace(d.datasetIdentifier.getNamespace())
-                    .name(d.datasetIdentifier.getName())
+                    .namespace(d.getDatasetIdentifier().getNamespace())
+                    .name(d.getDatasetIdentifier().getName())
                     .facets(convert(d))
                     .build())
         .collect(Collectors.toList());
   }
 
-  private OpenLineage.DatasetFacets convert(DatasetWithDatasetIdentifier dataset) {
+  private OpenLineage.DatasetFacets convert(LineageDatasetWithIdentifier dataset) {
     DatasetFacetsBuilder facetsBuilder = new DatasetFacetsBuilder();
 
-    if (dataset.datasetIdentifier.getSymlinks() != null) {
+    if (dataset.getDatasetIdentifier().getSymlinks() != null) {
       facetsBuilder.symlinks(
           context
               .getOpenLineage()
               .newSymlinksDatasetFacet(
-                  dataset.datasetIdentifier.getSymlinks().stream()
+                  dataset.getDatasetIdentifier().getSymlinks().stream()
                       .map(
                           i ->
                               context
@@ -91,23 +91,13 @@ class OpenLineageDatasetExtractor {
     }
 
     facetVisitors.stream()
-        .filter(v -> v.isDefinedAt(dataset.dataset))
-        .forEach(v -> v.apply(dataset.dataset, facetsBuilder));
+        .filter(v -> v.isDefinedAt(dataset))
+        .forEach(v -> v.apply(dataset, facetsBuilder));
 
     return facetsBuilder.build();
   }
 
-  private static class DatasetWithDatasetIdentifier {
-    DatasetIdentifier datasetIdentifier;
-    LineageDataset dataset;
-
-    DatasetWithDatasetIdentifier(DatasetIdentifier datasetIdentifier, LineageDataset dataset) {
-      this.datasetIdentifier = datasetIdentifier;
-      this.dataset = dataset;
-    }
-  }
-
-  private Collection<DatasetWithDatasetIdentifier> extractDatasetsWithIdentifiers(
+  private Collection<LineageDatasetWithIdentifier> extractDatasetsWithIdentifiers(
       LineageDataset dataset) {
     List<DatasetIdentifierVisitor> visitors =
         identifierVisitors.stream()
@@ -117,14 +107,14 @@ class OpenLineageDatasetExtractor {
     if (visitors.isEmpty()) {
       // no visitors to be applied
       return Collections.singletonList(
-          new DatasetWithDatasetIdentifier(
+          new LineageDatasetWithIdentifier(
               new DatasetIdentifier(dataset.name(), dataset.namespace()), dataset));
     }
 
     return identifierVisitors.stream()
         .filter(v -> v.isDefinedAt(dataset))
         .flatMap(v -> v.apply(dataset).stream())
-        .map(di -> new DatasetWithDatasetIdentifier(di, dataset))
+        .map(di -> new LineageDatasetWithIdentifier(di, dataset))
         .collect(Collectors.toList());
   }
 }

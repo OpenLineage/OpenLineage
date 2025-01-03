@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -8,7 +8,7 @@ package io.openlineage.flink.visitor.facet;
 import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.flink.client.OpenLineageContext;
-import io.openlineage.flink.util.TableLineageDatasetUtil;
+import io.openlineage.flink.converter.LineageDatasetWithIdentifier;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -26,13 +26,13 @@ public class TableLineageFacetVisitor implements DatasetFacetVisitor {
   }
 
   @Override
-  public boolean isDefinedAt(LineageDataset flinkDataset) {
-    return TableLineageDatasetUtil.isOnClasspath() && flinkDataset instanceof TableLineageDataset;
+  public boolean isDefinedAt(LineageDatasetWithIdentifier dataset) {
+    return dataset.getFlinkDataset() instanceof TableLineageDataset;
   }
 
   @Override
-  public void apply(LineageDataset flinkDataset, DatasetFacetsBuilder builder) {
-    buildSchemaFacet(flinkDataset, builder);
+  public void apply(LineageDatasetWithIdentifier dataset, DatasetFacetsBuilder builder) {
+    buildSchemaFacet(dataset.getFlinkDataset(), builder);
   }
 
   private void buildSchemaFacet(LineageDataset flinkDataset, DatasetFacetsBuilder builder) {

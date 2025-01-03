@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -39,6 +39,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.streaming.api.lineage.LineageDataset;
+import org.apache.flink.streaming.api.lineage.LineageDatasetFacet;
 import org.apache.flink.streaming.api.lineage.LineageGraph;
 import org.apache.flink.streaming.api.lineage.LineageVertex;
 import org.apache.flink.streaming.api.lineage.SourceLineageVertex;
@@ -69,7 +70,7 @@ class LineageGraphConverterTest {
     context.setJobId(JobIdentifier.builder().build());
     converter = new LineageGraphConverter(context, visitorFactory);
 
-    when(config.getJob()).thenReturn(jobConfig);
+    when(config.getJobConfig()).thenReturn(jobConfig);
   }
 
   @Test
@@ -91,11 +92,9 @@ class LineageGraphConverterTest {
 
   @Test
   void testJobType() {
-    SourceLineageVertex source1 = mock(SourceLineageVertex.class);
-    SourceLineageVertex source2 = mock(SourceLineageVertex.class);
-
-    when(source1.boundedness()).thenReturn(Boundedness.CONTINUOUS_UNBOUNDED);
-    when(source2.boundedness()).thenReturn(Boundedness.BOUNDED);
+    SourceLineageVertex source1 =
+        sourceVertexOf(Boundedness.CONTINUOUS_UNBOUNDED, Collections.emptyList());
+    SourceLineageVertex source2 = sourceVertexOf(Boundedness.BOUNDED, Collections.emptyList());
 
     when(graph.sources()).thenReturn(Arrays.asList(source1, source2));
 
@@ -105,7 +104,7 @@ class LineageGraphConverterTest {
     assertThat(jobTypeFacet.getJobType()).isEqualTo("JOB");
     assertThat(jobTypeFacet.getProcessingType()).isEqualTo("STREAMING");
 
-    when(source1.boundedness()).thenReturn(Boundedness.BOUNDED);
+    when(graph.sources()).thenReturn(Arrays.asList(source2, source2));
     assertThat(
             converter
                 .convert(graph, EventType.START)
@@ -118,28 +117,29 @@ class LineageGraphConverterTest {
 
   @Test
   void testFacetVisitors() {
-    SourceLineageVertex source = mock(SourceLineageVertex.class);
-    LineageDataset sourceDataset = mock(LineageDataset.class);
     DatasetFacet openlineageSourceFacet = mock(DatasetFacet.class);
+    LineageDatasetWithIdentifier sourceDataset = lineageDatasetOf("sourceName", "sourceNamespace");
+    SourceLineageVertex source =
+        sourceVertexOf(
+            Boundedness.CONTINUOUS_UNBOUNDED,
+            Collections.singletonList(sourceDataset.getFlinkDataset()));
 
-    when(source.datasets()).thenReturn(Arrays.asList(sourceDataset));
-    when(sourceDataset.name()).thenReturn("sourceName");
-    when(sourceDataset.namespace()).thenReturn("sourceNamespace");
-
-    LineageVertex sink = mock(LineageVertex.class);
-    LineageDataset sinkDataset = mock(LineageDataset.class);
     DatasetFacet openlineageSinkFacet = mock(DatasetFacet.class);
+    LineageDatasetWithIdentifier sinkDataset = lineageDatasetOf("sinkName", "sinkNamespace");
+    LineageVertex sink =
+        new LineageVertex() {
+          @Override
+          public List<LineageDataset> datasets() {
+            return List.of(sinkDataset.getFlinkDataset());
+          }
+        };
 
-    when(sink.datasets()).thenReturn(Arrays.asList(sinkDataset));
-    when(sinkDataset.name()).thenReturn("sinkName");
-    when(sinkDataset.namespace()).thenReturn("sinkNamespace");
-
-    when(graph.sources()).thenReturn(Arrays.asList(source));
-    when(graph.sinks()).thenReturn(Arrays.asList(sink));
+    when(graph.sources()).thenReturn(List.of(source));
+    when(graph.sinks()).thenReturn(List.of(sink));
 
     when(visitorFactory.loadDatasetFacetVisitors(context))
         .thenReturn(
-            Arrays.asList(
+            List.of(
                 new TestingDatasetFacetVisitor(
                     Map.of(
                         sourceDataset,
@@ -168,15 +168,16 @@ class LineageGraphConverterTest {
 
   @Test
   void testDatasetIdentifierFacetVisitors() {
-    SourceLineageVertex source = mock(SourceLineageVertex.class);
-    LineageDataset dataset = mock(LineageDataset.class);
-    when(source.datasets()).thenReturn(Arrays.asList(dataset));
+    LineageDatasetWithIdentifier dataset = lineageDatasetOf("datasetName", "namespace");
+    SourceLineageVertex source =
+        sourceVertexOf(
+            Boundedness.CONTINUOUS_UNBOUNDED, Collections.singletonList(dataset.getFlinkDataset()));
 
-    when(graph.sources()).thenReturn(Arrays.asList(source));
+    when(graph.sources()).thenReturn(List.of(source));
     when(graph.sinks()).thenReturn(Collections.emptyList());
 
     when(visitorFactory.loadDatasetIdentifierVisitors(context))
-        .thenReturn(Arrays.asList(new TestingDatasetIdentifierVisitor()));
+        .thenReturn(List.of(new TestingDatasetIdentifierVisitor()));
 
     LineageGraphConverter converter = new LineageGraphConverter(context, visitorFactory);
     List<InputDataset> inputs = converter.convert(graph, EventType.START).getInputs();
@@ -195,21 +196,57 @@ class LineageGraphConverterTest {
         .hasFieldOrPropertyWithValue("type", "TABLE");
   }
 
+  private LineageDatasetWithIdentifier lineageDatasetOf(String name, String namespace) {
+    return new LineageDatasetWithIdentifier(
+        new DatasetIdentifier(name, namespace),
+        new LineageDataset() {
+          @Override
+          public String name() {
+            return name;
+          }
+
+          @Override
+          public String namespace() {
+            return namespace;
+          }
+
+          @Override
+          public Map<String, LineageDatasetFacet> facets() {
+            return Collections.emptyMap();
+          }
+        });
+  }
+
+  private SourceLineageVertex sourceVertexOf(
+      Boundedness boundedness, List<LineageDataset> datasets) {
+    return new SourceLineageVertex() {
+      @Override
+      public Boundedness boundedness() {
+        return boundedness;
+      }
+
+      @Override
+      public List<LineageDataset> datasets() {
+        return datasets;
+      }
+    };
+  }
+
   private static class TestingDatasetFacetVisitor implements DatasetFacetVisitor {
 
-    private final Map<LineageDataset, DatasetFacet> behaviour;
+    private final Map<LineageDatasetWithIdentifier, DatasetFacet> behaviour;
 
-    private TestingDatasetFacetVisitor(Map<LineageDataset, DatasetFacet> behaviour) {
+    private TestingDatasetFacetVisitor(Map<LineageDatasetWithIdentifier, DatasetFacet> behaviour) {
       this.behaviour = behaviour;
     }
 
     @Override
-    public boolean isDefinedAt(LineageDataset dataset) {
+    public boolean isDefinedAt(LineageDatasetWithIdentifier dataset) {
       return behaviour.containsKey(dataset);
     }
 
     @Override
-    public void apply(LineageDataset dataset, DatasetFacetsBuilder builder) {
+    public void apply(LineageDatasetWithIdentifier dataset, DatasetFacetsBuilder builder) {
       builder.put("facet", behaviour.get(dataset));
     }
   }

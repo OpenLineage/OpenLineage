@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -60,7 +60,7 @@ class OpenLineageJobExtractor {
 
   private JobFacetsBuilder buildOwnershipFacet(JobFacetsBuilder builder) {
     Optional.ofNullable(context.getConfig())
-        .map(FlinkOpenLineageConfig::getJob)
+        .map(FlinkOpenLineageConfig::getJobConfig)
         .map(JobConfig::getOwners)
         .map(JobOwnersConfig::getAdditionalProperties)
         .filter(Objects::nonNull)

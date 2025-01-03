@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -12,8 +12,10 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.flink.client.OpenLineageContext;
 import io.openlineage.flink.client.Versions;
+import io.openlineage.flink.converter.LineageDatasetWithIdentifier;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.flink.table.api.Schema;
@@ -47,7 +49,9 @@ class TableLineageFacetVisitorTest {
                 new UnresolvedPhysicalColumn("col_a", dataType1),
                 new UnresolvedPhysicalColumn("col_b", dataType2)));
 
-    visitor.apply(table, facetsBuilder);
+    visitor.apply(
+        new LineageDatasetWithIdentifier(new DatasetIdentifier("namespace", "name"), table),
+        facetsBuilder);
 
     List<SchemaDatasetFacetFields> fields = facetsBuilder.build().getSchema().getFields();
 

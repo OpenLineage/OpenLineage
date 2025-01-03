@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -23,7 +23,9 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageConfig> {
-  @Setter private JobConfig job;
+  @JsonProperty("job")
+  @Setter
+  private JobConfig jobConfig;
 
   @JsonProperty("dataset")
   @Setter
@@ -35,9 +37,9 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
       FlinkDatasetConfig datasetConfig,
       CircuitBreakerConfig circuitBreaker,
       Map metricsConfig,
-      JobConfig job) {
+      JobConfig jobConfig) {
     super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig);
-    this.job = job;
+    this.jobConfig = jobConfig;
   }
 
   @Getter
@@ -64,6 +66,6 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
         mergePropertyWith(datasetConfig, other.datasetConfig),
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
         mergePropertyWith(metricsConfig, other.metricsConfig),
-        mergePropertyWith(job, other.job));
+        mergePropertyWith(jobConfig, other.jobConfig));
   }
 }

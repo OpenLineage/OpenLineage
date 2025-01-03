@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -26,7 +26,7 @@ public class OpenLineageJobStatusChangedListenerFactory implements JobStatusChan
     // TODO: Write test which verifies listener factory created via manifest file
     // This can be done once Docker image with flink version supporting lineage graph extraction
     // is released
-    return new OpenLineageFlinkListener(context, loadVisitorFactory());
+    return new OpenLineageJobStatusChangedListener(context, loadVisitorFactory());
   }
 
   VisitorFactory loadVisitorFactory() {

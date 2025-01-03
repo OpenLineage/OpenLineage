@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFieldsBuilder;
 import io.openlineage.flink.client.OpenLineageContext;
+import io.openlineage.flink.converter.LineageDatasetWithIdentifier;
 import io.openlineage.flink.util.KafkaDatasetFacetUtil;
 import io.openlineage.flink.util.TypeDatasetFacetUtil;
 import java.lang.reflect.Modifier;
@@ -18,7 +19,6 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.GenericTypeInfo;
-import org.apache.flink.streaming.api.lineage.LineageDataset;
 
 /** Class used to extract type information from the facets returned by the collector */
 @Slf4j
@@ -31,18 +31,23 @@ public class TypeInformationFacetVisitor implements DatasetFacetVisitor {
   }
 
   @Override
-  public boolean isDefinedAt(LineageDataset flinkDataset) {
+  public boolean isDefinedAt(LineageDatasetWithIdentifier dataset) {
+    // need to check class existence on classpath to make sure that flink-connector-kafka
+    // package on the classpath supports lineage extraction
     if (!TypeDatasetFacetUtil.isOnClasspath()) {
       return false;
     }
 
-    return KafkaDatasetFacetUtil.getFacet(flinkDataset).isPresent();
+    return KafkaDatasetFacetUtil.getFacet(dataset.getFlinkDataset()).isPresent();
   }
 
   @Override
-  public void apply(LineageDataset flinkDataset, OpenLineage.DatasetFacetsBuilder builder) {
+  public void apply(
+      LineageDatasetWithIdentifier dataset, OpenLineage.DatasetFacetsBuilder builder) {
     TypeInformation typeInformation =
-        TypeDatasetFacetUtil.getFacet(flinkDataset).map(f -> f.getTypeInformation()).get();
+        TypeDatasetFacetUtil.getFacet(dataset.getFlinkDataset())
+            .map(f -> f.getTypeInformation())
+            .get();
 
     // TODO: support GenericAvroRecord & support protobuf
     if (typeInformation instanceof GenericTypeInfo) {
