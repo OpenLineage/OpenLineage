@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -8,7 +8,6 @@ package io.openlineage.flink.visitor.identifier;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.DatasetIdentifier.Symlink;
 import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
-import io.openlineage.flink.util.TableLineageDatasetUtil;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -26,10 +25,6 @@ public class KafkaTableLineageDatasetIdentifierVisitor implements DatasetIdentif
 
   @Override
   public boolean isDefinedAt(LineageDataset dataset) {
-    if (!TableLineageDatasetUtil.isOnClasspath()) {
-      return false;
-    }
-
     if (!(dataset instanceof TableLineageDataset)) {
       return false;
     }

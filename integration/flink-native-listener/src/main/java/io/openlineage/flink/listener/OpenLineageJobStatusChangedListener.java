@@ -1,16 +1,13 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.flink.listener;
 
-import io.openlineage.client.Clients;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
-import io.openlineage.client.OpenLineageClient;
-import io.openlineage.client.transports.TransportFactory;
 import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.flink.client.EventEmitter;
 import io.openlineage.flink.client.OpenLineageContext;
@@ -29,14 +26,14 @@ import org.apache.flink.core.execution.JobStatusChangedListenerFactory.Context;
 import org.apache.flink.streaming.runtime.execution.JobCreatedEvent;
 
 @Slf4j
-public class OpenLineageFlinkListener implements JobStatusChangedListener {
+public class OpenLineageJobStatusChangedListener implements JobStatusChangedListener {
   public static final String DEFAULT_NAMESPACE = "flink-jobs";
   private final OpenLineageContext openLineageContext;
-  private final OpenLineageClient client;
+  private final EventEmitter eventEmitter;
 
   private final LineageGraphConverter graphConverter;
 
-  public OpenLineageFlinkListener(Context context, VisitorFactory visitorFactory) {
+  public OpenLineageJobStatusChangedListener(Context context, VisitorFactory visitorFactory) {
     openLineageContext =
         OpenLineageContext.builder()
             .runId(UUIDUtils.generateNewUUID())
@@ -45,74 +42,68 @@ public class OpenLineageFlinkListener implements JobStatusChangedListener {
             .build();
 
     graphConverter = new LineageGraphConverter(openLineageContext, visitorFactory);
-
-    if (openLineageContext.getConfig().getTransportConfig() != null) {
-      // build emitter client based on flink configuration
-      this.client =
-          OpenLineageClient.builder()
-              .transport(
-                  new TransportFactory(openLineageContext.getConfig().getTransportConfig()).build())
-              .build();
-    } else {
-      // build emitter default way - openlineage.yml file or system properties
-      client = Clients.newClient();
-    }
+    eventEmitter = new EventEmitter(openLineageContext.getConfig());
   }
 
   @Override
   @SuppressWarnings("PMD.AvoidCatchingThrowable")
   public void onEvent(JobStatusChangedEvent event) {
     if (event instanceof JobCreatedEvent) {
-      // We always expect this as the first event
-      JobCreatedEvent createdEvent = (JobCreatedEvent) event;
-      loadJobId(createdEvent);
-
-      log.debug("triggered onEvent for JobCreatedEvent: {}", event);
-      try {
-        client.emit(graphConverter.convert(createdEvent.lineageGraph(), EventType.START));
-      } catch (Throwable e) {
-        log.error("Triggering event caused an exception", e);
-      }
+      onJobCreatedEvent((JobCreatedEvent) event);
     } else if (event instanceof DefaultJobExecutionStatusEvent
         && openLineageContext.getJobId() != null) {
-      // only when job id has already been assigned
-      RunEvent runEvent =
-          openLineageContext
-              .getOpenLineage()
-              .newRunEventBuilder()
-              .eventTime(ZonedDateTime.now())
-              .eventType(
-                  JobStatusUtil.fromJobStatus(((DefaultJobExecutionStatusEvent) event).newStatus()))
-              .run(
-                  openLineageContext
-                      .getOpenLineage()
-                      .newRunBuilder()
-                      .runId(openLineageContext.getRunId())
-                      .build())
-              .job(
-                  openLineageContext
-                      .getOpenLineage()
-                      .newJobBuilder()
-                      .namespace(openLineageContext.getJobId().getJobNamespace())
-                      .name(openLineageContext.getJobId().getJobNme())
-                      .build())
-              .build();
-      client.emit(runEvent);
+      onDefaultJobExecutionStatusEvent((DefaultJobExecutionStatusEvent) event);
     } else {
       log.warn("Unsupported event: {}", event.getClass());
     }
   }
 
+  private void onJobCreatedEvent(JobCreatedEvent event) {
+    loadJobId(event);
+    log.debug("triggered onEvent for JobCreatedEvent: {}", event);
+    try {
+      eventEmitter.emit(graphConverter.convert(event.lineageGraph(), EventType.START));
+    } catch (Exception e) {
+      log.error("Triggering event caused an exception", e);
+    }
+  }
+
+  private void onDefaultJobExecutionStatusEvent(DefaultJobExecutionStatusEvent event) {
+    // only when job id has already been assigned
+    RunEvent runEvent =
+        openLineageContext
+            .getOpenLineage()
+            .newRunEventBuilder()
+            .eventTime(ZonedDateTime.now())
+            .eventType(
+                JobStatusUtil.fromJobStatus(((DefaultJobExecutionStatusEvent) event).newStatus()))
+            .run(
+                openLineageContext
+                    .getOpenLineage()
+                    .newRunBuilder()
+                    .runId(openLineageContext.getRunId())
+                    .build())
+            .job(
+                openLineageContext
+                    .getOpenLineage()
+                    .newJobBuilder()
+                    .namespace(openLineageContext.getJobId().getJobNamespace())
+                    .name(openLineageContext.getJobId().getJobNme())
+                    .build())
+            .build();
+    eventEmitter.emit(runEvent);
+  }
+
   OpenLineageContext.JobIdentifier loadJobId(JobCreatedEvent createdEvent) {
     String jobName =
         Optional.ofNullable(openLineageContext.getConfig())
-            .map(c -> c.getJob())
+            .map(c -> c.getJobConfig())
             .map(j -> j.getName())
             .orElse(createdEvent.jobName());
 
     String jobNamespace =
         Optional.ofNullable(openLineageContext.getConfig())
-            .map(c -> c.getJob())
+            .map(c -> c.getJobConfig())
             .map(j -> j.getName())
             .orElse(DEFAULT_NAMESPACE);
 

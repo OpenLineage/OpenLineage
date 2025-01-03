@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -32,6 +32,8 @@ public class TypeInformationFacetVisitor implements DatasetFacetVisitor {
 
   @Override
   public boolean isDefinedAt(LineageDataset flinkDataset) {
+    // need to check class existence on classpath to make sure that flink-connector-kafka
+    // package on the classpath supports lineage extraction
     if (!TypeDatasetFacetUtil.isOnClasspath()) {
       return false;
     }

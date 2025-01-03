@@ -1,5 +1,5 @@
 /*
-/* Copyright 2018-2024 contributors to the OpenLineage project
+/* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
@@ -31,10 +31,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class OpenLineageFlinkListenerTest {
+class OpenLineageJobStatusChangedListenerTest {
   Context context = mock(Context.class);
   VisitorFactory factory = mock(VisitorFactory.class);
-  OpenLineageFlinkListener listener;
+  OpenLineageJobStatusChangedListener listener;
   String eventFileLocation;
 
   @BeforeEach
@@ -64,7 +64,7 @@ class OpenLineageFlinkListenerTest {
   @Test
   @SneakyThrows
   void testOnEventForJobCreated() {
-    listener = new OpenLineageFlinkListener(context, factory);
+    listener = new OpenLineageJobStatusChangedListener(context, factory);
     JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
     when(createdEvent.jobName()).thenReturn("event-job-name");
     listener.onEvent(createdEvent);
@@ -98,7 +98,7 @@ class OpenLineageFlinkListenerTest {
 
     when(context.getConfiguration()).thenReturn(configuration);
 
-    listener = new OpenLineageFlinkListener(context, factory);
+    listener = new OpenLineageJobStatusChangedListener(context, factory);
     JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
     when(createdEvent.jobName()).thenReturn("config-job-name");
     listener.onEvent(createdEvent);
@@ -120,7 +120,7 @@ class OpenLineageFlinkListenerTest {
   @Test
   @SneakyThrows
   void testOnEventJobFinished() {
-    listener = new OpenLineageFlinkListener(context, factory);
+    listener = new OpenLineageJobStatusChangedListener(context, factory);
 
     // emit start event
     JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
@@ -157,7 +157,7 @@ class OpenLineageFlinkListenerTest {
   @Test
   @SneakyThrows
   void testOnEventJobFailed() {
-    listener = new OpenLineageFlinkListener(context, factory);
+    listener = new OpenLineageJobStatusChangedListener(context, factory);
 
     // emit start event
     JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
