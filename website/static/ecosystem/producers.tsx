@@ -111,6 +111,6 @@ export const Producers: Array<Partner> = [
         full_name: "oleander",
         description: "Data Observability. Simplified. Application Performance Monitoring for Data Pipelines.",
         docs_url: "https://docs.oleander.dev/",
-        org_url: "https://docs.oleander.dev/"
+        org_url: "https://oleander.dev/"
     },
 ]
