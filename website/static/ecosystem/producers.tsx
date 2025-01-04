@@ -105,4 +105,12 @@ export const Producers: Array<Partner> = [
         docs_url: "https://www.snaplogic.com/blog/snaplogic-loves-openlineage",
         org_url: "https://www.snaplogic.com/"
     },
+    {
+        image: "oleander_logo.svg",
+        org: "oleander",
+        full_name: "oleander",
+        description: "Data Observability. Simplified. Application Performance Monitoring for Data Pipelines.",
+        docs_url: "https://docs.oleander.dev/",
+        org_url: "https://docs.oleander.dev/"
+    },
 ]

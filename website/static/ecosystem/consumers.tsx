@@ -108,4 +108,12 @@ export const Consumers: Array<Partner> = [
     docs_url: "https://aws.amazon.com/sagemaker/data-ai-governance/",
     org_url: "https://aws.amazon.com/"
   },
+  {
+    image: "oleander_logo.svg",
+    org: "oleander",
+    full_name: "oleander",
+    description: "Data Observability. Simplified. Application Performance Monitoring for Data Pipelines.",
+    docs_url: "https://docs.oleander.dev/",
+    org_url: "https://docs.oleander.dev/"
+  },
   ]
