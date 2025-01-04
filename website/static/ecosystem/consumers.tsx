@@ -109,7 +109,7 @@ export const Consumers: Array<Partner> = [
     org_url: "https://aws.amazon.com/"
   },
   {
-    image: "oleander_logo.png",
+    image: "oleander_logo_full.png",
     org: "oleander",
     full_name: "oleander",
     description: "Data Observability. Simplified. Application Performance Monitoring for Data Pipelines.",
