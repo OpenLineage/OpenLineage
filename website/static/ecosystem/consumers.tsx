@@ -108,4 +108,12 @@ export const Consumers: Array<Partner> = [
     docs_url: "https://aws.amazon.com/sagemaker/data-ai-governance/",
     org_url: "https://aws.amazon.com/"
   },
+  {
+    image: "oleander_logo_full.png",
+    org: "oleander",
+    full_name: "oleander",
+    description: "Data Observability. Simplified. Unified API for lineage metadata interoperability across platforms like Airflow, Spark, Flink and more.",
+    docs_url: "https://docs.oleander.dev/",
+    org_url: "https://oleander.dev/"
+  },
   ]
