@@ -109,7 +109,7 @@ export const Producers: Array<Partner> = [
         image: "oleander_logo_full.png",
         org: "oleander",
         full_name: "oleander",
-        description: "Data Observability. Simplified. Application Performance Monitoring for Data Pipelines.",
+        description: "Data Observability. Simplified. Unified API for lineage metadata interoperability across platforms like Airflow, Spark, Flink and more.",
         docs_url: "https://docs.oleander.dev/",
         org_url: "https://oleander.dev/"
     },
