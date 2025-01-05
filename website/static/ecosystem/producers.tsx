@@ -106,6 +106,15 @@ export const Producers: Array<Partner> = [
         org_url: "https://www.snaplogic.com/"
     },
     {
+        image: "oleander_logo_full.png",
+        org: "oleander",
+        full_name: "oleander",
+        description: "Data Observability. Simplified. Unified API for lineage metadata interoperability across platforms like Airflow, Spark, Flink and more.",
+        docs_url: "https://docs.oleander.dev/",
+        org_url: "https://oleander.dev/"
+        a5150f29 (Add `oleander.dev` as ol consumer/producer (#3375))
+    },
+    {
         image: "csvpath-logo.svg",
         org: "CsvPath",
         full_name: "CsvPath",
