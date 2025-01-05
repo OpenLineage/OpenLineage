@@ -26,7 +26,7 @@ idea {
 }
 
 ext {
-    assertjVersion = "3.27.0"
+    assertjVersion = "3.27.2"
     deltaVersion = "1.1.0"
     icebergVersion = "0.14.1"
     jacksonVersion = "2.15.3"
