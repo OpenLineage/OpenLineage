@@ -26,7 +26,7 @@ idea {
 }
 
 ext {
-    assertjVersion = "3.27.0"
+    assertjVersion = "3.27.2"
     bigqueryVersion = "0.41.1"
     databricksVersion = "0.1.4"
     deltaVersion = "1.1.0"

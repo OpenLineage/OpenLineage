@@ -20,7 +20,7 @@ scalaVariants {
 }
 
 ext {
-    assertjVersion = "3.27.0"
+    assertjVersion = "3.27.2"
     junit5Version = "5.11.4"
     mockitoVersion = "4.11.0"
     micrometerVersion = "1.14.2"
