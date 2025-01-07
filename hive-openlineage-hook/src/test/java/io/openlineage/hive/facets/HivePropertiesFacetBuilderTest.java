@@ -18,6 +18,7 @@ package io.openlineage.hive.facets;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.hive.api.OpenLineageContext;
 import io.openlineage.hive.client.HiveOpenLineageConfig;
 import io.openlineage.hive.client.Versions;
@@ -34,6 +35,7 @@ class HivePropertiesFacetBuilderTest {
         .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
         .queryString("xxx")
         .eventTime(Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.of("UTC")))
+        .eventType(EventType.OTHER)
         .readEntities(new HashSet<>())
         .writeEntities(new HashSet<>())
         .hadoopConf(conf)
