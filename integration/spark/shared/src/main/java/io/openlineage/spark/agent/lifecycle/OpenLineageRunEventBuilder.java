@@ -454,4 +454,9 @@ class OpenLineageRunEventBuilder {
                         .record(() -> fn.accept(event, runFacetsBuilder::put))));
     return runFacetsBuilder.build();
   }
+
+  public RunFacets buildRunFacets(SparkListenerEvent event, RunFacetsBuilder builder) {
+    runFacetBuilders.forEach(customFacetBuilder -> customFacetBuilder.accept(event, builder::put));
+    return builder.build();
+  }
 }

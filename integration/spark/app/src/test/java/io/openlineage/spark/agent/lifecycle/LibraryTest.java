@@ -20,6 +20,7 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
+import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -145,6 +146,14 @@ class LibraryTest {
     assertThat(second.getRun().getFacets().getParent().getJob())
         .hasFieldOrPropertyWithValue("namespace", "ns_name")
         .hasFieldOrPropertyWithValue("name", "test_rdd");
+
+    assertThat(
+            second
+                .getRun()
+                .getFacets()
+                .getAdditionalProperties()
+                .containsKey(TestOpenLineageEventHandlerFactory.TEST_FACET_KEY))
+        .isTrue();
 
     assertThat(second.getOutputs())
         .hasSize(1)
