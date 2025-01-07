@@ -63,15 +63,20 @@ class RddExecutionContext implements ExecutionContext {
   private static final String SPARK_JOB_TYPE = "RDD_JOB";
 
   private final EventEmitter eventEmitter;
+  private final OpenLineageRunEventBuilder runEventBuilder;
   private final UUID runId = UUIDUtils.generateNewUUID();
   private final OpenLineageContext olContext;
   private List<URI> inputs = Collections.emptyList();
   private List<URI> outputs = Collections.emptyList();
   private String jobSuffix;
 
-  public RddExecutionContext(OpenLineageContext olContext, EventEmitter eventEmitter) {
+  public RddExecutionContext(
+      OpenLineageContext olContext,
+      EventEmitter eventEmitter,
+      OpenLineageRunEventBuilder runEventBuilder) {
     this.eventEmitter = eventEmitter;
     this.olContext = olContext;
+    this.runEventBuilder = runEventBuilder;
   }
 
   @Override
@@ -273,6 +278,8 @@ class RddExecutionContext implements ExecutionContext {
     addSparkPropertyFacet(runFacetsBuilder, event);
     addGcpRunFacet(runFacetsBuilder, event);
     addSparkJobDetailsFacet(runFacetsBuilder, event);
+
+    runEventBuilder.buildRunFacets(event, runFacetsBuilder);
 
     return runFacetsBuilder.build();
   }

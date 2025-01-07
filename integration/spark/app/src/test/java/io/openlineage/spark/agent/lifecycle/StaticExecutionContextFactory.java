@@ -15,6 +15,7 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
@@ -85,7 +86,10 @@ public class StaticExecutionContextFactory extends ContextFactory {
     SparkOpenLineageConfig olConfig = new SparkOpenLineageConfig();
     olConfig.setOverriddenAppName("test_rdd");
     when(olContext.getOpenLineageConfig()).thenReturn(olConfig);
-    return new RddExecutionContext(olContext, openLineageEventEmitter) {
+    OpenLineageRunEventBuilder runEventBuilder =
+        new OpenLineageRunEventBuilder(olContext, new TestOpenLineageEventHandlerFactory());
+
+    return new RddExecutionContext(olContext, openLineageEventEmitter, runEventBuilder) {
       @Override
       public void start(SparkListenerJobStart jobStart) {
         try {

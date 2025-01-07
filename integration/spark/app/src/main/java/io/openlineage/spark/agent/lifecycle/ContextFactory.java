@@ -79,7 +79,11 @@ public class ContextFactory {
             .openLineageConfig(config)
             .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
             .build();
-    return new RddExecutionContext(olContext, openLineageEventEmitter);
+
+    OpenLineageRunEventBuilder runEventBuilder =
+        new OpenLineageRunEventBuilder(olContext, handlerFactory);
+
+    return new RddExecutionContext(olContext, openLineageEventEmitter, runEventBuilder);
   }
 
   public Optional<ExecutionContext> createSparkSQLExecutionContext(long executionId) {
