@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -97,7 +98,7 @@ class RddExecutionContext implements ExecutionContext {
     log.debug("setActiveJob within RddExecutionContext {}", activeJob);
     RDD<?> finalRDD = activeJob.finalStage().rdd();
     this.jobSuffix = nameRDD(finalRDD);
-    Set<RDD<?>> rdds = Rdds.flattenRDDs(finalRDD);
+    Set<RDD<?>> rdds = Rdds.flattenRDDs(finalRDD, new HashSet<>());
     log.debug("flattenRDDs {}", rdds);
     this.inputs = findInputs(rdds);
     Configuration jc = new JobConf();

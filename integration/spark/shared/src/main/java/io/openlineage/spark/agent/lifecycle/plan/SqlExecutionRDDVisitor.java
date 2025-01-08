@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -20,17 +21,24 @@ import org.apache.spark.sql.execution.SQLExecutionRDD;
 
 public class SqlExecutionRDDVisitor extends AbstractRDDNodeVisitor<LogicalRDD, InputDataset> {
 
+  Set<RDD<?>> flattenedRdds;
+
   public SqlExecutionRDDVisitor(@NonNull OpenLineageContext context) {
     super(context, DatasetFactory.input(context));
   }
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
-    return x instanceof LogicalRDD && containsSqlExecution((LogicalRDD) x);
+
+    if (x instanceof LogicalRDD) {
+      flattenedRdds = Rdds.flattenRDDs(((LogicalRDD) x).rdd(), new HashSet<>());
+      return containsSqlExecution(flattenedRdds);
+    } else {
+      return false;
+    }
   }
 
-  public static boolean containsSqlExecution(LogicalRDD logicalRDD) {
-    Set<RDD<?>> rdds = Rdds.flattenRDDs(logicalRDD.rdd());
+  public static boolean containsSqlExecution(Set<RDD<?>> rdds) {
     return !rdds.stream()
         .filter(rdd -> rdd instanceof SQLExecutionRDD)
         .map(SQLExecutionRDD.class::cast)
@@ -40,6 +48,8 @@ public class SqlExecutionRDDVisitor extends AbstractRDDNodeVisitor<LogicalRDD, I
 
   @Override
   public List<InputDataset> apply(LogicalPlan x) {
-    return findInputDatasets(Rdds.findFileLikeRdds(((LogicalRDD) x).rdd()), x.schema());
+    List<InputDataset> inputs = findInputDatasets(Rdds.findFileLikeRdds(flattenedRdds), x.schema());
+    flattenedRdds.clear();
+    return inputs;
   }
 }

@@ -11,6 +11,7 @@ import io.openlineage.client.OpenLineage.ParentRunFacet;
 import io.openlineage.client.OpenLineage.RunEventBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -58,11 +59,11 @@ public class OpenLineageRunEventContext {
       RDD<?> rdd = stage.rdd();
 
       nodes.addAll(Arrays.asList(stageInfo, stage));
-      nodes.addAll(Rdds.flattenRDDs(rdd));
+      nodes.addAll(Rdds.flattenRDDs(rdd, new HashSet<>()));
     } else if (jobId.isPresent() && jobMap.containsKey(jobId.get())) {
       ActiveJob activeJob = jobMap.get(jobId.get());
       nodes.add(activeJob);
-      nodes.addAll(Rdds.flattenRDDs(activeJob.finalStage().rdd()));
+      nodes.addAll(Rdds.flattenRDDs(activeJob.finalStage().rdd(), new HashSet<>()));
     }
 
     return nodes;
