@@ -51,10 +51,7 @@ In order to build the jar with running tests, you need to build the `flink-conne
 This will change once [FLINK-36648](https://github.com/apache/flink-connector-kafka/pull/140) is merged and released.
 
 ```bash
-    git clone https://github.com/lvyanquan/flink-connector-kafka
-    cd flink-connector-kafka
-    git checkout 096ab5a # Depends on https://github.com/apache/flink-connector-kafka/pull/140
-    mvn clean install -DskipTests
+./buildDependencies.sh
 ```
 
 Run the integration tests of this package:

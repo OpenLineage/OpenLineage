@@ -1052,11 +1052,7 @@ jobs:
       - run:
           name: Build and install locally flink-connector-kafka
           command: |
-            cd /tmp
-            git clone https://github.com/lvyanquan/flink-connector-kafka
-            cd flink-connector-kafka
-            git checkout 096ab5a # Depends on https://github.com/apache/flink-connector-kafka/pull/140
-            mvn clean install -DskipTests
+            ./buildDependencies.sh
       - attach_workspace:
           at: ~/
       - run:
