@@ -5,6 +5,7 @@
       "ol:core:ColumnLineageDatasetFacet.json",
       "ol:core:DataQualityAssertionsDatasetFacet.json",
       "ol:core:DataQualityMetricsInputDatasetFacet.json",
+      "ol:core:DatasetTypeDatasetFacet.json",
       "ol:core:DatasetVersionDatasetFacet.json",
       "ol:core:DatasourceDatasetFacet.json",
       "ol:core:DocumentationDatasetFacet.json",
