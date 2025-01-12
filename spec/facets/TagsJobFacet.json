@@ -26,13 +26,13 @@
     "TagsJobFacet": {
       "allOf": [
         {
-          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/JobFacet"
+          "$ref": "https://openlineage.io/spec/2-0-3/OpenLineage.json#/$defs/JobFacet"
         },
         {
           "type": "object",
           "properties": {
             "tags": {
-              "description": "The tags applied to the dataset facet",
+              "description": "The tags applied to the job facet",
               "type": "array",
               "items": {
                 "$ref": "#/$defs/TagsJobFacetFields"

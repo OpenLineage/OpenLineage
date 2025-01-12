@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/2-0-2/TagDatasetFacet.json",
+  "$id": "https://openlineage.io/spec/facets/2-0-3/TagDatasetFacet.json",
   "$defs": {
     "TagFacetFields": {
       "type": "object",

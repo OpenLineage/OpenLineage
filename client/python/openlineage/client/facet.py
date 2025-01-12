@@ -422,49 +422,49 @@ class ExtractionErrorRunFacet(BaseFacet):
         return SCHEMA_URI + "#/definitions/ExtractionErrorRunFacet"
 
 
-@attr.define
-class Tag(RedactMixin):
-    key: str
-    """Key that identifies the tag"""
+# @attr.define
+# class Tag(RedactMixin):
+#     key: str
+#     """Key that identifies the tag"""
 
-    value: str
-    """The value of the field"""
+#     value: str
+#     """The value of the field"""
 
-    source: str | None = attr.field(default=None)
-    """The source of the tag. INTEGRATION|USER|DBT CORE|SPARK|etc."""
-
-
-@attr.define
-class TagDataset(Tag):
-    field: str | None = attr.field(default=None)
-    """Identifies the field in a dataset if a tag applies to one"""
+#     source: str | None = attr.field(default=None)
+#     """The source of the tag. INTEGRATION|USER|DBT CORE|SPARK|etc."""
 
 
-@attr.define
-class TagsDatasetFacet(BaseFacet):
-    tags: list[TagDataset] | None = attr.field(factory=list)
-    """List of tags"""
-
-    @staticmethod
-    def _get_schema() -> str:
-         return SCHEMA_URI + "#/definitions/TagsDatasetFacet"
+# @attr.define
+# class TagDataset(Tag):
+#     field: str | None = attr.field(default=None)
+#     """Identifies the field in a dataset if a tag applies to one"""
 
 
-@attr.define
-class TagsRunFacet(BaseFacet):
-    tags: list[Tag] | None = attr.field(factory=list)
-    """List of tags"""
+# @attr.define
+# class TagsDatasetFacet(BaseFacet):
+#     tags: list[TagDataset] | None = attr.field(factory=list)
+#     """List of tags"""
 
-    @staticmethod
-    def _get_schema() -> str:
-         return SCHEMA_URI + "#/definitions/TagsRunFacet"
+#     @staticmethod
+#     def _get_schema() -> str:
+#          return SCHEMA_URI + "#/definitions/TagsDatasetFacet"
 
 
-@attr.define
-class TagsJobFacet(BaseFacet):
-    tags: list[Tag] | None = attr.field(factory=list)
-    """List of tags"""
+# @attr.define
+# class TagsRunFacet(BaseFacet):
+#     tags: list[Tag] | None = attr.field(factory=list)
+#     """List of tags"""
 
-    @staticmethod
-    def _get_schema() -> str:
-         return SCHEMA_URI + "#/definitions/TagsJobFacet"
+#     @staticmethod
+#     def _get_schema() -> str:
+#          return SCHEMA_URI + "#/definitions/TagsRunFacet"
+
+
+# @attr.define
+# class TagsJobFacet(BaseFacet):
+#     tags: list[Tag] | None = attr.field(factory=list)
+#     """List of tags"""
+
+#     @staticmethod
+#     def _get_schema() -> str:
+#          return SCHEMA_URI + "#/definitions/TagsJobFacet"

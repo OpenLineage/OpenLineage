@@ -26,13 +26,13 @@
     "TagsRunFacet": {
       "allOf": [
         {
-          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunFacet"
+          "$ref": "https://openlineage.io/spec/2-0-3/OpenLineage.json#/$defs/RunFacet"
         },
         {
           "type": "object",
           "properties": {
             "tags": {
-              "description": "The tags applied to the dataset facet",
+              "description": "The tags applied to the run facet",
               "type": "array",
               "items": {
                 "$ref": "#/$defs/TagsRunFacetFields"

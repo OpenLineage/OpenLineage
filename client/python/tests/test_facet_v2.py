@@ -28,6 +28,7 @@ from openlineage.client.facet_v2 import (
     parent_run,
     schema_dataset,
     set_producer,
+    tags
 )
 
 
@@ -102,103 +103,178 @@ def test_custom_facet() -> None:
     assert expected_event == event_sent
 
 
-#
-# def test_full_core_event_serializes_properly(facet_mocker, event_mocker) -> None:
-def test_full_core_event_serializes_properly() -> None:
+def test_tags_run_facet() -> None:
     session = mock.MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
-    set_producer("https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client")
+    tags_run_facet = tags.TagsRunFacet(
+        tags = [
+            tags.Tag(key="test_tag", value="test_value", source="test_source"),
+            tags.Tag(key="test_tag2", value="test_value2"),
+        ]
+    ) 
 
-    event_init = BaseEvent.__attrs_post_init__
-    facet_init = BaseFacet.__attrs_post_init__
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime="2021-11-03T10:53:52.427343",
+        run=Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3", facets={"tags": tags_run_facet}), 
+        job=Job("openlineage", "job"),
+        inputs=[],
+        outputs=[],
+    )
 
-    def set_test_schemaURL(self):  # noqa: N802
-        if getattr(self, "schemaURL", None):
-            event_init(self)
-            self.schemaURL = "http://test.schema.url"
-        else:
-            facet_init(self)
-            self._schemaURL = "http://test.schema.url"
+    client.emit(event)
 
-    with mock.patch.object(
-        BaseFacet, "__attrs_post_init__", autospec=True, side_effect=set_test_schemaURL
-    ), mock.patch.object(BaseEvent, "__attrs_post_init__", autospec=True, side_effect=set_test_schemaURL):
-        event = RunEvent(
-            eventType=RunState.COMPLETE,
-            eventTime="2020-12-28T19:51:01.641Z",
-            run=Run(
-                runId="ea041791-68bc-4ae1-bd89-4c8106a157e4",
-                facets={
-                    "nominalTime": nominal_time_run.NominalTimeRunFacet(
-                        nominalStartTime="2020-12-17T03:00:00.001Z", nominalEndTime="2020-12-17T04:00:00.001Z"
-                    ),
-                    "parent": parent_run.ParentRunFacet(
-                        run=parent_run.Run(runId="3f5e83fa-3480-44ff-99c5-ff943904e5e8"),
-                        job=parent_run.Job(namespace="my-scheduler-namespace", name="myjob.mytask"),
-                    ),
-                },
-            ),
-            job=Job(
-                namespace="my-scheduler-namespace",
-                name="myjob.mytask",
-                facets={"documentation": documentation_job.DocumentationJobFacet(description="string")},
-            ),
-            inputs=[
-                InputDataset(
-                    namespace="my-datasource-namespace",
-                    name="instance.schema.table",
-                    inputFacets={
-                        "dataQualityAssertions": data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet(  # noqa: E501
-                            assertions=[
-                                data_quality_assertions_dataset.Assertion(
-                                    assertion="row_count_equal_to", success=True
-                                ),
-                                data_quality_assertions_dataset.Assertion(
-                                    assertion="no_null_values", success=True, column="id"
-                                ),
-                            ]
-                        )
-                    },
-                    facets={
-                        "schema": schema_dataset.SchemaDatasetFacet(
-                            fields=[
-                                schema_dataset.SchemaDatasetFacetFields(
-                                    name="column1", type="VARCHAR", description="string"
-                                )
-                            ]
-                        )
-                    },
-                )
-            ],
-            outputs=[
-                OutputDataset(
-                    namespace="my-datasource-namespace",
-                    name="instance.schema.table",
-                    outputFacets={
-                        "outputStatistics": output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(  # noqa: E501
-                            rowCount=2000, size=2097152
-                        )
-                    },
-                    facets={
-                        "schema": schema_dataset.SchemaDatasetFacet(
-                            fields=[
-                                schema_dataset.SchemaDatasetFacetFields(
-                                    name="column1", type="VARCHAR", description="string"
-                                )
-                            ]
-                        )
-                    },
-                )
-            ],
-        )
+    event_sent = json.loads(session.post.call_args.kwargs["data"])
 
-        client.emit(event)
+    expected_event = {
+        "eventType": "START",
+        "eventTime": "2021-11-03T10:53:52.427343",
+        "job": {
+            "namespace": "openlineage",
+            "name": "job",
+            "facets": {},
+        },
+        "run": {
+            "runId": "69f4acab-b87d-4fc0-b27b-8ea950370ff3",
+            "facets": {
+                "tags": {
+                    "tags": [ 
+                        {"key": "test_tag", "value": "test_value", "source": "test_source"},
+                        {"key": "test_tag2", "value": "test_value2"},
+                    ],
+                    "_producer": PRODUCER,
+                    "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/TagsRunFacet.json#/$defs/TagsRunFacet",
+                }
+            },
+        },
+        "inputs": [],
+        "outputs": [],
+        "producer": PRODUCER,
+        "schemaURL": RunEvent._get_schema(),  # noqa: SLF001
+    }
+    
+    print('expected_event = ', expected_event)
+    print('event_sent = ', event_sent)
+    assert expected_event == event_sent
 
-        event_sent = json.loads(session.post.call_args.kwargs["data"])
 
-        dirpath = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(dirpath, "example_full_event.json")) as f:
-            expected_event = json.load(f)
+def test_tags_job_facet() -> None:
+    session = mock.MagicMock()
+    client = OpenLineageClient(url="http://example.com", session=session)
 
-        assert expected_event == event_sent
+    tags_job_facet = tags.TagsJobFacet(
+        tags = [
+            tags.Tag(key="test_tag", value="test_value", source="test_source"),
+            tags.Tag(key="test_tag2", value="test_value2"),
+        ]
+    ) 
+
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime="2021-11-03T10:53:52.427343",
+        run=Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3", facets={}), 
+        job=Job("openlineage", "job", facets={"tags": tags_job_facet}),
+        inputs=[],
+        outputs=[],
+    )
+
+    client.emit(event)
+
+    event_sent = json.loads(session.post.call_args.kwargs["data"])
+
+    expected_event = {
+        "eventType": "START",
+        "eventTime": "2021-11-03T10:53:52.427343",
+        "job": {
+            "namespace": "openlineage",
+            "name": "job",
+            "facets": {
+                "tags": {
+                    "tags": [ 
+                        {"key": "test_tag", "value": "test_value", "source": "test_source"},
+                        {"key": "test_tag2", "value": "test_value2"},
+                    ],
+                    "_producer": PRODUCER,
+                    "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/TagsJobFacet.json#/$defs/TagsJobFacet",
+                }
+            },
+        },
+        "run": { "runId": "69f4acab-b87d-4fc0-b27b-8ea950370ff3", "facets": {}},
+        "inputs": [],
+        "outputs": [],
+        "producer": PRODUCER,
+        "schemaURL": RunEvent._get_schema(),  # noqa: SLF001
+    }
+    
+    print('expected_event = ', expected_event)
+    print('event_sent = ', event_sent)
+    assert expected_event == event_sent
+
+
+def test_tags_dataset_facet() -> None:
+    session = mock.MagicMock()
+    client = OpenLineageClient(url="http://example.com", session=session)
+
+    tags_dataset_facet = tags.TagsDatasetFacet(
+        tags = [
+            tags.TagDataset(key="test_tag", value="test_value", field="email", source="test_source"),
+            tags.TagDataset(key="test_tag2", value="test_value2"),
+        ]
+    ) 
+
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime="2021-11-03T10:53:52.427343",
+        run=Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3", facets={}), 
+        job=Job("openlineage", "job", facets={}),
+        inputs=[
+            InputDataset(
+                namespace="some-namespace", 
+                name="input-dataset", 
+                inputFacets={"tags": tags_dataset_facet} 
+            )
+        ],
+        outputs=[],
+    )
+
+    client.emit(event)
+
+    event_sent = json.loads(session.post.call_args.kwargs["data"])
+
+    expected_event = {
+        "eventType": "START",
+        "eventTime": "2021-11-03T10:53:52.427343",
+        "job": {
+            "namespace": "openlineage",
+            "name": "job",
+            "facets": {
+                
+            },
+        },
+        "run": { "runId": "69f4acab-b87d-4fc0-b27b-8ea950370ff3", "facets": {}},
+        "inputs": [
+            {
+                "namespace": "some-namespace",
+                "name": "input-dataset",
+                "facets": {},
+                "inputFacets": {
+                    "tags": {
+                        "tags": [ 
+                        {"key": "test_tag", "value": "test_value", "field": "email", "source": "test_source"},
+                        {"key": "test_tag2", "value": "test_value2"},
+                    ],
+                    "_producer": PRODUCER,
+                    "_schemaURL": "https://openlineage.io/spec/facets/2-0-3/TagsDatasetFacet.json#/$defs/TagsDatasetFacet",
+                    }
+                }
+            }
+        ],
+        "outputs": [],
+        "producer": PRODUCER,
+        "schemaURL": RunEvent._get_schema(),  # noqa: SLF001
+    }
+    
+    print('expected_event = ', expected_event)
+    print('event_sent = ', event_sent)
+    assert expected_event == event_sent
