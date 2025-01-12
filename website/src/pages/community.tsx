@@ -126,7 +126,7 @@ const TalkCard = ( talk: Talk ) => {
   )
 }
 
-const FillTalksGrid = ( events: Array<Talk> ) => {
+const FillTalksGrid = ( events: Talk[] ) => {
   return (
     <Grid container 
       margin="auto"
@@ -147,7 +147,7 @@ const FillTalksGrid = ( events: Array<Talk> ) => {
   )
 }
 
-const FillMeetupsGrid = ( events: Array<Meetup> ) => {
+const FillMeetupsGrid = ( events: Meetup[] ) => {
   return (
     <Grid container 
       margin="auto"
