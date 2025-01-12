@@ -18,7 +18,7 @@ import { Meetups, Meetup } from "@site/static/meetups/meetupStrings";
 import AddEvent from '@site/src/components/addevent';
 
 interface ExpandMoreProps extends IconButtonProps {
-  expand: boolean;
+  isExpand: boolean;
 }
 
 const ExpandMore = styled((props: ExpandMoreProps) => {
