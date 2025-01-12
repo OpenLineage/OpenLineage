@@ -4,7 +4,7 @@ export type Meetup = {
   "link": string,
 }
 
-export const Meetups: Array<Meetup> = [
+export const Meetups: Meetup[] = [
   {
     image: "newyork-meetup.png",
     city: "New York",

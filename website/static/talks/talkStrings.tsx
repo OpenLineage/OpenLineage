@@ -9,7 +9,7 @@ export type Talk = {
   "speakers": Array[string],
 }
 
-export const Talks: Array<Talk> = [
+export const Talks: Talk[] = [
   {
     conf: "Airflow Summit 2024",
     date: "2024-09-10",
