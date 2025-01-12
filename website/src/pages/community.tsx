@@ -15,8 +15,6 @@ import IconButton, { IconButtonProps } from '@mui/material/IconButton';
 import { Talks, Talk } from "@site/static/talks/talkStrings";
 import { Meetups, Meetup } from "@site/static/meetups/meetupStrings";
 
-import AddEvent from '@site/src/components/addevent';
-
 interface ExpandMoreProps extends IconButtonProps {
   isExpand: boolean;
 }
@@ -139,6 +137,7 @@ const FillTalksGrid = ( events: Talk[] ) => {
         <Grid
           marginX="auto"
           justifyItems="top"
+          key={event.toString()}
         >
        		{TalkCard(event)}
         </Grid >
@@ -160,6 +159,7 @@ const FillMeetupsGrid = ( events: Meetup[] ) => {
         <Grid
           marginX="auto"
           justifyItems="top"
+          key={event.toString()}
         > 
           {MeetupCard(event)}
         </Grid >

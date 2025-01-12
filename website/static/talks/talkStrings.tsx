@@ -16,7 +16,7 @@ export const Talks: Array<Talk> = [
     image: "airflow_summit_v2.png",
     title: "Activating operational metadata with Airflow, Atlan and OpenLineage",
     speakers: ["Kacper Muda, GetInData", "Eric Veleker, Atlan"],
-    description: "We will demonstrate what OpenLineage is and how, with minimal and intuitive setup across Airlfow and Atlan, it presents unified workflows view, efficient cross-platform lineage collection, including column level, in various technologies (Python, Spark, dbt, SQL etc.) and clouds (AWS, Azure, GCP, etc.) - all orchestrated by Airflow.",
+    description: "We will demonstrate what OpenLineage is and how, with minimal and intuitive setup across Airflow and Atlan, it presents unified workflows view, efficient cross-platform lineage collection, including column level, in various technologies (Python, Spark, dbt, SQL etc.) and clouds (AWS, Azure, GCP, etc.) - all orchestrated by Airflow.",
     video_url: "https://www.youtube.com/embed/z_j3UFIyj9o?si=KTmK1C-N9LlBhpRg",
     conf_url: "https://airflowsummit.org/sessions/2024/activating-operational-metadata-with-airflow-atlan-and-openlineage/",
   },
