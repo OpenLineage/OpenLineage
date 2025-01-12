@@ -110,7 +110,7 @@ const TalkCard = ( talk: Talk ) => {
         		{talk.title}
         	</Typography>
         	{talk.speakers.map(speaker => 
-	        	<Typography variant="h6" color="text.secondary">
+	        	<Typography variant="h6" color="text.secondary" key={speaker.toString()}>
 	        		{speaker}
 	        	</Typography>
         	)}
@@ -196,7 +196,7 @@ export default function DisplayTalks(): JSX.Element {
 	    </h2>
 	  </div>
 	  <div className="eco-grid-div">
-	    {FillMeetupsGrid(Meetups.sort((a, b) => Date(a.date).localeCompare(Date(b.date))))}
+	    {FillMeetupsGrid(Meetups)}
 	  </div>
 
 	  <div className="text-center">
