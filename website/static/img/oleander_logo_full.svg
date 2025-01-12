@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="300" height="150" version="1.1" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+ <g fill="#cd2274" stroke-width=".26818">
+  <path d="m67.283 75s-16.796-11.88-16.796-26.534c0-14.654 16.796-26.534 16.796-26.534s16.796 11.88 16.796 26.534c0 14.654-16.796 26.534-16.796 26.534z"/>
+  <path d="m67.283 75s-11.88 16.796-26.534 16.796c-14.654 0-26.534-16.796-26.534-16.796s11.88-16.796 26.534-16.796c14.654 0 26.534 16.796 26.534 16.796z"/>
+  <path d="m67.283 75s16.796 11.879 16.796 26.534c0 14.654-16.796 26.534-16.796 26.534s-16.796-11.88-16.796-26.534c0-14.654 16.796-26.534 16.796-26.534z"/>
+  <path d="m67.283 74.999s11.879-16.796 26.534-16.796c14.654 0 26.534 16.796 26.534 16.796s-11.88 16.796-26.534 16.796c-14.654 0-26.534-16.796-26.534-16.796z"/>
+ </g>
+ <g fill="#fc8cc1" stroke-width=".26818">
+  <path d="m66.725 74.44s-20.277 3.4764-30.639-6.8857c-10.362-10.362-6.8857-30.639-6.8857-30.639s20.277-3.4764 30.639 6.8857c10.362 10.362 6.8857 30.639 6.8857 30.639z" opacity=".6"/>
+  <path d="m66.725 75.56s-20.277-3.4764-30.639 6.8857c-10.362 10.362-6.8857 30.639-6.8857 30.639s20.277 3.4767 30.639-6.8858c10.362-10.362 6.8857-30.639 6.8857-30.639z" opacity=".6"/>
+  <path d="m67.841 74.439s-3.4764-20.277 6.8857-30.639c10.362-10.362 30.639-6.8857 30.639-6.8857s3.4767 20.277-6.8855 30.639c-10.362 10.362-30.639 6.8855-30.639 6.8855z" opacity=".6"/>
+  <path d="m67.841 75.56s-3.4764 20.277 6.8857 30.639c10.362 10.362 30.639 6.8858 30.639 6.8858s3.4767-20.277-6.8855-30.639c-10.362-10.362-30.639-6.8857-30.639-6.8857z" opacity=".6"/>
+ </g>
+ <circle cx="67.283" cy="75" r="8.6154" fill="#fff" stroke-width=".26818"/>
+ <text fill="#000000" font-family="Geist" font-size="40px" style="font-variant-caps:normal;font-variant-east-asian:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variation-settings:'wght' 700;line-height:1.25;shape-inside:url(#rect8420);white-space:pre" xml:space="preserve"/>
+ <text x="128.29225" y="87.602989" fill="#000000" font-family="Geist" font-size="36.787px" font-weight="bold" stroke-width=".91968" style="font-variant-caps:normal;font-variant-east-asian:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="128.29225" y="87.602989" stroke-width=".91968">oleander</tspan></text>
+</svg>
