@@ -41,7 +41,7 @@ const MeetupCard = ( meetup: Meetup ) => {
         title={meetup.description}
       />
 	    <CardContent sx={{ width: 640 }}>
-	      	<Typography variant="h5" color="text.seconday">
+	      	<Typography variant="h5" color="text.secondary">
 	      		{meetup.city}
 	      	</Typography>
 	    </CardContent>
@@ -108,11 +108,11 @@ const TalkCard = ( talk: Talk ) => {
           <Typography variant="h4" color="text.primary" className="pb-5">
         		{talk.conf}
         	</Typography>
-        	<Typography variant="h5" color="text.seconday">
+        	<Typography variant="h5" color="text.secondary">
         		{talk.title}
         	</Typography>
         	{talk.speakers.map(speaker => 
-	        	<Typography variant="h6" color="text.seconday">
+	        	<Typography variant="h6" color="text.secondary">
 	        		{speaker}
 	        	</Typography>
         	)}
@@ -223,13 +223,13 @@ export default function DisplayTalks(): JSX.Element {
 		        title="TSC meeting"
 		      />
 		      <CardContent sx={{ height: 190 }}>
-		       	<Typography variant="h5" color="text.seconday">
+		       	<Typography variant="h5" color="text.secondary">
 		       		OpenLineage Technical Steering Committee Meeting (open to all)
 		       	</Typography>
-		       	<Typography sx={{ my: 1 }} variant="h6" color="text.seconday">
+		       	<Typography sx={{ my: 1 }} variant="h6" color="text.secondary">
 		       		Day/time: every third Wednesday from 9:30am to 10:30am Pacific time
 		       	</Typography>
-		       	<Typography variant="body1" color="text.seconday">
+		       	<Typography variant="body1" color="text.secondary">
 	            At the monthly meeting, we review recent releases, hear from contributors of major new developments, and feature guest speakers on various topics of interest to the community. Meetings take place on Zoom and are archived on the OpenLineage YouTube Channel. Notes for the meeting are published on the OpenLineage Wiki.
 		        </Typography>
 		      </CardContent>
@@ -266,10 +266,10 @@ export default function DisplayTalks(): JSX.Element {
 		        title="GitHub"
 		      />
 		      <CardContent sx={{ height: 145 }}>
-		       	<Typography variant="h5" color="text.seconday">
+		       	<Typography variant="h5" color="text.secondary">
 		       		OpenLineage GiHub Organization
 		       	</Typography>
-		       	<Typography sx={{ my: 1 }} variant="body1" color="text.seconday">
+		       	<Typography sx={{ my: 1 }} variant="body1" color="text.secondary">
 	            Visit GitHub for the main codebase and repos for the website and workshops. Contributions are welcome!
 	          </Typography>
 		      </CardContent>
@@ -291,10 +291,10 @@ export default function DisplayTalks(): JSX.Element {
 		        title="Slack"
 		      />
 		      <CardContent sx={{ height: 145 }}>
-		       	<Typography variant="h5" color="text.seconday">
+		       	<Typography variant="h5" color="text.secondary">
 		       		OpenLineage Slack
 		       	</Typography>
-		       	<Typography sx={{ my: 1 }} variant="body1" color="text.seconday">
+		       	<Typography sx={{ my: 1 }} variant="body1" color="text.secondary">
 	            Learn about the project, find out about releases and upcoming events, sync up with fellow users and contributors, and get help from OpenLineage experts.
 	          </Typography>
 		      </CardContent>
