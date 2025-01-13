@@ -6,7 +6,7 @@ import json
 import os
 from unittest import mock
 
-from attr import define
+from attr import asdict, define
 from openlineage.client.client import OpenLineageClient
 from openlineage.client.event_v2 import (
     BaseEvent,
@@ -202,3 +202,47 @@ def test_full_core_event_serializes_properly() -> None:
             expected_event = json.load(f)
 
         assert expected_event == event_sent
+
+
+def test_with_additional_properties_adds_new_properties():
+    base_facet = BaseFacet()
+    changed_facet = base_facet.with_additional_properties(new_prop="new_value")
+
+    assert hasattr(changed_facet, "new_prop")
+    assert changed_facet.new_prop == "new_value"
+
+
+def test_with_additional_properties_updates_existing_properties():
+    documentation_facet = documentation_job.DocumentationJobFacet(description="desc")
+    changed_facet = documentation_facet.with_additional_properties(description="new_value")
+
+    assert changed_facet.description == "new_value"
+
+
+def test_with_additional_properties_does_not_overwrite_class_level_attributes():
+    base_facet = BaseFacet()
+    original_attrs = base_facet.__class__.__attrs_attrs__
+    base_facet.with_additional_properties(new_prop="new_value")
+
+    assert base_facet.__class__.__attrs_attrs__ == original_attrs
+
+
+def test_with_additional_properties_works_with_attr_asdict():
+    documentation_facet = documentation_job.DocumentationJobFacet(description="desc")
+    changed_facet = documentation_facet.with_additional_properties(new_prop="new_value")
+
+    assert asdict(changed_facet) == {
+        "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DocumentationJobFacet.json#/$defs/DocumentationJobFacet",
+        "_deleted": None,
+        "description": "desc",
+        "new_prop": "new_value",
+    }
+
+
+def test_with_additional_properties_isinstance_works():
+    documentation_facet = documentation_job.DocumentationJobFacet(description="desc")
+    changed_facet = documentation_facet.with_additional_properties(new_prop="new_value")
+
+    assert isinstance(changed_facet, documentation_job.DocumentationJobFacet)
+    assert isinstance(changed_facet, BaseFacet)

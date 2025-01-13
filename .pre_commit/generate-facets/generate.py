@@ -168,7 +168,7 @@ def parse_and_generate(locations):
             keep_model_order=True,
             custom_template_dir=TEMPLATES_LOCATION,
             extra_template_data=defaultdict(dict, deep_merge_dicts(extra_redact_fields, extra_schema_urls)),
-            additional_imports=["typing.ClassVar", "openlineage.client.constants.DEFAULT_PRODUCER"],
+            additional_imports=["typing.ClassVar", "typing.Any", "typing.cast", "openlineage.client.constants.DEFAULT_PRODUCER"],
         )
 
         # keep information about uuid and date-time formats
