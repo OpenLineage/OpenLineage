@@ -6,7 +6,7 @@ export type Talk = {
   "description": string,
   "video_url": string,
   "conf_url" : string,
-  "speakers": Array[string],
+  "speakers": string[],
 }
 
 export const Talks: Talk[] = [
