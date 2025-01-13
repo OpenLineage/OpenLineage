@@ -66,9 +66,11 @@ run.plugins = ["covdefaults"]
 
 [tool.mypy]
 disable_error_code = "no-redef"
+warn_redundant_casts = true
 show_error_codes = true
 overrides = [
   { ignore_missing_imports = true, module = [
   "confluent_kafka.*",
 ] } ]
 strict = true
+pretty = true
