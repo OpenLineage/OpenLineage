@@ -1,8 +1,8 @@
 export type Meetup = {
-  "image": string,
-  "city": string,
-  "link": string,
-}
+  image: string;
+  city: string;
+  link: string;
+};
 
 export const Meetups: Meetup[] = [
   {
@@ -34,5 +34,5 @@ export const Meetups: Meetup[] = [
     image: "toronto_screen.png",
     city: "Toronto",
     link: "https://www.meetup.com/openlineage/",
-  }
+  },
 ];

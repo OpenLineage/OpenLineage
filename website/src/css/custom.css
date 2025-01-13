@@ -8,14 +8,14 @@
 @import "tailwindcss/utilities";
 @import "tailwindcss/components";
 
-@import url('https://fonts.googleapis.com/css2?family=Didact+Gothic&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Didact+Gothic&display=swap");
 
 /* You can override the default Infima variables here. */
 :root {
   --ifm-h1-font-size: 3rem;
   --ifm-h2-font-size: 3rem;
-    --ifm-h3-font-size: 1.5rem;
-    --ifm-h4-font-size: 1.25rem;
+  --ifm-h3-font-size: 1.5rem;
+  --ifm-h4-font-size: 1.25rem;
   --ifm-color-primary: #b6420b;
   --ifm-color-primary-dark: #7f2e08;
   --ifm-color-primary-darker: #6d2807;
@@ -28,11 +28,11 @@
   --deckgo-highlight-code-scroll: scroll;
   --deckgo-highlight-code-width: max-content;
   --deckgo-highlight-code-carbon-margin: 30px 20px;
-  --ifm-font-family-base: 'Didact Gothic';
+  --ifm-font-family-base: "Didact Gothic";
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
-[data-theme='dark'] {
+[data-theme="dark"] {
   --ifm-color-primary: #74a4bc;
   --ifm-color-primary-dark: #5f97b2;
   --ifm-color-primary-darker: #5590ad;
@@ -75,13 +75,13 @@ a {
 
 @screen lg {
   .boxed {
-      @apply max-w-screen-md;
+    @apply max-w-screen-md;
   }
 }
 
 @screen xl {
   .boxed {
-      @apply max-w-screen-lg;
+    @apply max-w-screen-lg;
   }
 }
 
@@ -104,42 +104,45 @@ a.navbar__brand:hover {
   text-decoration: none;
 }
 
-.nav .nav-links li{
+.nav .nav-links li {
   @apply relative inline-block mx-2;
 }
 
-.nav .nav-links li a{
+.nav .nav-links li a {
   @apply inline-block p-1 relative z-10;
 }
 
-.nav .nav-links li:before{
+.nav .nav-links li:before {
   content: "";
   @apply absolute w-0 h-0 rounded-full bg-primary left-0 right-0 bottom-0 top-0 m-auto opacity-25;
-  transition: width .25s, height .25s;
+  transition:
+    width 0.25s,
+    height 0.25s;
 }
 
-.nav .nav-links li.active a ,.nav .nav-links li:hover a {
+.nav .nav-links li.active a,
+.nav .nav-links li:hover a {
   color: #f26522;
 }
 
-.nav .nav-links .theme-switcher:before{
+.nav .nav-links .theme-switcher:before {
   display: none;
 }
 
 .nav .line {
   width: 0;
-  transition: width 0.50s;
+  transition: width 0.5s;
 }
 
 code .token-line {
   font-size: 14px;
 }
 
-.nav.scrolled .line{
+.nav.scrolled .line {
   @apply w-full;
 }
 
-.title h1{
+.title h1 {
   @apply text-color-1;
 }
 
@@ -155,7 +158,7 @@ code .token-line {
   @apply relative z-10;
 }
 
-.btn:before{
+.btn:before {
   content: "";
   @apply absolute w-full h-full top-0;
   left: 100%;
@@ -190,13 +193,14 @@ code .token-line {
   @apply bg-secondary;
 }
 
-.btn-primary:hover:before,.btn-primary:focus:before {
+.btn-primary:hover:before,
+.btn-primary:focus:before {
   left: 0;
 }
 
 .integration-item .image {
   clip-path: polygon(0 0, 0% 0, 0% 100%, 0% 100%);
-  transition: clip-path 0.50s;
+  transition: clip-path 0.5s;
   transition-timing-function: ease-in-out;
   z-index: 3;
   transform: translateY(0);
@@ -206,7 +210,7 @@ code .token-line {
   clip-path: polygon(100% 0, 100% 0, 100% 99%, 100% 100%);
 }
 
-.integration-item.begin-animation .image{
+.integration-item.begin-animation .image {
   clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
 }
 
@@ -215,7 +219,7 @@ code .token-line {
   transition: transform 0.25s;
 }
 
-.integration-item .to-up:nth-child(2){
+.integration-item .to-up:nth-child(2) {
   transition-delay: 0.2s;
 }
 
@@ -230,7 +234,7 @@ code .token-line {
   right: 0;
 }
 
-.footer-links li{
+.footer-links li {
   @apply mx-3;
 }
 
@@ -249,7 +253,9 @@ code .token-line {
   height: 2px;
 }
 
-.animated-link-parent a:hover:after,.animated-link-parent a:focus:after,.animated-link-parent a:active:after {
+.animated-link-parent a:hover:after,
+.animated-link-parent a:focus:after,
+.animated-link-parent a:active:after {
   @apply w-full;
 }
 
@@ -257,7 +263,12 @@ article div p {
   @apply my-3;
 }
 
-article div h1, h2, h3, h4, h5, h6 {
+article div h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   @apply text-color-2 my-8;
 }
 
@@ -297,11 +308,13 @@ article div ol {
   list-style: decimal;
 }
 
-article div ul, article div ol {
+article div ul,
+article div ol {
   @apply ml-4;
 }
 
-article div ul ul, article div ol ol {
+article div ul ul,
+article div ol ol {
   @apply ml-3;
 }
 
@@ -319,15 +332,16 @@ article div table tr {
   @apply border-medium;
 }
 
-.theme-dark article div table tr  {
+.theme-dark article div table tr {
   border-bottom: 2px solid #444;
 }
 
-article div table tr td, article div table tr th {
+article div table tr td,
+article div table tr th {
   @apply p-2 py-3 text-left;
 }
 
-article div blockquote{
+article div blockquote {
   @apply border-l-4 border-primary p-3;
   padding: 0rem 0.75rem;
   margin: 1.5rem 0;
@@ -345,7 +359,7 @@ article div iframe {
   background: theme("themes.dark.medium");
 }
 
-.theme-dark .blog-item .focused{
+.theme-dark .blog-item .focused {
   background: theme("themes.dark.medium");
 }
 
@@ -354,17 +368,17 @@ article div iframe {
 }
 
 @keyframes spin {
-  0%{
-      transform: rotate(0deg);
+  0% {
+    transform: rotate(0deg);
   }
-  100%{
-      transform: rotate(360deg);
+  100% {
+    transform: rotate(360deg);
   }
 }
 
 @media (max-width: 640px) {
   html {
-      font-size: 15px;
+    font-size: 15px;
   }
 }
 
@@ -423,11 +437,10 @@ article div pre {
   padding-left: 0;
   padding-right: 10px;
   margin-left: 10px;
-
 }
 
 .table-of-contents ol li:before {
-  content: counters(tocnum, '.') '. ';
+  content: counters(tocnum, ".") ". ";
   font-weight: bold;
 }
 
@@ -464,7 +477,12 @@ code {
   font-size: 0.85rem;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   margin-top: 1.5rem;
   margin-bottom: 1.5rem;
 }
@@ -557,7 +575,11 @@ img[src*="#banner"] {
   margin: 0;
   padding-left: 0.5rem;
 }
-.bd-sidebar-secondary .nav.visible, .bd-sidebar-secondary .bd-toc .nav > .active > ul, .bd-sidebar-secondary .list-caption .nav.visible, .bd-sidebar-secondary .list-caption > .active > ul, .bd-sidebar-secondary .toc-entry {
+.bd-sidebar-secondary .nav.visible,
+.bd-sidebar-secondary .bd-toc .nav > .active > ul,
+.bd-sidebar-secondary .list-caption .nav.visible,
+.bd-sidebar-secondary .list-caption > .active > ul,
+.bd-sidebar-secondary .toc-entry {
   display: block;
 }
 .bd-sidebar-secondary li .toc-h4 {
@@ -636,22 +658,27 @@ dl.py dl.field-list dt {
 dl.py dl.field-list dd {
   font-family: var(--ifm-font-family-base);
 }
-dl.py dl.field-list dt, dl.py dl.field-list dd {
+dl.py dl.field-list dt,
+dl.py dl.field-list dd {
   margin-left: 0;
   padding-left: 0;
 }
-dl.py dl.field-list dt:not(:first-of-type), dl.py dl.field-list dd:not(:first-of-type) {
+dl.py dl.field-list dt:not(:first-of-type),
+dl.py dl.field-list dd:not(:first-of-type) {
   border-top: 1px solid theme("colors.color-2");
   padding-top: var(--ifm-spacing-vertical);
 }
-dl.py dl.field-list dt:not(:last-of-type), dl.py dl.field-list dd:not(:last-of-type) {
+dl.py dl.field-list dt:not(:last-of-type),
+dl.py dl.field-list dd:not(:last-of-type) {
   padding-bottom: var(--ifm-spacing-vertical);
 }
-dl.py dl.field-list dt ul, dl.py dl.field-list dd ul {
+dl.py dl.field-list dt ul,
+dl.py dl.field-list dd ul {
   list-style-type: none;
   padding-left: 0;
 }
-dl.py dl.field-list dt ul li p, dl.py dl.field-list dd ul li p {
+dl.py dl.field-list dt ul li p,
+dl.py dl.field-list dd ul li p {
   margin: 0;
   padding: 0;
 }

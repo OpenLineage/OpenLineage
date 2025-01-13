@@ -1,17 +1,17 @@
-import * as React from 'react';
-import { styled } from '@mui/material/styles';
+import * as React from "react";
+import { styled } from "@mui/material/styles";
 import Footer from "../components/footer";
-import Layout from '@theme/Layout';
-import Card from '@mui/material/Card';
-import CardActions from '@mui/material/CardActions';
-import CardActionArea from '@mui/material/CardActionArea';
-import CardContent from '@mui/material/CardContent';
-import CardMedia from '@mui/material/CardMedia';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Unstable_Grid2';
-import Collapse from '@mui/material/Collapse';
-import IconButton, { IconButtonProps } from '@mui/material/IconButton';
+import Layout from "@theme/Layout";
+import Card from "@mui/material/Card";
+import CardActions from "@mui/material/CardActions";
+import CardActionArea from "@mui/material/CardActionArea";
+import CardContent from "@mui/material/CardContent";
+import CardMedia from "@mui/material/CardMedia";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
+import Grid from "@mui/material/Unstable_Grid2";
+import Collapse from "@mui/material/Collapse";
+import IconButton, { IconButtonProps } from "@mui/material/IconButton";
 import { Consumers, Partner } from "@site/static/ecosystem/consumers";
 import { Producers } from "@site/static/ecosystem/producers";
 
@@ -23,13 +23,13 @@ const ExpandMore = styled((props: ExpandMoreProps) => {
   const { expand, ...other } = props;
   return <IconButton {...other} />;
 })(({ theme }) => ({
-  marginX: 'auto',
-  transition: theme.transitions.create('transform', {
+  marginX: "auto",
+  transition: theme.transitions.create("transform", {
     duration: theme.transitions.duration.shortest,
   }),
 }));
 
-const LogoCard = ( partner: Partner ) => {
+const LogoCard = (partner: Partner) => {
   const [expanded, setExpanded] = React.useState(false);
 
   const handleExpandClick = () => {
@@ -40,22 +40,22 @@ const LogoCard = ( partner: Partner ) => {
     if (partner.docs_url) {
       return (
         <CardActions disableSpacing>
-          <Button size="small" href={partner.docs_url}>Learn More</Button>
-          <Button 
-            size="small" 
-            href={partner.org_url} 
-            sx={{ marginLeft: 2 }}
-          >
+          <Button size="small" href={partner.docs_url}>
+            Learn More
+          </Button>
+          <Button size="small" href={partner.org_url} sx={{ marginLeft: 2 }}>
             Website
           </Button>
         </CardActions>
-      )
+      );
     } else {
       return (
         <CardActions disableSpacing>
-          <Button size="small" href={partner.org_url}>Website</Button>
+          <Button size="small" href={partner.org_url}>
+            Website
+          </Button>
         </CardActions>
-      )
+      );
     }
   };
 
@@ -77,71 +77,53 @@ const LogoCard = ( partner: Partner ) => {
               title={partner.org}
             />
           </CardActionArea>
-        </ExpandMore>  
+        </ExpandMore>
       </CardActions>
-      <Collapse in={expanded} timeout="auto" unmountOnExit> 
+      <Collapse in={expanded} timeout="auto" unmountOnExit>
         <CardContent sx={{ maxWidth: 340 }}>
           <Typography variant="body1" color="text.secondary">
             {partner.description}
           </Typography>
         </CardContent>
         {DisplayLinks()}
-      </Collapse>     
+      </Collapse>
     </Card>
-  )
-}
+  );
+};
 
-const FillGrid = ( partners: Array<Partner> ) => {
+const FillGrid = (partners: Partner[]) => {
   return (
-    <Grid container 
-      margin="auto"
-      rowSpacing={8}
-      columnSpacing={4}
-      paddingBottom={4}
-      width="85%"
-    >
-      {partners.map(partner => 
-        <Grid
-          marginX="auto"
-          justifyItems="top"
-        > 
+    <Grid container margin="auto" rowSpacing={8} columnSpacing={4} paddingBottom={4} width="85%">
+      {partners.map((partner) => (
+        <Grid marginX="auto" justifyItems="top">
           {LogoCard(partner)}
-        </Grid >
-      )}
+        </Grid>
+      ))}
     </Grid>
-  )
-}
+  );
+};
 
 export default function Ecosystem(): JSX.Element {
   const seoTitle = "OpenLineage Ecosystem Page";
-  const seoDescription = "A page about systems, such as AWS and the Google Cloud Platform, that interoperate with the OpenLineage specification for data lineage.";
+  const seoDescription =
+    "A page about systems, such as AWS and the Google Cloud Platform, that interoperate with the OpenLineage specification for data lineage.";
 
   return (
     <Layout title={seoTitle} description={seoDescription}>
       <div className="title pt-4 text-center lg:py-14 lg:px-0">
-        <h2 className="text-5xl text-color-1">
-          Ecosystem
-        </h2>
+        <h2 className="text-5xl text-color-1">Ecosystem</h2>
       </div>
       <div className="title pb-8 text-center">
-        <h3 className="text-4xl text-color-1">
-          Consumers
-        </h3>
+        <h3 className="text-4xl text-color-1">Consumers</h3>
       </div>
-      <div className="eco-grid-div">
-        {FillGrid(Consumers.sort((a, b) => a.full_name.localeCompare(b.full_name)))}
-      </div>
+      <div className="eco-grid-div">{FillGrid(Consumers.sort((a, b) => a.full_name.localeCompare(b.full_name)))}</div>
       <div className="title pt-12 pb-8 text-center">
-        <h3 className="text-4xl text-color-1">
-          Producers
-        </h3>
+        <h3 className="text-4xl text-color-1">Producers</h3>
       </div>
-      <div className="eco-grid-div">
-        {FillGrid(Producers.sort((a, b) => a.full_name.localeCompare(b.full_name)))}
-      </div>
+      <div className="eco-grid-div">{FillGrid(Producers.sort((a, b) => a.full_name.localeCompare(b.full_name)))}</div>
       <div className="bg-bg">
         <Footer />
       </div>
     </Layout>
-  )
+  );
 }

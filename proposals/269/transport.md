@@ -77,7 +77,7 @@ transport:
   api_key: "very-secure-api-key"
 ```
 
-Buildin `Transports` are specified via case-insensitive aliases, like `http`, `kafka`.
+Builtin `Transports` are specified via case-insensitive aliases, like `http`, `kafka`.
 Default `TransportFactory` can load non-buildin transports based on fully-qualified class names. 
 The fully-qualified name can differ between languages. For example, Java implementation
 of `Apache Kafka Transport` can be `io.openlineage.transport.KafkaTransport`.

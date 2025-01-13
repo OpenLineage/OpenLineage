@@ -433,7 +433,7 @@ Or the code change in the upstream job could be innocuous. Maybe someone added a
 unrelated bug. We might do some follow up and discover we have to continue our search upstream.
 
 But the Marquez API actually gives us that ability. Using the `/lineage` API, we can even explore the
-downsteam impact of changes. So if you owned the `etl_delivery_7_days` job and wanted to see what the
+downstream impact of changes. So if you owned the `etl_delivery_7_days` job and wanted to see what the
 impact of changing the varchar to an int was on running jobs, the following jq recursive script
 will let you walk the downstream jobs and show the state of the last run:
 ```bash
