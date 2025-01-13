@@ -30,12 +30,13 @@ const ExpandMore = styled((props: ExpandMoreProps) => {
 }));
 
 const MeetupCard = ( meetup: Meetup ) => {
+	let imgPath = "/img/"+meetup.image
 	return (
     <Card raised={false} sx={{ width: 640, overflow: "hidden" }}>
     	<CardMedia
         sx={{ width: 640, height: 340, padding: 0 }}
         component="img"
-        src={require(`@site/static/img/${meetup.image}`).default}
+        src={imgPath}
         title={meetup.description}
       />
 	    <CardContent sx={{ width: 640 }}>
@@ -44,8 +45,8 @@ const MeetupCard = ( meetup: Meetup ) => {
 	      	</Typography>
 	    </CardContent>
 	    <CardActions disableSpacing>
-          <Button size="small" href={meetup.link}>Join</Button>
-        </CardActions>
+        <Button size="small" href={meetup.link}>Join</Button>
+      </CardActions>
     </Card>
 	)
 };
@@ -80,6 +81,7 @@ const TalkCard = ( talk: Talk ) => {
     }
   };
 
+  let imgPath = "/img/"+talk.image
   return (
     <Card raised={true} sx={{ width: 640 }}>
     <CardActions disableSpacing sx={{ padding: 0 }}>
@@ -95,7 +97,7 @@ const TalkCard = ( talk: Talk ) => {
             <CardMedia
               sx={{ width: 640, height: 'auto', padding: 0 }}
               component="img"
-              src={require(`@site/static/img/${talk.image}`).default}
+              src={imgPath}
               title={talk.conf}
             />
           </CardActionArea>
