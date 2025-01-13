@@ -307,7 +307,7 @@ rootLogger.appenderRef.file.ref = fileLogger
 ```
 
 And the logs will be saved to a file `app.log`.
-Outputting logs using `log4j2` is just one way of doing it, so below are some additional resources of undersatnding how Java logging works, and other ways to output the logs.
+Outputting logs using `log4j2` is just one way of doing it, so below are some additional resources of understanding how Java logging works, and other ways to output the logs.
 
 ### Further readings
 - https://www.baeldung.com/java-logging-intro

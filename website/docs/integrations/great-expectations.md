@@ -9,7 +9,7 @@ To learn more about Great Expectations, visit their [documentation site](https:/
 
 ## How does Great Expectations work with OpenLineage?
 
-Great Expecations integrates with OpenLineage through the action list in a checkpoint. An OpenLineage action can be specified, which is triggered when all expectations are run. Data from the checkpoint is sent to OpenLineage, which can then be viewed in Marquez or Datakin.
+Great Expectations integrates with OpenLineage through the action list in a checkpoint. An OpenLineage action can be specified, which is triggered when all expectations are run. Data from the checkpoint is sent to OpenLineage, which can then be viewed in Marquez or Datakin.
 
 ## Preparing a Great Expectations project for OpenLineage
 
@@ -31,7 +31,7 @@ We can optionally specify a namespace where the lineage events will be stored. F
 OPENLINEAGE_NAMESPACE=dev
 ```
 
-With these environment variables set, we can add the OpenLineage action to the action list of the Great Expecations checkpoint.
+With these environment variables set, we can add the OpenLineage action to the action list of the Great Expectations checkpoint.
 Note: this must be done for *each* checkpoint.
 Note: when using the `GreatExpectationsOperator>=0.2.0` in Airflow, there is a boolean parameter, defaulting to `True`, that will automatically create this action list item when it detects the OpenLineage environment specified in the previous step.
 
@@ -79,7 +79,7 @@ name: openlineage
          job_name: validate_my_dataset
 ```
 
-Then run your Great Expecations checkpoint with the CLI or your integration of choice.
+Then run your Great Expectations checkpoint with the CLI or your integration of choice.
 
 ## Feedback
 
