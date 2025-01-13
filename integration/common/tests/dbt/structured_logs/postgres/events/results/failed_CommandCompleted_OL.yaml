@@ -13,7 +13,13 @@
     "job": {
       "namespace": "dbt-test-namespace",
       "name": "dbt-run-jaffle_shop",
-      "facets": { }
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "JOB"
+        }
+      }
     },
     "eventType": "START",
     "inputs": [ ],
@@ -38,7 +44,13 @@
     "job":{
       "namespace":"dbt-test-namespace",
       "name":"dbt-run-jaffle_shop",
-      "facets":{ }
+      "facets":{
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "JOB"
+        }
+      }
     },
     "eventType":"FAIL",
     "inputs":[ ],

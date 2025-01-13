@@ -525,3 +525,107 @@ def test_node_job_name(dbt_event, expected_job_name, dbt_command):
     actual_job_name = processor._get_job_name(dbt_event)
 
     assert expected_job_name == actual_job_name
+
+
+@pytest.mark.parametrize(
+    "dbt_events, expected_sql_job_names",
+    [
+        (
+            [
+                {
+                    "data": {
+                        "node_info": {"unique_id": "model.jaffle_shop.stg_orders"},
+                        "sql": "SELECT * ...",
+                    },
+                    "info": {"ts": "2024-11-20T19:45:53.117597Z"},
+                },
+                {
+                    "data": {
+                        "node_info": {"unique_id": "model.jaffle_shop.stg_orders"},
+                        "sql": "SELECT * ...",
+                    },
+                    "info": {"ts": "2024-11-20T20:45:53.117597Z"},
+                },
+            ],
+            [
+                "model.jaffle_shop.stg_orders.sql.1",
+                "model.jaffle_shop.stg_orders.sql.2",
+            ],
+        ),
+        (
+            [
+                {
+                    "data": {
+                        "node_info": {"unique_id": "model.jaffle_shop.stg_payments"},
+                        "sql": "SELECT * ...",
+                    },
+                    "info": {"ts": "2024-11-20T19:45:53.117597Z"},
+                },
+                {
+                    "data": {
+                        "node_info": {"unique_id": "model.jaffle_shop.stg_payments"},
+                        "sql": "SELECT * ...",
+                    },
+                    "info": {"ts": "2024-11-20T20:45:53.117597Z"},
+                },
+                # the same as the first one
+                {
+                    "data": {
+                        "node_info": {"unique_id": "model.jaffle_shop.stg_payments"},
+                        "sql": "SELECT * ...",
+                    },
+                    "info": {"ts": "2024-11-20T19:45:53.117597Z"},
+                },
+            ],
+            [
+                "model.jaffle_shop.stg_payments.sql.1",
+                "model.jaffle_shop.stg_payments.sql.2",
+                "model.jaffle_shop.stg_payments.sql.1",
+            ],
+        ),
+        (
+            [
+                {
+                    "data": {
+                        "node_info": {"unique_id": "model.jaffle_shop.stg_payments"},
+                        "sql": "SELECT * ...",
+                    },
+                    "info": {"ts": "2024-11-20T19:45:53.117597Z"},
+                },
+                {
+                    "data": {
+                        "node_info": {"unique_id": "model.jaffle_shop.stg_payments"},
+                        "sql": "SELECT * ...",
+                    },
+                    "info": {"ts": "2024-11-20T20:45:53.117597Z"},
+                },
+                # on a different node_id
+                {
+                    "data": {
+                        "node_info": {"unique_id": "model.jaffle_shop.stg_orders"},
+                        "sql": "SELECT * ...",
+                    },
+                    "info": {"ts": "2024-11-20T19:45:53.117597Z"},
+                },
+            ],
+            [
+                "model.jaffle_shop.stg_payments.sql.1",
+                "model.jaffle_shop.stg_payments.sql.2",
+                "model.jaffle_shop.stg_orders.sql.1",
+            ],
+        ),
+    ],
+    ids=["without_duplicates", "with_duplicate_sql", "with_different_node_ids"],
+)
+def test_sql_job_name(dbt_events, expected_sql_job_names):
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir="tests/dbt/structured_logs",
+        target="postgres",
+        dbt_command_line=["dbt", "run", "..."],
+    )
+
+    actual_sql_job_names = [processor._get_sql_job_name(event) for event in dbt_events]
+
+    assert actual_sql_job_names == expected_sql_job_names
