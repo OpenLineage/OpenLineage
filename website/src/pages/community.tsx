@@ -20,7 +20,7 @@ interface ExpandMoreProps extends IconButtonProps {
 }
 
 const ExpandMore = styled((props: ExpandMoreProps) => {
-  const { expand, ...other } = props;
+  const { isExpand, ...other } = props;
   return <IconButton {...other} />;
 })(({ theme }) => ({
   marginX: 'auto',
@@ -86,8 +86,7 @@ const TalkCard = ( talk: Talk ) => {
     <Card raised={true} sx={{ width: 640 }}>
     <CardActions disableSpacing sx={{ padding: 0 }}>
         <ExpandMore
-          expand={expanded}
-          orientation="horizontal"
+          isExpand={expanded}
           onClick={handleExpandClick}
           aria-expanded={expanded}
           aria-label="show more"
@@ -189,7 +188,7 @@ export default function DisplayTalks(): JSX.Element {
 	    </h2>
 	  </div>
 	  <div className="eco-grid-div">
-	    {FillTalksGrid(Talks.sort((a, b) => Date(a.date).localeCompare(Date(b.date))))}
+	    {FillTalksGrid(Talks.sort((a, b) => new Date(a.date).toISOString().localeCompare(new Date(b.date).toISOString())))}
 	  </div>
 
 		<div className="text-center">
