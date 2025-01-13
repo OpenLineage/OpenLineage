@@ -37,7 +37,7 @@ const MeetupCard = ( meetup: Meetup ) => {
         sx={{ width: 640, height: 340, padding: 0 }}
         component="img"
         src={imgPath}
-        title={meetup.description}
+        title={meetup.city}
       />
 	    <CardContent sx={{ width: 640 }}>
 	      	<Typography variant="h5" color="text.secondary">
@@ -169,9 +169,9 @@ const FillMeetupsGrid = ( events: Meetup[] ) => {
   )
 }
 
-export default function DisplayTalks(): JSX.Element {
-  const seoTitle = 'Talks';
-  const seoDescription = '';
+export default function CommunityResources(): JSX.Element {
+  const seoTitle = 'OpenLineage Community Resources';
+  const seoDescription = 'Learn about community resources available from OpenLineage including recorded talks, meetup groups, and ways to contribute.';
 
   return (
     <Layout title={seoTitle} description={seoDescription}>
@@ -188,7 +188,12 @@ export default function DisplayTalks(): JSX.Element {
 	    </h2>
 	  </div>
 	  <div className="eco-grid-div">
-	    {FillTalksGrid(Talks.sort((a, b) => new Date(a.date).toISOString().localeCompare(new Date(b.date).toISOString())))}
+	    {FillTalksGrid(
+	    	Talks.sort(
+	    		(a, b) => new Date(a.date).toISOString().localeCompare(
+	    			new Date(b.date).toISOString())
+	    		)
+	    	)}
 	  </div>
 
 		<div className="text-center">
@@ -235,9 +240,25 @@ export default function DisplayTalks(): JSX.Element {
 		        </Typography>
 		      </CardContent>
 		      <CardActions disableSpacing>
-          	<Button size="small" href="https://zoom-lfx.platform.linuxfoundation.org/meeting/91792261572?password=7c4c7552-0970-480f-9bdb-0b85257879ac">Zoom</Button>
-          	<Button sx={{ marginLeft: 5 }} size="small" href="https://www.youtube.com/@openlineageproject6897/videos">YouTube</Button>
-          	<Button sx={{ marginLeft: 5 }} size="small" href="https://wiki.lfaidata.foundation/display/OpenLineage/Monthly+TSC+meeting">Minutes</Button>
+          	<Button 
+          		size="small" href="https://zoom-lfx.platform.linuxfoundation.org/meeting/91792261572?password=7c4c7552-0970-480f-9bdb-0b85257879ac"
+        		>
+        			Zoom
+      			</Button>
+          	<Button 
+          		sx={{ marginLeft: 5 }} 
+          		size="small" 
+          		href="https://www.youtube.com/@openlineageproject6897/videos"
+        		>
+        			YouTube
+      			</Button>
+          	<Button 
+          		sx={{ marginLeft: 5 }} 
+          		size="small" 
+          		href="https://wiki.lfaidata.foundation/display/OpenLineage/Monthly+TSC+meeting"
+        		>
+        			Minutes
+      			</Button>
         	</CardActions>
 			  </Card>
 		  </Grid>
@@ -275,8 +296,19 @@ export default function DisplayTalks(): JSX.Element {
 	          </Typography>
 		      </CardContent>
 		      <CardActions disableSpacing>
-          	<Button size="small" href="https://github.com/OpenLineage/OpenLineage/CONTRIBUTING.md">Learn More</Button>
-          	<Button sx={{ marginLeft: 5 }}size="small" href="https://github.com/OpenLineage/">GitHub</Button>
+          	<Button 
+          		size="small" 
+          		href="https://github.com/OpenLineage/OpenLineage/CONTRIBUTING.md"
+        		>
+        			Learn More
+      			</Button>
+          	<Button 
+          		sx={{ marginLeft: 5 }}
+          		size="small" 
+          		href="https://github.com/OpenLineage/"
+        		>
+        			GitHub
+      			</Button>
           </CardActions>
 			  </Card>
 	    </Grid>
@@ -300,7 +332,12 @@ export default function DisplayTalks(): JSX.Element {
 	          </Typography>
 		      </CardContent>
 		      <CardActions disableSpacing>
-          	<Button size="small" href="https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA">Join</Button>
+          	<Button 
+          		size="small" 
+          		href="https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA"
+        		>
+        			Join
+      			</Button>
           </CardActions>
 			</Card>
 			</Grid>
