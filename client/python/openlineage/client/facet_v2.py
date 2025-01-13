@@ -29,6 +29,9 @@ from openlineage.client.generated import (
     sql_job,
     storage_dataset,
     symlinks_dataset,
+    tags_dataset,
+    tags_job,
+    tags_run,
 )
 from openlineage.client.generated.base import (
     PRODUCER,
@@ -77,4 +80,7 @@ __all__ = [
     "sql_job",
     "storage_dataset",
     "symlinks_dataset",
+    "tags_dataset",
+    "tags_job",
+    "tags_run",
 ]
