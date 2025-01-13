@@ -188,12 +188,10 @@ export default function CommunityResources(): JSX.Element {
 	    </h2>
 	  </div>
 	  <div className="eco-grid-div">
-	    {FillTalksGrid(
-	    	Talks.sort(
-	    		(a, b) => new Date(a.date).toISOString().localeCompare(
-	    			new Date(b.date).toISOString())
-	    		)
-	    	)}
+      {FillTalksGrid(
+      	Talks.sort((a, b) => new Date(b.date).toISOString().localeCompare(
+      		new Date(a.date).toISOString()))
+    	)}
 	  </div>
 
 		<div className="text-center">
