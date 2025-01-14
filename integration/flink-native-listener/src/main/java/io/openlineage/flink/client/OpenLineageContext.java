@@ -7,6 +7,7 @@ package io.openlineage.flink.client;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
+import io.openlineage.flink.column.expression.ExpressionContainer;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import java.util.UUID;
 import lombok.Builder;
@@ -28,6 +29,8 @@ public class OpenLineageContext {
 
   /** Assigned during the event emitted. */
   @Setter private JobIdentifier jobId;
+
+  @Setter @Getter private ExpressionContainer expressionContainer;
 
   @Getter
   @Builder
