@@ -62,7 +62,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.node_id_to_ol_run_id: Dict[str, str] = defaultdict(lambda: str(generate_new_uuid()))
 
         # sql query ids are incremented sequentially per node_id
-        self.node_id_to_sql_query_id: Dict[str, int] = defaultdict(lambda: 1)
+        self.node_id_to_sql_query_id: Dict[str, Dict[str, int]] = defaultdict(lambda: {"next_id": 1})
         self.node_id_to_sql_start_event: Dict[str, RunEvent] = {}
 
         self.node_id_to_inputs: Dict[str, List[ModelNode]] = {}
@@ -163,9 +163,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             end_event = self._parse_command_completed_event(dbt_event)
             return end_event
 
-        try:
-            get_node_unique_id(dbt_event)
-        except KeyError:
+        if get_node_unique_id(dbt_event) is None:
             return None
 
         ol_event = None
@@ -189,6 +187,14 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             run_facets["parent"] = parent_run_metadata
 
         start_event_run_id = str(generate_new_uuid())
+        job_facets = {
+            "jobType": job_type_job.JobTypeJobFacet(
+                jobType=get_job_type(event),
+                integration="DBT",
+                processingType="BATCH",
+                producer=self.producer,
+            )
+        }
 
         start_event = generate_run_event(
             event_type=RunState.START,
@@ -196,6 +202,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             run_id=start_event_run_id,
             job_name=self.job_name,
             job_namespace=self.job_namespace,
+            job_facets=job_facets,
             run_facets=run_facets,
         )
 
@@ -405,12 +412,22 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         if parent_run_metadata:
             run_facets["parent"] = parent_run_metadata
 
+        job_facets = {
+            "jobType": job_type_job.JobTypeJobFacet(
+                jobType=get_job_type(event),
+                integration="DBT",
+                processingType="BATCH",
+                producer=self.producer,
+            )
+        }
+
         return generate_run_event(
             event_type=run_state,
             event_time=event_time,
             run_id=self.dbt_run_metadata.run_id,
             job_name=self.dbt_run_metadata.job_name,
             job_namespace=self.dbt_run_metadata.job_namespace,
+            job_facets=job_facets,
             run_facets=run_facets,
         )
 
@@ -428,26 +445,31 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     def dbt_version_facet(self) -> DbtVersionRunFacet:
         return {"dbt_version": DbtVersionRunFacet(version=self.dbt_version)}
 
-    def _get_sql_query_id(self, node_id) -> int:
+    def _get_sql_query_id(self, timestamp: str, node_id: str) -> int:
         """
         Not all adapters have the sql id defined in their dbt event.
         A node is executed by a single thread which means that sql queries of a single node are executed
         sequentially and their status is also reported sequentially.
-        This function gives us a surrogate query id. It's auto-incremented
+        This function gives us a surrogate query id. It's auto-incremented.
+        It gives the same id for the couple node_id, timestamp.
         """
-        query_id = self.node_id_to_sql_query_id[node_id]
-        self.node_id_to_sql_query_id[node_id] += 1
-        return query_id
+        ids = self.node_id_to_sql_query_id[node_id]
+        if timestamp not in ids:
+            next_id = ids["next_id"]
+            ids[timestamp] = next_id
+            ids["next_id"] += 1
+
+        return ids[timestamp]
 
     def _get_sql_job_name(self, event) -> str:
         """
         The name of the sql job is as follows
         {node_job_name}.sql.{incremental_id}
         """
-        node_job_name = self._get_job_name(event)
+        timestamp_str = event["info"]["ts"]
         node_unique_id = get_node_unique_id(event)
-        query_id = self._get_sql_query_id(node_unique_id)
-        job_name = f"{node_job_name}.sql.{query_id}"
+        query_id = self._get_sql_query_id(timestamp_str, node_unique_id)
+        job_name = f"{node_unique_id}.sql.{query_id}"
 
         return job_name
 
