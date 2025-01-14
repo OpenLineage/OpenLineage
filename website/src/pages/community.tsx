@@ -102,7 +102,12 @@ const TalkCard = ( talk: Talk ) => {
           </CardActionArea>
         </ExpandMore>  
       </CardActions>
-      <Collapse in={expanded} orientation="vertical" timeout="auto" unmountOnExit> 
+      <Collapse 
+      	in={expanded} 
+      	orientation="vertical" 
+      	timeout="auto" 
+      	unmountOnExit
+    	> 
         <CardContent sx={{ width: 640 }}>
           <Typography variant="h4" color="text.primary" className="pb-5">
         		{talk.conf}
@@ -111,7 +116,11 @@ const TalkCard = ( talk: Talk ) => {
         		{talk.title}
         	</Typography>
         	{talk.speakers.map(speaker => 
-	        	<Typography variant="h6" color="text.secondary" key={speaker.toString()}>
+	        	<Typography 
+	        		variant="h6" 
+	        		color="text.secondary" 
+	        		key={speaker.toString()}
+        		>
 	        		{speaker}
 	        	</Typography>
         	)}
@@ -170,8 +179,8 @@ const FillMeetupsGrid = ( events: Meetup[] ) => {
 }
 
 export default function CommunityResources(): JSX.Element {
-  const seoTitle = 'OpenLineage Community Resources';
-  const seoDescription = 'Learn about community resources available from OpenLineage including recorded talks, meetup groups, and ways to contribute.';
+  const seoTitle = "OpenLineage Community Resources";
+  const seoDescription = "Learn about community resources available from OpenLineage including recorded talks, meetup groups, and ways to contribute.";
 
   return (
     <Layout title={seoTitle} description={seoDescription}>
@@ -234,12 +243,13 @@ export default function CommunityResources(): JSX.Element {
 		       		Day/time: every third Wednesday from 9:30am to 10:30am Pacific time
 		       	</Typography>
 		       	<Typography variant="body1" color="text.secondary">
-	            At the monthly meeting, we review recent releases, hear from contributors of major new developments, and feature guest speakers on various topics of interest to the community. Meetings take place on Zoom and are archived on the OpenLineage YouTube Channel. Notes for the meeting are published on the OpenLineage Wiki.
+	            At the monthly meeting, we review recent releases, hear from contributors about new integrations and features, and discuss topics such as the project roadmap and work in progress. Meetings take place on Zoom and are archived on the OpenLineage YouTube Channel. Notes are published on the OpenLineage Wiki.
 		        </Typography>
 		      </CardContent>
 		      <CardActions disableSpacing>
           	<Button 
-          		size="small" href="https://zoom-lfx.platform.linuxfoundation.org/meeting/91792261572?password=7c4c7552-0970-480f-9bdb-0b85257879ac"
+          		size="small" 
+          		href="https://zoom-lfx.platform.linuxfoundation.org/meeting/91792261572?password=7c4c7552-0970-480f-9bdb-0b85257879ac"
         		>
         			Zoom
       			</Button>

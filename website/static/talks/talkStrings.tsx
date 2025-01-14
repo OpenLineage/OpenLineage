@@ -26,7 +26,7 @@ export const Talks: Talk[] = [
     image: "kafka_summit_v2.png",
     title: "OpenLineage for Stream Processing",
     speakers: ["Maciej Obuchowski, GetInData", "Paweł Leszczyński, Astronomer"],
-    description: "This talk will provide an overview of the most recent developments in the OpenLineage Flink integration and share what’s in store for this important collaboration..",
+    description: "This talk will provide an overview of the most recent developments in the OpenLineage Flink integration and share what’s in store for this important collaboration.",
     video_url: "https://www.confluent.io/events/kafka-summit-london-2024/openlineage-for-stream-processing/",
     conf_url: "https://www.confluent.io/events/kafka-summit-london-2024/openlineage-for-stream-processing/",
   },
@@ -40,7 +40,7 @@ export const Talks: Talk[] = [
       "Ernie Ostic, Manta Software", 
       "Sheeri Cabral, Collibra", 
       "Eric Veleker, Atlan",
-      "Moderator: Julien Le Dem, Open Lineage Project Lead" 
+      "Moderator: Julien Le Dem, OpenLineage Project Lead" 
     ],
     description: "This panel discussion features industry experts from the Data Catalog and Data Observability space as they explore the evolution and future prospects of data lineage. Discover how technology has progressed, from manual approaches to automated operational lineage across batch and stream processing, and grasp the pivotal role of data lineage in data processing layers.",
     video_url: "https://www.youtube.com/watch?v=OE1o4D_iWfw/",
@@ -55,7 +55,7 @@ export const Talks: Talk[] = [
       "Julien Le Dem, Chief Architect",
       "Willy Lulciuc, Astronomer"
     ],
-    description: "OpenLineage provides a standard for lineage collection that spans multiple platforms, including Apache Airflow, Apache Spark™, Flink®, and dbt. This empowers teams to diagnose and address widespread data quality and efficiency issues in real time. In this session, we will show how to trace data lineage across Apache Spark and Apache Airflow. There will be a walk-through of the OpenLineage architecture and a live demo of a running pipeline with real-time data lineage.",
+    description: "OpenLineage provides a standard for lineage collection that spans multiple platforms, including Apache Airflow®, Apache Spark™, Flink®, and dbt. This empowers teams to diagnose and address widespread data quality and efficiency issues in real time. In this session, we will show how to trace data lineage across Apache Spark and Apache Airflow®. There will be a walk-through of the OpenLineage architecture and a live demo of a running pipeline with real-time data lineage.",
     video_url: "https://www.youtube.com/watch?v=rO3BPqUtWrI/",
     conf_url: "https://moscone.com/events/data-ai-summit-2024/",
   },
@@ -85,7 +85,7 @@ export const Talks: Talk[] = [
     image: "buzzwords_2021.png",
     title: "Observability for Data Pipelines with OpenLineage",
     speakers: ["Julien Le Dem, OpenLineage"],
-    description: "Data is increasingly becoming core to many products. Whether to provide recommendations for users, getting insights on how they use the product or using machine learning to improve the experience. This creates a critical need for reliable data operations and understanding how data is flowing through our systems. Data pipelines must be auditable, reliable and run on time. This proves particularly difficult in a constantly changing, fast paced environment.",
+    description: "Data is increasingly becoming core to many products. Whether to provide recommendations for users, getting insights on how they use the product or using machine learning to improve the experience. This creates a critical need for reliable data operations and understanding how data is flowing through our systems. Data pipelines must be auditable, reliable and run on time. This proves particularly difficult in a constantly changing, fast-paced environment.",
     video_url: "https://www.youtube.com/watch?v=HEJFCQLwdtk/",
     conf_url: "https://2025.berlinbuzzwords.de/"
   },
