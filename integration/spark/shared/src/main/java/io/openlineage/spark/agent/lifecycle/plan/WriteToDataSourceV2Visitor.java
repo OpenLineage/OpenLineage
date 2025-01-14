@@ -40,7 +40,8 @@ public final class WriteToDataSourceV2Visitor
     boolean result = plan instanceof WriteToDataSourceV2;
     if (log.isDebugEnabled()) {
       log.debug(
-          "The supplied logical plan {} an instance of {}",
+          "The supplied logical plan {} {} an instance of {}",
+          plan.getClass().getCanonicalName(),
           result ? "IS" : "IS NOT",
           WriteToDataSourceV2.class.getCanonicalName());
     }
