@@ -15,7 +15,7 @@ class TagsJobFacet(JobFacet):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/2-0-3/TagsJobFacet.json#/$defs/TagsJobFacet"
+        return "https://openlineage.io/spec/facets/1-0-0/TagsJobFacet.json#/$defs/TagsJobFacet"
 
 
 @attr.define
@@ -31,4 +31,4 @@ class TagsJobFacetFields(RedactMixin):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/2-0-3/TagsJobFacet.json#/$defs/TagsJobFacetFields"
+        return "https://openlineage.io/spec/facets/1-0-0/TagsJobFacet.json#/$defs/TagsJobFacetFields"

@@ -15,7 +15,7 @@ class TagsRunFacet(RunFacet):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/2-0-3/TagsRunFacet.json#/$defs/TagsRunFacet"
+        return "https://openlineage.io/spec/facets/1-0-0/TagsRunFacet.json#/$defs/TagsRunFacet"
 
 
 @attr.define
@@ -31,4 +31,4 @@ class TagsRunFacetFields(RedactMixin):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/2-0-3/TagsRunFacet.json#/$defs/TagsRunFacetFields"
+        return "https://openlineage.io/spec/facets/1-0-0/TagsRunFacet.json#/$defs/TagsRunFacetFields"
