@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 
 from openlineage.client.event_v2 import InputDataset, Job, OutputDataset, Run, RunEvent, RunState
 from openlineage.common.provider.dbt.processor import ParentRunMetadata
-from openlineage.common.utils import parse_single_arg
+from openlineage.common.utils import get_from_nullable_chain, parse_single_arg
 
 __version__ = "1.27.0"
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
@@ -112,7 +112,7 @@ def get_parent_run_metadata():
 
 
 def get_node_unique_id(event):
-    return event["data"]["node_info"]["unique_id"]
+    return get_from_nullable_chain(event, ["data", "node_info", "unique_id"])
 
 
 def get_job_type(event) -> Optional[str]:
@@ -123,6 +123,8 @@ def get_job_type(event) -> Optional[str]:
     node_type = event["info"]["name"]
     if node_type == "SQLQuery":
         return "SQL"
+    elif node_type in ("MainReportVersion", "CommandCompleted"):
+        return "JOB"
     elif node_unique_id.startswith("model."):
         return "MODEL"
     elif node_unique_id.startswith("snapshot."):
