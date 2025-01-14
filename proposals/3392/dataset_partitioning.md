@@ -1,5 +1,5 @@
 ---
-Author: Paweł Leszczyński 
+Authors: Paweł Leszczyński, Maxim Martynov
 Created: January tenth, 2025 
 ---
 
@@ -45,9 +45,9 @@ Create `PartitionDatasetFacet`
               }
             }
           },
-         "sqlClause": {
+         "partitionedBySqlClause": {
             "type": "string",
-            "description": "Optional SQL clause definition like: 'PARTITIONED BY (days(ts), category)'."
+            "description": "Optional SQL clause definition like: '(days(ts), category)' for SQL clause `PARTITIONED BY (days(ts), category)` used."
          }
         },
         "required": ["dimensions"]
@@ -67,7 +67,7 @@ Examples:
     "dimensions": [
       {
         "fields": [
-          "busniess_date"
+          "business_date"
         ],
         "transform": "identity"
       },
@@ -78,7 +78,7 @@ Examples:
         "transform": "identity"
       }
     ], 
-     "sqlClause": "PARTITION BY ('business_date', 'country')" 
+     "sqlClause": "('business_date', 'country')" 
   }
 }
 ```
@@ -234,37 +234,63 @@ An example filter facet for SQL `SELECT * FROM table WHERE col1 = 7 and col2 = 9
 ```
     
 Please mind that this approach also allows providing a list of partitions, as well as extending it to add regex patterns on partitioning read.
-Output partitions dataset facet
+
+### Output partitions' dataset facet
 
 ```json
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://openlineage.io/spec/facets/1-0-0/FilterInputDatasetFacet.json",
-    "$defs": {
-        "PartitionOutputDatasetFacet": {
-            "allOf": [
-                {
-                    "$ref": "#/$defs/OutputDatasetFacet"
-                },
-                {
-                    "type": "object",
-                    "updated": {
-                      "type": "array",
-                      "items": {
+   "$schema": "https://json-schema.org/draft/2020-12/schema",
+   "$defs": {
+      "BasePartitionOutputDatasetFacet": {
+         "allOf": [
+            {
+               "$ref": "#/$defs/OutputDatasetFacet"
+            }
+         ]
+      },
+      "SelectedPartitionsOutputDatasetFacet": {
+         "allOf": [
+            {
+               "$ref": "#/$defs/BasePartitionOutputDatasetFacet"
+            },
+            {
+               "type": "object",
+               "properties": {
+                  "partitions": {
+                     "type": "array",
+                     "items": {
                         "types": "object",
-                        "additionalProperties": true
-                      }
-                    }
-                }
-           ]
-        }
-    },
-    "type": "object",
-    "properties": {
-        "partitions": {
-          "$ref": "#/$defs/PartitionOutputDatasetFacet"
-        }
-    }
+                        "properties": {
+                           "operation": {
+                              "type": "string",
+                              "description": "Operation performed on a partition. Can be: 'ADD', 'UPDATE', 'DROP'."
+                           },
+                           "location": {
+                              "type": "string",
+                              "description": "Optionally provided location of the partition specified"
+                           },
+                           "identifier": {
+                              "type": "string",
+                              "description": "Optionally provided identifier of the partition specified"
+                           },
+                           "values": {
+                              "type": "object",
+                              "additionalProperties": true
+                           }
+                        }
+                     }
+                  }
+               }
+            }
+         ]
+      }
+   },
+   "type": "object",
+   "properties": {
+      "partitions": {
+         "$ref": "#/$defs/BasePartitionOutputDatasetFacet"
+      }
+   }
 }
 ```
 
@@ -272,21 +298,33 @@ An example of this would be a dataset partitioned by `business_date` and `countr
 
 ```json
 {
-  "partitions": {
-    "updated": [
+   "$id": "https://openlineage.io/spec/facets/1-0-0/SelectedPartitionsOutputDatasetFacet.json",
+   "partitions": [
       {
-        "business_date": "2024-10-15",
-        "country": "PL"
+        "operation": "UPDATE",
+        "values": {
+           "business_date": "2024-10-15",
+           "country": "PL"
+        }
       },
       {
-        "business_date": "2024-10-15",
-        "country": "DE"
+         "operation": "UPDATE",
+         "values": {
+            "business_date": "2024-10-15",
+            "country": "DE"
+         }
       }
-    ]
-  }
+   ]
 }
 ```
 
+Updated partitions can be also identified by `location` or `identifier` fields. 
+
+The proposal keeps it simple with `SelectedPartitionsOutputDatasetFacet` as this is the scenario which 
+can be supported. For example, this can be implemented within the Spark integration. 
+Output datasets' partitioning can be much more complex than this, like `RANGE` partitioning in Postgres. 
+However, it's not clear if such scenario can be supported at all. 
+Within the proposal, we leave `BasePartitionOutputDatasetFacet` to allow extending easily when needed.
 
 ## Reference implementation with Apache Spark
 
