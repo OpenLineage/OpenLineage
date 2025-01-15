@@ -119,7 +119,7 @@ def test_file_transport_raises_error_with_non_writeable_file(mock_dt, append) ->
         config = FileConfig(log_file_path=log_base_file_path, append=append)
         transport = FileTransport(config)
 
-        log_file_path = log_base_file_path if append else f"{log_base_file_path}-timestr"
+        log_file_path = log_base_file_path if append else f"{log_base_file_path}-timestr.json"
 
         # Create the file and make it read-only
         with open(log_file_path, "w") as f:
@@ -128,6 +128,32 @@ def test_file_transport_raises_error_with_non_writeable_file(mock_dt, append) ->
 
         with pytest.raises(RuntimeError, match=f"Log file `{log_file_path}` is not writeable"):
             transport.emit(event)
+
+        os.remove(log_file_path)
+
+
+@mock.patch("openlineage.client.transport.file.datetime")
+def test_file_transport_file_path_has_valid_extension_when_not_in_append_mode(mock_dt) -> None:
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime=datetime.datetime.now().isoformat(),
+        run=Run(runId=str(generate_new_uuid())),
+        job=Job(namespace="file", name="test"),
+        producer="prod",
+    )
+    mock_dt.now().strftime.return_value = "timestr"
+
+    with tempfile.TemporaryDirectory() as log_dir:
+        log_base_file_path = join(log_dir, "logtest")
+
+        config = FileConfig(log_file_path=log_base_file_path, append=False)
+        transport = FileTransport(config)
+
+        log_file_path = f"{log_base_file_path}-timestr.json"
+
+        assert not os.path.exists(log_file_path)
+        transport.emit(event)
+        assert os.path.exists(log_file_path)
 
         os.remove(log_file_path)
 
