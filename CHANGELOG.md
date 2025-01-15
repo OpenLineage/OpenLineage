@@ -7,6 +7,10 @@
 * **Flink: Experimental version for flink native lineage listener.** [`#3099`](https://github.com/OpenLineage/OpenLineage/pull/3099) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
   *New flink listener to extract lineage through native Flink interfaces. Supports Flink SQL. Requires Flink 2.0.*
 
+### Fixed
+
+* **Spark: fix lineage for SQLs run within structured streaming queries.** [`#3405`](https://github.com/OpenLineage/OpenLineage/pull/3405) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *When a streaming query gets executed, treat SQL executed within a streaming query as parts of a streaming job.*
 
 ## [1.26.0](https://github.com/OpenLineage/OpenLineage/compare/1.25.0...1.26.0) - 2024-12-20
 
