@@ -49,7 +49,7 @@ class FileTransport(Transport):
             log_file_path = self.config.log_file_path
         else:
             time_str = datetime.now().strftime("%Y%m%d-%H%M%S.%f")
-            log_file_path = f"{self.config.log_file_path}-{time_str}"
+            log_file_path = f"{self.config.log_file_path}-{time_str}.json"
 
         log.debug("Openlineage event will be emitted to file: `%s`", log_file_path)
         try:
