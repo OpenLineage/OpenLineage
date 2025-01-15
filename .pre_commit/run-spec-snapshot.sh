@@ -42,7 +42,7 @@ while read -r LINE; do
     echo "Change detected in $LINE: $LOC is untracked"
     CHANGE_DONE=1  # Mark as change detected
   fi
-done < <(git diff --name-only HEAD -- 'spec/*.json' 'spec/OpenLineage.yml')
+done < <(git diff --name-only origin/main -- 'spec/OpenLineage.json' 'spec/facets/*.json' 'spec/OpenLineage.yml')
 
 # Exit with the value of CHANGE_DONE (0 if no changes, 1 if there were changes)
 exit $CHANGE_DONE
