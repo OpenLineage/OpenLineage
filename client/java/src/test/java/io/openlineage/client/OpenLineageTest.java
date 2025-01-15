@@ -17,7 +17,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.openlineage.client.OpenLineage.DataQualityMetricsInputDatasetFacet;
 import io.openlineage.client.OpenLineage.DataQualityMetricsInputDatasetFacetColumnMetricsAdditional;
 import io.openlineage.client.OpenLineage.DatasetEvent;
-import io.openlineage.client.OpenLineage.DatasetFacets;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.Job;
 import io.openlineage.client.OpenLineage.JobEvent;
@@ -28,12 +27,6 @@ import io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet;
 import io.openlineage.client.OpenLineage.Run;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunFacets;
-import io.openlineage.client.OpenLineage.TagsDatasetFacetFields;
-import io.openlineage.client.OpenLineage.TagsDatasetFacet;
-import io.openlineage.client.OpenLineage.TagsJobFacetFields;
-import io.openlineage.client.OpenLineage.TagsJobFacet;
-import io.openlineage.client.OpenLineage.TagsRunFacetFields;
-import io.openlineage.client.OpenLineage.TagsRunFacet;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
 import io.openlineage.server.OpenLineage.OutputDatasetFacet;
 import java.net.URI;
@@ -66,17 +59,7 @@ class OpenLineageTest {
     OpenLineage ol = new OpenLineage(producer);
     UUID runId = UUID.randomUUID();
     RunFacets runFacets =
-        ol.newRunFacetsBuilder()
-        .nominalTime(ol.newNominalTimeRunFacet(now, now))
-        .tags(
-            ol.newTagsRunFacet(
-                Arrays.asList(
-                    ol.newTagsRunFacetFieldsBuilder().key("testkey").value("testvalue").build(),
-                    ol.newTagsRunFacetFieldsBuilder().key("testkey2").value("testvalue2").source("testsource2").build()
-                ) 
-            )
-        )
-        .build();
+        ol.newRunFacetsBuilder().nominalTime(ol.newNominalTimeRunFacet(now, now)).build();
     Run run = ol.newRun(runId, runFacets);
     String name = "jobName";
     String namespace = "namespace";
@@ -100,15 +83,6 @@ class OpenLineageTest {
     NominalTimeRunFacet nominalTime = runStateUpdate.getRun().getFacets().getNominalTime();
     assertEquals(now, nominalTime.getNominalStartTime());
     assertEquals(now, nominalTime.getNominalEndTime());
-    TagsRunFacet tags = runStateUpdate.getRun().getFacets().getTags();
-    assertEquals(2L, tags.getTags().size());
-    TagsRunFacetFields tag1 = tags.getTags().get(0);
-    assertEquals("testkey", tag1.getKey());
-    assertEquals("testvalue", tag1.getValue());
-    TagsRunFacetFields tag2 = tags.getTags().get(1);
-    assertEquals("testkey2", tag2.getKey());
-    assertEquals("testvalue2", tag2.getValue());
-    assertEquals("testsource2", tag2.getSource());
     InputDataset inputDataset = runStateUpdate.getInputs().get(0);
     assertEquals("ins", inputDataset.getNamespace());
     assertEquals("input", inputDataset.getName());
@@ -125,24 +99,6 @@ class OpenLineageTest {
     URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
 
-    DatasetFacets datasetFacets =
-        ol.newDatasetFacetsBuilder()
-        .documentation(ol.newDocumentationDatasetFacet("foo"))
-        .tags(
-            ol.newTagsDatasetFacet(
-                Arrays.asList(
-                    ol.newTagsDatasetFacetFieldsBuilder().key("testkey").value("testvalue").build(),
-                    ol.newTagsDatasetFacetFieldsBuilder()
-                        .key("testkey2")
-                        .value("testvalue2")
-                        .source("testsource2")
-                        .field("testfield2")
-                        .build()
-                ) 
-            )
-        )
-        .build();
-
     DatasetEvent datasetEvent =
         ol.newDatasetEventBuilder()
             .eventTime(now)
@@ -150,7 +106,9 @@ class OpenLineageTest {
                 ol.newStaticDataset(
                     "ns",
                     "ds",
-                    datasetFacets))
+                    ol.newDatasetFacetsBuilder()
+                        .documentation(ol.newDocumentationDatasetFacet("foo"))
+                        .build()))
             .build();
 
     String json = mapper.writeValueAsString(datasetEvent);
@@ -160,17 +118,6 @@ class OpenLineageTest {
     assertEquals("ds", read.getDataset().getName());
     assertEquals(now, read.getEventTime());
     assertEquals("foo", read.getDataset().getFacets().getDocumentation().getDescription());
-
-    TagsDatasetFacet tags = read.getDataset().getFacets().getTags();
-    assertEquals(2L, tags.getTags().size());
-    TagsDatasetFacetFields tag1 = tags.getTags().get(0);
-    assertEquals("testkey", tag1.getKey());
-    assertEquals("testvalue", tag1.getValue());
-    TagsDatasetFacetFields tag2 = tags.getTags().get(1);
-    assertEquals("testkey2", tag2.getKey());
-    assertEquals("testvalue2", tag2.getValue());
-    assertEquals("testsource2", tag2.getSource());
-    assertEquals("testfield2", tag2.getField());
   }
 
   @Test
@@ -223,25 +170,12 @@ class OpenLineageTest {
   void jsonJobEventSerialization() throws JsonProcessingException {
     URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
-
-    JobFacets jobFacets =
-        ol.newJobFacetsBuilder()
-        .tags(
-            ol.newTagsJobFacet(
-                Arrays.asList(
-                    ol.newTagsJobFacetFieldsBuilder().key("testkey").value("testvalue").build(),
-                    ol.newTagsJobFacetFieldsBuilder().key("testkey2").value("testvalue2").source("testsource2").build()
-                ) 
-            )
-        )
-        .build();
-
     JobEvent jobEvent =
         ol.newJobEventBuilder()
             .eventTime(now)
             .inputs(Collections.singletonList(ol.newInputDataset("ins", "input", null, null)))
             .outputs(Collections.singletonList(ol.newOutputDataset("ous", "output", null, null)))
-            .job(ol.newJob("jns", "jname", jobFacets))
+            .job(ol.newJob("jns", "jname", null))
             .build();
 
     String json = mapper.writeValueAsString(jobEvent);
@@ -256,16 +190,6 @@ class OpenLineageTest {
     assertEquals("jns", read.getJob().getNamespace());
     assertEquals("jname", read.getJob().getName());
     assertEquals(now, read.getEventTime());
-
-    TagsJobFacet tags = read.getJob().getFacets().getTags();
-    assertEquals(2L, tags.getTags().size());
-    TagsJobFacetFields tag1 = tags.getTags().get(0);
-    assertEquals("testkey", tag1.getKey());
-    assertEquals("testvalue", tag1.getValue());
-    TagsJobFacetFields tag2 = tags.getTags().get(1);
-    assertEquals("testkey2", tag2.getKey());
-    assertEquals("testvalue2", tag2.getValue());
-    assertEquals("testsource2", tag2.getSource());
   }
 
   String roundTrip(String value) throws JsonMappingException, JsonProcessingException {
