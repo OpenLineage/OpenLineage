@@ -74,6 +74,12 @@
       redact_fields: []
     - class_name: DataQualityMetricsInputDatasetFacet
       redact_fields: []
+- module: dataset_type_dataset
+  classes:
+    - class_name: DatasetTypeDatasetFacet
+      redact_fields:
+        - datasetType
+        - subType
 - module: dataset_version_dataset
   classes:
     - class_name: DatasetVersionDatasetFacet
