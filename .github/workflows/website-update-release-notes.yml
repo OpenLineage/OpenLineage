@@ -1,0 +1,28 @@
+name: Version documentation
+
+on:
+  release:
+    types: [published]
+
+
+permissions:
+  id-token: write
+
+jobs:
+  test-release-notes:
+    name: Test release notes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: 'source'
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/checkout@v4
+        with:
+          repository: 'Openlineage/openlineage-site'
+          path: 'target'
+      # print debug content of release notes from webhook
+      - name: Print release notes
+        run: |
+          echo "Release notes: ${{ github.event.release.body }}"
