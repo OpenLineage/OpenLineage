@@ -56,7 +56,7 @@ def job(job_name, sql, location):
     return Job(namespace=namespace, name=job_name, facets=facets)
 
 
-# geneartes run racet
+# generates run racet
 def run(run_id, hour):
     return Run(
         runId=run_id,

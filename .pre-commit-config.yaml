@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.5.4
+    rev: v1.5.5
     hooks:
       - id: insert-license
         name: Add license for all Python files
@@ -43,7 +43,7 @@ repos:
           - --fuzzy-match-generates-todo
           - --use-current-year
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v5.0.0
     hooks:
       - id: check-ast
         files: ^client/python/
@@ -71,29 +71,29 @@ repos:
         name: ruff-format
         files: ^client/python/|^dev/|^integration/airflow/|^integration/common/|^integration/dagster/|^integration/dbt/|^integration/spark/|^integration/sql/
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: "v2.7.1"
+    rev: "v4.0.0-alpha.8"
     hooks:
       - id: prettier
-        files: ^spec/
+        files: ^spec/|\.ts$|\.tsx$|^website.*\.js$|^website.*\.jsx$|\.css$|^\..*\.yaml$|\^\..*\.yml$
         args: ["--print-width=120", "--prose-wrap=always"]
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.5
+    rev: v2.3.0
     hooks:
       - id: codespell
         name: Run codespell to check for common misspellings in files
-        entry: bash -c 'echo "If you think that this failure is an error, consider adding the word(s)
-          to the codespell dictionary at spelling_wordlist.txt.
-          The word(s) should be in lowercase." && exec codespell "$@"' --
+        entry:
+          bash -c 'echo "If you think that this failure is an error, consider adding the word(s) to the codespell
+          dictionary at spelling_wordlist.txt. The word(s) should be in lowercase." && exec codespell "$@"' --
         language: python
         types: [text]
         args:
           - --ignore-words=spelling_wordlist.txt
           - --skip=*.css,*.js,*.svg,*.xml,*/**/test/*,*/**/tests/*,*/yarn.lock,**/openapi/*.html,*/package-lock.json,*/spec/*
   - repo: https://github.com/koalaman/shellcheck-precommit
-    rev: v0.9.0
+    rev: v0.10.0
     hooks:
       - id: shellcheck
-        args: ['--exclude=1090,1091,2207']
+        args: ["--exclude=1090,1091,2207"]
         exclude: ".*gradlew$"
   - repo: local
     hooks:
@@ -172,4 +172,3 @@ repos:
         files: ^integration/spark/.*\.java$
         exclude: ".*test.*"
         pass_filenames: false
-
