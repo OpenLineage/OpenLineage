@@ -12,6 +12,7 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.openlineage.client.Environment;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.client.circuitBreaker.CircuitBreakerFactory;
@@ -22,6 +23,7 @@ import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.util.SparkVersionUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -51,6 +53,8 @@ import org.apache.spark.scheduler.SparkListenerTaskEnd;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
+import org.apache.spark.sql.streaming.StreamingQueryListener.QueryStartedEvent;
+import org.apache.spark.sql.streaming.StreamingQueryListener.QueryTerminatedEvent;
 import scala.Function0;
 import scala.Function1;
 import scala.Option;
@@ -109,6 +113,15 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       initializeContextFactoryIfNotInitialized();
       log.debug("onOtherEvent called with event type SparkListenerSQLExecutionEnd: [{}].", event);
       sparkSQLExecEnd((SparkListenerSQLExecutionEnd) event);
+    } else if (event instanceof QueryStartedEvent) {
+      // after setting this all SQL queries' events will get the same runId
+      log.debug("onOtherEvent called with event type QueryStartedEvent: [{}].", event);
+      contextFactory.setStreamingQueryMode(true);
+    } else if (event instanceof QueryTerminatedEvent) {
+      log.debug("onOtherEvent called with event type QueryTerminatedEvent: [{}].", event);
+      streamingQueryTerminated((QueryTerminatedEvent) event);
+    } else {
+      log.warn("onOtherEvent called with unsupported event: {}", event.getClass());
     }
   }
 
@@ -151,6 +164,37 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
                         return null;
                       }));
     }
+  }
+
+  private void streamingQueryTerminated(QueryTerminatedEvent event) {
+    if (isDisabled) {
+      return;
+    }
+    contextFactory.setStreamingQueryMode(false);
+    circuitBreaker.run(
+        () -> {
+          OpenLineageContext streamingContext = contextFactory.getStreamingContext();
+          contextFactory.openLineageEventEmitter.emit(
+              streamingContext
+                  .getOpenLineage()
+                  .newRunEventBuilder()
+                  .run(
+                      streamingContext
+                          .getOpenLineage()
+                          .newRunBuilder()
+                          .runId(streamingContext.getRunUuid())
+                          .build())
+                  .job(
+                      streamingContext
+                          .getOpenLineage()
+                          .newJobBuilder()
+                          .namespace(contextFactory.openLineageEventEmitter.getJobNamespace())
+                          .name(streamingContext.getJobName())
+                          .build())
+                  .eventType(event.exception().isEmpty() ? EventType.COMPLETE : EventType.FAIL)
+                  .build());
+          return null;
+        });
   }
 
   /** called by the SparkListener when a job starts */

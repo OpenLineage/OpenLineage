@@ -114,7 +114,7 @@ public class OpenLineageContext {
   final List<ColumnLevelLineageVisitor> columnLevelLineageVisitors = new ArrayList<>();
 
   /** Optional {@link QueryExecution} for runs that are Spark SQL queries. */
-  final QueryExecution queryExecution;
+  @Setter QueryExecution queryExecution;
 
   public Optional<QueryExecution> getQueryExecution() {
     return Optional.ofNullable(queryExecution);

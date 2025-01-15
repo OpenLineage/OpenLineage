@@ -143,7 +143,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
                   visitorFactory.getOutputVisitors(olContext);
               olContext.getOutputDatasetQueryPlanVisitors().addAll(outputDatasets);
               return new SparkSQLExecutionContext(
-                  executionId, openLineageEventEmitter, olContext, runEventBuilder) {
+                  executionId, openLineageEventEmitter, olContext, runEventBuilder, false) {
                 @Override
                 public void start(SparkListenerSQLExecutionStart startEvent) {
                   try {
@@ -177,6 +177,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
         executionId,
         emitter,
         olContext,
-        new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory()));
+        new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory()),
+        false);
   }
 }

@@ -54,7 +54,8 @@ class SparkSQLExecutionContextTest {
           executionId,
           eventEmitter,
           olContext,
-          new OpenLineageRunEventBuilder(olContext, mock(OpenLineageEventHandlerFactory.class)));
+          new OpenLineageRunEventBuilder(olContext, mock(OpenLineageEventHandlerFactory.class)),
+          false);
   private final QueryExecution queryExecution = mock(QueryExecution.class, RETURNS_DEEP_STUBS);
 
   @AfterEach
@@ -279,4 +280,6 @@ class SparkSQLExecutionContextTest {
           .isEqualTo(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
     }
   }
+
+  // TODO: test streaming query mode should never emit COMPLETE event for SQL
 }

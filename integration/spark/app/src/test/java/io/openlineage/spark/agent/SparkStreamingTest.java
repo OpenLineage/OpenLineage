@@ -16,6 +16,7 @@ import static org.apache.spark.sql.functions.expr;
 import static org.apache.spark.sql.functions.from_json;
 import static org.apache.spark.sql.functions.from_unixtime;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,6 +46,7 @@ import java.util.stream.IntStream;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.iceberg.util.Pair;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.CreateTopicsResult;
@@ -62,7 +64,6 @@ import org.apache.spark.sql.streaming.StreamingQuery;
 import org.apache.spark.sql.streaming.StreamingQueryException;
 import org.apache.spark.sql.streaming.Trigger;
 import org.apache.spark.sql.types.StructType;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -176,8 +177,8 @@ class SparkStreamingTest {
 
     kafkaContainer.close();
 
-    Awaitility.await().atMost(Duration.ofSeconds(60)).until(() -> !kafkaContainer.isRunning());
-    Awaitility.await().atMost(Duration.ofSeconds(60)).until(() -> spark.sparkContext().isStopped());
+    await().atMost(Duration.ofSeconds(60)).until(() -> !kafkaContainer.isRunning());
+    await().atMost(Duration.ofSeconds(60)).until(() -> spark.sparkContext().isStopped());
 
     List<RunEvent> events =
         handler.getEventsMap().getOrDefault("test_kafka_source_to_kafka_sink", new ArrayList<>());
@@ -236,6 +237,7 @@ class SparkStreamingTest {
 
   @Test
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
+  @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
   void testKafkaSourceToBatchSink() throws TimeoutException, StreamingQueryException, IOException {
     KafkaTestContainer kafkaContainer = setupKafkaContainer();
 
@@ -268,12 +270,26 @@ class SparkStreamingTest {
             .start();
 
     streamingQuery.awaitTermination(Duration.ofSeconds(20).toMillis());
+    streamingQuery.stop(); // triggers QueryTerminatedEvent event
+
+    // wait for complete event
+    await()
+        .pollInterval(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(10))
+        .until(
+            () ->
+                handler.getEventsMap().get("test_kafka_source_to_batch_sink").stream()
+                    .map(r -> r.getEventType().toString())
+                    .anyMatch("COMPLETE"::equalsIgnoreCase));
+
     List<RunEvent> events = handler.getEventsMap().get("test_kafka_source_to_batch_sink");
 
     assertThat(events).isNotEmpty();
 
     List<RunEvent> kafkaInputEvents =
-        events.stream().filter(x -> !x.getInputs().isEmpty()).collect(Collectors.toList());
+        events.stream()
+            .filter(x -> x.getInputs() != null && !x.getInputs().isEmpty())
+            .collect(Collectors.toList());
 
     assertThat(kafkaInputEvents).isNotEmpty();
 
@@ -285,7 +301,9 @@ class SparkStreamingTest {
         });
 
     List<RunEvent> outputEvents =
-        events.stream().filter(x -> !x.getOutputs().isEmpty()).collect(Collectors.toList());
+        events.stream()
+            .filter(x -> x.getOutputs() != null && !x.getOutputs().isEmpty())
+            .collect(Collectors.toList());
 
     assertThat(outputEvents).isNotEmpty();
 
@@ -295,6 +313,31 @@ class SparkStreamingTest {
           assertEquals("/tmp/batch_sink", event.getOutputs().get(0).getName());
           assertEquals("file", event.getOutputs().get(0).getNamespace());
         });
+
+    // make sure events share the same runUuid and jobName
+    assertThat(
+            events.stream()
+                .filter(
+                    e ->
+                        e.getRun().getFacets() == null
+                            || e.getRun().getFacets().getParent()
+                                != null) // ignore application events
+                .map(x -> Pair.of(x.getRun().getRunId(), x.getJob().getName()))
+                .distinct()
+                .collect(Collectors.toList()))
+        .hasSize(1);
+
+    List<String> eventTypes =
+        events.stream()
+            .filter(
+                e ->
+                    e.getRun().getFacets() == null
+                        || e.getRun().getFacets().getParent() != null) // ignore application events
+            .map(e -> e.getEventType().toString())
+            .collect(Collectors.toList());
+
+    // there should be ONLY one START event and one COMPLETE event
+    assertThat(eventTypes).containsOnlyOnceElementsOf(Arrays.asList("START", "COMPLETE"));
 
     kafkaContainer.stop();
     spark.stop();
