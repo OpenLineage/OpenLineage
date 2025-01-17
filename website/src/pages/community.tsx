@@ -2,6 +2,7 @@ import * as React from 'react';
 import { styled, createTheme } from '@mui/material/styles';
 import Footer from "../components/footer";
 import Layout from '@theme/Layout';
+import Head from '@docusaurus/Head';
 import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
 import CardActionArea from '@mui/material/CardActionArea';
@@ -219,12 +220,15 @@ const FillMeetupsGrid = ( events: Meetup[] ) => {
 }
 
 export default function CommunityResources(): JSX.Element {
-  const seoTitle = "OpenLineage Community Resources";
+  const seoTitle = "Community";
   const seoDescription = "Learn about community resources available from OpenLineage including recorded talks, meetup groups, and ways to contribute.";
 
   return (
     <Layout title={seoTitle} description={seoDescription}>
-
+    	<Head>
+        <meta property="og:image" content="img/community-thumb.png" />
+        <meta property="twitter:image" content="img/community-thumb.png" />
+      </Head>
 		<div className="title px-4 py-12 text-center lg:py-14 lg:px-0">
 		    <h2 className="text-5xl text-color-1">
 		        Community Resources
