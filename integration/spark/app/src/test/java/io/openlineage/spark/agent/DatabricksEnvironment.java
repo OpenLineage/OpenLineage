@@ -52,6 +52,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -392,9 +393,7 @@ public class DatabricksEnvironment implements AutoCloseable {
           .forEach(f -> dbfs.delete(f.getPath()));
     }
 
-    String destination = "dbfs:/databricks/openlineage/" + jarFile.getFileName();
-    uploadFileToDbfs(jarFile, destination);
-    log.info("OpenLineage jar has been uploaded to [{}]", destination);
+    uploadFileToDbfs(jarFile);
   }
 
   /**
@@ -420,9 +419,15 @@ public class DatabricksEnvironment implements AutoCloseable {
   }
 
   @SneakyThrows
-  private void uploadFileToDbfs(Path jarFile, String toLocation) {
+  private void uploadFileToDbfs(Path jarFile) {
+    String basePath = "dbfs:/databricks/openlineage/";
     FileInputStream fis = new FileInputStream(jarFile.toString());
-    OutputStream outputStream = dbfs.getOutputStream(toLocation);
+
+    String tempLocation = basePath + jarFile.getFileName() + UUID.randomUUID() + ".tmp";
+    String targetLocation = basePath + jarFile.getFileName();
+
+    // copy to temp location to avoid conflicts in case of concurrent uploads
+    OutputStream outputStream = dbfs.getOutputStream(tempLocation);
 
     // upload to DBFS -> 12MB file upload need to go in chunks smaller than 1MB each
     byte[] buf = new byte[500000]; // approx 0.5MB
@@ -433,6 +438,8 @@ public class DatabricksEnvironment implements AutoCloseable {
       len = fis.read(buf);
     }
     outputStream.close();
+    dbfs.move(tempLocation, targetLocation);
+    log.info("OpenLineage jar has been uploaded to [{}]", targetLocation);
   }
 
   @SneakyThrows
