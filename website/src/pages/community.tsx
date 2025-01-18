@@ -226,8 +226,8 @@ export default function CommunityResources(): JSX.Element {
   return (
     <Layout title={seoTitle} description={seoDescription}>
     	<Head>
-        <meta property="og:image" content="img/community-thumb.png" />
-        <meta property="twitter:image" content="img/community-thumb.png" />
+        <meta property="og:image" content="https://openlineage.io/img/community-thumb.png" />
+        <meta property="twitter:image" content="https://openlineage.io/img/community-thumb.png" />
       </Head>
 		<div className="title px-4 py-12 text-center lg:py-14 lg:px-0">
 		    <h2 className="text-5xl text-color-1">
