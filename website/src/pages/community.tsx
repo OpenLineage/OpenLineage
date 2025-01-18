@@ -1,7 +1,8 @@
 import * as React from 'react';
-import { styled } from '@mui/material/styles';
+import { styled, createTheme } from '@mui/material/styles';
 import Footer from "../components/footer";
 import Layout from '@theme/Layout';
+import Head from '@docusaurus/Head';
 import Card from '@mui/material/Card';
 import CardActions from '@mui/material/CardActions';
 import CardActionArea from '@mui/material/CardActionArea';
@@ -14,6 +15,14 @@ import Collapse from '@mui/material/Collapse';
 import IconButton, { IconButtonProps } from '@mui/material/IconButton';
 import { Talks, Talk } from "@site/static/talks/talkStrings";
 import { Meetups, Meetup } from "@site/static/meetups/meetupStrings";
+
+const theme = createTheme({
+  breakpoints: {
+    values: {
+      sm: 600,
+    },
+  },
+});
 
 interface ExpandMoreProps extends IconButtonProps {
   isExpand: boolean;
@@ -32,17 +41,32 @@ const ExpandMore = styled((props: ExpandMoreProps) => {
 const MeetupCard = ( meetup: Meetup ) => {
 	let imgPath = "/img/"+meetup.image
 	return (
-    <Card raised={false} sx={{ width: 640, overflow: "hidden" }}>
+    <Card raised={false} sx={{ 
+    	width: 640, 
+    	overflow: "hidden", 
+    	[theme.breakpoints.down('sm')]: {
+        width: 300, overflow: "hidden"
+      },  
+    }}>
     	<CardMedia
-        sx={{ width: 640, height: 340, padding: 0 }}
+        sx={{ 
+        	width: 640, 
+        	height: 340, 
+        	padding: 0, 
+        	[theme.breakpoints.down('sm')]: {
+        		width: 300, height: 'auto', padding: 0
+      		},
+      	}}
         component="img"
         src={imgPath}
         title={meetup.city}
       />
-	    <CardContent sx={{ width: 640 }}>
-	      	<Typography variant="h5" color="text.secondary">
-	      		{meetup.city}
-	      	</Typography>
+	    <CardContent sx={{ width: 640, [theme.breakpoints.down('sm')]: {
+        width: 300,
+      },  }}>
+      	<Typography variant="h5" color="text.secondary">
+      		{meetup.city}
+      	</Typography>
 	    </CardContent>
 	    <CardActions disableSpacing>
         <Button size="small" href={meetup.link}>Join</Button>
@@ -83,7 +107,12 @@ const TalkCard = ( talk: Talk ) => {
 
   let imgPath = "/img/"+talk.image
   return (
-    <Card raised={true} sx={{ width: 640 }}>
+    <Card raised={true} sx={{ 
+    	width: 640,
+    	[theme.breakpoints.down('sm')]: {
+        width: 300
+      }, 
+    }}>
     <CardActions disableSpacing sx={{ padding: 0 }}>
         <ExpandMore
           isExpand={expanded}
@@ -94,7 +123,14 @@ const TalkCard = ( talk: Talk ) => {
         >
           <CardActionArea sx={{ padding: 0 }}>
             <CardMedia
-              sx={{ width: 640, height: 'auto', padding: 0 }}
+              sx={{ 
+              	width: 640, 
+              	height: 'auto', 
+              	padding: 0, 
+              	[theme.breakpoints.down('sm')]: {
+					        width: 300, height: 'auto'
+					      }, 
+					    }}
               component="img"
               src={imgPath}
               title={talk.conf}
@@ -108,7 +144,12 @@ const TalkCard = ( talk: Talk ) => {
       	timeout="auto" 
       	unmountOnExit
     	> 
-        <CardContent sx={{ width: 640 }}>
+        <CardContent sx={{ 
+        	width: 640, 
+        	[theme.breakpoints.down("sm")]: {
+						width: 300, height: "auto"
+		      }, 
+		    }}>
           <Typography variant="h4" color="text.primary" className="pb-5">
         		{talk.conf}
         	</Typography>
@@ -179,12 +220,15 @@ const FillMeetupsGrid = ( events: Meetup[] ) => {
 }
 
 export default function CommunityResources(): JSX.Element {
-  const seoTitle = "OpenLineage Community Resources";
+  const seoTitle = "Community";
   const seoDescription = "Learn about community resources available from OpenLineage including recorded talks, meetup groups, and ways to contribute.";
 
   return (
     <Layout title={seoTitle} description={seoDescription}>
-
+    	<Head>
+        <meta property="og:image" content="https://openlineage.io/img/community-thumb.png" />
+        <meta property="twitter:image" content="https://openlineage.io/img/community-thumb.png" />
+      </Head>
 		<div className="title px-4 py-12 text-center lg:py-14 lg:px-0">
 		    <h2 className="text-5xl text-color-1">
 		        Community Resources
@@ -228,14 +272,19 @@ export default function CommunityResources(): JSX.Element {
         marginX="auto"
         justifyItems="top"
 	    > 
-			  <Card raised={false} sx={{ height: "auto", width: 840 }}>
+			  <Card raised={false} sx={{ 
+			  	width: 840, 
+			  	[theme.breakpoints.down('sm')]: {
+        		width: 300
+      		},  
+      	}}>
 			  	<CardMedia
 		        sx={{ width: "100%", padding: 0 }}
 		        component="img"
 		        src={require(`@site/static/img/tsc_screen.png`).default}
 		        title="TSC meeting"
 		      />
-		      <CardContent sx={{ height: 190 }}>
+		      <CardContent>
 		       	<Typography variant="h5" color="text.secondary">
 		       		OpenLineage Technical Steering Committee Meeting (open to all)
 		       	</Typography>
@@ -288,65 +337,91 @@ export default function CommunityResources(): JSX.Element {
         marginX="auto"
         justifyItems="top"
 	    >
-			<Card raised={false} sx={{ height: "auto", width: 440 }}>
-			  	<CardMedia
-		        sx={{ width: 440, height: "auto", padding: 5 }}
-		        component="img"
-		        src={require(`@site/static/img/github.png`).default}
-		        title="GitHub"
-		      />
-		      <CardContent sx={{ height: 145 }}>
-		       	<Typography variant="h5" color="text.secondary">
-		       		OpenLineage GiHub Organization
-		       	</Typography>
-		       	<Typography sx={{ my: 1 }} variant="body1" color="text.secondary">
-	            Visit GitHub for the main codebase and repos for the website and workshops. Contributions are welcome!
-	          </Typography>
-		      </CardContent>
-		      <CardActions disableSpacing>
-          	<Button 
-          		size="small" 
-          		href="https://github.com/OpenLineage/OpenLineage/CONTRIBUTING.md"
-        		>
-        			Learn More
-      			</Button>
-          	<Button 
-          		sx={{ marginLeft: 5 }}
-          		size="small" 
-          		href="https://github.com/OpenLineage/"
-        		>
-        			GitHub
-      			</Button>
-          </CardActions>
-			  </Card>
+			<Card raised={false} sx={{ 
+				height: "auto", 
+				width: 440, 
+				[theme.breakpoints.down('sm')]: {
+        	height: "auto", width: 300,
+      	},
+      }}>
+		  	<CardMedia
+	        sx={{ 
+	        	width: 440, 
+	        	height: "auto", 
+	        	padding: 5, 
+	        	[theme.breakpoints.down('sm')]: {
+      				width: 300, height: "auto", padding: 5
+    				},
+    			}}
+	        component="img"
+	        src={require(`@site/static/img/github.png`).default}
+	        title="GitHub"
+	      />
+	      <CardContent sx={{  }}>
+	       	<Typography variant="h5" color="text.secondary">
+	       		OpenLineage GiHub Organization
+	       	</Typography>
+	       	<Typography sx={{ my: 1 }} variant="body1" color="text.secondary">
+            Visit GitHub for the main codebase and repos for the website and workshops. Contributions are welcome!
+          </Typography>
+	      </CardContent>
+	      <CardActions disableSpacing>
+        	<Button 
+        		size="small" 
+        		href="https://github.com/OpenLineage/OpenLineage/CONTRIBUTING.md"
+      		>
+      			Learn More
+    			</Button>
+        	<Button 
+        		sx={{ marginLeft: 5 }}
+        		size="small" 
+        		href="https://github.com/OpenLineage/"
+      		>
+      			GitHub
+    			</Button>
+        </CardActions>
+			 </Card>
 	    </Grid>
 	    <Grid
         marginX="auto"
         justifyItems="top"
 	    >
-	    <Card raised={false} sx={{ height: "auto", width: 440 }}>
-			  	<CardMedia
-		        sx={{ width: 440, height: "auto", padding: 4 }}
-		        component="img"
-		        src={require(`@site/static/img/slack.png`).default}
-		        title="Slack"
-		      />
-		      <CardContent sx={{ height: 145 }}>
-		       	<Typography variant="h5" color="text.secondary">
-		       		OpenLineage Slack
-		       	</Typography>
-		       	<Typography sx={{ my: 1 }} variant="body1" color="text.secondary">
-	            Learn about the project, find out about releases and upcoming events, sync up with fellow users and contributors, and get help from OpenLineage experts.
-	          </Typography>
-		      </CardContent>
-		      <CardActions disableSpacing>
-          	<Button 
-          		size="small" 
-          		href="https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA"
-        		>
-        			Join
-      			</Button>
-          </CardActions>
+	    <Card raised={false} sx={{ 
+	    	height: "auto", 
+	    	width: 440, 
+	    	[theme.breakpoints.down('sm')]: {
+        	height: "auto", width: 300,
+      	},
+      }}>
+		  	<CardMedia
+	        sx={{ 
+	        	width: 440, 
+	        	height: "auto", 
+	        	padding: 4, 
+	        	[theme.breakpoints.down('sm')]: {
+      				width: 300, height: "auto", padding: 4
+    				},
+    			}}
+	        component="img"
+	        src={require(`@site/static/img/slack.png`).default}
+	        title="Slack"
+	      />
+	      <CardContent>
+	       	<Typography variant="h5" color="text.secondary">
+	       		OpenLineage Slack
+	       	</Typography>
+	       	<Typography sx={{ my: 1 }} variant="body1" color="text.secondary">
+            Learn about the project, find out about releases and upcoming events, sync up with fellow users and contributors, and get help from OpenLineage experts.
+          </Typography>
+	      </CardContent>
+	      <CardActions disableSpacing>
+        	<Button 
+        		size="small" 
+        		href="https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA"
+      		>
+      			Join
+    			</Button>
+        </CardActions>
 			</Card>
 			</Grid>
     </Grid>

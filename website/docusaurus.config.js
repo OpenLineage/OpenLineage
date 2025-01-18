@@ -160,6 +160,7 @@ const config = {
                 disableSwitch: true,
                 respectPrefersColorScheme: false,
             },
+            image: 'img/home-thumb.png',
         }),
 
     scripts: [
