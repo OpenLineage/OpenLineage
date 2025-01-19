@@ -14,7 +14,7 @@ The following guidelines may help you to correctly introduce new changes.
 Before you decide to make any changes, it is best advised that you first label your issue with `spec`. This will indicate the the issue is related to any changes in the current OpenLineage spec.
 
 ## Make changes to the spec's version
-Versioning occurs on a per-file basis. Any new spec files start at 1-0-0. Whenever there is a change to existing spec file (JSON), you need to bump up the version of the existing current spec, so that the changes can go through the code generation and gradle build. Consider the following spec file, where you will see the URL in `$id` that shows what is the current spec version the file currently is.
+[Versioning](https://github.com/OpenLineage/OpenLineage/blob/main/spec/Versioning.md) occurs on a per-file basis. Any new spec files start at 1-0-0. Whenever there is a change to existing spec files (JSON), you need to bump up the version of the existing current spec, so that the changes can go through the code generation and gradle build. Consider the following spec file, where you will see the URL in `$id` that shows what is the current spec version the file currently is.
 
 ```
 {
@@ -36,7 +36,7 @@ In this example, bumping up the version to the new value, should be changed from
 
 ## Adding and Updating the Schema
 
-Both Python and Java clients automatically generate code to handle the schema, so there is generally little work to do for modifications and new facets. Core logic changes may require manual code in both the Java and Python clients. These changes are rare and require additional planning in the proposal to plan out the steps. Thee are the steps for adding a new facet, which covers the majority of schema changes.  
+Both Python and Java clients automatically generate code to handle the schema, so there is generally little work to do for modifications and new facets. Core logic changes may require manual code in both the Java and Python clients. These changes are rare and require additional planning in the proposal to plan out the steps. These are the steps for adding a new facet, which covers the majority of schema changes.  
 
 > It is important to have pre-commit installed by running `pre-commit install` before committing to the repository. All commits should be signed off with -s `git commit -s -m "commit message"`
 
