@@ -26,12 +26,12 @@ idea {
 }
 
 ext {
-    assertjVersion = "3.27.2"
+    assertjVersion = "3.27.3"
     icebergVersion = "0.14.1"
     jacksonVersion = "2.15.3"
     junit5Version = "5.11.4"
     mockitoVersion = "4.11.0"
-    micrometerVersion = "1.14.2"
+    micrometerVersion = "1.14.3"
 
     sparkVersion = project.findProperty("spark33.spark.version")
     scalaBinaryVersion = project.findProperty("scala.binary.version")
