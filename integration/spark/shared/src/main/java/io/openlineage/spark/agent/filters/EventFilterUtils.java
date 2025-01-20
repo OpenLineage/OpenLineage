@@ -9,12 +9,14 @@ import io.openlineage.spark.agent.util.SparkSessionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Optional;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 
+@Slf4j
 public class EventFilterUtils {
 
   /**
@@ -28,7 +30,24 @@ public class EventFilterUtils {
             new SparkNodesFilter(context),
             new CreateViewFilter(context),
             new AdaptivePlanEventFilter(context))
-        .anyMatch(filter -> filter.isDisabled(event.getClass().cast(event)));
+        .anyMatch(
+            filter -> {
+              boolean isDisabled = filter.isDisabled(event.getClass().cast(event));
+              if (isDisabled) {
+                String logicalPlanNode =
+                    getLogicalPlan(context)
+                        .map(plan -> plan.getClass().getCanonicalName())
+                        .orElse("UnparsableLogicalPlan");
+                if (log.isDebugEnabled()) {
+                  log.debug(
+                      "Rejecting event : {} with plan : {} due to filter : {}",
+                      event.toString(),
+                      logicalPlanNode,
+                      filter.getClass().getCanonicalName());
+                }
+              }
+              return isDisabled;
+            });
   }
 
   static Optional<LogicalPlan> getLogicalPlan(OpenLineageContext context) {

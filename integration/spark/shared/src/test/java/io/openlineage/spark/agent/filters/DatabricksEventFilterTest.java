@@ -29,6 +29,7 @@ class DatabricksEventFilterTest {
   DatabricksEventFilter filter = new DatabricksEventFilter(context);
   QueryExecution queryExecution = mock(QueryExecution.class, RETURNS_DEEP_STUBS);
   WholeStageCodegenExec node = mock(WholeStageCodegenExec.class);
+  SerializeFromObject serializedObjectNode = mock(SerializeFromObject.class);
   SparkListenerEvent sparkListenerEvent = mock(SparkListenerEvent.class);
 
   @BeforeEach
@@ -82,6 +83,19 @@ class DatabricksEventFilterTest {
             .contains("spark.databricks.workspaceUrl"))
         .thenReturn(false);
     when(node.nodeName()).thenReturn("collect_Limit");
+    assertThat(filter.isDisabled(event)).isFalse();
+  }
+
+  @Test
+  void testSerializedFromObjectEventIsNotFiltered() {
+    when(queryExecution
+            .sparkSession()
+            .sparkContext()
+            .getConf()
+            .contains("spark.databricks.workspaceUrl"))
+        .thenReturn(false);
+
+    when(queryExecution.optimizedPlan()).thenReturn(serializedObjectNode);
     assertThat(filter.isDisabled(event)).isFalse();
   }
 }
