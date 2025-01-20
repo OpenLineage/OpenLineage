@@ -38,27 +38,33 @@ public class DatabricksEventFilter implements EventFilter {
 
   @Override
   public boolean isDisabled(SparkListenerEvent event) {
-    return isSerializeFromObject() || isWriteIntoDeltaCommand() || isDisabledDatabricksPlan(event);
-  }
-
-  public boolean isDisabledDatabricksPlan(SparkListenerEvent ignoredEvent) {
     if (!DatabricksUtils.isRunOnDatabricksPlatform(context)
         || !context.getQueryExecution().isPresent()) {
       return false;
     }
 
-    SparkPlan node = context.getQueryExecution().get().executedPlan();
+    return isWriteIntoDeltaCommand() || isDisabledDatabricksPlan(event);
+  }
 
-    // Unwrap SparkPlan from WholeStageCodegen, as that's not a descriptive or helpful job name
-    if (node instanceof WholeStageCodegenExec) {
-      node = ((WholeStageCodegenExec) node).child();
+  public boolean isDisabledDatabricksPlan(SparkListenerEvent ignoredEvent) {
+    boolean isSerializedFromObject = isSerializeFromObject();
+
+    if (!isSerializedFromObject) {
+      SparkPlan node = context.getQueryExecution().get().executedPlan();
+
+      // Unwrap SparkPlan from WholeStageCodegen, as that's not a descriptive or helpful job name
+      if (node instanceof WholeStageCodegenExec) {
+        node = ((WholeStageCodegenExec) node).child();
+      }
+
+      String nodeName = node.nodeName().replace("_", "");
+
+      return excludedNodes.stream()
+          .map(n -> n.replace("_", ""))
+          .anyMatch(n -> n.equalsIgnoreCase(nodeName));
+    } else {
+      return isSerializedFromObject;
     }
-
-    String nodeName = node.nodeName().replace("_", "");
-
-    return excludedNodes.stream()
-        .map(n -> n.replace("_", ""))
-        .anyMatch(n -> n.equalsIgnoreCase(nodeName));
   }
 
   private boolean isSerializeFromObject() {
