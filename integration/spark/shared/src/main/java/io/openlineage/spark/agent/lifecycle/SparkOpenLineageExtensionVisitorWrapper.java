@@ -13,20 +13,27 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.DatasetIdentifier.Symlink;
+import io.openlineage.spark.agent.util.ExtensionClassloader;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.extension.OpenLineageExtensionProvider;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A helper class that uses reflection to call all methods of SparkOpenLineageExtensionVisitor,
@@ -35,6 +42,22 @@ import org.jetbrains.annotations.NotNull;
  */
 @Slf4j
 public final class SparkOpenLineageExtensionVisitorWrapper {
+
+  private static final String providerCanonicalName =
+      "io.openlineage.spark.extension.OpenLineageExtensionProvider";
+
+  private static final ByteBuffer providerClassBytes;
+
+  static {
+    try {
+      providerClassBytes = getProviderClassBytes(Thread.currentThread().getContextClassLoader());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static final ClassLoader currentThreadClassloader =
+      Thread.currentThread().getContextClassLoader();
 
   /**
    * Stores instances of SparkOpenLineageExtensionVisitor provided by connectors that implement
@@ -190,10 +213,28 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
   }
 
   private static List<Object> init(String testExtensionProvider)
-      throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+      throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException {
     List<Object> objects = new ArrayList<>();
+    // The following sequence of operations must be preserved as is.
+    // We cannot use ResourceFinder or ServiceLoader to determine if there are any
+    // OpenLineageExtensionProvider implementations because doing so involves classloading
+    // machinery.
+    // As a result, there is no reliable way to bypass the entire mechanism, even if
+    // no OpenLineageExtensionProvider implementations are present.
+
+    List<ClassLoader> availableClassloaders =
+        Thread.getAllStackTraces().keySet().stream()
+            .map(Thread::getContextClassLoader)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+    // Mutates the state of available classloader(s)
+    loadProviderToAvailableClassloaders(availableClassloaders);
+    ExtensionClassloader classLoader = new ExtensionClassloader(availableClassloaders);
+
     ServiceLoader<OpenLineageExtensionProvider> serviceLoader =
-        ServiceLoader.load(OpenLineageExtensionProvider.class);
+        ServiceLoader.load(OpenLineageExtensionProvider.class, classLoader);
+
     for (OpenLineageExtensionProvider service : serviceLoader) {
       String className = service.getVisitorClassName();
       if (testExtensionProvider == null) {
@@ -208,7 +249,76 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
     return objects;
   }
 
-  @NotNull
+  private static void loadProviderToAvailableClassloaders(List<ClassLoader> classloaders)
+      throws IOException {
+    List<ClassLoader> filteredClassloaders =
+        classloaders.stream()
+            // Skip the class loader associated with SparkOpenLineageExtensionVisitorWrapper
+            .filter(cl -> !(currentThreadClassloader.equals(cl)))
+            // Skip class loaders that have already loaded OpenLineageExtensionProvider
+            .filter(cl -> !hasLoadedProvider(cl))
+            .collect(Collectors.toList());
+
+    if (!filteredClassloaders.isEmpty()) {
+      log.warn(
+          "An illegal reflective access operation will occur when using the openlineage-spark integration with a "
+              + "Spark connector that implements spark-openlineage extension interfaces. \n"
+              + "This issue arises when the openlineage-spark integration and the Spark connector are loaded using "
+              + "different classloaders. For example, if one library is loaded using the --jars parameter while the other "
+              + "is placed in the /usr/lib/spark/jars directory. \n"
+              + "In this case, the OpenLineageExtensionProvider class will only be accessible to the class loader that "
+              + "loaded the openlineage-spark integration. If the other class loader attempts to access this class, it "
+              + "will trigger an illegal reflective access operation.\n"
+              + "To prevent this, ensure that both the openlineage-spark integration and the Spark connector are loaded "
+              + "using the same class loader. This can be achieved by: \n"
+              + "1. Placing both libraries in the /usr/lib/spark/jars directory, or \n"
+              + "2. Loading both libraries through the --jars parameter.");
+    }
+
+    filteredClassloaders.forEach(
+        cl -> {
+          try {
+            MethodUtils.invokeMethod(
+                cl, true, "defineClass", providerCanonicalName, providerClassBytes, null);
+            log.trace("{} succeeded to load a class", cl);
+          } catch (InvocationTargetException ex) {
+            if (!(ex.getCause() instanceof LinkageError)) {
+              log.error("Failed to load OpenLineageExtensionProvider class", ex.getCause());
+            }
+          } catch (Exception e) {
+            log.error("{}: Failed to load OpenLineageExtensionProvider class ", cl, e);
+          }
+        });
+  }
+
+  private static boolean hasLoadedProvider(ClassLoader classLoader) {
+    try {
+      classLoader.loadClass(providerCanonicalName);
+      return true;
+    } catch (Exception | Error e) {
+      log.trace("{} classloader failed to load OpenLineageExtensionProvider class", classLoader, e);
+      return false;
+    }
+  }
+
+  private static ByteBuffer getProviderClassBytes(ClassLoader classLoader) throws IOException {
+    String classPath =
+        SparkOpenLineageExtensionVisitorWrapper.providerCanonicalName.replace('.', '/') + ".class";
+
+    try (InputStream is = classLoader.getResourceAsStream(classPath)) {
+      if (is == null) {
+        throw new IOException(
+            "Class not found: "
+                + SparkOpenLineageExtensionVisitorWrapper.providerCanonicalName
+                + " using classloader: "
+                + classLoader);
+      }
+
+      byte[] bytes = IOUtils.toByteArray(is);
+      return ByteBuffer.wrap(bytes);
+    }
+  }
+
   private static Object getClassInstance(String className)
       throws ClassNotFoundException, InstantiationException, IllegalAccessException {
     Class<?> loadedClass = Class.forName(className);
