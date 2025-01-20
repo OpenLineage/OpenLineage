@@ -38,15 +38,15 @@ public class DatabricksEventFilter implements EventFilter {
 
   @Override
   public boolean isDisabled(SparkListenerEvent event) {
-    return isWriteIntoDeltaCommand() || isDisabledDatabricksPlan(event);
-  }
-
-  public boolean isDisabledDatabricksPlan(SparkListenerEvent ignoredEvent) {
     if (!DatabricksUtils.isRunOnDatabricksPlatform(context)
         || !context.getQueryExecution().isPresent()) {
       return false;
     }
 
+    return isWriteIntoDeltaCommand() || isDisabledDatabricksPlan(event);
+  }
+
+  public boolean isDisabledDatabricksPlan(SparkListenerEvent ignoredEvent) {
     boolean isSerializedFromObject = isSerializeFromObject();
 
     if (!isSerializedFromObject) {

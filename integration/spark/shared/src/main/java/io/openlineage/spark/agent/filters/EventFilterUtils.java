@@ -38,11 +38,13 @@ public class EventFilterUtils {
                     getLogicalPlan(context)
                         .map(plan -> plan.getClass().getCanonicalName())
                         .orElse("UnparsableLogicalPlan");
-                log.debug(
-                    "Rejecting event : {} with plan : {} due to filter : {}",
-                    event.toString(),
-                    logicalPlanNode,
-                    filter.getClass().getCanonicalName());
+                if (log.isDebugEnabled()) {
+                  log.debug(
+                      "Rejecting event : {} with plan : {} due to filter : {}",
+                      event.toString(),
+                      logicalPlanNode,
+                      filter.getClass().getCanonicalName());
+                }
               }
               return isDisabled;
             });
