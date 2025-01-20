@@ -1,11 +1,40 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.26.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.27.0...HEAD)
+
+## [1.27.0]() - 2025-01-20
 
 ### Added
 
 * **Flink: Experimental version for flink native lineage listener.** [`#3099`](https://github.com/OpenLineage/OpenLineage/pull/3099) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
   *New flink listener to extract lineage through native Flink interfaces. Supports Flink SQL. Requires Flink 2.0.*
+* **dbt: add support for consuming dbt structured logs for test and build commands .** [`#3362`](https://github.com/OpenLineage/OpenLineage/pull/3362) [@MassyB](https://github.com/MassyB)
+  *New option for dbt integration now can handle test and build commands too.*
+* **Spark: allow attaching custom facets to RDDExecContext events.** [`#3379`](https://github.com/OpenLineage/OpenLineage/pull/3379) [@ssanthanam185](https://github.com/ssanthanam185)
+  *Events emitted from RDDExecutionContext now include custom facets that get loaded as part of InternalHandlerFactory.*
+* **spec: add DatasetTypeDatasetFacet.** [`#3390`](https://github.com/OpenLineage/OpenLineage/pull/3390) [@ssanthanam185](https://github.com/ssanthanam185)
+  *Events emitted from RDDExecutionContext now include custom facets that get loaded as part of InternalHandlerFactory.*
+
+### Changed
+
+* **Python: allow adding additionalProperties to Python facets** [`#3391`](https://github.com/OpenLineage/OpenLineage/pull/3391) [@JDarDagran](https://github.com/JDarDagran)
+  *Adds `with_additonal_properties` method that allows to create modified instance of facet with additional properties.*
+* **Spark: allow attaching custom facets to RDDExecContext events.** [`#3379`](https://github.com/OpenLineage/OpenLineage/pull/3379) [@ssanthanam185](https://github.com/ssanthanam185)
+  *Events emitted from RDDExecutionContext now include custom facets that get loaded as part of InternalHandlerFactory.*
+* **Spark: SerializedFromObject events aren't filtered for not-delta plans.** [`#3403`](https://github.com/OpenLineage/OpenLineage/pull/3403) [@ssanthanam185](https://github.com/ssanthanam185)
+  *Those events shouldn't be filtered outside Databricks/Delta ecosystem.*
+
+### Fixed
+* **Spark: fixed ClassLoader handling for OpenLineageExtensionProvider.** [`#3368`](https://github.com/OpenLineage/OpenLineage/pull/3368) [@ddebowczyk92](https://github.com/ddebowczyk92)
+  *Fixes ClassNotFoundException issue when using the openlineage-spark integration alongside a Spark connector that implements the spark-extension-interfaces due to class loader conflicts.*
+* **SQL: add minimal support for Snowflake LATERAL.** [`#3368`](https://github.com/OpenLineage/OpenLineage/pull/3368) [@cisenbe](https://github.com/cisenbe)
+  *SQL parser won't error on Snowflake's LATERAL keyword.*
+* **dbt: handle errors in parse_assertions** [`#3311`](https://github.com/OpenLineage/OpenLineage/pull/3311) [@dsaxton-1password](https://github.com/dsaxton-1password)
+  *dbt integration won't fail when looking at tests on seeds.*
+* **Spark: fix infinite loop in RDD flatten & perf optimization.** [`#3379`](https://github.com/OpenLineage/OpenLineage/pull/3379) [@ssanthanam185](https://github.com/ssanthanam185)
+  *Spark integration now correctly handles complex jobs that have cycles and nested RDD trees.*
+* **Python: FileTransport now correctly attaches `json` file extension.** [`#3404`](https://github.com/OpenLineage/OpenLineage/pull/3404) [@kacpermuda](https://github.com/kacpermuda)
+  *When append=False, the json file extension wasn't properly added before.*
 
 
 ## [1.26.0](https://github.com/OpenLineage/OpenLineage/compare/1.25.0...1.26.0) - 2024-12-20
