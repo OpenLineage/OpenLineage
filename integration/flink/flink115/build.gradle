@@ -39,7 +39,7 @@ test {
 ext {
     flinkVersion = project.getProperty('flink.flink115.version')
     flinkVersionShort = flinkVersion.substring(0,4)
-    assertjVersion = '3.27.2'
+    assertjVersion = '3.27.3'
     junit5Version = '5.11.4'
     mockitoVersion = '5.2.0'
 }
