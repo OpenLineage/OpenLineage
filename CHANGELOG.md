@@ -2,7 +2,7 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.27.0...HEAD)
 
-## [1.27.0]() - 2025-01-20
+## [1.27.0](https://github.com/OpenLineage/OpenLineage/compare/1.26.0...1.27.0) - 2025-01-20
 
 ### Added
 
