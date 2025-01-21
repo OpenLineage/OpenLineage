@@ -45,6 +45,7 @@ class Adapter(Enum):
     DREMIO = "dremio"
     ATHENA = "athena"
     DUCKDB = "duckdb"
+    TRINO = "trino"
 
     @staticmethod
     def adapters() -> str:
@@ -618,6 +619,8 @@ class DbtArtifactProcessor:
             return f"redshift://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.POSTGRES:
             return f"postgres://{profile['host']}:{profile['port']}"
+        elif self.adapter_type == Adapter.TRINO:
+            return f"trino://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.DATABRICKS:
             return f"databricks://{profile['host']}"
         elif self.adapter_type == Adapter.SQLSERVER:
