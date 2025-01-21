@@ -27,6 +27,7 @@ import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -84,6 +85,14 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
    * which are collected within RddExecutionContext but emitted within SparkSQLExecutionContext.
    */
   private Optional<Integer> activeJobId = Optional.empty();
+
+  @SuppressWarnings("PMD")
+  private final SparkConf conf;
+
+  public OpenLineageSparkListener(SparkConf conf) {
+    super();
+    this.conf = Objects.requireNonNull(conf).clone();
+  }
 
   /**
    * called by the tests

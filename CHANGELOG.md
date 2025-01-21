@@ -2,6 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.27.0...HEAD)
 
+### Added
+
+### Changed
+
+* **Spark: the OpenLineageSparkListener was refactored to have a public, single-argument constructor taking an instance of SparkConf. [`#3425`](https://github.com/OpenLineage/OpenLineage/pull/3425) [@d-m-h](https://github.com/d-m-h)
+  *This presents no functional change to the listener, however it will allow for improved initialisation of the listener in the future.*
+
+### Fixed
+
 ## [1.27.0](https://github.com/OpenLineage/OpenLineage/compare/1.26.0...1.27.0) - 2025-01-20
 
 ### Added
