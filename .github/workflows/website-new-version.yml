@@ -35,7 +35,11 @@ jobs:
       - name: Generate release notes
         run: |
           cd target
-          python scripts/create_release_notes.py '${{ github.event.release.tag_name }}' '${{ github.event.release.published_at }}' '${{ github.event.release.body }}'
+          echo 
+          python scripts/create_release_notes.py '${{ github.event.release.tag_name }}' '${{ github.event.release.published_at }}' "$(cat << 'EOM'
+          ${{ github.event.release.body }}
+          EOM
+          )"
       - name: Generate new version
         run: |
           echo latest version is ${{ github.event.release.tag_name }}
