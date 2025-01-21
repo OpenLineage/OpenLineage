@@ -143,6 +143,7 @@ perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/grad
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark-extension-interfaces/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/flink/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/flink/examples/stateful/gradle.properties
+perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/flink-native-listener/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./proxy/backend/gradle.properties
 
 # (3) Bump version in docs
@@ -185,6 +186,7 @@ echo "version ${NEXT_VERSION}" > integration/spark/spark3/src/test/resources/io/
 echo "version ${NEXT_VERSION}" > integration/spark-extension-interfaces/src/test/resources/io/openlineage/spark/shade/extension/v1/lifecycle/plan/version.properties
 echo "version ${NEXT_VERSION}" > integration/flink/shared/src/test/resources/io/openlineage/flink/client/version.properties
 echo "version ${NEXT_VERSION}" > integration/flink/app/src/test/resources/io/openlineage/flink/client/version.properties
+echo "version ${NEXT_VERSION}" > integration/flink-native-listener/src/test/resources/io/openlineage/flink/client/version.properties
 
 # (7) Prepare next development version commit
 git commit --no-verify -sam "Prepare next development version ${NEXT_VERSION}"
