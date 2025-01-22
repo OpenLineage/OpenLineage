@@ -107,7 +107,7 @@ def get_parent_run_metadata():
         parent_namespace, parent_job_name, parent_run_id = parent_id.split("/")
         parent_run_metadata = ParentRunMetadata(
             run_id=parent_run_id, job_name=parent_job_name, job_namespace=parent_namespace
-        )
+        ).to_openlineage()
     return parent_run_metadata
 
 
