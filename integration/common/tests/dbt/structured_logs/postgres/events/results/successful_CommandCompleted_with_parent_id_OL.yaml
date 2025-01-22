@@ -1,0 +1,72 @@
+[
+  # OL event for command start
+  {
+    "eventTime": "2024-11-22T15:58:03.518877Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "dbt-run-jaffle_shop",
+      "facets": {
+        "parent": {
+          "run": { # parent runID passed via environment variable is present
+            "runId": "e2c4a0ab-d119-4828-b9c4-96ffd4c79d4f"
+          },
+          "job": {
+            "namespace": "my_parent_namespace",
+            "name": "my_parent_job_name"
+          }
+        },
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "JOB"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [ ],
+    "outputs": [ ]
+  },
+  # OL event for command finished
+  {
+    "eventTime":"2024-11-20T19:45:55.112200Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "dbt_version": {
+          "version": "1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"dbt-run-jaffle_shop",
+      "facets":{
+        "parent": {
+          "run": {
+            "runId": "e2c4a0ab-d119-4828-b9c4-96ffd4c79d4f"
+          },
+          "job": {
+            "namespace": "my_parent_namespace",
+            "name": "my_parent_job_name"
+          }
+        },
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "JOB"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  }
+]

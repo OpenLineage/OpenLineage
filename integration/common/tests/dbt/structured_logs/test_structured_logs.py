@@ -15,6 +15,7 @@ from openlineage.common.utils import get_from_nullable_chain
 ###########
 # helpers
 ###########
+DUMMY_UUID_4 = "e2c4a0ab-d119-4828-b9c4-96ffd4c79d4f"
 
 
 def ol_event_to_dict(event) -> Dict:
@@ -629,3 +630,40 @@ def test_sql_job_name(dbt_events, expected_sql_job_names):
     actual_sql_job_names = [processor._get_sql_job_name(event) for event in dbt_events]
 
     assert actual_sql_job_names == expected_sql_job_names
+
+
+@pytest.mark.parametrize(
+    "dbt_log_events, expected_ol_events, parent_id_env_var",
+    [
+        (
+            "./tests/dbt/structured_logs/postgres/events/logs/successful_CommandCompleted.yaml",
+            "./tests/dbt/structured_logs/postgres/events/results/successful_CommandCompleted_OL.yaml",
+            f"my_parent_namespace/my_parent_job_name/{DUMMY_UUID_4}",
+        ),
+        (
+            "./tests/dbt/structured_logs/postgres/events/logs/successful_CommandCompleted.yaml",
+            "./tests/dbt/structured_logs/postgres/events/results/successful_CommandCompleted_OL.yaml",
+            "",
+        ),
+    ],
+    ids=["with_env_var", "without_env_var"],
+)
+def test_parent_run_metadata(dbt_log_events, expected_ol_events, parent_id_env_var, monkeypatch):
+    monkeypatch.setenv("OPENLINEAGE_PARENT_ID", parent_id_env_var)
+    monkeypatch.setattr(
+        "openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._run_dbt_command",
+        lambda self: [json.dumps(dbt_event) for dbt_event in yaml.safe_load(open(dbt_log_events))],
+    )
+
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir="tests/dbt/structured_logs",
+        target="postgres",
+        dbt_command_line=["dbt", "run", "..."],
+    )
+    processor.manifest_path = "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
+    actual_ol_events = list(ol_event_to_dict(event) for event in processor.parse())
+    expected_ol_events = yaml.safe_load(open(expected_ol_events))
+
+    assert match(expected=expected_ol_events, result=actual_ol_events, ordered_list=True)
