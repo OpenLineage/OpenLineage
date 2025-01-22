@@ -105,7 +105,7 @@ const FillGrid = (partners: Partner[]) => {
 };
 
 export default function Ecosystem(): JSX.Element {
-  const seoTitle = "OpenLineage Ecosystem Page";
+  const seoTitle = "Ecosystem";
   const seoDescription =
     "A page about systems that interoperate with the OpenLineage specification for data lineage.";
 

@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+title: Documentation
 description: OpenLineage documentation
 image: https://openlineage.io/img/docs-thumb.png
 ---
