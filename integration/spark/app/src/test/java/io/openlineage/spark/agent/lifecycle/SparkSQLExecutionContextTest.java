@@ -54,7 +54,8 @@ class SparkSQLExecutionContextTest {
           executionId,
           eventEmitter,
           olContext,
-          new OpenLineageRunEventBuilder(olContext, mock(OpenLineageEventHandlerFactory.class)));
+          new OpenLineageRunEventBuilder(olContext, mock(OpenLineageEventHandlerFactory.class)),
+          false);
   private final QueryExecution queryExecution = mock(QueryExecution.class, RETURNS_DEEP_STUBS);
 
   @AfterEach
@@ -95,6 +96,23 @@ class SparkSQLExecutionContextTest {
 
     assertThat(lineageEvent.getAllValues().get(0))
         .hasFieldOrPropertyWithValue("eventType", EventType.START);
+    assertThat(lineageEvent.getAllValues().get(1))
+        .hasFieldOrPropertyWithValue("eventType", EventType.RUNNING);
+  }
+
+  @Test
+  void testNoStartIsSentWhenSwitchedOff(SparkSession spark) {
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+    }
+    context.setStartEmitted();
+    context.start(mock(SparkListenerSQLExecutionStart.class));
+    context.start(mock(SparkListenerJobStart.class));
+    verify(eventEmitter, times(2)).emit(lineageEvent.capture());
+
+    assertThat(lineageEvent.getAllValues().get(0))
+        .hasFieldOrPropertyWithValue("eventType", EventType.RUNNING);
     assertThat(lineageEvent.getAllValues().get(1))
         .hasFieldOrPropertyWithValue("eventType", EventType.RUNNING);
   }
@@ -232,6 +250,33 @@ class SparkSQLExecutionContextTest {
       assertThat(jobType.getJobType()).isEqualTo("SQL_JOB");
       assertThat(jobType.getIntegration()).isEqualTo("SPARK");
       assertThat(jobType.getProcessingType()).isEqualTo("STREAMING");
+    }
+  }
+
+  @Test
+  void testNoCompleteIsSentWhenContextInStreamingMode(SparkSession spark) {
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    SparkSQLExecutionContext context =
+        new SparkSQLExecutionContext(
+            executionId,
+            eventEmitter,
+            olContext,
+            new OpenLineageRunEventBuilder(olContext, mock(OpenLineageEventHandlerFactory.class)),
+            true);
+
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+      when(queryExecution.optimizedPlan().isStreaming()).thenReturn(true);
+
+      context.start(mock(SparkListenerJobStart.class));
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+      context.end(mock(SparkListenerJobEnd.class));
+    }
+    verify(eventEmitter, times(4)).emit(lineageEvent.capture());
+
+    for (RunEvent event : lineageEvent.getAllValues()) {
+      assertThat(event.getEventType().toString()).isNotEqualTo("COMPLETE");
     }
   }
 

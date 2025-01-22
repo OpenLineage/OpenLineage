@@ -45,6 +45,10 @@
 * **Python: FileTransport now correctly attaches `json` file extension.** [`#3404`](https://github.com/OpenLineage/OpenLineage/pull/3404) [@kacpermuda](https://github.com/kacpermuda)
   *When append=False, the json file extension wasn't properly added before.*
 
+### Fixed
+
+* **Spark: fix lineage for SQLs run within structured streaming queries.** [`#3405`](https://github.com/OpenLineage/OpenLineage/pull/3405) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *When a streaming query gets executed, treat SQL executed within a streaming query as parts of a streaming job.*
 
 ## [1.26.0](https://github.com/OpenLineage/OpenLineage/compare/1.25.0...1.26.0) - 2024-12-20
 
