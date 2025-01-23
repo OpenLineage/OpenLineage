@@ -12,11 +12,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.spark.scheduler.SparkListenerEvent;
-import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
-import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 
 /**
  * {@link AbstractQueryPlanDatasetBuilder} serves as an extension of {@link
@@ -35,8 +33,7 @@ public abstract class AbstractQueryPlanInputDatasetBuilder<P extends LogicalPlan
 
   @Override
   public boolean isDefinedAt(SparkListenerEvent event) {
-    return event instanceof SparkListenerJobStart
-        || event instanceof SparkListenerSQLExecutionStart;
+    return true;
   }
 
   @Override
