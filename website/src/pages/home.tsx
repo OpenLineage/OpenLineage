@@ -155,12 +155,7 @@ const Participate = () => {
           experiences. We also run a monthly open meeting of the Technical Steering Committee where we share project
           updates and engage in open discussion.
         </p>
-        <Button
-          title="GitHub"
-          to="https://github.com/openlineage/"
-          type="extbutton"
-          iconRight={<GitHub />}
-        />
+        <Button title="GitHub" to="https://github.com/openlineage/" type="extbutton" iconRight={<GitHub />} />
         <Button
           title="Slack"
           to="https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA"
