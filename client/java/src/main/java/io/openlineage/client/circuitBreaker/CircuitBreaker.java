@@ -20,6 +20,8 @@ public interface CircuitBreaker {
    */
   <T> T run(Callable<T> callable);
 
+  void close();
+
   default int getCheckIntervalMillis() {
     return CIRCUIT_CHECK_INTERVAL_IN_MILLIS;
   }
