@@ -11,6 +11,9 @@
 
 ### Fixed
 
+* **Spark: improve column lineage by including inputs within `COMPLETE` events.** [`#3434`](https://github.com/OpenLineage/OpenLineage/pull/3434) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Send input datasets in `COMPLETE` events while making sure version facet is attached on `START` only.
+
 ## [1.27.0](https://github.com/OpenLineage/OpenLineage/compare/1.26.0...1.27.0) - 2025-01-20
 
 ### Added
