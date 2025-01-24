@@ -118,9 +118,8 @@ public class DataSourceV2RelationDatasetExtractor {
     try {
       return (Optional.of(CatalogUtils3.getDatasetIdentifierFromRelation(relation)));
     } catch (UnsupportedCatalogException ex) {
-      log.error(
-          String.format("Catalog %s is unsupported", ex.getMessage()),
-          ex); // update this if change the exception thrown in catalogutils
+      log.warn(String.format("Catalog %s is unsupported", ex.getMessage()));
+      // update this if change the exception thrown in catalogutils
       return Optional.empty();
     }
   }

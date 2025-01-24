@@ -61,7 +61,12 @@ public class CatalogUtils3 {
                 handler.getDatasetIdentifier(
                     context.getSparkSession().get(), catalog, identifier, properties))
         .findAny()
-        .orElseThrow(() -> new UnsupportedCatalogException(catalog.getClass().getCanonicalName()));
+        .orElseThrow(
+            () ->
+                new UnsupportedCatalogException(
+                    String.format(
+                        "Cannot extract dataset for catalog=%s",
+                        catalog.getClass().getCanonicalName())));
   }
 
   public static Optional<CatalogHandler> getCatalogHandler(
@@ -79,7 +84,12 @@ public class CatalogUtils3 {
         .filter(handler -> handler.isClass(relation))
         .map(handler -> handler.getDatasetIdentifier(relation))
         .findAny()
-        .orElseThrow(() -> new UnsupportedCatalogException(relation.getClass().getCanonicalName()));
+        .orElseThrow(
+            () ->
+                new UnsupportedCatalogException(
+                    String.format(
+                        "Cannot extract dataset from relation=%s relationClass=%s",
+                        relation.simpleString(5), relation.getClass().getCanonicalName())));
   }
 
   public static Optional<OpenLineage.StorageDatasetFacet> getStorageDatasetFacet(

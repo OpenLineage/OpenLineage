@@ -49,7 +49,10 @@ public class PlanUtils3 {
       return (Optional.of(
           CatalogUtils3.getDatasetIdentifier(context, catalog, identifier, properties)));
     } catch (UnsupportedCatalogException ex) {
-      log.error(String.format("Catalog %s is unsupported", ex.getMessage()), ex);
+      log.warn(
+          String.format(
+              "Catalog %s is unsupported: %s",
+              catalog.getClass().getCanonicalName(), ex.getMessage()));
       return Optional.empty();
     } catch (Exception e) {
       if (e instanceof NoSuchTableException) {
