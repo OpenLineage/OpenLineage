@@ -16,7 +16,8 @@ import io.openlineage.spark.agent.util.DeltaUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
-import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputOnEndDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputOnStartDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationOnEndInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationOnStartInputDatasetBuilder;
@@ -61,7 +62,8 @@ public class Spark35DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new CreateReplaceInputDatasetBuilder(context))
             .add(new SparkExtensionV1InputDatasetBuilder(context))
             .add(new MergeIntoCommandEdgeInputDatasetBuilder(context))
-            .add(new DataSourceV2RelationInputDatasetBuilder(context, datasetFactory));
+            .add(new DataSourceV2RelationInputOnStartDatasetBuilder(context, datasetFactory))
+            .add(new DataSourceV2RelationInputOnEndDatasetBuilder(context, datasetFactory));
 
     if (DeltaUtils.hasMergeIntoCommandClass()) {
       builder.add(new MergeIntoCommandInputDatasetBuilder(context));
