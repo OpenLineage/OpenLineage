@@ -1,6 +1,12 @@
 ---
 sidebar_position: 1
+title: About OpenLineage
+description: OpenLineage documentation
+image: https://openlineage.io/img/docs-thumb.png
 ---
+<Head>
+  <title>Documentation | OpenLineage</title>
+</Head>
 
 # About OpenLineage
 

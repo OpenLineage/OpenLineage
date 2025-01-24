@@ -1,5 +1,6 @@
 import * as React from "react";
 import { styled } from "@mui/material/styles";
+import Head from "@docusaurus/Head";
 import Footer from "../components/footer";
 import Layout from "@theme/Layout";
 import Card from "@mui/material/Card";
@@ -104,12 +105,15 @@ const FillGrid = (partners: Partner[]) => {
 };
 
 export default function Ecosystem(): JSX.Element {
-  const seoTitle = "OpenLineage Ecosystem Page";
-  const seoDescription =
-    "A page about systems, such as AWS and the Google Cloud Platform, that interoperate with the OpenLineage specification for data lineage.";
+  const seoTitle = "Ecosystem | OpenLineage";
+  const seoDescription = "A page about systems that interoperate with the OpenLineage specification for data lineage.";
 
   return (
     <Layout title={seoTitle} description={seoDescription}>
+      <Head>
+        <meta property="og:image" content="https://openlineage.io/img/ecosystem-thumb.png" />
+        <meta property="twitter:image" content="https://openlineage.io/img/ecosystem-thumb.png" />
+      </Head>
       <div className="title pt-4 text-center lg:py-14 lg:px-0">
         <h2 className="text-5xl text-color-1">Ecosystem</h2>
       </div>
