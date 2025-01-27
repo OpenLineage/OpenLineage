@@ -15,7 +15,7 @@ plugins {
     id 'com.diffplug.spotless' version '6.13.0'
     id "com.gradleup.shadow" version "8.3.5"
     id "pmd"
-    id "io.freefair.lombok" version "8.11"
+    id "io.freefair.lombok" version "8.12"
     id "com.github.gmazzo.buildconfig" version "5.5.1"
 }
 
@@ -37,7 +37,7 @@ sourceSets {
 
 dependencies {
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
-    implementation(platform("software.amazon.awssdk:bom:2.30.2"))
+    implementation(platform("software.amazon.awssdk:bom:2.30.6"))
     implementation("software.amazon.awssdk:auth")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:url-connection-client")
