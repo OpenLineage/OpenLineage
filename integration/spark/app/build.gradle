@@ -378,6 +378,7 @@ tasks.register("createVersionProperties") {
 }
 
 def integrationTestDependencies = [
+        tasks.named("testClasses"),
         tasks.named("shadowJar"),
         tasks.named("copyDependencies"),
         tasks.named("copyIntegrationTestFixtures"),
