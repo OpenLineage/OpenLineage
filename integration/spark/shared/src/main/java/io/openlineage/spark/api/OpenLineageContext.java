@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.StringJoiner;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -28,6 +29,7 @@ import org.apache.spark.package$;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
+import org.apache.spark.sql.execution.SparkPlan;
 import scala.PartialFunction;
 
 /**
@@ -114,10 +116,144 @@ public class OpenLineageContext {
   final List<ColumnLevelLineageVisitor> columnLevelLineageVisitors = new ArrayList<>();
 
   /** Optional {@link QueryExecution} for runs that are Spark SQL queries. */
-  final QueryExecution queryExecution;
+  private final QueryExecution queryExecution;
 
+  /**
+   * @deprecated Use the direct methods like {@link #getLogicalPlan()}, {@link #getAnalyzedPlan()},
+   *     {@link #getOptimizedPlan()}, or {@link #getSparkPlan()} to access the underlying plans.
+   *     This method exposes the internal {@link QueryExecution} object, which breaks the Law of
+   *     Demeter and is not intended for direct use. The direct methods provide a cleaner API for
+   *     accessing plan information and also centralize logic for handling cases where the plan may
+   *     need to be augmented.
+   * @return an Optional {@link QueryExecution}
+   */
+  @Deprecated
   public Optional<QueryExecution> getQueryExecution() {
     return Optional.ofNullable(queryExecution);
+  }
+
+  /**
+   * Checks if a logical plan is available for the current query execution.
+   *
+   * @return true if a logical plan exists, false otherwise.
+   */
+  public boolean hasLogicalPlan() {
+    return queryExecution != null && queryExecution.logical() != null;
+  }
+
+  /**
+   * Checks if an analyzed logical plan is available for the current query execution.
+   *
+   * @return true if an analyzed logical plan exists, false otherwise.
+   */
+  public boolean hasAnalyzedPlan() {
+    return queryExecution != null && queryExecution.analyzed() != null;
+  }
+
+  /**
+   * Checks if an optimized logical plan is available for the current query execution.
+   *
+   * @return true if an optimized logical plan exists, false otherwise.
+   */
+  public boolean hasOptimizedPlan() {
+    return queryExecution != null && queryExecution.optimizedPlan() != null;
+  }
+
+  /**
+   * Returns the logical plan for the current query execution.
+   *
+   * @return The logical plan.
+   * @throws NullPointerException if there is no query execution or the logical plan is not present
+   */
+  public LogicalPlan getLogicalPlan() {
+    return queryExecution.logical();
+  }
+
+  /**
+   * Returns the analyzed logical plan for the current query execution.
+   *
+   * @return The analyzed logical plan.
+   * @throws NullPointerException if there is no query execution or the analyzed logical plan is not
+   *     present
+   */
+  public LogicalPlan getAnalyzedPlan() {
+    return queryExecution.analyzed();
+  }
+
+  /**
+   * Returns the optimized logical plan for the current query execution.
+   *
+   * @return The optimized logical plan.
+   * @throws NullPointerException if there is no query execution or the optimized logical plan is
+   *     not present
+   */
+  public LogicalPlan getOptimizedPlan() {
+    return queryExecution.optimizedPlan();
+  }
+
+  /**
+   * Returns an Optional containing the logical plan for the current query execution.
+   *
+   * @return An Optional containing the logical plan, or an empty Optional if not present.
+   */
+  public Optional<LogicalPlan> getLogicalPlanOptional() {
+    return Optional.ofNullable(queryExecution.logical());
+  }
+
+  /**
+   * Returns an Optional containing the analyzed logical plan for the current query execution.
+   *
+   * @return An Optional containing the analyzed logical plan, or an empty Optional if not present.
+   */
+  public Optional<LogicalPlan> getAnalyzedPlanOptional() {
+    return Optional.ofNullable(queryExecution.analyzed());
+  }
+
+  /**
+   * Returns an Optional containing the optimized logical plan for the current query execution.
+   *
+   * @return An Optional containing the optimized logical plan, or an empty Optional if not present.
+   */
+  public Optional<LogicalPlan> getOptimizedPlanOptional() {
+    return Optional.ofNullable(queryExecution.optimizedPlan());
+  }
+
+  /**
+   * Checks if an executed plan is available for the current query execution.
+   *
+   * @return true if an executed plan exists, false otherwise.
+   */
+  public boolean hasExecutedPlan() {
+    return queryExecution != null && queryExecution.executedPlan() != null;
+  }
+
+  /**
+   * Returns the executed plan for the current query execution.
+   *
+   * @return The executed plan.
+   * @throws NullPointerException if there is no query execution or the executed plan is not present
+   */
+  public SparkPlan getExecutedPlan() {
+    return queryExecution.executedPlan();
+  }
+
+  /**
+   * Checks if a spark plan is available for the current query execution.
+   *
+   * @return true if a spark plan exists, false otherwise.
+   */
+  public boolean hasSparkPlan() {
+    return queryExecution != null && queryExecution.sparkPlan() != null;
+  }
+
+  /**
+   * Returns the spark plan for the current query execution.
+   *
+   * @return The spark plan.
+   * @throws NullPointerException if there is no query execution or the spark plan is not present
+   */
+  public SparkPlan getSparkPlan() {
+    return queryExecution.sparkPlan();
   }
 
   /** Spark version of currently running job */
@@ -159,4 +295,13 @@ public class OpenLineageContext {
    * and the extension implementations provided by spark-extension-interfaces.
    */
   @Getter final SparkOpenLineageExtensionVisitorWrapper sparkExtensionVisitorWrapper;
+
+  @Override
+  public String toString() {
+    return new StringJoiner(", ", OpenLineageContext.class.getSimpleName() + "[", "]")
+        .add("applicationUuid=" + applicationUuid)
+        .add("runUuid=" + runUuid)
+        .add("jobName='" + jobName + "'")
+        .toString();
+  }
 }

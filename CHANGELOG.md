@@ -10,6 +10,8 @@
   *This presents no functional change to the listener, however it will allow for improved initialisation of the listener in the future.*
 * **Spark: Unsupported catalog exception should be less verbose.** [`#3435`](https://github.com/OpenLineage/OpenLineage/pull/3435) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
   *In case of unsupported classes, `warn` logs without a stacktrace should be produced.*
+* **Spark: Directly expose the LogicalPlan and SparkPlan objects inside OpenLineageContext.* [`#3443`](https://github.com/OpenLineage/OpenLineage/pull/3443) [@d-m-h](https://github.com/d-m-h)
+  *This is an initial refactor to a larger code base change that will see the removal of direct access of the QueryExecution object. It has no functional change on the way the integration behaves.*
 
 ### Fixed
 
