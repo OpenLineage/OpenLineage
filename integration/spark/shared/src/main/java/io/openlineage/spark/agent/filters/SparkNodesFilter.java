@@ -8,8 +8,11 @@ package io.openlineage.spark.agent.filters;
 import static io.openlineage.spark.agent.filters.EventFilterUtils.getLogicalPlan;
 
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark.api.SparkOpenLineageConfig.FilterConfig;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
@@ -44,6 +47,8 @@ public class SparkNodesFilter implements EventFilter {
   }
 
   private boolean filterNode(LogicalPlan plan) {
+    String nodeName = plan.getClass().getCanonicalName();
+
     if (plan.isStreaming()) {
       // When Spark is in the streaming mode, Kafka input when saving with method forEach batch is
       // in the different
@@ -52,9 +57,27 @@ public class SparkNodesFilter implements EventFilter {
       return filterNodes.stream()
           .filter(node -> !node.equals(Project.class.getCanonicalName()))
           .collect(Collectors.toList())
-          .contains(plan.getClass().getCanonicalName());
+          .contains(nodeName);
     }
 
-    return filterNodes.contains(plan.getClass().getCanonicalName());
+    Optional<FilterConfig> filterConfig =
+        Optional.ofNullable(context.getOpenLineageConfig())
+            .map(SparkOpenLineageConfig::getFilterConfig);
+
+    if (filterConfig.isPresent() && filterConfig.get().getAllowedSparkNodes() != null) {
+      // configured allowed nodes
+      if (filterConfig.get().getAllowedSparkNodes().contains(nodeName)) {
+        return false;
+      }
+    }
+
+    if (filterConfig.isPresent() && filterConfig.get().getDeniedSparkNodes() != null) {
+      // configured denied nodes
+      if (filterConfig.get().getDeniedSparkNodes().contains(nodeName)) {
+        return true;
+      }
+    }
+
+    return filterNodes.contains(nodeName);
   }
 }

@@ -377,4 +377,26 @@ class ArgumentParserTest {
         .hasFieldOrPropertyWithValue(
             "hosts", Arrays.asList("postgres-host1-test", "postgres-host1-test"));
   }
+
+  @Test
+  void testNodeFilterConfiguration() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set(
+                "spark.openlineage.filter.allowedSparkNodes",
+                "[org.apache.spark.sql.Node1;org.apache.spark.sql.Node1]")
+            .set(
+                "spark.openlineage.filter.deniedSparkNodes",
+                "[org.apache.spark.sql.Node3;org.apache.spark.sql.Node4]");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+
+    assertThat(config.getFilterConfig())
+        .hasFieldOrPropertyWithValue(
+            "allowedSparkNodes",
+            Arrays.asList("org.apache.spark.sql.Node1", "org.apache.spark.sql.Node1"))
+        .hasFieldOrPropertyWithValue(
+            "deniedSparkNodes",
+            Arrays.asList("org.apache.spark.sql.Node3", "org.apache.spark.sql.Node4"));
+  }
 }
