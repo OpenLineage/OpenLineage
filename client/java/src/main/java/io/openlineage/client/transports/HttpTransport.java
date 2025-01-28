@@ -14,13 +14,20 @@ import static org.apache.hc.core5.http.HttpHeaders.CONTENT_TYPE;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLContext;
 import lombok.NonNull;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
@@ -30,8 +37,8 @@ import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.entity.GzipCompressingEntity;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
-import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.ParseException;
@@ -42,6 +49,7 @@ import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.pool.PoolReusePolicy;
+import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.Timeout;
 
 @Slf4j
@@ -72,7 +80,7 @@ public final class HttpTransport extends Transport {
     }
     Timeout timeout = Timeout.ofMilliseconds(timeoutMs);
 
-    PoolingHttpClientConnectionManager connectionManager =
+    PoolingHttpClientConnectionManagerBuilder connectionManagerBuilder =
         PoolingHttpClientConnectionManagerBuilder.create()
             .setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(timeout).build())
             .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.STRICT)
@@ -82,18 +90,55 @@ public final class HttpTransport extends Transport {
                     .setSocketTimeout(timeout)
                     .setConnectTimeout(timeout)
                     .setTimeToLive(timeout)
-                    .build())
-            .build();
+                    .build());
+
+    if (httpConfig.getSslContextConfig() != null) {
+      SSLContext sslContext = getSSLContext(httpConfig.getSslContextConfig());
+      if (sslContext != null) {
+        log.info("SSLContext set up successfully");
+        DefaultClientTlsStrategy tlsStrategy = new DefaultClientTlsStrategy(sslContext);
+        connectionManagerBuilder.setTlsSocketStrategy(tlsStrategy);
+      } else {
+        log.warn("SSLContext configured but unable to set up");
+      }
+    }
 
     RequestConfig requestConfig =
         RequestConfig.custom()
             .setConnectionRequestTimeout(timeout)
             .setResponseTimeout(timeout)
             .build();
+
     return HttpClientBuilder.create()
-        .setConnectionManager(connectionManager)
+        .setDefaultRequestConfig(requestConfig)
+        .setConnectionManager(connectionManagerBuilder.build())
         .setDefaultRequestConfig(requestConfig)
         .build();
+  }
+
+  private static SSLContext getSSLContext(HttpSslContextConfig httpSslContextConfig) {
+    if (httpSslContextConfig == null
+        || httpSslContextConfig.getKeyStoreType() == null
+        || httpSslContextConfig.getKeyStorePath() == null) {
+      return null;
+    }
+    try {
+      return SSLContexts.custom()
+          .setKeyStoreType(httpSslContextConfig.getKeyStoreType())
+          .loadKeyMaterial(
+              new File(httpSslContextConfig.getKeyStorePath()),
+              httpSslContextConfig.getStorePassword().toCharArray(),
+              httpSslContextConfig.getKeyPassword().toCharArray())
+          .build();
+    } catch (NoSuchAlgorithmException
+        | KeyManagementException
+        | KeyStoreException
+        | UnrecoverableKeyException
+        | CertificateException
+        | IOException e) {
+      log.error("Error creating SSLContext: {}", e.getMessage());
+      return null;
+    }
   }
 
   public HttpTransport(
