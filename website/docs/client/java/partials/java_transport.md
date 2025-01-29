@@ -101,6 +101,16 @@ spark.openlineage.transport.headers.X-Some-Extra-Header=abc
 spark.openlineage.transport.compression=gzip
 ```
 
+With SSL context:
+```ini
+spark.openlineage.transport.sslContext.storePassword=...
+spark.openlineage.transport.sslContext.keyPassword=...
+spark.openlineage.transport.sslContext.keyStoreType=...
+spark.openlineage.transport.sslContext.keyStorePath=...
+```
+where the config contains location of the keystore file, keystore password and its type.
+It should also contain key password.
+
 <details>
 <summary>URL parsing within Spark integration</summary>
 <p>
@@ -149,6 +159,17 @@ openlineage.transport.auth.apiKey=f38d2189-c603-4b46-bdea-e573a3b5a7d5
 openlineage.transport.headers.X-Some-Extra-Header=abc
 openlineage.transport.compression=gzip
 ```
+
+With SSL context:
+```ini
+openlineage.transport.sslContext.storePassword=...
+openlineage.transport.sslContext.keyPassword=...
+openlineage.transport.sslContext.keyStoreType=...
+openlineage.transport.sslContext.keyStorePath=...
+```
+where the config contains location of the keystore file, keystore password and its type.
+It should also contain key password.
+
 
 </TabItem>
 <TabItem value="java" label="Java Code">
@@ -226,6 +247,13 @@ OpenLineageClient client = OpenLineageClient.builder()
     new HttpTransport(httpConfig))
   .build();
 ```
+
+With SSL Context:
+```java
+ httpConfig.setSslContextConfig(new HttpSslContextConfig(keyStorePassword, keyPassword, keyStoreType, keyStoreFileName));
+```
+where the config contains location of the keystore file, keystore password and its type. 
+It should also contain key password. 
 
 </TabItem>
 </Tabs>

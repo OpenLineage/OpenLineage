@@ -51,6 +51,11 @@ public final class HttpConfig implements TransportConfig, MergeConfig<HttpConfig
 
   @Getter @Setter private @Nullable Compression compression;
 
+  @JsonProperty("sslContext")
+  @Getter
+  @Setter
+  private @Nullable HttpSslContextConfig sslContextConfig;
+
   @Override
   public HttpConfig mergeWithNonNull(HttpConfig other) {
     return new HttpConfig(
@@ -61,6 +66,7 @@ public final class HttpConfig implements TransportConfig, MergeConfig<HttpConfig
         mergePropertyWith(auth, other.auth),
         mergePropertyWith(urlParams, other.urlParams),
         mergePropertyWith(headers, other.headers),
-        mergePropertyWith(compression, other.compression));
+        mergePropertyWith(compression, other.compression),
+        mergePropertyWith(sslContextConfig, other.sslContextConfig));
   }
 }

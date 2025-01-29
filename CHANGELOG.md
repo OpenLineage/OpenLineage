@@ -4,6 +4,8 @@
 
 ### Added
 
+* **Java: enable specifying custom SSL context** [`#3444`](https://github.com/OpenLineage/OpenLineage/pull/3444) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Enable providing configuration for SSL context within HTTP transport.
 * **Spark: make Spark nodes filtering configurable.** [`#3442`](https://github.com/OpenLineage/OpenLineage/pull/3442) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
   *Spark integration filters OpenLineage events for specific plan node classes. This can be now extended with extra config entries: `allowedSparkNodes` and `deniedSparkNodes`. See [Spark Configuration documentation](https://openlineage.io/docs/integrations/spark/configuration/spark_conf) for more details. *
 
