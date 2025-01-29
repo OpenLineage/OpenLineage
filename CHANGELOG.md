@@ -4,6 +4,9 @@
 
 ### Added
 
+* **Spark: make Spark nodes filtering configurable.** [`#3442`](https://github.com/OpenLineage/OpenLineage/pull/3442) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Spark integration filters OpenLineage events for specific plan node classes. This can be now extended with extra config entries: `allowedSparkNodes` and `deniedSparkNodes`. See [Spark Configuration documentation](https://openlineage.io/docs/integrations/spark/configuration/spark_conf) for more details. *
+
 ### Changed
 
 * **Spark: the OpenLineageSparkListener was refactored to have a public, single-argument constructor taking an instance of SparkConf. [`#3425`](https://github.com/OpenLineage/OpenLineage/pull/3425) [@d-m-h](https://github.com/d-m-h)

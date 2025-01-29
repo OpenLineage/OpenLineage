@@ -70,18 +70,18 @@ dataset:
 <TabItem value="spark" label="Spark Config">
 
 | Parameter                                                          | Definition    | Example |
-------------------- -------------------------------------------------|---------------|--------
-| spark.openlineage.dataset.namespaceResolvers.resolved-name.type  | Resolver type | pattern |
-| spark.openlineage.dataset.namespaceResolvers.resolved-name.hosts | Regex pattern to find and replace | `cassandra-prod(\d)+\.company\.com` |
-| spark.openlineage.dataset.namespaceResolvers.resolved-name.schema | Optional schema to be specified. Resolver will be only applied if schema matches the configure one. | `kafka` |
+-------------------------------------------------------------------- |---------------|--------
+| spark.openlineage.dataset.namespaceResolvers.resolved-name.type    | Resolver type | pattern |
+| spark.openlineage.dataset.namespaceResolvers.resolved-name.hosts   | Regex pattern to find and replace | `cassandra-prod(\d)+\.company\.com` |
+| spark.openlineage.dataset.namespaceResolvers.resolved-name.schema  | Optional schema to be specified. Resolver will be only applied if schema matches the configure one. | `kafka` |
 
 </TabItem>
 <TabItem value="flink" label="Flink Config">
 
-| Parameter                                                    | Definition    | Example |
-------------------- -------------------------------------------|---------------|--
-| openlineage.dataset.namespaceResolvers.resolved-name.type  | Resolver type | pattern |
-| openlineage.dataset.namespaceResolvers.resolved-name.hosts | Regex pattern to find and replace | `cassandra-prod(\d)+\.company\.com` |
+| Parameter                                                   | Definition    | Example |
+------------------------------------------------------------- |---------------|--
+| openlineage.dataset.namespaceResolvers.resolved-name.type   | Resolver type | pattern |
+| openlineage.dataset.namespaceResolvers.resolved-name.hosts  | Regex pattern to find and replace | `cassandra-prod(\d)+\.company\.com` |
 | openlineage.dataset.namespaceResolvers.resolved-name.schema | Optional schema to be specified. Resolver will be only applied if schema matches the configure one. | `kafka` |
 
 </TabItem>
@@ -110,7 +110,7 @@ dataset:
 <TabItem value="spark" label="Spark Config">
 
 | Parameter                                                             | Definition    | Example |
-------------------- ----------------------------------------------------|---------------|--
+------------------------------------------------------------------------|---------------|--
 | spark.openlineage.dataset.namespaceResolvers.pattern-group-resolver.type  | Resolver type | patternGroup |
 | spark.openlineage.dataset.namespaceResolvers.pattern-group-resolver.regex | Regex pattern to find and replace | `(?<cluster>[a-zA-Z-]+)-(\d)+\.company\.com:[\d]*` |
 | spark.openlineage.dataset.namespaceResolvers.pattern-group-resolver.matchingGroup | Matching group named within the regex | `cluster` |
@@ -120,7 +120,7 @@ dataset:
 <TabItem value="flink" label="Flink Config">
 
 | Parameter                                                             | Definition    | Example |
-------------------- ----------------------------------------------------|---------------|--
+------------------------------------------------------------------------|---------------|--
 | openlineage.dataset.namespaceResolvers.pattern-group-resolver.type  | Resolver type | patternGroup |
 | openlineage.dataset.namespaceResolvers.pattern-group-resolver.regex | Regex pattern to find and replace | `(?<cluster>[a-zA-Z-]+)-(\d)+\.company\.com` |
 | openlineage.dataset.namespaceResolvers.pattern-group-resolver.matchingGroup | Matching group named within the regex | `cluster` |
