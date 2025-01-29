@@ -13,6 +13,7 @@ import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.dataset.DatasetConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,9 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   @JsonProperty("columnLineage")
   private ColumnLineageConfig columnLineageConfig;
 
+  @JsonProperty("filter")
+  private FilterConfig filterConfig;
+
   public SparkOpenLineageConfig(
       String namespace,
       String parentJobName,
@@ -63,7 +67,8 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       CircuitBreakerConfig circuitBreaker,
       Map<String, Object> metricsConfig,
       ColumnLineageConfig columnLineageConfig,
-      VendorsConfig vendors) {
+      VendorsConfig vendors,
+      FilterConfig filterConfig) {
     super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig);
     this.namespace = namespace;
     this.parentJobName = parentJobName;
@@ -75,6 +80,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.job = job;
     this.columnLineageConfig = columnLineageConfig;
     this.vendors = vendors;
+    this.filterConfig = filterConfig;
   }
 
   @Override
@@ -150,6 +156,14 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     private final Map<String, String> additionalProperties = new HashMap<>();
   }
 
+  @Getter
+  @Setter
+  @ToString
+  public static class FilterConfig {
+    private final List<String> allowedSparkNodes = new ArrayList<>();
+    private final List<String> deniedSparkNodes = new ArrayList<>();
+  }
+
   @Override
   public SparkOpenLineageConfig mergeWithNonNull(SparkOpenLineageConfig other) {
     return new SparkOpenLineageConfig(
@@ -167,6 +181,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
         mergePropertyWith(metricsConfig, other.metricsConfig),
         mergePropertyWith(columnLineageConfig, other.columnLineageConfig),
-        mergePropertyWith(vendors, other.vendors));
+        mergePropertyWith(vendors, other.vendors),
+        mergePropertyWith(filterConfig, other.filterConfig));
   }
 }
