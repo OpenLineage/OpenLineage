@@ -120,7 +120,7 @@ The existing ExecutorCircuitBreaker, though looks similar, is not fully adequate
 it has a cachedthreadpool, which can result in creation of too many threads and high memory footprint. 
 It also rejects a task right away if there's no thread to pick up.
 
-</TabItem>
+<Tabs groupId="async">
 <TabItem value="flink" label="Flink Config">
 
 | Parameter                            | Definition                                                                                                 | Example        |
