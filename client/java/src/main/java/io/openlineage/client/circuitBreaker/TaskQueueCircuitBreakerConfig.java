@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2025 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.client.circuitBreaker;
 
 import static io.openlineage.client.circuitBreaker.CircuitBreaker.CIRCUIT_CHECK_INTERVAL_IN_MILLIS;

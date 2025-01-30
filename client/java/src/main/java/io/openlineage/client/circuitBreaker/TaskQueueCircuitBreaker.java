@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2025 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.client.circuitBreaker;
 
 import io.micrometer.common.lang.NonNull;
@@ -17,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
  * Queues every openlineage task for execution by a bounded threadpool to prevent creation of too
  * many threads (unlike cachedthreadpool) and resulting impact on the spark job. Once queued, the
  * circuit breaker waits for some configured time for the task to finish execution in an effort to
- * preseve the ordering of completion of tasks. If queue is full, it gives up on the task. An
+ * preserve the ordering of completion of tasks. If queue is full, it gives up on the task. An
  * explicit close() that need to be called after the application end event is processed shuts it
  * down after waiting for a while (configurable) to finish pending tasks. Also the circuit breaker
  * maintains the count of rejected, canceled tasks, or submission timeouts.
