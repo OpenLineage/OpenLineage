@@ -105,3 +105,34 @@ circuitBreaker:
 
 List of available circuit breakers can be extended with custom one loaded via ServiceLoader
 with own implementation of `io.openlineage.client.circuitBreaker.CircuitBreakerBuilder`. 
+
+
+### Task Queue based Async CircuitBreaker
+In some cases spark applications generate too many events and processing all those events by the
+connector may have adverse effect on the spark application itself, e.g.,
+choking the listener bus and making other listeners sharing the listener bus not able to catch up. 
+TaskQueueCircuitBreaker offers the functionality to process as many events as possible in such cases, 
+while minimizing impact on the spark job. First it queues any task (processing of events) in a bounded queue
+and strictly process them asynchronously, while waiting a configurable 
+amount of time for the task to complete to make some effort towards
+preserving order. Second, it offers a close method to abandon pending tasks and unblock the listeners sharing the same listener bus.
+The existing ExecutorCircuitBreaker, though looks similar, is not fully adequate for this need because  
+it has a cachedthreadpool, which can result in creation of too many threads and high memory footprint. 
+It also rejects a task right away if there's no thread to pick up.
+
+</TabItem>
+<TabItem value="flink" label="Flink Config">
+
+| Parameter                            | Definition                                                                                                 | Example        |
+--------------------------------------|------------------------------------------------------------------------------------------------------------|----------------
+| openlineage.circuitBreaker.type | Circuit breaker type selected                                                                              | asyncTaskQueue |
+| openlineage.circuitBreaker.threadCount | Num threads to process task                                                                                | 2              |
+| openlineage.circuitBreaker.queueSize | The size of task queue                                                                                     | 1000           |
+| openlineage.circuitBreaker.circuitCheckIntervalInMillis | Frequency of checking circuit breaker                                                                      | 1000           |
+| spark.openlineage.circuitBreaker.timeoutInSeconds | Optional timeout for OpenLineage execution (Since version 1.13)                                            | 3              |
+| spark.openlineage.circuitBreaker.shutdownTimeoutSeconds | The duration through which the circuit breaker waits on close to wait for the queued tasks to be processed | 100            |
+
+
+
+</TabItem>
+</Tabs>
