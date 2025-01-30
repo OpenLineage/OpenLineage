@@ -90,6 +90,11 @@ public abstract class ExecutorCircuitBreaker implements CircuitBreaker {
     return circuitCheckIntervalInMillis;
   }
 
+  @Override
+  public void close() {
+    log.info("No-op close");
+  }
+
   public Optional<Duration> getTimeout() {
     return timeout;
   }
