@@ -90,7 +90,7 @@ dependencies {
     testImplementation "io.micrometer:micrometer-registry-statsd:${micrometerVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     testImplementation "com.google.guava:guava:${guavaVersion}"
-    testImplementation 'org.slf4j:slf4j-simple:1.7.36'
+    testImplementation 'org.slf4j:slf4j-simple:2.0.16'
 
     testImplementation("org.mock-server:mockserver-netty:5.14.0:shaded") {
         exclude group: 'com.google.guava', module: 'guava'
