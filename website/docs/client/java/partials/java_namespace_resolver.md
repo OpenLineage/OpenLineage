@@ -31,20 +31,21 @@ dataset:
 </TabItem>
 <TabItem value="spark" label="Spark Config">
 
-| Parameter                                                             | Definition    | Example |
-------------------- ----------------------------------------------------|---------------|--
-| spark.openlineage.dataset.namespaceResolvers.resolved-name.type  | Resolver type | hostList |
-| spark.openlineage.dataset.namespaceResolvers.resolved-name.hosts | List of hosts | `['kafka-prod13.company.com', 'kafka-prod15.company.com']` |
-| spark.openlineage.dataset.namespaceResolvers.resolved-name.schema | Optional schema to be specified. Resolver will be only applied if schema matches the configure one. | `kafka` |
+| Parameter                                                         | Definition                                                                                          | Example                                                    |
+--------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|------------------------------------------------------------
+| spark.openlineage.dataset.namespaceResolvers.resolved-name.type   | Resolver type                                                                                       | hostList                                                   |
+| spark.openlineage.dataset.namespaceResolvers.resolved-name.hosts  | List of hosts                                                                                       | `['kafka-prod13.company.com', 'kafka-prod15.company.com']` |
+| spark.openlineage.dataset.namespaceResolvers.resolved-name.schema | Optional schema to be specified. Resolver will be only applied if schema matches the configure one. | `kafka`                                                    |
 
 </TabItem>
 <TabItem value="flink" label="Flink Config">
 
-| Parameter                                                    | Definition    | Example |
-------------------- -------------------------------------------|---------------|--
-| openlineage.dataset.namespaceResolvers.resolved-name.type  | Resolver type | hostList |
-| openlineage.dataset.namespaceResolvers.resolved-name.hosts | List of hosts | `['kafka-prod13.company.com', 'kafka-prod15.company.com']` |
-| openlineage.dataset.namespaceResolvers.resolved-name.schema | Optional schema to be specified. Resolver will be only applied if schema matches the configure one. | `kafka` |
+| Parameter                                                   | Definition                                                                                          | Example                                                    |
+--------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|------------------------------------------------------------
+| openlineage.dataset.namespaceResolvers.resolved-name.type   | Resolver type                                                                                       | hostList                                                   |
+| openlineage.dataset.namespaceResolvers.resolved-name.hosts  | List of hosts                                                                                       | `['kafka-prod13.company.com', 'kafka-prod15.company.com']` |
+| openlineage.dataset.namespaceResolvers.resolved-name.schema | Optional schema to be specified. Resolver will be only applied if schema matches the configure one. | `kafka`                                                    |
+
 
 
 </TabItem>
