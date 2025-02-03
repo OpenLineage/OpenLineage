@@ -131,7 +131,13 @@ const config = {
         path: "./blogs",
       },
     ],
-    require.resolve("docusaurus-lunr-search"),
+    [
+      "docusaurus-lunr-search",
+      {
+        disableVersioning: false,
+        excludeRoutes: ["**/next/**", "docs/+([0-9]).+([0-9]).+([0-9])/**"],
+      },
+    ],
   ],
 
   themeConfig:
