@@ -21,6 +21,7 @@ import io.openlineage.client.OpenLineage.JobFacet;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunFacet;
+import io.openlineage.client.circuitBreaker.NoOpCircuitBreaker;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
@@ -54,7 +55,10 @@ class SparkApplicationExecutionContextTest {
       mock(OpenLineageEventHandlerFactory.class);
   private SparkApplicationExecutionContext context =
       new SparkApplicationExecutionContext(
-          eventEmitter, olContext, new OpenLineageRunEventBuilder(olContext, eventHandlerFactory));
+          eventEmitter,
+          olContext,
+          new OpenLineageRunEventBuilder(olContext, eventHandlerFactory),
+          new NoOpCircuitBreaker());
 
   @AfterEach
   void reset() {
@@ -207,7 +211,8 @@ class SparkApplicationExecutionContextTest {
         new SparkApplicationExecutionContext(
             eventEmitter,
             olContext,
-            new OpenLineageRunEventBuilder(olContext, eventHandlerFactory));
+            new OpenLineageRunEventBuilder(olContext, eventHandlerFactory),
+            new NoOpCircuitBreaker());
 
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
@@ -226,4 +231,6 @@ class SparkApplicationExecutionContextTest {
     }
     assertThat(lineageEvent.getAllValues()).isNotEmpty();
   }
+
+  // TODO: test with TaskQueueCircuitBreaker and verify run facet is present
 }

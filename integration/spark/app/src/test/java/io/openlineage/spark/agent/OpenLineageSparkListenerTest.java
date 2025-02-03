@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.circuitBreaker.NoOpCircuitBreaker;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
@@ -167,7 +168,8 @@ class OpenLineageSparkListenerTest {
       listener.onOtherEvent(mock(SparkListenerSQLExecutionStart.class));
       listener.onOtherEvent(mock(SparkListenerSQLExecutionEnd.class));
 
-      verify(contextFactory, never()).createSparkApplicationExecutionContext(sparkContext);
+      verify(contextFactory, never())
+          .createSparkApplicationExecutionContext(sparkContext, new NoOpCircuitBreaker());
       verify(contextFactory, never()).createSparkSQLExecutionContext(anyLong());
     }
   }

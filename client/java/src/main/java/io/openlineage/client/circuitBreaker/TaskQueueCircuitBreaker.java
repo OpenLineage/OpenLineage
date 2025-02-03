@@ -6,7 +6,11 @@
 package io.openlineage.client.circuitBreaker;
 
 import io.micrometer.common.lang.NonNull;
+import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.RunFacet;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -114,5 +118,22 @@ public class TaskQueueCircuitBreaker implements CircuitBreaker {
       log.error("Unable to shutdown pending event processing tasks", e);
     }
     // Once pending tasks are complete/conceled, process this end event synchronously
+  }
+
+  @Override
+  public Map<String, RunFacet> getRunFacets(OpenLineage openLineage) {
+    RunFacet runFacet = openLineage.newRunFacet();
+
+    runFacet
+        .getAdditionalProperties()
+        .put("type", TaskQueueCircuitBreaker.class.getCanonicalName());
+
+    runFacet.getAdditionalProperties().put("dropped", String.valueOf(dropped.intValue()));
+
+    runFacet.getAdditionalProperties().put("timedOut", String.valueOf(timedOut.intValue()));
+
+    runFacet.getAdditionalProperties().put("failed", String.valueOf(failed.intValue()));
+
+    return Collections.singletonMap("circuitBreaker", runFacet);
   }
 }

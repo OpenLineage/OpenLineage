@@ -5,7 +5,11 @@
 
 package io.openlineage.client.circuitBreaker;
 
+import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.RunFacet;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
@@ -97,6 +101,11 @@ public abstract class ExecutorCircuitBreaker implements CircuitBreaker {
 
   public Optional<Duration> getTimeout() {
     return timeout;
+  }
+
+  @Override
+  public Map<String, RunFacet> getRunFacets(OpenLineage openLineage) {
+    return Collections.emptyMap();
   }
 
   protected boolean isPercentageValueValid(Integer value) {

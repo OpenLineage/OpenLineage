@@ -260,7 +260,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
             SparkSession.getDefaultSession()
                 .map(sparkContextFromSession)
                 .orElse(activeSparkContext));
-    return contextFactory.createSparkApplicationExecutionContext(sparkContext.orElse(null));
+    return contextFactory.createSparkApplicationExecutionContext(
+        sparkContext.orElse(null), circuitBreaker);
   }
 
   private static Optional<ExecutionContext> getSparkSQLExecutionContext(long executionId) {

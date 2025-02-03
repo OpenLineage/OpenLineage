@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.lifecycle;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -44,7 +45,8 @@ public class ContextFactory {
     handlerFactory = new InternalEventHandlerFactory();
   }
 
-  public ExecutionContext createSparkApplicationExecutionContext(SparkContext sparkContext) {
+  public ExecutionContext createSparkApplicationExecutionContext(
+      SparkContext sparkContext, CircuitBreaker circuitBreaker) {
     OpenLineageContext olContext =
         OpenLineageContext.builder()
             .sparkContext(sparkContext)
@@ -62,7 +64,7 @@ public class ContextFactory {
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, handlerFactory);
     return new SparkApplicationExecutionContext(
-        openLineageEventEmitter, olContext, runEventBuilder);
+        openLineageEventEmitter, olContext, runEventBuilder, circuitBreaker);
   }
 
   public ExecutionContext createRddExecutionContext(int jobId) {

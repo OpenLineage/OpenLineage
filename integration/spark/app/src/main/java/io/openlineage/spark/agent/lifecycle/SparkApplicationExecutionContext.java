@@ -11,10 +11,14 @@ import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.RunFacet;
+import io.openlineage.client.OpenLineage.RunFacetsBuilder;
+import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.naming.JobNameBuilder;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.ActiveJob;
@@ -36,14 +40,17 @@ class SparkApplicationExecutionContext implements ExecutionContext {
   private final OpenLineageContext olContext;
   private final EventEmitter eventEmitter;
   private final OpenLineageRunEventBuilder runEventBuilder;
+  private final CircuitBreaker circuitBreaker;
 
   public SparkApplicationExecutionContext(
       EventEmitter eventEmitter,
       OpenLineageContext olContext,
-      OpenLineageRunEventBuilder runEventBuilder) {
+      OpenLineageRunEventBuilder runEventBuilder,
+      CircuitBreaker circuitBreaker) {
     this.eventEmitter = eventEmitter;
     this.olContext = olContext;
     this.runEventBuilder = runEventBuilder;
+    this.circuitBreaker = circuitBreaker;
   }
 
   @Override
@@ -120,6 +127,7 @@ class SparkApplicationExecutionContext implements ExecutionContext {
                         .eventTime(toZonedTime(applicationEnd.time()))
                         .eventType(COMPLETE))
                 .jobBuilder(getJobBuilder())
+                .runFacetsBuilder(getRunFacetsBuilder())
                 .jobFacetsBuilder(getJobFacetsBuilder())
                 .overwriteRunId(Optional.of(olContext.getApplicationUuid()))
                 .event(applicationEnd)
@@ -162,5 +170,19 @@ class SparkApplicationExecutionContext implements ExecutionContext {
                 .processingType(SPARK_PROCESSING_TYPE)
                 .integration(SPARK_INTEGRATION)
                 .build());
+  }
+
+  private OpenLineage.RunFacetsBuilder getRunFacetsBuilder() {
+    RunFacetsBuilder runFacetsBuilder = olContext.getOpenLineage().newRunFacetsBuilder();
+
+    if (circuitBreaker != null) {
+      Map<String, RunFacet> circuitBreakerRunFacets =
+          circuitBreaker.getRunFacets(olContext.getOpenLineage());
+      if (circuitBreakerRunFacets != null) {
+        circuitBreakerRunFacets.forEach(runFacetsBuilder::put);
+      }
+    }
+
+    return runFacetsBuilder;
   }
 }
