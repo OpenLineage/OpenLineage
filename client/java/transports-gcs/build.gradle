@@ -13,7 +13,7 @@ plugins {
     id "com.adarshr.test-logger" version "3.2.0"
     // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
     id 'com.diffplug.spotless' version '6.13.0'
-    id "com.gradleup.shadow" version "8.3.5"
+    id "com.gradleup.shadow" version "8.3.6"
     id "pmd"
     id "io.freefair.lombok" version "8.12"
 }
@@ -23,9 +23,9 @@ ext {
 }
 
 dependencies {
-    implementation('com.google.cloud:google-cloud-storage:2.47.0')
+    implementation('com.google.cloud:google-cloud-storage:2.48.0')
 
-    testImplementation('com.google.cloud:google-cloud-nio:0.127.29')
+    testImplementation('com.google.cloud:google-cloud-nio:0.127.30')
 }
 
 shadowJar {
