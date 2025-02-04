@@ -1,0 +1,74 @@
+---
+title: "Expanding the Horizon of OpenLineage: Extracting Lineage from Code with Foundational"
+date: 2025-02-04
+authors: [Forgoun]
+description: "Expanding the Horizon of OpenLineage: Extracting Lineage from Code with Foundational"
+---
+
+# Expanding the Horizon of OpenLineage: Extracting Lineage from Code with Foundational
+
+Data lineage is the cornerstone of modern data governance, providing transparency, traceability, and accountability across the data lifecycle. It ensures that organizations can track how data flows through systems, transforms between processes, and ultimately impacts downstream analytics and decision making. For data leaders, lineage is critical to maintaining trust in data by ensuring its accuracy, managing risks, and complying with regulatory requirements.
+
+Beyond its role in compliance and security, lineage is essential for operational efficiency. It allows teams to perform impact analyses before making changes, reducing the risk of breaking pipelines or disrupting critical workflows. When combined with metadata and integrated into governance tools, lineage offers a powerful way to visualize data dependencies, troubleshoot issues, and ensure stewardship across the organization.
+
+OpenLineage, the leading standard for capturing and sharing lineage, has transformed how organizations manage runtime-based lineage emitted from tools like Airflow and Spark. Yet, this focus on runtime lineage leaves a gap when it comes to static code, which governs rarely executed and ad hoc pipelines. Addressing this gap is essential to achieving a comprehensive view of lineage across the data ecosystem.
+
+This blog explores why lineage extracted from code is indispensable, how [Foundational extracts lineage directly from code](https://www.foundational.io/product/data-lineage), the challenges of integrating it into OpenLineage, and how a community-driven approach can address these challenges to provide a holistic view of data lineage.
+
+# The Evolution of Lineage: From Runtime to Code
+
+OpenLineage has excelled at capturing lineage during pipeline execution. Whether tracking Spark transformations or Airflow DAGs, its runtime-centric approach has provided unmatched visibility into active pipelines. However, relying solely on runtime lineage creates blind spots, particularly for rarely executed or complex code paths.
+
+## Examples of Missing Runtime Lineage:
+
+* **Rarely Executed Pipelines**:
+For example, restore jobs triggered only during incidents or annual computations might not emit runtime lineage frequently enough to provide actionable insights.
+* **Specific code-paths that rarely trigger**
+Some pipelines run frequently, but certain code paths are triggered only under rare conditions. For example, dbt incremental models typically run as incremental updates, and full refreshes are seldom executed, leaving their lineage underrepresented.
+* **Rarely Viewed Dashboards**
+Dashboards that are infrequently accessed might not emit queries often enough to appear in runtime lineage. For instance, renaming a column might not show any immediate impact, but it could break an obscure dashboard used only once a quarter or year.
+
+In these scenarios, runtime lineage cannot provide the full picture. To fill this gap, **lineage extracted directly from code** becomes critical. Together, runtime and code-based lineage create a comprehensive view, ensuring organizations are fully informed regardless of pipeline execution frequency.
+
+# Why Code-Based Lineage Matters
+
+Extracting lineage from code is a non-trivial process because it requires static analysis to understand the data flow and dependencies within the codebase. This involves examining how data is transformed and moved across various parts of the code. [Foundational](https://www.foundational.io/) provides a solution for extracting lineage from code for platforms like dbt, [Spark](https://docs.foundational.io/en/articles/9477498-foundational-spark-lineage), ORMs like [SQLAlchemy](https://docs.foundational.io/en/articles/9805380-extracting-lineage-from-sqlalchemy) and other platforms by analyzing the code to identify how data is transformed and moved between different components.
+
+Code-based lineage, like that implemented by [Foundational](https://www.foundational.io/), complements runtime lineage by providing coverage for **potential lineage**—a view of what could happen when the code is executed. This distinction is invaluable for several high-stakes use cases:
+
+1. **Regulatory Compliance**
+In industries like finance and healthcare, compliance requires proof that sensitive data (e.g., PII) is handled appropriately, even in rarely executed pipelines. Lineage extracted from code ensures there’s no pipeline—even an obscure or rarely run one—that inadvertently violates data regulations.
+2. **Data Security**
+Protecting sensitive customer data means verifying that no pipeline code inadvertently writes private information to publicly accessible locations. Code-based lineage identifies potential security risks, even in edge-case scenarios like a backup restore job copying sensitive data to public storage.
+3. **Refactoring with Confidence**
+When refactoring tables, columns, or schemas, understanding all dependencies—including those in rarely executed code—prevents unexpected breakages. Code-based lineage provides the safety net engineers need to proceed with confidence.
+
+# Modeling Code-Based Lineage in OpenLineage
+
+OpenLineage’s current model revolves around the concept of a **Job**, representing a runtime activity that transforms one Entity (e.g., a table or file) into another. But what happens when there is no true runtime job—when lineage comes from static code analysis instead?
+In July 2023, [Open Lineage introduced the concept of Static Lineage](https://openlineage.io/blog/static-lineage/), which allows to model lineage that is not emitted from runtime, but rather statically, as “design” lineage. We leverage this, in order to model code-based lineage. This means that we use the Job object to represent the code location from which the lineage was extracted. This aligns well with the OpenLineage modeling, as Job defines a transformation while Run is the instance of that job \- so in code-based lineage we can use the Job object without a Run object.
+We can also use some facets of Job which are suitable for use for code-based lineage, such as [SourceCodeLocationJobFacet](https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/SourceCodeLocationJobFacet.json), in order to represent additional information, such as the specific code version identifier (e.g., commit hash), repository, etc.
+So, for example, for a piece of code that copies data from Table1 to Table2 the lineage would be:
+
+```
+Table1 → <Job (points to `source/foo.py`)> → Table2
+```
+
+This approach maintains compatibility with the existing OpenLineage model while providing a path forward for integrating code-based lineage.
+
+# Collaborating with the OpenLineage Community
+
+While modeling via the Job object is a functional starting point, it leaves room for improvement. For example:
+
+* Creating a new facet for representing information for code-based lineage, such as the relevant code lines that are responsible for the specific transformation, pointing customers to the exact place in the code, rather than to just a source file.
+* Defining specific code annotations that can provide hints for the specific lineage, allowing authors of legacy code to benefit from code-based lineage by using hints in the code. The rationale here is that while there will be support for code-based lineage for popular frameworks like: dbt, Airflow, Spark, there probably won’t be support for legacy or home-grown systems.
+
+Foundational is excited to collaborate with the OpenLineage community to refine this model and develop a standard that unites code-based and runtime lineage into a cohesive framework.
+
+# Conclusion: A Holistic View of Data Lineage
+
+Data lineage is no longer just a nice-to-have; it’s a requirement for ensuring trust, compliance, and security in the modern data stack. OpenLineage has laid the foundation for open, runtime-based lineage, but it’s time to expand the scope.
+
+By integrating code-based lineage, organizations can achieve full coverage of their data pipelines, capturing both what is happening and what could happen. This comprehensive approach unlocks new possibilities for compliance, security, and data engineering efficiency.
+
+[Foundational](http://foundational.io) is already helping organizations extract lineage directly from their codebases, and we look forward to collaborating with the OpenLineage community to ensure this new frontier of lineage is modeled effectively. Together, we can build a lineage ecosystem that leaves no pipeline—or dependency—untracked.
