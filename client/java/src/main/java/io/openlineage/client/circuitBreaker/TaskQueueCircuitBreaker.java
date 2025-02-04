@@ -113,6 +113,6 @@ public class TaskQueueCircuitBreaker implements CircuitBreaker {
     } catch (Exception e) {
       log.error("Unable to shutdown pending event processing tasks", e);
     }
-    // Once pending tasks are complete/conceled, process this end event synchronously
+    // Once pending tasks are complete/canceled, process this end event synchronously
   }
 }
