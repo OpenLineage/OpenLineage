@@ -6,7 +6,10 @@
 package io.openlineage.client.circuitBreaker;
 
 import io.micrometer.common.lang.NonNull;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.openlineage.client.metrics.MicrometerProvider;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -15,7 +18,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -29,14 +31,16 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class TaskQueueCircuitBreaker implements CircuitBreaker {
+
+  public static final String TASK_QUEUE_METRIC_PREFIX = "openlineage.circuitbreaker.taskqueue.";
+  public static final String DROPPED_METRIC = TASK_QUEUE_METRIC_PREFIX + "dropped";
+  public static final String TIMED_OUT_METRIC = TASK_QUEUE_METRIC_PREFIX + "timedout";
+  public static final String FAILED_METRIC = TASK_QUEUE_METRIC_PREFIX + "failed";
+
   private BlockingQueue<Runnable> eventQueue;
   private ExecutorService eventProcessingExecutor;
   private Long timeoutSeconds;
   private Long shutdownTimeoutSeconds;
-
-  private final AtomicLong dropped = new AtomicLong();
-  private final AtomicLong timedOut = new AtomicLong();
-  private final AtomicLong failed = new AtomicLong();
 
   public TaskQueueCircuitBreaker(@NonNull TaskQueueCircuitBreakerConfig config) {
     this.timeoutSeconds = config.getTimeoutSeconds();
@@ -58,34 +62,32 @@ public class TaskQueueCircuitBreaker implements CircuitBreaker {
       T result = eventProcessingExecutor.submit(callable).get(timeoutSeconds, TimeUnit.SECONDS);
       return result;
     } catch (RejectedExecutionException re) {
-      dropped.incrementAndGet();
+      incrementCounter(DROPPED_METRIC);
       return null;
     } catch (TimeoutException e) {
-      timedOut.incrementAndGet();
+      incrementCounter(TIMED_OUT_METRIC);
       return null;
     } catch (Exception e) {
-      failed.incrementAndGet();
+      incrementCounter(FAILED_METRIC);
       return null;
     } finally {
-      log.info(
-          "Openlineage async stats: dropped={}, timeout={}, queueDepth={}, failed={}",
-          dropped.get(),
-          timedOut.get(),
-          getPendingTasks(),
-          failed.get());
+      Optional.ofNullable(MicrometerProvider.getMeterRegistry())
+          .ifPresent(
+              m ->
+                  log.info(
+                      "Openlineage async stats: dropped={}, timeout={}, queueDepth={}, failed={}",
+                      m.counter(DROPPED_METRIC).count(),
+                      m.counter(TIMED_OUT_METRIC).count(),
+                      getPendingTasks(),
+                      m.counter(FAILED_METRIC).count()));
     }
   }
 
-  public long getDroppedCount() {
-    return dropped.get();
-  }
-
-  public long getFailedCount() {
-    return failed.get();
-  }
-
-  public long getTimedoutCount() {
-    return timedOut.get();
+  private void incrementCounter(String metric) {
+    MeterRegistry meterRegistry = MicrometerProvider.getMeterRegistry();
+    if (meterRegistry != null) {
+      meterRegistry.counter(metric).increment();
+    }
   }
 
   public int getPendingTasks() {
@@ -109,10 +111,11 @@ public class TaskQueueCircuitBreaker implements CircuitBreaker {
       eventProcessingExecutor.awaitTermination(shutdownTimeoutSeconds, TimeUnit.SECONDS);
       // Force shutdown, canceling pending tasks. This will result in loss of events.
       List<Runnable> canceledTasks = eventProcessingExecutor.shutdownNow();
-      dropped.addAndGet(canceledTasks.size());
+      Optional.ofNullable(MicrometerProvider.getMeterRegistry())
+          .ifPresent(m -> m.counter(FAILED_METRIC).increment(canceledTasks.size()));
     } catch (Exception e) {
       log.error("Unable to shutdown pending event processing tasks", e);
     }
-    // Once pending tasks are complete/conceled, process this end event synchronously
+    // Once pending tasks are complete/canceled, process this end event synchronously
   }
 }

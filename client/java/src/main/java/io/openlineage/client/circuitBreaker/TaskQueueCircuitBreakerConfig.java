@@ -22,8 +22,8 @@ import lombok.ToString;
 public class TaskQueueCircuitBreakerConfig
     implements CircuitBreakerConfig, MergeConfig<TaskQueueCircuitBreakerConfig> {
   private static final Integer DEFAULT_THREAD_COUNT = 2;
-  private static final Integer DEFAULT_QUEUE_SIZE = 2;
-  private static final Long DEFAULT_TIMEOUT = 1L;
+  private static final Integer DEFAULT_QUEUE_SIZE = 10;
+  private static final Long DEFAULT_TIMEOUT = 90L;
   private static final Long DEFAULT_SHUTDOWN_TIMEOUT = 60L;
 
   @Getter @Setter private Integer threadCount = DEFAULT_THREAD_COUNT;
