@@ -32,7 +32,6 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
         .add(new CreateTableLikeCommandVisitor(context))
         .add(new DropTableVisitor(context))
         .add(new WriteToDataSourceV2Visitor(context))
-        .add(new RefreshTableCommandVisitor(context))
         .add(new RepairTableCommandVisitor(context))
         .build();
   }
@@ -43,6 +42,7 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
     return ImmutableList.<PartialFunction<LogicalPlan, List<InputDataset>>>builder()
         .addAll(super.getInputVisitors(context))
         .add(new StreamingDataSourceV2RelationVisitor(context))
+        .add(new RefreshTableCommandVisitor(context))
         .build();
   }
 
