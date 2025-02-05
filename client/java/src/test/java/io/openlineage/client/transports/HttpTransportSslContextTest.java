@@ -16,12 +16,15 @@ import java.net.URI;
 import javax.net.ssl.HttpsURLConnection;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockserver.configuration.Configuration;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.logging.MockServerLogger;
+import org.mockserver.model.ClearType;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.socket.tls.KeyStoreFactory;
 import org.slf4j.event.Level;
@@ -33,14 +36,14 @@ class HttpTransportSslContextTest {
   public static final String API_V1_LINEAGE = "/api/v1/lineage";
   private static ClientAndServer mockServer;
 
-  KeyStoreFactory keyStoreFactory;
+  private static KeyStoreFactory keyStoreFactory;
   HttpConfig httpConfig = new HttpConfig();
   OpenLineage.RunEvent event =
       new OpenLineage(URI.create("http://test.producer")).newRunEventBuilder().build();
 
-  @BeforeEach
+  @BeforeAll
   @SneakyThrows
-  public void startMockServer() {
+  public static void beforeAll() {
     keyStoreFactory = new KeyStoreFactory(new MockServerLogger());
 
     Configuration config = Configuration.configuration();
@@ -50,7 +53,13 @@ class HttpTransportSslContextTest {
     // ensure all connection using HTTPS will use the SSL context defined by
     // MockServer to allow dynamically generated certificates to be accepted
     HttpsURLConnection.setDefaultSSLSocketFactory(keyStoreFactory.sslContext().getSocketFactory());
+
     mockServer = ClientAndServer.startClientAndServer(config, MOCK_SERVER_PORT);
+  }
+
+  @BeforeEach
+  @SneakyThrows
+  public void beforeEach() {
     mockServer
         .withSecure(true)
         .when(new HttpRequest().withSecure(true).withPath(API_V1_LINEAGE))
@@ -67,7 +76,12 @@ class HttpTransportSslContextTest {
   }
 
   @AfterEach
-  public void stopMockServer() {
+  public void clear() {
+    mockServer.clear(request(API_V1_LINEAGE), ClearType.LOG);
+  }
+
+  @AfterAll
+  public static void stopMockServer() {
     mockServer.stop();
   }
 
