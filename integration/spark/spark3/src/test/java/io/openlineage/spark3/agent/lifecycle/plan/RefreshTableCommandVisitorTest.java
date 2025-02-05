@@ -113,19 +113,19 @@ class RefreshTableCommandVisitorTest {
       RefreshTableCommand command = RefreshTableCommand$.MODULE$.apply(tableIdentifier);
 
       assertThat(visitor.isDefinedAt(command)).isTrue();
-      List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
+      List<OpenLineage.InputDataset> datasets = visitor.apply(command);
 
       assertEquals(1, datasets.size());
-      OpenLineage.OutputDataset outputDataset = datasets.get(0);
+      OpenLineage.InputDataset inputDataset = datasets.get(0);
 
       assertEquals(
           OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.ALTER,
-          outputDataset.getFacets().getLifecycleStateChange().getLifecycleStateChange());
-      assertEquals("s3://bucket", outputDataset.getNamespace());
-      assertEquals("some-uri", outputDataset.getName());
+          inputDataset.getFacets().getLifecycleStateChange().getLifecycleStateChange());
+      assertEquals("s3://bucket", inputDataset.getNamespace());
+      assertEquals("some-uri", inputDataset.getName());
       assertEquals(
           DATABASE + "." + TABLE,
-          outputDataset.getFacets().getSymlinks().getIdentifiers().get(0).getName());
+          inputDataset.getFacets().getSymlinks().getIdentifiers().get(0).getName());
     }
   }
 }
