@@ -131,7 +131,8 @@ export const Consumers: Array<Partner> = [
     image: "select_star_logo.png",
     org: "Select Star",
     full_name: "Select Star",
-    description:  "Select Star uses OpenLineage events to extract and generate column-level lineage, enabling precise metadata tracking, impact analysis, and comprehensive documentation of data pipelines.",
+    description:
+      "Select Star uses OpenLineage events to extract and generate column-level lineage, enabling precise metadata tracking, impact analysis, and comprehensive documentation of data pipelines.",
     docs_url: "https://docs.selectstar.com/",
     org_url: "https://www.selectstar.com/",
   },

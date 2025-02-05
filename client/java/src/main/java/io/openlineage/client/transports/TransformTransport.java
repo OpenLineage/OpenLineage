@@ -58,7 +58,8 @@ public class TransformTransport extends Transport {
       throw new TransformTransportException("Error transforming RunEvent", e);
     }
     if (updatedRunEvent == null) {
-      throw new TransformTransportException("Transformed RunEvent is null, not emitting");
+      log.warn("Transformed RunEvent is null, not emitting");
+      return;
     }
     transport.emit(updatedRunEvent);
   }
@@ -72,7 +73,8 @@ public class TransformTransport extends Transport {
       throw new TransformTransportException("Error transforming DatasetEvent", e);
     }
     if (updatedDatasetEvent == null) {
-      throw new TransformTransportException("Transformed DatasetEvent is null, not emitting");
+      log.warn("Transformed DatasetEvent is null, not emitting");
+      return;
     }
     transport.emit(updatedDatasetEvent);
   }
@@ -86,7 +88,8 @@ public class TransformTransport extends Transport {
       throw new TransformTransportException("Error transforming JobEvent", e);
     }
     if (updatedJobEvent == null) {
-      throw new TransformTransportException("Transformed JobEvent is null, not emitting");
+      log.warn("Transformed JobEvent is null, not emitting");
+      return;
     }
     transport.emit(updatedJobEvent);
   }

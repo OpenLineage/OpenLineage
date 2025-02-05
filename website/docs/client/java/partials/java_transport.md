@@ -662,6 +662,7 @@ send different events into multiple backends.
 
 - The configured `transformerClass` will be used to alter events before the emission.
 - Modified events will be passed into the configured `transport` for further processing.
+- In case of returning `null`, the event will be skipped.
 
 #### `EventTransformer` interface
 
