@@ -21,6 +21,8 @@ public class CircuitBreakerFactory {
           (SimpleMemoryCircuitBreakerConfig) circuitBreakerConfig);
     } else if (circuitBreakerConfig instanceof StaticCircuitBreakerConfig) {
       return new StaticCircuitBreaker((StaticCircuitBreakerConfig) circuitBreakerConfig);
+    } else if (circuitBreakerConfig instanceof TaskQueueCircuitBreakerConfig) {
+      return new TaskQueueCircuitBreaker((TaskQueueCircuitBreakerConfig) circuitBreakerConfig);
     }
 
     return new NoOpCircuitBreaker();

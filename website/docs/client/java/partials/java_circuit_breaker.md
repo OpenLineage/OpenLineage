@@ -121,18 +121,38 @@ it has a cachedthreadpool, which can result in creation of too many threads and 
 It also rejects a task right away if there's no thread to pick up.
 
 <Tabs groupId="async">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+circuitBreaker:
+  type: asyncTaskQueue
+  threadCount: 2
+  queueSize: 10
+  timeoutSeconds: 90
+  shutdownTimeoutSeconds: 60
+```
+</TabItem>
+<TabItem value="spark" label="Spark Config">
+
+| Parameter                                               | Definition                                                                                                 | Example        |
+----------------------------------------------------------|------------------------------------------------------------------------------------------------------------|----------------
+| spark.openlineage.circuitBreaker.type                   | Circuit breaker type selected                                                                              | asyncTaskQueue |
+| spark.openlineage.circuitBreaker.threadCount            | Num threads to process task                                                                                | 2              |
+| spark.openlineage.circuitBreaker.queueSize              | The size of task queue                                                                                     | 10             |
+| spark.openlineage.circuitBreaker.timeoutInSeconds       | Optional timeout for OpenLineage execution                                                                 | 90             |
+| spark.openlineage.circuitBreaker.shutdownTimeoutSeconds | The duration through which the circuit breaker waits on close to wait for the queued tasks to be processed | 60             |
+
+
+</TabItem>
 <TabItem value="flink" label="Flink Config">
 
-| Parameter                            | Definition                                                                                                 | Example        |
---------------------------------------|------------------------------------------------------------------------------------------------------------|----------------
-| openlineage.circuitBreaker.type | Circuit breaker type selected                                                                              | asyncTaskQueue |
-| openlineage.circuitBreaker.threadCount | Num threads to process task                                                                                | 2              |
-| openlineage.circuitBreaker.queueSize | The size of task queue                                                                                     | 1000           |
-| openlineage.circuitBreaker.circuitCheckIntervalInMillis | Frequency of checking circuit breaker                                                                      | 1000           |
-| spark.openlineage.circuitBreaker.timeoutInSeconds | Optional timeout for OpenLineage execution (Since version 1.13)                                            | 3              |
-| spark.openlineage.circuitBreaker.shutdownTimeoutSeconds | The duration through which the circuit breaker waits on close to wait for the queued tasks to be processed | 100            |
-
-
+| Parameter                                               | Definition                                                                                                 | Example        |
+----------------------------------------------------------|------------------------------------------------------------------------------------------------------------|----------------
+| openlineage.circuitBreaker.type                   | Circuit breaker type selected                                                                              | asyncTaskQueue |
+| openlineage.circuitBreaker.threadCount            | Num threads to process task                                                                                | 2              |
+| openlineage.circuitBreaker.queueSize              | The size of task queue                                                                                     | 10             |
+| openlineage.circuitBreaker.timeoutInSeconds       | Optional timeout for OpenLineage execution                                                                 | 90             |
+| openlineage.circuitBreaker.shutdownTimeoutSeconds | The duration through which the circuit breaker waits on close to wait for the queued tasks to be processed | 60             |
 
 </TabItem>
 </Tabs>
