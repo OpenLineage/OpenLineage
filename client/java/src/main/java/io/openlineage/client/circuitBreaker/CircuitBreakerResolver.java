@@ -17,7 +17,8 @@ public class CircuitBreakerResolver {
       Arrays.asList(
           new StaticCircuitBreakerBuilder(),
           new SimpleMemoryCircuitBreakerBuilder(),
-          new JavaRuntimeCircuitBreakerBuilder());
+          new JavaRuntimeCircuitBreakerBuilder(),
+          new TaskQueueCircuitBreakerBuilder());
 
   public static Class<? extends CircuitBreakerConfig> resolveCircuitBreakerConfigByType(
       String type) {

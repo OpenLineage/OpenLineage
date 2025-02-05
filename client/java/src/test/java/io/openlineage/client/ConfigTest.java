@@ -18,6 +18,7 @@ import io.openlineage.client.circuitBreaker.JavaRuntimeCircuitBreaker;
 import io.openlineage.client.circuitBreaker.JavaRuntimeCircuitBreakerConfig;
 import io.openlineage.client.circuitBreaker.SimpleMemoryCircuitBreaker;
 import io.openlineage.client.circuitBreaker.SimpleMemoryCircuitBreakerConfig;
+import io.openlineage.client.circuitBreaker.TaskQueueCircuitBreaker;
 import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceResolverConfig;
 import io.openlineage.client.dataset.namespace.resolver.PatternMatchingGroupNamespaceResolverConfig;
 import io.openlineage.client.dataset.namespace.resolver.PatternNamespaceResolverConfig;
@@ -220,6 +221,17 @@ class ConfigTest {
         .isInstanceOf(SimpleMemoryCircuitBreaker.class)
         .hasFieldOrPropertyWithValue("config", new SimpleMemoryCircuitBreakerConfig(13, 200, 90));
     assertThat(client.circuitBreaker.get().getCheckIntervalMillis()).isEqualTo(200);
+  }
+
+  @Test
+  void testTaskQueueCircuitBreakerFromYaml() {
+    OpenLineageClient client =
+        Clients.newClient(new TestConfigPathProvider("config/circuitBreaker5.yaml"));
+
+    assertThat(client.circuitBreaker.get())
+        .isInstanceOf(TaskQueueCircuitBreaker.class)
+        .hasFieldOrPropertyWithValue("timeoutSeconds", 3L)
+        .hasFieldOrPropertyWithValue("shutdownTimeoutSeconds", 4L);
   }
 
   @Test
