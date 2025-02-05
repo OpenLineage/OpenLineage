@@ -35,6 +35,7 @@ public class SparkNodesFilter implements EventFilter {
           Aggregate.class.getCanonicalName(),
           Repartition.class.getCanonicalName(),
           CreateDatabaseCommand.class.getCanonicalName(),
+          "org.apache.spark.sql.execution.command.RefreshTableCommand",
           LocalRelation.class.getCanonicalName());
 
   public SparkNodesFilter(OpenLineageContext context) {
