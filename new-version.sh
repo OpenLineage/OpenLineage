@@ -180,6 +180,7 @@ perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/spark/gradle.
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/spark-extension-interfaces/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/examples/stateful/gradle.properties
+perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink-native-listener/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./proxy/backend/gradle.properties
 echo "version ${NEXT_VERSION}" > integration/spark/spark2/src/test/resources/io/openlineage/spark/agent/version.properties
 echo "version ${NEXT_VERSION}" > integration/spark/spark3/src/test/resources/io/openlineage/spark/agent/version.properties
