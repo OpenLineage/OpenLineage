@@ -500,7 +500,7 @@ OpenLineageClient client = OpenLineageClient.builder()
 </TabItem>
 </Tabs>
 
-## [Composite](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports/CompositeTransport.java)
+### [Composite](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports/CompositeTransport.java)
 
 The `CompositeTransport` is designed to combine multiple transports, allowing event emission to several destinations. This is useful when events need to be sent to multiple targets, such as a logging system and an API endpoint. The events are delivered sequentially - one after another in a defined order.
 
