@@ -15,6 +15,8 @@ from openlineage.client.generated.environment_variables_run import (
     EnvironmentVariable,
     EnvironmentVariablesRunFacet,
 )
+from openlineage.client.generated.tags_job import TagsJobFacet, TagsJobFacetFields
+from openlineage.client.generated.tags_run import TagsRunFacet, TagsRunFacetFields
 from openlineage.client.run import (
     SCHEMA_URL,
     Dataset,
@@ -28,6 +30,7 @@ from openlineage.client.run import (
 from openlineage.client.transport.composite import CompositeTransport
 from openlineage.client.transport.console import ConsoleTransport
 from openlineage.client.transport.http import ApiKeyTokenProvider, HttpTransport, TokenProvider
+from openlineage.client.transport.no_output import NoOutputConfig, NoOutputTransport
 from openlineage.client.transport.noop import NoopTransport
 from openlineage.client.uuid import generate_new_uuid
 
@@ -82,7 +85,6 @@ def test_client_passes_to_create_with_valid_url(url: str, res: str) -> None:
 def test_client_sends_proper_json_with_minimal_run_event() -> None:
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
-
     client.emit(
         RunEvent(
             RunState.START,
@@ -846,3 +848,177 @@ class TestOpenLineageConfigLoader:
         with patch.dict(os.environ, env_vars):
             config = OpenLineageClient._load_config_from_env_variables()  # noqa: SLF001
             assert config == expected_config
+
+
+def test_get_tag_environment_variables():
+    tag_environment_variables = {
+        "OPENLINEAGE__TAG__JOB__ENVIRONMENT": "PRODUCTION",
+        "OPENLINEAGE__TAG__JOB__pipeline": "SALES",
+        "OPENLINEAGE__TAG__RUN__ADHOC": "true",
+        "OPENLINEAGE__TAG__RUN__pipeline": "sales",
+    }
+
+    expected_tag_vars = {
+        "tags_job": [("ENVIRONMENT", "PRODUCTION"), ("pipeline", "SALES")],
+        "tags_run": [("ADHOC", "true"), ("pipeline", "sales")],
+    }
+    client = OpenLineageClient(url="http://example.com", session=MagicMock())
+
+    with patch.dict(os.environ, tag_environment_variables):
+        tag_vars = client._collect_tag_environment_variables()  # noqa: SLF001
+        assert tag_vars == expected_tag_vars
+
+
+def test_create_tags():
+    tag_vars = {
+        "tags_job": [("ENVIRONMENT", "PRODUCTION"), ("pipeline", "SALES")],
+        "tags_run": [("ADHOC", "true"), ("pipeline", "sales")],
+    }
+
+    expected_tags = {
+        "tags_job": [
+            TagsJobFacetFields("ENVIRONMENT", "PRODUCTION", "USER"),
+            TagsJobFacetFields("pipeline", "SALES", "USER"),
+        ],
+        "tags_run": [
+            TagsRunFacetFields("ADHOC", "true", "USER"),
+            TagsRunFacetFields("pipeline", "sales", "USER"),
+        ],
+    }
+    client = OpenLineageClient(url="http://example.com", session=MagicMock())
+
+    tags = client._create_tags(tag_vars)  # noqa: SLF001
+    assert tags == expected_tags
+
+
+def test_update_job_tag_facet_creates_new_facet():
+    tag_environment_variables = {
+        "OPENLINEAGE__TAG__JOB__ENVIRONMENT": "PRODUCTION",
+        "OPENLINEAGE__TAG__JOB__pipeline": "SALES",
+    }
+
+    run_event = RunEvent(
+        RunState.START,
+        "2021-11-03T10:53:52.427343",
+        Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
+        Job("openlineage", "job"),
+        "producer",
+    )
+
+    tags = [
+        TagsJobFacetFields("ENVIRONMENT", "PRODUCTION", "USER"),
+        TagsJobFacetFields("pipeline", "SALES", "USER"),
+    ]
+
+    with patch.dict(os.environ, tag_environment_variables):
+        transport = NoOutputTransport(config=NoOutputConfig())
+        client = OpenLineageClient(transport=transport)
+        client.emit(run_event)
+        assert transport.event.job.facets.get("tags")
+        assert transport.event.job.facets["tags"].tags == tags
+
+
+def test_update_job_tag_facet_creates_updates_existing_facet():
+    tag_environment_variables = {
+        "OPENLINEAGE__TAG__JOB__ENVIRONMENT": "PRODUCTION",
+        "OPENLINEAGE__TAG__JOB__pipeline": "SALES",
+    }
+
+    run_event = RunEvent(
+        RunState.START,
+        "2021-11-03T10:53:52.427343",
+        Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
+        Job(
+            namespace="openlineage",
+            name="job",
+            facets={
+                "tags": TagsRunFacet(
+                    tags=[
+                        TagsJobFacetFields("ENVIRONMENT", "STAGING", "USER"),
+                        TagsJobFacetFields("foo", "bar", "USER"),
+                    ]
+                )
+            },
+        ),
+        "producer",
+    )
+
+    # One existing tag (not updated), one existing tag (updated), one new tag from the user
+    tags = [
+        TagsJobFacetFields("foo", "bar", "USER"),
+        TagsJobFacetFields("ENVIRONMENT", "PRODUCTION", "USER"),
+        TagsJobFacetFields("pipeline", "SALES", "USER"),
+    ]
+
+    with patch.dict(os.environ, tag_environment_variables):
+        transport = NoOutputTransport(config=NoOutputConfig())
+        client = OpenLineageClient(transport=transport)
+        client.emit(run_event)
+        assert transport.event.job.facets.get("tags")
+        assert transport.event.job.facets["tags"].tags == tags
+
+
+def test_update_run_tag_facet_creates_new_facet():
+    tag_environment_variables = {
+        "OPENLINEAGE__TAG__RUN__ENVIRONMENT": "PRODUCTION",
+        "OPENLINEAGE__TAG__RUN__pipeline": "SALES",
+    }
+
+    run_event = RunEvent(
+        RunState.START,
+        "2021-11-03T10:53:52.427343",
+        Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
+        Job("openlineage", "job"),
+        "producer",
+    )
+
+    tags = [
+        TagsRunFacetFields("ENVIRONMENT", "PRODUCTION", "USER"),
+        TagsRunFacetFields("pipeline", "SALES", "USER"),
+    ]
+
+    with patch.dict(os.environ, tag_environment_variables):
+        transport = NoOutputTransport(config=NoOutputConfig())
+        client = OpenLineageClient(transport=transport)
+        client.emit(run_event)
+        assert transport.event.run.facets.get("tags")
+        assert transport.event.run.facets["tags"].tags == tags
+
+
+def test_update_run_tag_facet_updates_existing_facet():
+    tag_environment_variables = {
+        "OPENLINEAGE__TAG__RUN__ENVIRONMENT": "PRODUCTION",
+        "OPENLINEAGE__TAG__RUN__pipeline": "SALES",
+    }
+
+    run_event = RunEvent(
+        RunState.START,
+        "2021-11-03T10:53:52.427343",
+        Run(
+            runId="69f4acab-b87d-4fc0-b27b-8ea950370ff3",
+            facets={
+                "tags": TagsJobFacet(
+                    tags=[
+                        TagsRunFacetFields("ENVIRONMENT", "STAGING", "USER"),
+                        TagsRunFacetFields("foo", "bar", "USER"),
+                    ]
+                )
+            },
+        ),
+        Job("openlineage", "job"),
+        "producer",
+    )
+
+    # One existing tag (not updated), one existing tag (updated), one new tag from the user
+    tags = [
+        TagsRunFacetFields("foo", "bar", "USER"),
+        TagsRunFacetFields("ENVIRONMENT", "PRODUCTION", "USER"),
+        TagsRunFacetFields("pipeline", "SALES", "USER"),
+    ]
+
+    with patch.dict(os.environ, tag_environment_variables):
+        transport = NoOutputTransport(config=NoOutputConfig())
+        client = OpenLineageClient(transport=transport)
+        client.emit(run_event)
+        assert transport.event.run.facets.get("tags")
+        assert transport.event.run.facets["tags"].tags == tags
