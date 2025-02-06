@@ -97,25 +97,19 @@ class TransformTransportTest {
   @Test
   void testTransportWhenTransformReturnsNull() {
     transformConfig.setTransformerClass(EventTransformerReturningNull.class.getName());
-    transformTransport = new TransformTransport(transformConfig);
+    transformTransport = new TransformTransport(transformConfig, subTransport);
 
-    assertThrows(
-        TransformTransportException.class,
-        () -> {
-          transformTransport.emit(mock(RunEvent.class));
-        });
+    RunEvent runEvent = mock(RunEvent.class);
+    DatasetEvent datasetEvent = mock(DatasetEvent.class);
+    JobEvent jobEvent = mock(JobEvent.class);
 
-    assertThrows(
-        TransformTransportException.class,
-        () -> {
-          transformTransport.emit(mock(DatasetEvent.class));
-        });
+    transformTransport.emit(runEvent);
+    transformTransport.emit(datasetEvent);
+    transformTransport.emit(jobEvent);
 
-    assertThrows(
-        TransformTransportException.class,
-        () -> {
-          transformTransport.emit(mock(JobEvent.class));
-        });
+    verify(subTransport, times(0)).emit((RunEvent) argThat(event -> event instanceof RunEvent));
+    verify(subTransport, times(0)).emit((RunEvent) argThat(event -> event instanceof DatasetEvent));
+    verify(subTransport, times(0)).emit((RunEvent) argThat(event -> event instanceof JobEvent));
   }
 
   @Test
