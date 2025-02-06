@@ -26,6 +26,8 @@ from openlineage.client.generated.environment_variables_run import (
     EnvironmentVariable,
     EnvironmentVariablesRunFacet,
 )
+from openlineage.client.generated.tags_job import TagsJobFacet, TagsJobFacetFields
+from openlineage.client.generated.tags_run import TagsRunFacet, TagsRunFacetFields
 from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 from openlineage.client.transport import (
     Transport,
@@ -72,6 +74,8 @@ _T = TypeVar("_T", bound="OpenLineageClient")
 
 class OpenLineageClient:
     DYNAMIC_ENV_VARS_PREFIX = "OPENLINEAGE__"
+    DYNAMIC_ENV_VARS_TAG_JOB_PREFIX = "OPENLINEAGE__TAG__JOB__"
+    DYNAMIC_ENV_VARS_TAG_RUN_PREFIX = "OPENLINEAGE__TAG__RUN__"
     DEFAULT_URL_TRANSPORT_NAME = "default_http"
 
     def __init__(  # noqa: PLR0913
@@ -114,6 +118,9 @@ class OpenLineageClient:
             _filter = create_filter(conf)
             if _filter:
                 self._filters.append(_filter)
+
+        tag_env_vars = self._collect_tag_environment_variables()
+        self.tags = self._create_tags(tag_env_vars)
 
     @classmethod
     def from_environment(cls: type[_T]) -> _T:
@@ -163,6 +170,7 @@ class OpenLineageClient:
             return
 
         event = self.add_environment_facets(event)
+        event = self.update_event_tags_facets(event)
 
         if log.isEnabledFor(logging.DEBUG):
             val = Serde.to_json(event).encode("utf-8")
@@ -404,3 +412,59 @@ class OpenLineageClient:
                 missing_vars,
             )
         return filtered_vars
+
+    def _collect_tag_environment_variables(self) -> dict[str]:
+        """
+        Retrieves all environment variables starting with OPENLINEAGE__TAG__JOB/RUN__
+        """
+        tag_vars = {}
+        # Get all job tags from environment variables.
+        prefix = self.DYNAMIC_ENV_VARS_TAG_JOB_PREFIX
+        tag_vars["tags_job"] = [
+            (k.removeprefix(prefix), v) for (k, v) in os.environ.items() if k.startswith(prefix)
+        ]
+        # Get all job tags from environment variable.
+        prefix = self.DYNAMIC_ENV_VARS_TAG_RUN_PREFIX
+        tag_vars["tags_run"] = [
+            (k.removeprefix(prefix), v) for (k, v) in os.environ.items() if k.startswith(prefix)
+        ]
+
+        return tag_vars
+
+    def _create_tags(self, tag_vars: list[tuple]) -> None:
+        """
+        Creates tags from environment variables that are stored in tuples (key/value)
+        """
+        tags = {}
+        tags["tags_job"] = [TagsJobFacetFields(k[0], k[1], "USER") for k in tag_vars["tags_job"]]
+        tags["tags_run"] = [TagsRunFacetFields(k[0], k[1], "USER") for k in tag_vars["tags_run"]]
+
+        return tags
+
+    def update_event_tags_facets(self, event: Event) -> Event:
+        """
+        Creates or updates job and run tag facets based on user-supplied environment variables
+        """
+        tags_job = self.tags["tags_job"]
+        if (isinstance(event, (JobEvent, RunEvent))) and tags_job:
+            tags_facet = event.job.facets.get("tags", TagsJobFacet())
+            event.job.facets["tags"] = self._update_tag_facet(tags_facet, tags_job)
+
+        tags_run = self.tags["tags_run"]
+        if (isinstance(event, RunEvent)) and tags_run:
+            tags_facet = event.run.facets.get("tags", TagsRunFacet())
+            event.run.facets["tags"] = self._update_tag_facet(tags_facet, tags_run)
+
+        return event
+
+    def _update_tag_facet(
+        self, tags_facet: TagsJobFacet | TagsRunFacet, user_tags
+    ) -> TagsJobFacet | TagsRunFacet:
+        """
+        Handles updating tags in an existing tag facet
+        """
+        user_tag_names = {tag.key for tag in user_tags}
+        keep_tags = list(filter(lambda x: x.key not in user_tag_names, tags_facet.tags))
+        all_tags = keep_tags + user_tags
+        tags_facet.tags = all_tags
+        return tags_facet
