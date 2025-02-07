@@ -10,6 +10,7 @@ import static io.openlineage.flink.testutils.KafkaTestBase.deleteTestTopic;
 import static org.apache.flink.configuration.DeploymentOptions.JOB_STATUS_CHANGED_LISTENERS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacet;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
@@ -26,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -233,8 +235,8 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
 
       // we always use a different topic name for each parameterized topic,
       // in order to make sure the topic can be created.
-      final String inputTopic = "tstopic_" + "_" + UUID.randomUUID();
-      final String outputTopic = "tstopic_" + "_" + UUID.randomUUID();
+      final String inputTopic = "tstopic_" + UUID.randomUUID();
+      final String outputTopic = "tstopic_" + UUID.randomUUID();
       createTestTopic(inputTopic, 1, 1);
 
       // ---------- Produce an event time stream into Kafka -------------------
@@ -352,8 +354,7 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
 
       Optional<OutputDataset> output =
           events.stream()
-              .filter(e -> e.getOutputs() != null)
-              .filter(e -> e.getOutputs().size() > 0)
+              .filter(e -> e.getOutputs().get(0).getName().equals(outputTopic))
               .map(e -> e.getOutputs().get(0))
               .findAny();
       assertThat(output.get().getNamespace()).startsWith("kafka://localhost:");
@@ -372,6 +373,47 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
           .hasFieldOrPropertyWithValue("name", "default_catalog.default_database.kafka_output");
       assertThat(output.get().getFacets().getSymlinks().getIdentifiers().get(0).getNamespace())
           .startsWith("kafka://localhost:");
+
+      Optional<OutputDataset> outputWithColumnLevelLineage =
+          events.stream()
+              .filter(e -> e.getOutputs() != null)
+              .filter(e -> !e.getOutputs().isEmpty())
+              .filter(
+                  e ->
+                      e.getOutputs().stream()
+                          .map(d -> d.getFacets().getColumnLineage())
+                          .anyMatch(Objects::nonNull))
+              .map(e -> e.getOutputs().get(0))
+              .findAny();
+
+      assertThat(outputWithColumnLevelLineage).isPresent();
+      ColumnLineageDatasetFacet columnLineage =
+          outputWithColumnLevelLineage.get().getFacets().getColumnLineage();
+      assertThat(columnLineage).isNotNull();
+      assertThat(
+              columnLineage.getFields().getAdditionalProperties().get("max_price").getInputFields())
+          .hasSize(1)
+          .element(0)
+          .hasFieldOrPropertyWithValue("name", input.get().getName())
+          .hasFieldOrPropertyWithValue("namespace", input.get().getNamespace())
+          .hasFieldOrPropertyWithValue("field", "price");
+
+      assertThat(
+              columnLineage.getFields().getAdditionalProperties().get("max_price").getInputFields())
+          .hasSize(1)
+          .element(0)
+          .hasFieldOrPropertyWithValue("name", input.get().getName())
+          .hasFieldOrPropertyWithValue("namespace", input.get().getNamespace())
+          .hasFieldOrPropertyWithValue("field", "price");
+
+      assertThat(columnLineage.getFields().getAdditionalProperties().get("max_ts").getInputFields())
+          .hasSize(1)
+          .element(0)
+          .hasFieldOrPropertyWithValue("name", input.get().getName())
+          .hasFieldOrPropertyWithValue("namespace", input.get().getNamespace())
+          .hasFieldOrPropertyWithValue("field", "log_ts");
+
+      // TODO: count should depend on the whole dataset
 
       // ------------- cleanup -------------------
       deleteTestTopic(inputTopic);
