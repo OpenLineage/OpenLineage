@@ -55,6 +55,8 @@ class OpenLineageConfig:
     transport: dict[str, Any] | None = attr.ib(factory=dict)
     facets: FacetsConfig = attr.ib(factory=FacetsConfig)
     filters: list[FilterConfig] = attr.ib(factory=list)
+    tags_job: list[TagsJobFacetFields] = attr.ib(factory=list)
+    tags_run: list[TagsRunFacetFields] = attr.ib(factory=list)
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> OpenLineageConfig:
@@ -65,6 +67,10 @@ class OpenLineageConfig:
             config.facets = FacetsConfig(**params["facets"])
         if "filters" in params:
             config.filters = [FilterConfig(**filter_config) for filter_config in params["filters"]]
+        if tags_job := params.get("tag", {}).get("job"):
+            config.tags_job = [TagsJobFacetFields(key, value, "USER") for key, value in tags_job.items()]
+        if tags_run := params.get("tag", {}).get("run"):
+            config.tags_run = [TagsRunFacetFields(key, value, "USER") for key, value in tags_run.items()]
         return config
 
 
@@ -118,9 +124,6 @@ class OpenLineageClient:
             _filter = create_filter(conf)
             if _filter:
                 self._filters.append(_filter)
-
-        tag_env_vars = self._collect_tag_environment_variables()
-        self.tags = self._create_tags(tag_env_vars)
 
     @classmethod
     def from_environment(cls: type[_T]) -> _T:
@@ -370,7 +373,6 @@ class OpenLineageClient:
             # Parse value (try to parse as JSON, otherwise lowercase the value)
             with contextlib.suppress(json.JSONDecodeError):
                 env_value = json.loads(env_value)  # noqa: PLW2901
-
             cls._insert_into_config(config, keys, env_value)
 
         return config
@@ -413,44 +415,16 @@ class OpenLineageClient:
             )
         return filtered_vars
 
-    def _collect_tag_environment_variables(self) -> dict[str]:
-        """
-        Retrieves all environment variables starting with OPENLINEAGE__TAG__JOB/RUN__
-        """
-        tag_vars = {}
-        # Get all job tags from environment variables.
-        prefix = self.DYNAMIC_ENV_VARS_TAG_JOB_PREFIX
-        tag_vars["tags_job"] = [
-            (k.removeprefix(prefix), v) for (k, v) in os.environ.items() if k.startswith(prefix)
-        ]
-        # Get all job tags from environment variable.
-        prefix = self.DYNAMIC_ENV_VARS_TAG_RUN_PREFIX
-        tag_vars["tags_run"] = [
-            (k.removeprefix(prefix), v) for (k, v) in os.environ.items() if k.startswith(prefix)
-        ]
-
-        return tag_vars
-
-    def _create_tags(self, tag_vars: list[tuple]) -> None:
-        """
-        Creates tags from environment variables that are stored in tuples (key/value)
-        """
-        tags = {}
-        tags["tags_job"] = [TagsJobFacetFields(k[0], k[1], "USER") for k in tag_vars["tags_job"]]
-        tags["tags_run"] = [TagsRunFacetFields(k[0], k[1], "USER") for k in tag_vars["tags_run"]]
-
-        return tags
-
     def update_event_tags_facets(self, event: Event) -> Event:
         """
         Creates or updates job and run tag facets based on user-supplied environment variables
         """
-        tags_job = self.tags["tags_job"]
+        tags_job = self.config.tags_job
         if (isinstance(event, (JobEvent, RunEvent))) and tags_job:
             tags_facet = event.job.facets.get("tags", TagsJobFacet())
             event.job.facets["tags"] = self._update_tag_facet(tags_facet, tags_job)
 
-        tags_run = self.tags["tags_run"]
+        tags_run = self.config.tags_run
         if (isinstance(event, RunEvent)) and tags_run:
             tags_facet = event.run.facets.get("tags", TagsRunFacet())
             event.run.facets["tags"] = self._update_tag_facet(tags_facet, tags_run)

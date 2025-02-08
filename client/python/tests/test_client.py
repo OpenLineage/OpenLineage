@@ -841,6 +841,20 @@ class TestOpenLineageConfigLoader:
                 },
                 {"transport": {"type": "console"}},
             ),
+            (
+                {
+                    "OPENLINEAGE__TAG__JOB__ENVIRONMENT": "PRODUCTION",
+                    "OPENLINEAGE__TAG__JOB__pipeline": "finance",
+                    "OPENLINEAGE__TAG__RUN__environment": "PRODUCTION",
+                    "OPENLINEAGE__TAG__RUN__pipeline": "finance",
+                },
+                {
+                    "tag": {
+                        "job": {"environment": "PRODUCTION", "pipeline": "finance"},
+                        "run": {"environment": "PRODUCTION", "pipeline": "finance"},
+                    }
+                },
+            ),
         ],
     )
     @patch.dict(os.environ, {})
@@ -848,47 +862,6 @@ class TestOpenLineageConfigLoader:
         with patch.dict(os.environ, env_vars):
             config = OpenLineageClient._load_config_from_env_variables()  # noqa: SLF001
             assert config == expected_config
-
-
-def test_get_tag_environment_variables():
-    tag_environment_variables = {
-        "OPENLINEAGE__TAG__JOB__ENVIRONMENT": "PRODUCTION",
-        "OPENLINEAGE__TAG__JOB__pipeline": "SALES",
-        "OPENLINEAGE__TAG__RUN__ADHOC": "true",
-        "OPENLINEAGE__TAG__RUN__pipeline": "sales",
-    }
-
-    expected_tag_vars = {
-        "tags_job": [("ENVIRONMENT", "PRODUCTION"), ("pipeline", "SALES")],
-        "tags_run": [("ADHOC", "true"), ("pipeline", "sales")],
-    }
-    client = OpenLineageClient(url="http://example.com", session=MagicMock())
-
-    with patch.dict(os.environ, tag_environment_variables):
-        tag_vars = client._collect_tag_environment_variables()  # noqa: SLF001
-        assert tag_vars == expected_tag_vars
-
-
-def test_create_tags():
-    tag_vars = {
-        "tags_job": [("ENVIRONMENT", "PRODUCTION"), ("pipeline", "SALES")],
-        "tags_run": [("ADHOC", "true"), ("pipeline", "sales")],
-    }
-
-    expected_tags = {
-        "tags_job": [
-            TagsJobFacetFields("ENVIRONMENT", "PRODUCTION", "USER"),
-            TagsJobFacetFields("pipeline", "SALES", "USER"),
-        ],
-        "tags_run": [
-            TagsRunFacetFields("ADHOC", "true", "USER"),
-            TagsRunFacetFields("pipeline", "sales", "USER"),
-        ],
-    }
-    client = OpenLineageClient(url="http://example.com", session=MagicMock())
-
-    tags = client._create_tags(tag_vars)  # noqa: SLF001
-    assert tags == expected_tags
 
 
 def test_update_job_tag_facet_creates_new_facet():
@@ -906,7 +879,7 @@ def test_update_job_tag_facet_creates_new_facet():
     )
 
     tags = [
-        TagsJobFacetFields("ENVIRONMENT", "PRODUCTION", "USER"),
+        TagsJobFacetFields("environment", "PRODUCTION", "USER"),
         TagsJobFacetFields("pipeline", "SALES", "USER"),
     ]
 
@@ -915,7 +888,9 @@ def test_update_job_tag_facet_creates_new_facet():
         client = OpenLineageClient(transport=transport)
         client.emit(run_event)
         assert transport.event.job.facets.get("tags")
-        assert transport.event.job.facets["tags"].tags == tags
+        event_tags = sorted(transport.event.job.facets["tags"].tags, key=lambda x: x.key)
+        expected_tags = sorted(tags, key=lambda x: x.key)
+        assert event_tags == expected_tags
 
 
 def test_update_job_tag_facet_creates_updates_existing_facet():
@@ -934,7 +909,7 @@ def test_update_job_tag_facet_creates_updates_existing_facet():
             facets={
                 "tags": TagsRunFacet(
                     tags=[
-                        TagsJobFacetFields("ENVIRONMENT", "STAGING", "USER"),
+                        TagsJobFacetFields("environment", "STAGING", "USER"),
                         TagsJobFacetFields("foo", "bar", "USER"),
                     ]
                 )
@@ -946,7 +921,7 @@ def test_update_job_tag_facet_creates_updates_existing_facet():
     # One existing tag (not updated), one existing tag (updated), one new tag from the user
     tags = [
         TagsJobFacetFields("foo", "bar", "USER"),
-        TagsJobFacetFields("ENVIRONMENT", "PRODUCTION", "USER"),
+        TagsJobFacetFields("environment", "PRODUCTION", "USER"),
         TagsJobFacetFields("pipeline", "SALES", "USER"),
     ]
 
@@ -955,7 +930,9 @@ def test_update_job_tag_facet_creates_updates_existing_facet():
         client = OpenLineageClient(transport=transport)
         client.emit(run_event)
         assert transport.event.job.facets.get("tags")
-        assert transport.event.job.facets["tags"].tags == tags
+        event_tags = sorted(transport.event.job.facets["tags"].tags, key=lambda x: x.key)
+        expected_tags = sorted(tags, key=lambda x: x.key)
+        assert event_tags == expected_tags
 
 
 def test_update_run_tag_facet_creates_new_facet():
@@ -973,7 +950,7 @@ def test_update_run_tag_facet_creates_new_facet():
     )
 
     tags = [
-        TagsRunFacetFields("ENVIRONMENT", "PRODUCTION", "USER"),
+        TagsRunFacetFields("environment", "PRODUCTION", "USER"),
         TagsRunFacetFields("pipeline", "SALES", "USER"),
     ]
 
@@ -982,7 +959,9 @@ def test_update_run_tag_facet_creates_new_facet():
         client = OpenLineageClient(transport=transport)
         client.emit(run_event)
         assert transport.event.run.facets.get("tags")
-        assert transport.event.run.facets["tags"].tags == tags
+        event_tags = sorted(transport.event.run.facets["tags"].tags, key=lambda x: x.key)
+        expected_tags = sorted(tags, key=lambda x: x.key)
+        assert event_tags == expected_tags
 
 
 def test_update_run_tag_facet_updates_existing_facet():
@@ -999,7 +978,7 @@ def test_update_run_tag_facet_updates_existing_facet():
             facets={
                 "tags": TagsJobFacet(
                     tags=[
-                        TagsRunFacetFields("ENVIRONMENT", "STAGING", "USER"),
+                        TagsRunFacetFields("environment", "STAGING", "USER"),
                         TagsRunFacetFields("foo", "bar", "USER"),
                     ]
                 )
@@ -1012,7 +991,7 @@ def test_update_run_tag_facet_updates_existing_facet():
     # One existing tag (not updated), one existing tag (updated), one new tag from the user
     tags = [
         TagsRunFacetFields("foo", "bar", "USER"),
-        TagsRunFacetFields("ENVIRONMENT", "PRODUCTION", "USER"),
+        TagsRunFacetFields("environment", "PRODUCTION", "USER"),
         TagsRunFacetFields("pipeline", "SALES", "USER"),
     ]
 
@@ -1021,4 +1000,6 @@ def test_update_run_tag_facet_updates_existing_facet():
         client = OpenLineageClient(transport=transport)
         client.emit(run_event)
         assert transport.event.run.facets.get("tags")
-        assert transport.event.run.facets["tags"].tags == tags
+        event_tags = sorted(transport.event.run.facets["tags"].tags, key=lambda x: x.key)
+        expected_tags = sorted(tags, key=lambda x: x.key)
+        assert event_tags == expected_tags
