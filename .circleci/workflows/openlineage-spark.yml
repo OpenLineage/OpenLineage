@@ -31,10 +31,10 @@ workflows:
                 'java:17-spark:3.3.4-scala:2.13-full-tests',
                 'java:8-spark:3.4.3-scala:2.12-full-tests',
                 'java:8-spark:3.4.3-scala:2.13-full-tests',
-                'java:8-spark:3.5.2-scala:2.12-full-tests',
-                'java:8-spark:3.5.2-scala:2.13-full-tests',
-                'java:17-spark:3.5.2-scala:2.12-full-tests',
-                'java:17-spark:3.5.2-scala:2.13',
+                'java:8-spark:3.5.4-scala:2.12-full-tests',
+                'java:8-spark:3.5.4-scala:2.13-full-tests',
+                'java:17-spark:3.5.4-scala:2.12-full-tests',
+                'java:17-spark:3.5.4-scala:2.13',
                 'java:17-spark:4.0.0-scala:2.13'
               ]
           requires:
@@ -123,10 +123,10 @@ workflows:
                 'java:17-spark:3.3.4-scala:2.13-full-tests',
                 'java:8-spark:3.4.3-scala:2.12-full-tests',
                 'java:8-spark:3.4.3-scala:2.13-full-tests',
-                'java:8-spark:3.5.2-scala:2.12-full-tests',
-                'java:8-spark:3.5.2-scala:2.13-full-tests',
-                'java:17-spark:3.5.2-scala:2.12-full-tests',
-                'java:17-spark:3.5.2-scala:2.13',
+                'java:8-spark:3.5.4-scala:2.12-full-tests',
+                'java:8-spark:3.5.4-scala:2.13-full-tests',
+                'java:17-spark:3.5.4-scala:2.12-full-tests',
+                'java:17-spark:3.5.4-scala:2.13',
                 'java:17-spark:4.0.0-scala:2.13'
               ]
           requires:

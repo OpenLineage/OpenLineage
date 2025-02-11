@@ -105,8 +105,8 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
    * org.apache.spark.sql.catalyst.analysis.ResolvedTable (3.2.4) -
    * org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect (3.2.4) -
    * org.apache.spark.sql.catalyst.analysis.ResolvedDBObjectName (3.3.4) -
-   * org.apache.spark.sql.catalyst.analysis.ResolvedTable (3.3.4, 3.4.3, 3.5.2) -
-   * org.apache.spark.sql.catalyst.analysis.ResolvedIdentifier (3.4.3, 3.5.2)
+   * org.apache.spark.sql.catalyst.analysis.ResolvedTable (3.3.4, 3.4.3, 3.5.4) -
+   * org.apache.spark.sql.catalyst.analysis.ResolvedIdentifier (3.4.3, 3.5.4)
    *
    * @param plan
    * @return
