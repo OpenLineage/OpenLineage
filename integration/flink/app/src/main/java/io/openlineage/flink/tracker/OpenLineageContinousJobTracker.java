@@ -50,12 +50,11 @@ public class OpenLineageContinousJobTracker {
     CloseableHttpClient httpClient = HttpClients.createDefault();
 
     String checkpointApiUrl =
-            String.format(
-                    "http://%s:%s/jobs/%s/checkpoints",
-                    Optional.ofNullable(config.get(RestOptions.ADDRESS)).
-                            orElse("localhost"),
-                    config.get(RestOptions.PORT),
-                    context.getJobId().toString());
+        String.format(
+            "http://%s:%s/jobs/%s/checkpoints",
+            Optional.ofNullable(config.get(RestOptions.ADDRESS)).orElse("localhost"),
+            config.get(RestOptions.PORT),
+            context.getJobId().toString());
     HttpGet request = new HttpGet(checkpointApiUrl);
 
     trackingThread =
