@@ -30,7 +30,6 @@ from openlineage.client.run import (
 from openlineage.client.transport.composite import CompositeTransport
 from openlineage.client.transport.console import ConsoleTransport
 from openlineage.client.transport.http import ApiKeyTokenProvider, HttpTransport, TokenProvider
-from openlineage.client.transport.no_output import NoOutputConfig, NoOutputTransport
 from openlineage.client.transport.noop import NoopTransport
 from openlineage.client.uuid import generate_new_uuid
 
@@ -864,7 +863,7 @@ class TestOpenLineageConfigLoader:
             assert config == expected_config
 
 
-def test_update_job_tag_facet_creates_new_facet():
+def test_update_job_tag_facet_creates_new_facet(transport):
     tag_environment_variables = {
         "OPENLINEAGE__TAG__JOB__ENVIRONMENT": "PRODUCTION",
         "OPENLINEAGE__TAG__JOB__pipeline": "SALES",
@@ -884,7 +883,6 @@ def test_update_job_tag_facet_creates_new_facet():
     ]
 
     with patch.dict(os.environ, tag_environment_variables):
-        transport = NoOutputTransport(config=NoOutputConfig())
         client = OpenLineageClient(transport=transport)
         client.emit(run_event)
         assert transport.event.job.facets.get("tags")
@@ -893,7 +891,7 @@ def test_update_job_tag_facet_creates_new_facet():
         assert event_tags == expected_tags
 
 
-def test_update_job_tag_facet_creates_updates_existing_facet():
+def test_update_job_tag_facet_updates_existing_facet(transport):
     tag_environment_variables = {
         "OPENLINEAGE__TAG__JOB__ENVIRONMENT": "PRODUCTION",
         "OPENLINEAGE__TAG__JOB__pipeline": "SALES",
@@ -926,7 +924,6 @@ def test_update_job_tag_facet_creates_updates_existing_facet():
     ]
 
     with patch.dict(os.environ, tag_environment_variables):
-        transport = NoOutputTransport(config=NoOutputConfig())
         client = OpenLineageClient(transport=transport)
         client.emit(run_event)
         assert transport.event.job.facets.get("tags")
@@ -935,7 +932,7 @@ def test_update_job_tag_facet_creates_updates_existing_facet():
         assert event_tags == expected_tags
 
 
-def test_update_run_tag_facet_creates_new_facet():
+def test_update_run_tag_facet_creates_new_facet(transport):
     tag_environment_variables = {
         "OPENLINEAGE__TAG__RUN__ENVIRONMENT": "PRODUCTION",
         "OPENLINEAGE__TAG__RUN__pipeline": "SALES",
@@ -955,7 +952,6 @@ def test_update_run_tag_facet_creates_new_facet():
     ]
 
     with patch.dict(os.environ, tag_environment_variables):
-        transport = NoOutputTransport(config=NoOutputConfig())
         client = OpenLineageClient(transport=transport)
         client.emit(run_event)
         assert transport.event.run.facets.get("tags")
@@ -964,7 +960,7 @@ def test_update_run_tag_facet_creates_new_facet():
         assert event_tags == expected_tags
 
 
-def test_update_run_tag_facet_updates_existing_facet():
+def test_update_run_tag_facet_updates_existing_facet(transport):
     tag_environment_variables = {
         "OPENLINEAGE__TAG__RUN__ENVIRONMENT": "PRODUCTION",
         "OPENLINEAGE__TAG__RUN__pipeline": "SALES",
@@ -996,9 +992,9 @@ def test_update_run_tag_facet_updates_existing_facet():
     ]
 
     with patch.dict(os.environ, tag_environment_variables):
-        transport = NoOutputTransport(config=NoOutputConfig())
         client = OpenLineageClient(transport=transport)
         client.emit(run_event)
+        print(transport.event.run.facets.get("tags"))
         assert transport.event.run.facets.get("tags")
         event_tags = sorted(transport.event.run.facets["tags"].tags, key=lambda x: x.key)
         expected_tags = sorted(tags, key=lambda x: x.key)

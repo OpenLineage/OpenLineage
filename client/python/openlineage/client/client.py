@@ -437,8 +437,10 @@ class OpenLineageClient:
         """
         Handles updating tags in an existing tag facet
         """
-        user_tag_names = {tag.key for tag in user_tags}
-        keep_tags = list(filter(lambda x: x.key not in user_tag_names, tags_facet.tags))
+        # Integration-supplied tags can be uppercase or lower case. Keep the case of the existing tag
+        # but compare with case-insensitive match.
+        user_tag_names = {tag.key.lower() for tag in user_tags}
+        keep_tags = list(filter(lambda x: x.key.lower() not in user_tag_names, tags_facet.tags))
         all_tags = keep_tags + user_tags
         tags_facet.tags = all_tags
         return tags_facet
