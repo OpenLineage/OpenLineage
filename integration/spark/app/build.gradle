@@ -17,7 +17,7 @@ plugins {
     id("io.freefair.lombok")
     id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
-    id "org.gradle.test-retry" version "1.6.1"
+    id "org.gradle.test-retry" version "1.6.2"
 }
 
 ext {
@@ -98,7 +98,7 @@ dependencies {
     implementation(project(path: ":iceberg"))
     implementation(project(path: ":gcp"))
 
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.1")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.2")
 
     compileOnly("org.apache.spark:spark-core_${scala}:${spark}")
     compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")
@@ -115,7 +115,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation("org.postgresql:postgresql:${postgresqlVersion}")
     testImplementation('org.hamcrest:hamcrest-library:3.0')
-    testImplementation('org.xerial:sqlite-jdbc:3.48.0.0')
+    testImplementation('org.xerial:sqlite-jdbc:3.49.0.0')
     testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
@@ -132,7 +132,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.module'
     }
 
-    testImplementation(platform("software.amazon.awssdk:bom:2.30.11"))
+    testImplementation(platform("software.amazon.awssdk:bom:2.30.16"))
     testImplementation("software.amazon.awssdk:auth")
     testImplementation("software.amazon.awssdk:emr")
     testImplementation("software.amazon.awssdk:s3")
@@ -530,7 +530,7 @@ List<Dependency> icebergDependencies(String spark, String scala) {
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
                     dependencies.create("org.scala-lang.modules:scala-collection-compat_${scala}:2.11.0"),
             ],
-            "3.5.2": [
+            "3.5.4": [
                     dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.5_${scala}:1.6.0"),
                     dependencies.create("org.scala-lang:scala-library:${scalaVersion}"),
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
@@ -563,7 +563,7 @@ List<Dependency> gcsDependencies(String spark, String scala) {
             "3.2.4": "hadoop3-2.2.9",
             "3.3.4": "hadoop3-2.2.9",
             "3.4.3": "hadoop3-2.2.9",
-            "3.5.2": "hadoop3-2.2.9",
+            "3.5.4": "hadoop3-2.2.9",
     ]
 
     def gcs = registry.get(spark)
@@ -583,7 +583,7 @@ List<Dependency> hadoopClientDependencies(String spark, String scala) {
             "3.2.4": "3.3.4",
             "3.3.4": "3.3.2",
             "3.4.3": "3.3.4",
-            "3.5.2": "3.3.4",
+            "3.5.4": "3.3.4",
     ]
 
     def hadoopClient = registry.get(spark)
@@ -643,7 +643,7 @@ List<Dependency> additionalJars(String spark, String scala) {
                     }),
                     dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.4_${scala}:1.6.0")
             ],
-            "3.5.2": [
+            "3.5.4": [
                     dependencies.create("org.slf4j:slf4j-api:2.0.10"),
                     dependencies.create("org.slf4j:slf4j-reload4j:2.0.16"),
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
