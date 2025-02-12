@@ -20,6 +20,11 @@ set_java_version_ubuntu() {
 # Function to set Java version on macOS
 set_java_version_macos() {
   local version="$1"
+  
+  if [[ -n "$JAVA_HOME" && "$JAVA_HOME" =~ $version ]]; then
+    echo "JAVA_HOME is already set to a compatible version: $JAVA_HOME"
+    return 0
+  fi
 
   echo "Setting Java version to $version on macOS..."
 
