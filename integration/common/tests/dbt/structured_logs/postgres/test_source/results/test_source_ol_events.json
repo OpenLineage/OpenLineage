@@ -1,0 +1,321 @@
+[
+  {
+    "eventTime":"2025-02-13T15:50:29.970137Z",
+    "run":{
+      "runId": "{{ any(result) }}",
+      "facets":{
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"dbt-run-jaffle_shop",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"JOB"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2025-02-13T15:50:35.322840Z",
+    "run":{
+      "runId": "{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId": "{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"TEST"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.dim_date",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public_dbt_test__audit.source_unique_jaffle_shop_dim_date_id",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
+  },
+  {
+    "eventTime":"2025-02-13T15:50:35.606010Z",
+    "run":{
+      "runId": "{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId": "{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6.sql.1",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"BEGIN"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2025-02-13T15:50:35.692496Z",
+    "run":{
+      "runId": "{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId": "{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6.sql.1",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"BEGIN"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2025-02-13T15:50:35.705761Z",
+    "run":{
+      "runId": "{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId": "{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6.sql.2",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6\"} */\nselect\n      count(*) as failures,\n      count(*) != 0 as should_warn,\n      count(*) != 0 as should_error\n    from (\n      \n    \n    \n\nselect\n    id as unique_field,\n    count(*) as n_records\n\nfrom \"postgres\".\"public\".\"dim_date\"\nwhere id is not null\ngroup by id\nhaving count(*) > 1\n\n\n\n      \n    ) dbt_internal_test"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2025-02-13T15:50:35.716658Z",
+    "run":{
+      "runId": "{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId": "{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6.sql.2",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"SQL"
+        },
+        "sql":{
+          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6\"} */\nselect\n      count(*) as failures,\n      count(*) != 0 as should_warn,\n      count(*) != 0 as should_error\n    from (\n      \n    \n    \n\nselect\n    id as unique_field,\n    count(*) as n_records\n\nfrom \"postgres\".\"public\".\"dim_date\"\nwhere id is not null\ngroup by id\nhaving count(*) > 1\n\n\n\n      \n    ) dbt_internal_test"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2025-02-13T15:50:35.764098Z",
+    "run":{
+      "runId": "{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId": "{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"test.jaffle_shop.source_unique_jaffle_shop_dim_date_id.d6e33513b6",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"TEST"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public_dbt_test__audit.source_unique_jaffle_shop_dim_date_id",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
+  },
+  {
+    "eventTime":"2025-02-13T15:50:36.463614Z",
+    "run":{
+      "runId": "{{ any(result) }}",
+      "facets":{
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"dbt-run-jaffle_shop",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"JOB"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[ ],
+    "outputs":[ ]
+  }
+]
