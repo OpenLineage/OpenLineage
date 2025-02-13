@@ -230,7 +230,7 @@ class ConfigTest {
 
     assertThat(client.circuitBreaker.get())
         .isInstanceOf(TaskQueueCircuitBreaker.class)
-        .hasFieldOrPropertyWithValue("timeoutSeconds", 3L)
+        .hasFieldOrPropertyWithValue("blockingTimeInSeconds", 3L)
         .hasFieldOrPropertyWithValue("shutdownTimeoutSeconds", 4L);
   }
 
