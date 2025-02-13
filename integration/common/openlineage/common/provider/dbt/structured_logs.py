@@ -286,13 +286,17 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 assertions=[assertion]
             )
             attached_dataset = self._get_attached_dataset(node_unique_id)
-            dataset_facets = attached_dataset.facets
-            dataset_facets["dataQualityAssertions"] = assertion_facet
-            inputs = [
-                Dataset(
-                    name=attached_dataset.name, namespace=attached_dataset.namespace, facets=dataset_facets
-                )
-            ]
+            inputs = []
+            if attached_dataset:
+                dataset_facets = attached_dataset.facets
+                dataset_facets["dataQualityAssertions"] = assertion_facet
+                inputs = [
+                    Dataset(
+                        name=attached_dataset.name,
+                        namespace=attached_dataset.namespace,
+                        facets=dataset_facets,
+                    )
+                ]
 
         return generate_run_event(
             event_type=event_type,
@@ -306,15 +310,19 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             outputs=outputs,
         )
 
-    def _get_attached_dataset(self, test_node_id: str) -> InputDataset:
+    def _get_attached_dataset(self, test_node_id: str) -> Optional[InputDataset]:
         """
-        gets the input the data test is attached to
+        gets the input the data test is attached to.
+        Some nodes like tests related to sources have an attached_node to None.
         """
         all_nodes = {**self.compiled_manifest["nodes"], **self.compiled_manifest["sources"]}
         test_node = all_nodes[test_node_id]
         attached_node_id = test_node["attached_node"]
-        attached_model_node = self._get_model_node(attached_node_id)
-        return self.node_to_dataset(node=attached_model_node, has_facets=True)
+        input_dataset = None
+        if attached_node_id:
+            attached_model_node = self._get_model_node(attached_node_id)
+            input_dataset = self.node_to_dataset(node=attached_model_node, has_facets=True)
+        return input_dataset
 
     def _get_assertion(self, node_id: str, success: bool) -> data_quality_assertions_dataset.Assertion:
         manifest_test_node = self.compiled_manifest["nodes"][node_id]
