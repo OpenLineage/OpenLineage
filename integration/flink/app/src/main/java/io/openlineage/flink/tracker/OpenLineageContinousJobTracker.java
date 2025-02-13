@@ -52,7 +52,7 @@ public class OpenLineageContinousJobTracker {
     String checkpointApiUrl =
         String.format(
             "http://%s:%s/jobs/%s/checkpoints",
-            config.get(RestOptions.ADDRESS),
+            Optional.ofNullable(config.get(RestOptions.ADDRESS)).orElse("localhost"),
             config.get(RestOptions.PORT),
             context.getJobId().toString());
     HttpGet request = new HttpGet(checkpointApiUrl);
