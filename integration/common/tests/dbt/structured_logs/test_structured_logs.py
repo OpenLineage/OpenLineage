@@ -121,6 +121,14 @@ def patch_get_dbt_profiles_dir(monkeypatch):
             "./tests/dbt/structured_logs/postgres/test/results/test_ol_events.json",
             "./tests/dbt/structured_logs/postgres/test/target/manifest.json",
         ),
+        # postgres dbt tests on sources
+        (
+            "postgres",
+            ["dbt", "test", "..."],
+            "./tests/dbt/structured_logs/postgres/test_source/logs/test_source_logs.jsonl",
+            "./tests/dbt/structured_logs/postgres/test_source/results/test_source_ol_events.json",
+            "./tests/dbt/structured_logs/postgres/test_source/target/manifest.json",
+        ),
         # postgres build
         (
             "postgres",
@@ -144,6 +152,7 @@ def patch_get_dbt_profiles_dir(monkeypatch):
         "snowflake_dbt_snapshot",
         # test command
         "postgres_dbt_test",
+        "postgres_dbt_test_source",
         # build command
         "postgres_dbt_build",
     ],
