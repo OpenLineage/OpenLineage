@@ -39,11 +39,11 @@ public class TaskQueueCircuitBreaker implements CircuitBreaker {
 
   private BlockingQueue<Runnable> eventQueue;
   private ExecutorService eventProcessingExecutor;
-  private Long timeoutSeconds;
+  private Long blockingTimeInSeconds;
   private Long shutdownTimeoutSeconds;
 
   public TaskQueueCircuitBreaker(@NonNull TaskQueueCircuitBreakerConfig config) {
-    this.timeoutSeconds = config.getTimeoutSeconds();
+    this.blockingTimeInSeconds = config.getBlockingTimeInSeconds();
     this.shutdownTimeoutSeconds = config.getShutdownTimeoutSeconds();
     eventQueue = new ArrayBlockingQueue<>(config.getQueueSize());
     eventProcessingExecutor =
@@ -59,12 +59,14 @@ public class TaskQueueCircuitBreaker implements CircuitBreaker {
   @Override
   public <T> T run(Callable<T> callable) {
     try {
-      T result = eventProcessingExecutor.submit(callable).get(timeoutSeconds, TimeUnit.SECONDS);
+      T result =
+          eventProcessingExecutor.submit(callable).get(blockingTimeInSeconds, TimeUnit.SECONDS);
       return result;
     } catch (RejectedExecutionException re) {
       incrementCounter(DROPPED_METRIC);
       return null;
     } catch (TimeoutException e) {
+      // Although timeout exception thrown, Future is not cancelled which is the async behavior
       incrementCounter(TIMED_OUT_METRIC);
       return null;
     } catch (Exception e) {

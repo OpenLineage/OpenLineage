@@ -117,7 +117,7 @@ and strictly process them asynchronously, while waiting a configurable
 amount of time for the task to complete to make some effort towards
 preserving order. Second, it offers a close method to abandon pending tasks and unblock the listeners sharing the same listener bus.
 The existing ExecutorCircuitBreaker, though looks similar, is not fully adequate for this need because  
-it has a cachedthreadpool, which can result in creation of too many threads and high memory footprint. 
+it has a cached thread pool, which can result in creation of too many threads and high memory footprint. 
 It also rejects a task right away if there's no thread to pick up.
 
 <Tabs groupId="async">
@@ -128,30 +128,30 @@ circuitBreaker:
   type: asyncTaskQueue
   threadCount: 2
   queueSize: 10
-  timeoutSeconds: 90
+  blockingTimeInSeconds: 1
   shutdownTimeoutSeconds: 60
 ```
 </TabItem>
 <TabItem value="spark" label="Spark Config">
 
 | Parameter                                               | Definition                                                                                                 | Example        |
-----------------------------------------------------------|------------------------------------------------------------------------------------------------------------|----------------
+---------------------------------------------------------|------------------------------------------------------------------------------------------------------------|----------------
 | spark.openlineage.circuitBreaker.type                   | Circuit breaker type selected                                                                              | asyncTaskQueue |
 | spark.openlineage.circuitBreaker.threadCount            | Num threads to process task                                                                                | 2              |
 | spark.openlineage.circuitBreaker.queueSize              | The size of task queue                                                                                     | 10             |
-| spark.openlineage.circuitBreaker.timeoutInSeconds       | Optional timeout for OpenLineage execution                                                                 | 90             |
+| spark.openlineage.circuitBreaker.blockingTimeInSeconds  | Initial blocking time of async call, can be used to improve event ordering                                 | 1              |
 | spark.openlineage.circuitBreaker.shutdownTimeoutSeconds | The duration through which the circuit breaker waits on close to wait for the queued tasks to be processed | 60             |
 
 
 </TabItem>
 <TabItem value="flink" label="Flink Config">
 
-| Parameter                                               | Definition                                                                                                 | Example        |
-----------------------------------------------------------|------------------------------------------------------------------------------------------------------------|----------------
+| Parameter                                         | Definition                                                                                                 | Example        |
+----------------------------------------------------|------------------------------------------------------------------------------------------------------------|----------------
 | openlineage.circuitBreaker.type                   | Circuit breaker type selected                                                                              | asyncTaskQueue |
 | openlineage.circuitBreaker.threadCount            | Num threads to process task                                                                                | 2              |
 | openlineage.circuitBreaker.queueSize              | The size of task queue                                                                                     | 10             |
-| openlineage.circuitBreaker.timeoutInSeconds       | Optional timeout for OpenLineage execution                                                                 | 90             |
+| openlineage.circuitBreaker.blockingTimeInSeconds  | Initial blocking time of async call, can be used to improve event ordering                                 | 1              |
 | openlineage.circuitBreaker.shutdownTimeoutSeconds | The duration through which the circuit breaker waits on close to wait for the queued tasks to be processed | 60             |
 
 </TabItem>
