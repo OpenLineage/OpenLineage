@@ -27,11 +27,18 @@ ext {
     flinkVersion = project.getProperty('flink.version')
     flinkVersionShort = flinkVersion.substring(0,4)
     isReleaseVersion = !version.endsWith('-SNAPSHOT')
+
+    // Currently flink2 is supported only for testing when a flink version specified is 2.x
+    flink2SupportEnabled = flinkVersion.startsWith('2')
 }
 
 dependencies {
-    implementation(project(path: ":app"))
     implementation(project(path: ":shared"))
+    implementation(project(path: ":flink1app"))
+    if (flink2SupportEnabled) {
+        // build requires flink-connector-kafka dependency built from non-released branch
+        implementation(project(path: ":flink2app"))
+    }
     implementation(project(path: ":flink115"))
     implementation(project(path: ":flink117"))
     implementation(project(path: ":flink118"))
@@ -203,8 +210,8 @@ signing {
 
 shadowJar {
     minimize() {
-        exclude(project(path: ":app"))
         exclude(project(path: ":shared"))
+        exclude(project(path: ":flink1app"))
         exclude(project(path: ":flink115"))
         exclude(project(path: ":flink117"))
         exclude(project(path: ":flink118"))

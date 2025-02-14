@@ -16,10 +16,10 @@ plugins {
     id 'com.github.johnrengelman.shadow'
 }
 
-archivesBaseName='openlineage-flink-app'
+archivesBaseName='openlineage-flink1-app'
 
 ext {
-    flinkVersion = project.getProperty('flink.version')
+    flinkVersion = project.getProperty('flink.version').startsWith("2") ? project.getProperty('flink.shared.version') : project.getProperty('flink.version')
     flinkVersionShort = flinkVersion.substring(0,4)
     assertjVersion = '3.27.3'
     junit5Version = '5.11.4'
