@@ -26,6 +26,8 @@ from openlineage.client.generated.environment_variables_run import (
     EnvironmentVariable,
     EnvironmentVariablesRunFacet,
 )
+from openlineage.client.generated.tags_job import TagsJobFacet, TagsJobFacetFields
+from openlineage.client.generated.tags_run import TagsRunFacet, TagsRunFacetFields
 from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 from openlineage.client.transport import (
     Transport,
@@ -53,6 +55,8 @@ class OpenLineageConfig:
     transport: dict[str, Any] | None = attr.ib(factory=dict)
     facets: FacetsConfig = attr.ib(factory=FacetsConfig)
     filters: list[FilterConfig] = attr.ib(factory=list)
+    tags_job: list[TagsJobFacetFields] = attr.ib(factory=list)
+    tags_run: list[TagsRunFacetFields] = attr.ib(factory=list)
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> OpenLineageConfig:
@@ -63,6 +67,10 @@ class OpenLineageConfig:
             config.facets = FacetsConfig(**params["facets"])
         if "filters" in params:
             config.filters = [FilterConfig(**filter_config) for filter_config in params["filters"]]
+        if tags_job := params.get("tag", {}).get("job"):
+            config.tags_job = [TagsJobFacetFields(key, value, "USER") for key, value in tags_job.items()]
+        if tags_run := params.get("tag", {}).get("run"):
+            config.tags_run = [TagsRunFacetFields(key, value, "USER") for key, value in tags_run.items()]
         return config
 
 
@@ -72,6 +80,8 @@ _T = TypeVar("_T", bound="OpenLineageClient")
 
 class OpenLineageClient:
     DYNAMIC_ENV_VARS_PREFIX = "OPENLINEAGE__"
+    DYNAMIC_ENV_VARS_TAG_JOB_PREFIX = "OPENLINEAGE__TAG__JOB__"
+    DYNAMIC_ENV_VARS_TAG_RUN_PREFIX = "OPENLINEAGE__TAG__RUN__"
     DEFAULT_URL_TRANSPORT_NAME = "default_http"
 
     def __init__(  # noqa: PLR0913
@@ -163,6 +173,7 @@ class OpenLineageClient:
             return
 
         event = self.add_environment_facets(event)
+        event = self.update_event_tags_facets(event)
 
         if log.isEnabledFor(logging.DEBUG):
             val = Serde.to_json(event).encode("utf-8")
@@ -362,7 +373,6 @@ class OpenLineageClient:
             # Parse value (try to parse as JSON, otherwise lowercase the value)
             with contextlib.suppress(json.JSONDecodeError):
                 env_value = json.loads(env_value)  # noqa: PLW2901
-
             cls._insert_into_config(config, keys, env_value)
 
         return config
@@ -404,3 +414,33 @@ class OpenLineageClient:
                 missing_vars,
             )
         return filtered_vars
+
+    def update_event_tags_facets(self, event: Event) -> Event:
+        """
+        Creates or updates job and run tag facets based on user-supplied environment variables
+        """
+        tags_job = self.config.tags_job
+        if (isinstance(event, (JobEvent, RunEvent))) and tags_job:
+            tags_facet = event.job.facets.get("tags", TagsJobFacet())
+            event.job.facets["tags"] = self._update_tag_facet(tags_facet, tags_job)
+
+        tags_run = self.config.tags_run
+        if (isinstance(event, RunEvent)) and tags_run:
+            tags_facet = event.run.facets.get("tags", TagsRunFacet())
+            event.run.facets["tags"] = self._update_tag_facet(tags_facet, tags_run)
+
+        return event
+
+    def _update_tag_facet(
+        self, tags_facet: TagsJobFacet | TagsRunFacet, user_tags
+    ) -> TagsJobFacet | TagsRunFacet:
+        """
+        Handles updating tags in an existing tag facet
+        """
+        # Integration-supplied tags can be uppercase or lower case. Keep the case of the existing tag
+        # but compare with case-insensitive match.
+        user_tag_names = {tag.key.lower() for tag in user_tags}
+        keep_tags = list(filter(lambda x: x.key.lower() not in user_tag_names, tags_facet.tags))
+        all_tags = keep_tags + user_tags
+        tags_facet.tags = all_tags
+        return tags_facet
