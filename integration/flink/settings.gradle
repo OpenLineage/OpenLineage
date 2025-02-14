@@ -9,4 +9,7 @@ include 'shared'
 include 'flink115'
 include 'flink117'
 include 'flink118'
-include 'app'
+include 'flink1app'
+if (hasProperty('flink.version') &&  getProperty('flink.version').startsWith('2')) {
+    include 'flink2app'
+}

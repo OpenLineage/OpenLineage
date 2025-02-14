@@ -1,0 +1,142 @@
+/*
+/* Copyright 2018-2025 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+import org.apache.tools.ant.filters.ReplaceTokens
+
+plugins {
+    id 'java-library'
+    id 'jacoco'
+    id 'com.adarshr.test-logger'
+    id 'com.diffplug.spotless'
+    id 'io.franzbecker.gradle-lombok'
+    id 'io.openlineage.common-config'
+    id 'maven-publish'
+    id 'com.github.johnrengelman.shadow'
+}
+
+group = "io.openlineage"
+
+archivesBaseName='openlineage-flink2-app'
+
+ext {
+    flinkVersion = project.getProperty('flink.version')
+    flinkVersionShort = flinkVersion.substring(0,4)
+    isReleaseVersion = !version.endsWith('-SNAPSHOT')
+    assertjVersion = '3.25.3'
+    jacksonVersion = "2.15.3"
+    junit5Version = '5.10.2'
+    scalaLibraryVersion = '2.12.7'
+    mockitoVersion = '5.14.1'
+
+    // Currently flink2 is supported only for testing when a flink version specified is 2.x
+    flink2SupportEnabled = flinkVersion.startsWith('2')
+}
+
+
+dependencies {
+    api "io.openlineage:openlineage-java:${project.version}"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+
+    compileOnly "org.apache.flink:flink-core:$flinkVersion"
+    compileOnly "org.apache.flink:flink-runtime:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
+    compileOnly "org.apache.flink:flink-connector-kafka:3.4-SNAPSHOT"
+    compileOnly "org.apache.flink:flink-connector-test-utils:$flinkVersion"
+
+
+    testImplementation "org.scala-lang:scala-library:$scalaLibraryVersion"
+    testImplementation "org.apache.flink:flink-connector-test-utils:$flinkVersion"
+    testImplementation("org.apache.flink:flink-table-test-utils:$flinkVersion") {
+        exclude(group: "org.apache.flink", module: "flink-table-planner-loader")
+    }
+    testImplementation "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
+    testImplementation "org.apache.flink:flink-connector-base:$flinkVersion"
+    testImplementation "org.apache.flink:flink-json:$flinkVersion"
+    testImplementation "org.apache.flink:flink-connector-kafka:3.4-SNAPSHOT" // need to be built locally
+    testImplementation "org.apache.kafka:kafka-clients:3.4.0"
+    testImplementation "org.testcontainers:kafka:1.20.4"
+    testImplementation "commons-codec:commons-codec:1.17.1"
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation("org.slf4j:slf4j-api:2.0.16")
+    testImplementation("org.slf4j:slf4j-simple:2.0.16")
+
+}
+
+compileJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+compileTestJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+
+task sourceJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+def commonTestConfiguration = {
+    classpath =  project.sourceSets.test.runtimeClasspath
+}
+
+test {
+    jvmArgs(
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+            "--add-opens=java.base/java.io=ALL-UNNAMED",
+            "--add-opens=java.base/java.net=ALL-UNNAMED",
+            "--add-opens=java.base/java.nio=ALL-UNNAMED",
+            "--add-opens=java.base/java.util=ALL-UNNAMED"
+    )
+
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
+}
+
+def reportsDir = "${buildDir}/reports"
+def coverageDir = "${reportsDir}/coverage"
+
+jacoco {
+    toolVersion = '0.8.12'
+    reportsDir = file(coverageDir)
+}
+
+jacocoTestReport {
+    reports {
+        xml {
+            enabled true
+        }
+        html {
+            enabled true
+            destination = file(coverageDir)
+        }
+    }
+}
+
+spotlessJava {
+    dependsOn("compileJava", "compileTestJava")
+}

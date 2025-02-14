@@ -51,7 +51,7 @@ In order to build the jar with running tests, you need to build the `flink-conne
 This will change once [FLINK-36648](https://github.com/apache/flink-connector-kafka/pull/140) is merged and released.
 
 ```bash
-./buildDependencies.sh
+./buildFlinkConnectorKafka.sh
 ```
 
 Run the integration tests of this package:
@@ -67,7 +67,6 @@ Run the integration tests of this package:
     treating the implementation as production ready.
 
  * Write docker integration test and depend on released Flink version.
- * Job listener implemented within this package shall be available within standard `openlineage-flink` jar.
  * Make sure package does not contain extra dependencies (or relocates them).
  * Implement circuit breaker within the listener as in other integrations.
  * Add custom Facet with Flink jobId.
@@ -77,4 +76,5 @@ Run the integration tests of this package:
  * Support extracting dataset scheme from Protobuf.
  * Extract table comment property into OpenLineage facet. 
  * For Kafka table, include symlink with the table name. 
+ * Implement a check which will not allow turning on the listener if the Flink version is 2.
 

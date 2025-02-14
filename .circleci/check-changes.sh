@@ -65,7 +65,6 @@ else
     check_change integration/spark/ true openlineage-java.yml openlineage-spark.yml
     check_change integration/spark-extension-interfaces/ true openlineage-java.yml openlineage-spark.yml
     check_change integration/flink/ true openlineage-java.yml openlineage-flink.yml
-    check_change integration/flink-native-listener/ true openlineage-java.yml openlineage-flink.yml
     check_change client/python/ true openlineage-python.yml
     check_change integration/common/ true openlineage-python.yml
     check_change integration/airflow/ true openlineage-python.yml
