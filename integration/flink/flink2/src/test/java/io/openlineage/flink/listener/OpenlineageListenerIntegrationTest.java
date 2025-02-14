@@ -58,6 +58,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.rules.TemporaryFolder;
@@ -65,6 +66,7 @@ import org.junit.runners.MethodSorters;
 
 /** Tests for job status changed listener. */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@Tag("integration-test")
 public class OpenlineageListenerIntegrationTest extends TestLogger {
 
   private static final String TOPIC1 = "topic1";
