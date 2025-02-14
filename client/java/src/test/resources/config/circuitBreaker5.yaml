@@ -4,6 +4,6 @@ circuitBreaker:
   type: asyncTaskQueue
   threadCount: 1
   queueSize: 2
-  timeoutSeconds: 3
+  blockingTimeInSeconds: 3
   shutdownTimeoutSeconds: 4
   circuitCheckIntervalInMillis: 5

@@ -23,12 +23,12 @@ public class TaskQueueCircuitBreakerConfig
     implements CircuitBreakerConfig, MergeConfig<TaskQueueCircuitBreakerConfig> {
   private static final Integer DEFAULT_THREAD_COUNT = 2;
   private static final Integer DEFAULT_QUEUE_SIZE = 10;
-  private static final Long DEFAULT_TIMEOUT = 90L;
+  private static final Long DEFAULT_TIMEOUT = 1L;
   private static final Long DEFAULT_SHUTDOWN_TIMEOUT = 60L;
 
   @Getter @Setter private Integer threadCount = DEFAULT_THREAD_COUNT;
   @Getter @Setter private Integer queueSize = DEFAULT_QUEUE_SIZE;
-  @Getter @Setter private Long timeoutSeconds = DEFAULT_TIMEOUT;
+  @Getter @Setter private Long blockingTimeInSeconds = DEFAULT_TIMEOUT;
   @Getter @Setter private Long shutdownTimeoutSeconds = DEFAULT_SHUTDOWN_TIMEOUT;
   @Getter @Setter private Integer circuitCheckIntervalInMillis = CIRCUIT_CHECK_INTERVAL_IN_MILLIS;
 
@@ -37,7 +37,8 @@ public class TaskQueueCircuitBreakerConfig
     return new TaskQueueCircuitBreakerConfig(
         mergeWithDefaultValue(threadCount, other.threadCount, DEFAULT_THREAD_COUNT),
         mergeWithDefaultValue(this.queueSize, other.queueSize, DEFAULT_QUEUE_SIZE),
-        mergeWithDefaultValue(this.timeoutSeconds, other.timeoutSeconds, DEFAULT_TIMEOUT),
+        mergeWithDefaultValue(
+            this.blockingTimeInSeconds, other.blockingTimeInSeconds, DEFAULT_TIMEOUT),
         mergeWithDefaultValue(
             this.shutdownTimeoutSeconds, other.shutdownTimeoutSeconds, DEFAULT_SHUTDOWN_TIMEOUT),
         mergeWithDefaultValue(
