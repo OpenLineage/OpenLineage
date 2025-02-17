@@ -354,16 +354,13 @@ class RddExecutionContext implements ExecutionContext {
     if (jobSuffix == null) {
       suffix = String.valueOf(jobId);
     }
+    OpenLineage ol = olContext.getOpenLineage();
 
-    return olContext
-        .getOpenLineage()
-        .newJobBuilder()
+    return ol.newJobBuilder()
         .namespace(eventEmitter.getJobNamespace())
         .name(JobNameBuilder.build(olContext, suffix))
         .facets(
-            olContext
-                .getOpenLineage()
-                .newJobFacetsBuilder()
+            ol.newJobFacetsBuilder()
                 .jobType(
                     olContext
                         .getOpenLineage()

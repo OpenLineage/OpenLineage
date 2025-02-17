@@ -23,6 +23,7 @@ import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.KafkaConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark.api.TagField;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -283,7 +284,9 @@ class ArgumentParserTest {
     String propertyBefore = System.getProperty("user.dir");
     System.setProperty("user.dir", Resources.getResource("config").getPath());
 
-    SparkOpenLineageConfig config = ArgumentParser.parse(new SparkConf());
+    SparkConf sparkConf = new SparkConf();
+    sparkConf.set("spark.openlineage.run.tags", "overwrite:overwritten");
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
     System.setProperty("user.dir", propertyBefore);
 
     assertThat(config.getTransportConfig()).isInstanceOf(HttpConfig.class);
@@ -297,6 +300,11 @@ class ArgumentParserTest {
     assertThat(config.getFacetsConfig().getDisabledFacets())
         .containsAllEntriesOf(
             ImmutableMap.of("spark_unknown", false, "spark.logicalPlan", true, "debug", true));
+    assertThat(config.getJob().getTags())
+        .contains(new TagField("key", "value"), new TagField("tag2"));
+    assertThat(config.getRun().getTags())
+        .contains(
+            new TagField("something", "will", "be"), new TagField("overwrite", "overwritten"));
   }
 
   @Test
@@ -398,5 +406,38 @@ class ArgumentParserTest {
         .hasFieldOrPropertyWithValue(
             "deniedSparkNodes",
             Arrays.asList("org.apache.spark.sql.Node3", "org.apache.spark.sql.Node4"));
+  }
+
+  @Test
+  void testExtractTags() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.job.tags", "tag;key:value;k:v:s;this:will:get:skipped")
+            .set("spark.openlineage.run.tags", "otherTag;otherKey:otherValue");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+
+    assertThat(config.getJob().getTags())
+        .isEqualTo(
+            Arrays.asList(
+                new TagField("tag"),
+                new TagField("key", "value"),
+                new TagField("k", "v", "s"),
+                new TagField("this", "will", "get")));
+    assertThat(config.getRun().getTags())
+        .isEqualTo(Arrays.asList(new TagField("otherTag"), new TagField("otherKey", "otherValue")));
+  }
+
+  @Test
+  void testExtractTagsEdgeCases() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.job.tags", "a:;:b")
+            .set("spark.openlineage.run.tags", ";;:; : ;");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+
+    assertThat(config.getJob().getTags()).isEqualTo(Collections.singletonList(new TagField("a")));
+    assertThat(config.getRun().getTags()).isEmpty();
   }
 }
