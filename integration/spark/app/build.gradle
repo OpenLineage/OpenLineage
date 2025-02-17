@@ -39,7 +39,7 @@ ext {
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
             testDir      : project.findProperty('test.dir') ?: System.getProperty('test.dir')
     ]
-    micrometerVersion = '1.14.3'
+    micrometerVersion = '1.14.4'
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
@@ -121,7 +121,7 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.testcontainers:mockserver")
     testImplementation("org.testcontainers:kafka")
-    testImplementation("commons-beanutils:commons-beanutils:1.10.0")
+    testImplementation("commons-beanutils:commons-beanutils:1.10.1")
     testImplementation("org.awaitility:awaitility:4.2.2")
     testImplementation("org.assertj:assertj-core:${assertjVersion}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
@@ -132,7 +132,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.module'
     }
 
-    testImplementation(platform("software.amazon.awssdk:bom:2.30.16"))
+    testImplementation(platform("software.amazon.awssdk:bom:2.30.21"))
     testImplementation("software.amazon.awssdk:auth")
     testImplementation("software.amazon.awssdk:emr")
     testImplementation("software.amazon.awssdk:s3")
