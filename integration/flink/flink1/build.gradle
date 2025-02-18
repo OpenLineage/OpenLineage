@@ -16,11 +16,11 @@ plugins {
     id 'com.github.johnrengelman.shadow'
 }
 
-archivesBaseName='openlineage-flink-app'
+archivesBaseName='openlineage-flink1-app'
 
 ext {
-    flinkVersion = project.getProperty('flink.version')
-    flinkVersionShort = flinkVersion.substring(0,4)
+    compileFlinkVersion = project.getProperty('flink.flink1.version')
+    testedFlinkVersion = project.getProperty('flink.version')
     assertjVersion = '3.27.3'
     junit5Version = '5.11.4'
     lombokVersion = '1.18.36'
@@ -39,16 +39,16 @@ dependencies {
     api "io.openlineage:openlineage-java:${project.version}"
 
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
-    compileOnly "org.apache.flink:flink-java:$flinkVersion"
-    compileOnly "org.apache.flink:flink-streaming-java:$flinkVersion"
+    compileOnly "org.apache.flink:flink-java:$compileFlinkVersion"
+    compileOnly "org.apache.flink:flink-streaming-java:$compileFlinkVersion"
     compileOnly "io.micrometer:micrometer-core:${micrometerVersion}"
 
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.4.2'
-    testImplementation "org.apache.flink:flink-java:$flinkVersion"
-    testImplementation "org.apache.flink:flink-streaming-java:$flinkVersion"
+    testImplementation "org.apache.flink:flink-java:$testedFlinkVersion"
+    testImplementation "org.apache.flink:flink-streaming-java:$testedFlinkVersion"
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
@@ -88,6 +88,13 @@ test {
     configure commonTestConfiguration
     useJUnitPlatform {
         excludeTags 'integration-test'
+    }
+}
+
+compileTestJava {
+    if (project.property("flink.version").toString().startsWith("2")) {
+        // don't compile test when testing Flink 2
+        exclude '**/*'
     }
 }
 

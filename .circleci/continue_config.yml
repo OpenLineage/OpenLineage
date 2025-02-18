@@ -15,6 +15,10 @@ parameters:
   nightly-run:
     type: string
     default: "inactive"
+  integration-type:
+    type: enum
+    default: "*"
+    enum: [ "*", "airflow", "dagster", "dbt", "publish", "python" ]
 
 checkout_project_root:
   &checkout_project_root # Override checkout path to project root (see: https://circleci.com/docs/2.0/configuration-reference/#checkout)
@@ -986,13 +990,18 @@ jobs:
             - v1-integration-flink-{{ checksum "/tmp/checksum.txt" }}
       - attach_workspace:
           at: ~/
-      - set_java_version
       - run: chmod -R 777 data/iceberg/db
+      - when:
+          condition:
+            equal: [ 2.0-preview1, << parameters.flink-version >> ]
+          steps:
+            - run: ./flink2/buildFlinkConnectorKafka.sh
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
           export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
           export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+          
           ./gradlew --no-daemon --console=plain integrationTest --i -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail
@@ -1036,39 +1045,6 @@ jobs:
           path: build/libs
           destination: libs
 
-  build-integration-flink-native:
-    working_directory: ~/openlineage/integration/flink-native-listener
-    machine:
-      image: ubuntu-2404:current
-    resource_class: large
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
-      - restore_cache:
-          keys:
-            - v1-integration-flink-native-listener-{{ checksum "/tmp/checksum.txt" }}
-      - run:
-          name: Build and install locally flink-connector-kafka
-          command: |
-            ./buildDependencies.sh
-      - attach_workspace:
-          at: ~/
-      - run:
-          name: Run built-in lineage listener tests
-          command: |
-            ./gradlew clean build
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - .m2/repository/io/openlineage/flink-native-listener
-            - openlineage/integration/flink-native-listener/build-cache
-            - openlineage/integration/flink-native-listener/build/libs
-      - store_artifacts:
-          path: build/libs
-          destination: libs
-
   test-integration-flink:
     parameters:
       flink-version:
@@ -1089,6 +1065,11 @@ jobs:
             - v1-integration-flink-{{ checksum "/tmp/checksum.txt" }}
       - attach_workspace:
           at: ~/
+      - when:
+          condition:
+            equal: [ 2.0-preview1, << parameters.flink-version >> ]
+          steps:
+            - run: ./flink2/buildFlinkConnectorKafka.sh
       - run: ./gradlew --no-daemon --console=plain --stacktrace build check -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail
