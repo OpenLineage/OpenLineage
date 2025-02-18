@@ -43,6 +43,7 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
         metricsConfig,
         runConfig,
         jobConfig);
+    this.datasetConfig = datasetConfig;
   }
 
   @Override

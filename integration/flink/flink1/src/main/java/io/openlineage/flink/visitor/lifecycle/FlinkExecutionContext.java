@@ -5,7 +5,6 @@
 
 package io.openlineage.flink.visitor.lifecycle;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.JobFacets;
 import io.openlineage.client.OpenLineage.JobFacetsBuilder;
@@ -13,15 +12,12 @@ import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunEventBuilder;
-import io.openlineage.client.circuitBreaker.CircuitBreaker;
-import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
+import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.job.JobConfig;
 import io.openlineage.flink.SinkLineage;
 import io.openlineage.flink.TransformationUtils;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.CheckpointFacet;
-import io.openlineage.flink.client.EventEmitter;
-import io.openlineage.flink.client.FlinkOpenLineageConfig;
 import io.openlineage.flink.visitor.Visitor;
 import io.openlineage.flink.visitor.VisitorFactory;
 import io.openlineage.flink.visitor.VisitorFactoryImpl;
@@ -33,14 +29,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.flink.api.common.JobExecutionResult;
-import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.dag.Transformation;
 
 @Slf4j
@@ -49,57 +43,65 @@ public class FlinkExecutionContext implements ExecutionContext {
 
   public static final String FLINK_INTEGRATION = "FLINK";
   public static final String FLINK_JOB_TYPE = "JOB";
-  @Getter private final JobID jobId;
-  protected final UUID runId;
-  protected final EventEmitter eventEmitter;
-  protected final OpenLineageContext openLineageContext;
-  private final String jobName;
-  private final String jobNamespace;
-  private final String processingType;
-  private final CircuitBreaker circuitBreaker;
-  private final FlinkOpenLineageConfig config;
-  @Getter private final MeterRegistry meterRegistry;
-  @Getter private final DatasetNamespaceCombinedResolver namespaceResolver;
 
+  @Getter private final OpenLineageContext olContext;
   @Getter private final List<Transformation<?>> transformations;
 
   @Override
   public void onJobSubmitted() {
-    log.debug("JobClient - jobId: {}", jobId);
-    circuitBreaker.run(
-        () -> {
-          RunEvent runEvent =
-              buildEventForEventType(EventType.START)
-                  .run(new OpenLineage.RunBuilder().runId(runId).build())
-                  .build();
-          log.debug("Posting event for onJobSubmitted {}: {}", jobId, runEvent);
-          meterRegistry.counter("openlineage.flink.event.submitted.start").increment();
-          eventEmitter.emit(runEvent);
-          meterRegistry.counter("openlineage.flink.event.submitted.end").increment();
-          return null;
-        });
+    log.debug("JobClient - jobId: {}", olContext.getJobId().getFlinkJobId());
+    olContext
+        .getCircuitBreaker()
+        .run(
+            () -> {
+              RunEvent runEvent =
+                  buildEventForEventType(EventType.START)
+                      .run(new OpenLineage.RunBuilder().runId(olContext.getRunUuid()).build())
+                      .build();
+              log.debug("Posting event for onJobSubmitted {}: {}", olContext.getJobId(), runEvent);
+              olContext
+                  .getMeterRegistry()
+                  .counter("openlineage.flink.event.submitted.start")
+                  .increment();
+              olContext.getEventEmitter().emit(runEvent);
+              olContext
+                  .getMeterRegistry()
+                  .counter("openlineage.flink.event.submitted.end")
+                  .increment();
+              return null;
+            });
   }
 
   @Override
   public void onJobCheckpoint(CheckpointFacet facet) {
-    log.debug("JobClient - jobId: {}", jobId);
-    circuitBreaker.run(
-        () -> {
-          RunEvent runEvent =
-              buildEventForEventType(EventType.RUNNING)
-                  .run(
-                      new OpenLineage.RunBuilder()
-                          .runId(runId)
-                          .facets(
-                              new OpenLineage.RunFacetsBuilder().put("checkpoints", facet).build())
-                          .build())
-                  .build();
-          log.debug("Posting event for onJobCheckpoint {}: {}", jobId, runEvent);
-          meterRegistry.counter("openlineage.flink.event.checkpoint.start").increment();
-          eventEmitter.emit(runEvent);
-          meterRegistry.counter("openlineage.flink.event.checkpoint.end").increment();
-          return null;
-        });
+    log.debug("JobClient - jobId: {}", olContext.getJobId());
+    olContext
+        .getCircuitBreaker()
+        .run(
+            () -> {
+              RunEvent runEvent =
+                  buildEventForEventType(EventType.RUNNING)
+                      .run(
+                          new OpenLineage.RunBuilder()
+                              .runId(olContext.getRunUuid())
+                              .facets(
+                                  new OpenLineage.RunFacetsBuilder()
+                                      .put("checkpoints", facet)
+                                      .build())
+                              .build())
+                      .build();
+              log.debug("Posting event for onJobCheckpoint {}: {}", olContext.getJobId(), runEvent);
+              olContext
+                  .getMeterRegistry()
+                  .counter("openlineage.flink.event.checkpoint.start")
+                  .increment();
+              olContext.getEventEmitter().emit(runEvent);
+              olContext
+                  .getMeterRegistry()
+                  .counter("openlineage.flink.event.checkpoint.end")
+                  .increment();
+              return null;
+            });
   }
 
   public RunEventBuilder buildEventForEventType(EventType eventType) {
@@ -123,45 +125,65 @@ public class FlinkExecutionContext implements ExecutionContext {
 
   @Override
   public void onJobCompleted(JobExecutionResult jobExecutionResult) {
-    circuitBreaker.run(
-        () -> {
-          OpenLineage openLineage = openLineageContext.getOpenLineage();
-          meterRegistry.counter("openlineage.flink.event.completed.start").increment();
-          eventEmitter.emit(
-              commonEventBuilder()
-                  .run(openLineage.newRun(runId, null))
-                  .eventType(EventType.COMPLETE)
-                  .build());
-          meterRegistry.counter("openlineage.flink.event.completed.end").increment();
-          return null;
-        });
+    olContext
+        .getCircuitBreaker()
+        .run(
+            () -> {
+              OpenLineage openLineage = olContext.getOpenLineage();
+              olContext
+                  .getMeterRegistry()
+                  .counter("openlineage.flink.event.completed.start")
+                  .increment();
+              olContext
+                  .getEventEmitter()
+                  .emit(
+                      commonEventBuilder()
+                          .run(openLineage.newRun(olContext.getRunUuid(), null))
+                          .eventType(EventType.COMPLETE)
+                          .build());
+              olContext
+                  .getMeterRegistry()
+                  .counter("openlineage.flink.event.completed.end")
+                  .increment();
+              return null;
+            });
   }
 
   @Override
   public void onJobFailed(Throwable failed) {
-    circuitBreaker.run(
-        () -> {
-          OpenLineage openLineage = openLineageContext.getOpenLineage();
-          meterRegistry.counter("openlineage.flink.event.failed.start").increment();
-          eventEmitter.emit(
-              commonEventBuilder()
-                  .run(
-                      openLineage.newRun(
-                          runId,
-                          openLineage
-                              .newRunFacetsBuilder()
-                              .errorMessage(
-                                  openLineage.newErrorMessageRunFacet(
-                                      failed.getMessage(),
-                                      "JAVA",
-                                      ExceptionUtils.getStackTrace(failed)))
-                              .build()))
-                  .eventType(EventType.FAIL)
-                  .eventTime(ZonedDateTime.now())
-                  .build());
-          meterRegistry.counter("openlineage.flink.event.failed.end").increment();
-          return null;
-        });
+    olContext
+        .getCircuitBreaker()
+        .run(
+            () -> {
+              OpenLineage openLineage = olContext.getOpenLineage();
+              olContext
+                  .getMeterRegistry()
+                  .counter("openlineage.flink.event.failed.start")
+                  .increment();
+              olContext
+                  .getEventEmitter()
+                  .emit(
+                      commonEventBuilder()
+                          .run(
+                              openLineage.newRun(
+                                  olContext.getRunUuid(),
+                                  openLineage
+                                      .newRunFacetsBuilder()
+                                      .errorMessage(
+                                          openLineage.newErrorMessageRunFacet(
+                                              failed.getMessage(),
+                                              "JAVA",
+                                              ExceptionUtils.getStackTrace(failed)))
+                                      .build()))
+                          .eventType(EventType.FAIL)
+                          .eventTime(ZonedDateTime.now())
+                          .build());
+              olContext
+                  .getMeterRegistry()
+                  .counter("openlineage.flink.event.failed.end")
+                  .increment();
+              return null;
+            });
   }
 
   /**
@@ -170,27 +192,31 @@ public class FlinkExecutionContext implements ExecutionContext {
    * @return
    */
   private RunEventBuilder commonEventBuilder() {
-    OpenLineage openLineage = openLineageContext.getOpenLineage();
+    OpenLineage openLineage = olContext.getOpenLineage();
     JobFacets jobFacets =
         buildOwnershipFacet(new JobFacetsBuilder())
             .jobType(
                 openLineage
                     .newJobTypeJobFacetBuilder()
                     .jobType(FLINK_JOB_TYPE)
-                    .processingType(processingType)
+                    .processingType(olContext.getProcessingType())
                     .integration(FLINK_INTEGRATION)
                     .build())
             .build();
 
     return openLineage
         .newRunEventBuilder()
-        .job(openLineage.newJob(jobNamespace, jobName, jobFacets))
+        .job(
+            openLineage.newJob(
+                olContext.getJobId().getJobNamespace(),
+                olContext.getJobId().getJobName(),
+                jobFacets))
         .eventTime(ZonedDateTime.now());
   }
 
   private JobFacetsBuilder buildOwnershipFacet(JobFacetsBuilder builder) {
-    Optional.ofNullable(config)
-        .map(FlinkOpenLineageConfig::getJobConfig)
+    Optional.of(olContext.getConfig())
+        .map(OpenLineageConfig::getJobConfig)
         .map(JobConfig::getOwners)
         .map(JobConfig.JobOwnersConfig::getAdditionalProperties)
         .filter(Objects::nonNull)
@@ -200,14 +226,14 @@ public class FlinkExecutionContext implements ExecutionContext {
               map.forEach(
                   (type, name) ->
                       ownersList.add(
-                          openLineageContext
+                          olContext
                               .getOpenLineage()
                               .newOwnershipJobFacetOwnersBuilder()
                               .name(name)
                               .type(type)
                               .build()));
               builder.ownership(
-                  openLineageContext
+                  olContext
                       .getOpenLineage()
                       .newOwnershipJobFacetBuilder()
                       .owners(ownersList)
@@ -221,7 +247,7 @@ public class FlinkExecutionContext implements ExecutionContext {
       VisitorFactory visitorFactory, List<Object> sources) {
     List<OpenLineage.InputDataset> inputDatasets = new ArrayList<>();
     List<Visitor<OpenLineage.InputDataset>> inputVisitors =
-        visitorFactory.getInputVisitors(openLineageContext);
+        visitorFactory.getInputVisitors(olContext);
 
     for (var transformation : sources) {
       log.debug("Getting input dataset from source {}", transformation.toString());
@@ -230,7 +256,8 @@ public class FlinkExecutionContext implements ExecutionContext {
               .filter(inputVisitor -> inputVisitor.isDefinedAt(transformation))
               .map(
                   inputVisitor ->
-                      meterRegistry
+                      olContext
+                          .getMeterRegistry()
                           .timer(
                               "openlineage.flink.dataset.input.extraction.time",
                               "visitor",
@@ -245,14 +272,15 @@ public class FlinkExecutionContext implements ExecutionContext {
   private List<OpenLineage.OutputDataset> getOutputDatasets(
       VisitorFactory visitorFactory, Object sink) {
     List<Visitor<OpenLineage.OutputDataset>> outputVisitors =
-        visitorFactory.getOutputVisitors(openLineageContext);
+        visitorFactory.getOutputVisitors(olContext);
 
     log.debug("Getting output dataset from sink {}", sink.toString());
     return outputVisitors.stream()
         .filter(outputVisitor -> outputVisitor.isDefinedAt(sink))
         .map(
             outputVisitor ->
-                meterRegistry
+                olContext
+                    .getMeterRegistry()
                     .timer(
                         "openlineage.flink.dataset.output.extraction.time",
                         "visitor",

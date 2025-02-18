@@ -5,13 +5,20 @@
 
 package io.openlineage.flink.api;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.circuitBreaker.CircuitBreaker;
+import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.client.utils.UUIDUtils;
-import io.openlineage.flink.client.FlinkOpenLineageConfig;
+import io.openlineage.flink.client.EventEmitter;
+import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import java.util.UUID;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.Value;
+import lombok.Setter;
+import org.apache.flink.api.common.JobID;
 
 /**
  * Context holder with references to several required objects during construction of an OpenLineage
@@ -22,10 +29,11 @@ import lombok.Value;
  *
  * @apiNote This interface is evolving and may change in future releases
  */
-@Value
 @Builder
+@Getter
 public class OpenLineageContext {
-  UUID runUuid = UUIDUtils.generateNewUUID();
+
+  @Builder.Default UUID runUuid = UUIDUtils.generateNewUUID();
 
   /**
    * A non-null, preconfigured {@link OpenLineage} client instance for constructing OpenLineage
@@ -35,4 +43,27 @@ public class OpenLineageContext {
 
   /** Flink OpenLineage config */
   @NonNull FlinkOpenLineageConfig config;
+
+  MeterRegistry meterRegistry;
+
+  DatasetNamespaceCombinedResolver namespaceResolver;
+
+  CircuitBreaker circuitBreaker;
+
+  @Setter JobIdentifier jobId;
+
+  String processingType;
+
+  EventEmitter eventEmitter;
+
+  @Getter
+  @Builder
+  @EqualsAndHashCode
+  public static class JobIdentifier {
+    private String jobName;
+    private String jobNamespace;
+
+    /** Assigned during the event emitted. */
+    @Setter private JobID flinkJobId;
+  }
 }

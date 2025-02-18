@@ -6,7 +6,7 @@
 package io.openlineage.flink.visitor.identifier;
 
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.flink.client.OpenLineageContext;
+import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.config.FlinkDatasetConfig;
 import io.openlineage.flink.config.FlinkDatasetKafkaConfig;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;

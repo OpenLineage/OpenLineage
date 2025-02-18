@@ -10,8 +10,8 @@ import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.flink.client.OpenLineageContext;
-import io.openlineage.flink.visitor.VisitorFactory;
+import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.visitor.Flink2VisitorFactory;
 import io.openlineage.flink.visitor.facet.DatasetFacetVisitor;
 import io.openlineage.flink.visitor.identifier.DatasetIdentifierVisitor;
 import java.util.Collection;
@@ -27,7 +27,7 @@ class OpenLineageDatasetExtractor {
   private final Collection<DatasetFacetVisitor> facetVisitors;
   private final Collection<DatasetIdentifierVisitor> identifierVisitors;
 
-  OpenLineageDatasetExtractor(OpenLineageContext context, VisitorFactory visitorFactory) {
+  OpenLineageDatasetExtractor(OpenLineageContext context, Flink2VisitorFactory visitorFactory) {
     this.context = context;
     this.facetVisitors = visitorFactory.loadDatasetFacetVisitors(context);
     this.identifierVisitors = visitorFactory.loadDatasetIdentifierVisitors(context);

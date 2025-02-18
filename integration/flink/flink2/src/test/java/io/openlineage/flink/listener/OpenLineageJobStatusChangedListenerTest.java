@@ -12,7 +12,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageClientUtils;
-import io.openlineage.flink.visitor.VisitorFactory;
+import io.openlineage.flink.visitor.Flink2VisitorFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 
 class OpenLineageJobStatusChangedListenerTest {
   Context context = mock(Context.class);
-  VisitorFactory factory = mock(VisitorFactory.class);
+  Flink2VisitorFactory factory = mock(Flink2VisitorFactory.class);
   OpenLineageJobStatusChangedListener listener;
   String eventFileLocation;
 

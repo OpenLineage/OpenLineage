@@ -11,6 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.io.Resources;
 import io.openlineage.client.transports.HttpConfig;
+import io.openlineage.flink.config.FlinkConfigParser;
+import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import java.net.URI;
 import lombok.SneakyThrows;
 import org.apache.flink.configuration.ConfigOption;

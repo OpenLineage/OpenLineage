@@ -5,8 +5,8 @@
 
 package io.openlineage.flink.listener;
 
-import io.openlineage.flink.client.OpenLineageContext;
-import io.openlineage.flink.visitor.VisitorFactory;
+import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.visitor.Flink2VisitorFactory;
 import io.openlineage.flink.visitor.facet.DatasetFacetVisitor;
 import io.openlineage.flink.visitor.facet.TableLineageFacetVisitor;
 import io.openlineage.flink.visitor.facet.TypeInformationFacetVisitor;
@@ -29,8 +29,8 @@ public class OpenLineageJobStatusChangedListenerFactory implements JobStatusChan
     return new OpenLineageJobStatusChangedListener(context, loadVisitorFactory());
   }
 
-  VisitorFactory loadVisitorFactory() {
-    return new VisitorFactory() {
+  Flink2VisitorFactory loadVisitorFactory() {
+    return new Flink2VisitorFactory() {
       @Override
       public Collection<DatasetFacetVisitor> loadDatasetFacetVisitors(OpenLineageContext context) {
         return Arrays.asList(

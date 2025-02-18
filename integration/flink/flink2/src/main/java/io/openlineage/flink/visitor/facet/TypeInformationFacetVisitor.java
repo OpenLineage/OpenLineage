@@ -8,7 +8,7 @@ package io.openlineage.flink.visitor.facet;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFieldsBuilder;
-import io.openlineage.flink.client.OpenLineageContext;
+import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.converter.LineageDatasetWithIdentifier;
 import io.openlineage.flink.util.KafkaDatasetFacetUtil;
 import io.openlineage.flink.util.TypeDatasetFacetUtil;

@@ -35,6 +35,7 @@ ext {
 
 dependencies {
     api "io.openlineage:openlineage-java:${project.version}"
+    implementation(project(path: ":shared"))
 
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     compileOnly "org.apache.flink:flink-core:$compileflinkVersion"
