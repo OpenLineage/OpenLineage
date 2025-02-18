@@ -11,27 +11,29 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.job.JobConfig;
+import io.openlineage.client.utils.TagField;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import io.openlineage.spark.api.TagField;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
-public class TagsJobFacetBuilderTest {
+@SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
+class TagsJobFacetBuilderTest {
   @Test
   void testTagsJobEventBuilds() {
     OpenLineageContext context = mock(OpenLineageContext.class);
     OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
     SparkOpenLineageConfig config = new SparkOpenLineageConfig();
-    SparkOpenLineageConfig.JobConfig jobConfig = new SparkOpenLineageConfig.JobConfig();
+    JobConfig jobConfig = new JobConfig();
     jobConfig.setTags(
         Arrays.asList(
             new TagField("label"),
             new TagField("k", "v"),
             new TagField("k", "v", "s"),
             new TagField("e", "f", "g")));
-    config.setJob(jobConfig);
+    config.setJobConfig(jobConfig);
     when(context.getOpenLineageConfig()).thenReturn(config);
     when(context.getOpenLineage()).thenReturn(openLineage);
 

@@ -7,29 +7,21 @@ package io.openlineage.spark.api;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
-import io.openlineage.client.MergeConfig;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.dataset.DatasetConfig;
+import io.openlineage.client.job.JobConfig;
+import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
-import org.apache.commons.lang3.StringUtils;
 
 /** Config class to store entries which are specific only to Spark integration. */
 @Getter
@@ -50,9 +42,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   @NonNull private String debugFacet;
   private String testExtensionProvider;
   private JobNameConfig jobName;
-  private JobConfig job;
   private VendorsConfig vendors;
-  private RunConfig run;
 
   @JsonProperty("columnLineage")
   private ColumnLineageConfig columnLineageConfig;
@@ -78,7 +68,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       VendorsConfig vendors,
       FilterConfig filterConfig,
       RunConfig run) {
-    super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig);
+    super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig, run, job);
     this.namespace = namespace;
     this.parentJobName = parentJobName;
     this.parentJobNamespace = parentJobNamespace;
@@ -86,11 +76,9 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.overriddenAppName = overriddenAppName;
     this.testExtensionProvider = testExtensionProvider;
     this.jobName = jobName;
-    this.job = job;
     this.columnLineageConfig = columnLineageConfig;
     this.vendors = vendors;
     this.filterConfig = filterConfig;
-    this.run = run;
   }
 
   @Override
@@ -147,56 +135,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   @Getter
   @Setter
   @ToString
-  public static class JobConfig implements MergeConfig<JobConfig> {
-    private JobOwnersConfig owners;
-
-    @JsonDeserialize(using = TagsDeserializer.class)
-    private List<TagField> tags;
-
-    @Override
-    public JobConfig mergeWithNonNull(JobConfig other) {
-      Map<String, TagField> tagMap =
-          tags.stream().collect(Collectors.toMap(TagField::getKey, x -> x));
-      other.getTags().forEach(tag -> tagMap.put(tag.getKey(), tag));
-      JobConfig jobConfig = new JobConfig();
-
-      JobOwnersConfig newOwners = new JobOwnersConfig();
-      newOwners.getAdditionalProperties().putAll(owners.getAdditionalProperties());
-      newOwners.getAdditionalProperties().putAll(other.owners.getAdditionalProperties());
-      jobConfig.setOwners(newOwners);
-      jobConfig.setTags(new ArrayList<>(tagMap.values()));
-      return jobConfig;
-    }
-  }
-
-  @Getter
-  @ToString
-  public static class JobOwnersConfig {
-    @JsonAnySetter @NonNull
-    private final Map<String, String> additionalProperties = new HashMap<>();
-  }
-
-  @Getter
-  @Setter
-  @ToString
-  public static class RunConfig implements MergeConfig<RunConfig> {
-    @JsonDeserialize(using = TagsDeserializer.class)
-    private List<TagField> tags;
-
-    @Override
-    public RunConfig mergeWithNonNull(RunConfig other) {
-      Map<String, TagField> tagMap =
-          tags.stream().collect(Collectors.toMap(TagField::getKey, x -> x));
-      other.getTags().forEach(tag -> tagMap.put(tag.getKey(), tag));
-      RunConfig runConfig = new RunConfig();
-      runConfig.setTags(new ArrayList<>(tagMap.values()));
-      return runConfig;
-    }
-  }
-
-  @Getter
-  @Setter
-  @ToString
   public static class VendorsConfig {
     @JsonAnySetter @NonNull
     private final Map<String, String> additionalProperties = new HashMap<>();
@@ -220,7 +158,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(overriddenAppName, other.overriddenAppName),
         mergePropertyWith(testExtensionProvider, other.testExtensionProvider),
         mergePropertyWith(jobName, other.jobName),
-        mergePropertyWith(job, other.job),
+        mergePropertyWith(jobConfig, other.jobConfig),
         mergePropertyWith(transportConfig, other.transportConfig),
         mergePropertyWith(facetsConfig, other.facetsConfig),
         mergePropertyWith(datasetConfig, other.datasetConfig),
@@ -229,56 +167,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(columnLineageConfig, other.columnLineageConfig),
         mergePropertyWith(vendors, other.vendors),
         mergePropertyWith(filterConfig, other.filterConfig),
-        mergePropertyWith(run, other.run));
-  }
-
-  public static class TagsDeserializer extends JsonDeserializer<List<TagField>> {
-    @Override
-    public List<TagField> deserialize(
-        JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
-      JsonNode node = jsonParser.getCodec().readTree(jsonParser);
-      Stream<String> tagText;
-      if (node.isArray()) {
-        tagText = StreamSupport.stream(node.spliterator(), false).map(JsonNode::asText);
-      } else if (node.isTextual()) {
-        tagText = Arrays.stream(node.asText().split(";"));
-      } else {
-        return Collections.emptyList();
-      }
-      return tagText
-          .filter(StringUtils::isNotBlank)
-          .flatMap(
-              x -> {
-                String[] elements = x.split(":");
-                String key, value = "true", source = "CONFIG";
-                if (elements.length == 0) {
-                  return Stream.empty();
-                }
-
-                // If we get malformed data, we skip the tag.
-                if (StringUtils.isBlank(elements[0])) {
-                  return Stream.empty();
-                }
-                key = elements[0];
-                if (elements.length >= 2) {
-                  // If we get malformed data, we skip the tag.
-                  if (StringUtils.isBlank(elements[1])) {
-                    return Stream.empty();
-                  }
-                  value = elements[1];
-                }
-                if (elements.length >= 3) {
-                  // If elements.length > 3, truncate the rest of the elements - use only
-                  // first three ones.
-                  // If we get malformed data, we skip the tag.
-                  if (StringUtils.isBlank(elements[2])) {
-                    return Stream.empty();
-                  }
-                  source = elements[2];
-                }
-                return Stream.of(new TagField(key, value, source));
-              })
-          .collect(Collectors.toList());
-    }
+        mergePropertyWith(runConfig, other.runConfig));
   }
 }

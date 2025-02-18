@@ -7,11 +7,10 @@ package io.openlineage.spark.agent.facets.builder;
 
 import io.openlineage.client.OpenLineage.OwnershipJobFacet;
 import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
+import io.openlineage.client.job.JobConfig;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import io.openlineage.spark.api.SparkOpenLineageConfig.JobConfig;
-import io.openlineage.spark.api.SparkOpenLineageConfig.JobOwnersConfig;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -41,9 +40,9 @@ public class OwnershipJobFacetBuilder
       SparkListenerEvent event, BiConsumer<String, ? super OwnershipJobFacet> consumer) {
     List<OwnershipJobFacetOwners> ownersList = new ArrayList<>();
     Optional.of(olContext.getOpenLineageConfig())
-        .map(SparkOpenLineageConfig::getJob)
+        .map(SparkOpenLineageConfig::getJobConfig)
         .map(JobConfig::getOwners)
-        .map(JobOwnersConfig::getAdditionalProperties)
+        .map(JobConfig.JobOwnersConfig::getAdditionalProperties)
         .filter(Objects::nonNull)
         .ifPresent(
             map -> {

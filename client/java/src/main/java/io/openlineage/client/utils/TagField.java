@@ -3,15 +3,17 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.api;
+package io.openlineage.client.utils;
 
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.ToString;
 
 @Getter
 @AllArgsConstructor
 @EqualsAndHashCode
+@ToString
 public class TagField {
 
   public TagField(String key) {

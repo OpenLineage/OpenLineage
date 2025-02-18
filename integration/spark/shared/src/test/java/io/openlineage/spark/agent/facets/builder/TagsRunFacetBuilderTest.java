@@ -11,27 +11,29 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.run.RunConfig;
+import io.openlineage.client.utils.TagField;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import io.openlineage.spark.api.TagField;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
-public class TagsRunFacetBuilderTest {
+@SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
+class TagsRunFacetBuilderTest {
   @Test
   void testTagsRunEventBuilds() {
     OpenLineageContext context = mock(OpenLineageContext.class);
     OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
     SparkOpenLineageConfig config = new SparkOpenLineageConfig();
-    SparkOpenLineageConfig.RunConfig runConfig = new SparkOpenLineageConfig.RunConfig();
+    RunConfig runConfig = new RunConfig();
     runConfig.setTags(
         Arrays.asList(
             new TagField("label"),
             new TagField("k", "v"),
             new TagField("k", "v", "s"),
             new TagField("e", "f", "g")));
-    config.setRun(runConfig);
+    config.setRunConfig(runConfig);
     when(context.getOpenLineageConfig()).thenReturn(config);
     when(context.getOpenLineage()).thenReturn(openLineage);
 

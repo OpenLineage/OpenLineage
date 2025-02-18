@@ -1,0 +1,4 @@
+job:
+  tags: [ key:value, tag2 ]
+run:
+  tags: [ something:will:be:missing, overwrite:something ]

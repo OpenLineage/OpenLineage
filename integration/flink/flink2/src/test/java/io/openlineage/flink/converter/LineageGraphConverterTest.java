@@ -18,6 +18,7 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageClient;
+import io.openlineage.client.job.JobConfig;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.DatasetIdentifier.Symlink;
 import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
@@ -25,8 +26,6 @@ import io.openlineage.flink.client.OpenLineageContext;
 import io.openlineage.flink.client.OpenLineageContext.JobIdentifier;
 import io.openlineage.flink.client.Versions;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
-import io.openlineage.flink.config.FlinkOpenLineageConfig.JobConfig;
-import io.openlineage.flink.config.FlinkOpenLineageConfig.JobOwnersConfig;
 import io.openlineage.flink.visitor.VisitorFactory;
 import io.openlineage.flink.visitor.facet.DatasetFacetVisitor;
 import io.openlineage.flink.visitor.identifier.DatasetIdentifierVisitor;
@@ -75,7 +74,7 @@ class LineageGraphConverterTest {
 
   @Test
   void testJobOwnership() {
-    JobOwnersConfig ownersConfig = new JobOwnersConfig();
+    JobConfig.JobOwnersConfig ownersConfig = new JobConfig.JobOwnersConfig();
     ownersConfig.getAdditionalProperties().put("team", "MyTeam");
     ownersConfig.getAdditionalProperties().put("person", "John Smith");
 

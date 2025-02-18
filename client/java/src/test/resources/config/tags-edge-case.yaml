@@ -1,0 +1,40 @@
+job:
+  tags:
+    # Basic cases
+    - "valid:tag"                      # regular key-value
+    - "single_tag"                     # single value tag
+    - "key:value:source"              # tag with source
+
+    # Empty and blank cases
+    - ""                              # empty string
+    - " "                             # blank string
+    - ":"                            # only separator
+    - "::"                           # multiple separators
+    - " : : "                        # spaces around separators
+
+    # Malformed cases
+    - ":value"                       # missing key
+    - "missing-value:"               # missing value
+    - "dangling:separator:"                   # dangling separator
+    - "::source"                     # missing key and value
+    - "too:many:parts:extra"       # too many parts
+
+    # Special characters
+    - "key with spaces:value"        # spaces in key
+    - "key:value with spaces"        # spaces in value
+    - "key:value:source with spaces" # spaces in source
+    - "empty::middle"                # empty middle part
+    - "🔑:🔧:📱"                    # emoji characters
+
+    # Escaping
+    - "key\\:with\\:colons:value"     # key:with:colons -> value
+    - "key:value\\:with\\:colons"     # key -> value:with:colons
+    - "tag\\;with\\;semicolons"       # tag;with;semicolons -> true
+    - "tag:with\\;\\:semicolons"      # tag -> with;:semicolons -> true
+
+run:
+  tags:
+    # Edge cases with whitespace
+    - "   surrounding:whitespace   "              # surrounding whitespace
+    - "   :   :   "                  # whitespace between colons
+    - "whitespace   :   around"              # whitespace around separator

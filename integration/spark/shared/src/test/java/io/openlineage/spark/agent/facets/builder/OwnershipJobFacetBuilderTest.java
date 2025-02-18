@@ -14,11 +14,10 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OwnershipJobFacet;
+import io.openlineage.client.job.JobConfig;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import io.openlineage.spark.api.SparkOpenLineageConfig.JobConfig;
-import io.openlineage.spark.api.SparkOpenLineageConfig.JobOwnersConfig;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -44,7 +43,7 @@ class OwnershipJobFacetBuilderTest {
     BiConsumer<String, ? super OwnershipJobFacet> consumer = mock(BiConsumer.class);
 
     when(olContext.getOpenLineageConfig()).thenReturn(config);
-    when(config.getJob()).thenReturn(jobConfig);
+    when(config.getJobConfig()).thenReturn(jobConfig);
     when(jobConfig.getOwners()).thenReturn(null);
 
     builder.build(mock(SparkListenerEvent.class), consumer);
@@ -60,12 +59,12 @@ class OwnershipJobFacetBuilderTest {
 
     SparkOpenLineageConfig config = mock(SparkOpenLineageConfig.class);
     JobConfig jobConfig = mock(JobConfig.class);
-    JobOwnersConfig jobOwnersConfig = mock(JobOwnersConfig.class);
+    JobConfig.JobOwnersConfig jobOwnersConfig = mock(JobConfig.JobOwnersConfig.class);
 
     BiConsumer<String, ? super OwnershipJobFacet> consumer = mock(BiConsumer.class);
 
     when(olContext.getOpenLineageConfig()).thenReturn(config);
-    when(config.getJob()).thenReturn(jobConfig);
+    when(config.getJobConfig()).thenReturn(jobConfig);
     when(jobConfig.getOwners()).thenReturn(jobOwnersConfig);
     when(jobOwnersConfig.getAdditionalProperties()).thenReturn(owners);
 

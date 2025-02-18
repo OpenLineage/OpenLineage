@@ -6,9 +6,9 @@
 package io.openlineage.spark.agent.facets.builder;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.TagField;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.TagField;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -23,10 +23,11 @@ public class TagsJobFacetBuilder extends CustomFacetBuilder<Object, OpenLineage.
   @Override
   protected void build(
       Object event, BiConsumer<String, ? super OpenLineage.TagsJobFacet> consumer) {
-    if (context.getOpenLineageConfig().getJob() == null) {
+    if (context.getOpenLineageConfig().getJobConfig() == null
+        || context.getOpenLineageConfig().getJobConfig().getTags() == null) {
       return;
     }
-    List<TagField> tags = context.getOpenLineageConfig().getJob().getTags();
+    List<TagField> tags = context.getOpenLineageConfig().getJobConfig().getTags();
     if (!tags.isEmpty()) {
       consumer.accept(
           "tags",

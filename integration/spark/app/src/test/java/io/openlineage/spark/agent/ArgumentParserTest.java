@@ -22,8 +22,8 @@ import io.openlineage.client.transports.CompositeConfig;
 import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.KafkaConfig;
+import io.openlineage.client.utils.TagField;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import io.openlineage.spark.api.TagField;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -300,9 +300,9 @@ class ArgumentParserTest {
     assertThat(config.getFacetsConfig().getDisabledFacets())
         .containsAllEntriesOf(
             ImmutableMap.of("spark_unknown", false, "spark.logicalPlan", true, "debug", true));
-    assertThat(config.getJob().getTags())
+    assertThat(config.getJobConfig().getTags())
         .contains(new TagField("key", "value"), new TagField("tag2"));
-    assertThat(config.getRun().getTags())
+    assertThat(config.getRunConfig().getTags())
         .contains(
             new TagField("something", "will", "be"), new TagField("overwrite", "overwritten"));
   }
@@ -417,15 +417,33 @@ class ArgumentParserTest {
 
     SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
 
-    assertThat(config.getJob().getTags())
+    assertThat(config.getJobConfig().getTags())
         .isEqualTo(
             Arrays.asList(
                 new TagField("tag"),
                 new TagField("key", "value"),
                 new TagField("k", "v", "s"),
                 new TagField("this", "will", "get")));
-    assertThat(config.getRun().getTags())
+    assertThat(config.getRunConfig().getTags())
         .isEqualTo(Arrays.asList(new TagField("otherTag"), new TagField("otherKey", "otherValue")));
+  }
+
+  @Test
+  void testExtractTagsEscape() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.job.tags", "escaped\\:key:escaped\\;value;other:notescaped:tag")
+            .set("spark.openlineage.run.tags", "\\;startkey\\;:endvalue\\;");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+
+    assertThat(config.getJobConfig().getTags())
+        .isEqualTo(
+            Arrays.asList(
+                new TagField("escaped:key", "escaped;value"),
+                new TagField("other", "notescaped", "tag")));
+    assertThat(config.getRunConfig().getTags())
+        .isEqualTo(Arrays.asList(new TagField(";startkey;", "endvalue;")));
   }
 
   @Test
@@ -437,7 +455,8 @@ class ArgumentParserTest {
 
     SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
 
-    assertThat(config.getJob().getTags()).isEqualTo(Collections.singletonList(new TagField("a")));
-    assertThat(config.getRun().getTags()).isEmpty();
+    assertThat(config.getJobConfig().getTags())
+        .isEqualTo(Collections.singletonList(new TagField("a")));
+    assertThat(config.getRunConfig().getTags()).isEmpty();
   }
 }

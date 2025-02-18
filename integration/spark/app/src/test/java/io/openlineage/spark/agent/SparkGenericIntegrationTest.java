@@ -95,7 +95,7 @@ class SparkGenericIntegrationTest {
             .config("spark.openlineage.parentJobName", "parent-job")
             .config("spark.openlineage.parentRunId", "bd9c2467-3ed7-4fdc-85c2-41ebf5c73b40")
             .config("spark.openlineage.parentJobNamespace", "parent-namespace")
-            .config("spark.openlineage.job.tags", ";rew")
+            .config("spark.openlineage.job.tags", "spark;key:value")
             .config("spark.openlineage.job.owners.team", "MyTeam")
             .config("spark.openlineage.job.owners.person", "John Smith")
             .config("spark.openlineage.run.tags", "run;set:up:SERVICE")
