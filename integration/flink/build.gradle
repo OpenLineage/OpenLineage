@@ -30,8 +30,9 @@ ext {
 }
 
 dependencies {
-    implementation(project(path: ":app"))
     implementation(project(path: ":shared"))
+    implementation(project(path: ":flink1"))
+    implementation(project(path: ":flink2"))
     implementation(project(path: ":flink115"))
     implementation(project(path: ":flink117"))
     implementation(project(path: ":flink118"))
@@ -90,8 +91,10 @@ task integrationTest(type: Test) {
     }
 }
 
-integrationTest.dependsOn(shadowJar, project.tasks.publishToMavenLocal, shadowStateful)
-
+if (project.getProperty('flink.version').toString().startsWith("1")) {
+    // build example apps
+    integrationTest.dependsOn(shadowJar, project.tasks.publishToMavenLocal, shadowStateful)
+}
 
 def reportsDir = "${buildDir}/reports"
 def coverageDir = "${reportsDir}/coverage"
@@ -203,8 +206,9 @@ signing {
 
 shadowJar {
     minimize() {
-        exclude(project(path: ":app"))
         exclude(project(path: ":shared"))
+        exclude(project(path: ":flink1"))
+        exclude(project(path: ":flink2"))
         exclude(project(path: ":flink115"))
         exclude(project(path: ":flink117"))
         exclude(project(path: ":flink118"))

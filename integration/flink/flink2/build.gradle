@@ -1,0 +1,183 @@
+/*
+/* Copyright 2018-2025 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+import org.apache.tools.ant.filters.ReplaceTokens
+
+plugins {
+    id 'java-library'
+    id 'jacoco'
+    id 'com.adarshr.test-logger'
+    id 'com.diffplug.spotless'
+    id 'io.franzbecker.gradle-lombok'
+    id 'io.openlineage.common-config'
+    id 'maven-publish'
+    id 'com.github.johnrengelman.shadow'
+}
+
+group = "io.openlineage"
+
+archivesBaseName='openlineage-flink2-app'
+
+ext {
+    compileflinkVersion = project.getProperty('flink.flink2.version')
+    testedflinkVersion = project.getProperty('flink.version')
+    isReleaseVersion = !version.endsWith('-SNAPSHOT')
+    assertjVersion = '3.25.3'
+    jacksonVersion = "2.15.3"
+    junit5Version = '5.10.2'
+    lombokVersion = '1.18.36'
+    scalaLibraryVersion = '2.12.7'
+    mockitoVersion = '5.14.1'
+}
+
+
+dependencies {
+    api "io.openlineage:openlineage-java:${project.version}"
+
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    compileOnly "org.apache.flink:flink-core:$compileflinkVersion"
+    compileOnly "org.apache.flink:flink-runtime:$compileflinkVersion"
+    compileOnly 'org.apache.flink:flink-connector-kafka:3.4.0-1.20' // different version build - built locally is used for testing
+    compileOnly "org.apache.flink:flink-table-planner_2.12:$compileflinkVersion"
+
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    testImplementation "org.apache.flink:flink-core:$testedflinkVersion"
+    testImplementation "org.apache.flink:flink-runtime:$testedflinkVersion"
+    testImplementation "org.scala-lang:scala-library:$scalaLibraryVersion"
+    testImplementation "org.apache.flink:flink-connector-test-utils:$testedflinkVersion"
+    testImplementation("org.apache.flink:flink-table-test-utils:$testedflinkVersion") {
+        exclude(group: "org.apache.flink", module: "flink-table-planner-loader")
+    }
+    testImplementation "org.apache.flink:flink-table-planner_2.12:$testedflinkVersion"
+    testImplementation "org.apache.flink:flink-connector-base:$testedflinkVersion"
+    testImplementation "org.apache.flink:flink-json:$testedflinkVersion"
+    testImplementation "org.apache.flink:flink-connector-kafka:3.4-SNAPSHOT" // need to be built locally
+    testImplementation "org.apache.flink:flink-connector-test-utils:$testedflinkVersion"
+    testImplementation "org.apache.kafka:kafka-clients:3.4.0"
+    testImplementation "org.testcontainers:kafka:1.20.4"
+    testImplementation "commons-codec:commons-codec:1.17.1"
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation("org.slf4j:slf4j-api:2.0.16")
+    testImplementation("org.slf4j:slf4j-simple:2.0.16")
+    testImplementation "org.projectlombok:lombok:${lombokVersion}"
+
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+}
+
+compileJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+compileTestJava {
+    if (project.property("flink.version").startsWith("1")) {
+        // don't compile test when testing Flink 1
+        exclude '**/*'
+    }
+
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+
+task sourceJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+def commonTestConfiguration = {
+    classpath =  project.sourceSets.test.runtimeClasspath
+}
+
+test {
+    jvmArgs(
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+            "--add-opens=java.base/java.io=ALL-UNNAMED",
+            "--add-opens=java.base/java.net=ALL-UNNAMED",
+            "--add-opens=java.base/java.nio=ALL-UNNAMED",
+            "--add-opens=java.base/java.util=ALL-UNNAMED"
+    )
+
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
+}
+
+def integrationTestConfiguration = {
+    jvmArgs(
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+            "--add-opens=java.base/java.io=ALL-UNNAMED",
+            "--add-opens=java.base/java.net=ALL-UNNAMED",
+            "--add-opens=java.base/java.nio=ALL-UNNAMED",
+            "--add-opens=java.base/java.util=ALL-UNNAMED"
+    )
+    forkEvery 1
+    maxParallelForks 1
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+            'flink.version': "${flinkVersion}",
+            'junit.platform.output.capture.stdout': 'true',
+            'junit.platform.output.capture.stderr': 'true',
+            '.flink.jar': "${archivesBaseName}-${project.version}.jar",
+    ]
+    classpath =  project.sourceSets.test.runtimeClasspath
+}
+
+
+task integrationTest(type: Test) {
+    configure integrationTestConfiguration
+    useJUnitPlatform {
+        includeTags "integration-test"
+    }
+}
+
+integrationTest.outputs.upToDateWhen { false }
+
+def reportsDir = "${buildDir}/reports"
+def coverageDir = "${reportsDir}/coverage"
+
+jacoco {
+    toolVersion = '0.8.12'
+    reportsDir = file(coverageDir)
+}
+
+jacocoTestReport {
+    reports {
+        xml {
+            enabled true
+        }
+        html {
+            enabled true
+            destination = file(coverageDir)
+        }
+    }
+}
+
+spotlessJava {
+    dependsOn("compileJava", "compileTestJava")
+}
