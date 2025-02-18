@@ -1,5 +1,5 @@
 plugins {
-    id 'java'
+    id 'java-library'
     // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
     id 'com.diffplug.spotless' version '6.13.0'
     id 'com.adarshr.test-logger' version '4.0.0'
@@ -10,13 +10,29 @@ plugins {
 group = 'io.openlineage'
 version = '1.0.0-SNAPSHOT'
 
-subprojects {
-    tasks.withType(Test).tap {
-        configureEach {
-            // Prevent Gradle from caching tests results
-            outputs.upToDateWhen { false }
-        }
+repositories {
+    mavenCentral()
+    mavenLocal()
+
+    // FIXME: We use this repo to only download the JAR because hive-bigquery-connector:2.0.3
+    //  has some incorrect metadata in its POMs. This will be fixed in a future release of the
+    //  connector.
+    mavenCentral() {
+        metadataSources { artifact() }
     }
+}
+
+//subprojects {
+//    tasks.withType(Test).tap {
+//        configureEach {
+//            // Prevent Gradle from caching tests results
+//            outputs.upToDateWhen { false }
+//        }
+//    }
+//}
+
+dependencies {
+    implementation project(path: ':hive-openlineage-hook', configuration: 'shadow')
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -24,7 +40,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 subprojects {
-    apply plugin: 'java'
+    apply plugin: 'java-library'
     apply plugin: 'com.diffplug.spotless'
     apply plugin: 'pmd'
     repositories {
@@ -73,4 +89,18 @@ subprojects {
  */""")
         }
     }
+}
+
+shadowJar {
+    archiveClassifier = ""
+    manifest {
+        attributes(
+                "Created-By": "Gradle ${gradle.gradleVersion}",
+                "Built-By": System.getProperty("user.name"),
+                "Build-Jdk": System.getProperty("java.version"),
+                "Implementation-Title": project.name,
+                "Implementation-Version": project.version
+        )
+    }
+    zip64 true
 }
