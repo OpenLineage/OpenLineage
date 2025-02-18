@@ -13,6 +13,8 @@ ext {
     jupiterVersion = '5.11.3'
     jacksonVersion = '2.18.1'
     mockitoVersion = '4.11.0'
+    hiveVersion = '3.1.3'
+    hadoopVersion = '2.10.2'
 }
 
 java {
@@ -48,18 +50,6 @@ testlogger {
     showStandardStreams true
 }
 
-tasks.register('acceptanceTest', Test) {
-    useJUnitPlatform()
-
-    filter {
-        includeTestsMatching "*acceptance*"
-    }
-
-    // Create the shaded jar before an acceptance test is run.
-    // The shaded JAR is later automatically uploaded to the test cluster
-    // as part the acceptance test execution.
-    dependsOn shadowJar
-}
 
 tasks.register('unitTest', Test) {
     useJUnitPlatform()
@@ -103,22 +93,29 @@ test {
 // Dependencies ----------------------------------------------------------------------------------
 
 dependencies {
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
-    implementation "org.projectlombok:lombok:${lombokVersion}"
-    implementation "com.google.guava:guava:${guavaVersion}"
-    compileOnly project(path: ':shaded-integration-test-dependencies', configuration: 'shadow')
-    implementation ("io.openlineage:openlineage-java:${openLineageVersion}") {
+    compileOnly("org.apache.hadoop:hadoop-common:${hadoopVersion}") {
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'org.apache.avro', module: 'avro'
+    }
+
+    compileOnly("org.apache.hive:hive-exec:${hiveVersion}") {
+        exclude group: 'org.pentaho', module: '*'
+        exclude group: 'org.apache.hadoop', module: '*'
+    }
+
+
+    implementation("com.google.guava:guava:${guavaVersion}")
+
+    api ("io.openlineage:openlineage-java:${openLineageVersion}") {
         exclude group: 'com.fasterxml.jackson.core', module: '*'
     }
-    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    // TODO: We might not want this to be included in the shaded JAR and instead rely on Dataproc including it?
-    implementation ("io.openlineage:transports-gcplineage:${openLineageVersion}")
-    implementation ("io.openlineage:transports-gcs:${openLineageVersion}")
+    implementation ("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
 
     // Test dependencies ---------------------------------------------------------------------
-
-    testImplementation project(path: ':shaded-integration-test-dependencies', configuration: 'shadow')
-    testImplementation project(path: ':shaded-acceptance-test-dependencies', configuration: 'shadow')
+    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${jupiterVersion}"
     testImplementation("io.github.hiverunner:hiverunner:${hiverunnerVersion}") {
@@ -169,6 +166,41 @@ dependencies {
     testImplementation 'org.datanucleus:datanucleus-rdbms:4.1.19'
     testImplementation 'org.datanucleus:datanucleus-api-jdo:4.2.4'
     testImplementation 'org.datanucleus:datanucleus-core:4.1.17'
+
+    testImplementation("org.apache.hive:hive-exec:${hiveVersion}") {
+        exclude group: 'org.pentaho', module: '*'
+        exclude group: 'org.apache.hadoop', module: '*'
+    }
+    testImplementation("org.apache.hive:hive-common:${hiveVersion}") {
+        exclude group: 'org.apache.hadoop', module: '*'
+        exclude group: 'com.github.joshelser', module: 'dropwizard-metrics-hadoop-metrics2-reporter'
+    }
+    testImplementation("org.apache.hive:hive-service:${hiveVersion}") {
+        exclude group: 'org.pentaho', module: '*'
+        exclude group: 'org.apache.hadoop', module: '*'
+        exclude group: 'org.apache.hbase', module: '*'
+        exclude group: 'org.apache.parquet', module: 'parquet-hadoop-bundle'
+        exclude group: 'com.github.joshelser', module: 'dropwizard-metrics-hadoop-metrics2-reporter'
+        exclude group: 'com.lmax', module: 'disruptor'
+    }
+    testImplementation("org.apache.hive.hcatalog:hive-hcatalog-pig-adapter:${hiveVersion}") {
+        exclude group: 'org.apache.hive', module: 'hive-exec'
+        exclude group: 'org.apache.hadoop', module: '*'
+        exclude group: 'org.apache.pig', module: '*'
+    }
+
+    testImplementation("org.apache.hadoop:hadoop-common:${hadoopVersion}") {
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'org.apache.avro', module: 'avro'
+    }
+    testImplementation("org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}") {
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'org.apache.avro', module: 'avro'
+    }
+    testImplementation("org.apache.hadoop:hadoop-hdfs:${hadoopVersion}") {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+
 }
 
 // Shading ---------------------------------------------------------------------------------------
@@ -177,10 +209,10 @@ apply plugin: 'com.gradleup.shadow'
 
 shadowJar {
     archiveClassifier.set('shaded')
-    doFirst {
-        println "Files to be included in shadow jar:"
-        inputs.files.each { println it }
-    }
+//    doFirst {
+//        println "Files to be included in shadow jar:"
+//        inputs.files.each { println it }
+//    }
 
     zip64 true
 
@@ -193,27 +225,41 @@ shadowJar {
     exclude 'META-INF/LICENSE'
     exclude 'META-INF/NOTICE'
 
-    // Relocate some packages
-    [
-            'com.google.common',
-            'com.google.protobuf',
-            'com.google.longrunning',
-            'com.fasterxml',
-            'io.grpc',
-
-            // FIXME: Temporary to avoid conflicts with Dataproc's built-in
-            //  OpenLineage and related libraries
-            'io.openlineage.client',
-            'io.openlineage.core',
-            'io.openlineage.server',
-            'io.micrometer',
-            'com.google.cloud.datalineage',
-            'com.google.cloud.datacatalog',
-    ].each { pkg ->
-        relocate pkg, "hive.openlineage.repackaged.${pkg}"
+    dependencies {
+        exclude(dependency("com.google.guava:guava:${guavaVersion}"))
+        exclude(dependency("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"))
     }
 
-    mergeServiceFiles()
+    // Relocate some packages
+//    [
+//            'com.google.common',
+//            'com.google.protobuf',
+//            'com.google.longrunning',
+//            'com.fasterxml',
+//            'io.grpc',
+//
+//            // FIXME: Temporary to avoid conflicts with Dataproc's built-in
+//            //  OpenLineage and related libraries
+//            'io.openlineage.client',
+//            'io.openlineage.core',
+//            'io.openlineage.server',
+//            'io.micrometer',
+//            'com.google.cloud.datalineage',
+//            'com.google.cloud.datacatalog',
+//    ].each { pkg ->
+//        relocate pkg, "hive.openlineage.repackaged.${pkg}"
+//    }
+
+    manifest {
+        attributes([
+                'Created-By'            : "Gradle ${gradle.gradleVersion}",
+                'Built-By'              : System.getProperty('user.name'),
+                'Build-Jdk'             : System.getProperty('java.version'),
+                'Implementation-Title'  : project.name,
+                'Implementation-Version': project.version
+        ])
+    }
+    zip64 true
 }
 
 // Create the Version properties file ----------------------------------------------------
