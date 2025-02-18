@@ -80,8 +80,6 @@ _T = TypeVar("_T", bound="OpenLineageClient")
 
 class OpenLineageClient:
     DYNAMIC_ENV_VARS_PREFIX = "OPENLINEAGE__"
-    DYNAMIC_ENV_VARS_TAG_JOB_PREFIX = "OPENLINEAGE__TAG__JOB__"
-    DYNAMIC_ENV_VARS_TAG_RUN_PREFIX = "OPENLINEAGE__TAG__RUN__"
     DEFAULT_URL_TRANSPORT_NAME = "default_http"
 
     def __init__(  # noqa: PLR0913
