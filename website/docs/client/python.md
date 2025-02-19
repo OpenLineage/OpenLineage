@@ -1028,9 +1028,9 @@ If we set the following environment variables, three things will happen.
 * Run: Create a new tag for adhoc. 
 
 ```sh
-OPENLINEAGE__TAG__JOB__ENVIRONMENT="PRODUCTION"
-OPENLINEAGE__TAG__JOB__PIPELINE="sales_monthly"
-OPENLINEAGE__TAG__RUN__adhoc="true"
+OPENLINEAGE__TAGS__JOB__ENVIRONMENT="PRODUCTION"
+OPENLINEAGE__TAGS__JOB__PIPELINE="sales_monthly"
+OPENLINEAGE__TAGS__RUN__adhoc="true"
 ```
 
 The event will now have these tag updates. 

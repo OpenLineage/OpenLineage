@@ -12,6 +12,7 @@ import attr
 import yaml
 from openlineage.client.filter import Filter, FilterConfig, create_filter
 from openlineage.client.serde import Serde
+from openlineage.client.tags import TagsConfig
 from openlineage.client.utils import deep_merge_dicts
 
 if TYPE_CHECKING:
@@ -55,8 +56,7 @@ class OpenLineageConfig:
     transport: dict[str, Any] | None = attr.ib(factory=dict)
     facets: FacetsConfig = attr.ib(factory=FacetsConfig)
     filters: list[FilterConfig] = attr.ib(factory=list)
-    tags_job: list[TagsJobFacetFields] = attr.ib(factory=list)
-    tags_run: list[TagsRunFacetFields] = attr.ib(factory=list)
+    tags: TagsConfig = attr.ib(factory=TagsConfig)
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> OpenLineageConfig:
@@ -67,10 +67,13 @@ class OpenLineageConfig:
             config.facets = FacetsConfig(**params["facets"])
         if "filters" in params:
             config.filters = [FilterConfig(**filter_config) for filter_config in params["filters"]]
-        if tags_job := params.get("tag", {}).get("job"):
-            config.tags_job = [TagsJobFacetFields(key, value, "USER") for key, value in tags_job.items()]
-        if tags_run := params.get("tag", {}).get("run"):
-            config.tags_run = [TagsRunFacetFields(key, value, "USER") for key, value in tags_run.items()]
+        if "tags" in params:
+            job_tags = params["tags"].get("job", {})
+            run_tags = params["tags"].get("run", {})
+            config.tags = TagsConfig(
+                job=[TagsJobFacetFields(key, value, "USER") for (key, value) in job_tags.items()],
+                run=[TagsRunFacetFields(key, value, "USER") for (key, value) in run_tags.items()],
+            )
         return config
 
 
@@ -417,12 +420,12 @@ class OpenLineageClient:
         """
         Creates or updates job and run tag facets based on user-supplied environment variables
         """
-        tags_job = self.config.tags_job
+        tags_job = self.config.tags.job
         if (isinstance(event, (JobEvent, RunEvent))) and tags_job:
             tags_facet = event.job.facets.get("tags", TagsJobFacet())
             event.job.facets["tags"] = self._update_tag_facet(tags_facet, tags_job)
 
-        tags_run = self.config.tags_run
+        tags_run = self.config.tags.run
         if (isinstance(event, RunEvent)) and tags_run:
             tags_facet = event.run.facets.get("tags", TagsRunFacet())
             event.run.facets["tags"] = self._update_tag_facet(tags_facet, tags_run)
@@ -435,10 +438,18 @@ class OpenLineageClient:
         """
         Handles updating tags in an existing tag facet
         """
-        # Integration-supplied tags can be uppercase or lower case. Keep the case of the existing tag
-        # but compare with case-insensitive match.
-        user_tag_names = {tag.key.lower() for tag in user_tags}
-        keep_tags = list(filter(lambda x: x.key.lower() not in user_tag_names, tags_facet.tags))
+
+        # Get tags from the facet that will not be updated (Do not have the same key as a user tag)
+        user_tag_keys = [tag.key for tag in user_tags]
+        keep_tags = list(filter(lambda x: x.key.lower() not in user_tag_keys, tags_facet.tags))
+
+        # Update tag key for any user tags that should override a facet tag.
+        # This preserves case of the facet tag key while updating value and source.
+        facet_tag_keys = {tag.key.lower(): tag.key for tag in tags_facet.tags}
+        for user_tag in user_tags:
+            if user_tag.key in facet_tag_keys:
+                user_tag.key = facet_tag_keys[user_tag.key]
+
         all_tags = keep_tags + user_tags
         tags_facet.tags = all_tags
         return tags_facet

@@ -842,13 +842,13 @@ class TestOpenLineageConfigLoader:
             ),
             (
                 {
-                    "OPENLINEAGE__TAG__JOB__ENVIRONMENT": "PRODUCTION",
-                    "OPENLINEAGE__TAG__JOB__pipeline": "finance",
-                    "OPENLINEAGE__TAG__RUN__environment": "PRODUCTION",
-                    "OPENLINEAGE__TAG__RUN__pipeline": "finance",
+                    "OPENLINEAGE__TAGS__JOB__ENVIRONMENT": "PRODUCTION",
+                    "OPENLINEAGE__TAGS__JOB__pipeline": "finance",
+                    "OPENLINEAGE__TAGS__RUN__environment": "PRODUCTION",
+                    "OPENLINEAGE__TAGS__RUN__pipeline": "finance",
                 },
                 {
-                    "tag": {
+                    "tags": {
                         "job": {"environment": "PRODUCTION", "pipeline": "finance"},
                         "run": {"environment": "PRODUCTION", "pipeline": "finance"},
                     }
@@ -865,8 +865,8 @@ class TestOpenLineageConfigLoader:
 
 def test_update_job_tag_facet_creates_new_facet(transport):
     tag_environment_variables = {
-        "OPENLINEAGE__TAG__JOB__ENVIRONMENT": "PRODUCTION",
-        "OPENLINEAGE__TAG__JOB__pipeline": "SALES",
+        "OPENLINEAGE__TAGS__JOB__ENVIRONMENT": "PRODUCTION",
+        "OPENLINEAGE__TAGS__JOB__pipeline": "SALES",
     }
 
     run_event = RunEvent(
@@ -893,8 +893,8 @@ def test_update_job_tag_facet_creates_new_facet(transport):
 
 def test_update_job_tag_facet_updates_existing_facet(transport):
     tag_environment_variables = {
-        "OPENLINEAGE__TAG__JOB__ENVIRONMENT": "PRODUCTION",
-        "OPENLINEAGE__TAG__JOB__pipeline": "SALES",
+        "OPENLINEAGE__TAGS__JOB__ENVIRONMENT": "PRODUCTION",
+        "OPENLINEAGE__TAGS__JOB__pipeline": "SALES",
     }
 
     run_event = RunEvent(
@@ -934,8 +934,8 @@ def test_update_job_tag_facet_updates_existing_facet(transport):
 
 def test_update_run_tag_facet_creates_new_facet(transport):
     tag_environment_variables = {
-        "OPENLINEAGE__TAG__RUN__ENVIRONMENT": "PRODUCTION",
-        "OPENLINEAGE__TAG__RUN__pipeline": "SALES",
+        "OPENLINEAGE__TAGS__RUN__ENVIRONMENT": "PRODUCTION",
+        "OPENLINEAGE__TAGS__RUN__pipeline": "SALES",
     }
 
     run_event = RunEvent(
@@ -962,8 +962,8 @@ def test_update_run_tag_facet_creates_new_facet(transport):
 
 def test_update_run_tag_facet_updates_existing_facet(transport):
     tag_environment_variables = {
-        "OPENLINEAGE__TAG__RUN__ENVIRONMENT": "PRODUCTION",
-        "OPENLINEAGE__TAG__RUN__pipeline": "SALES",
+        "OPENLINEAGE__TAGS__RUN__ENVIRONMENT": "PRODUCTION",
+        "OPENLINEAGE__TAGS__RUN__pipeline": "SALES",
     }
 
     run_event = RunEvent(
@@ -974,7 +974,7 @@ def test_update_run_tag_facet_updates_existing_facet(transport):
             facets={
                 "tags": TagsJobFacet(
                     tags=[
-                        TagsRunFacetFields("environment", "STAGING", "USER"),
+                        TagsRunFacetFields("ENVIRONMENT", "STAGING", "USER"),
                         TagsRunFacetFields("foo", "bar", "USER"),
                     ]
                 )
@@ -987,14 +987,13 @@ def test_update_run_tag_facet_updates_existing_facet(transport):
     # One existing tag (not updated), one existing tag (updated), one new tag from the user
     tags = [
         TagsRunFacetFields("foo", "bar", "USER"),
-        TagsRunFacetFields("environment", "PRODUCTION", "USER"),
+        TagsRunFacetFields("ENVIRONMENT", "PRODUCTION", "USER"),
         TagsRunFacetFields("pipeline", "SALES", "USER"),
     ]
 
     with patch.dict(os.environ, tag_environment_variables):
         client = OpenLineageClient(transport=transport)
         client.emit(run_event)
-        print(transport.event.run.facets.get("tags"))
         assert transport.event.run.facets.get("tags")
         event_tags = sorted(transport.event.run.facets["tags"].tags, key=lambda x: x.key)
         expected_tags = sorted(tags, key=lambda x: x.key)
