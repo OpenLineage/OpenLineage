@@ -9,10 +9,9 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.JobFacetsBuilder;
 import io.openlineage.client.OpenLineage.JobTypeJobFacetBuilder;
 import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
+import io.openlineage.client.job.JobConfig;
 import io.openlineage.flink.client.OpenLineageContext;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
-import io.openlineage.flink.config.FlinkOpenLineageConfig.JobConfig;
-import io.openlineage.flink.config.FlinkOpenLineageConfig.JobOwnersConfig;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -62,7 +61,7 @@ class OpenLineageJobExtractor {
     Optional.ofNullable(context.getConfig())
         .map(FlinkOpenLineageConfig::getJobConfig)
         .map(JobConfig::getOwners)
-        .map(JobOwnersConfig::getAdditionalProperties)
+        .map(JobConfig.JobOwnersConfig::getAdditionalProperties)
         .filter(Objects::nonNull)
         .ifPresent(
             map -> {

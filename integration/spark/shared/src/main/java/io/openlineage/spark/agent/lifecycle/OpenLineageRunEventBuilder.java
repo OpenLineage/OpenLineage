@@ -451,7 +451,10 @@ class OpenLineageRunEventBuilder {
                                 .map(Object::getClass)
                                 .map(Class::getCanonicalName)
                                 .orElse(""))
-                        .record(() -> fn.accept(event, runFacetsBuilder::put))));
+                        .record(
+                            () -> {
+                              fn.accept(event, runFacetsBuilder::put);
+                            })));
     return runFacetsBuilder.build();
   }
 

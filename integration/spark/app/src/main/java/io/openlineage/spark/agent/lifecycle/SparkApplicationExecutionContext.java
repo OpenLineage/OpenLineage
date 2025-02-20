@@ -78,13 +78,13 @@ class SparkApplicationExecutionContext implements ExecutionContext {
       return;
     }
 
+    OpenLineage openLineage = olContext.getOpenLineage();
     RunEvent event =
         runEventBuilder.buildRun(
             OpenLineageRunEventContext.builder()
                 .applicationParentRunFacet(buildApplicationParentFacet())
                 .runEventBuilder(
-                    olContext
-                        .getOpenLineage()
+                    openLineage
                         .newRunEventBuilder()
                         .eventTime(toZonedTime(applicationStart.time()))
                         .eventType(START))

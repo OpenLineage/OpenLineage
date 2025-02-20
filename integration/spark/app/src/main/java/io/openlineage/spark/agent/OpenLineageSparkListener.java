@@ -87,7 +87,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private Optional<Integer> activeJobId = Optional.empty();
 
   @SuppressWarnings("PMD")
-  private final SparkConf conf;
+  private SparkConf conf;
 
   public OpenLineageSparkListener(SparkConf conf) {
     super();
@@ -348,14 +348,17 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (contextFactory != null) {
       return;
     }
-    SparkEnv sparkEnv = SparkEnv$.MODULE$.get();
-    if (sparkEnv == null) {
-      log.warn(
-          "OpenLineage listener instantiated, but no configuration could be found. "
-              + "Lineage events will not be collected");
-      return;
+    if (conf == null) {
+      SparkEnv sparkEnv = SparkEnv$.MODULE$.get();
+      if (sparkEnv == null) {
+        log.warn(
+            "OpenLineage listener instantiated, but no configuration could be found. "
+                + "Lineage events will not be collected");
+        return;
+      }
+      conf = sparkEnv.conf();
     }
-    initializeContextFactoryIfNotInitialized(sparkEnv.conf(), appName);
+    initializeContextFactoryIfNotInitialized(conf, appName);
   }
 
   private void initializeContextFactoryIfNotInitialized(SparkConf sparkConf, String appName) {

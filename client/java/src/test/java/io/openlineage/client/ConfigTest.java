@@ -32,6 +32,7 @@ import io.openlineage.client.transports.HttpTransport;
 import io.openlineage.client.transports.NoopTransport;
 import io.openlineage.client.transports.TransformTransport;
 import io.openlineage.client.transports.Transport;
+import io.openlineage.client.utils.TagField;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -352,5 +353,50 @@ class ConfigTest {
         .hasFieldOrPropertyWithValue("schema", "cassandra")
         .hasFieldOrPropertyWithValue(
             "regex", "(?<cluster>[a-zA-Z-]+)-(\\d)+\\.company\\.com:[\\d]*");
+  }
+
+  @Test
+  void testExtractTags() {
+    final OpenLineageConfig config =
+        OpenLineageClientUtils.loadOpenLineageConfigYaml(
+            new TestConfigPathProvider("config/tags.yaml"),
+            new TypeReference<OpenLineageConfig>() {});
+
+    assertThat(config.getJobConfig().getTags())
+        .isEqualTo(Arrays.asList(new TagField("key", "value"), new TagField("tag2", "true")));
+    assertThat(config.getRunConfig().getTags())
+        .isEqualTo(
+            Arrays.asList(
+                new TagField("something", "will", "be"), new TagField("overwrite", "something")));
+  }
+
+  @Test
+  void testExtractTagsEdgeCases() {
+    final OpenLineageConfig config =
+        OpenLineageClientUtils.loadOpenLineageConfigYaml(
+            new TestConfigPathProvider("config/tags-edge-case.yaml"),
+            new TypeReference<OpenLineageConfig>() {});
+
+    assertThat(config.getJobConfig().getTags())
+        .isEqualTo(
+            Arrays.asList(
+                new TagField("valid", "tag"),
+                new TagField("single_tag", "true"),
+                new TagField("key", "value", "source"),
+                new TagField("missing-value", "true"),
+                new TagField("dangling", "separator"),
+                new TagField("too", "many", "parts"),
+                new TagField("key with spaces", "value"),
+                new TagField("key", "value with spaces"),
+                new TagField("key", "value", "source with spaces"),
+                new TagField("🔑", "🔧", "📱"),
+                new TagField("key:with:colons", "value"),
+                new TagField("key", "value:with:colons"),
+                new TagField("tag;with;semicolons", "true"),
+                new TagField("tag", "with;:semicolons")));
+    assertThat(config.getRunConfig().getTags())
+        .isEqualTo(
+            Arrays.asList(
+                new TagField("surrounding", "whitespace"), new TagField("whitespace", "around")));
   }
 }
