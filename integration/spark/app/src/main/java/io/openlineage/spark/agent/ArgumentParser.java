@@ -18,12 +18,7 @@ import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.ToString;
@@ -44,7 +39,6 @@ public class ArgumentParser {
   public static final String SPARK_CONF_APP_NAME = "spark.openlineage.appName";
   public static final String ARRAY_PREFIX_CHAR = "[";
   public static final String ARRAY_SUFFIX_CHAR = "]";
-  public static final String DISABLED_FACETS_SEPARATOR = ";";
   public static final String SPARK_CONF_TRANSPORT_TYPE = "spark.openlineage.transport.type";
   public static final String SPARK_CONF_HTTP_URL = "spark.openlineage.transport.url";
   public static final String SPARK_CONF_JOB_NAME_APPEND_DATASET_NAME =
@@ -62,7 +56,7 @@ public class ArgumentParser {
       new HashSet<>(
           Arrays.asList("transport.properties.", "transport.urlParams.", "transport.headers."));
 
-  private static final String disabledFacetsSeparator = ";";
+  private static final String separator = ";";
 
   public static SparkOpenLineageConfig parse(SparkConf conf) {
     // TRY READING CONFIG FROM FILE
@@ -75,7 +69,6 @@ public class ArgumentParser {
           .ifPresent(url -> UrlParser.parseUrl(url).forEach(conf::set));
     }
     SparkOpenLineageConfig configFromSparkConf = extractOpenLineageConfFromSparkConf(conf);
-
     SparkOpenLineageConfig targetConfig;
     if (configFromFile.isPresent()) {
       targetConfig = configFromFile.get().mergeWith(configFromSparkConf);
@@ -148,7 +141,7 @@ public class ArgumentParser {
         .map(s -> s.replace("[", "").replace("]", ""))
         .map(
             s ->
-                Stream.of(s.split(disabledFacetsSeparator))
+                Stream.of(s.split(separator))
                     .filter(StringUtils::isNotBlank)
                     .toArray(String[]::new))
         .ifPresent(a -> config.getFacetsConfig().setDeprecatedDisabledFacets(a));
@@ -185,7 +178,7 @@ public class ArgumentParser {
           ArrayNode arrayNode = nodePointer.putArray(leaf);
           String valueWithoutBrackets =
               isArrayType(value) ? value.substring(1, value.length() - 1) : value;
-          Arrays.stream(valueWithoutBrackets.split(DISABLED_FACETS_SEPARATOR))
+          Arrays.stream(valueWithoutBrackets.split(separator))
               .filter(StringUtils::isNotBlank)
               .forEach(arrayNode::add);
         } else {

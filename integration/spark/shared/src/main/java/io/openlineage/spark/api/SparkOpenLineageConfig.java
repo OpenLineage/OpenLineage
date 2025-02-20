@@ -11,12 +11,11 @@ import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.dataset.DatasetConfig;
+import io.openlineage.client.job.JobConfig;
+import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -43,7 +42,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   @NonNull private String debugFacet;
   private String testExtensionProvider;
   private JobNameConfig jobName;
-  private JobConfig job;
   private VendorsConfig vendors;
 
   @JsonProperty("columnLineage")
@@ -68,8 +66,9 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       Map<String, Object> metricsConfig,
       ColumnLineageConfig columnLineageConfig,
       VendorsConfig vendors,
-      FilterConfig filterConfig) {
-    super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig);
+      FilterConfig filterConfig,
+      RunConfig run) {
+    super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig, run, job);
     this.namespace = namespace;
     this.parentJobName = parentJobName;
     this.parentJobNamespace = parentJobNamespace;
@@ -77,7 +76,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.overriddenAppName = overriddenAppName;
     this.testExtensionProvider = testExtensionProvider;
     this.jobName = jobName;
-    this.job = job;
     this.columnLineageConfig = columnLineageConfig;
     this.vendors = vendors;
     this.filterConfig = filterConfig;
@@ -137,20 +135,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   @Getter
   @Setter
   @ToString
-  public static class JobConfig {
-    private JobOwnersConfig owners;
-  }
-
-  @Getter
-  @ToString
-  public static class JobOwnersConfig {
-    @JsonAnySetter @NonNull
-    private final Map<String, String> additionalProperties = new HashMap<>();
-  }
-
-  @Getter
-  @Setter
-  @ToString
   public static class VendorsConfig {
     @JsonAnySetter @NonNull
     private final Map<String, String> additionalProperties = new HashMap<>();
@@ -174,7 +158,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(overriddenAppName, other.overriddenAppName),
         mergePropertyWith(testExtensionProvider, other.testExtensionProvider),
         mergePropertyWith(jobName, other.jobName),
-        mergePropertyWith(job, other.job),
+        mergePropertyWith(jobConfig, other.jobConfig),
         mergePropertyWith(transportConfig, other.transportConfig),
         mergePropertyWith(facetsConfig, other.facetsConfig),
         mergePropertyWith(datasetConfig, other.datasetConfig),
@@ -182,6 +166,7 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(metricsConfig, other.metricsConfig),
         mergePropertyWith(columnLineageConfig, other.columnLineageConfig),
         mergePropertyWith(vendors, other.vendors),
-        mergePropertyWith(filterConfig, other.filterConfig));
+        mergePropertyWith(filterConfig, other.filterConfig),
+        mergePropertyWith(runConfig, other.runConfig));
   }
 }

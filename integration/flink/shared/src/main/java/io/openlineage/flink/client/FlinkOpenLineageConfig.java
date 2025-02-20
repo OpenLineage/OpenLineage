@@ -5,25 +5,22 @@
 
 package io.openlineage.flink.client;
 
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.dataset.DatasetConfig;
+import io.openlineage.client.job.JobConfig;
+import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
-import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.Setter;
 import lombok.ToString;
 
 @Getter
 @NoArgsConstructor
 @ToString
 public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageConfig> {
-  @Setter private JobConfig job;
 
   public FlinkOpenLineageConfig(
       TransportConfig transportConfig,
@@ -31,22 +28,16 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
       DatasetConfig datasetConfig,
       CircuitBreakerConfig circuitBreaker,
       Map metricsConfig,
-      JobConfig job) {
-    super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig);
-    this.job = job;
-  }
-
-  @Getter
-  @ToString
-  public static class JobConfig {
-    @Setter @Getter private JobOwnersConfig owners;
-  }
-
-  @Getter
-  @ToString
-  public static class JobOwnersConfig {
-    @JsonAnySetter @Setter @Getter @NonNull
-    private Map<String, String> additionalProperties = new HashMap<>();
+      RunConfig runConfig,
+      JobConfig jobConfig) {
+    super(
+        transportConfig,
+        facetsConfig,
+        datasetConfig,
+        circuitBreaker,
+        metricsConfig,
+        runConfig,
+        jobConfig);
   }
 
   @Override
@@ -57,6 +48,7 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
         mergePropertyWith(datasetConfig, other.datasetConfig),
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
         mergePropertyWith(metricsConfig, other.metricsConfig),
-        mergePropertyWith(job, other.job));
+        mergePropertyWith(runConfig, other.runConfig),
+        mergePropertyWith(jobConfig, other.jobConfig));
   }
 }

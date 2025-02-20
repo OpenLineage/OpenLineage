@@ -116,3 +116,23 @@ import Metrics from './partials/java_metrics.md';
 import DatasetNamespaceResolver from './partials/java_namespace_resolver.md';
 
 <DatasetNamespaceResolver/>
+
+
+## Tags
+
+You can specify tags for Runs and Jobs using the following syntax:
+Tags added by run will be added as TagsRunFacet, while tags added by jobs will be added as TagsJobFacet.
+
+```yaml
+run:
+    tags:
+      - "key:value"
+      - "label"
+      - "key:value:source"
+jobs:
+    tags: [
+      "key:value",
+      "label",
+      "key:value:source"
+    ] 
+```

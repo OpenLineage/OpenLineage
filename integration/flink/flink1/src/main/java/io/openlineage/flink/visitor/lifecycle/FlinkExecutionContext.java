@@ -15,14 +15,13 @@ import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunEventBuilder;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
+import io.openlineage.client.job.JobConfig;
 import io.openlineage.flink.SinkLineage;
 import io.openlineage.flink.TransformationUtils;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.CheckpointFacet;
 import io.openlineage.flink.client.EventEmitter;
 import io.openlineage.flink.client.FlinkOpenLineageConfig;
-import io.openlineage.flink.client.FlinkOpenLineageConfig.JobConfig;
-import io.openlineage.flink.client.FlinkOpenLineageConfig.JobOwnersConfig;
 import io.openlineage.flink.visitor.Visitor;
 import io.openlineage.flink.visitor.VisitorFactory;
 import io.openlineage.flink.visitor.VisitorFactoryImpl;
@@ -191,9 +190,9 @@ public class FlinkExecutionContext implements ExecutionContext {
 
   private JobFacetsBuilder buildOwnershipFacet(JobFacetsBuilder builder) {
     Optional.ofNullable(config)
-        .map(FlinkOpenLineageConfig::getJob)
+        .map(FlinkOpenLineageConfig::getJobConfig)
         .map(JobConfig::getOwners)
-        .map(JobOwnersConfig::getAdditionalProperties)
+        .map(JobConfig.JobOwnersConfig::getAdditionalProperties)
         .filter(Objects::nonNull)
         .ifPresent(
             map -> {
