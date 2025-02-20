@@ -23,6 +23,7 @@ import org.apache.spark.sql.execution.datasources.FilePartition;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import scala.Tuple2;
 import scala.collection.immutable.Seq;
+import scala.collection.mutable.ArrayBuffer;
 
 /** Utility class to extract paths from RDD nodes. */
 @Slf4j
@@ -140,6 +141,11 @@ public class RddPathUtils {
                     }
                     return path;
                   })
+              .filter(Objects::nonNull);
+        } else if ((data instanceof ArrayBuffer) && !((ArrayBuffer<?>) data).isEmpty()) {
+          ArrayBuffer<?> dataBuffer = (ArrayBuffer<?>) data;
+          return ScalaConversionUtils.fromSeq(dataBuffer.toSeq()).stream()
+              .map(o -> parentOf(o.toString()))
               .filter(Objects::nonNull);
         } else {
           log.warn("Cannot extract path from ParallelCollectionRDD {}", data);
