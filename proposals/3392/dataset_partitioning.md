@@ -164,10 +164,9 @@ We start with logical subset definitions:
                   "const": "binary"
                },
                "operator": {
-                  "enum": [
-                     "OR",
-                     "AND"
-                  ]
+                  "type": "string",
+                  "example": "AND",
+                  "description": "Allowed values: 'AND' or 'OR'"
                }
             }
          }
@@ -191,13 +190,9 @@ We start with logical subset definitions:
                   "type": "CompareExpression"
                },
                "comparison": {
-                  "enum": [
-                     "EQUAL",
-                     "GREATER_THAN",
-                     "GREATER_EQUAL_THAN",
-                     "LESS_THAN",
-                     "LESS_EQUAL_THAN"
-                  ]
+                  "type": "string",
+                  "example": "EQUAL",
+                  "description": "Allowed values: 'EQUAL', 'GREATER_THAN', 'GREATER_EQUAL_THAN', 'LESS_THAN', 'LESS_EQUAL_THAN'",
                }
             }
          }
