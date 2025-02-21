@@ -20,7 +20,7 @@ for _, workflow_definition in d["workflows"].items():
         elif "integration-test-integration-spark" in job:
             integration_test_job = job["integration-test-integration-spark"]
 
-    for job in filter(None, [test_job, integration_test_job]):
+    for job in [x for x in [test_job, integration_test_job] if x is not None]:
         variants = [
             x for x in test_job.get("matrix").get("parameters").get("env-variant") if "full-tests" not in x
         ]
