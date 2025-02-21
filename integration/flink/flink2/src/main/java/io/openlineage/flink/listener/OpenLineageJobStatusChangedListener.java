@@ -18,6 +18,7 @@ import io.openlineage.flink.visitor.Flink2VisitorFactory;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.core.execution.DefaultJobExecutionStatusEvent;
 import org.apache.flink.core.execution.JobStatusChangedEvent;
 import org.apache.flink.core.execution.JobStatusChangedListener;
@@ -39,16 +40,30 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
     graphConverter = new LineageGraphConverter(this.context, visitorFactory);
   }
 
+  @VisibleForTesting
+  OpenLineageJobStatusChangedListener(
+      OpenLineageContext context, Flink2VisitorFactory visitorFactory) {
+    this.context = context;
+    graphConverter = new LineageGraphConverter(this.context, visitorFactory);
+  }
+
   @Override
   @SuppressWarnings("PMD.AvoidCatchingThrowable")
   public void onEvent(JobStatusChangedEvent event) {
-    if (event instanceof JobCreatedEvent) {
-      onJobCreatedEvent((JobCreatedEvent) event);
-    } else if (event instanceof DefaultJobExecutionStatusEvent && context.getJobId() != null) {
-      onDefaultJobExecutionStatusEvent((DefaultJobExecutionStatusEvent) event);
-    } else {
-      log.warn("Unsupported event: {}", event.getClass());
-    }
+    context
+        .getCircuitBreaker()
+        .run(
+            () -> {
+              if (event instanceof JobCreatedEvent) {
+                onJobCreatedEvent((JobCreatedEvent) event);
+              } else if (event instanceof DefaultJobExecutionStatusEvent
+                  && context.getJobId() != null) {
+                onDefaultJobExecutionStatusEvent((DefaultJobExecutionStatusEvent) event);
+              } else {
+                log.warn("Unsupported event: {}", event.getClass());
+              }
+              return null;
+            });
   }
 
   private void onJobCreatedEvent(JobCreatedEvent event) {

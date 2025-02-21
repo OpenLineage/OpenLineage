@@ -6,12 +6,17 @@
 package io.openlineage.flink.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.circuitBreaker.CircuitBreaker;
+import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.Flink2VisitorFactory;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,6 +24,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.apache.flink.api.common.JobID;
@@ -182,5 +188,15 @@ class OpenLineageJobStatusChangedListenerTest {
     assertThat(eventsEmitted).hasSize(2);
     assertThat(eventsEmitted.get(0).getEventType()).isEqualTo(EventType.START);
     assertThat(eventsEmitted.get(1).getEventType()).isEqualTo(EventType.FAIL);
+  }
+
+  @Test
+  void testCircuitBreaker() {
+    OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
+    CircuitBreaker circuitBreaker = mock(CircuitBreaker.class);
+    when(openLineageContext.getCircuitBreaker()).thenReturn(circuitBreaker);
+    listener = new OpenLineageJobStatusChangedListener(openLineageContext, factory);
+    listener.onEvent(mock(JobCreatedEvent.class));
+    verify(circuitBreaker, times(1)).run(any(Callable.class));
   }
 }
