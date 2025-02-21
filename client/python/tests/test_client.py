@@ -998,3 +998,41 @@ def test_update_run_tag_facet_updates_existing_facet(transport):
         event_tags = sorted(transport.event.run.facets["tags"].tags, key=lambda x: x.key)
         expected_tags = sorted(tags, key=lambda x: x.key)
         assert event_tags == expected_tags
+
+
+def test_update_tag_facet_keeps_key_case(transport):
+    tag_environment_variables = {
+        "OPENLINEAGE__TAGS__RUN__ENVIRONMENT": "PRODUCTION",
+        "OPENLINEAGE__TAGS__RUN__pipeline": "SALES",
+    }
+
+    run_event = RunEvent(
+        RunState.START,
+        "2021-11-03T10:53:52.427343",
+        Run(
+            runId="69f4acab-b87d-4fc0-b27b-8ea950370ff3",
+            facets={
+                "tags": TagsJobFacet(
+                    tags=[
+                        TagsRunFacetFields("environment", "STAGING", "USER"),
+                        TagsRunFacetFields("PIPELINE", "FINANCE", "USER"),
+                    ]
+                )
+            },
+        ),
+        Job("openlineage", "job"),
+        "producer",
+    )
+
+    tags = [
+        TagsRunFacetFields("environment", "PRODUCTION", "USER"),
+        TagsRunFacetFields("PIPELINE", "SALES", "USER"),
+    ]
+
+    with patch.dict(os.environ, tag_environment_variables):
+        client = OpenLineageClient(transport=transport)
+        client.emit(run_event)
+        assert transport.event.run.facets.get("tags")
+        event_tags = sorted(transport.event.run.facets["tags"].tags, key=lambda x: x.key)
+        expected_tags = sorted(tags, key=lambda x: x.key)
+        assert event_tags == expected_tags
