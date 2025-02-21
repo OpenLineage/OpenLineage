@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
-import io.openlineage.flink.client.OpenLineageContext;
+import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.Versions;
 import io.openlineage.flink.converter.LineageDatasetWithIdentifier;
 import java.util.List;

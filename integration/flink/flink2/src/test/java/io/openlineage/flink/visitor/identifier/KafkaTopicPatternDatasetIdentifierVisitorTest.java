@@ -13,7 +13,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.flink.client.OpenLineageContext;
+import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.identifier.KafkaTopicPatternDatasetIdentifierVisitor.ConsumerUtils;
 import java.util.Arrays;
 import java.util.Collections;

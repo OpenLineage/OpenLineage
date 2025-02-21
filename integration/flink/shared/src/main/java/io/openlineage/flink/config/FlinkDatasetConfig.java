@@ -16,15 +16,15 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+@Setter
 @NoArgsConstructor
 @ToString
+@Getter
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
 public class FlinkDatasetConfig extends DatasetConfig {
 
   @JsonProperty("kafka")
-  @Getter
-  @Setter
   private FlinkDatasetKafkaConfig kafkaConfig;
 
   public FlinkDatasetConfig(

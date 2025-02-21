@@ -54,7 +54,7 @@ public class OpenLineageContinousJobTracker {
             "http://%s:%s/jobs/%s/checkpoints",
             Optional.ofNullable(config.get(RestOptions.ADDRESS)).orElse("localhost"),
             config.get(RestOptions.PORT),
-            context.getJobId().toString());
+            context.getOlContext().getJobId().getFlinkJobId().toString());
     HttpGet request = new HttpGet(checkpointApiUrl);
 
     trackingThread =
@@ -97,7 +97,9 @@ public class OpenLineageContinousJobTracker {
                 }
               }
             }));
-    log.info("Starting tracking thread for jobId={}", context.getJobId().toString());
+    log.info(
+        "Starting tracking thread for jobId={}",
+        context.getOlContext().getJobId().getFlinkJobId().toString());
     trackingThread.start();
   }
 

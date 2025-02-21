@@ -5,6 +5,7 @@
 
 package io.openlineage.flink;
 
+import io.openlineage.flink.api.OpenLineageContext.JobIdentifier;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTrackerFactory;
 import io.openlineage.flink.utils.JobTypeUtils;
@@ -170,9 +171,11 @@ public class OpenLineageFlinkJobListener implements JobListener {
       FlinkExecutionContext context =
           FlinkExecutionContextFactory.getContext(
               (Configuration) executionEnvironment.getConfiguration(),
-              jobNamespace,
-              jobName,
-              jobClient.getJobID(),
+              JobIdentifier.builder()
+                  .jobNamespace(jobNamespace)
+                  .jobName(jobName)
+                  .flinkJobId(jobClient.getJobID())
+                  .build(),
               JobTypeUtils.extract(runtimeMode, transformations),
               transformations);
 

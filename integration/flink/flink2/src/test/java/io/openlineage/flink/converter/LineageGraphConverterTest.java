@@ -17,16 +17,15 @@ import io.openlineage.client.OpenLineage.JobTypeJobFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
-import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.job.JobConfig;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.DatasetIdentifier.Symlink;
 import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
-import io.openlineage.flink.client.OpenLineageContext;
-import io.openlineage.flink.client.OpenLineageContext.JobIdentifier;
+import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.api.OpenLineageContext.JobIdentifier;
 import io.openlineage.flink.client.Versions;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
-import io.openlineage.flink.visitor.VisitorFactory;
+import io.openlineage.flink.visitor.Flink2VisitorFactory;
 import io.openlineage.flink.visitor.facet.DatasetFacetVisitor;
 import io.openlineage.flink.visitor.identifier.DatasetIdentifierVisitor;
 import java.util.Arrays;
@@ -49,7 +48,7 @@ import org.junit.jupiter.api.Test;
 class LineageGraphConverterTest {
 
   private static UUID runUuid = UUID.randomUUID();
-  VisitorFactory visitorFactory = mock(VisitorFactory.class);
+  Flink2VisitorFactory visitorFactory = mock(Flink2VisitorFactory.class);
   OpenLineageContext context;
   LineageGraphConverter converter;
   FlinkOpenLineageConfig config = mock(FlinkOpenLineageConfig.class);
@@ -61,9 +60,7 @@ class LineageGraphConverterTest {
     context =
         OpenLineageContext.builder()
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-            .client(mock(OpenLineageClient.class))
             .config(config)
-            .runId(runUuid)
             .build();
 
     context.setJobId(JobIdentifier.builder().build());

@@ -13,9 +13,11 @@ import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.metrics.MicrometerProvider;
+import io.openlineage.client.transports.ConsoleConfig;
+import io.openlineage.flink.api.OpenLineageContext.JobIdentifier;
 import io.openlineage.flink.client.CheckpointFacet;
 import io.openlineage.flink.client.EventEmitter;
-import io.openlineage.flink.client.FlinkOpenLineageConfig;
+import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +32,13 @@ import org.junit.jupiter.api.Test;
 public class FlinkExecutionContextTest {
 
   Configuration config = new Configuration();
+
+  JobIdentifier jobId =
+      JobIdentifier.builder()
+          .jobNamespace("jobNamespace")
+          .jobName("jobName")
+          .flinkJobId(mock(JobID.class))
+          .build();
 
   @AfterEach
   void cleanUp() {
@@ -47,12 +56,7 @@ public class FlinkExecutionContextTest {
 
     FlinkExecutionContext context =
         FlinkExecutionContextFactory.getContext(
-            config,
-            "jobNamespace",
-            "jobName",
-            mock(JobID.class),
-            "streaming",
-            Collections.emptyList());
+            config, jobId, "streaming", Collections.emptyList());
 
     RunEvent runEvent = context.buildEventForEventType(EventType.COMPLETE).build();
 
@@ -73,12 +77,7 @@ public class FlinkExecutionContextTest {
 
     FlinkExecutionContext context =
         FlinkExecutionContextFactory.getContext(
-            config,
-            "jobNamespace",
-            "jobName",
-            mock(JobID.class),
-            "streaming",
-            Collections.emptyList());
+            config, jobId, "streaming", Collections.emptyList());
 
     assertThat(
             context
@@ -143,14 +142,9 @@ public class FlinkExecutionContextTest {
 
   FlinkExecutionContext setupMetricsContext() {
     FlinkOpenLineageConfig config = mock(FlinkOpenLineageConfig.class);
+    when(config.getTransportConfig()).thenReturn(new ConsoleConfig());
     when(config.getMetricsConfig()).thenReturn(Map.of("type", "simple"));
     return FlinkExecutionContextFactory.getContext(
-        config,
-        "jobNamespace",
-        "jobName",
-        mock(JobID.class),
-        "streaming",
-        mock(EventEmitter.class),
-        Collections.emptyList());
+        config, jobId, "streaming", mock(EventEmitter.class), Collections.emptyList());
   }
 }

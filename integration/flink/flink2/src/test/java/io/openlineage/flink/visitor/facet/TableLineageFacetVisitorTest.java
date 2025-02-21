@@ -13,7 +13,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.flink.client.OpenLineageContext;
+import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.Versions;
 import io.openlineage.flink.converter.LineageDatasetWithIdentifier;
 import java.util.Arrays;

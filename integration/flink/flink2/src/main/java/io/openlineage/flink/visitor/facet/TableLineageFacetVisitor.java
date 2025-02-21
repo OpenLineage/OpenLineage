@@ -7,7 +7,7 @@ package io.openlineage.flink.visitor.facet;
 
 import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
-import io.openlineage.flink.client.OpenLineageContext;
+import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.converter.LineageDatasetWithIdentifier;
 import java.util.List;
 import java.util.stream.Collectors;
