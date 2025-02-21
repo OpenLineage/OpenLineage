@@ -31,6 +31,7 @@ public class EventEmitter {
   @Getter private UUID applicationRunId;
   @Getter private String applicationJobName;
   @Getter private Optional<List<String>> customEnvironmentVariables;
+  private String justForTest = "a";
 
   public EventEmitter(SparkOpenLineageConfig config, String applicationJobName)
       throws URISyntaxException {
@@ -60,9 +61,10 @@ public class EventEmitter {
       this.client.emit(event);
       if (log.isDebugEnabled()) {
         log.debug(
-            "Emitting lineage completed successfully  with run id: {}: {}",
+            "Emitting lineage completed successfully  with run id: {}: {} {}",
             event.getRun().getRunId(),
-            OpenLineageClientUtils.toJson(event));
+            OpenLineageClientUtils.toJson(event),
+            justForTest);
       } else {
         log.info(
             "Emitting lineage completed successfully with run id: {}", event.getRun().getRunId());

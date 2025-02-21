@@ -23,6 +23,5 @@ public class VendorsContext {
 
   public boolean contains(String key) {
     return contextMap.containsKey(key);
-  }
-  ;
+  };
 }

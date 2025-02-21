@@ -133,8 +133,7 @@ class AwsUtils {
     return s3Client
         .listObjectsV2(
             ListObjectsV2Request.builder().bucket(bucketName).prefix(directoryPath).build())
-        .contents()
-        .stream()
+        .contents().stream()
         .map(s3Object -> getS3ObjectContent(s3Client, bucketName, s3Object.key()));
   }
 

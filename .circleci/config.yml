@@ -83,6 +83,7 @@ jobs:
           fi
           echo $IS_FULL_TESTS
           if [ -z "$IS_FULL_TESTS" ] || [ "$IS_FULL_TESTS" == "0" ]; then
+            echo "Skipping full tests"
             pip install pyyaml==6.0.1
             python dev/filter_matrix.py 
           fi
