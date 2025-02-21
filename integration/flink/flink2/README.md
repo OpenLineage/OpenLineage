@@ -68,7 +68,6 @@ Run the integration tests of this package:
 
  * Write docker integration test and depend on released Flink version.
  * Make sure package does not contain extra dependencies (or relocates them).
- * Implement circuit breaker within the listener as in other integrations.
  * Add custom Facet with Flink jobId.
  * Create a tracking thread that uses Flink api to get checkpoint data. This shall be done in same way as other OpenLineage Flink integration.
  * Support schema extraction from nested Generic Records.
