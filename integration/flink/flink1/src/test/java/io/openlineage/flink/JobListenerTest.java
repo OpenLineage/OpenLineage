@@ -7,6 +7,7 @@ package io.openlineage.flink;
 
 import static io.openlineage.flink.OpenLineageFlinkJobListener.DEFAULT_JOB_NAMESPACE;
 import static io.openlineage.flink.OpenLineageFlinkJobListener.OPENLINEAGE_LISTENER_CONFIG_DURATION;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -15,6 +16,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.api.OpenLineageContext.JobIdentifier;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTrackerFactory;
 import io.openlineage.flink.utils.JobTypeUtils;
@@ -32,7 +35,6 @@ import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -40,20 +42,24 @@ import org.mockito.MockedStatic;
 class JobListenerTest {
 
   JobClient jobClient = mock(JobClient.class);
-  JobID jobId = mock(JobID.class);
+  JobIdentifier jobId =
+      JobIdentifier.builder()
+          .jobNamespace("some-job-namespace")
+          .jobName("some-job-name")
+          .flinkJobId(mock(JobID.class))
+          .build();
   List<Transformation<?>> transformations = new ArrayList<>();
   OpenLineageFlinkJobListener listener;
   FlinkExecutionContext context = mock(FlinkExecutionContext.class);
+  OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   OpenLineageContinousJobTracker tracker = mock(OpenLineageContinousJobTracker.class);
   Configuration readableConfig = new Configuration();
-  String jobName = "some-job-name";
-  String jobNamespace = "some-job-namespace";
 
   @BeforeEach
   @SneakyThrows
   public void setup() {
     transformations.add(mock(Transformation.class));
-    when(jobClient.getJobID()).thenReturn(jobId);
+    when(jobClient.getJobID()).thenReturn(jobId.getFlinkJobId());
   }
 
   @Test
@@ -73,19 +79,14 @@ class JobListenerTest {
         OpenLineageFlinkJobListener.builder()
             .executionEnvironment(streamExecutionEnvironment)
             .jobTracker(tracker)
-            .jobNamespace(jobNamespace)
-            .jobName(jobName)
+            .jobNamespace(jobId.getJobNamespace())
+            .jobName(jobId.getJobName())
             .build();
 
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
       when(FlinkExecutionContextFactory.getContext(
-              eq(readableConfig),
-              eq(jobNamespace),
-              eq(jobName),
-              eq(jobId),
-              eq(JobTypeUtils.STREAMING),
-              eq(transformations)))
+              eq(readableConfig), eq(jobId), eq(JobTypeUtils.STREAMING), eq(transformations)))
           .thenReturn(context);
       doNothing().when(context).onJobSubmitted();
 
@@ -106,6 +107,13 @@ class JobListenerTest {
     String customNamespace = "customized_namespace";
     configuration.setString("execution.job-listener.openlineage.namespace", customNamespace);
 
+    jobId =
+        JobIdentifier.builder()
+            .jobNamespace(customNamespace)
+            .jobName(customJobName)
+            .flinkJobId(mock(JobID.class))
+            .build();
+
     StreamExecutionEnvironment streamExecutionEnvironment =
         new StreamExecutionEnvironment(configuration);
 
@@ -123,9 +131,10 @@ class JobListenerTest {
             mockStatic(OpenLineageContinousJobTrackerFactory.class)) {
       when(FlinkExecutionContextFactory.getContext(
               eq((Configuration) streamExecutionEnvironment.getConfiguration()),
-              eq(customNamespace),
-              eq(customJobName),
-              eq(jobId),
+              argThat(
+                  jobIdentifier ->
+                      jobIdentifier.getJobNamespace().equals(customNamespace)
+                          && jobIdentifier.getJobName().equals(customJobName)),
               eq(JobTypeUtils.STREAMING),
               eq(transformations)))
           .thenReturn(context);
@@ -158,19 +167,14 @@ class JobListenerTest {
     when(globalJobParameters.toMap()).thenReturn(new HashMap<>());
 
     JobExecutionResult jobExecutionResult = mock(JobExecutionResult.class);
-    when(jobExecutionResult.getJobID()).thenReturn(jobId);
+    when(jobExecutionResult.getJobID()).thenReturn(jobId.getFlinkJobId());
     doNothing().when(context).onJobSubmitted();
     doNothing().when(tracker).startTracking(context);
 
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
       when(FlinkExecutionContextFactory.getContext(
-              eq(readableConfig),
-              eq(jobNamespace),
-              eq(jobName),
-              eq(jobId),
-              eq(JobTypeUtils.STREAMING),
-              eq(transformations)))
+              eq(readableConfig), eq(jobId), eq(JobTypeUtils.STREAMING), eq(transformations)))
           .thenReturn(context);
       doNothing().when(context).onJobSubmitted();
 
@@ -206,9 +210,8 @@ class JobListenerTest {
         mockStatic(FlinkExecutionContextFactory.class)) {
       when(FlinkExecutionContextFactory.getContext(
               eq(readableConfig),
-              eq(DEFAULT_JOB_NAMESPACE),
-              eq(StreamGraphGenerator.DEFAULT_STREAMING_JOB_NAME),
-              eq(jobId),
+              argThat(
+                  jobIdentifier -> jobIdentifier.getJobNamespace().equals(DEFAULT_JOB_NAMESPACE)),
               eq(JobTypeUtils.STREAMING),
               eq(transformations)))
           .thenReturn(context);

@@ -10,7 +10,7 @@ import io.openlineage.client.OpenLineage.JobFacetsBuilder;
 import io.openlineage.client.OpenLineage.JobTypeJobFacetBuilder;
 import io.openlineage.client.OpenLineage.OwnershipJobFacetOwners;
 import io.openlineage.client.job.JobConfig;
-import io.openlineage.flink.client.OpenLineageContext;
+import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +52,7 @@ class OpenLineageJobExtractor {
         .getOpenLineage()
         .newJobBuilder()
         .namespace(context.getJobId().getJobNamespace())
-        .name(context.getJobId().getJobNme())
+        .name(context.getJobId().getJobName())
         .facets(facetsBuilder.build())
         .build();
   }

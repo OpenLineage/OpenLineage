@@ -66,6 +66,8 @@ dependencies {
     testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
+    testImplementation("org.slf4j:slf4j-api:2.0.16")
+    testImplementation("org.slf4j:slf4j-simple:2.0.16")
 
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }

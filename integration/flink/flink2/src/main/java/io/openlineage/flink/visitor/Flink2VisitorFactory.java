@@ -5,15 +5,15 @@
 
 package io.openlineage.flink.visitor;
 
-import io.openlineage.flink.client.OpenLineageContext;
+import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.facet.DatasetFacetVisitor;
 import io.openlineage.flink.visitor.identifier.DatasetIdentifierVisitor;
 import java.util.Collection;
 import org.apache.flink.streaming.api.lineage.LineageDataset;
 
 /**
- * Factory to load all the {@link VisitorFactory} to be applied on facets returned within Flink's
- * lineage graph. There two types of visitors: {@link DatasetIdentifierVisitor} and {@link
+ * Factory to load all the {@link Flink2VisitorFactory} to be applied on facets returned within
+ * Flink's lineage graph. There two types of visitors: {@link DatasetIdentifierVisitor} and {@link
  * DatasetFacetVisitor}.
  *
  * <p>{@link DatasetIdentifierVisitor} allow extracting OpenLineage dataset identifiers from Flink's
@@ -25,7 +25,7 @@ import org.apache.flink.streaming.api.lineage.LineageDataset;
  * <p>{@link DatasetFacetVisitor} allows created OpenLineage dataset facets From Flink's {@link
  * LineageDataset}.
  */
-public interface VisitorFactory {
+public interface Flink2VisitorFactory {
   Collection<DatasetFacetVisitor> loadDatasetFacetVisitors(OpenLineageContext context);
 
   Collection<DatasetIdentifierVisitor> loadDatasetIdentifierVisitors(OpenLineageContext context);

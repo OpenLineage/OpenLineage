@@ -8,8 +8,8 @@ package io.openlineage.flink.converter;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
-import io.openlineage.flink.client.OpenLineageContext;
-import io.openlineage.flink.visitor.VisitorFactory;
+import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.visitor.Flink2VisitorFactory;
 import java.time.ZonedDateTime;
 import org.apache.flink.streaming.api.lineage.LineageGraph;
 
@@ -20,7 +20,7 @@ public class LineageGraphConverter {
 
   private final OpenLineageDatasetExtractor datasetExtractor;
 
-  public LineageGraphConverter(OpenLineageContext context, VisitorFactory visitorFactory) {
+  public LineageGraphConverter(OpenLineageContext context, Flink2VisitorFactory visitorFactory) {
     this.context = context;
     this.jobExtractor = new OpenLineageJobExtractor(context);
     this.datasetExtractor = new OpenLineageDatasetExtractor(context, visitorFactory);
@@ -36,7 +36,7 @@ public class LineageGraphConverter {
         .run(
             context
                 .getOpenLineage()
-                .newRun(context.getRunId(), new OpenLineage.RunFacetsBuilder().build()))
+                .newRun(context.getRunUuid(), new OpenLineage.RunFacetsBuilder().build()))
         .inputs(datasetExtractor.extractInputs(graph))
         .outputs(datasetExtractor.extractOutputs(graph))
         .build();

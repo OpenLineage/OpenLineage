@@ -28,7 +28,7 @@ import org.apache.flink.configuration.Configuration;
 
 /** Class responsible for parsing Flink configuration to extract Openlineage entries. */
 @Slf4j
-public class OpenlineageConfigParser {
+public class FlinkConfigParser {
   public static final String ARRAY_PREFIX_CHAR = "[";
   public static final String ARRAY_SUFFIX_CHAR = "]";
   public static final String ARRAY_ELEMENTS_SEPARATOR = ";";
@@ -48,6 +48,7 @@ public class OpenlineageConfigParser {
       targetConfig = configFromFlinkConf;
     }
 
+    log.debug("OpenLineage config: {}", targetConfig);
     return targetConfig;
   }
 
@@ -73,7 +74,7 @@ public class OpenlineageConfigParser {
             .filter(key -> key.startsWith("openlineage."))
             .collect(Collectors.toList());
 
-    ObjectMapper objectMapper = OpenLineageClientUtils.newObjectMapper();
+    ObjectMapper objectMapper = new ObjectMapper();
     ObjectNode objectNode = objectMapper.createObjectNode();
     for (String configKey : configKeys) {
       ObjectNode nodePointer = objectNode;

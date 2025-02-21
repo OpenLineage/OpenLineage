@@ -22,6 +22,8 @@ import static org.mockito.Mockito.when;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.api.OpenLineageContext.JobIdentifier;
 import io.openlineage.flink.client.CheckpointFacet;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
 import java.time.Duration;
@@ -46,6 +48,7 @@ class OpenLineageContinousJobTrackerTest {
   OpenLineageContinousJobTracker tracker =
       new OpenLineageContinousJobTracker(config, Duration.ofMillis(100));
   FlinkExecutionContext context = mock(FlinkExecutionContext.class);
+  OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   MeterRegistry meterRegistry;
   JobID jobID = new JobID(1, 2);
   CheckpointFacet expectedCheckpointFacet = new CheckpointFacet(1, 5, 6, 7, 1);
@@ -66,8 +69,10 @@ class OpenLineageContinousJobTrackerTest {
     wireMockServer.start();
     configureFor("localhost", 18088);
     meterRegistry = new SimpleMeterRegistry();
-    when(context.getJobId()).thenReturn(jobID);
-    when(context.getMeterRegistry()).thenReturn(meterRegistry);
+    when(context.getOlContext()).thenReturn(openLineageContext);
+    when(openLineageContext.getJobId())
+        .thenReturn(JobIdentifier.builder().flinkJobId(jobID).build());
+    when(openLineageContext.getMeterRegistry()).thenReturn(meterRegistry);
     when(config.get(RestOptions.ADDRESS)).thenReturn("localhost");
     when(config.get(RestOptions.PORT)).thenReturn(18088);
   }
