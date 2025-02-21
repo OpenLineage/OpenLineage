@@ -1008,9 +1008,14 @@ jobs:
           command: cat app/build/test-results/integrationTest/TEST-*.xml
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport
       - store_test_results:
-          path: app/build/test-results/integrationTest
+          path: flink1/build/test-results/integrationTest
       - store_artifacts:
-          path: app/build/reports/tests/integrationTest
+          path: flink1/build/reports/tests/integrationTest
+          destination: test-report
+      - store_test_results:
+          path: flink2/build/test-results/integrationTest
+      - store_artifacts:
+          path: flink2/build/reports/tests/integrationTest
           destination: test-report
       - save_cache:
           key: v1-integration-flink-{{ checksum "/tmp/checksum.txt" }}
@@ -1076,11 +1081,16 @@ jobs:
           command: cat build/test-results/test/TEST-*.xml
       - run: ./gradlew --no-daemon --console=plain jacocoTestReport
       - run: ./gradlew --console=plain javadoc
-      - store_test_results:
-          path: app/build/test-results/test
-      - store_artifacts:
-          path: app/build/reports/tests/test
-          destination: test-report
+      - store_submodule_tests:
+          submodule: flink1
+      - store_submodule_tests:
+          submodule: flink2
+      - store_submodule_tests:
+          submodule: flink115
+      - store_submodule_tests:
+          submodule: flink117
+      - store_submodule_tests:
+          submodule: flink118
       - save_cache:
           key: v1-integration-flink-{{ checksum "/tmp/checksum.txt" }}
           paths:
