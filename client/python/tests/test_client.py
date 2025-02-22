@@ -854,6 +854,17 @@ class TestOpenLineageConfigLoader:
                     }
                 },
             ),
+            (
+                {
+                    "OPENLINEAGE__TAGS": '{"job": {"a": "b", "c": "d"}, "run": {"a": "b", "c": "d"}}',
+                },
+                {
+                    "tags": {
+                        "job": {"a": "b", "c": "d"},
+                        "run": {"a": "b", "c": "d"},
+                    }
+                },
+            ),
         ],
     )
     @patch.dict(os.environ, {})

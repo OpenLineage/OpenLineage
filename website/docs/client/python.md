@@ -956,7 +956,10 @@ The resulting lineage events received by Marquez would look like this.
 
 Integrations can add [tag facets](https://github.com/OpenLineage/OpenLineage/blob/main/proposals/3169/tags_facet.md) to runs, jobs and datasets. To allow more control over tags, users can add to and override integration-supplied tags through environment variables supplied to the client. The following rules apply to user-supplied tags. 
 
-* Tag environment variables follow this format. OPENLINEAGE__TAGS__JOB/RUN__KEY="VALUE"
+* User-supplied tags follow the conventions of [dynamic configuration with environment variables.](#dynamic-configuration-with-environment-variables)
+  * OPENLINEAGE__TAGS__JOB__key=value
+  * OPENLINEAGE__TAGS__RUN__key=value
+  * OPENLINEAGE__TAGS='{"job": {"key": "value"}, "run": {"key": "value"}}'
 * User-supplied tag keys are always transformed to lowercase. 
 * Key and value are both treated as strings 
 * Source for a user-supplied tag is always set to "USER"
@@ -969,6 +972,11 @@ Using this environment variable, an event with no tags facets will create a tag 
 
 ```sh
 OPENLINEAGE__TAGS__JOB__ENVIRONMENT="PRODUCTION"
+```
+or 
+
+```sh
+OPENLINEAGE__TAGS='{"job": {"ENVIRONMENT": "PRODUCTION"}}'
 ```
 
 ```json
@@ -1033,6 +1041,12 @@ OPENLINEAGE__TAGS__JOB__PIPELINE="sales_monthly"
 OPENLINEAGE__TAGS__RUN__adhoc="true"
 ```
 
+or
+
+```sh
+OPENLINIAGE__TAGS='{"job": {"ENVIRONMENT": "PRODUCTION", "PIPELINE": "sales_monthly"}, "run": {"adhoc": "true"}}'
+```
+
 The event will now have these tag updates. 
 
 ```json
@@ -1066,12 +1080,12 @@ The event will now have these tag updates.
   "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.30.0/integration/airflow",
   "run": {
     "facets": {
-      "tags": { # New user-supplied tags facet
+      "tags": { # New tags facet
         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.27.0/client/python",
         "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TagsJobFacet.json#/$defs/TagsJobFacet",
         "tags": [
           {
-            "key": "adhoc", # New user-supplied tag
+            "key": "adhoc", # New tag
             "value": "true" 
             "source": "USER"
           }
