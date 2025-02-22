@@ -968,7 +968,7 @@ Integrations can add [tag facets](https://github.com/OpenLineage/OpenLineage/blo
 Using this environment variable, an event with no tags facets will create a tag facet and add the following tag. 
 
 ```sh
-OPENLINEAGE__TAG__JOB__ENVIRONMENT="PRODUCTION"
+OPENLINEAGE__TAGS__JOB__ENVIRONMENT="PRODUCTION"
 ```
 
 ```json
