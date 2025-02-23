@@ -24,11 +24,11 @@ ext {
     compileflinkVersion = project.getProperty('flink.flink2.version')
     testedflinkVersion = project.getProperty('flink.version')
     isReleaseVersion = !version.endsWith('-SNAPSHOT')
-    assertjVersion = '3.25.3'
+    assertjVersion = '3.27.3'
     jacksonVersion = "2.15.3"
-    junit5Version = '5.10.2'
+    junit5Version = '5.12.0'
     lombokVersion = '1.18.36'
-    scalaLibraryVersion = '2.12.7'
+    scalaLibraryVersion = '2.13.16'
     mockitoVersion = '5.14.1'
 }
 
@@ -55,11 +55,11 @@ dependencies {
     testImplementation "org.apache.flink:flink-table-planner_2.12:$testedflinkVersion"
     testImplementation "org.apache.flink:flink-connector-base:$testedflinkVersion"
     testImplementation "org.apache.flink:flink-json:$testedflinkVersion"
-    testImplementation "org.apache.flink:flink-connector-kafka:3.4-SNAPSHOT" // need to be built locally
+    testImplementation "org.apache.flink:flink-connector-kafka:3.4.0-1.20" // need to be built locally
     testImplementation "org.apache.flink:flink-connector-test-utils:$testedflinkVersion"
-    testImplementation "org.apache.kafka:kafka-clients:3.4.0"
-    testImplementation "org.testcontainers:kafka:1.20.4"
-    testImplementation "commons-codec:commons-codec:1.17.1"
+    testImplementation "org.apache.kafka:kafka-clients:3.9.0"
+    testImplementation "org.testcontainers:kafka:1.20.5"
+    testImplementation "commons-codec:commons-codec:1.18.0"
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
 
