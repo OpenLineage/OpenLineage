@@ -1,6 +1,31 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.28.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.29.0...HEAD)
+
+## [1.29.0](https://github.com/OpenLineage/OpenLineage/compare/1.28.0...1.29.0) - 2025-02-24
+
+### Added
+
+* **Python: allow adding user-supplied tags facets from config** [`#3471`](https://github.com/OpenLineage/OpenLineage/pull/3471) [@leogodin217](https://github.com/leogodin217)
+  *User-supplied tags will allow the client to inject new tags or override tags provided by the integrations for jobs and runs.*
+* **Java: allow adding user-supplied tags facets from config** [`#3493`](https://github.com/OpenLineage/OpenLineage/pull/3493) [@mobuchowski](https://github.com/mobuchowski)
+  *Enabled parsing tags from config in Java client and Spark conf.*
+
+### Changed
+
+* **Java: change async breaker timeout setting is not a real timeout.** [`#3487`](https://github.com/OpenLineage/OpenLineage/pull/3487) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Properly name case where TaskQueueCircuitBreaker allows a configurable blocking time after submitting a callable.*
+* **Flink: enabled circuit breaker for Flink 2 integration.** [`#3503`](https://github.com/OpenLineage/OpenLineage/pull/3503) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Native Flink integration is now isolated within circuit breaker call.*
+
+### Fixed
+
+* **Spark: use all of the underlying classloaders to find META-INF/services resources.** [`#3483`](https://github.com/OpenLineage/OpenLineage/pull/3483) [@ddebowczyk92](https://github.com/ddebowczyk92)
+  *ServiceLoader should not fail to load OpenLineageExtensionProvider implementations in certain configurations.*
+* **Flink: handle default null job manager address.** [`#3486`](https://github.com/OpenLineage/OpenLineage/pull/3486) [@MarquisC](https://github.com/MarquisC)
+  *Null Flink Job Manager address will default to localhost*
+* **dbt: handle tests on sources for structured logs option.** [`#3488`](https://github.com/OpenLineage/OpenLineage/pull/3488) [@MassyB](https://github.com/MassyB)
+  *Handle case for tests on sources which don't have the attached_node defined in the manifest.*
 
 
 ## [1.28.0](https://github.com/OpenLineage/OpenLineage/compare/1.27.0...1.28.0) - 2025-02-06
