@@ -59,11 +59,19 @@ test {
     }
 }
 
-task shadowStateful(type: Exec) {
-    workingDir 'examples/stateful'
-    commandLine 'bash', '-c', "pwd && ./gradlew clean shadowJar -Pflink.version=${flinkVersion} && mkdir -p ../../fixtures && ls -halt build/libs && cp build/libs/flink-examples-stateful-*.jar ../../fixtures && ls -la ../../fixtures"
-    doLast {
-        println "Copied stateful-*.jar to fixtures directory"
+task shadowTestApps(type: Exec) {
+    if (project.getProperty('flink.version').toString().startsWith("1")) {
+        workingDir 'examples/flink1-test-apps'
+        commandLine 'bash', '-c', "pwd && ./gradlew clean shadowJar -Pflink.version=${flinkVersion} && mkdir -p ../../fixtures && ls -halt build/libs && cp build/libs/flink-examples-stateful-*.jar ../../fixtures && ls -la ../../fixtures"
+        doLast {
+            println "Copied stateful-*.jar to fixtures directory"
+        }
+    } else {
+        workingDir 'examples/flink2-test-apps'
+        commandLine 'bash', '-c', "pwd && ./gradlew clean shadowJar -Pflink.version=${flinkVersion} && mkdir -p ../../fixtures && ls -halt build/libs && cp build/libs/flink2-*.jar ../../fixtures && ls -la ../../fixtures"
+        doLast {
+            println "Copied flink2-*.jar to fixtures directory"
+        }
     }
 }
 
@@ -91,10 +99,7 @@ task integrationTest(type: Test) {
     }
 }
 
-if (project.getProperty('flink.version').toString().startsWith("1")) {
-    // build example apps
-    integrationTest.dependsOn(shadowJar, project.tasks.publishToMavenLocal, shadowStateful)
-}
+integrationTest.dependsOn(shadowJar, project.tasks.publishToMavenLocal, shadowTestApps)
 
 def reportsDir = "${buildDir}/reports"
 def coverageDir = "${reportsDir}/coverage"

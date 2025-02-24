@@ -8,11 +8,14 @@ package io.openlineage.flink.visitor.identifier;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.DatasetIdentifier.Symlink;
 import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
+import io.openlineage.flink.wrapper.TableLineageDatasetWrapper;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.lineage.LineageDataset;
+import org.apache.flink.table.catalog.CatalogBaseTable;
 import org.apache.flink.table.planner.lineage.TableLineageDataset;
 
 /** Class to extract dataset identifier from {@link TableLineageDataset} stored on Kafka. */
@@ -25,30 +28,48 @@ public class KafkaTableLineageDatasetIdentifierVisitor implements DatasetIdentif
 
   @Override
   public boolean isDefinedAt(LineageDataset dataset) {
-    if (!(dataset instanceof TableLineageDataset)) {
+    log.debug("Calling isDefinedAt for dataset {}", dataset);
+
+    CatalogBaseTable table = new TableLineageDatasetWrapper(dataset).getTable().orElse(null);
+
+    if (table == null) {
+      log.info("Table is null for dataset {}", dataset);
       return false;
     }
 
     // TODO: get comment from catalogBaseTable's comment field
-    TableLineageDataset table = (TableLineageDataset) dataset;
 
-    if (table.table().getOptions() == null) {
+    Map<String, String> options = table.getOptions();
+    if (options == null) {
+      log.info("Table options are null for dataset {}", dataset);
       return false;
     }
 
-    return table.table().getOptions().containsKey("connector")
-        && KAFKA_CONNECTOR.equals(table.table().getOptions().get("connector"));
+    if (!options.containsKey("connector")) {
+      log.info("Table options does not contain connector for dataset {}", dataset);
+      return false;
+    }
+
+    log.debug("Table options contains connector {}", options.get("connector"));
+    return KAFKA_CONNECTOR.equals(options.get("connector"));
   }
 
   @Override
   public Collection<DatasetIdentifier> apply(LineageDataset dataset) {
-    TableLineageDataset table = (TableLineageDataset) dataset;
+    CatalogBaseTable table = new TableLineageDatasetWrapper(dataset).getTable().orElseThrow();
+
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "Extracting dataset identifier from table options bootstrap-servers={} topics={}",
+          table.getOptions().get("properties.bootstrap.servers"),
+          table.getOptions().get("topic"));
+    }
 
     return Collections.singletonList(
         datasetIdentifierForKafka(
-            table.table().getOptions().get("properties.bootstrap.servers"),
-            table.table().getOptions().get("topic"),
-            table.name()));
+            table.getOptions().get("properties.bootstrap.servers"),
+            table.getOptions().get("topic"),
+            dataset.name()));
   }
 
   private DatasetIdentifier datasetIdentifierForKafka(
