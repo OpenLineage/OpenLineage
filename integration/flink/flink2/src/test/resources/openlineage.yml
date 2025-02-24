@@ -1,0 +1,11 @@
+transport:
+  type: http
+  url: http://openlineageclient:1080
+dataset:
+  namespaceResolvers:
+    kafka-cluster-prod:
+      type: hostList
+      hosts: [ 'kafka-host' ]
+    cassandra-cluster-prod:
+      type: hostList
+      hosts: [ 'cassandra-server' ]
