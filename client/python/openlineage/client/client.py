@@ -443,7 +443,9 @@ class OpenLineageClient:
 
         # Get tags from the facet that will not be updated (Do not have the same key as a user tag)
         user_tag_keys = [tag.key for tag in user_tags]
-        keep_tags = [tag for tag in user_tags if tag.key.lower() not in user_tag_keys]
+        keep_tags = []
+        if tags_facet.tags is not None:
+            keep_tags = [tag for tag in tags_facet.tags if tag.key.lower() not in user_tag_keys]
 
         # Update tag key for any user tags that should override a facet tag.
         # This preserves case of the facet tag key while updating value and source.
