@@ -957,9 +957,9 @@ The resulting lineage events received by Marquez would look like this.
 Integrations can add [tag facets](https://github.com/OpenLineage/OpenLineage/blob/main/proposals/3169/tags_facet.md) to runs, jobs and datasets. To allow more control over tags, users can add to and override integration-supplied tags through environment variables supplied to the client. The following rules apply to user-supplied tags. 
 
 * User-supplied tags follow the conventions of [dynamic configuration with environment variables.](#dynamic-configuration-with-environment-variables)
-  * OPENLINEAGE__TAGS__JOB__key=value
-  * OPENLINEAGE__TAGS__RUN__key=value
-  * OPENLINEAGE__TAGS='{"job": {"key": "value"}, "run": {"key": "value"}}'
+  * `OPENLINEAGE__TAGS__JOB__key=value`
+  * `OPENLINEAGE__TAGS__RUN__key=value`
+  * `OPENLINEAGE__TAGS='{"job": {"key": "value"}, "run": {"key": "value"}}'`
 * User-supplied tag keys are always transformed to lowercase. 
 * Key and value are both treated as strings 
 * Source for a user-supplied tag is always set to "USER"
