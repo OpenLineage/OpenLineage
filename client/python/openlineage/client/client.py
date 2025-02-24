@@ -433,7 +433,9 @@ class OpenLineageClient:
         return event
 
     def _update_tag_facet(
-        self, tags_facet: TagsJobFacet | TagsRunFacet, user_tags
+        self,
+        tags_facet: TagsJobFacet | TagsRunFacet,
+        user_tags: list[TagsJobFacetFields | TagsRunFacetFields],
     ) -> TagsJobFacet | TagsRunFacet:
         """
         Handles updating tags in an existing tag facet
@@ -441,11 +443,14 @@ class OpenLineageClient:
 
         # Get tags from the facet that will not be updated (Do not have the same key as a user tag)
         user_tag_keys = [tag.key for tag in user_tags]
-        keep_tags = list(filter(lambda x: x.key.lower() not in user_tag_keys, tags_facet.tags))
+        keep_tags = [tag for tag in user_tags if tag.key.lower() not in user_tag_keys]
 
         # Update tag key for any user tags that should override a facet tag.
         # This preserves case of the facet tag key while updating value and source.
-        facet_tag_keys = {tag.key.lower(): tag.key for tag in tags_facet.tags}
+        facet_tag_keys = {}
+        if tags_facet.tags is not None:
+            facet_tag_keys = {tag.key.lower(): tag.key for tag in tags_facet.tags}
+
         for user_tag in user_tags:
             if user_tag.key in facet_tag_keys:
                 facet_tag_key = facet_tag_keys[user_tag.key]
@@ -453,5 +458,6 @@ class OpenLineageClient:
                 user_tag.key = facet_tag_key
 
         all_tags = keep_tags + user_tags
-        tags_facet.tags = all_tags
+        if all_tags is not None:
+            tags_facet.tags = all_tags
         return tags_facet
