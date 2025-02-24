@@ -408,6 +408,10 @@ When implementing a strategy to describe a dataset subset definition, following 
 For two first hierarchy levels, there is a possible scenario of a job reading thousands of partitions or files. 
 We allow producer to have a configurable maximal amount of partitions or locations collected, as at some point this information stops being useful. 
 
+Table bucketing may also be a valid partitioning strategy. It's not listed within this proposal,
+as it is not certain if any OpenLineage producer can extract buckets read or updated within the job.
+If this is doable, then a hierarchy should be extended to support `bucket` subset definition.
+
 ### Examples
 
 An example subset dataset facet for SQL:
