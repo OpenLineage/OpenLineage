@@ -423,12 +423,12 @@ class OpenLineageClient:
         tags_job = self.config.tags.job
         if (isinstance(event, (JobEvent, RunEvent))) and tags_job:
             tags_facet = event.job.facets.get("tags", TagsJobFacet())
-            event.job.facets["tags"] = self._update_tag_facet(tags_facet, tags_job)
+            event.job.facets["tags"] = self._update_tag_facet(tags_facet, tags_job)  # type: ignore [arg-type]
 
         tags_run = self.config.tags.run
         if (isinstance(event, RunEvent)) and tags_run:
             tags_facet = event.run.facets.get("tags", TagsRunFacet())
-            event.run.facets["tags"] = self._update_tag_facet(tags_facet, tags_run)
+            event.run.facets["tags"] = self._update_tag_facet(tags_facet, tags_run)  # type: ignore [arg-type]
 
         return event
 
@@ -458,6 +458,5 @@ class OpenLineageClient:
                 user_tag.key = facet_tag_key
 
         all_tags = keep_tags + user_tags
-        if all_tags is not None:
-            tags_facet.tags = all_tags
+        tags_facet.tags = all_tags  # type: ignore [assignment]
         return tags_facet
