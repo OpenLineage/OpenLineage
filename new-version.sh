@@ -184,8 +184,8 @@ echo "version ${NEXT_VERSION}" > integration/spark/spark2/src/test/resources/io/
 echo "version ${NEXT_VERSION}" > integration/spark/spark3/src/test/resources/io/openlineage/spark/agent/version.properties
 echo "version ${NEXT_VERSION}" > integration/spark-extension-interfaces/src/test/resources/io/openlineage/spark/shade/extension/v1/lifecycle/plan/version.properties
 echo "version ${NEXT_VERSION}" > integration/flink/shared/src/test/resources/io/openlineage/flink/client/version.properties
-echo "version ${NEXT_VERSION}" > integration/flink/app/src/test/resources/io/openlineage/flink/client/version.properties
-echo "version ${NEXT_VERSION}" > integration/flink-native-listener/src/test/resources/io/openlineage/flink/client/version.properties
+echo "version ${NEXT_VERSION}" > integration/flink/flink1/src/test/resources/io/openlineage/flink/client/version.properties
+echo "version ${NEXT_VERSION}" > integration/flink/flink2/src/test/resources/io/openlineage/flink/client/version.properties
 
 # (7) Prepare next development version commit
 git commit --no-verify -sam "Prepare next development version ${NEXT_VERSION}"
