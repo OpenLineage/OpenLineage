@@ -13,8 +13,7 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id "com.adarshr.test-logger" version "3.2.0"
-    // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
-    id 'com.diffplug.spotless' version '6.13.0'
+    id 'com.diffplug.spotless' version '7.0.2'
     id "org.openapi.generator" version "6.6.0"
     id "com.gradleup.shadow" version "8.3.6"
     id "pmd"
@@ -56,9 +55,9 @@ repositories {
 ext {
     assertjVersion = '3.27.3'
     jacksonVersion = "2.15.3"
-    junit5Version = '5.12.0'
+    junit5Version = '5.11.4'
     lombokVersion = '1.18.36'
-    mockitoVersion = '5.2.0'
+    mockitoVersion = '5.15.2'
     micrometerVersion = '1.14.4'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
     guavaVersion = '33.4.0-jre'
@@ -92,8 +91,9 @@ dependencies {
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"
-    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
-    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}") {
+        exclude(group: 'org.junit.jupiter')
+    }
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
     testImplementation "io.micrometer:micrometer-registry-statsd:${micrometerVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
