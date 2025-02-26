@@ -12,12 +12,10 @@ import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
 @Setter
-@NoArgsConstructor
 @ToString
 @Getter
 @EqualsAndHashCode(callSuper = true)
@@ -26,6 +24,11 @@ public class FlinkDatasetConfig extends DatasetConfig {
 
   @JsonProperty("kafka")
   private FlinkDatasetKafkaConfig kafkaConfig;
+
+  public FlinkDatasetConfig() {
+    super();
+    this.kafkaConfig = new FlinkDatasetKafkaConfig();
+  }
 
   public FlinkDatasetConfig(
       FlinkDatasetKafkaConfig kafkaConfig,

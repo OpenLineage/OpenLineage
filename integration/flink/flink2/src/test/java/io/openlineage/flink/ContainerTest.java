@@ -167,6 +167,24 @@ class ContainerTest {
     verify("events/expected_sql_kafka.json");
   }
 
+  @Test
+  @SneakyThrows
+  void testKafkaTopicPatternJob() {
+    Properties jobProperties = new Properties();
+
+    jobProperties.put("inputTopics", "io.openlineage.flink.kafka.input.*");
+    jobProperties.put("outputTopics", "io.openlineage.flink.kafka.output_topic");
+    jobProperties.put("jobName", "flink_topic_pattern");
+
+    runUntilLogMessage(
+        "io.openlineage.flink.FlinkTopicPatternApplication",
+        jobProperties,
+        generateEvents,
+        "Marking checkpoint 1 as completed for source Source");
+
+    verify("events/expected_kafka_topic_pattern.json");
+  }
+
   @SneakyThrows
   private JsonBody readJson(Path path) {
     return json(new String(readAllBytes(path)), MatchType.ONLY_MATCHING_FIELDS);

@@ -14,18 +14,21 @@ import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
 import java.util.Map;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
 @Getter
-@NoArgsConstructor
 @ToString
 public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageConfig> {
 
   @JsonProperty("dataset")
   @Setter
   private FlinkDatasetConfig datasetConfig;
+
+  public FlinkOpenLineageConfig() {
+    super();
+    datasetConfig = new FlinkDatasetConfig();
+  }
 
   public FlinkOpenLineageConfig(
       TransportConfig transportConfig,

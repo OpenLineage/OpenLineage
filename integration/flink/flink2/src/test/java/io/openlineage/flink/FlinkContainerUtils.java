@@ -8,6 +8,7 @@ package io.openlineage.flink;
 import com.google.common.io.Resources;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -82,6 +83,13 @@ public class FlinkContainerUtils {
         .withCopyFileToContainer(
             MountableFile.forHostPath(Resources.getResource("InputEvent.avsc").getPath()),
             "/tmp/InputEvent.avsc")
+        .withCopyFileToContainer(
+            MountableFile.forHostPath(Resources.getResource("events.json").getPath()),
+            "/tmp/events.json")
+        .withCommand(
+            "/bin/bash",
+            "-c",
+            Resources.toString(Resources.getResource("generate_events.sh"), StandardCharsets.UTF_8))
         .withEnv("SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL", "WARN")
         .dependsOn(initTopics);
   }
@@ -106,7 +114,7 @@ public class FlinkContainerUtils {
         jobProperties.getProperty("outputTopics", "io.openlineage.flink.kafka.output");
     String jobNameParam = "";
     if (jobProperties.getProperty("jobName") != null) {
-      jobNameParam = "--job-name " + jobProperties.get("jobName") + " ";
+      jobNameParam = " --job-name " + jobProperties.get("jobName") + " ";
     }
     String configPath = jobProperties.getProperty("configPath", "/opt/flink/lib/openlineage.yml");
     GenericContainer<?> container =

@@ -12,6 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.io.Resources;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.flink.config.FlinkConfigParser;
+import io.openlineage.flink.config.FlinkDatasetConfig;
+import io.openlineage.flink.config.FlinkDatasetKafkaConfig;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import java.net.URI;
 import lombok.SneakyThrows;
@@ -118,5 +120,23 @@ class FlinkConfigParserTest {
 
     // API config from yaml file
     assertThat(httpConfig.getAuth().getToken()).isEqualTo("Bearer random_token");
+  }
+
+  @Test
+  void testResolveTopicPattern() {
+    FlinkOpenLineageConfig config = FlinkConfigParser.parse(configuration);
+    assertThat(config)
+        .extracting(FlinkOpenLineageConfig::getDatasetConfig)
+        .extracting(FlinkDatasetConfig::getKafkaConfig)
+        .extracting(FlinkDatasetKafkaConfig::getResolveTopicPattern)
+        .isEqualTo(true);
+
+    configuration.set(
+        ConfigOptions.key("openlineage.dataset.kafka.resolveTopicPattern")
+            .booleanType()
+            .noDefaultValue(),
+        false);
+    config = FlinkConfigParser.parse(configuration);
+    assertThat(config.getDatasetConfig().getKafkaConfig().getResolveTopicPattern()).isFalse();
   }
 }
