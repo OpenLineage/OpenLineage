@@ -66,7 +66,9 @@ class ConfigTest {
   @ParameterizedTest
   @ValueSource(strings = {"config/composite-array.yaml", "config/composite-map.yaml"})
   void testLoadCompositeTransportConfigFromYaml(String yamlFile)
-      throws NoSuchFieldException, SecurityException, IllegalArgumentException,
+      throws NoSuchFieldException,
+          SecurityException,
+          IllegalArgumentException,
           IllegalAccessException {
     OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(yamlFile));
     assertThat(client.transport).isInstanceOf(CompositeTransport.class);
