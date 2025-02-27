@@ -124,6 +124,13 @@ public class IcebergHandler implements CatalogHandler {
       maybeSymlink = getSymlinkIdentifier(session, catalogType, catalogConf, tableName);
     }
 
+    if (!maybeTableLocation.isPresent() && warehouseLocation == null) {
+      log.debug(
+          "The catalog type is 'rest' and the table location and warehouse location is empty. This is likely a table that is being created");
+      throw new MissingDatasetIdentifierCatalogException(
+          "No table location found. Probably needs to create table first");
+    }
+
     Path tableLocation =
         maybeTableLocation.orElseGet(
             () -> reconstructDefaultLocation(new Path(warehouseLocation), identifier));
@@ -205,7 +212,7 @@ public class IcebergHandler implements CatalogHandler {
     if (confUri == null) {
       metastoreUri =
           SparkConfUtils.getMetastoreUri(session.sparkContext())
-              .orElseThrow(() -> new UnsupportedCatalogException("hive"));
+              .orElseThrow(() -> new MissingDatasetIdentifierCatalogException("hive"));
     } else {
       metastoreUri = new URI(confUri);
     }
@@ -299,6 +306,12 @@ public class IcebergHandler implements CatalogHandler {
           "Default the catalog type to 'glue' because the catalog impl is {}",
           catalogConf.get(CATALOG_IMPL));
       return "glue";
+    } else if (catalogConf.containsKey(CATALOG_IMPL)
+        && catalogConf.get(CATALOG_IMPL).endsWith("RESTCatalog")) {
+      log.debug(
+          "Default the catalog type to 'rest' because the catalog impl is {}",
+          catalogConf.get(CATALOG_IMPL));
+      return "rest";
     } else {
       return null;
     }
