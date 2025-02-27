@@ -33,7 +33,7 @@ ext {
     junit5Version = '5.11.4'
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.5'
-    testcontainersVersion = '1.20.4'
+    testcontainersVersion = '1.20.5'
     configurableTestConfig = [
             sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
@@ -115,14 +115,14 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation("org.postgresql:postgresql:${postgresqlVersion}")
     testImplementation('org.hamcrest:hamcrest-library:3.0')
-    testImplementation('org.xerial:sqlite-jdbc:3.49.0.0')
+    testImplementation('org.xerial:sqlite-jdbc:3.49.1.0')
     testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.testcontainers:mockserver")
     testImplementation("org.testcontainers:kafka")
     testImplementation("commons-beanutils:commons-beanutils:1.10.1")
-    testImplementation("org.awaitility:awaitility:4.2.2")
+    testImplementation("org.awaitility:awaitility:4.3.0")
     testImplementation("org.assertj:assertj-core:${assertjVersion}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
@@ -132,7 +132,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.module'
     }
 
-    testImplementation(platform("software.amazon.awssdk:bom:2.30.21"))
+    testImplementation(platform("software.amazon.awssdk:bom:2.30.29"))
     testImplementation("software.amazon.awssdk:auth")
     testImplementation("software.amazon.awssdk:emr")
     testImplementation("software.amazon.awssdk:s3")
@@ -645,7 +645,7 @@ List<Dependency> additionalJars(String spark, String scala) {
             ],
             "3.5.4": [
                     dependencies.create("org.slf4j:slf4j-api:2.0.10"),
-                    dependencies.create("org.slf4j:slf4j-reload4j:2.0.16"),
+                    dependencies.create("org.slf4j:slf4j-reload4j:2.0.17"),
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
                         transitive = false
                     }),
