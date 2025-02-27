@@ -61,6 +61,7 @@ public class CatalogMetricsReporterHolder {
     }
     log.debug("Registering catalog: {}", catalog);
 
+    // use catalog wrapper objects to inject metrics reporter into different types of catalogs
     CatalogWrapper catalogWrapper;
     if (catalog instanceof BaseMetastoreCatalog) {
       catalogWrapper = new BaseMetastoreCatalogWrapper((BaseMetastoreCatalog) catalog);
@@ -71,9 +72,11 @@ public class CatalogMetricsReporterHolder {
       return;
     }
 
+    // check if the metrics reporter is already set in the catalog
     MetricsReporter existing = catalogWrapper.getExistingReporter();
     OpenLineageMetricsReporter openLineageMetricsReporter;
 
+    // check if the existing reporter is already OpenLineageMetricsReporter
     if (existing instanceof OpenLineageMetricsReporter) {
       // in case the metrics reporter is manually set to OpenLineageMetricsReporter
       holder.catalogMetricsReporter.putIfAbsent(
@@ -86,12 +89,16 @@ public class CatalogMetricsReporterHolder {
     }
 
     if (existing != null) {
+      // if the metrics reporter is already set in the catalog but is other than
+      // OpenLineageMetricsReporter
       log.debug("Existing metrics reporter found: {}", existing.getClass().getName());
       openLineageMetricsReporter = new OpenLineageMetricsReporter(existing);
     } else if (holder.catalogMetricsReporter.containsKey(catalog.name())) {
+      // if the metrics reporter is already set in the holder -> perhaps from another run
       log.debug("Use reporter available in the holder");
       openLineageMetricsReporter = holder.catalogMetricsReporter.get(catalog.name());
     } else {
+      // create new metrics reporter
       log.debug("No existing metrics reporter found");
       openLineageMetricsReporter = new OpenLineageMetricsReporter();
     }
@@ -100,7 +107,7 @@ public class CatalogMetricsReporterHolder {
     holder.catalogMetricsReporter.put(catalog.name(), openLineageMetricsReporter);
 
     try {
-      // set metrics reporter in catalog
+      // set metrics reporter field in catalog
       catalogWrapper.updateMetricsReporter(openLineageMetricsReporter);
       log.info("Injected metrics reporter into Iceberg catalog and runId {}", context.getRunUuid());
     } catch (IllegalAccessException e) {

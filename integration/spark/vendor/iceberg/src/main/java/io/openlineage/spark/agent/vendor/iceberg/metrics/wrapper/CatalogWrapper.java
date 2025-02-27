@@ -8,6 +8,10 @@ package io.openlineage.spark.agent.vendor.iceberg.metrics.wrapper;
 import io.openlineage.spark.agent.vendor.iceberg.metrics.OpenLineageMetricsReporter;
 import org.apache.iceberg.metrics.MetricsReporter;
 
+/**
+ * Interface used to inject MetricsReporter into Iceberg Catalogs. Uses reflection to access private
+ * fields.
+ */
 public interface CatalogWrapper {
 
   /**

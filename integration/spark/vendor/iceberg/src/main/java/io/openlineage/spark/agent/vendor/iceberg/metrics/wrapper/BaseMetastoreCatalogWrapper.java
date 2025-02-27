@@ -23,24 +23,35 @@ public class BaseMetastoreCatalogWrapper implements CatalogWrapper {
     this.catalog = catalog;
   }
 
+  /**
+   * Get the metricsReporter field from {@link BaseMetastoreCatalog}. Returns null if the field is
+   * not found.
+   *
+   * @return MetricsReporter
+   */
   @Override
   public MetricsReporter getExistingReporter() {
     Field metricsReporterField =
         FieldUtils.getField(BaseMetastoreCatalog.class, METRICS_REPORTER, true);
 
     if (metricsReporterField == null) {
-      log.warn("Could not inject metrics reporter: no such field");
+      log.warn("Could obtain metrics reporter: no such field");
       return null;
     }
 
     try {
       return (MetricsReporter) metricsReporterField.get(catalog);
     } catch (IllegalAccessException e) {
-      log.warn("Could not inject metrics reporter: {}", e.getMessage());
+      log.warn("Could obtain metrics reporter: {}", e.getMessage());
       return null;
     }
   }
 
+  /**
+   * Update the metricsReporter field. Throws IllegalAccessException if the field is not found.
+   *
+   * @param reporter OpenLineageMetricsReporter
+   */
   @Override
   public void updateMetricsReporter(OpenLineageMetricsReporter reporter)
       throws IllegalAccessException {

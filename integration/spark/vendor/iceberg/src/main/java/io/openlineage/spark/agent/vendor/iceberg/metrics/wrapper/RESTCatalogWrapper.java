@@ -35,20 +35,32 @@ public class RESTCatalogWrapper implements CatalogWrapper {
     }
   }
 
+  /**
+   * Get the reporter field from {@link RESTSessionCatalog} within {@link RESTCatalog}. Returns null
+   * if the field is not found.
+   *
+   * @return MetricsReporter
+   */
   public MetricsReporter getExistingReporter() {
     Field reporterField = FieldUtils.getField(RESTSessionCatalog.class, REPORTER, true);
     if (reporterField == null) {
-      log.warn("Could not inject metrics reporter: no such field");
+      log.warn("Could obtain metrics reporter: no such field");
       return null;
     }
     try {
       return (MetricsReporter) reporterField.get(restSessionCatalog);
     } catch (IllegalAccessException e) {
-      log.warn("Could not inject metrics reporter: {}", e.getMessage());
+      log.warn("Could obtain metrics reporter: {}", e.getMessage());
       return null;
     }
   }
 
+  /**
+   * Update the reporter field of {@link RESTSessionCatalog} within {@link RESTCatalog}. Throws
+   * IllegalAccessException if the field is not found.
+   *
+   * @param reporter OpenLineageMetricsReporter
+   */
   @Override
   public void updateMetricsReporter(OpenLineageMetricsReporter reporter)
       throws IllegalAccessException {
