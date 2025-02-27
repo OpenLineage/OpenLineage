@@ -14,10 +14,13 @@ import static org.mockito.Mockito.withSettings;
 
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.VendorsContext;
+import java.lang.reflect.Field;
 import java.util.List;
+import lombok.SneakyThrows;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.iceberg.BaseMetastoreCatalog;
 import org.apache.iceberg.CachingCatalog;
-import org.apache.iceberg.Table;
-import org.apache.iceberg.catalog.Catalog;
+import org.apache.iceberg.TableOperations;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.metrics.MetricsReporter;
@@ -106,20 +109,22 @@ public class IcebergMetricsReporterInjectorTest {
   }
 
   @Test
+  @SneakyThrows
   void testApplyInjectsMetricsReporter() {
-    icebergCatalog.metricsReporter = null;
+    FieldUtils.writeField(icebergCatalog, "metricsReporter", null, true);
     injector.apply(plan);
 
     CatalogMetricsReporterHolder holder =
         (CatalogMetricsReporterHolder)
             context.getVendors().getVendorsContext().fromVendorsContext(VENDOR_CONTEXT_KEY).get();
 
-    assertThat(icebergCatalog.metricsReporter).isEqualTo(holder.getReporterFor("catalog-name"));
+    assertThat(getMetricsReporter(icebergCatalog)).isEqualTo(holder.getReporterFor("catalog-name"));
   }
 
   @Test
-  void testApplyInjectsMetricReporterWith() {
-    icebergCatalog.metricsReporter = existingMetricsReporter;
+  @SneakyThrows
+  void testApplyInjectsMetricReporterWithExistingReporter() {
+    FieldUtils.writeField(icebergCatalog, "metricsReporter", existingMetricsReporter, true);
     injector.apply(plan);
     CatalogMetricsReporterHolder holder =
         (CatalogMetricsReporterHolder)
@@ -128,12 +133,30 @@ public class IcebergMetricsReporterInjectorTest {
     assertThat(holder.getReporterFor("catalog-name").getDelegate())
         .isEqualTo(existingMetricsReporter);
 
-    assertThat(icebergCatalog.metricsReporter).isEqualTo(holder.getReporterFor("catalog-name"));
+    assertThat(getMetricsReporter(icebergCatalog)).isEqualTo(holder.getReporterFor("catalog-name"));
   }
 
-  private static class TestingIcebergCatalog implements Catalog {
+  @SneakyThrows
+  private MetricsReporter getMetricsReporter(BaseMetastoreCatalog catalog) {
+    Field field = FieldUtils.getField(catalog.getClass(), "metricsReporter", true);
+    return (MetricsReporter) field.get(catalog);
+  }
 
-    public MetricsReporter metricsReporter;
+  private static class TestingIcebergCatalog extends BaseMetastoreCatalog {
+    @Override
+    public String name() {
+      return "catalog-name";
+    }
+
+    @Override
+    protected TableOperations newTableOps(TableIdentifier tableIdentifier) {
+      return null;
+    }
+
+    @Override
+    protected String defaultWarehouseLocation(TableIdentifier tableIdentifier) {
+      return "";
+    }
 
     @Override
     public List<TableIdentifier> listTables(Namespace namespace) {
@@ -147,15 +170,6 @@ public class IcebergMetricsReporterInjectorTest {
 
     @Override
     public void renameTable(TableIdentifier tableIdentifier, TableIdentifier tableIdentifier1) {}
-
-    @Override
-    public Table loadTable(TableIdentifier tableIdentifier) {
-      return null;
-    }
-
-    public String name() {
-      return "catalog-name";
-    }
   }
 
   public interface TestingLogicalPlanWithCatalog {
