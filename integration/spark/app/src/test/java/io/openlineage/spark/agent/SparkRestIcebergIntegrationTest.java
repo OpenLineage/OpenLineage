@@ -39,6 +39,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.mockserver.integration.ClientAndServer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -61,8 +62,6 @@ class SparkRestIcebergIntegrationTest {
       new GenericContainer<>("tabulario/iceberg-rest:latest")
           .withExposedPorts(8181)
           .withNetwork(network);
-
-  private static final String JAVA_VERSION = System.getProperty("java.version");
 
   @BeforeAll
   @SneakyThrows
@@ -111,6 +110,9 @@ class SparkRestIcebergIntegrationTest {
                 "spark.sql.extensions",
                 "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
             .getOrCreate();
+
+    clearTables("temp", "scan_source", "scan_target");
+    createTempDataset(3).createOrReplaceTempView("temp");
   }
 
   private Dataset<Row> createTempDataset(int rows) {
@@ -131,17 +133,9 @@ class SparkRestIcebergIntegrationTest {
   }
 
   @Test
+  @DisabledIf("isJava8AndSpark35")
   @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
   void testMetricsFacets() {
-    if (JAVA_VERSION.startsWith("1.8") && System.getProperty(SPARK_VERSION).startsWith("3.5")) {
-      // This test will not work as Iceberg classes used are Java 11
-      assertThat(true).isTrue();
-      return;
-    }
-
-    clearTables("temp", "scan_source", "scan_target");
-    createTempDataset(3).createOrReplaceTempView("temp");
-
     spark.sql("CREATE TABLE rest.default.scan_source USING iceberg AS SELECT * FROM temp");
     spark.sql(
         "CREATE TABLE rest.default.scan_target USING iceberg AS SELECT * FROM rest.default.scan_source");
@@ -202,5 +196,11 @@ class SparkRestIcebergIntegrationTest {
     Arrays.asList(tables).stream()
         .filter(t -> spark.catalog().tableExists(t))
         .forEach(t -> spark.sql("DROP TABLE IF EXISTS " + t));
+  }
+
+  @SuppressWarnings("PMD.UnusedPrivateMethod")
+  private static boolean isJava8AndSpark35() {
+    return System.getProperty("java.version").startsWith("1.8")
+        && System.getProperty(SPARK_VERSION).startsWith("3.5");
   }
 }
