@@ -28,15 +28,9 @@ class FacetUtilsTest {
     FacetsConfig facetsConfig = new FacetsConfig();
     when(solc.getFacetsConfig()).thenReturn(facetsConfig);
 
-    // facetA - set with old mechanism
-    // spark.logicalPlan - set with old mechanism but overwritten with new mechanism
-    // spark_unknown - set with new mechanism only
-    facetsConfig.setDeprecatedDisabledFacets(
-        new String[] {"facetA", SPARK_LOGICAL_PLAN_FACET_NAME});
     facetsConfig.setDisabledFacets(
         ImmutableMap.of(SPARK_LOGICAL_PLAN_FACET_NAME, false, SPARK_UNKNOWN_FACET_NAME, true));
 
-    assertThat(FacetUtils.isFacetDisabled(olc, "facetA")).isTrue();
     assertThat(FacetUtils.isFacetDisabled(olc, SPARK_LOGICAL_PLAN_FACET_NAME)).isFalse();
     assertThat(FacetUtils.isFacetDisabled(olc, SPARK_UNKNOWN_FACET_NAME)).isTrue();
   }

@@ -88,12 +88,4 @@ class FacetsConfigTest {
                 "facetG",
                 true));
   }
-
-  @Test
-  void testMergingDisabledFacets() {
-    FacetsConfig facetsConfig = new FacetsConfig();
-    facetsConfig.setDeprecatedDisabledFacets(new String[] {"facetA", "facetB"});
-    facetsConfig.setDisabledFacets(ImmutableMap.of("facetA", false, "facetC", true));
-    assertThat(facetsConfig.getEffectiveDisabledFacets()).containsExactly("facetB", "facetC");
-  }
 }

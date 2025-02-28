@@ -41,26 +41,9 @@ transport:
 facets:
   spark_unknown:
     disabled: true
-  spark:
-    logicalPlan:
+  "spark.logicalPlan":
       disabled: true
 ```
-
-### Deprecated syntax
-
-The following syntax is deprecated and soon will be removed:
-
-```yaml
-transport:
-  type: console
-facets:
-  disabled:
-    - spark_unknown
-    - spark.logicalPlan
-```
-
-The rationale behind deprecation is that some of the facets were disabled by default in some integrations. When we added
-something extra but didn't include the defaults, they were unintentionally enabled.
 
 ## Transports
 

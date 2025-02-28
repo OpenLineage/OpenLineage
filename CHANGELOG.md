@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.29.0...HEAD)
 
+### Changed
+
+* **Java: remove deprecated configs: 'disabledFacets' and 'timeout'.** [`#3522`](https://github.com/OpenLineage/OpenLineage/pull/3522) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Configs have been replaced with: 'facets.<name of disabled facet>.disabled=true' and 'timeoutInMillis'.*
+
 ## [1.29.0](https://github.com/OpenLineage/OpenLineage/compare/1.28.0...1.29.0) - 2025-02-24
 
 ### Added

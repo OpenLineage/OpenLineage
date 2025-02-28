@@ -86,9 +86,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     if (facetsConfig == null) {
       facetsConfig = new FacetsConfig();
     }
-    if (facetsConfig.getDeprecatedDisabledFacets() == null) {
-      facetsConfig.setDeprecatedDisabledFacets(new String[] {});
-    }
     if (facetsConfig.getDisabledFacets() == null) {
       facetsConfig.setDisabledFacets(new HashMap<>());
     } else {

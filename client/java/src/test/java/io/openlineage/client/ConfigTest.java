@@ -184,7 +184,7 @@ class ConfigTest {
   void testFacetsDisabledConfigFromYaml() throws URISyntaxException {
     OpenLineageClient client = Clients.newClient(new TestConfigPathProvider("config/facets.yaml"));
 
-    assertThat(client.disabledFacets).contains("facet1", "facet2");
+    assertThat(client.disabledFacets).contains("facet1", "spark.logicalPlan");
   }
 
   @Test
