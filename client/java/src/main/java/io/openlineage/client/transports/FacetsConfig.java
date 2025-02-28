@@ -31,26 +31,12 @@ import lombok.extern.slf4j.Slf4j;
 @ToString
 public class FacetsConfig implements MergeConfig<FacetsConfig> {
 
-  /* This property is deprecated. Disable facets with "&lt;facet name&gt;.disabled=true" instead */
-  @Getter(onMethod_ = {@Deprecated})
-  @JsonProperty("disabled")
-  private String[] deprecatedDisabledFacets;
-
   @Getter
   @JsonProperty("custom_environment_variables")
   private String[] customEnvironmentVariables;
 
   /* The field is deserialized with {@link #onOtherProperty}. It is lazily initialized */
   @Getter @Setter private Map<String, Boolean> disabledFacets;
-
-  @SuppressWarnings({"PMD.UseVarargs", "PMD.ArrayIsStoredDirectly"})
-  public void setDeprecatedDisabledFacets(String[] disabledFacets) {
-    if (disabledFacets.length > 0) {
-      log.warn(
-          "Deprecation warning: The property 'disabledFacets' is deprecated and will be removed in the future. Use 'facets.<name of disabled facet>.disabled=true' instead");
-    }
-    this.deprecatedDisabledFacets = disabledFacets;
-  }
 
   /**
    * This method accepts every other property we may receive in configuration. The only supported
@@ -152,7 +138,6 @@ public class FacetsConfig implements MergeConfig<FacetsConfig> {
   @Override
   public FacetsConfig mergeWithNonNull(FacetsConfig facetsConfig) {
     return new FacetsConfig(
-        mergePropertyWith(deprecatedDisabledFacets, facetsConfig.deprecatedDisabledFacets),
         mergePropertyWith(customEnvironmentVariables, facetsConfig.customEnvironmentVariables),
         mergePropertyWith(disabledFacets, facetsConfig.disabledFacets));
   }
@@ -170,11 +155,6 @@ public class FacetsConfig implements MergeConfig<FacetsConfig> {
    */
   public String[] getEffectiveDisabledFacets() {
     Set<String> disabledFacetsSet = new HashSet<>();
-    if (getDeprecatedDisabledFacets() != null) {
-      for (String deprecatedDisabledFacet : getDeprecatedDisabledFacets()) {
-        disabledFacetsSet.add(deprecatedDisabledFacet);
-      }
-    }
     if (getDisabledFacets() != null) {
       getDisabledFacets()
           .forEach(

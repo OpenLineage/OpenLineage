@@ -69,10 +69,7 @@ public final class HttpTransport extends Transport {
 
   private static CloseableHttpClient withTimeout(HttpConfig httpConfig) {
     int timeoutMs;
-    if (httpConfig.getTimeout() != null) {
-      // deprecated approach, value in seconds as double provided
-      timeoutMs = (int) (httpConfig.getTimeout() * 1000);
-    } else if (httpConfig.getTimeoutInMillis() != null) {
+    if (httpConfig.getTimeoutInMillis() != null) {
       timeoutMs = httpConfig.getTimeoutInMillis();
     } else {
       // default one
@@ -300,11 +297,6 @@ public final class HttpTransport extends Transport {
       } catch (URISyntaxException e) {
         throw new OpenLineageClientException(e);
       }
-      return this;
-    }
-
-    public Builder timeout(@Nullable Double timeout) {
-      httpConfig.setTimeout(timeout);
       return this;
     }
 
