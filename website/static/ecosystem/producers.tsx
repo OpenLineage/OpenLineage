@@ -112,7 +112,6 @@ export const Producers: Array<Partner> = [
         description: "Data Observability. Simplified. Unified API for lineage metadata interoperability across platforms like Airflow, Spark, Flink and more.",
         docs_url: "https://docs.oleander.dev/",
         org_url: "https://oleander.dev/"
-        a5150f29 (Add `oleander.dev` as ol consumer/producer (#3375))
     },
     {
         image: "csvpath-logo.svg",
