@@ -6,6 +6,7 @@
 package io.openlineage.flink.visitor.identifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -14,20 +15,50 @@ import io.openlineage.client.utils.DatasetIdentifier.Symlink;
 import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.flink.streaming.api.lineage.LineageDataset;
+import org.apache.flink.streaming.api.lineage.LineageDatasetFacet;
+import org.apache.flink.table.catalog.CatalogBaseTable;
+import org.apache.flink.table.catalog.ContextResolvedTable;
 import org.apache.flink.table.planner.lineage.TableLineageDataset;
+import org.apache.flink.table.planner.lineage.TableLineageDatasetImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 
 class KafkaTableLineageDatasetIdentifierVisitorTest {
   KafkaTableLineageDatasetIdentifierVisitor visitor =
       new KafkaTableLineageDatasetIdentifierVisitor();
 
-  TableLineageDataset table = mock(TableLineageDataset.class, Answers.RETURNS_DEEP_STUBS);
+  ContextResolvedTable contextResolvedTable = mock(ContextResolvedTable.class, RETURNS_DEEP_STUBS);
+  CatalogBaseTable catalogBaseTable = mock(CatalogBaseTable.class);
+  TableLineageDataset table;
 
   @BeforeEach
-  void setup() {}
+  void setup() {
+    when(contextResolvedTable.getTable()).thenReturn(catalogBaseTable);
+    when(contextResolvedTable.getIdentifier().asSummaryString()).thenReturn("tableName");
+
+    table =
+        new TableLineageDatasetImpl(
+            contextResolvedTable,
+            Optional.of(
+                new LineageDataset() {
+                  @Override
+                  public String name() {
+                    return "tableName";
+                  }
+
+                  @Override
+                  public String namespace() {
+                    return "";
+                  }
+
+                  @Override
+                  public Map<String, LineageDatasetFacet> facets() {
+                    return Map.of();
+                  }
+                }));
+  }
 
   @Test
   void testIsDefinedAt() {
@@ -40,8 +71,7 @@ class KafkaTableLineageDatasetIdentifierVisitorTest {
 
   @Test
   void testApply() {
-    when(table.name()).thenReturn("tableName");
-    when(table.table().getOptions())
+    when(catalogBaseTable.getOptions())
         .thenReturn(
             Map.of(
                 "connector",
@@ -65,8 +95,7 @@ class KafkaTableLineageDatasetIdentifierVisitorTest {
 
   @Test
   void testApplyWithSemicolonBootstraps() {
-    when(table.name()).thenReturn("tableName");
-    when(table.table().getOptions())
+    when(catalogBaseTable.getOptions())
         .thenReturn(
             Map.of(
                 "connector",

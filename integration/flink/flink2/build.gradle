@@ -30,6 +30,7 @@ ext {
     lombokVersion = '1.18.36'
     scalaLibraryVersion = '2.12.7'
     mockitoVersion = '5.14.1'
+    testcontainersVersion = '1.20.4'
 }
 
 
@@ -68,6 +69,10 @@ dependencies {
     testImplementation("org.slf4j:slf4j-api:2.0.17")
     testImplementation("org.slf4j:slf4j-simple:2.0.17")
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
+    testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
+    testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
+    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.2.2'
 
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }

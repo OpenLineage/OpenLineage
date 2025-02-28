@@ -9,12 +9,13 @@ import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.converter.LineageDatasetWithIdentifier;
+import io.openlineage.flink.wrapper.TableLineageDatasetWrapper;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.lineage.LineageDataset;
 import org.apache.flink.table.api.Schema.UnresolvedPhysicalColumn;
-import org.apache.flink.table.planner.lineage.TableLineageDataset;
+import org.apache.flink.table.catalog.CatalogBaseTable;
 
 /** Class for extracting facets from TableLineage datasets */
 @Slf4j
@@ -27,7 +28,7 @@ public class TableLineageFacetVisitor implements DatasetFacetVisitor {
 
   @Override
   public boolean isDefinedAt(LineageDatasetWithIdentifier dataset) {
-    return dataset.getFlinkDataset() instanceof TableLineageDataset;
+    return new TableLineageDatasetWrapper(dataset.getFlinkDataset()).isTableLineageDataset();
   }
 
   @Override
@@ -36,10 +37,10 @@ public class TableLineageFacetVisitor implements DatasetFacetVisitor {
   }
 
   private void buildSchemaFacet(LineageDataset flinkDataset, DatasetFacetsBuilder builder) {
-    TableLineageDataset table = (TableLineageDataset) flinkDataset;
+    CatalogBaseTable table = new TableLineageDatasetWrapper(flinkDataset).getTable().orElse(null);
 
     List<SchemaDatasetFacetFields> datasetFacetFields =
-        table.table().getUnresolvedSchema().getColumns().stream()
+        table.getUnresolvedSchema().getColumns().stream()
             .filter(column -> column instanceof UnresolvedPhysicalColumn)
             .map(
                 column ->
