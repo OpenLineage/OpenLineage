@@ -9,6 +9,7 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.MissingDatasetIdentifierCatalogException;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import java.util.Map;
 import java.util.Optional;
@@ -52,6 +53,12 @@ public class PlanUtils3 {
       log.warn(
           String.format(
               "Catalog %s is unsupported: %s",
+              catalog.getClass().getCanonicalName(), ex.getMessage()));
+      return Optional.empty();
+    } catch (MissingDatasetIdentifierCatalogException ex) {
+      log.debug(
+          String.format(
+              "Catalog %s is missing dataset identifier: %s",
               catalog.getClass().getCanonicalName(), ex.getMessage()));
       return Optional.empty();
     } catch (Exception e) {

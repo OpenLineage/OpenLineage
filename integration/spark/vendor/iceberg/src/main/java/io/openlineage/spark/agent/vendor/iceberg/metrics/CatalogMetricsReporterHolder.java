@@ -140,9 +140,9 @@ public class CatalogMetricsReporterHolder {
       }
 
       if (scanReport.isPresent()) {
-        log.debug("Returning commit report facet for snapshot id: {}", snapshotId);
+        log.debug("Returning scan report facet for snapshot id: {}", snapshotId);
       } else {
-        log.debug("No commit report facet found for snapshot id: {}", snapshotId);
+        log.debug("No scan report facet found for snapshot id: {}", snapshotId);
       }
     }
 
