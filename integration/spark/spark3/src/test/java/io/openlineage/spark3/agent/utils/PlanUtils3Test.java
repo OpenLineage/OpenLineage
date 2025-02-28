@@ -15,6 +15,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.MissingDatasetIdentifierCatalogException;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import java.util.HashMap;
 import java.util.Map;
@@ -69,6 +70,20 @@ class PlanUtils3Test {
       when(CatalogUtils3.getDatasetIdentifier(
               openLineageContext, tableCatalog, identifier, tableProperties))
           .thenThrow(new UnsupportedCatalogException("exception"));
+
+      assertEquals(
+          Optional.empty(),
+          PlanUtils3.getDatasetIdentifier(
+              openLineageContext, tableCatalog, identifier, tableProperties));
+    }
+  }
+
+  @Test
+  void testGetDatasetIdentifierWhenMissingDatasetIdentifier() {
+    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
+      when(CatalogUtils3.getDatasetIdentifier(
+              openLineageContext, tableCatalog, identifier, tableProperties))
+          .thenThrow(new MissingDatasetIdentifierCatalogException("exception"));
 
       assertEquals(
           Optional.empty(),

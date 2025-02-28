@@ -6,6 +6,7 @@
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -165,6 +166,36 @@ class IcebergHandlerTest {
         .hasFieldOrPropertyWithValue("namespace", "http://lakehouse-host:8080")
         .hasFieldOrPropertyWithValue("name", "database.table")
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierForRestWithoutLocation() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog.rest",
+                "org.apache.iceberg.spark.SparkCatalog",
+                "spark.sql.catalog.rest.catalog-impl",
+                "org.apache.iceberg.rest.RESTCatalog",
+                "spark.sql.catalog.rest.uri",
+                "http://lakehouse-host:8080"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.name()).thenReturn("rest");
+    when(sparkCatalog.loadTable(identifier)).thenThrow(new NoSuchTableException(identifier));
+
+    assertThrows(
+        MissingDatasetIdentifierCatalogException.class,
+        () ->
+            icebergHandler.getDatasetIdentifier(
+                sparkSession,
+                sparkCatalog,
+                Identifier.of(new String[] {"database"}, "table"),
+                new HashMap<>()));
   }
 
   @Test
