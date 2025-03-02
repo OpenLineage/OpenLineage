@@ -26,9 +26,9 @@ ext {
     isReleaseVersion = !version.endsWith('-SNAPSHOT')
     assertjVersion = '3.27.3'
     jacksonVersion = "2.15.3"
-    junit5Version = '5.11.4'
+    junit5Version = '5.12.0'
     lombokVersion = '1.18.36'
-    scalaLibraryVersion = '2.12.7'
+    scalaLibraryVersion = '2.13.16'
     mockitoVersion = '5.14.1'
 }
 
@@ -55,7 +55,7 @@ dependencies {
     testImplementation "org.apache.flink:flink-table-planner_2.12:$testedflinkVersion"
     testImplementation "org.apache.flink:flink-connector-base:$testedflinkVersion"
     testImplementation "org.apache.flink:flink-json:$testedflinkVersion"
-    testImplementation "org.apache.flink:flink-connector-kafka:3.4-SNAPSHOT" // need to be built locally
+    testImplementation "org.apache.flink:flink-connector-kafka:3.4.0-1.20" // need to be built locally
     testImplementation "org.apache.flink:flink-connector-test-utils:$testedflinkVersion"
     testImplementation "org.apache.kafka:kafka-clients:3.9.0"
     testImplementation "org.testcontainers:kafka:1.20.5"
