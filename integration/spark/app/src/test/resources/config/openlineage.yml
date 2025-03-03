@@ -8,7 +8,6 @@ transport:
 jobName:
   appendDatasetName: false
 facets:
-  disabled: [ aDisabledFacet ]
   spark:
     logicalPlan:
       disabled: true

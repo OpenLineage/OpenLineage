@@ -1,6 +1,7 @@
 transport:
   type: console
 facets:
-  disabled:
-    - facet1
-    - facet2
+  facet1:
+    disabled: true
+  "spark.logicalPlan":
+    disabled: true

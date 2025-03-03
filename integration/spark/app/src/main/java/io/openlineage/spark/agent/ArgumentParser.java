@@ -20,7 +20,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -45,7 +44,6 @@ public class ArgumentParser {
       "spark.openlineage.jobName.appendDatasetName";
   public static final String SPARK_CONF_JOB_NAME_REPLACE_DOT_WITH_UNDERSCORE =
       "spark.openlineage.jobName.replaceDotWithUnderscore";
-  private static final String SPARK_CONF_FACETS_DISABLED = "spark.openlineage.facets.disabled";
 
   private static final String SPARK_CONF_DEBUG_FACET = "spark.openlineage.debugFacet";
 
@@ -137,14 +135,6 @@ public class ArgumentParser {
     findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_REPLACE_DOT_WITH_UNDERSCORE)
         .map(Boolean::valueOf)
         .ifPresent(v -> config.getJobName().setReplaceDotWithUnderscore(v));
-    findSparkConfigKey(conf, SPARK_CONF_FACETS_DISABLED)
-        .map(s -> s.replace("[", "").replace("]", ""))
-        .map(
-            s ->
-                Stream.of(s.split(separator))
-                    .filter(StringUtils::isNotBlank)
-                    .toArray(String[]::new))
-        .ifPresent(a -> config.getFacetsConfig().setDeprecatedDisabledFacets(a));
   }
 
   /**
@@ -173,8 +163,7 @@ public class ArgumentParser {
           }
           nodePointer = (ObjectNode) nodePointer.get(node);
         }
-        if (isArrayType(value)
-            || SPARK_CONF_FACETS_DISABLED.equals("spark.openlineage." + keyPath)) {
+        if (isArrayType(value)) {
           ArrayNode arrayNode = nodePointer.putArray(leaf);
           String valueWithoutBrackets =
               isArrayType(value) ? value.substring(1, value.length() - 1) : value;

@@ -42,7 +42,6 @@ class ArgumentParserTest {
   private static final String URL = "http://localhost:5000";
   private static final String RUN_ID = "ea445b5c-22eb-457a-8007-01c7c52b6e54";
   private static final String APP_NAME = "test";
-  private static final String DISABLED_FACETS = "[facet1;facet2]";
   private static final String ENDPOINT = "api/v1/lineage";
   private static final String AUTH_TYPE = "api_key";
   private static final String API_KEY = "random_token";
@@ -53,7 +52,6 @@ class ArgumentParserTest {
   @SuppressWarnings({"deprecation"})
   void testDefaults() {
     config = ArgumentParser.parse(new SparkConf());
-    assertThat(config.getFacetsConfig().getDeprecatedDisabledFacets()).isEmpty();
     assertThat(config.getFacetsConfig().getDisabledFacets())
         .containsAllEntriesOf(
             ImmutableMap.of("spark_unknown", true, "spark.logicalPlan", true, "debug", true));
@@ -104,8 +102,7 @@ class ArgumentParserTest {
             .set("spark.openlineage.transport.endpoint", ENDPOINT)
             .set("spark.openlineage.transport.auth.type", AUTH_TYPE)
             .set("spark.openlineage.transport.auth.apiKey", API_KEY)
-            .set("spark.openlineage.transport.timeout", "5000")
-            .set("spark.openlineage.facets.disabled", DISABLED_FACETS)
+            .set("spark.openlineage.transport.timeoutInMillis", "5000")
             .set("spark.openlineage.transport.urlParams.test1", "test1")
             .set("spark.openlineage.transport.urlParams.test2", "test2")
             .set("spark.openlineage.transport.headers.testHeader1", "test1")
@@ -119,7 +116,7 @@ class ArgumentParserTest {
     assert (transportConfig.getAuth() != null);
     assert (transportConfig.getAuth() instanceof ApiKeyTokenProvider);
     assertEquals("Bearer random_token", transportConfig.getAuth().getToken());
-    assertEquals(5000, transportConfig.getTimeout());
+    assertEquals(5000, transportConfig.getTimeoutInMillis());
     assertEquals("test1", transportConfig.getHeaders().get("testHeader1"));
     assertEquals("test2", transportConfig.getHeaders().get("testHeader2"));
     assertEquals(HttpConfig.Compression.GZIP, transportConfig.getCompression());
@@ -234,51 +231,6 @@ class ArgumentParserTest {
   }
 
   @Test
-  @SuppressWarnings("deprecation")
-  void testDeprecatedDisabledFacetsFromSparkConf() {
-    SparkConf sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "[a;b]");
-    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
-    String[] disabledFacets = config.getFacetsConfig().getDeprecatedDisabledFacets();
-    assertThat(disabledFacets).containsExactly("a", "b");
-
-    // test empty value
-    sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "");
-    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDeprecatedDisabledFacets())
-        .hasSize(0);
-
-    // test empty list
-    sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "[]");
-    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDeprecatedDisabledFacets())
-        .hasSize(0);
-
-    assertThat(
-            ArgumentParser.parse(new SparkConf()).getFacetsConfig().getDeprecatedDisabledFacets())
-        .hasSize(0);
-  }
-
-  @Test
-  @SuppressWarnings("deprecation")
-  void testDisabledFacetsFromSparkConf() {
-    SparkConf sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "[a;b]");
-    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
-    assertThat(config.getFacetsConfig().getDeprecatedDisabledFacets()).containsExactly("a", "b");
-
-    // test empty value
-    sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "");
-    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDeprecatedDisabledFacets())
-        .hasSize(0);
-
-    // test empty list
-    sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "[]");
-    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDeprecatedDisabledFacets())
-        .hasSize(0);
-
-    assertThat(
-            ArgumentParser.parse(new SparkConf()).getFacetsConfig().getDeprecatedDisabledFacets())
-        .hasSize(0);
-  }
-
-  @Test
   @SuppressWarnings({"deprecation", "UnstableApiUsage", "ConstantConditions"})
   void testConfigReadFromYamlFile() {
     String propertyBefore = System.getProperty("user.dir");
@@ -295,8 +247,6 @@ class ArgumentParserTest {
     assertThat(httpConfig.getUrl().toString()).isEqualTo("http://localhost:1010");
     assertThat(httpConfig.getAuth().getToken()).isEqualTo("Bearer random_token");
     assertThat(config.getJobName().getAppendDatasetName()).isFalse();
-    assertThat(config.getFacetsConfig().getDeprecatedDisabledFacets()[0])
-        .isEqualTo("aDisabledFacet");
     assertThat(config.getFacetsConfig().getDisabledFacets())
         .containsAllEntriesOf(
             ImmutableMap.of("spark_unknown", false, "spark.logicalPlan", true, "debug", true));

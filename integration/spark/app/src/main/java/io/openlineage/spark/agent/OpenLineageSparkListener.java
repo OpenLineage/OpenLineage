@@ -27,6 +27,7 @@ import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
@@ -381,9 +382,12 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         MicrometerProvider.addMeterRegistryFromConfig(openLineageConfig.getMetricsConfig());
     String disabledFacets;
     if (openLineageConfig.getFacetsConfig() != null
-        && openLineageConfig.getFacetsConfig().getDeprecatedDisabledFacets() != null) {
+        && openLineageConfig.getFacetsConfig().getDisabledFacets() != null) {
       disabledFacets =
-          String.join(";", openLineageConfig.getFacetsConfig().getDeprecatedDisabledFacets());
+          openLineageConfig.getFacetsConfig().getDisabledFacets().entrySet().stream()
+              .filter(Entry::getValue)
+              .map(Entry::getKey)
+              .collect(Collectors.joining(";"));
     } else {
       disabledFacets = "";
     }
