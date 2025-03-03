@@ -114,8 +114,6 @@ public class FlinkContainerUtils {
             .withExposedPorts(8081)
             .withFileSystemBind(getOpenLineageJarPath(), "/opt/flink/lib/openlineage.jar")
             .withFileSystemBind(getExampleAppJarPath(), "/opt/flink/lib/example-app.jar")
-            //            .withCopyFileToContainer(
-            //                MountableFile.forHostPath("../data/iceberg"), "/tmp/warehouse/")
             .withCopyFileToContainer(
                 MountableFile.forHostPath(Resources.getResource("openlineage.yml").getPath()),
                 configPath)
