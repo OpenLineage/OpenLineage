@@ -46,6 +46,8 @@ dependencies {
 
     implementation "io.openlineage:openlineage-flink:$project.version"
     implementation "org.apache.flink:flink-connector-kafka:3.4-SNAPSHOT" // need to be built locally
+    implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
+    implementation "org.apache.flink:flink-avro:$flinkVersion"
 
     compileOnly "org.apache.flink:flink-streaming-java:$flinkVersion"
     compileOnly "org.apache.flink:flink-runtime-web:$flinkVersion"
@@ -77,3 +79,6 @@ test {
     useJUnitPlatform()
 }
 
+avro {
+    fieldVisibility = 'PUBLIC'
+}

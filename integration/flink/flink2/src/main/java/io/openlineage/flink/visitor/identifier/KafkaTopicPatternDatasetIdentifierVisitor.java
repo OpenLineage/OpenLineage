@@ -41,7 +41,7 @@ public class KafkaTopicPatternDatasetIdentifierVisitor implements DatasetIdentif
             .map(OpenLineageContext::getConfig)
             .map(FlinkOpenLineageConfig::getDatasetConfig)
             .map(FlinkDatasetConfig::getKafkaConfig)
-            .map(FlinkDatasetKafkaConfig::isResolveTopicPattern);
+            .map(FlinkDatasetKafkaConfig::getResolveTopicPattern);
 
     if (resolveTopics.isEmpty() || !resolveTopics.get()) {
       return false;
@@ -63,7 +63,6 @@ public class KafkaTopicPatternDatasetIdentifierVisitor implements DatasetIdentif
       return Collections.emptyList();
     }
     Pattern pattern = getTopicPattern(dataset).get();
-    partitions.forEach(p -> log.info("Partitions: {}", p));
 
     return partitions.stream()
         .flatMap(Collection::stream)

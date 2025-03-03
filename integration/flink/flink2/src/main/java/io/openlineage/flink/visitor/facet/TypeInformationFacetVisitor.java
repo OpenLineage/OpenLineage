@@ -47,7 +47,7 @@ public class TypeInformationFacetVisitor implements DatasetFacetVisitor {
     TypeInformation typeInformation =
         TypeDatasetFacetUtil.getFacet(dataset.getFlinkDataset())
             .map(f -> f.getTypeInformation())
-            .get();
+            .orElse(null);
 
     // TODO: support GenericAvroRecord & support protobuf
     if (typeInformation instanceof GenericTypeInfo) {

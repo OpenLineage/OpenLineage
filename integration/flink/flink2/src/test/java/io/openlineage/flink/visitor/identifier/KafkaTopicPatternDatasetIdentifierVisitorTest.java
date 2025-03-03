@@ -43,7 +43,7 @@ class KafkaTopicPatternDatasetIdentifierVisitorTest {
 
   @BeforeEach
   void setup() {
-    when((context.getConfig().getDatasetConfig().getKafkaConfig()).isResolveTopicPattern())
+    when((context.getConfig().getDatasetConfig().getKafkaConfig()).getResolveTopicPattern())
         .thenReturn(true);
   }
 
@@ -74,7 +74,7 @@ class KafkaTopicPatternDatasetIdentifierVisitorTest {
     when(dataset.facets()).thenReturn(Map.of("kafka", facet));
     assertThat(visitor.isDefinedAt(dataset)).isTrue();
 
-    when((context.getConfig().getDatasetConfig().getKafkaConfig()).isResolveTopicPattern())
+    when((context.getConfig().getDatasetConfig().getKafkaConfig()).getResolveTopicPattern())
         .thenReturn(false);
     assertThat(visitor.isDefinedAt(dataset)).isFalse();
 

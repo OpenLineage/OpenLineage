@@ -1,0 +1,32 @@
+{
+  "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+  "eventType": "START",
+  "run": {
+  },
+  "job": {
+    "namespace": "flink-jobs",
+    "facets": {
+      "jobType": {
+        "processingType": "STREAMING",
+        "integration": "FLINK",
+        "jobType": "JOB"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "namespace": "kafka://kafka-host:9092",
+      "name": "io.openlineage.flink.kafka.input2"
+    },
+    {
+      "namespace": "kafka://kafka-host:9092",
+      "name": "io.openlineage.flink.kafka.input1"
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "kafka://kafka-host:9092",
+      "name": "io.openlineage.flink.kafka.output_topic"
+    }
+  ]
+}
