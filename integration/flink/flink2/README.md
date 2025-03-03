@@ -66,7 +66,7 @@ Run the integration tests of this package:
     emitted correctly from the native Flink interfaces. Issues below should be implemented before
     treating the implementation as production ready.
 
- * Write docker integration test and depend on released Flink version.
+ * Write docker integration test for topic pattern resolution.
  * Make sure package does not contain extra dependencies (or relocates them).
  * Add custom Facet with Flink jobId.
  * Create a tracking thread that uses Flink api to get checkpoint data. This shall be done in same way as other OpenLineage Flink integration.

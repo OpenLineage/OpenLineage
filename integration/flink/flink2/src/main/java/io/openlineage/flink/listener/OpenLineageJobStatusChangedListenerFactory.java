@@ -23,9 +23,6 @@ public class OpenLineageJobStatusChangedListenerFactory implements JobStatusChan
 
   @Override
   public JobStatusChangedListener createListener(Context context) {
-    // TODO: Write test which verifies listener factory created via manifest file
-    // This can be done once Docker image with flink version supporting lineage graph extraction
-    // is released
     return new OpenLineageJobStatusChangedListener(context, loadVisitorFactory());
   }
 
