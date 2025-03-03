@@ -39,8 +39,6 @@ class FlinkConfigParserTest {
   ConfigOption testCompressionOption =
       ConfigOptions.key("openlineage.transport.compression").stringType().noDefaultValue();
 
-  ConfigOption deprecatedDisabledFacetsOption =
-      ConfigOptions.key("openlineage.facets.disabled").stringType().noDefaultValue();
   ConfigOption facetXDisabled =
       ConfigOptions.key("openlineage.facets.facetX.disabled").booleanType().noDefaultValue();
   ConfigOption facetYDisabled =
@@ -75,14 +73,12 @@ class FlinkConfigParserTest {
   @Test
   void testFlinkConfArrayEntry() {
     configuration.set(transportTypeOption, "console");
-    configuration.set(deprecatedDisabledFacetsOption, "[facet1;facetY]");
     configuration.set(facetXDisabled, "true");
     configuration.set(facetYDisabled, "false");
 
     FlinkOpenLineageConfig config = FlinkConfigParser.parse(configuration);
 
-    assertThat(config.getFacetsConfig().getEffectiveDisabledFacets())
-        .containsExactly("facetX", "facet1");
+    assertThat(config.getFacetsConfig().getEffectiveDisabledFacets()).containsExactly("facetX");
   }
 
   @Test
