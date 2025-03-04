@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-title: Supported Airflow versions
+title: Supported Airflow Versions
 ---
 
 :::caution
