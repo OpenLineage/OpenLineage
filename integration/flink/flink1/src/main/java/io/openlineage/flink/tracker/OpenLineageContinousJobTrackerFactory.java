@@ -6,7 +6,9 @@
 package io.openlineage.flink.tracker;
 
 import java.time.Duration;
+import java.util.Optional;
 import org.apache.flink.configuration.ReadableConfig;
+import org.apache.flink.configuration.RestOptions;
 
 /**
  * Factory class to create instance of {@link OpenLineageContinousJobTracker}. It is included for
@@ -16,6 +18,13 @@ public class OpenLineageContinousJobTrackerFactory {
 
   public static OpenLineageContinousJobTracker getTracker(
       ReadableConfig config, Duration duration) {
-    return new OpenLineageContinousJobTracker(config, duration);
+
+    String jobsApiUrl =
+        String.format(
+            "http://%s:%s/jobs",
+            Optional.ofNullable(config.get(RestOptions.ADDRESS)).orElse("localhost"),
+            config.get(RestOptions.PORT));
+
+    return new OpenLineageContinousJobTracker(duration, jobsApiUrl);
   }
 }

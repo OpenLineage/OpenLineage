@@ -180,9 +180,11 @@ class ContainerTest {
         "io.openlineage.flink.FlinkTopicPatternApplication",
         jobProperties,
         generateEvents,
-        "Marking checkpoint 1 as completed for source Source");
+        "Emitting checkpoint event");
 
-    verify("events/expected_kafka_topic_pattern.json");
+    verify(
+        "events/expected_kafka_topic_pattern.json",
+        "events/expected_kafka_topic_pattern_checkpoint.json");
   }
 
   @SneakyThrows

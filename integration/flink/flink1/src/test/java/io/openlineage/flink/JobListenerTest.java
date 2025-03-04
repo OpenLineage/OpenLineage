@@ -7,6 +7,7 @@ package io.openlineage.flink;
 
 import static io.openlineage.flink.OpenLineageFlinkJobListener.DEFAULT_JOB_NAMESPACE;
 import static io.openlineage.flink.OpenLineageFlinkJobListener.OPENLINEAGE_LISTENER_CONFIG_DURATION;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -60,6 +61,7 @@ class JobListenerTest {
   public void setup() {
     transformations.add(mock(Transformation.class));
     when(jobClient.getJobID()).thenReturn(jobId.getFlinkJobId());
+    when(context.getOlContext()).thenReturn(openLineageContext);
   }
 
   @Test
@@ -73,7 +75,7 @@ class JobListenerTest {
         transformations,
         true);
 
-    doNothing().when(tracker).startTracking(context);
+    doNothing().when(tracker).startTracking(openLineageContext, context::onJobCheckpoint);
 
     listener =
         OpenLineageFlinkJobListener.builder()
@@ -92,7 +94,7 @@ class JobListenerTest {
 
       listener.onJobSubmitted(jobClient, null);
       verify(context, times(1)).onJobSubmitted();
-      verify(tracker, times(1)).startTracking(context);
+      verify(tracker, times(1)).startTracking(eq(openLineageContext), any());
     }
   }
 
@@ -123,7 +125,7 @@ class JobListenerTest {
         transformations,
         true);
 
-    doNothing().when(tracker).startTracking(context);
+    doNothing().when(tracker).startTracking(openLineageContext, context::onJobCheckpoint);
 
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
             mockStatic(FlinkExecutionContextFactory.class);
@@ -149,7 +151,7 @@ class JobListenerTest {
               .build();
       listener.onJobSubmitted(jobClient, null);
       verify(context, times(1)).onJobSubmitted();
-      verify(tracker, times(1)).startTracking(context);
+      verify(tracker, times(1)).startTracking(eq(openLineageContext), any());
     }
   }
 
@@ -169,7 +171,7 @@ class JobListenerTest {
     JobExecutionResult jobExecutionResult = mock(JobExecutionResult.class);
     when(jobExecutionResult.getJobID()).thenReturn(jobId.getFlinkJobId());
     doNothing().when(context).onJobSubmitted();
-    doNothing().when(tracker).startTracking(context);
+    doNothing().when(tracker).startTracking(openLineageContext, context::onJobCheckpoint);
 
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
@@ -198,7 +200,7 @@ class JobListenerTest {
         transformations,
         true);
 
-    doNothing().when(tracker).startTracking(context);
+    doNothing().when(tracker).startTracking(openLineageContext, context::onJobCheckpoint);
 
     listener =
         OpenLineageFlinkJobListener.builder()
@@ -219,7 +221,7 @@ class JobListenerTest {
 
       listener.onJobSubmitted(jobClient, null);
       verify(context, times(1)).onJobSubmitted();
-      verify(tracker, times(1)).startTracking(context);
+      verify(tracker, times(1)).startTracking(eq(openLineageContext), any());
     }
   }
 }

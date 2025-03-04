@@ -1,0 +1,20 @@
+{
+  "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+  "eventType": "RUNNING",
+  "run": {
+    "runId": "${json-unit.any-string}",
+    "facets" : {
+      "checkpoints": {
+        "completed": "${json-unit.any-number}",
+        "failed": "${json-unit.any-number}",
+        "in-progress": "${json-unit.any-number}",
+        "restored": "${json-unit.any-number}",
+        "total": "${json-unit.any-number}"
+      }
+    }
+  },
+  "job": {
+    "namespace": "flink-jobs",
+    "name" : "flink_topic_pattern"
+  }
+}
