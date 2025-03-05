@@ -6,28 +6,30 @@
 package io.openlineage.flink.visitor.facet;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
-import io.openlineage.client.OpenLineage.SchemaDatasetFacetFieldsBuilder;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.converter.LineageDatasetWithIdentifier;
 import io.openlineage.flink.util.KafkaDatasetFacetUtil;
 import io.openlineage.flink.util.TypeDatasetFacetUtil;
-import java.lang.reflect.Modifier;
+import io.openlineage.flink.visitor.facet.schema.GenericTypeInfoSchemaBuilder;
+import io.openlineage.flink.visitor.facet.schema.PojoTypeInfoSchemaBuilder;
+import io.openlineage.flink.visitor.facet.schema.TypeInformationSchemaBuilder;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.typeutils.GenericTypeInfo;
 
 /** Class used to extract type information from the facets returned by the collector */
 @Slf4j
 public class TypeInformationFacetVisitor implements DatasetFacetVisitor {
 
   private final OpenLineageContext context;
+  private final List<TypeInformationSchemaBuilder> schemaBuilders;
 
   public TypeInformationFacetVisitor(OpenLineageContext context) {
     this.context = context;
+    this.schemaBuilders =
+        Arrays.asList(new GenericTypeInfoSchemaBuilder(), new PojoTypeInfoSchemaBuilder());
   }
 
   @Override
@@ -49,30 +51,18 @@ public class TypeInformationFacetVisitor implements DatasetFacetVisitor {
             .map(f -> f.getTypeInformation())
             .orElse(null);
 
-    // TODO: support GenericAvroRecord & support protobuf
-    if (typeInformation instanceof GenericTypeInfo) {
+    Optional<TypeInformationSchemaBuilder> schemaBuilder =
+        schemaBuilders.stream().filter(b -> b.isDefinedAt(typeInformation)).findFirst();
+
+    if (schemaBuilder.isPresent()) {
       builder.schema(
           context
               .getOpenLineage()
               .newSchemaDatasetFacetBuilder()
-              .fields(from((GenericTypeInfo) typeInformation))
+              .fields(schemaBuilder.get().buildSchemaFields(typeInformation))
               .build());
     } else {
       log.warn("Could not extract schema from type {}", typeInformation);
     }
-  }
-
-  private List<SchemaDatasetFacetFields> from(GenericTypeInfo genericTypeInfo) {
-    return Arrays.stream(genericTypeInfo.getTypeClass().getFields())
-        .filter(f -> Modifier.isPublic(f.getModifiers()))
-        .map(
-            f ->
-                new SchemaDatasetFacetFieldsBuilder()
-                    .type(
-                        f.getType()
-                            .getSimpleName()) // TODO: go deeper to extract fields recursively
-                    .name(f.getName())
-                    .build())
-        .collect(Collectors.toList());
   }
 }
