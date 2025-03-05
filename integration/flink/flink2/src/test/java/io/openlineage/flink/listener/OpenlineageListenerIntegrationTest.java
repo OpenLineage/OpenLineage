@@ -247,14 +247,14 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
           String.format(
               "create table kafka_input (\n"
                   + "  `computed-price` as price + 1.0,\n"
-                  + "  price decimal(38, 18),\n"
+                  + "  price decimal(38, 18) comment 'price comment',\n"
                   + "  currency string,\n"
                   + "  log_date date,\n"
                   + "  log_time time(3),\n"
                   + "  log_ts timestamp(3),\n"
                   + "  ts as log_ts + INTERVAL '1' SECOND,\n"
                   + "  watermark for ts as ts\n"
-                  + ") comment 'My Complex Table' with (\n"
+                  + ") comment 'My Complex Input Table' with (\n"
                   + "  'connector' = '%s',\n"
                   + "  'topic' = '%s',\n"
                   + "  'properties.bootstrap.servers' = '%s',\n"
@@ -273,8 +273,8 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
                   + "  max_log_time string,\n"
                   + "  max_ts string,\n"
                   + "  counter bigint,\n"
-                  + "  max_price decimal(38, 18)\n"
-                  + ") with (\n"
+                  + "  max_price decimal(38, 18) comment 'max_price comment' \n"
+                  + ") comment 'My Complex Output Table' with (\n"
                   + "  'connector' = '%s',\n"
                   + "  'topic' = '%s',\n"
                   + "  'properties.bootstrap.servers' = '%s',\n"
@@ -374,6 +374,23 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
           .hasFieldOrPropertyWithValue("name", "default_catalog.default_database.kafka_output");
       assertThat(output.get().getFacets().getSymlinks().getIdentifiers().get(0).getNamespace())
           .startsWith("kafka://localhost:");
+
+      // test SQL comments
+      assertThat(input.get().getFacets().getDocumentation())
+          .extracting("description")
+          .isEqualTo("My Complex Input Table");
+      assertThat(output.get().getFacets().getDocumentation())
+          .extracting("description")
+          .isEqualTo("My Complex Output Table");
+
+      assertThat(inputFields.stream().filter(f -> f.getName().equals("price")).findAny())
+          .isPresent()
+          .map(SchemaDatasetFacetFields::getDescription)
+          .hasValue("price comment");
+      assertThat(outputFields.stream().filter(f -> f.getName().equals("max_price")).findAny())
+          .isPresent()
+          .map(SchemaDatasetFacetFields::getDescription)
+          .hasValue("max_price comment");
 
       // ------------- cleanup -------------------
       deleteTestTopic(inputTopic);
