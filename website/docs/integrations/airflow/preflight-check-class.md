@@ -11,26 +11,16 @@ In some cases, you might want to validate your OpenLineage setup in Airflow with
 ## Preflight Check Class Code
 
 ```python
-from __future__ import annotations
-
 import logging
 import os
 import attr
 
 from packaging.version import Version
-
 from airflow import DAG
 from airflow.configuration import conf
 from airflow import __version__ as airflow_version
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
-
-# Set this to True to bypass the latest version check for OpenLineage package.
-# Version check will be skipped if unable to access PyPI URL
-BYPASS_LATEST_VERSION_CHECK = False
-# Update this to `CUSTOM` if using any other backend for OpenLineage events ingestion
-# When using custom transport - implement custom checks in _verify_custom_backend function
-LINEAGE_BACKEND = "MARQUEZ"
 
 log = logging.getLogger(__name__)
 
@@ -44,6 +34,10 @@ class CheckOpenLineage:
     that the setup is correctly done to start receiving OpenLineage events.
     """
 
+    BYPASS_LATEST_VERSION_CHECK: bool = False
+    LINEAGE_BACKEND: str = "MARQUEZ"
+
+    def __init__(self) -> None:
 
     def _get_latest_package_version(self, library_name: str) -> Version | None:
         """
@@ -201,8 +195,8 @@ class CheckOpenLineage:
             self._is_config_set(provider=True)
             self._is_transport_set()
         self._is_config_set(provider=False)
-        # self._check_openlineage_yml("openlineage.yml")
-        # self._check_openlineage_yml("~/.openlineage/openlineage.yml")
+        self._check_openlineage_yml("openlineage.yml")
+        self._check_openlineage_yml("~/.openlineage/openlineage.yml")
         self._check_http_env_vars()
         raise ValueError("OpenLineage is missing configuration, please refer to the OL setup docs.")
 
@@ -258,9 +252,11 @@ class CheckOpenLineage:
         """Get the configured transport from the OpenLineage plugin."""
         if self._provider_can_be_used():
             from airflow.providers.openlineage.plugins.openlineage import OpenLineageProviderPlugin
+
             transport = OpenLineageProviderPlugin().listeners[0].adapter.get_or_create_openlineage_client().transport
         else:
             from openlineage.airflow.plugin import OpenLineagePlugin
+
             transport = (
                 OpenLineagePlugin.listeners[0].adapter.get_or_create_openlineage_client().transport
             )
@@ -277,14 +273,14 @@ class CheckOpenLineage:
             raise ValueError("There was an error when trying to build transport.") from e
 
         if transport is None or transport.kind in ("noop", "console"):
-            _debug_missing_transport()
+            self._debug_missing_transport()
 
 
     def validate_connection(self):
         """Validate the connection to the lineage backend."""
         transport = self._get_transport()
         config = attr.asdict(transport.config)
-        self._verify_backend(LINEAGE_BACKEND, config)
+        self._verify_backend(self.LINEAGE_BACKEND, config)
 
 
     def _verify_backend(self, backend_type: str, config: dict):
