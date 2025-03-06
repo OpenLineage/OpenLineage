@@ -26,11 +26,11 @@ ext {
     isReleaseVersion = !version.endsWith('-SNAPSHOT')
     assertjVersion = '3.27.3'
     jacksonVersion = "2.15.3"
-    junit5Version = '5.11.4'
+    junit5Version = '5.12.0'
     lombokVersion = '1.18.36'
-    scalaLibraryVersion = '2.12.7'
+    scalaLibraryVersion = '2.13.16'
     mockitoVersion = '5.14.1'
-    testcontainersVersion = '1.20.4'
+    testcontainersVersion = '1.20.6'
 }
 
 
@@ -56,10 +56,10 @@ dependencies {
     testImplementation "org.apache.flink:flink-table-planner_2.12:$testedflinkVersion"
     testImplementation "org.apache.flink:flink-connector-base:$testedflinkVersion"
     testImplementation "org.apache.flink:flink-json:$testedflinkVersion"
-    testImplementation "org.apache.flink:flink-connector-kafka:3.4-SNAPSHOT" // need to be built locally
+    testImplementation "org.apache.flink:flink-connector-kafka:3.4.0-1.20" // need to be built locally
     testImplementation "org.apache.flink:flink-connector-test-utils:$testedflinkVersion"
     testImplementation "org.apache.kafka:kafka-clients:3.9.0"
-    testImplementation "org.testcontainers:kafka:1.20.5"
+    testImplementation "org.testcontainers:kafka:1.20.6"
     testImplementation "commons-codec:commons-codec:1.18.0"
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
@@ -72,7 +72,7 @@ dependencies {
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
-    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.2.2'
+    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.3.0'
 
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
