@@ -501,14 +501,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             dbt_command_line, option="--write-json", replace_option="--no-write-json"
         )
 
+        self._open_dbt_log_file()
         process = subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr, text=True)
 
         try:
             while process.poll() is None:
-                self._open_dbt_log_file()
-                if self._dbt_log_file is None:
-                    continue  # wait for the log file to be created
-
                 if has_lines(self._dbt_log_file) > 0:
                     # Load the manifest as soon as it exists
                     self.compiled_manifest
@@ -529,11 +526,18 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         """
         If the log file already exists when the dbt command is executed logs are appended.
         This reads all the lines on first (and only) open to get rid of those previous lines.
+        If the file doesn't exist it creates an empty one
         """
-        if os.path.exists(self.dbt_log_file_path) and self._dbt_log_file is None:
-            self._dbt_log_file = open(self.dbt_log_file_path)
-            while self._dbt_log_file.readlines():
+        if self._dbt_log_file is not None:
+            return
+
+        if not os.path.exists(self.dbt_log_file_path):
+            with open(self.dbt_log_file_path, "w"):
                 pass
+
+        self._dbt_log_file = open(self.dbt_log_file_path)
+        while self._dbt_log_file.readlines():
+            pass
 
     def _get_model_node(self, node_id) -> ModelNode:
         """
