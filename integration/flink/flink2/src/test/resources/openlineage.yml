@@ -1,6 +1,7 @@
 transport:
   type: http
   url: http://openlineageclient:1080
+trackingIntervalInSeconds: 3
 dataset:
   namespaceResolvers:
     kafka-cluster-prod:

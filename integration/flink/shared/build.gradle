@@ -140,6 +140,8 @@ dependencies {
     testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
     testImplementation "com.google.protobuf:protobuf-java:3.25.3"
+    testImplementation("org.slf4j:slf4j-api:2.0.17")
+    testImplementation("org.slf4j:slf4j-simple:2.0.17")
 
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }

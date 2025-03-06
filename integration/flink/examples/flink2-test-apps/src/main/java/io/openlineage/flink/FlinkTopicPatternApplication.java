@@ -5,6 +5,7 @@
 
 package io.openlineage.flink;
 
+import static io.openlineage.common.config.ConfigWrapper.fromResource;
 import static io.openlineage.flink.StreamEnvironment.setupEnv;
 
 import io.openlineage.flink.avro.event.InputEvent;
@@ -33,19 +34,21 @@ public class FlinkTopicPatternApplication {
 
     KafkaSource<InputEvent> source =
         KafkaSource.<InputEvent>builder()
+            .setProperties(fromResource("kafka-consumer.conf").toProperties())
             .setBootstrapServers(bootstraps)
             .setGroupId("testTopicPatternRead")
             .setTopicPattern(Pattern.compile(parameters.getRequired("input-topics")))
             .setValueOnlyDeserializer(
                 ConfluentRegistryAvroDeserializationSchema.forSpecific(
                     InputEvent.class, SCHEMA_REGISTRY_URL))
-            .setStartingOffsets(OffsetsInitializer.earliest())
-            .setBounded(OffsetsInitializer.latest())
+            .setClientIdPrefix("testTopicPatternRead")
             .build();
 
     KafkaSink<OutputEvent> sink =
         KafkaSink.<OutputEvent>builder()
+            .setKafkaProducerConfig(fromResource("kafka-producer.conf").toProperties())
             .setBootstrapServers(bootstraps)
+            .setTransactionalIdPrefix("testTopicPatternWrite")
             .setRecordSerializer(
                 KafkaRecordSerializationSchema.builder()
                     .setValueSerializationSchema(
@@ -55,13 +58,20 @@ public class FlinkTopicPatternApplication {
                     .build())
             .build();
 
-    DataStream<InputEvent> stream =
-        env.fromSource(source, WatermarkStrategy.noWatermarks(), "testBasicRead");
-
-    stream
+    env
+        .fromSource(source, WatermarkStrategy.noWatermarks(), "FlinkTopicPatternApplication")
+        .setParallelism(1)
+        .uid("kafka-source")
+        .name("kafka-source")
         .keyBy(InputEvent::getId)
         .process(new StatefulCounter())
-        .sinkTo(sink);
-    env.execute();
+        .name("process")
+        .uid("process")
+        .sinkTo(sink)
+        .name("kafka-sink")
+        .uid("kafka-sink");
+
+    String jobName = parameters.get("job-name", "flink_topic_pattern");
+    env.execute(jobName);
   }
 }
