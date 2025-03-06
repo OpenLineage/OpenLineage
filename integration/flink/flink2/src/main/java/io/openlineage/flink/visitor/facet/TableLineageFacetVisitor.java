@@ -53,6 +53,13 @@ public class TableLineageFacetVisitor implements DatasetFacetVisitor {
                         .build())
             .collect(Collectors.toList());
 
+    table
+        .getDescription()
+        .ifPresent(
+            description ->
+                builder.documentation(
+                    context.getOpenLineage().newDocumentationDatasetFacet(description)));
+
     builder.schema(context.getOpenLineage().newSchemaDatasetFacet(datasetFacetFields));
   }
 }

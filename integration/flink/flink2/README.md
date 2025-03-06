@@ -72,7 +72,6 @@ Run the integration tests of this package:
  * Support schema extraction from nested Generic Records.
  * Support extracting dataset schema from Avro.
  * Support extracting dataset scheme from Protobuf.
- * Extract table comment property into OpenLineage facet. 
  * For Kafka table, include symlink with the table name. 
  * Implement a check which will not allow turning on the listener if the Flink version is 2.
  * Prepare documentation for the package. Document some flink config entries work for Flink 2 only like - resolveTopicPattern.
