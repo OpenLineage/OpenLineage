@@ -149,4 +149,14 @@ class ExtensionDataSourceV2Utils {
         .filter(props -> props.containsKey("openlineage.dataset.namespace"))
         .isPresent();
   }
+
+  public static boolean hasQueryExtensionLineage(DataSourceV2Relation relation) {
+    return Optional.ofNullable(relation)
+        .map(r -> r.table())
+        .map(table -> table.properties())
+        .filter(Objects::nonNull)
+        .filter(props -> props.containsKey("openlineage.dataset.query"))
+        .filter(props -> props.containsKey("openlineage.dataset.namespace"))
+        .isPresent();
+  }
 }

@@ -219,4 +219,50 @@ class DataSourceV2RelationDatasetExtractorTest {
     assertThat(datasetFacet.getAdditionalProperties())
         .hasFieldOrPropertyWithValue("property", "value");
   }
+
+  @Test
+  void testExtractFromDataSourceV2RelationForExtensionLineageWithQuery() throws URISyntaxException {
+    Map<String, String> properties = new HashMap<>();
+    properties.put(
+        "openlineage.dataset.query",
+        "SELECT column1, column2 FROM `bigquery-public-data.samples.shakespeare`");
+    properties.put("openlineage.dataset.namespace", "bigquery");
+    properties.put(
+        "openlineage.dataset.facets.customFacet",
+        "{"
+            + "\"property\": \"value\","
+            + "\"_producer\": \"https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client\""
+            + "}");
+
+    StructType schema =
+        new StructType(
+            new StructField[] {
+              new StructField("column1", IntegerType$.MODULE$, false, null),
+              new StructField("column2", IntegerType$.MODULE$, false, null)
+            });
+
+    when(dataSourceV2Relation.schema()).thenReturn(schema);
+    when(table.properties()).thenReturn(properties);
+    when(openLineageContext.getOpenLineage())
+        .thenReturn(
+            new OpenLineage(
+                new URI("https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client")));
+
+    DatasetFactory<OpenLineage.OutputDataset> datasetFactory =
+        DatasetFactory.output(openLineageContext);
+
+    final List<OpenLineage.OutputDataset> result =
+        DataSourceV2RelationDatasetExtractor.extract(
+            datasetFactory, openLineageContext, dataSourceV2Relation);
+
+    assertEquals(1, result.size());
+    assertThat(result.get(0))
+        .hasFieldOrPropertyWithValue("name", "bigquery-public-data.samples.shakespeare")
+        .hasFieldOrPropertyWithValue("namespace", "bigquery");
+
+    OpenLineage.DatasetFacet datasetFacet =
+        result.get(0).getFacets().getAdditionalProperties().get("customFacet");
+    assertThat(datasetFacet.getAdditionalProperties())
+        .hasFieldOrPropertyWithValue("property", "value");
+  }
 }
