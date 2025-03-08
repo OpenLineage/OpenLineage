@@ -21,6 +21,7 @@ import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.iceberg.CachingCatalog;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.spark.SparkCatalog;
+import org.apache.iceberg.spark.SparkSessionCatalog;
 import org.apache.spark.sql.catalyst.plans.logical.BinaryCommand;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.UnaryCommand;
@@ -133,9 +134,8 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
    */
   @Override
   public List<D> apply(LogicalPlan x) {
-    SparkCatalog catalog = (SparkCatalog) getCatalog(x).get();
     // hack catalog to inject OpenLineageMetricsReporter
-    Catalog icebergCatalog = catalog.icebergCatalog();
+    Catalog icebergCatalog = getIcebergCatalog(x).get();
     if (icebergCatalog instanceof CachingCatalog) {
       // get root catalog of a caching catalog
       Field catalogField = FieldUtils.getField(icebergCatalog.getClass(), "catalog", true);
@@ -155,5 +155,16 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
     }
 
     return Collections.emptyList();
+  }
+
+  private Optional<Catalog> getIcebergCatalog(LogicalPlan x) {
+    CatalogPlugin catalog = getCatalog(x).get();
+    if (catalog instanceof SparkCatalog) {
+      return Optional.ofNullable(((SparkCatalog) catalog).icebergCatalog());
+    }
+    if (catalog instanceof SparkSessionCatalog) {
+      return Optional.ofNullable(((SparkSessionCatalog<?>) catalog).icebergCatalog());
+    }
+    return Optional.empty();
   }
 }
