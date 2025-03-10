@@ -267,15 +267,20 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             )
         }
 
-        event_type = RunState.COMPLETE
+        event_type = RunState.OTHER
+
         if node_status == "skipped":
             event_type = RunState.ABORT
-        elif node_status not in ("success", "pass"):
+        elif node_status in ("fail", "error", "runtime error"):
             event_type = RunState.FAIL
             error_message = event["data"]["run_result"]["message"]
             run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
                 message=error_message, programmingLanguage="sql"
             )
+        elif node_status in ("success", "pass"):
+            event_type = RunState.COMPLETE
+        else:
+            self.logger.info(f"node {node_unique_id} has and unknown node status {node_status}")
 
         inputs = [
             self.node_to_dataset(node=model_input, has_facets=True)
