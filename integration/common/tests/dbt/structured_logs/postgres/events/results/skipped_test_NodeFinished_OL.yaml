@@ -1,0 +1,260 @@
+[
+  {
+    "eventTime":"2024-11-22T15:58:03.518877Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"dbt-run-jaffle_shop",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"JOB"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[ ],
+    "outputs":[ ]
+  },
+  {
+    "eventTime":"2024-12-17T10:03:22.210376Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"TEST"
+        }
+      }
+    },
+    "eventType":"START",
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.customers",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"customer_id",
+                "type":"",
+                "description":"This is a unique identifier for a customer",
+                "fields":[ ]
+              },
+              {
+                "name":"first_name",
+                "type":"",
+                "description":"Customer's first name. PII.",
+                "fields":[ ]
+              },
+              {
+                "name":"last_name",
+                "type":"",
+                "description":"Customer's last name. PII.",
+                "fields":[ ]
+              },
+              {
+                "name":"first_order",
+                "type":"",
+                "description":"Date (UTC) of a customer's first order",
+                "fields":[ ]
+              },
+              {
+                "name":"most_recent_order",
+                "type":"",
+                "description":"Date (UTC) of a customer's most recent order",
+                "fields":[ ]
+              },
+              {
+                "name":"number_of_orders",
+                "type":"",
+                "description":"Count of the number of orders a customer has placed",
+                "fields":[ ]
+              },
+              {
+                "name":"total_order_amount",
+                "type":"",
+                "description":"Total value (AUD) of a customer's orders",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":"This table has basic information about a customer, as well as some derived facts based on a customer's orders"
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public_dbt_test__audit.accepted_values_customers_first_name__Jane",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
+  },
+  {
+    "eventTime":"2024-12-17T10:03:22.210376Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version":{
+          "version":"1.8.2"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"TEST"
+        }
+      }
+    },
+    "eventType":"ABORT",
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.customers",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"customer_id",
+                "type":"",
+                "description":"This is a unique identifier for a customer",
+                "fields":[ ]
+              },
+              {
+                "name":"first_name",
+                "type":"",
+                "description":"Customer's first name. PII.",
+                "fields":[ ]
+              },
+              {
+                "name":"last_name",
+                "type":"",
+                "description":"Customer's last name. PII.",
+                "fields":[ ]
+              },
+              {
+                "name":"first_order",
+                "type":"",
+                "description":"Date (UTC) of a customer's first order",
+                "fields":[ ]
+              },
+              {
+                "name":"most_recent_order",
+                "type":"",
+                "description":"Date (UTC) of a customer's most recent order",
+                "fields":[ ]
+              },
+              {
+                "name":"number_of_orders",
+                "type":"",
+                "description":"Count of the number of orders a customer has placed",
+                "fields":[ ]
+              },
+              {
+                "name":"total_order_amount",
+                "type":"",
+                "description":"Total value (AUD) of a customer's orders",
+                "fields":[ ]
+              }
+            ]
+          },
+          "documentation":{
+            "description":"This table has basic information about a customer, as well as some derived facts based on a customer's orders"
+          },
+          "dataQualityAssertions":{
+            "assertions":[
+              {
+                "assertion":"accepted_values",
+                "success":false,
+                "column":"first_name"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public_dbt_test__audit.accepted_values_customers_first_name__Jane",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[ ]
+          },
+          "documentation":{
+            "description":""
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
+  }
+]
