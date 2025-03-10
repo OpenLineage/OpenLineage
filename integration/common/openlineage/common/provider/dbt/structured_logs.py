@@ -500,7 +500,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         dbt_command_line = add_or_replace_command_line_option(
             dbt_command_line, option="--write-json", replace_option="--no-write-json"
         )
-
         self._open_dbt_log_file()
         process = subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr, text=True)
 
@@ -532,6 +531,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             return
 
         if not os.path.exists(self.dbt_log_file_path):
+            logs_directory = os.path.dirname(self.dbt_log_file_path)
+            os.makedirs(logs_directory, exist_ok=True)
             with open(self.dbt_log_file_path, "w"):
                 pass
 
