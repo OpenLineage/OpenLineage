@@ -280,7 +280,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         elif node_status in ("success", "pass"):
             event_type = RunState.COMPLETE
         else:
-            self.logger.info(f"node {node_unique_id} has and unknown node status {node_status}")
+            self.logger.info(f"node {node_unique_id} has an unknown node status {node_status}")
 
         inputs = [
             self.node_to_dataset(node=model_input, has_facets=True)
