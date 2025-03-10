@@ -248,6 +248,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         resource_type = event["data"]["node_info"]["resource_type"]
         node_unique_id = get_node_unique_id(event)
         node_finished_at = get_event_timestamp(event["data"]["node_info"]["node_finished_at"])
+        if node_finished_at == "":
+            node_finished_at = get_event_timestamp(event["data"]["node_info"]["node_started_at"])
         node_status = event["data"]["node_info"]["node_status"]
         run_id = self.node_id_to_ol_run_id[node_unique_id]
 
@@ -266,8 +268,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         }
 
         event_type = RunState.COMPLETE
-
-        if node_status not in ("success", "pass"):
+        if node_status == "skipped":
+            event_type = RunState.ABORT
+        elif node_status not in ("success", "pass"):
             event_type = RunState.FAIL
             error_message = event["data"]["run_result"]["message"]
             run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(

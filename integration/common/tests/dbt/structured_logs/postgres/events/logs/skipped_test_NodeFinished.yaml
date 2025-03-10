@@ -1,0 +1,98 @@
+[
+  # Command started dbt event
+  {
+    "data": {
+      "log_version": 3,
+      "version": "=1.8.2"
+    },
+    "info": {
+      "category": "",
+      "code": "A001",
+      "extra": { },
+      "invocation_id": "b0ed168e-1926-42da-aa25-6b3eb826074b",
+      "level": "info",
+      "msg": "Running with dbt=1.8.2",
+      "name": "MainReportVersion",
+      "pid": 278,
+      "thread": "MainThread",
+      "ts": "2024-11-22T15:58:03.518877Z"
+    }
+  },
+  # Test Node started dbt event
+  {
+    "data": {
+      "node_info": {
+        "materialized": "test",
+        "meta": { },
+        "node_finished_at": "",
+        "node_name": "accepted_values_customers_first_name__Jane",
+        "node_path": "accepted_values_customers_first_name__Jane.sql",
+        "node_relation": {
+          "alias": "accepted_values_customers_first_name__Jane",
+          "database": "postgres",
+          "relation_name": "",
+          "schema": "public_dbt_test__audit"
+        },
+        "node_started_at": "2024-12-17T10:03:22.210376",
+        "node_status": "started",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312"
+      }
+    },
+    "info": {
+      "category": "",
+      "code": "Q024",
+      "extra": { },
+      "invocation_id": "899a81ce-1512-451a-b34a-480863ac4005",
+      "level": "debug",
+      "msg": "Began running node test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312",
+      "name": "NodeStart",
+      "pid": 841,
+      "thread": "Thread-1 (worker)",
+      "ts": "2024-12-17T10:03:22.211861Z"
+    }
+  },
+  # Test Node finished dbt event
+  {
+    "data": {
+      "node_info": {
+        "materialized": "test",
+        "meta": { },
+        "node_finished_at": "", # this is empty for skipped nodes
+        "node_name": "accepted_values_customers_first_name__Jane",
+        "node_path": "accepted_values_customers_first_name__Jane.sql",
+        "node_relation": {
+          "alias": "accepted_values_customers_first_name__Jane",
+          "database": "postgres",
+          "relation_name": "",
+          "schema": "public_dbt_test__audit"
+        },
+        "node_started_at": "2024-12-17T10:03:22.210376",
+        "node_status": "skipped",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312"
+      },
+      "run_result": {
+        "adapter_response": { },
+        "execution_time": 0,
+        "message": "",
+        "num_failures": 0,
+        "status": "skipped",
+        "thread": "Thread-1 (worker)",
+        "timing_info": [ ]
+      }
+    },
+    "info": {
+      "category": "",
+      "code": "Q025",
+      "extra": { },
+      "invocation_id": "899a81ce-1512-451a-b34a-480863ac4005",
+      "level": "debug",
+      "msg": "Finished running node test.jaffle_shop.accepted_values_customers_first_name__Jane.21e890a312",
+      "name": "NodeFinished",
+      "pid": 841,
+      "thread": "Thread-1 (worker)",
+      "ts": "2024-12-17T10:03:22.805536Z"
+    }
+  }
+]
