@@ -311,6 +311,12 @@ def test_dataset_namespace(target, expected_dataset_namespace, monkeypatch):
             "NodeFinished",
             "./tests/dbt/structured_logs/postgres/test/target/manifest.json",
         ),
+        (
+            "./tests/dbt/structured_logs/postgres/events/logs/skipped_test_NodeFinished.yaml",
+            "./tests/dbt/structured_logs/postgres/events/results/skipped_test_NodeFinished_OL.yaml",
+            "NodeFinished",
+            "./tests/dbt/structured_logs/postgres/test/target/manifest.json",
+        ),
     ],
     ids=[
         "MainReportVersion",
@@ -324,6 +330,7 @@ def test_dataset_namespace(target, expected_dataset_namespace, monkeypatch):
         "failed_SQLQueryStatus",
         "failed_test_NodeFinished",
         "successful_test_NodeFinished",
+        "skipped_test_NodeFinished",
     ],
 )
 def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, manifest_path, monkeypatch):
