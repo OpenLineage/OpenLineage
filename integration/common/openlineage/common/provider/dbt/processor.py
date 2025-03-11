@@ -46,6 +46,7 @@ class Adapter(Enum):
     ATHENA = "athena"
     DUCKDB = "duckdb"
     TRINO = "trino"
+    GLUE = "glue" 
 
     @staticmethod
     def adapters() -> str:
@@ -642,6 +643,8 @@ class DbtArtifactProcessor:
             return f"dremio://{profile['software_host']}:{profile['port']}"
         elif self.adapter_type == Adapter.ATHENA:
             return f"awsathena://athena.{profile['region_name']}.amazonaws.com"
+        elif self.adapter_type == Adapter.GLUE:
+            return f"awsglue://glue.{profile['region']}.amazonaws.com"
         elif self.adapter_type == Adapter.DUCKDB:
             return f"duckdb://{profile['path']}"
         elif self.adapter_type == Adapter.SPARK:
