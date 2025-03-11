@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # see: https://github.com/vishnubob/wait-for-it
+# shellcheck disable=all
 
 WAITFORIT_cmdname=${0##*/}
 
