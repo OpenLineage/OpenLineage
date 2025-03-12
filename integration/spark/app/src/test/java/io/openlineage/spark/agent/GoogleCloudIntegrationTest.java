@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
+import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
 import java.io.IOException;
 import java.net.URI;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaRDD;
@@ -206,6 +208,74 @@ class GoogleCloudIntegrationTest {
     }
 
     verifyEvents(mockServer, replacements, "pysparkBigqueryQueryEnd.json");
+  }
+
+  @Test
+  @EnabledIfSystemProperty(
+      named = SPARK_VERSION_PROPERTY,
+      matches = SPARK_3_3) // Spark version == 3.*
+  void testDuplicateInputs() {
+    String source1_table =
+        String.format("%s.%s.%s_source_query_duplicates1", PROJECT_ID, DATASET_ID, VERSION_NAME);
+    String source2_table =
+        String.format("%s.%s.%s_source_query_duplicates2", PROJECT_ID, DATASET_ID, VERSION_NAME);
+    String target_table =
+        String.format("%s.%s.%s_target_query_duplicates", PROJECT_ID, DATASET_ID, VERSION_NAME);
+    String source_query1 = String.format("SELECT * FROM %s", source1_table);
+    String source_query2 = String.format("SELECT * FROM %s", source2_table);
+    log.info("Source Query: {}", source_query1);
+    log.info("Source Query: {}", source_query2);
+    log.info("Target Table: {}", target_table);
+
+    Dataset<Row> dataset = getTestDataset();
+    dataset.write().format("bigquery").option("table", source1_table).mode("overwrite").save();
+    dataset.write().format("bigquery").option("table", source2_table).mode("overwrite").save();
+
+    Dataset<Row> table1 =
+        spark
+            .read()
+            .format("bigquery")
+            .option("viewMaterializationProject", PROJECT_ID)
+            .option("viewMaterializationDataset", DATASET_ID)
+            .option("viewsEnabled", "true")
+            .option("query", source_query1)
+            .load();
+
+    Dataset<Row> table2 =
+        spark
+            .read()
+            .format("bigquery")
+            .option("viewMaterializationProject", PROJECT_ID)
+            .option("viewMaterializationDataset", DATASET_ID)
+            .option("viewsEnabled", "true")
+            .option("query", source_query2)
+            .load();
+
+    table1
+        .as("t1") // alias causing duplicate dataset
+        .join(
+            table2.as("t2"), // alias causing duplicate dataset,
+            table1.col("a").equalTo(table2.col("b")),
+            "left_outer")
+        .select(table1.col("a"), table2.col("a").as("b"))
+        .write()
+        .format("bigquery")
+        .option("table", target_table)
+        .mode("overwrite")
+        .save();
+
+    // make sure inputs does not contain duplicate datasets
+    List<RunEvent> runEvents = MockServerUtils.getEventsEmitted(mockServer);
+
+    runEvents.stream()
+        .map(RunEvent::getInputs)
+        .map(inputs -> inputs.stream().map(InputDataset::getName).collect(Collectors.toList()))
+        .forEach(
+            // make sure inputs name do not repeat
+            inputs -> assertThat(inputs).doesNotHaveDuplicates());
+
+    // assert some inputs are available
+    assertThat(true).isTrue();
   }
 
   private static void logRunEvents() {

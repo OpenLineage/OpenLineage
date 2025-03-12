@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -446,6 +447,13 @@ class SparkDeltaIntegrationTest {
         mockServer,
         "pysparkV2MergeIntoDeltaTableStartEvent.json",
         "pysparkV2MergeIntoDeltaTableCompleteEvent.json");
+
+    assertThat(
+            MockServerUtils.getEventsEmitted(mockServer).stream()
+                .map(e -> e.getInputs().size())
+                .collect(Collectors.toList()))
+        .describedAs("Number of inputs in each event")
+        .containsOnly(0, 1, 2);
   }
 
   @Test
