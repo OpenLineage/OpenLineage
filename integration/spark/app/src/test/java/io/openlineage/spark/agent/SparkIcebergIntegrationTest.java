@@ -485,8 +485,10 @@ class SparkIcebergIntegrationTest {
             .findFirst();
 
     assertThat(inputStatistics1).isPresent();
-    assertThat(inputStatistics1.get().getRowCount()).isGreaterThan(100);
-    assertThat(inputStatistics1.get().getSize()).isGreaterThan(0);
+    assertThat(inputStatistics1.get().getRowCount()).isEqualTo(100);
+    // size in bytes shall be greater than row count
+    assertThat(inputStatistics1.get().getSize())
+        .isGreaterThan(inputStatistics1.get().getRowCount());
     assertThat(inputStatistics1.get().getFileCount()).isEqualTo(1); // repartitioned
 
     // verify input2 statistics facet
@@ -501,8 +503,10 @@ class SparkIcebergIntegrationTest {
             .findFirst();
 
     assertThat(inputStatistics2).isPresent();
-    assertThat(inputStatistics2.get().getRowCount()).isGreaterThan(50);
-    assertThat(inputStatistics2.get().getSize()).isGreaterThan(0);
+    assertThat(inputStatistics2.get().getRowCount()).isEqualTo(50);
+    // size in bytes shall be greater than row count
+    assertThat(inputStatistics1.get().getSize())
+        .isGreaterThan(inputStatistics1.get().getRowCount());
     assertThat(inputStatistics2.get().getFileCount()).isEqualTo(1);
 
     // verify input1 statistics facet contains ScanReport facet
