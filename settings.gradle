@@ -1,3 +1,0 @@
-rootProject.name = 'hive-lineage'
-
-include 'hive-openlineage-hook'
