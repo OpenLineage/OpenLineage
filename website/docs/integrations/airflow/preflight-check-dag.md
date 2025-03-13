@@ -1,6 +1,6 @@
 ---
 sidebar_position: 3
-title: Preflight check DAG
+title: Preflight Check DAG
 ---
 # Preflight Check DAG
 
