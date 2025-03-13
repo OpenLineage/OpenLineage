@@ -13,17 +13,24 @@ import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
 import java.util.Map;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-@Getter
 @ToString
 public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageConfig> {
 
+  private static final Integer DEFAULT_TRACKING_INTERVAL = 60;
+
   @JsonProperty("dataset")
   @Setter
+  @Getter
   private FlinkDatasetConfig datasetConfig;
+
+  @JsonProperty("trackingIntervalInSeconds")
+  @Setter
+  private Integer trackingIntervalInSeconds;
 
   public FlinkOpenLineageConfig() {
     super();
@@ -37,7 +44,8 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
       CircuitBreakerConfig circuitBreaker,
       Map metricsConfig,
       RunConfig runConfig,
-      JobConfig jobConfig) {
+      JobConfig jobConfig,
+      Integer trackingIntervalInSeconds) {
     super(
         transportConfig,
         facetsConfig,
@@ -47,6 +55,7 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
         runConfig,
         jobConfig);
     this.datasetConfig = datasetConfig;
+    this.trackingIntervalInSeconds = trackingIntervalInSeconds;
   }
 
   @Override
@@ -58,6 +67,11 @@ public class FlinkOpenLineageConfig extends OpenLineageConfig<FlinkOpenLineageCo
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
         mergePropertyWith(metricsConfig, other.metricsConfig),
         mergePropertyWith(runConfig, other.runConfig),
-        mergePropertyWith(jobConfig, other.jobConfig));
+        mergePropertyWith(jobConfig, other.jobConfig),
+        mergePropertyWith(trackingIntervalInSeconds, other.trackingIntervalInSeconds));
+  }
+
+  public Integer getTrackingIntervalInSeconds() {
+    return Optional.ofNullable(trackingIntervalInSeconds).orElse(DEFAULT_TRACKING_INTERVAL);
   }
 }

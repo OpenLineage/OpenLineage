@@ -25,10 +25,10 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.api.OpenLineageContext.JobIdentifier;
 import io.openlineage.flink.client.CheckpointFacet;
-import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import lombok.SneakyThrows;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.configuration.ReadableConfig;
@@ -45,9 +45,9 @@ class OpenLineageContinousJobTrackerTest {
 
   WireMockServer wireMockServer = new WireMockServer(18088);
   ReadableConfig config = mock(ReadableConfig.class);
+  Consumer<CheckpointFacet> onJobCheckpoint = mock(Consumer.class);
   OpenLineageContinousJobTracker tracker =
-      new OpenLineageContinousJobTracker(config, Duration.ofMillis(100));
-  FlinkExecutionContext context = mock(FlinkExecutionContext.class);
+      new OpenLineageContinousJobTracker(Duration.ofMillis(100), "http://localhost:18088/jobs");
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   MeterRegistry meterRegistry;
   JobID jobID = new JobID(1, 2);
@@ -69,7 +69,6 @@ class OpenLineageContinousJobTrackerTest {
     wireMockServer.start();
     configureFor("localhost", 18088);
     meterRegistry = new SimpleMeterRegistry();
-    when(context.getOlContext()).thenReturn(openLineageContext);
     when(openLineageContext.getJobId())
         .thenReturn(JobIdentifier.builder().flinkJobId(jobID).build());
     when(openLineageContext.getMeterRegistry()).thenReturn(meterRegistry);
@@ -104,13 +103,13 @@ class OpenLineageContinousJobTrackerTest {
               methodDone.countDown();
               return null;
             })
-        .when(context)
-        .onJobCheckpoint(any());
+        .when(onJobCheckpoint)
+        .accept(any());
 
-    tracker.startTracking(context);
+    tracker.startTracking(openLineageContext, onJobCheckpoint);
     methodDone.await(10, TimeUnit.SECONDS);
 
-    verify(context, times(1)).onJobCheckpoint(eq(expectedCheckpointFacet));
+    verify(onJobCheckpoint, times(1)).accept(eq(expectedCheckpointFacet));
     tracker.stopTracking();
   }
 
@@ -143,13 +142,13 @@ class OpenLineageContinousJobTrackerTest {
               methodDone.countDown();
               return null;
             })
-        .when(context)
-        .onJobCheckpoint(any());
+        .when(onJobCheckpoint)
+        .accept(any());
 
-    tracker.startTracking(context);
+    tracker.startTracking(openLineageContext, onJobCheckpoint);
     methodDone.await(10, TimeUnit.SECONDS);
 
-    verify(context, times(1)).onJobCheckpoint(eq(expectedCheckpointFacet));
+    verify(onJobCheckpoint, times(1)).accept(eq(expectedCheckpointFacet));
     tracker.stopTracking();
   }
 }
