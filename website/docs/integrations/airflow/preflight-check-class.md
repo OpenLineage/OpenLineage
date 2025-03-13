@@ -21,11 +21,7 @@ import os
 import attr
 
 from packaging.version import Version
-from airflow import DAG
 from airflow.configuration import conf
-from airflow import __version__ as airflow_version
-from airflow.operators.python import PythonOperator
-from airflow.utils.dates import days_ago
 
 log = logging.getLogger(__name__)
 
