@@ -297,31 +297,13 @@ shadowJar {
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/LICENSE'
     exclude 'META-INF/NOTICE'
+    exclude 'META-INF/versions/21/**'
+    exclude 'META-INF/versions/22/**'
 
     dependencies {
         exclude(dependency("com.google.guava:guava:${guavaVersion}"))
         exclude(dependency("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"))
     }
-
-    // Relocate some packages
-//    [
-//            'com.google.common',
-//            'com.google.protobuf',
-//            'com.google.longrunning',
-//            'com.fasterxml',
-//            'io.grpc',
-//
-//            // FIXME: Temporary to avoid conflicts with Dataproc's built-in
-//            //  OpenLineage and related libraries
-//            'io.openlineage.client',
-//            'io.openlineage.core',
-//            'io.openlineage.server',
-//            'io.micrometer',
-//            'com.google.cloud.datalineage',
-//            'com.google.cloud.datacatalog',
-//    ].each { pkg ->
-//        relocate pkg, "hive.openlineage.repackaged.${pkg}"
-//    }
 
     manifest {
         attributes([
@@ -376,3 +358,106 @@ spotlessJava {
 classes {
     dependsOn createVersionProperties
 }
+
+//task verifyShadowJarExclusions {
+//    dependsOn shadowJar
+//
+//    doLast {
+//        // Path to the generated shadow JAR file
+//        def shadowJarFile = file("$buildDir/libs/hive-openlineage-hook-shadow.jar")
+//
+//        if (!shadowJarFile.exists()) {
+//            throw new GradleException("Shadow JAR file does not exist: ${shadowJarFile}")
+//        }
+//
+//        println "Listing contents of Shadow JAR: ${shadowJarFile}"
+//
+//        // Use a ZipFile to inspect the contents of the shadow JAR
+//        def zipFile = new java.util.zip.ZipFile(shadowJarFile)
+//        def entries = zipFile.entries()
+//
+//        // Print the names of files in the shadow JAR
+//        def excludedFiles = [
+//                'META-INF/versions/21/', 'META-INF/versions/22/',
+//                'module-info.class', 'META-INF/*.SF', 'META-INF/*.DSA',
+//                'META-INF/*.RSA', 'META-INF/MANIFEST.MF', 'META-INF/DEPENDENCIES',
+//                'META-INF/LICENSE', 'META-INF/NOTICE'
+//        ]
+//
+//        // Check if any of the excluded files are still in the JAR
+//        println "Checking exclusions..."
+//        entries.each { entry ->
+//            excludedFiles.each { exclusionPattern ->
+//                if (entry.name.matches(exclusionPattern)) {
+//                    println "Excluded file still present: ${entry.name}"
+//                }
+//            }
+//        }
+//    }
+//}
+//
+//task printMetaInfContents {
+//    dependsOn shadowJar
+//
+//    doLast {
+//        // Path to the generated shadow JAR file
+//        def shadowJarFile = file("$buildDir/libs/hive-openlineage-hook-shadow.jar")
+//
+//        if (!shadowJarFile.exists()) {
+//            throw new GradleException("Shadow JAR file does not exist: ${shadowJarFile}")
+//        }
+//
+//        println "Listing files in META-INF directory in the Shadow JAR: ${shadowJarFile}"
+//
+//        // Use a ZipFile to inspect the contents of the shadow JAR
+//        def zipFile = new java.util.zip.ZipFile(shadowJarFile)
+//        def entries = zipFile.entries()
+//
+//        // Collect files from the META-INF directory
+//        def metaInfFiles = []
+//        entries.each { entry ->
+//            if (entry.name.startsWith('META-INF/')) {
+//                metaInfFiles.add(entry.name)
+//            }
+//        }
+//
+//        // Print all the files in META-INF
+//        if (metaInfFiles.isEmpty()) {
+//            println "No files found in META-INF."
+//        } else {
+//            println "Files found in META-INF:"
+//            metaInfFiles.each { file ->
+//                println file
+//            }
+//        }
+//    }
+//}
+//
+//
+//task checkShadowJarClasses {
+//    dependsOn printMetaInfContents
+//    dependsOn verifyShadowJarExclusions
+//    doLast {
+//        def jar = file("${buildDir}/libs/hive-openlineage-hook-shadow.jar") // adjust this if shadow jar name is different
+//        ant.unzip(src: jar, dest: "$buildDir/classScan")
+//        def versions = [:]
+//        file("$buildDir/classScan").eachFileRecurse { f ->
+//            if (f.name.endsWith(".class")) {
+//                def bytes = f.bytes
+//                def major = ((bytes[6] & 0xFF) << 8) | (bytes[7] & 0xFF)
+//                versions[major] = (versions[major] ?: 0) + 1
+//                if (major == 65) {
+//                    println "⚠ Java 21 class (65): ${f.path}"
+//                }
+//                if (major == 66) {
+//                    println "⚠ Java 21 class (66): ${f.path}"
+//                }
+//            }
+//        }
+//        versions.each { k, v ->
+//            println "Major version ${k} = ${v} classes"
+//
+//        }
+//
+//    }
+//}
