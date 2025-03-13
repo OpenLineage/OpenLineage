@@ -13,6 +13,8 @@ import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
+import io.openlineage.sql.OpenLineageSql;
+import io.openlineage.sql.SqlMeta;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -35,12 +37,12 @@ public class DataSourceV2RelationDatasetExtractor {
       OpenLineageContext context,
       DataSourceV2Relation relation,
       DatasetCompositeFacetsBuilder datasetFacetsBuilder) {
-
     OpenLineage openLineage = context.getOpenLineage();
     Optional<DatasetIdentifier> di = getDatasetIdentifierExtended(context, relation);
     return di.map(
             identifier -> {
-              if (ExtensionDataSourceV2Utils.hasExtensionLineage(relation)) {
+              if (ExtensionDataSourceV2Utils.hasExtensionLineage(relation)
+                  || ExtensionDataSourceV2Utils.hasQueryExtensionLineage(relation)) {
                 ExtensionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
               } else {
                 TableCatalog tableCatalog = (TableCatalog) relation.catalog().get();
@@ -90,6 +92,20 @@ public class DataSourceV2RelationDatasetExtractor {
     // Check if the dataset has extension lineage
     if (ExtensionDataSourceV2Utils.hasExtensionLineage(relation)) {
       return Optional.of(ExtensionDataSourceV2Utils.getDatasetIdentifier(relation));
+    }
+
+    if (ExtensionDataSourceV2Utils.hasQueryExtensionLineage(relation)) {
+      String namespace = relation.table().properties().get("openlineage.dataset.namespace");
+      Optional<SqlMeta> sqlMeta =
+          OpenLineageSql.parse(
+              Collections.singletonList(
+                  relation.table().properties().get("openlineage.dataset.query")),
+              namespace);
+      return sqlMeta.flatMap(
+          meta ->
+              meta.inTables().stream()
+                  .findFirst()
+                  .map(dbtm -> new DatasetIdentifier(dbtm.qualifiedName(), namespace)));
     }
 
     // Check if the relation identifier is empty
