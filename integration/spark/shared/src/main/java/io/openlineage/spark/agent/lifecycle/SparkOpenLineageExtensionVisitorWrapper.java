@@ -46,13 +46,15 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
   private static final String providerCanonicalName =
       "io.openlineage.spark.extension.OpenLineageExtensionProvider";
 
-  private static final ByteBuffer providerClassBytes;
+  private static ByteBuffer providerClassBytes;
+  private static boolean providerFailWarned = false;
 
   static {
     try {
       providerClassBytes = getProviderClassBytes(Thread.currentThread().getContextClassLoader());
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      providerFailWarned = true;
+      log.warn("Failed to load provider class bytes.", e);
     }
   }
 
@@ -283,10 +285,24 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
             log.trace("{} succeeded to load a class", cl);
           } catch (InvocationTargetException ex) {
             if (!(ex.getCause() instanceof LinkageError)) {
-              log.error("Failed to load OpenLineageExtensionProvider class", ex.getCause());
+              if (!providerFailWarned) {
+                log.error("Failed to load OpenLineageExtensionProvider class", ex.getCause());
+              }
+              providerFailWarned = true;
             }
+          } catch (RuntimeException ex) {
+            // On Java 17, if add opens is not used, the defineClass method will throw an
+            // InaccessibleObjectException
+            // Any workaround is TODO, but we should not crash here
+            if (!providerFailWarned) {
+              log.warn("{}: Failed to load OpenLineageExtensionProvider class ", cl, ex);
+            }
+            providerFailWarned = true;
           } catch (Exception e) {
-            log.error("{}: Failed to load OpenLineageExtensionProvider class ", cl, e);
+            if (!providerFailWarned) {
+              log.warn("{}: Failed to load OpenLineageExtensionProvider class ", cl, e);
+            }
+            providerFailWarned = true;
           }
         });
   }
