@@ -6,7 +6,12 @@ title: Preflight Check Class
 
 ## Purpose
 
-In some cases, you might want to validate your OpenLineage setup in Airflow without having to start Airflow services or trigger a pipeline. Or you might be looking for a way to validate OpenLineage within a task rather than use a DAG. In these cases, you can use this Python class instead of the [Preflight Check DAG](https://openlineage.io/docs/integrations/airflow/preflight-check-dag), which is the basis of this class. 
+In some cases, you might want to validate your OpenLineage setup in Airflow 
+without having to start Airflow services or trigger a pipeline. Or you might be 
+looking for a way to validate OpenLineage within a task rather than use a DAG. 
+In these cases, you can use this Python class instead of the [Preflight Check 
+DAG](https://openlineage.io/docs/integrations/airflow/preflight-check-dag), 
+which is the basis of this class. 
 
 ## Preflight Check Class Code
 
@@ -24,25 +29,27 @@ from airflow.utils.dates import days_ago
 
 log = logging.getLogger(__name__)
 
+BYPASS_LATEST_VERSION_CHECK: bool = False
+LINEAGE_BACKEND: str = "MARQUEZ"
+
 class CheckOpenLineage:
     """
-    The preflight CheckOpenLineage class has been created to enable verifying of the setup 
-    of OpenLineage within an Apache Airflow environment. It checks the Airflow version, the 
-    version of the installed OpenLineage package, and the configuration settings read by the 
-    OpenLineage listener. This validation is crucial because, after setting up OpenLineage 
-    with Airflow and configuring necessary environment variables, users need confirmation 
-    that the setup is correctly done to start receiving OpenLineage events.
-    """
+    The CheckOpenLineage class has been created to enable verifying of the setup 
+    of OpenLineage within an Apache Airflow environment. It checks the Airflow 
+    version, the version of the installed OpenLineage package, and the 
+    configuration settings read by the OpenLineage listener. This validation is 
+    crucial because, after setting up OpenLineage with Airflow and configuring 
+    necessary environment variables, a user needs confirmation 
+    that their OpenLineage consumer will start receiving OpenLineage events.
 
-    BYPASS_LATEST_VERSION_CHECK: bool = False
-    LINEAGE_BACKEND: str = "MARQUEZ"
-
-    def __init__(self) -> None:
+    This class is based on the Preflight Check DAG in the OpenLineage Docs: 
+    https://openlineage.io/docs/integrations/airflow/preflight-check-dag.
+    """    
 
     def _get_latest_package_version(self, library_name: str) -> Version | None:
         """
-        Get the latest available version of the Apache Airflow OpenLineage Provider package
-        from the PyPI.org API.
+        Get the latest available version of the Apache Airflow OpenLineage 
+        Provider package from the PyPI.org API.
         """
         try:
             import requests
@@ -52,7 +59,9 @@ class CheckOpenLineage:
             version_string = response.json()["info"]["version"]
             return Version(version_string)
         except Exception as e:
-            log.error(f"Failed to fetch latest version for `{library_name}` from PyPI: {e}")
+            log.error(
+                f"Failed to fetch latest version for `{library_name}` from PyPI: {e}"
+                )
             return None
 
 
@@ -67,23 +76,32 @@ class CheckOpenLineage:
             log.info(f"Installed {library_name} version is {version}.")
             return version
         except Exception as e:
-            raise ModuleNotFoundError(f"`{library_name}` is not installed") from e
+            raise ModuleNotFoundError(
+                f"`{library_name}` is not installed"
+                ) from e
 
 
     def _provider_can_be_used(self) -> [bool, str]:
         """
-        Get the version of the locally installed Apache Airflow instance to determine if the
-        Apache Airflow OpenLineage Provider can be used.
+        Get the version of the locally installed Apache Airflow instance to 
+        determine if the Apache Airflow OpenLineage Provider can be used.
         """
         import subprocess
         
         app_name = "airflow"
         version_flag = "version"
-        process = subprocess.run([app_name, version_flag], capture_output=True, text=True, check=True)
+        process = subprocess.run(
+            [app_name, version_flag], 
+            capture_output=True, 
+            text=True, 
+            check=True
+            )
         version_output = process.stdout.strip()
         parsed_version = Version(version_output)
         if parsed_version < Version("2.3"):
-            raise RuntimeError("OpenLineage is not supported in Airflow versions <2.3")
+            raise RuntimeError(
+                "OpenLineage is not supported in Airflow versions <2.3"
+                )
         elif parsed_version >= Version("2.8"):
             log.info("OpenLineage Provider can be used.")
             return True, version_output
@@ -92,8 +110,9 @@ class CheckOpenLineage:
 
     def validate_ol_installation(self) -> None:
         """
-        Validate the OpenLineage installation by verifying the compatibility of the OpenLineage integration and the
-        locally installed copy of Apache Airflow.
+        Validate the OpenLineage installation by verifying the compatibility of 
+        the OpenLineage integration and the locally installed copy of Apache 
+        Airflow.
         """
         library_name = "openlineage-airflow"
         provider_status = self._provider_can_be_used()
@@ -106,30 +125,30 @@ class CheckOpenLineage:
                     f"Airflow version `{provider_status[1]}` requires `{library_name}` version >=2.0.0. "
                     f"Installed version: `{library_version}` "
                     f"Please upgrade the package using `pip install --upgrade {library_name}`"
-                )
+                    )
             elif Version(provider_status[1]) >= Version("2.8.0") and library_version < Version("1.11.0"):
                 raise ValueError(
                     f"Airflow version `{provider_status[1]}` requires `{library_name}` version >=1.11.0. "
                     f"Installed version: `{library_version}` "
                     f"Please upgrade the package using `pip install --upgrade {library_name}`"
-                )
+                    )
 
             if BYPASS_LATEST_VERSION_CHECK:
-	            log.info(f"Bypassing the latest version check for `{library_name}`")
-	            return
+                log.info(f"Bypassing the latest version check for `{library_name}`")
+                return
 
-	        latest_version = self._get_latest_package_version(library_name)
-	        if latest_version is None:
-	            log.warning(f"Failed to fetch the latest version for `{library_name}`. Skipping version check.")
-	            return
+            latest_version = self._get_latest_package_version(library_name)
+            if latest_version is None:
+                log.warning(f"Failed to fetch the latest version for `{library_name}`. Skipping version check.")
+                return
 
-	        if library_version < latest_version:
-	            raise ValueError(
-	                f"`{library_name}` is out of date. "
-	                f"Installed version: `{library_version}`, "
-	                f"Required version: `{latest_version}`"
-	                f"Please upgrade the package using `pip install --upgrade {library_name}` or set BYPASS_LATEST_VERSION_CHECK to True"
-	            )
+            if library_version < latest_version:
+                raise ValueError(
+                    f"`{library_name}` is out of date. "
+                    f"Installed version: `{library_version}`, "
+                    f"Required version: `{latest_version}`"
+                    f"Please upgrade the package using `pip install --upgrade {library_name}` or set BYPASS_LATEST_VERSION_CHECK to True"
+                    )
 
         else:
             library_version = self._get_installed_package_version(library_name)
@@ -138,7 +157,7 @@ class CheckOpenLineage:
                     f"Airflow version `{provider_status[1]}` is no longer supported as of October 2022. "
                     f"Consider upgrading to a more recent version of Airflow. " 
                     f"If upgrading to Airflow >=2.7.0, use the OpenLineage Airflow Provider. "
-                )
+                    )
 
     def _is_transport_set(self) -> None:
         """Check if an OpenLineage transport has been set."""
@@ -150,7 +169,7 @@ class CheckOpenLineage:
                 "Please check the format at "
                 "https://openlineage.io/docs/client/python/#built-in-transport-types",
                 transport,
-            )
+                )
         log.info("Airflow OpenLineage transport is not set.")
         return
 
@@ -167,18 +186,21 @@ class CheckOpenLineage:
 
 
     def _check_http_env_vars(self) -> None:
-        """Check environment for OpenLineage URL and endpoint environment variables."""
+        """
+        Check environment for OpenLineage URL and endpoint environment 
+        variables.
+        """
         from urllib.parse import urljoin
 
-        try:
-            final_url = urljoin(os.getenv("OPENLINEAGE_URL", ""), os.getenv("OPENLINEAGE_ENDPOINT", ""))
+        final_url = urljoin(os.getenv("OPENLINEAGE_URL"), os.getenv("OPENLINEAGE_ENDPOINT"))
+        if final_url:
             log.info("OPENLINEAGE_URL and OPENLINEAGE_ENDPOINT are set to: %s", final_url)
-        except:
+        else:
             raise ValueError(
                 "OPENLINEAGE_URL and OPENLINEAGE_ENDPOINT are not set. "
                 "Please set up OpenLineage using documentation at "
                 "https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/guides/user.html"
-            )
+                )
 
         transport_var = os.getenv("AIRFLOW__OPENLINEAGE__TRANSPORT", "")
         if transport_var:
@@ -198,7 +220,9 @@ class CheckOpenLineage:
         self._check_openlineage_yml("openlineage.yml")
         self._check_openlineage_yml("~/.openlineage/openlineage.yml")
         self._check_http_env_vars()
-        raise ValueError("OpenLineage is missing configuration, please refer to the OL setup docs.")
+        raise ValueError(
+            "OpenLineage is missing configuration, please refer to the OL setup docs."
+            )
 
 
     def _is_listener_accessible(self):
@@ -221,7 +245,10 @@ class CheckOpenLineage:
 
 
     def _is_ol_disabled(self):
-        """Confirm that OpenLineage is not disabled and inspect the configuration to suggest a fix."""
+        """
+        Confirm that OpenLineage is not disabled and inspect the configuration 
+        to suggest a fix.
+        """
         if self._provider_can_be_used():
             try:
                 # apache-airflow-providers-openlineage >= 1.7.0
@@ -238,12 +265,12 @@ class CheckOpenLineage:
             elif os.getenv("OPENLINEAGE_DISABLED", "false").lower() == "true":
                 raise ValueError(
                     "OpenLineage is disabled due to the environment variable OPENLINEAGE_DISABLED"
-                )
+                    )
             raise ValueError(
                 "OpenLineage is disabled because required config/env variables are not set. "
                 "Please refer to "
                 "https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/guides/user.html"
-            )
+                )
         log.info("OpenLineage is not disabled.")
         return False
 
@@ -259,11 +286,14 @@ class CheckOpenLineage:
 
             transport = (
                 OpenLineagePlugin.listeners[0].adapter.get_or_create_openlineage_client().transport
-            )
+                )
         return transport
 
     def is_ol_accessible_and_enabled(self):
-        """Confirm that OpenLineage is accessible and enabled by attempting to build the transport."""
+        """
+        Confirm that OpenLineage is accessible and enabled by attempting to 
+        build the transport.
+        """
         if not self._is_listener_accessible():
             self._is_ol_disabled()
 
@@ -280,7 +310,7 @@ class CheckOpenLineage:
         """Validate the connection to the lineage backend."""
         transport = self._get_transport()
         config = attr.asdict(transport.config)
-        self._verify_backend(self.LINEAGE_BACKEND, config)
+        self._verify_backend(LINEAGE_BACKEND, config)
 
 
     def _verify_backend(self, backend_type: str, config: dict):
