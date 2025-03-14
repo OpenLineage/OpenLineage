@@ -47,7 +47,7 @@ public final class SparkOpenLineageExtensionVisitorWrapper {
       "io.openlineage.spark.extension.OpenLineageExtensionProvider";
 
   private static ByteBuffer providerClassBytes;
-  private static boolean providerFailWarned = false;
+  private static boolean providerFailWarned;
 
   static {
     try {
