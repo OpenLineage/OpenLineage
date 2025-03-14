@@ -93,9 +93,9 @@ def _get_installed_package_version(library_name) -> Version | None:
 
 def _provider_can_be_used() -> bool:
     parsed_version = Version(airflow_version)
-    if parsed_version < Version("2.1"):
-        raise RuntimeError("OpenLineage is not supported in Airflow versions <2.1")
-    elif parsed_version >= Version("2.7"):
+    if parsed_version < Version("2.3"):
+        raise RuntimeError("OpenLineage is not supported in Airflow versions <2.3")
+    elif parsed_version >= Version("2.8"):
         return True
     return False
 
@@ -104,30 +104,47 @@ def validate_ol_installation() -> None:
     library_name = "openlineage-airflow"
     if _provider_can_be_used():
         library_name = "apache-airflow-providers-openlineage"
+        library_version = _get_installed_package_version(library_name)
+        
+        if Version(airflow_version) >= Version("2.9.0") and library_version < Version("2.0.0"):
+            raise ValueError(
+                f"Airflow version `{airflow_version}` requires `{library_name}` version >=2.0.0. "
+                f"Installed version: `{library_version}` "
+                f"Please upgrade the package using `pip install --upgrade {library_name}`"
+            )
 
-    library_version = _get_installed_package_version(library_name)
-    if Version(airflow_version) >= Version("2.10.0") and library_version < Version("1.8.0"):
-        raise ValueError(
-            f"Airflow version `{airflow_version}` requires `{library_name}` version >=1.8.0. "
-            f"Installed version: `{library_version}` "
-            f"Please upgrade the package using `pip install --upgrade {library_name}`"
-        )
-    if BYPASS_LATEST_VERSION_CHECK:
-        log.info(f"Bypassing the latest version check for `{library_name}`")
-        return
+        elif Version(airflow_version) >= Version("2.8.0") and library_version < Version("1.11.0"):
+                raise ValueError(
+                    f"Airflow version `{airflow_version}` requires `{library_name}` version >=1.11.0. "
+                    f"Installed version: `{library_version}` "
+                    f"Please upgrade the package using `pip install --upgrade {library_name}`"
+                    )
 
-    latest_version = _get_latest_package_version(library_name)
-    if latest_version is None:
-        log.warning(f"Failed to fetch the latest version for `{library_name}`. Skipping version check.")
-        return
+        if BYPASS_LATEST_VERSION_CHECK:
+            log.info(f"Bypassing the latest version check for `{library_name}`")
+            return
 
-    if library_version < latest_version:
-        raise ValueError(
-            f"`{library_name}` is out of date. "
-            f"Installed version: `{library_version}`, "
-            f"Required version: `{latest_version}`"
-            f"Please upgrade the package using `pip install --upgrade {library_name}` or set BYPASS_LATEST_VERSION_CHECK to True"
-        )
+        latest_version = _get_latest_package_version(library_name)
+        if latest_version is None:
+            log.warning(f"Failed to fetch the latest version for `{library_name}`. Skipping version check.")
+            return
+
+        if library_version < latest_version:
+            raise ValueError(
+                f"`{library_name}` is out of date. "
+                f"Installed version: `{library_version}`, "
+                f"Required version: `{latest_version}`"
+                f"Please upgrade the package using `pip install --upgrade {library_name}` or set BYPASS_LATEST_VERSION_CHECK to True"
+            )
+
+    else:
+        library_version = _get_installed_package_version(library_name)
+        if Version(airflow_version) < Version("1.11.0"):
+            raise ValueError(
+                f"Airflow version `{airflow_version}` is no longer supported as of October 2022. "
+                f"Consider upgrading to a more recent version of Airflow. " 
+                f"If upgrading to Airflow >=2.7.0, use the OpenLineage Airflow Provider. "
+                )
 
 
 def _is_transport_set() -> None:
@@ -177,14 +194,22 @@ def _check_openlineage_yml(file_path) -> bool:
 def _check_http_env_vars() -> None:
     from urllib.parse import urljoin
 
-    final_url = urljoin(os.getenv("OPENLINEAGE_URL", ""), os.getenv("OPENLINEAGE_ENDPOINT", ""))
+    final_url = urljoin(os.getenv("OPENLINEAGE_URL", ""), os.getenv("OPENLINEAGE_ENDPOINT"))
     if final_url:
         raise ValueError("OPENLINEAGE_URL and OPENLINEAGE_ENDPOINT are set to: %s", final_url)
-    log.info(
-        "OPENLINEAGE_URL and OPENLINEAGE_ENDPOINT are not set. "
-        "Please set up OpenLineage using documentation at "
-        "https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/guides/user.html"
-    )
+    else:
+        log.info(
+            "OPENLINEAGE_URL and OPENLINEAGE_ENDPOINT are not set. "
+            "Please set up OpenLineage using documentation at "
+            "https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/guides/user.html"
+        )
+
+    transport_var = os.getenv("AIRFLOW__OPENLINEAGE__TRANSPORT", "")
+    if transport_var:
+        log.info("AIRFLOW__OPENLINEAGE__TRANSPORT is set to: %s", transport_var)
+    else:
+        log.info("AIRFLOW__OPENLINEAGE__TRANSPORT variable is not set.")
+
     return
 
 
