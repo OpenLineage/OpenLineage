@@ -53,7 +53,6 @@ public class ContainerHiveTestBase {
         .when(request("/api/v1/lineage"))
         .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
     client = HiveJdbcClient.create(hiveContainer.getMappedPort(10000));
-    Awaitility.await().until(client::validateHiveJdbcConnection);
     Awaitility.await().until(openLineageClientMockContainer::isRunning);
   }
 
