@@ -982,8 +982,6 @@ jobs:
   build-integration-hive:
     working_directory: ~/openlineage/integration/hive
     parameters:
-      scala:
-        type: string
       release:
         type: boolean
         default: false
@@ -1027,9 +1025,6 @@ jobs:
             - ~/.gradle
 
   test-integration-hive:
-    parameters:
-      env-variant:
-        type: string
     working_directory: ~/openlineage/integration/hive
     machine:
       image: ubuntu-2404:current
@@ -1062,9 +1057,6 @@ jobs:
           destination: pmd-report
 
   integration-test-integration-hive:
-    parameters:
-      env-variant:
-        type: string
     working_directory: ~/openlineage/integration/hive
     machine:
       image: ubuntu-2404:current
