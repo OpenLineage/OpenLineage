@@ -30,16 +30,16 @@ ext {
 
     assertjVersion = '3.27.3'
     bigqueryVersion = '0.35.1'
-    junit5Version = '5.11.4'
+    junit5Version = '5.12.1'
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.5'
-    testcontainersVersion = '1.20.5'
+    testcontainersVersion = '1.20.6'
     configurableTestConfig = [
             sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
             testDir      : project.findProperty('test.dir') ?: System.getProperty('test.dir')
     ]
-    micrometerVersion = '1.14.4'
+    micrometerVersion = '1.14.5'
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
@@ -132,7 +132,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.module'
     }
 
-    testImplementation(platform("software.amazon.awssdk:bom:2.30.29"))
+    testImplementation(platform("software.amazon.awssdk:bom:2.31.1"))
     testImplementation("software.amazon.awssdk:auth")
     testImplementation("software.amazon.awssdk:emr")
     testImplementation("software.amazon.awssdk:s3")
