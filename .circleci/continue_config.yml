@@ -1038,6 +1038,8 @@ jobs:
           command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
       - attach_workspace:
           at: ~/
+      - set_java_version:
+          java_version: "8"
       - restore_cache:
           keys:
             - v1-integration-hive-{{ checksum "/tmp/checksum.txt" }}
