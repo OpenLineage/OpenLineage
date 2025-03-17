@@ -59,7 +59,7 @@ else
     # Changes to the spec require all workflows to run
 #    check_change spec true "*"
 #    check_change .circleci true "*"
-    check_change .circleci true openlineage-hive.yml
+    check_change .circleci true openlineage-java.yml openlineage-hive.yml
 #    check_change integration/sql/ true "*"
 
 #    check_change client/java/ true openlineage-java.yml openlineage-flink.yml openlineage-spark.yml
@@ -74,7 +74,7 @@ else
 #    check_change proxy/backend/ true openlineage-proxy-backend.yml
 #    check_change proxy/fluentd/ true openlineage-proxy-fluentd.yml
 #    check_change website false openlineage-website.yml
-    check_change integration/hive true openlineage-hive.yml
+    check_change integration/hive true openlineage-java.yml openlineage-hive.yml
 fi
 touch workflow_files.txt
 FILES=$(sort workflow_files.txt | uniq | tr "\n" " ")
