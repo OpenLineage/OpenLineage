@@ -21,11 +21,7 @@ import os
 import attr
 
 from packaging.version import Version
-from airflow import DAG
 from airflow.configuration import conf
-from airflow import __version__ as airflow_version
-from airflow.operators.python import PythonOperator
-from airflow.utils.dates import days_ago
 
 log = logging.getLogger(__name__)
 
@@ -184,6 +180,19 @@ class CheckOpenLineage:
         log.info("OpenLineage config is not set.")
         return
 
+    def _check_openlineage_yml(self, file_path: str) -> bool:
+        file_path = os.path.expanduser(file_path)
+        if os.path.exists(file_path):
+            with open(file_path, "r") as file:
+                content = file.read()
+            if not content:
+                raise ValueError(f"Empty file: `{file_path}`")
+            raise ValueError(
+                    f"File found at `{file_path}` with the following content: `{content}`. "
+                    "Make sure there the configuration is correct."
+                )
+        log.info("File not found: `%s`", file_path)
+        return False
 
     def _check_http_env_vars(self) -> None:
         """
