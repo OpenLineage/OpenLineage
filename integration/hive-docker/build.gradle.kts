@@ -64,7 +64,7 @@ abstract class BuildDockerImageTask : DefaultTask() {
     @get:Input abstract val tezVersion: Property<String>
     @get:InputDirectory abstract val dockerBuildContext: DirectoryProperty
     @get:Input abstract val platforms: SetProperty<String>
-    @get:Input abstract val skip: Property<String>
+    @get:Input @get:Optional abstract val skip: Property<String>
 
     @TaskAction
     fun buildDockerImage() {
