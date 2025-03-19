@@ -147,6 +147,10 @@ def parse_and_generate(locations):
             tmp_location.write_text(location.read_text())
             temporary_locations.append(tmp_location)
 
+        extra_template_data = defaultdict(dict, deep_merge_dicts(extra_redact_fields, extra_schema_urls))
+
+        print(extra_template_data)
+
         os.chdir(tmp_directory)
         # first parse OpenLineage.json
         parser = JsonSchemaParser(
@@ -167,7 +171,7 @@ def parse_and_generate(locations):
             use_double_quotes=True,
             keep_model_order=True,
             custom_template_dir=TEMPLATES_LOCATION,
-            extra_template_data=defaultdict(dict, deep_merge_dicts(extra_redact_fields, extra_schema_urls)),
+            extra_template_data=extra_template_data,
             additional_imports=["typing.ClassVar", "typing.Any", "typing.cast", "openlineage.client.constants.DEFAULT_PRODUCER"],
         )
 
@@ -204,7 +208,7 @@ def parse_and_generate(locations):
     return output
 
 
-def generate_facet_v2_module(module_location):
+def generate_facet_v2_module(module_location: str):
     modules = [name for _, name, _ in pkgutil.iter_modules([module_location]) if name != "base"]
 
     facet_v2_template = (TEMPLATES_LOCATION / "facet_v2.jinja2").read_text()
@@ -212,6 +216,8 @@ def generate_facet_v2_module(module_location):
     format_and_save_output(
         output=output, location=PYTHON_CLIENT_LOCATION / "openlineage" / "client" / "facet_v2.py"
     )
+
+
 def separate_imports(code):
   """Separates a Python script code (as string) into imports and the rest."""
   imports_section = []
@@ -286,7 +292,7 @@ def main(output_location):
             path.parent.mkdir(parents=True)
         if body:
             format_and_save_output(body, path, path.name == "open_lineage.py")
-    generate_facet_v2_module(DEFAULT_OUTPUT_LOCATION)
+    generate_facet_v2_module(str(DEFAULT_OUTPUT_LOCATION))
 
 
 if __name__ == "__main__":
