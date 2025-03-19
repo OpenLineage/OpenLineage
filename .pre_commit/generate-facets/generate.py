@@ -147,10 +147,6 @@ def parse_and_generate(locations):
             tmp_location.write_text(location.read_text())
             temporary_locations.append(tmp_location)
 
-        extra_template_data = defaultdict(dict, deep_merge_dicts(extra_redact_fields, extra_schema_urls))
-
-        print(extra_template_data)
-
         os.chdir(tmp_directory)
         # first parse OpenLineage.json
         parser = JsonSchemaParser(
@@ -171,7 +167,7 @@ def parse_and_generate(locations):
             use_double_quotes=True,
             keep_model_order=True,
             custom_template_dir=TEMPLATES_LOCATION,
-            extra_template_data=extra_template_data,
+            extra_template_data=defaultdict(dict, deep_merge_dicts(extra_redact_fields, extra_schema_urls)),
             additional_imports=["typing.ClassVar", "typing.Any", "typing.cast", "openlineage.client.constants.DEFAULT_PRODUCER"],
         )
 

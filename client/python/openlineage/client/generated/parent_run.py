@@ -28,8 +28,8 @@ class ParentRunFacet(RunFacet):
 
     run: Run
     job: Job
-    rootParentId: str | None = attr.field(default=None)  # noqa: N815
-    """The globally unique ID of the root parent run associated with the job."""
+    rootParentRunId: str | None = attr.field(default=None)  # noqa: N815
+    """The globally unique run ID of the root parent run associated with the job."""
 
     _additional_skip_redact: ClassVar[list[str]] = ["job", "run"]
 
@@ -38,7 +38,7 @@ class ParentRunFacet(RunFacet):
         return "https://openlineage.io/spec/facets/1-0-2/ParentRunFacet.json#/$defs/ParentRunFacet"
 
     @classmethod
-    def create(cls, runId: str, namespace: str, name: str) -> ParentRunFacet:  # noqa: N803
+    def create(cls, runId: str, namespace: str, name: str, root_parent_run_id: str) -> ParentRunFacet:  # noqa: N803
         import warnings
 
         warnings.warn(
@@ -46,7 +46,17 @@ class ParentRunFacet(RunFacet):
             DeprecationWarning,
             stacklevel=2,
         )
-        return cls(run=Run(runId=runId), job=Job(namespace=namespace, name=name))
+        return cls(
+            run=Run(runId=runId), job=Job(namespace=namespace, name=name), rootParentRunId=root_parent_run_id
+        )
+
+    @rootParentRunId.validator
+    def rootparentrunid_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        if value is None:
+            return
+        from uuid import UUID
+
+        UUID(value)
 
 
 @attr.define

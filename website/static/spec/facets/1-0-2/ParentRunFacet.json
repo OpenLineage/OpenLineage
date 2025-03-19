@@ -38,9 +38,10 @@
               },
               "required": ["namespace", "name"]
             },
-            "rootParentId": {
+            "rootParentRunId": {
               "type": "string",
-              "description": "The globally unique ID of the root parent run associated with the job."
+              "format": "uuid",
+              "description": "The globally unique run ID of the root parent run associated with the job."
             }
           },
           "required": ["run", "job"]
