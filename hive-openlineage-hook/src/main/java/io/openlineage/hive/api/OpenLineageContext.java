@@ -64,4 +64,6 @@ public class OpenLineageContext {
   @NonNull Set<WriteEntity> writeEntities;
 
   @NonNull ZonedDateTime eventTime;
+
+  @NonNull OpenLineage.RunEvent.EventType eventType;
 }

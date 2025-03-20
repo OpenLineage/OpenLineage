@@ -21,8 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.cloud.datacatalog.lineage.v1.LineageEvent;
 import com.google.cloud.datacatalog.lineage.v1.Link;
-import io.openlineage.client.OpenLineage.BaseEvent;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.hive.TestsBase;
 import io.openlineage.hive.testutils.DataplexTestUtils;
 import io.openlineage.hive.transport.DummyTransport;
@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class TableLevelLineageTests extends TestsBase {
@@ -66,6 +67,31 @@ public class TableLevelLineageTests extends TestsBase {
   }
 
   @Test
+  public void testFailure() {
+    createManagedHiveTable("employees", "id int, name string, team int");
+    createManagedHiveTable("failure_table", "id int, name string, team int");
+    runHiveQuery("INSERT INTO employees VALUES(1, 'hello', 1)");
+    Assertions.assertThatThrownBy(
+            () -> {
+              runHiveQuery(
+                  String.join(
+                      "\n",
+                      "INSERT INTO failure_table",
+                      "SELECT",
+                      "    id,",
+                      "    name,",
+                      "    ASSERT_TRUE(team != 1) as team", // This will fail for team=1
+                      "FROM employees"));
+            })
+        .hasMessageContainingAll("Failed to executeQuery Hive query");
+    // Check that no rows were added
+    List<Object[]> objects = runHiveQuery("SELECT * FROM failure_table");
+    // Check that lineage was still produced
+    assertThat(objects).isEmpty();
+    OLTestUtils.assertCreatedSingleEventOfType(EventType.FAIL);
+  }
+
+  @Test
   public void testSimpleCTAS() throws IOException {
     createManagedHiveTable("employees", "id int, name string, team int");
     createManagedHiveTable("managers", "id int, name string, team int");
@@ -82,9 +108,8 @@ public class TableLevelLineageTests extends TestsBase {
             "from teams, managers, employees",
             "where teams.id = managers.team and teams.id = employees.team"));
     // Check the OpenLineage event
-    List<BaseEvent> olEvents = DummyTransport.getEvents();
-    assertThat(olEvents).hasSize(1);
-    RunEvent runEvent = (RunEvent) olEvents.get(0);
+    OLTestUtils.assertCreatedSingleEventOfType(EventType.COMPLETE);
+    RunEvent runEvent = (RunEvent) DummyTransport.getEvents().get(0);
     assertStandardFormat(runEvent, hive.getHiveConf(), olJobNamespace, olJobName);
     assertThat(runEvent.getInputs()).hasSize(3);
     assertDatasets(

@@ -15,6 +15,8 @@
  */
 package io.openlineage.hive.hooks;
 
+import static org.apache.hadoop.hive.ql.hooks.HookContext.HookType;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.hive.api.OpenLineageContext;
 import io.openlineage.hive.client.EventEmitter;
@@ -40,10 +42,13 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 public class HiveOpenLineageHook implements ExecuteWithHookContext {
 
   private static final Set<HiveOperation> SUPPORTED_OPERATIONS = new HashSet<>();
+  private static final Set<HookContext.HookType> SUPPORTED_HOOK_TYPES = new HashSet<>();
 
   static {
     SUPPORTED_OPERATIONS.add(HiveOperation.QUERY);
     SUPPORTED_OPERATIONS.add(HiveOperation.CREATETABLE_AS_SELECT);
+    SUPPORTED_HOOK_TYPES.add(HookType.POST_EXEC_HOOK);
+    SUPPORTED_HOOK_TYPES.add(HookType.ON_FAILURE_HOOK);
   }
 
   public static Set<ReadEntity> getValidInputs(QueryPlan queryPlan) {
@@ -76,7 +81,7 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext {
       QueryPlan queryPlan = hookContext.getQueryPlan();
       Set<ReadEntity> validInputs = getValidInputs(queryPlan);
       Set<WriteEntity> validOutputs = getValidOutputs(queryPlan);
-      if (hookContext.getHookType() != HookContext.HookType.POST_EXEC_HOOK
+      if (!SUPPORTED_HOOK_TYPES.contains(hookContext.getHookType())
           || SessionState.get() == null
           || hookContext.getIndex() == null
           || !SUPPORTED_OPERATIONS.contains(queryPlan.getOperation())
@@ -90,12 +95,21 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext {
       SemanticAnalyzer semanticAnalyzer =
           HiveUtils.analyzeQuery(
               hookContext.getConf(), hookContext.getQueryState(), queryPlan.getQueryString());
+      OpenLineage.RunEvent.EventType eventType;
+      if (hookContext.getHookType() == HookType.POST_EXEC_HOOK) {
+        // It is a successful query
+        eventType = OpenLineage.RunEvent.EventType.COMPLETE;
+      } else { // HookType.ON_FAILURE_HOOK
+        // It is a failed query
+        eventType = OpenLineage.RunEvent.EventType.FAIL;
+      }
       OpenLineageContext olContext =
           OpenLineageContext.builder()
               .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
               .queryString(hookContext.getQueryPlan().getQueryString())
               .semanticAnalyzer(semanticAnalyzer)
               .eventTime(Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.of("UTC")))
+              .eventType(eventType)
               .readEntities(validInputs)
               .writeEntities(validOutputs)
               .hadoopConf(hookContext.getConf())

@@ -18,11 +18,29 @@ package io.openlineage.hive.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.hive.hooks.TransformationInfo;
+import io.openlineage.hive.transport.DummyTransport;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ColumnLevelLineageTestUtils {
+public class OLTestUtils {
+
+  static void assertNumEvents(int numEvents) {
+    List<OpenLineage.BaseEvent> olEvents = DummyTransport.getEvents();
+    assertThat(olEvents).hasSize(numEvents);
+  }
+
+  static void assertLastEventIsOfType(EventType eventType) {
+    RunEvent event = DummyTransport.getLastEvent();
+    assertThat(event.getEventType()).isEqualTo(eventType);
+  }
+
+  static void assertCreatedSingleEventOfType(EventType eventType) {
+    assertNumEvents(1);
+    assertLastEventIsOfType(eventType);
+  }
 
   static void assertColumnDependsOn(
       OpenLineage.ColumnLineageDatasetFacet facet,

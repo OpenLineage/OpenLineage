@@ -309,7 +309,7 @@ public class Faceting {
     List<InputDataset> inputDatasets = getInputDatasets(olContext);
     List<OutputDataset> outputDatasets = getOutputDatasets(olContext, inputDatasets);
     return ol.newRunEventBuilder()
-        .eventType(RunEvent.EventType.COMPLETE)
+        .eventType(olContext.getEventType())
         .eventTime(olContext.getEventTime())
         .run(runBuilder.build())
         .job(

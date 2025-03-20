@@ -21,10 +21,10 @@ import static io.openlineage.hive.hooks.TransformationInfo.Subtypes.GROUP_BY;
 import static io.openlineage.hive.hooks.TransformationInfo.Subtypes.JOIN;
 import static io.openlineage.hive.hooks.TransformationInfo.Subtypes.SORT;
 import static io.openlineage.hive.hooks.TransformationInfo.Subtypes.WINDOW;
-import static io.openlineage.hive.integration.ColumnLevelLineageTestUtils.assertColumnDependsOnType;
-import static io.openlineage.hive.integration.ColumnLevelLineageTestUtils.assertCountColumnDependencies;
-import static io.openlineage.hive.integration.ColumnLevelLineageTestUtils.assertCountDatasetDependencies;
-import static io.openlineage.hive.integration.ColumnLevelLineageTestUtils.assertDatasetDependsOnType;
+import static io.openlineage.hive.integration.OLTestUtils.assertColumnDependsOnType;
+import static io.openlineage.hive.integration.OLTestUtils.assertCountColumnDependencies;
+import static io.openlineage.hive.integration.OLTestUtils.assertCountDatasetDependencies;
+import static io.openlineage.hive.integration.OLTestUtils.assertDatasetDependsOnType;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage;
@@ -41,60 +41,66 @@ public class ColumnLevelLineageTests extends TestsBase {
   void selectStar() {
     createManagedHiveTable("t1", "a int, b string");
     runHiveQuery("CREATE TABLE xxx AS SELECT * FROM t1");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
-    ColumnLevelLineageTestUtils.assertCountColumnDependencies(facet, 2);
+    OLTestUtils.assertCountColumnDependencies(facet, 2);
     assertColumnDependsOnType(facet, "a", FILE, "t1", "a", TransformationInfo.identity());
     assertColumnDependsOnType(facet, "b", FILE, "t1", "b", TransformationInfo.identity());
-    ColumnLevelLineageTestUtils.assertCountDatasetDependencies(facet, 0);
+    OLTestUtils.assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
   void simpleQueryOnlyIdentity() {
     createManagedHiveTable("t1", "a int");
     runHiveQuery("CREATE TABLE xxx AS SELECT a FROM t1");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
-    ColumnLevelLineageTestUtils.assertCountColumnDependencies(facet, 1);
+    OLTestUtils.assertCountColumnDependencies(facet, 1);
     assertColumnDependsOnType(facet, "a", FILE, "t1", "a", TransformationInfo.identity());
-    ColumnLevelLineageTestUtils.assertCountDatasetDependencies(facet, 0);
+    OLTestUtils.assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
   void ifNotExists() {
     createManagedHiveTable("t1", "a int");
     runHiveQuery("CREATE TABLE IF NOT EXISTS xxx AS SELECT a FROM t1");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
-    ColumnLevelLineageTestUtils.assertCountColumnDependencies(facet, 1);
+    OLTestUtils.assertCountColumnDependencies(facet, 1);
     assertColumnDependsOnType(facet, "a", FILE, "t1", "a", TransformationInfo.identity());
-    ColumnLevelLineageTestUtils.assertCountDatasetDependencies(facet, 0);
+    OLTestUtils.assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
   void partitionedTable() {
     createPartitionedHiveTable("t1", "a int", "b DATE");
     runHiveQuery("CREATE TABLE xxx AS SELECT * FROM t1");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
-    ColumnLevelLineageTestUtils.assertCountColumnDependencies(facet, 2);
+    OLTestUtils.assertCountColumnDependencies(facet, 2);
     assertColumnDependsOnType(facet, "a", FILE, "t1", "a", TransformationInfo.identity());
     assertColumnDependsOnType(facet, "b", FILE, "t1", "b", TransformationInfo.identity());
-    ColumnLevelLineageTestUtils.assertCountDatasetDependencies(facet, 0);
+    OLTestUtils.assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
   void simpleQueryOnlyTransform() {
     createManagedHiveTable("t1", "a int, b int");
     runHiveQuery("CREATE TABLE xxx AS SELECT concat(a, 'test') AS a, a+b as b FROM t1");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
-    ColumnLevelLineageTestUtils.assertCountColumnDependencies(facet, 3);
+    OLTestUtils.assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(facet, "a", FILE, "t1", "a", TransformationInfo.transformation());
     assertColumnDependsOnType(facet, "b", FILE, "t1", "a", TransformationInfo.transformation());
     assertColumnDependsOnType(facet, "b", FILE, "t1", "b", TransformationInfo.transformation());
-    ColumnLevelLineageTestUtils.assertCountDatasetDependencies(facet, 0);
+    OLTestUtils.assertCountDatasetDependencies(facet, 0);
   }
 
   @Test
   void simpleQueryOnlyAggregation() {
     createManagedHiveTable("t1", "a int");
     runHiveQuery("CREATE TABLE xxx AS SELECT count(a) AS a FROM t1");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
     assertCountColumnDependencies(facet, 1);
     assertColumnDependsOnType(facet, "a", FILE, "t1", "a", TransformationInfo.aggregation(true));
@@ -105,6 +111,7 @@ public class ColumnLevelLineageTests extends TestsBase {
   void simpleQueryIndirect() {
     createManagedHiveTable("t1", "a int, b int");
     runHiveQuery("CREATE TABLE xxx AS SELECT a FROM t1 WHERE b > 1");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
     assertCountColumnDependencies(facet, 1);
     assertColumnDependsOnType(facet, "a", FILE, "t1", "a", TransformationInfo.identity());
@@ -116,6 +123,7 @@ public class ColumnLevelLineageTests extends TestsBase {
   void simpleQueryMultipleIndirect() {
     createManagedHiveTable("t1", "a int, b int, c int");
     runHiveQuery("CREATE TABLE xxx AS SELECT a, c FROM t1 WHERE b > 1 GROUP BY a, c ORDER BY c");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
     assertCountColumnDependencies(facet, 2);
     assertColumnDependsOnType(facet, "a", FILE, "t1", "a", TransformationInfo.identity());
@@ -132,6 +140,7 @@ public class ColumnLevelLineageTests extends TestsBase {
     createManagedHiveTable("t1", "a int, b int");
     runHiveQuery(
         "CREATE TABLE xxx AS SELECT a as i, a + 1 as t, sum(b) as a, 2 * sum(b) as ta, 2 * sum(b + 3) as tat FROM t1 GROUP BY a");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
     assertCountColumnDependencies(facet, 5);
     assertColumnDependsOnType(facet, "i", FILE, "t1", "a", TransformationInfo.identity());
@@ -154,6 +163,7 @@ public class ColumnLevelLineageTests extends TestsBase {
             + "sum(b) as a, "
             + "sha1(string(sum(b))) as ma "
             + "FROM t1 GROUP BY a");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
     assertCountColumnDependencies(facet, 5);
     assertColumnDependsOnType(facet, "i", FILE, "t1", "a", TransformationInfo.identity());
@@ -171,6 +181,7 @@ public class ColumnLevelLineageTests extends TestsBase {
     createManagedHiveTable("t1", "a int, b int");
     runHiveQuery(
         "CREATE TABLE xxx AS SELECT CASE WHEN b > 1 THEN a ELSE a + b END AS cond FROM t1");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
     assertCountColumnDependencies(facet, 4);
     assertColumnDependsOnType(facet, "cond", FILE, "t1", "a", TransformationInfo.identity());
@@ -185,6 +196,7 @@ public class ColumnLevelLineageTests extends TestsBase {
   void simpleQueryWithIfConditional() {
     createManagedHiveTable("t1", "a int, b int");
     runHiveQuery("CREATE TABLE xxx AS SELECT IF(b > 1, a, a + b) AS cond FROM t1");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
     assertCountColumnDependencies(facet, 4);
     assertColumnDependsOnType(facet, "cond", FILE, "t1", "a", TransformationInfo.identity());
@@ -200,6 +212,7 @@ public class ColumnLevelLineageTests extends TestsBase {
     createManagedHiveTable("t1", "a string");
     runHiveQuery(
         "CREATE TABLE xxx AS SELECT a FROM (SELECT explode(split(a, ' ')) AS a FROM t1) subquery_alias");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
     assertCountColumnDependencies(facet, 1);
     assertColumnDependsOnType(facet, "a", FILE, "t1", "a", TransformationInfo.transformation());
@@ -212,6 +225,7 @@ public class ColumnLevelLineageTests extends TestsBase {
     runHiveQuery(
         "CREATE TABLE xxx AS\n"
             + "SELECT a, RANK() OVER (PARTITION BY b ORDER BY c) as rank FROM t1");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
     assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(facet, "a", FILE, "t1", "a", TransformationInfo.identity());
@@ -225,6 +239,7 @@ public class ColumnLevelLineageTests extends TestsBase {
     createManagedHiveTable("t1", "a string, b string, c int");
     runHiveQuery(
         "CREATE TABLE xxx AS\n" + "SELECT sum(a) OVER (PARTITION BY b ORDER BY c) AS s FROM t1");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
     assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(facet, "s", FILE, "t1", "a", TransformationInfo.aggregation());
@@ -239,6 +254,7 @@ public class ColumnLevelLineageTests extends TestsBase {
     runHiveQuery(
         "CREATE TABLE xxx AS\n"
             + "SELECT LAG(a, 3, 0) OVER (PARTITION BY b ORDER BY c) AS l FROM t1");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
     assertCountColumnDependencies(facet, 3);
     assertColumnDependsOnType(facet, "l", FILE, "t1", "a", TransformationInfo.transformation());
@@ -258,6 +274,7 @@ public class ColumnLevelLineageTests extends TestsBase {
             + "tmp2 as (SELECT * FROM t2 where c = 1),\n"
             + "tmp3 as (SELECT tmp.a, b, c from tmp join tmp2 on tmp.a = tmp2.a)\n"
             + "SELECT tmp3.a as a, b, c, d FROM tmp3 join t3 on tmp3.a = t3.a order by d");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
     assertCountColumnDependencies(facet, 4);
     assertColumnDependsOnType(facet, "a", FILE, "t1", "a", TransformationInfo.identity());
@@ -284,6 +301,7 @@ public class ColumnLevelLineageTests extends TestsBase {
             + "UNION ALL\n"
             + "SELECT a, c, 'table2' as source\n"
             + "FROM t2");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
     assertCountColumnDependencies(facet, 4);
     assertColumnDependsOnType(facet, "a", FILE, "t1", "a", TransformationInfo.identity());
@@ -305,6 +323,7 @@ public class ColumnLevelLineageTests extends TestsBase {
     createManagedHiveTable("t1", "a int, b string");
     createManagedHiveTable("t2", "a int, b string");
     runHiveQuery("INSERT INTO t1 SELECT a, concat(b, 'x') FROM t2");
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("t1");
     assertCountColumnDependencies(facet, 2);
     assertColumnDependsOnType(facet, "a", FILE, "t2", "a", TransformationInfo.identity());
@@ -327,6 +346,7 @@ public class ColumnLevelLineageTests extends TestsBase {
             "    ON a.id = b.number",
             ")",
             "SELECT id * 10 as id, name FROM c"));
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet = DummyTransport.getColumnLineage("xxx");
     assertCountColumnDependencies(facet, 2);
     assertColumnDependsOnType(facet, "id", FILE, "t1", "id", TransformationInfo.transformation());
@@ -357,6 +377,7 @@ public class ColumnLevelLineageTests extends TestsBase {
             "INSERT INTO TABLE t2",
             "  SELECT SUM(id), name",
             "  GROUP BY name;"));
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet t1Facet = DummyTransport.getColumnLineage("t1");
     assertCountColumnDependencies(t1Facet, 2);
     assertColumnDependsOnType(t1Facet, "id", FILE, "t3", "id", TransformationInfo.transformation());
@@ -397,6 +418,7 @@ public class ColumnLevelLineageTests extends TestsBase {
             "ORDER BY",
             "    monTH,",
             "    transacTIONtype"));
+    OLTestUtils.assertCreatedSingleEventOfType(OpenLineage.RunEvent.EventType.COMPLETE);
     OpenLineage.ColumnLineageDatasetFacet facet =
         DummyTransport.getColumnLineage("monthly_transaction_summary");
     assertCountColumnDependencies(facet, 3);
