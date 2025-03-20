@@ -12,6 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.common.io.Resources;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.flink.config.FlinkConfigParser;
+import io.openlineage.flink.config.FlinkDatasetConfig;
+import io.openlineage.flink.config.FlinkDatasetKafkaConfig;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import java.net.URI;
 import lombok.SneakyThrows;
@@ -37,8 +39,6 @@ class FlinkConfigParserTest {
   ConfigOption testCompressionOption =
       ConfigOptions.key("openlineage.transport.compression").stringType().noDefaultValue();
 
-  ConfigOption deprecatedDisabledFacetsOption =
-      ConfigOptions.key("openlineage.facets.disabled").stringType().noDefaultValue();
   ConfigOption facetXDisabled =
       ConfigOptions.key("openlineage.facets.facetX.disabled").booleanType().noDefaultValue();
   ConfigOption facetYDisabled =
@@ -73,14 +73,12 @@ class FlinkConfigParserTest {
   @Test
   void testFlinkConfArrayEntry() {
     configuration.set(transportTypeOption, "console");
-    configuration.set(deprecatedDisabledFacetsOption, "[facet1;facetY]");
     configuration.set(facetXDisabled, "true");
     configuration.set(facetYDisabled, "false");
 
     FlinkOpenLineageConfig config = FlinkConfigParser.parse(configuration);
 
-    assertThat(config.getFacetsConfig().getEffectiveDisabledFacets())
-        .containsExactly("facetX", "facet1");
+    assertThat(config.getFacetsConfig().getEffectiveDisabledFacets()).containsExactly("facetX");
   }
 
   @Test
@@ -118,5 +116,23 @@ class FlinkConfigParserTest {
 
     // API config from yaml file
     assertThat(httpConfig.getAuth().getToken()).isEqualTo("Bearer random_token");
+  }
+
+  @Test
+  void testResolveTopicPattern() {
+    FlinkOpenLineageConfig config = FlinkConfigParser.parse(configuration);
+    assertThat(config)
+        .extracting(FlinkOpenLineageConfig::getDatasetConfig)
+        .extracting(FlinkDatasetConfig::getKafkaConfig)
+        .extracting(FlinkDatasetKafkaConfig::getResolveTopicPattern)
+        .isEqualTo(true);
+
+    configuration.set(
+        ConfigOptions.key("openlineage.dataset.kafka.resolveTopicPattern")
+            .booleanType()
+            .noDefaultValue(),
+        false);
+    config = FlinkConfigParser.parse(configuration);
+    assertThat(config.getDatasetConfig().getKafkaConfig().getResolveTopicPattern()).isFalse();
   }
 }

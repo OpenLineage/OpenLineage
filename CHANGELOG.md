@@ -1,6 +1,65 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.28.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.29.0...HEAD)
+
+## [1.30.0](https://github.com/OpenLineage/OpenLineage/compare/1.29.0...1.30.0) - 2025-03-14
+
+### Added
+
+* **Python: allow adding user-supplied tags facets from config** [`#3471`](https://github.com/OpenLineage/OpenLineage/pull/3471) [@leogodin217](https://github.com/leogodin217)
+  *User-supplied tags will allow the client to inject new tags or override tags provided by the integrations for jobs and runs.*
+* **Flink 2: added support for CheckpointFacet** [`#3531`](https://github.com/OpenLineage/OpenLineage/pull/3531) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Similar to Flink 1 integration, Flink 2 integration will emit CheckpointFacet.*
+* **Flink 2: include SQL comments in OL events** [`#3528`](https://github.com/OpenLineage/OpenLineage/pull/3528) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Table and field comments are available within generated OL events.*
+
+### Changed
+
+* **Java: remove deprecated configs: 'disabledFacets' and 'timeout'.** [`#3522`](https://github.com/OpenLineage/OpenLineage/pull/3522) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Configs have been replaced with: 'facets.<name of disabled facet>.disabled=true' and 'timeoutInMillis'.*
+
+### Fixed
+
+* **Spark: enable Iceberg metrics reporting for SparkSessionCatalog.** [`#3538`](https://github.com/OpenLineage/OpenLineage/pull/3538) [@sakjung](https://github.com/sakjung)
+  *Fixes support for metrics in Iceberg SparkSessionCatalog.*
+* **Spark: inject metrics reporter to Iceberg's RESTCatalog.** [`#3515`](https://github.com/OpenLineage/OpenLineage/pull/3515) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Fixes support for metrics in Iceberg RESTCatalog.*
+* **dbt: fix race condition on dbt log file** [`#3535`](https://github.com/OpenLineage/OpenLineage/pull/3535) [@MassyB](https://github.com/MassyB)
+  *Fixes race condition that was happening when using structured logs output.*
+* **dbt: fixes handling of skipped dbt nodes** [`#3545`](https://github.com/OpenLineage/OpenLineage/pull/3545) [@MassyB](https://github.com/MassyB)
+  *Skipped nodes no longed cause exceptions.*
+* **Spark: fix record count stats mixed with bytes stats** [`#3550`](https://github.com/OpenLineage/OpenLineage/pull/3550) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *InputStatistics facet for Iceberg datasets no longer produces incorrect stats.*
+* **Spark: catch input duplicates for SubqueryAlias.** [`#3548`](https://github.com/OpenLineage/OpenLineage/pull/3548) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Subquery alias no longer is duplicating the inputs.*
+* **Spark: catch Java 17 add opens exception.** [`#3552`](https://github.com/OpenLineage/OpenLineage/pull/3552) [@mobuchowski](https://github.com/mobuchowski)
+  *Fixes catching InaccessibleMethodException in Java 17 within SparkExtensionVisitor.*
+
+
+## [1.29.0](https://github.com/OpenLineage/OpenLineage/compare/1.28.0...1.29.0) - 2025-02-24
+
+### Added
+
+* **Python: allow adding user-supplied tags facets from config** [`#3471`](https://github.com/OpenLineage/OpenLineage/pull/3471) [@leogodin217](https://github.com/leogodin217)
+  *User-supplied tags will allow the client to inject new tags or override tags provided by the integrations for jobs and runs.*
+* **Java: allow adding user-supplied tags facets from config** [`#3493`](https://github.com/OpenLineage/OpenLineage/pull/3493) [@mobuchowski](https://github.com/mobuchowski)
+  *Enabled parsing tags from config in Java client and Spark conf.*
+
+### Changed
+
+* **Java: change async breaker timeout setting is not a real timeout.** [`#3487`](https://github.com/OpenLineage/OpenLineage/pull/3487) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Properly name case where TaskQueueCircuitBreaker allows a configurable blocking time after submitting a callable.*
+* **Flink: enabled circuit breaker for Flink 2 integration.** [`#3503`](https://github.com/OpenLineage/OpenLineage/pull/3503) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Native Flink integration is now isolated within circuit breaker call.*
+
+### Fixed
+
+* **Spark: use all of the underlying classloaders to find META-INF/services resources.** [`#3483`](https://github.com/OpenLineage/OpenLineage/pull/3483) [@ddebowczyk92](https://github.com/ddebowczyk92)
+  *ServiceLoader should not fail to load OpenLineageExtensionProvider implementations in certain configurations.*
+* **Flink: handle default null job manager address.** [`#3486`](https://github.com/OpenLineage/OpenLineage/pull/3486) [@MarquisC](https://github.com/MarquisC)
+  *Null Flink Job Manager address will default to localhost*
+* **dbt: handle tests on sources for structured logs option.** [`#3488`](https://github.com/OpenLineage/OpenLineage/pull/3488) [@MassyB](https://github.com/MassyB)
+  *Handle case for tests on sources which don't have the attached_node defined in the manifest.*
 
 
 ## [1.28.0](https://github.com/OpenLineage/OpenLineage/compare/1.27.0...1.28.0) - 2025-02-06

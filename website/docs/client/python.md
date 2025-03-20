@@ -100,7 +100,6 @@ OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP__ENDPOINT="api/v1/lineage"
 ```
 * If one does not want to use aliased HTTP transport in Composite Transport, they can set `OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP` to `{}`.
 
-
 #### Examples
 
 <Tabs groupId="configs">
@@ -951,3 +950,151 @@ for event in events:
 The resulting lineage events received by Marquez would look like this.
 
 ![the Marquez graph](./mqz_graph_example.png)
+
+
+##### User-supplied Tags with Environment Variables 
+
+Integrations can add [tag facets](https://github.com/OpenLineage/OpenLineage/blob/main/proposals/3169/tags_facet.md) to runs, jobs and datasets. To allow more control over tags, users can add to and override integration-supplied tags through environment variables supplied to the client. The following rules apply to user-supplied tags. 
+
+* User-supplied tags follow the conventions of [dynamic configuration with environment variables.](#dynamic-configuration-with-environment-variables)
+  * `OPENLINEAGE__TAGS__JOB__key=value`
+  * `OPENLINEAGE__TAGS__RUN__key=value`
+  * `OPENLINEAGE__TAGS='{"job": {"key": "value"}, "run": {"key": "value"}}'`
+* User-supplied tag keys are always transformed to lowercase. 
+* Key and value are both treated as strings 
+* Source for a user-supplied tag is always set to "USER"
+* If an integration-supplied tag has the same key as a user tag (case-insensitive), the tag value and source will be overridden.
+
+
+###### Examples
+
+Using this environment variable, an event with no tags facets will create a tag facet and add the following tag. 
+
+```sh
+OPENLINEAGE__TAGS__JOB__ENVIRONMENT="PRODUCTION"
+```
+or 
+
+```sh
+OPENLINEAGE__TAGS='{"job": {"ENVIRONMENT": "PRODUCTION"}}'
+```
+
+```json
+"facets": {
+  "tags": {
+    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.27.0/client/python",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TagsJobFacet.json#/$defs/TagsJobFacet",
+    "tags": [
+      {
+        "key": "environment",
+        "value": "PRODUCTION",
+        "source": "USER"
+      }
+    ]
+  }
+}
+```
+
+Consider this run event. It has one tag with key="ENVIRONMENT" for the job. Run has no tags facet.  
+
+```json
+{
+  "eventTime": "2023-07-17T10:54:22.355067Z",
+  "eventType": "COMPLETE",
+  "inputs": [],
+  "job": {
+    "facets": {
+      "tags": {
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.27.0/client/python",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TagsJobFacet.json#/$defs/TagsJobFacet",
+        "tags": [
+          {
+            "key": "PIPELINE",
+            "value": "sales" 
+            "source": "DBT_INTEGRATION"
+          }
+        ]
+      } 
+    },
+    "name": "dbt",
+    "namespace": "food_delivery"
+  },
+  "outputs": [],
+  "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.30.0/integration/airflow",
+  "run": {
+    "facets": {},
+    "runId": "f69a6e9b-9bac-3c9a-9cf6-eacb70ecc9a9"
+  },
+  "dataset": { "namespace": "123", "name": "1" },
+  "schemaURL": "https://openlineage.io/spec/1-0-5/OpenLineage.json#/definitions/RunEvent"
+}
+```
+
+If we set the following environment variables, three things will happen.
+* Job: Create a new tag for environment.
+* Job: Update the pipeline tag value from "sales" to "sales_monthly". 
+* Run: Create a new tag for adhoc. 
+
+```sh
+OPENLINEAGE__TAGS__JOB__ENVIRONMENT="PRODUCTION"
+OPENLINEAGE__TAGS__JOB__PIPELINE="sales_monthly"
+OPENLINEAGE__TAGS__RUN__adhoc="true"
+```
+
+or
+
+```sh
+OPENLINIAGE__TAGS='{"job": {"ENVIRONMENT": "PRODUCTION", "PIPELINE": "sales_monthly"}, "run": {"adhoc": "true"}}'
+```
+
+The event will now have these tag updates. 
+
+```json
+{
+  "eventTime": "2023-07-17T10:54:22.355067Z",
+  "eventType": "COMPLETE",
+  "inputs": [],
+  "job": {
+    "facets": {
+      "tags": {
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.27.0/client/python",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TagsJobFacet.json#/$defs/TagsJobFacet",
+        "tags": [
+          {
+            "key": "PIPELINE",
+            "value": "sales_monthly" # Updated tag value
+            "source": "DBT_INTEGRATION"
+          },
+          {
+            "key": "environment", # New tag with lowercase key 
+            "value": "PRODUCTION" 
+            "source": "USER"
+          }
+        ]
+      } 
+    },
+    "name": "dbt",
+    "namespace": "food_delivery"
+  },
+  "outputs": [],
+  "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.30.0/integration/airflow",
+  "run": {
+    "facets": {
+      "tags": { # New tags facet
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.27.0/client/python",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TagsJobFacet.json#/$defs/TagsJobFacet",
+        "tags": [
+          {
+            "key": "adhoc", # New tag
+            "value": "true" 
+            "source": "USER"
+          }
+        ]
+      }
+    },
+    "runId": "f69a6e9b-9bac-3c9a-9cf6-eacb70ecc9a9"
+  },
+  "dataset": { "namespace": "123", "name": "1" },
+  "schemaURL": "https://openlineage.io/spec/1-0-5/OpenLineage.json#/definitions/RunEvent"
+}
+```

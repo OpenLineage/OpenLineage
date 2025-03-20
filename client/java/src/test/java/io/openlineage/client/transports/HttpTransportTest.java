@@ -58,7 +58,6 @@ class HttpTransportTest {
     HttpConfig httpConfig = new HttpConfig();
     httpConfig.setUrl(new URI("http://localhost:5000"));
     httpConfig.setEndpoint("/api/v1/lineage");
-    httpConfig.setTimeout(5000.0);
     httpConfig.setUrlParams(singletonMap("param", "value"));
     httpConfig.setCompression(HttpConfig.Compression.GZIP);
     ApiKeyTokenProvider auth = new ApiKeyTokenProvider();

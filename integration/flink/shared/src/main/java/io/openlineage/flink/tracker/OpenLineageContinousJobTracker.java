@@ -7,15 +7,14 @@ package io.openlineage.flink.tracker;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.CheckpointFacet;
 import io.openlineage.flink.tracker.restapi.Checkpoints;
-import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.configuration.ReadableConfig;
-import org.apache.flink.configuration.RestOptions;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
@@ -30,15 +29,17 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
  */
 public class OpenLineageContinousJobTracker {
 
-  private final ReadableConfig config;
   private final Duration trackingInterval;
+  private final String jobsApiUrl;
+
+  private Consumer<CheckpointFacet> onJobCheckpoint;
   private Thread trackingThread;
   private Optional<Checkpoints> latestCheckpoints = Optional.empty();
   private boolean shouldContinue = true;
 
-  public OpenLineageContinousJobTracker(ReadableConfig config, Duration trackingInterval) {
-    this.config = config;
+  public OpenLineageContinousJobTracker(Duration trackingInterval, String jobsApiUrl) {
     this.trackingInterval = trackingInterval;
+    this.jobsApiUrl = jobsApiUrl;
   }
 
   /**
@@ -46,21 +47,24 @@ public class OpenLineageContinousJobTracker {
    *
    * @param context flink execution context
    */
-  public void startTracking(FlinkExecutionContext context) {
+  public void startTracking(OpenLineageContext context, Consumer<CheckpointFacet> onJobCheckpoint) {
+    this.onJobCheckpoint = onJobCheckpoint;
+
     CloseableHttpClient httpClient = HttpClients.createDefault();
 
-    String checkpointApiUrl =
+    String url =
         String.format(
-            "http://%s:%s/jobs/%s/checkpoints",
-            Optional.ofNullable(config.get(RestOptions.ADDRESS)).orElse("localhost"),
-            config.get(RestOptions.PORT),
-            context.getOlContext().getJobId().getFlinkJobId().toString());
-    HttpGet request = new HttpGet(checkpointApiUrl);
+            "%s/%s/checkpoints", this.jobsApiUrl, context.getJobId().getFlinkJobId().toString());
+    log.info("Tracking URL: {}", url);
+    HttpGet request = new HttpGet(url);
 
     trackingThread =
         (new Thread(
             () -> {
               try {
+                log.debug(
+                    "Tracking thread started and sleeping {} seconds",
+                    trackingInterval.getSeconds());
                 Thread.sleep(trackingInterval.toMillis());
               } catch (InterruptedException e) {
                 log.warn("Tracking thread interrupted", e);
@@ -70,6 +74,7 @@ public class OpenLineageContinousJobTracker {
                 try {
                   CloseableHttpResponse response = httpClient.execute(request);
                   String json = EntityUtils.toString(response.getEntity());
+                  log.debug("Tracking thread response: {}", json);
 
                   Optional.of(
                           new ObjectMapper()
@@ -81,8 +86,7 @@ public class OpenLineageContinousJobTracker {
                                   || latestCheckpoints.get().getCounts().getTotal()
                                       != newCheckpoints.getCounts().getTotal())
                       .ifPresentOrElse(
-                          newCheckpoints -> emitNewCheckpointEvent(context, newCheckpoints),
-                          () -> log.info("no new checkpoint found"));
+                          this::emitNewCheckpointEvent, () -> log.info("no new checkpoint found"));
                 } catch (IOException | ParseException e) {
                   log.error("Connecting REST API failed", e);
                 } catch (Exception e) {
@@ -98,17 +102,16 @@ public class OpenLineageContinousJobTracker {
               }
             }));
     log.info(
-        "Starting tracking thread for jobId={}",
-        context.getOlContext().getJobId().getFlinkJobId().toString());
+        "Starting tracking thread for jobId={}", context.getJobId().getFlinkJobId().toString());
     trackingThread.start();
   }
 
-  private void emitNewCheckpointEvent(FlinkExecutionContext context, Checkpoints newCheckpoints) {
+  private void emitNewCheckpointEvent(Checkpoints newCheckpoints) {
     log.info(
         "New checkpoint encountered total-checkpoint:{}", newCheckpoints.getCounts().getTotal());
     latestCheckpoints = Optional.of(newCheckpoints);
 
-    context.onJobCheckpoint(
+    onJobCheckpoint.accept(
         new CheckpointFacet(
             newCheckpoints.getCounts().getCompleted(),
             newCheckpoints.getCounts().getFailed(),

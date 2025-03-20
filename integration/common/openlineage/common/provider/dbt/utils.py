@@ -9,7 +9,7 @@ from openlineage.client.event_v2 import InputDataset, Job, OutputDataset, Run, R
 from openlineage.common.provider.dbt.processor import ParentRunMetadata
 from openlineage.common.utils import get_from_nullable_chain, parse_single_arg
 
-__version__ = "1.29.0"
+__version__ = "1.31.0"
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
 
 # for which command structured logs consumption is implemented

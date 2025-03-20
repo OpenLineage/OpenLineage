@@ -1,0 +1,84 @@
+/*
+/* Copyright 2018-2025 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+plugins {
+    id 'java-library'
+    id 'jacoco'
+    id 'pmd'
+    id "com.adarshr.test-logger" version "4.0.0"
+    id 'com.diffplug.spotless' version '6.23.0'
+    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id "com.github.davidmc24.gradle.plugin.avro" version "1.9.1"
+}
+
+repositories {
+    gradlePluginPortal()
+    mavenCentral()
+    maven { url "https://packages.confluent.io/maven/" }
+    mavenLocal()
+}
+
+group 'io.openlineage.flink'
+
+shadowJar {
+    zip64 true
+}
+
+ext {
+    flinkVersion = project.getProperty('flink.version')
+    flinkVersionShort = flinkVersion.substring(0,4)
+}
+
+dependencies {
+    configurations.all {
+        exclude module: 'slf4j-log4j12'
+        exclude module: 'log4j'
+    }
+
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter:5.11.4"
+    testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.20'
+    testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
+    implementation 'org.awaitility:awaitility:4.3.0'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.4.1'
+    implementation "com.typesafe:config:1.4.3"
+
+    implementation "io.openlineage:openlineage-flink:$project.version"
+    implementation "org.apache.flink:flink-connector-kafka:3.4-SNAPSHOT" // need to be built locally
+    implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
+    implementation "org.apache.flink:flink-avro:$flinkVersion"
+
+    compileOnly "org.apache.flink:flink-streaming-java:$flinkVersion"
+    compileOnly "org.apache.flink:flink-runtime-web:$flinkVersion"
+    compileOnly "org.apache.flink:flink-core:$flinkVersion"
+    compileOnly "org.apache.flink:flink-connector-base:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-api-java:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-api-java-bridge:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-common:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-runtime:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
+    compileOnly "org.apache.flink:flink-connector-kafka:3.4-SNAPSHOT" // need to be built locally
+
+}
+
+assemble {
+    dependsOn shadowJar
+}
+
+compileJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+test {
+    useJUnitPlatform()
+}
+
+avro {
+    fieldVisibility = 'PUBLIC'
+}

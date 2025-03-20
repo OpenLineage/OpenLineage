@@ -32,8 +32,8 @@ public class SubqueryAliasInputDatasetBuilder
 
   @Override
   protected List<InputDataset> apply(SparkListenerEvent event, SubqueryAlias x) {
-    return delegate(
-            context.getInputDatasetQueryPlanVisitors(), context.getInputDatasetBuilders(), event)
+    // this should not run query visitors again
+    return delegate(Collections.emptyList(), context.getInputDatasetBuilders(), event)
         .applyOrElse(
             x.child(),
             ScalaConversionUtils.toScalaFn((lp) -> Collections.<InputDataset>emptyList()))

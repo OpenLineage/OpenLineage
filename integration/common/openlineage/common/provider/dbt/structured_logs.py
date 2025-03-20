@@ -248,6 +248,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         resource_type = event["data"]["node_info"]["resource_type"]
         node_unique_id = get_node_unique_id(event)
         node_finished_at = get_event_timestamp(event["data"]["node_info"]["node_finished_at"])
+        if node_finished_at == "":
+            node_finished_at = get_event_timestamp(event["data"]["node_info"]["node_started_at"])
         node_status = event["data"]["node_info"]["node_status"]
         run_id = self.node_id_to_ol_run_id[node_unique_id]
 
@@ -265,14 +267,20 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             )
         }
 
-        event_type = RunState.COMPLETE
+        event_type = RunState.OTHER
 
-        if node_status not in ("success", "pass"):
+        if node_status == "skipped":
+            event_type = RunState.ABORT
+        elif node_status in ("fail", "error", "runtime error"):
             event_type = RunState.FAIL
             error_message = event["data"]["run_result"]["message"]
             run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
                 message=error_message, programmingLanguage="sql"
             )
+        elif node_status in ("success", "pass"):
+            event_type = RunState.COMPLETE
+        else:
+            self.logger.info(f"node {node_unique_id} has an unknown node status {node_status}")
 
         inputs = [
             self.node_to_dataset(node=model_input, has_facets=True)
@@ -500,15 +508,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         dbt_command_line = add_or_replace_command_line_option(
             dbt_command_line, option="--write-json", replace_option="--no-write-json"
         )
-
+        self._open_dbt_log_file()
         process = subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr, text=True)
 
         try:
             while process.poll() is None:
-                self._open_dbt_log_file()
-                if self._dbt_log_file is None:
-                    continue  # wait for the log file to be created
-
                 if has_lines(self._dbt_log_file) > 0:
                     # Load the manifest as soon as it exists
                     self.compiled_manifest
@@ -529,11 +533,20 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         """
         If the log file already exists when the dbt command is executed logs are appended.
         This reads all the lines on first (and only) open to get rid of those previous lines.
+        If the file doesn't exist it creates an empty one
         """
-        if os.path.exists(self.dbt_log_file_path) and self._dbt_log_file is None:
-            self._dbt_log_file = open(self.dbt_log_file_path)
-            while self._dbt_log_file.readlines():
+        if self._dbt_log_file is not None:
+            return
+
+        if not os.path.exists(self.dbt_log_file_path):
+            logs_directory = os.path.dirname(self.dbt_log_file_path)
+            os.makedirs(logs_directory, exist_ok=True)
+            with open(self.dbt_log_file_path, "w"):
                 pass
+
+        self._dbt_log_file = open(self.dbt_log_file_path)
+        while self._dbt_log_file.readlines():
+            pass
 
     def _get_model_node(self, node_id) -> ModelNode:
         """

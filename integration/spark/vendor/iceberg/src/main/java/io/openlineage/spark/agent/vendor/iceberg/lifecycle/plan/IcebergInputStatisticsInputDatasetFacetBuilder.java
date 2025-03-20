@@ -83,8 +83,8 @@ public class IcebergInputStatisticsInputDatasetFacetBuilder
               .getOpenLineage()
               .newInputStatisticsInputDatasetFacetBuilder()
               .fileCount((long) dataFiles.size())
-              .rowCount(dataFiles.stream().map(ContentFile::fileSizeInBytes).reduce(0L, Long::sum))
-              .size(dataFiles.stream().map(ContentFile::recordCount).reduce(0L, Long::sum))
+              .size(dataFiles.stream().map(ContentFile::fileSizeInBytes).reduce(0L, Long::sum))
+              .rowCount(dataFiles.stream().map(ContentFile::recordCount).reduce(0L, Long::sum))
               .build());
     } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
       // do nothing

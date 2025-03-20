@@ -66,7 +66,9 @@ class ConfigTest {
   @ParameterizedTest
   @ValueSource(strings = {"config/composite-array.yaml", "config/composite-map.yaml"})
   void testLoadCompositeTransportConfigFromYaml(String yamlFile)
-      throws NoSuchFieldException, SecurityException, IllegalArgumentException,
+      throws NoSuchFieldException,
+          SecurityException,
+          IllegalArgumentException,
           IllegalAccessException {
     OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(yamlFile));
     assertThat(client.transport).isInstanceOf(CompositeTransport.class);
@@ -182,7 +184,7 @@ class ConfigTest {
   void testFacetsDisabledConfigFromYaml() throws URISyntaxException {
     OpenLineageClient client = Clients.newClient(new TestConfigPathProvider("config/facets.yaml"));
 
-    assertThat(client.disabledFacets).contains("facet1", "facet2");
+    assertThat(client.disabledFacets).contains("facet1", "spark.logicalPlan");
   }
 
   @Test

@@ -70,12 +70,6 @@ repos:
       - id: ruff-format
         name: ruff-format
         files: ^client/python/|^dev/|^integration/airflow/|^integration/common/|^integration/dagster/|^integration/dbt/|^integration/spark/|^integration/sql/
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: "v4.0.0-alpha.8"
-    hooks:
-      - id: prettier
-        files: ^spec/|\.ts$|\.tsx$|^website.*\.js$|^website.*\.jsx$|\.css$|^\..*\.yaml$|\^\..*\.yml$
-        args: ["--print-width=120", "--prose-wrap=always"]
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:
@@ -97,6 +91,23 @@ repos:
         exclude: ".*gradlew$"
   - repo: local
     hooks:
+      - id: check-version-files
+        name: Check version file paths in new-version.sh
+        description: "Verifies that file paths in new-version.sh exist and are only defined in that file"
+        language: script
+        entry: .pre_commit/check_version_update_path.sh
+        files: new-version\.sh$|\.gradle$|gradle\.properties$|README\.md$|version\.properties$
+        pass_filenames: false
+      - id: prettier
+        name: prettier
+        description: ""
+        entry: prettier --write --ignore-unknown
+        files: ^spec/|\.ts$|\.tsx$|^website.*\.js$|^website.*\.jsx$|\.css$|^\..*\.yaml$|\^\..*\.yml$
+        args: ["--print-width=120", "--prose-wrap=always"]
+        language: node
+        types: [text]
+        require_serial: false
+        additional_dependencies: ["prettier@3.5.2"]
       - id: check_schemas
         name: Check JSON Schema spec files.
         language: golang
