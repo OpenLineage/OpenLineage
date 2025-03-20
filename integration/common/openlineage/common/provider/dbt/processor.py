@@ -131,11 +131,13 @@ class ParentRunMetadata:
     run_id: str = attr.ib()
     job_name: str = attr.ib()
     job_namespace: str = attr.ib()
+    root_parent_run_id: Optional[str] = attr.ib(default=None)
 
     def to_openlineage(self) -> parent_run.ParentRunFacet:
         return parent_run.ParentRunFacet(
             run=parent_run.Run(runId=self.run_id),
             job=parent_run.Job(namespace=self.job_namespace, name=self.job_name),
+            rootParentRunId=self.root_parent_run_id if self.root_parent_run_id else self.run_id,
         )
 
 

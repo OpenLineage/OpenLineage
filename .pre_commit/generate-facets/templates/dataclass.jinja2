@@ -180,7 +180,7 @@ class {{ class_name }}:
 {#- special addition to keep backwards compatibility -#}
 {%- if class_name == 'ParentRunFacet' %}
     @classmethod
-    def create(cls, runId: str, namespace: str, name: str) -> "ParentRunFacet":  # noqa: N803
+    def create(cls, runId: str, namespace: str, name: str, root_parent_run_id: str) -> "ParentRunFacet":  # noqa: N803
         import warnings
         warnings.warn(
             "ParentRunFacet.create method is deprecated. Please use class initializator instead.",
@@ -189,7 +189,8 @@ class {{ class_name }}:
         )
         return cls(
             run=Run(runId=runId),
-            job=Job(namespace=namespace,name=name)
+            job=Job(namespace=namespace,name=name),
+            rootParentRunId=root_parent_run_id
         )
 {%- endif -%}
 {#- add validator methods -#}
