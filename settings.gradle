@@ -1,0 +1,4 @@
+rootProject.name = 'hive-lineage'
+
+include 'hive-openlineage-hook'
+include 'shaded-test-dependencies'
