@@ -42,6 +42,9 @@ Event_v1 = Union[RunEvent, DatasetEvent, JobEvent]
 Event_v2 = Union[event_v2.RunEvent, event_v2.DatasetEvent, event_v2.JobEvent]
 Event = Union[Event_v1, Event_v2]
 
+Run_event = Union[RunEvent, event_v2.RunEvent]
+Run_and_job_event = Union[RunEvent, event_v2.RunEvent, JobEvent, event_v2.JobEvent]
+
 
 @attr.s
 class OpenLineageClientOptions:
@@ -421,12 +424,12 @@ class OpenLineageClient:
         Creates or updates job and run tag facets based on user-supplied environment variables
         """
         tags_job = self.config.tags.job
-        if (isinstance(event, (JobEvent, RunEvent))) and tags_job:
+        if isinstance(event, Run_and_job_event) and tags_job:
             tags_facet = event.job.facets.get("tags", TagsJobFacet())
             event.job.facets["tags"] = self._update_tag_facet(tags_facet, tags_job)  # type: ignore [arg-type]
 
         tags_run = self.config.tags.run
-        if (isinstance(event, RunEvent)) and tags_run:
+        if isinstance(event, Run_event) and tags_run:
             tags_facet = event.run.facets.get("tags", TagsRunFacet())
             event.run.facets["tags"] = self._update_tag_facet(tags_facet, tags_run)  # type: ignore [arg-type]
 
