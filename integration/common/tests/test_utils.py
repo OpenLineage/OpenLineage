@@ -6,6 +6,7 @@ from openlineage.common.utils import (
     add_command_line_arg,
     add_or_replace_command_line_option,
     get_from_nullable_chain,
+    get_next_lines,
     parse_multiple_args,
     parse_single_arg,
     remove_command_line_option,
@@ -152,3 +153,40 @@ def test_add_or_replace_command_line_option(command_line, option, replace_option
 def test_remove_command_line_option(command_line, command_option, expected_command_line):
     actual_command_line = remove_command_line_option(command_line, command_option)
     assert actual_command_line == expected_command_line
+
+
+@pytest.mark.parametrize(
+    "incremental_reads, expected_lines",
+    [
+        (["foo", " bar", " bim\nbuzz", " foo\n"], ["foo bar bim", "buzz foo"]),
+        (["foo bar bim\n", "buzz foo\n"], ["foo bar bim", "buzz foo"]),
+        (["foo bar bim\n", "buzz foo"], ["foo bar bim"]),
+        (["foo", " bar", " bim\nbuzz\nfizz\n", "foo\n"], ["foo bar bim", "buzz", "fizz", "foo"]),
+    ],
+    ids=[
+        "new_line_in_middle",
+        "new_line_at_the_end",
+        "last_read_has_no_new_line",
+        "many_new_lines_in_one_read",
+    ],
+)
+def test_get_next_lines(incremental_reads, expected_lines):
+    class DummyTextFile:
+        def __init__(self):
+            self.incremental_reads = incremental_reads
+            self.i = 0
+
+        def read(self, *args, **kwargs):
+            next_read = self.incremental_reads[self.i]
+            self.i += 1
+            return next_read
+
+    dummy_text_file = DummyTextFile()
+    next_line = get_next_lines()
+    actual_lines_read = []
+    for _ in range(len(incremental_reads)):
+        for line in next_line(dummy_text_file):
+            if line:
+                actual_lines_read.append(line)
+
+    assert expected_lines == actual_lines_read

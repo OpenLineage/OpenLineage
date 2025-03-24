@@ -1,7 +1,7 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
-from typing import Any, Dict, Generator, List, Optional, TextIO
+import os
+from typing import Any, Callable, Dict, Generator, List, Optional, TextIO
 
 
 def get_from_nullable_chain(source: Any, chain: List[str]) -> Optional[Any]:
@@ -161,9 +161,32 @@ def has_lines(text_file: TextIO):
     return len(lines) > 0
 
 
-def get_next_lines(text_file: TextIO) -> Generator[str, None, None]:
-    lines = text_file.readlines()
-    for line in lines:
-        line = line.strip()
-        if line:
-            yield line
+def get_next_lines() -> Callable[[TextIO], Generator[str, None, None]]:
+    """
+    reads a text file chunk by chunk and return a line when it's complete.
+    next_line inner function should be called over and over again to read the whole file.
+    example:
+    next_line = get_next_lines(text_io)
+    If a line can't be formed it returns None
+    """
+    previous_chunk = ""
+
+    def next_line(text_file: TextIO):
+        nonlocal previous_chunk
+
+        chunk_size = 1024
+        chunk = previous_chunk + text_file.read(chunk_size)
+        line = []
+        next_line_start = 0
+        for i in range(len(chunk)):
+            char = chunk[i]
+            if char != os.linesep:
+                line.append(char)
+            else:
+                yield "".join(line)
+                line = []
+                next_line_start = i + 1
+
+        previous_chunk = chunk[next_line_start::]
+
+    return next_line

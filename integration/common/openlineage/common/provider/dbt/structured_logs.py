@@ -149,6 +149,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             dbt_event = json.loads(line)
         except ValueError:
             # log that can't be consumed
+            self.logger.info(f"The following log is not valid JSON:\n{line}")
             return None
 
         dbt_event_name = dbt_event["info"]["name"]
@@ -509,25 +510,30 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             dbt_command_line, option="--write-json", replace_option="--no-write-json"
         )
         self._open_dbt_log_file()
+        next_line = get_next_lines()
         process = subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr, text=True)
-
+        exception = None
+        parse_manifest = True
         try:
             while process.poll() is None:
-                if has_lines(self._dbt_log_file) > 0:
+                if parse_manifest and has_lines(self._dbt_log_file) > 0:
                     # Load the manifest as soon as it exists
                     self.compiled_manifest
+                    parse_manifest = False
 
-                yield from get_next_lines(self._dbt_log_file)
+                yield from next_line(self._dbt_log_file)
 
             if self._dbt_log_file is not None:
-                yield from get_next_lines(self._dbt_log_file)
+                yield from next_line(self._dbt_log_file)
 
         except Exception as e:
-            process.kill()
-            raise e
+            exception = e
         finally:
             if self._dbt_log_file is not None:
                 self._dbt_log_file.close()
+            if exception:
+                process.kill()
+                raise exception
 
     def _open_dbt_log_file(self):
         """
