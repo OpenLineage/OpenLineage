@@ -172,11 +172,18 @@ def test_remove_command_line_option(command_line, command_option, expected_comma
 )
 def test_incremental_file_reader(incremental_reads, expected_lines):
     class DummyTextFile:
+        """
+        This simulates a text file that reads incomplete lines.
+        """
+
         def __init__(self):
             self.incremental_reads = incremental_reads
             self.i = 0
 
         def read(self, *args, **kwargs):
+            """
+            This simulates incomplete reads.
+            """
             next_read = self.incremental_reads[self.i] if self.i < len(incremental_reads) else ""
             self.i += 1
             return next_read

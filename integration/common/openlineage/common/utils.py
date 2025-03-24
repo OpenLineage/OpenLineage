@@ -163,9 +163,8 @@ def has_lines(text_file: TextIO):
 
 class IncrementalFileReader:
     """
-    The dbt log file is being written to incrementally by the dbt process.
-    this class is responsible of reading the log file.
-    Some lines are written incomplete. This class reads complete lines.
+    dbt process writes to the log file incrementally. Sometimes lines are written incomplete.
+    This class is responsible of reading complete lines only and returns them via its methods.
     """
 
     def __init__(self, text_file: TextIO):
@@ -176,7 +175,7 @@ class IncrementalFileReader:
     def read_lines(self):
         """
         This reads as many complete lines as possible.
-        incomplete line chars are saved in the self.incomplete_line
+        incomplete line chars are saved in the incomplete_line member
         """
 
         chunk = self.incomplete_line + self.text_file.read(self.chunk_size)
