@@ -3,10 +3,10 @@
 import pytest
 from openlineage.common.provider.dbt.utils import CONSUME_STRUCTURED_LOGS_COMMAND_OPTION
 from openlineage.common.utils import (
+    IncrementalFileReader,
     add_command_line_arg,
     add_or_replace_command_line_option,
     get_from_nullable_chain,
-    get_next_lines,
     parse_multiple_args,
     parse_single_arg,
     remove_command_line_option,
@@ -170,23 +170,21 @@ def test_remove_command_line_option(command_line, command_option, expected_comma
         "many_new_lines_in_one_read",
     ],
 )
-def test_get_next_lines(incremental_reads, expected_lines):
+def test_incremental_file_reader(incremental_reads, expected_lines):
     class DummyTextFile:
         def __init__(self):
             self.incremental_reads = incremental_reads
             self.i = 0
 
         def read(self, *args, **kwargs):
-            next_read = self.incremental_reads[self.i]
+            next_read = self.incremental_reads[self.i] if self.i < len(incremental_reads) else ""
             self.i += 1
             return next_read
 
     dummy_text_file = DummyTextFile()
-    next_line = get_next_lines()
+    incremental_reader = IncrementalFileReader(dummy_text_file)
     actual_lines_read = []
-    for _ in range(len(incremental_reads)):
-        for line in next_line(dummy_text_file):
-            if line:
-                actual_lines_read.append(line)
+    for line in incremental_reader.read_lines():
+        actual_lines_read.append(line)
 
     assert expected_lines == actual_lines_read

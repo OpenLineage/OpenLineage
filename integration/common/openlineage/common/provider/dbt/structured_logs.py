@@ -36,10 +36,10 @@ from openlineage.common.provider.dbt.utils import (
     get_parent_run_metadata,
 )
 from openlineage.common.utils import (
+    IncrementalFileReader,
     add_command_line_args,
     add_or_replace_command_line_option,
     get_from_nullable_chain,
-    get_next_lines,
     has_lines,
 )
 
@@ -510,7 +510,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             dbt_command_line, option="--write-json", replace_option="--no-write-json"
         )
         self._open_dbt_log_file()
-        next_line = get_next_lines()
+        incremental_reader = IncrementalFileReader(self._dbt_log_file)
         process = subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr, text=True)
         exception = None
         parse_manifest = True
@@ -521,10 +521,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                     self.compiled_manifest
                     parse_manifest = False
 
-                yield from next_line(self._dbt_log_file)
+                yield from incremental_reader.read_lines()
 
             if self._dbt_log_file is not None:
-                yield from next_line(self._dbt_log_file)
+                yield from incremental_reader.read_lines()
 
         except Exception as e:
             exception = e

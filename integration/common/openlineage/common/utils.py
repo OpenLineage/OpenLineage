@@ -1,7 +1,7 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 import os
-from typing import Any, Callable, Dict, Generator, List, Optional, TextIO
+from typing import Any, Dict, List, Optional, TextIO
 
 
 def get_from_nullable_chain(source: Any, chain: List[str]) -> Optional[Any]:
@@ -161,32 +161,36 @@ def has_lines(text_file: TextIO):
     return len(lines) > 0
 
 
-def get_next_lines() -> Callable[[TextIO], Generator[str, None, None]]:
+class IncrementalFileReader:
     """
-    reads a text file chunk by chunk and return a line when it's complete.
-    next_line inner function should be called over and over again to read the whole file.
-    example:
-    next_line = get_next_lines(text_io)
-    If a line can't be formed it returns None
+    The dbt log file is being written to incrementally by the dbt process.
+    this class is responsible of reading the log file.
+    Some lines are written incomplete. This class reads complete lines.
     """
-    previous_chunk = ""
 
-    def next_line(text_file: TextIO):
-        nonlocal previous_chunk
+    def __init__(self, text_file: TextIO):
+        self.text_file = text_file
+        self.incomplete_line = ""
+        self.chunk_size = 1024
 
-        chunk_size = 1024
-        chunk = previous_chunk + text_file.read(chunk_size)
-        line = []
-        next_line_start = 0
-        for i in range(len(chunk)):
-            char = chunk[i]
-            if char != os.linesep:
-                line.append(char)
-            else:
-                yield "".join(line)
-                line = []
-                next_line_start = i + 1
+    def read_lines(self):
+        """
+        This reads as many complete lines as possible.
+        incomplete line chars are saved in the self.incomplete_line
+        """
 
-        previous_chunk = chunk[next_line_start::]
+        chunk = self.incomplete_line + self.text_file.read(self.chunk_size)
+        while chunk and chunk != self.incomplete_line:
+            line = []
+            next_line_start = 0
+            for i in range(len(chunk)):
+                char = chunk[i]
+                if char != os.linesep:
+                    line.append(char)
+                else:
+                    yield "".join(line)
+                    line = []
+                    next_line_start = i + 1
 
-    return next_line
+            self.incomplete_line = chunk[next_line_start::]
+            chunk = self.incomplete_line + self.text_file.read(self.chunk_size)
