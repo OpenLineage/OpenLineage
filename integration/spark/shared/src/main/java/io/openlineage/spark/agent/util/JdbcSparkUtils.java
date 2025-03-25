@@ -64,12 +64,12 @@ public class JdbcSparkUtils {
                   JdbcDatasetUtils.getDatasetIdentifier(
                       jdbcUrl, dbtm.qualifiedName(), jdbcProperties);
               return datasetFactory.getDataset(
-                  di.getName(), di.getNamespace(), generateJDBCSchema(dbtm, schema, meta));
+                  di.getName(), di.getNamespace(), generateSchemaFromSqlMeta(dbtm, schema, meta));
             })
         .collect(Collectors.toList());
   }
 
-  private static StructType generateJDBCSchema(
+  public static StructType generateSchemaFromSqlMeta(
       DbTableMeta origin, StructType schema, SqlMeta sqlMeta) {
     StructType originSchema = new StructType();
     for (StructField f : schema.fields()) {
