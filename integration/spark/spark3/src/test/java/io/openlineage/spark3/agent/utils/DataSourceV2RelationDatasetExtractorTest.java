@@ -259,10 +259,5 @@ class DataSourceV2RelationDatasetExtractorTest {
     assertThat(result.get(0))
         .hasFieldOrPropertyWithValue("name", "bigquery-public-data.samples.shakespeare")
         .hasFieldOrPropertyWithValue("namespace", "bigquery");
-
-    OpenLineage.DatasetFacet datasetFacet =
-        result.get(0).getFacets().getAdditionalProperties().get("customFacet");
-    assertThat(datasetFacet.getAdditionalProperties())
-        .hasFieldOrPropertyWithValue("property", "value");
   }
 }

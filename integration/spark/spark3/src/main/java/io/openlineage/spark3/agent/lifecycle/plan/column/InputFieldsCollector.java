@@ -17,6 +17,7 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
+import io.openlineage.spark3.agent.utils.ExtensionDataSourceV2Utils;
 import io.openlineage.sql.SqlMeta;
 import java.net.URI;
 import java.util.ArrayList;
@@ -72,6 +73,8 @@ public class InputFieldsCollector {
     List<DatasetIdentifier> datasetIdentifiers = extractDatasetIdentifier(context, node);
     if (isJDBCNode(node)) {
       JdbcColumnLineageCollector.extractExternalInputs(context, node, datasetIdentifiers);
+    } else if (isQueryRelationNode(node)) {
+      QueryRelationColumnLineageCollector.extractExternalInputs(context, node);
     } else {
       extractInternalInputs(node, context.getBuilder(), datasetIdentifiers);
     }
@@ -80,6 +83,17 @@ public class InputFieldsCollector {
   private static boolean isJDBCNode(LogicalPlan node) {
     return node instanceof LogicalRelation
         && ((LogicalRelation) node).relation() instanceof JDBCRelation;
+  }
+
+  private static boolean isQueryRelationNode(LogicalPlan node) {
+    if (node instanceof DataSourceV2Relation) {
+      return ExtensionDataSourceV2Utils.hasQueryExtensionLineage((DataSourceV2Relation) node);
+    }
+    if (node instanceof DataSourceV2ScanRelation) {
+      return ExtensionDataSourceV2Utils.hasQueryExtensionLineage(
+          ((DataSourceV2ScanRelation) node).relation());
+    }
+    return false;
   }
 
   private static void extractInternalInputs(
@@ -175,9 +189,7 @@ public class InputFieldsCollector {
   private static List<DatasetIdentifier> extractDatasetIdentifier(
       ColumnLevelLineageContext context, DataSourceV2Relation relation) {
     return DataSourceV2RelationDatasetExtractor.getDatasetIdentifierExtended(
-            context.getOlContext(), relation)
-        .map(Collections::singletonList)
-        .orElse(Collections.emptyList());
+        context.getOlContext(), relation);
   }
 
   private static List<DatasetIdentifier> extractDatasetIdentifier(
