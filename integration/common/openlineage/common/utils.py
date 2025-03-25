@@ -170,7 +170,7 @@ class IncrementalFileReader:
     def __init__(self, text_file: TextIO):
         self.text_file = text_file
         self.incomplete_line = ""
-        self.chunk_size = 1024
+        self.chunk_size = 4096
 
     def read_lines(self):
         """
@@ -191,5 +191,5 @@ class IncrementalFileReader:
                     line = []
                     next_line_start = i + 1
 
-            self.incomplete_line = chunk[next_line_start::]
+            self.incomplete_line = chunk[next_line_start:]
             chunk = self.incomplete_line + self.text_file.read(self.chunk_size)
