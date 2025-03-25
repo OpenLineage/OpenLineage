@@ -149,7 +149,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             dbt_event = json.loads(line)
         except ValueError:
             # log that can't be consumed
-            self.logger.info(f"The following log is not valid JSON:\n{line}")
+            self.logger.error(f"The following log is not valid JSON:\n{line}")
             return None
 
         dbt_event_name = dbt_event["info"]["name"]
@@ -512,7 +512,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self._open_dbt_log_file()
         incremental_reader = IncrementalFileReader(self._dbt_log_file)
         process = subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr, text=True)
-        exception = None
         parse_manifest = True
         try:
             while process.poll() is None:
@@ -526,14 +525,13 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             if self._dbt_log_file is not None:
                 yield from incremental_reader.read_lines()
 
-        except Exception as e:
-            exception = e
+        except Exception:
+            self.logger.exception("An exception occurred in OL code. dbt is still running.")
+            while process.poll() is None:
+                pass  # wait for the process to finish
         finally:
             if self._dbt_log_file is not None:
                 self._dbt_log_file.close()
-            if exception:
-                process.kill()
-                raise exception
 
     def _open_dbt_log_file(self):
         """
