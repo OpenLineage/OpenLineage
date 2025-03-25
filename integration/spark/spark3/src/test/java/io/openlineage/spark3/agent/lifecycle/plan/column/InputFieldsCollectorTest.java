@@ -27,7 +27,6 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.rdd.RDD;
@@ -95,7 +94,7 @@ class InputFieldsCollectorTest {
     try (MockedStatic mocked = mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
       when(DataSourceV2RelationDatasetExtractor.getDatasetIdentifierExtended(
               context.getOlContext(), relation))
-          .thenReturn(Optional.of(di));
+          .thenReturn(Collections.singletonList(di));
       InputFieldsCollector.collect(context, plan);
     }
     verify(builder, times(1)).addInput(exprId, di, SOME_NAME);
@@ -119,7 +118,7 @@ class InputFieldsCollectorTest {
     try (MockedStatic mocked = mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
       when(DataSourceV2RelationDatasetExtractor.getDatasetIdentifierExtended(
               context.getOlContext(), relation))
-          .thenReturn(Optional.of(di));
+          .thenReturn(Collections.singletonList(di));
       InputFieldsCollector.collect(context, plan);
     }
     verify(builder, times(1)).addInput(exprId, di, SOME_NAME);
