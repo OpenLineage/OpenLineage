@@ -36,10 +36,10 @@ from openlineage.common.provider.dbt.utils import (
     get_parent_run_metadata,
 )
 from openlineage.common.utils import (
+    IncrementalFileReader,
     add_command_line_args,
     add_or_replace_command_line_option,
     get_from_nullable_chain,
-    get_next_lines,
     has_lines,
 )
 
@@ -149,6 +149,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             dbt_event = json.loads(line)
         except ValueError:
             # log that can't be consumed
+            self.logger.error(f"The following log is not valid JSON:\n{line}")
             return None
 
         dbt_event_name = dbt_event["info"]["name"]
@@ -509,22 +510,25 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             dbt_command_line, option="--write-json", replace_option="--no-write-json"
         )
         self._open_dbt_log_file()
+        incremental_reader = IncrementalFileReader(self._dbt_log_file)
         process = subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr, text=True)
-
+        parse_manifest = True
         try:
             while process.poll() is None:
-                if has_lines(self._dbt_log_file) > 0:
+                if parse_manifest and has_lines(self._dbt_log_file) > 0:
                     # Load the manifest as soon as it exists
                     self.compiled_manifest
+                    parse_manifest = False
 
-                yield from get_next_lines(self._dbt_log_file)
+                yield from incremental_reader.read_lines()
 
             if self._dbt_log_file is not None:
-                yield from get_next_lines(self._dbt_log_file)
+                yield from incremental_reader.read_lines()
 
-        except Exception as e:
-            process.kill()
-            raise e
+        except Exception:
+            self.logger.exception("An exception occurred in OL code. dbt is still running.")
+            while process.poll() is None:
+                pass  # wait for the process to finish
         finally:
             if self._dbt_log_file is not None:
                 self._dbt_log_file.close()
