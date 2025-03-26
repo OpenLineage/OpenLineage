@@ -420,15 +420,21 @@ class OpenLineageClient:
         """
         Creates or updates job and run tag facets based on user-supplied environment variables
         """
+        run_event_types = (RunEvent, event_v2.RunEvent)
+        run_and_job_event_types = (RunEvent, event_v2.RunEvent, JobEvent, event_v2.JobEvent)
         tags_job = self.config.tags.job
-        if (isinstance(event, (JobEvent, RunEvent))) and tags_job:
+        if isinstance(event, run_and_job_event_types) and tags_job:
+            # Ensure facets exists
+            event.job.facets = {} if not event.job.facets else event.job.facets
             tags_facet = event.job.facets.get("tags", TagsJobFacet())
-            event.job.facets["tags"] = self._update_tag_facet(tags_facet, tags_job)  # type: ignore [arg-type]
+            event.job.facets["tags"] = self._update_tag_facet(tags_facet, tags_job)  # type: ignore [arg-type, assignment]
 
         tags_run = self.config.tags.run
-        if (isinstance(event, RunEvent)) and tags_run:
+        if isinstance(event, run_event_types) and tags_run:
+            # Ensure facets exists
+            event.run.facets = {} if not event.run.facets else event.run.facets
             tags_facet = event.run.facets.get("tags", TagsRunFacet())
-            event.run.facets["tags"] = self._update_tag_facet(tags_facet, tags_run)  # type: ignore [arg-type]
+            event.run.facets["tags"] = self._update_tag_facet(tags_facet, tags_run)  # type: ignore [arg-type, assignment]
 
         return event
 
