@@ -6,7 +6,7 @@
 
 ### Fixed
 
-* **dbt: read structured log file incrementally ** [`#3580`](https://github.com/OpenLineage/OpenLineage/pull/3580) [@MassyB](https://github.com/MassyB)
+* **dbt: read structured log file incrementally** [`#3580`](https://github.com/OpenLineage/OpenLineage/pull/3580) [@MassyB](https://github.com/MassyB)
   *Buffered writing could cause dbt to write broken log lines. This PR handles that case.*
 * **Python: fix user tags in event v2 events** [`#3576`](https://github.com/OpenLineage/OpenLineage/pull/3550) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
   *This PR fixes case where event v2 job and run events did not get user tags.*
