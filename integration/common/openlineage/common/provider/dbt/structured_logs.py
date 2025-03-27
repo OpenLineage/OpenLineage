@@ -58,6 +58,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.dbt_command_line: List[str] = dbt_command_line
         self.profiles_dir: str = get_dbt_profiles_dir(command=self.dbt_command_line)
         self.dbt_log_file_path: str = get_dbt_log_path(command=self.dbt_command_line)
+        self.parent_run_metadata: ParentRunMetadata = get_parent_run_metadata()
 
         self.node_id_to_ol_run_id: Dict[str, str] = defaultdict(lambda: str(generate_new_uuid()))
 
@@ -181,11 +182,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         return ol_event
 
     def _parse_dbt_start_command_event(self, event) -> RunEvent:
-        parent_run_metadata = get_parent_run_metadata()
         event_time = get_event_timestamp(event["info"]["ts"])
         run_facets = self.dbt_version_facet()
-        if parent_run_metadata:
-            run_facets["parent"] = parent_run_metadata
+        if self.parent_run_metadata:
+            run_facets["parent"] = self.parent_run_metadata
 
         start_event_run_id = str(generate_new_uuid())
         job_facets = {
@@ -349,7 +349,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         sql_start_at = event["info"]["ts"]
 
         parent_run = ParentRunMetadata(
-            run_id=node_start_run_id, job_name=self._get_job_name(event), job_namespace=self.job_namespace
+            run_id=node_start_run_id,
+            job_name=self._get_job_name(event),
+            job_namespace=self.job_namespace,
+            root_parent_run_id=self.get_root_parent_run_id(),
         )
 
         run_facets = {"parent": parent_run.to_openlineage(), **self.dbt_version_facet()}
@@ -453,10 +456,18 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         The dbt command defines the parent run metadata of
         all subsequent OL events (NodeStart, NodeFinish ...)
         """
+        root_parent_run_id = start_event.run.runId
+        if start_event.run.facets.get("parent"):
+            parent_facet = start_event.run.facets.get("parent")
+            if hasattr(parent_facet, "rootParentRunId"):
+                root_parent_run_id = parent_facet.rootParentRunId
+            else:
+                root_parent_run_id = parent_facet.run.runId
         self.dbt_run_metadata = ParentRunMetadata(
             run_id=start_event.run.runId,
             job_name=start_event.job.name,
             job_namespace=start_event.job.namespace,
+            root_parent_run_id=root_parent_run_id,
         )
 
     def dbt_version_facet(self) -> DbtVersionRunFacet:
@@ -589,3 +600,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         Replaced by properties
         """
         pass
+
+    def get_root_parent_run_id(self):
+        if self.parent_run_metadata is not None:
+            return self.parent_run_metadata.root_parent_run_id
+        if self.dbt_run_metadata is not None:
+            return self.dbt_run_metadata.root_parent_run_id
