@@ -27,15 +27,15 @@ idea {
 
 ext {
     assertjVersion = "3.27.3"
-    bigqueryVersion = "0.42.0"
+    bigqueryVersion = "0.42.1"
     databricksVersion = "0.1.4"
     deltaVersion = "1.1.0"
     icebergVersion = "1.4.3"
     jacksonVersion = "2.15.3"
-    junit5Version = "5.11.4"
+    junit5Version = "5.12.1"
     lombokVersion = "1.18.30"
     mockitoVersion = "4.11.0"
-    micrometerVersion = "1.14.4"
+    micrometerVersion = "1.14.5"
 
     sparkVersion = project.findProperty("spark3.spark.version")
     scalaBinaryVersion = project.findProperty("scala.binary.version")
