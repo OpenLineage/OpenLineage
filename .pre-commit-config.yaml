@@ -169,17 +169,17 @@ repos:
         require_serial: true
       - id: spotless-client-java
         name: spotless-client-java
-        description: "Runs the Spotless formatter."
+        description: "Runs the Spotless formatter - Java client."
         language: system
-        entry: bash -c "cd client/java && ./gradlew spotlessApply"
+        entry: .pre_commit/run-spotless.sh --java-version 17 --location client/java
         files: ^client/java/src/.*\.java$
         exclude: ".*test.*"
         pass_filenames: false
       - id: spotless-integration-spark
         name: spotless-integration-spark
-        description: "Runs the Spotless formatter for Spark."
+        description: "Runs the Spotless formatter - Spark."
         language: system
-        entry: bash -c "cd integration/spark && ./gradlew spotlessApply"
+        entry: .pre_commit/run-spotless.sh --java-version 17 --location integration/spark
         files: ^integration/spark/.*\.java$
         exclude: ".*test.*"
         pass_filenames: false

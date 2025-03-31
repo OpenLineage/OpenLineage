@@ -2,6 +2,17 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.29.0...HEAD)
 
+## [1.30.1](https://github.com/OpenLineage/OpenLineage/compare/1.29.0...1.30.0) - 2025-03-26
+
+### Fixed
+
+* **dbt: read structured log file incrementally** [`#3580`](https://github.com/OpenLineage/OpenLineage/pull/3580) [@MassyB](https://github.com/MassyB)
+  *Buffered writing could cause dbt to write broken log lines. This PR handles that case.*
+* **Python: fix user tags in event v2 events** [`#3576`](https://github.com/OpenLineage/OpenLineage/pull/3550) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *This PR fixes case where event v2 job and run events did not get user tags.*
+* **Spark: fix NullPointerException** [`#3583`](https://github.com/OpenLineage/OpenLineage/pull/3583) [@ddebowczyk92](https://github.com/ddebowczyk92)
+  *This PR fixes potential NullPointerException in SaveIntoDataSourceCommandVisitor.*
+
 ## [1.30.0](https://github.com/OpenLineage/OpenLineage/compare/1.29.0...1.30.0) - 2025-03-14
 
 ### Added

@@ -3,14 +3,17 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-# Function to set Java version on Ubuntu
-set_java_version_ubuntu() {
+# Function to get Java home on Ubuntu
+set_java_home_ubuntu() {
   local version="$1"
 
   echo "Setting Java version to $version on Ubuntu..."
   if [ -d "/usr/lib/jvm/java-${version}-openjdk-amd64" ]; then
-    sudo update-alternatives --set java "/usr/lib/jvm/java-${version}-openjdk-amd64/bin/java"
-    sudo update-alternatives --set javac "/usr/lib/jvm/java-${version}-openjdk-amd64/bin/javac"
+    export JAVA_HOME="/usr/lib/jvm/java-${version}-openjdk-amd64"
+    export PATH="${JAVA_HOME}:${PATH}"
+  elif [ -d "/usr/lib/jvm/java-${version}-openjdk" ]; then
+    export JAVA_HOME="/usr/lib/jvm/java-${version}-openjdk"
+    export PATH="${JAVA_HOME}:${PATH}"
   else
     echo "Java version ${version} is not installed on your Ubuntu system."
     exit 1
@@ -18,13 +21,8 @@ set_java_version_ubuntu() {
 }
 
 # Function to set Java version on macOS
-set_java_version_macos() {
+set_java_home_macos() {
   local version="$1"
-  
-  if [[ -n "$JAVA_HOME" && "$JAVA_HOME" =~ $version ]]; then
-    echo "JAVA_HOME is already set to a compatible version: $JAVA_HOME"
-    return 0
-  fi
 
   echo "Setting Java version to $version on macOS..."
 
@@ -37,20 +35,17 @@ set_java_version_macos() {
     exit 1
   fi
 
-  export JAVA_HOME="$java_home_path"
-  echo "JAVA_HOME set to $JAVA_HOME"
-  # Append the JAVA_HOME export to the user's profile if not already set
-  if ! grep -q "export JAVA_HOME=$JAVA_HOME" ~/.bash_profile; then
-    echo "export JAVA_HOME=$JAVA_HOME" >> ~/.bash_profile
-  fi
-
-  # Apply the changes to the current shell session
-  source ~/.bash_profile
+  export JAVA_HOME="$java_home_path";
 }
 
 # Main function to set Java version based on OS
 set_java_version() {
   local version="$1"
+  
+  if [[ -n "$JAVA_HOME" && "$JAVA_HOME" =~ $version ]]; then
+    echo "JAVA_HOME is already set to a compatible version: $JAVA_HOME"
+    return 0
+  fi
 
   if [ -z "$version" ]; then
     echo "No Java version specified. Usage: set_java_version <java_version>"
@@ -64,10 +59,10 @@ set_java_version() {
 
   case "$os_name" in
     Linux*)
-      set_java_version_ubuntu "$version"
+      set_java_home_ubuntu "$version"
       ;;
     Darwin*)
-      set_java_version_macos "$version"
+      set_java_home_macos "$version"
       ;;
     *)
       echo "Unsupported operating system: $os_name"

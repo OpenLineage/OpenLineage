@@ -1,7 +1,7 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
-from typing import Any, Dict, Generator, List, Optional, TextIO
+import os
+from typing import Any, Dict, List, Optional, TextIO
 
 
 def get_from_nullable_chain(source: Any, chain: List[str]) -> Optional[Any]:
@@ -161,9 +161,35 @@ def has_lines(text_file: TextIO):
     return len(lines) > 0
 
 
-def get_next_lines(text_file: TextIO) -> Generator[str, None, None]:
-    lines = text_file.readlines()
-    for line in lines:
-        line = line.strip()
-        if line:
-            yield line
+class IncrementalFileReader:
+    """
+    dbt process writes to the log file incrementally. Sometimes lines are written incomplete.
+    This class is responsible of reading complete lines only and returns them via its methods.
+    """
+
+    def __init__(self, text_file: TextIO):
+        self.text_file = text_file
+        self.incomplete_line = ""
+        self.chunk_size = 4096
+
+    def read_lines(self):
+        """
+        This reads as many complete lines as possible.
+        incomplete line chars are saved in the incomplete_line member
+        """
+
+        chunk = self.incomplete_line + self.text_file.read(self.chunk_size)
+        while chunk and chunk != self.incomplete_line:
+            line = []
+            next_line_start = 0
+            for i in range(len(chunk)):
+                char = chunk[i]
+                if char != os.linesep:
+                    line.append(char)
+                else:
+                    yield "".join(line)
+                    line = []
+                    next_line_start = i + 1
+
+            self.incomplete_line = chunk[next_line_start:]
+            chunk = self.incomplete_line + self.text_file.read(self.chunk_size)
