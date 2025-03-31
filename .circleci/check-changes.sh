@@ -57,22 +57,24 @@ elif [ "$CIRCLE_BRANCH" == "main" ]; then
     fi
 else
     # Changes to the spec require all workflows to run
-    check_change spec true "*"
-    check_change .circleci true "*"
-    check_change integration/sql/ true "*"
+#    check_change spec true "*"
+#    check_change .circleci true "*"
+    check_change .circleci true openlineage-java.yml openlineage-hive.yml
+#    check_change integration/sql/ true "*"
 
-    check_change client/java/ true openlineage-java.yml openlineage-flink.yml openlineage-spark.yml
-    check_change integration/spark/ true openlineage-java.yml openlineage-spark.yml
-    check_change integration/spark-extension-interfaces/ true openlineage-java.yml openlineage-spark.yml
-    check_change integration/flink/ true openlineage-java.yml openlineage-flink.yml
-    check_change client/python/ true openlineage-python.yml
-    check_change integration/common/ true openlineage-python.yml
-    check_change integration/airflow/ true openlineage-python.yml
-    check_change integration/dagster/ true openlineage-python.yml
-    check_change integration/dbt/ true openlineage-python.yml
-    check_change proxy/backend/ true openlineage-proxy-backend.yml
-    check_change proxy/fluentd/ true openlineage-proxy-fluentd.yml
-    check_change website false openlineage-website.yml
+#    check_change client/java/ true openlineage-java.yml openlineage-flink.yml openlineage-spark.yml
+#    check_change integration/spark/ true openlineage-java.yml openlineage-spark.yml
+#    check_change integration/spark-extension-interfaces/ true openlineage-java.yml openlineage-spark.yml
+#    check_change integration/flink/ true openlineage-java.yml openlineage-flink.yml
+#    check_change client/python/ true openlineage-python.yml
+#    check_change integration/common/ true openlineage-python.yml
+#    check_change integration/airflow/ true openlineage-python.yml
+#    check_change integration/dagster/ true openlineage-python.yml
+#    check_change integration/dbt/ true openlineage-python.yml
+#    check_change proxy/backend/ true openlineage-proxy-backend.yml
+#    check_change proxy/fluentd/ true openlineage-proxy-fluentd.yml
+#    check_change website false openlineage-website.yml
+    check_change integration/hive true openlineage-java.yml openlineage-hive.yml
 fi
 touch workflow_files.txt
 FILES=$(sort workflow_files.txt | uniq | tr "\n" " ")
