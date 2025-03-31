@@ -315,6 +315,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   /** To close the underlying resources. */
   public static void close() {
+    circuitBreaker.close();
     clear();
   }
 
