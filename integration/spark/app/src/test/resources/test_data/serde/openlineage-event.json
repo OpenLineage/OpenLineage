@@ -8,7 +8,8 @@
         "job": {
           "namespace": "namespace",
           "name": "jobName"
-        }
+        },
+        "rootParentRunId": "5f24c93c-1a1a-49dc-82e7-95ab4915242f"
       },
       "errorMessage": {
         "message": "failed",

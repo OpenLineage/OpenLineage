@@ -6,7 +6,7 @@
 		"facets": {
 			"parent": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+				"_schemaURL": "https://openlineage.io/spec/facets/1-0-2/ParentRunFacet.json#/$defs/ParentRunFacet",
 				"run": {
 					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
 				},
@@ -65,7 +65,7 @@
 		"facets": {
 			"parent": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+				"_schemaURL": "https://openlineage.io/spec/facets/1-0-2/ParentRunFacet.json#/$defs/ParentRunFacet",
 				"run": {
 					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
 				},
@@ -128,7 +128,7 @@
 		"facets": {
 			"parent": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+				"_schemaURL": "https://openlineage.io/spec/facets/1-0-2/ParentRunFacet.json#/$defs/ParentRunFacet",
 				"run": {
 					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
 				},
@@ -191,7 +191,7 @@
 		"facets": {
 			"parent": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+				"_schemaURL": "https://openlineage.io/spec/facets/1-0-2/ParentRunFacet.json#/$defs/ParentRunFacet",
 				"run": {
 					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
 				},
@@ -343,7 +343,7 @@
 		"facets": {
 			"parent": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+				"_schemaURL": "https://openlineage.io/spec/facets/1-0-2/ParentRunFacet.json#/$defs/ParentRunFacet",
 				"run": {
 					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
 				},
@@ -482,7 +482,7 @@
 		"facets": {
 			"parent": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+				"_schemaURL": "https://openlineage.io/spec/facets/1-0-2/ParentRunFacet.json#/$defs/ParentRunFacet",
 				"run": {
 					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
 				},
@@ -541,7 +541,7 @@
 		"facets": {
 			"parent": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+				"_schemaURL": "https://openlineage.io/spec/facets/1-0-2/ParentRunFacet.json#/$defs/ParentRunFacet",
 				"run": {
 					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
 				},
@@ -604,7 +604,7 @@
 		"facets": {
 			"parent": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+				"_schemaURL": "https://openlineage.io/spec/facets/1-0-2/ParentRunFacet.json#/$defs/ParentRunFacet",
 				"run": {
 					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
 				},
@@ -667,7 +667,7 @@
 		"facets": {
 			"parent": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+				"_schemaURL": "https://openlineage.io/spec/facets/1-0-2/ParentRunFacet.json#/$defs/ParentRunFacet",
 				"run": {
 					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
 				},
@@ -819,7 +819,7 @@
 		"facets": {
 			"parent": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+				"_schemaURL": "https://openlineage.io/spec/facets/1-0-2/ParentRunFacet.json#/$defs/ParentRunFacet",
 				"run": {
 					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
 				},

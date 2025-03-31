@@ -35,6 +35,7 @@ public class ArgumentParser {
       "spark.openlineage.parentJobNamespace";
   public static final String SPARK_CONF_PARENT_JOB_NAME = "spark.openlineage.parentJobName";
   public static final String SPARK_CONF_PARENT_RUN_ID = "spark.openlineage.parentRunId";
+  public static final String SPARK_CONF_ROOT_PARENT_RUN_ID = "spark.openlineage.rootParentRunId";
   public static final String SPARK_CONF_APP_NAME = "spark.openlineage.appName";
   public static final String ARRAY_PREFIX_CHAR = "[";
   public static final String ARRAY_SUFFIX_CHAR = "]";
@@ -126,6 +127,7 @@ public class ArgumentParser {
     findSparkConfigKey(conf, SPARK_CONF_PARENT_JOB_NAMESPACE)
         .ifPresent(config::setParentJobNamespace);
     findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID).ifPresent(config::setParentRunId);
+    findSparkConfigKey(conf, SPARK_CONF_ROOT_PARENT_RUN_ID).ifPresent(config::setRootParentRunId);
     findSparkConfigKey(conf, SPARK_CONF_DEBUG_FACET).ifPresent(config::setDebugFacet);
     findSparkConfigKey(conf, SPARK_TEST_EXTENSION_PROVIDER)
         .ifPresent(config::setTestExtensionProvider);

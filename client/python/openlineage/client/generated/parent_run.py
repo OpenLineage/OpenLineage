@@ -28,11 +28,12 @@ class ParentRunFacet(RunFacet):
 
     run: Run
     job: Job
+    root: Root | None = attr.field(default=None)
     _additional_skip_redact: ClassVar[list[str]] = ["job", "run"]
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet"
+        return "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet"
 
     @classmethod
     def create(cls, runId: str, namespace: str, name: str) -> ParentRunFacet:  # noqa: N803
@@ -44,6 +45,46 @@ class ParentRunFacet(RunFacet):
             stacklevel=2,
         )
         return cls(run=Run(runId=runId), job=Job(namespace=namespace, name=name))
+
+
+@attr.define
+class Root(RedactMixin):
+    run: RootRun
+    job: RootJob
+    _skip_redact: ClassVar[list[str]] = ["run", "job"]
+
+
+@attr.define
+class RootJob(RedactMixin):
+    namespace: str
+    """The namespace containing root job"""
+
+    name: str
+    """The unique name containing root job within that namespace"""
+
+    _skip_redact: ClassVar[list[str]] = ["namespace", "name"]
+
+    @staticmethod
+    def _get_schema() -> str:
+        return "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/RootJob"
+
+
+@attr.define
+class RootRun(RedactMixin):
+    runId: str = attr.field()  # noqa: N815
+    """The globally unique ID of the root run associated with the root job."""
+
+    _skip_redact: ClassVar[list[str]] = ["runId"]
+
+    @staticmethod
+    def _get_schema() -> str:
+        return "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/RootRun"
+
+    @runId.validator
+    def runid_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        from uuid import UUID
+
+        UUID(value)
 
 
 @attr.define

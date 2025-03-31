@@ -224,7 +224,7 @@ public class PlanUtils {
    * @return
    */
   public static OpenLineage.ParentRunFacet parentRunFacet(
-      UUID parentRunId, String parentJob, String parentJobNamespace) {
+      UUID parentRunId, String parentJob, String parentJobNamespace, UUID rootParentRunId) {
     return new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI)
         .newParentRunFacetBuilder()
         .run(new OpenLineage.ParentRunFacetRunBuilder().runId(parentRunId).build())
@@ -233,6 +233,7 @@ public class PlanUtils {
                 .name(NameNormalizer.normalize(parentJob))
                 .namespace(parentJobNamespace)
                 .build())
+        .rootParentRunId(rootParentRunId)
         .build();
   }
 

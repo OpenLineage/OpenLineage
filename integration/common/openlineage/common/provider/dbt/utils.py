@@ -104,9 +104,19 @@ def get_parent_run_metadata():
     parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
     parent_run_metadata = None
     if parent_id:
-        parent_namespace, parent_job_name, parent_run_id = parent_id.split("/")
+        parent_tuple = parent_id.split("/")
+        if len(parent_tuple) == 3:
+            parent_namespace, parent_job_name, parent_run_id = parent_tuple
+            root_parent_run_id = parent_run_id
+        elif len(parent_tuple) == 4:
+            parent_namespace, parent_job_name, parent_run_id, root_parent_run_id = parent_tuple
+        else:
+            return None
         parent_run_metadata = ParentRunMetadata(
-            run_id=parent_run_id, job_name=parent_job_name, job_namespace=parent_namespace
+            run_id=parent_run_id,
+            job_name=parent_job_name,
+            job_namespace=parent_namespace,
+            root_parent_run_id=root_parent_run_id,
         ).to_openlineage()
     return parent_run_metadata
 

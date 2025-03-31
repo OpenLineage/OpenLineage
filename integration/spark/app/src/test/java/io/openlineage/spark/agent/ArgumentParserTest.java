@@ -41,6 +41,7 @@ class ArgumentParserTest {
   private static final String JOB_NAME = "job_name";
   private static final String URL = "http://localhost:5000";
   private static final String RUN_ID = "ea445b5c-22eb-457a-8007-01c7c52b6e54";
+  private static final String ROOT_PARENT_RUN_ID = "ea445b5c-1a1a-2b2b-3c3c-01c7c52b6e54";
   private static final String APP_NAME = "test";
   private static final String ENDPOINT = "api/v1/lineage";
   private static final String AUTH_TYPE = "api_key";
@@ -82,6 +83,7 @@ class ArgumentParserTest {
             .set(ArgumentParser.SPARK_CONF_PARENT_JOB_NAMESPACE, JOB_NAMESPACE)
             .set(ArgumentParser.SPARK_CONF_PARENT_JOB_NAME, JOB_NAME)
             .set(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, RUN_ID)
+            .set(ArgumentParser.SPARK_CONF_ROOT_PARENT_RUN_ID, ROOT_PARENT_RUN_ID)
             .set(ArgumentParser.SPARK_CONF_APP_NAME, APP_NAME);
 
     config = ArgumentParser.parse(sparkConf);

@@ -25,6 +25,7 @@ from openlineage.common.provider.dbt.utils import (
     CONSUME_STRUCTURED_LOGS_COMMAND_OPTION,
     PRODUCER,
     __version__,
+    get_parent_run_metadata,
 )
 from openlineage.common.utils import (
     has_command_line_option,
@@ -202,13 +203,7 @@ def consume_local_artifacts(
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
 
     if parent_id:
-        parent_namespace, parent_job_name, parent_run_id = parent_id.split("/")
-        parent_run_metadata = ParentRunMetadata(
-            run_id=parent_run_id,
-            job_name=parent_job_name,
-            job_namespace=parent_namespace,
-        )
-
+        parent_run_metadata = get_parent_run_metadata()
     client = OpenLineageClient()
 
     processor = DbtLocalArtifactProcessor(
