@@ -53,6 +53,12 @@ optional-dependencies.docs = [
   "pydata-sphinx-theme>=0.13"
 ]
 
+optional-dependencies.generator = [
+  "ruff==0.3.5",
+  "click",
+  "datamodel-code-generator==0.25.4"
+]
+
 [tool.hatch.build]
 exclude = [".idea", ".ruff_cache", ".gitignore", "setup.cfg"]
 targets.wheel = {packages = ["openlineage"]}
@@ -74,3 +80,6 @@ overrides = [
 ] } ]
 strict = true
 pretty = true
+
+[project.scripts]
+ol-generate-code = "openlineage.client.generator.cli:main"

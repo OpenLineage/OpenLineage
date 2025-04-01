@@ -124,7 +124,7 @@ repos:
       - id: generate_facets
         name: Generate OpenLineage facets for Python client.
         language: python
-        entry: python ./.pre_commit/generate-facets/generate.py
+        entry: python ./client/python/openlineage/client/generator/generate.py
         files: ^spec/.*\.json$|^client/python/facets\.py$
         exclude: ^spec/tests/.*$
         pass_filenames: false
