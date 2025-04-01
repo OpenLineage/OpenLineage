@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.29.0...HEAD)
 
+### Fixed
+* **Spark: fix internal metrics sent through DebugFacet.** [`#3594`](https://github.com/OpenLineage/OpenLineage/pull/3594) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Register simple micrometer registry when no other registry configured.*
+
 ## [1.30.1](https://github.com/OpenLineage/OpenLineage/compare/1.29.0...1.30.0) - 2025-03-26
 
 ### Fixed

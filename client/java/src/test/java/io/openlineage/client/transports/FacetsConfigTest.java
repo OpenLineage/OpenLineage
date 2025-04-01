@@ -87,5 +87,8 @@ class FacetsConfigTest {
                 true,
                 "facetG",
                 true));
+
+    assertThat(facetsConfig.isFacetEnabled("facetD")).isFalse();
+    assertThat(facetsConfig.isFacetEnabled("subsystemA.facetE")).isTrue();
   }
 }
