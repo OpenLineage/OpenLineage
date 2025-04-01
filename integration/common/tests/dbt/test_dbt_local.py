@@ -31,6 +31,8 @@ def parent_run_metadata():
         job_name="dbt-job-name",
         job_namespace="dbt",
         root_parent_run_id="f99310b4-3c3c-4d4d-2b2b-c1b95c24ff11",
+        root_parent_job_name="root-parent-job-name",
+        root_parent_job_namespace="root-parent-job-namespace",
     )
 
 
