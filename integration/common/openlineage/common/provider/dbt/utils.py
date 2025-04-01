@@ -1,6 +1,6 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
+import logging
 import os
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -15,6 +15,8 @@ PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integ
 # for which command structured logs consumption is implemented
 HANDLED_COMMANDS = ["run", "seed", "snapshot", "test", "build"]
 CONSUME_STRUCTURED_LOGS_COMMAND_OPTION = "--consume-structured-logs"
+
+log = logging.getLogger(__name__)
 
 
 def get_event_timestamp(timestamp: str):
@@ -102,22 +104,36 @@ def get_parent_run_metadata():
     The parent job that started the dbt command. Usually the scheduler (Airflow, ...etc)
     """
     parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
+    root_parent_id = os.getenv("OPENLINEAGE_ROOT_PARENT_ID")
     parent_run_metadata = None
     if parent_id:
         parent_tuple = parent_id.split("/")
         if len(parent_tuple) == 3:
             parent_namespace, parent_job_name, parent_run_id = parent_tuple
-            root_parent_run_id = parent_run_id
-        elif len(parent_tuple) == 4:
-            parent_namespace, parent_job_name, parent_run_id, root_parent_run_id = parent_tuple
         else:
+            log.warning("Received OPENLINEAGE_PARENT_ID but can't parse it")
             return None
+
+        if root_parent_id:
+            root_parent_tuple = root_parent_id.split("/")
+            if len(root_parent_tuple) == 3:
+                root_parent_job_namespace, root_parent_job_name, root_parent_run_id = root_parent_tuple
+            else:
+                root_parent_job_namespace, root_parent_job_name, root_parent_run_id = None, None, None
+                log.warning("Received OPENLINEAGE_ROOT_PARENT_ID but can't parse it")
+        else:
+            root_parent_run_id = parent_run_id
+            root_parent_job_name = parent_job_name
+            root_parent_job_namespace = parent_namespace
+
         parent_run_metadata = ParentRunMetadata(
             run_id=parent_run_id,
             job_name=parent_job_name,
             job_namespace=parent_namespace,
+            root_parent_job_name=root_parent_job_name,
+            root_parent_job_namespace=root_parent_job_namespace,
             root_parent_run_id=root_parent_run_id,
-        ).to_openlineage()
+        )
     return parent_run_metadata
 
 

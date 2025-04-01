@@ -64,7 +64,7 @@
         },
         "parent": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-2/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
           "job": { "name": "dbt-job-name", "namespace": "dbt" },
           "run": { "runId": "{{ any(result) }}" }
         }
@@ -142,7 +142,7 @@
         },
         "parent": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-2/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
           "job": { "name": "dbt-job-name", "namespace": "dbt" },
           "run": { "runId": "{{ any(result) }}" }
         }
