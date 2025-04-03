@@ -33,11 +33,10 @@ public class SubqueryAliasInputDatasetBuilder
   @Override
   protected List<InputDataset> apply(SparkListenerEvent event, SubqueryAlias x) {
     // this should not run query visitors again
-    return delegate(Collections.emptyList(), context.getInputDatasetBuilders(), event)
-        .applyOrElse(
-            x.child(),
-            ScalaConversionUtils.toScalaFn((lp) -> Collections.<InputDataset>emptyList()))
+    return delegate(Collections.emptyList(), Collections.emptyList(), event)
+        .applyOrElse(x.child(), ScalaConversionUtils.toScalaFn((lp) -> Collections.<InputDataset>emptyList()))
         .stream()
         .collect(Collectors.toList());
   }
+
 }
