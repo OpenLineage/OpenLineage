@@ -39,6 +39,17 @@ public class OracleJdbcExtractor implements JdbcExtractor {
   }
 
   private JdbcLocation extractUri(String uri, Properties properties) throws URISyntaxException {
+    // Handle LDAP connection strings
+    if (uri.toLowerCase(Locale.ROOT).startsWith("ldap://")) {
+      String[] ldapParts = uri.split("/", 4);
+      if (ldapParts.length >= 3) {
+        String hostPort = ldapParts[2];
+        String dbName = ldapParts.length > 3 ? ldapParts[3].split(",")[0] : "";
+        // Convert to a normalized form that can be processed by OverridingJdbcExtractor
+        uri = hostPort + "/" + dbName;
+      }
+    }
+
     // convert 'tcp://'' protocol to 'oracle://'', convert ':sid' format to '/sid'
     String normalizedUri = uri.replaceFirst(PROTOCOL_PART, "");
     normalizedUri = SCHEME + "://" + fixSidFormat(normalizedUri);
