@@ -18,7 +18,7 @@ export const Talks: Talk[] = [
     speakers: ["Rahul Madan, Atlan"],
     description:
       "Whether you're troubleshooting data issues, planning pipeline changes, or ensuring compliance, this session will equip you with the knowledge to leverage OpenLineage for better data visibility and control. Demystify data lineage and its critical role in modern data ecosystems, explore real-world use cases that demonstrate the power of lineage tracking, and learn how following your data's breadcrumbs (Data Lineage) can transform your team's efficiency and data reliability!",
-    video_url: "https://www.youtube.com/embed/fSL110nYCYo",
+    video_url: "https://www.youtube.com/watch?v=fSL110nYCYo&list=PLgyvStszwUHj-HwMVPGQAWRwhnZSkePRA",
     conf_url:
       "https://movedata.airbyte.com/",
   },
