@@ -29,7 +29,7 @@ export const Consumers: Array<Partner> = [
     org_url: "https://atlan.com",
   },
   {
-    image: "dd_logo_h_rgb.svg",
+    image: "dd_logo_h_rgb_small.svg",
     org: "Datadog",
     full_name: "Datadog",
     description:
