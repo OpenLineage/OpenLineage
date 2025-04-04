@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.MergeConfig;
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -167,5 +168,16 @@ public class FacetsConfig implements MergeConfig<FacetsConfig> {
               });
     }
     return disabledFacetsSet.toArray(new String[0]);
+  }
+
+  /**
+   * Checks if the facet is enabled. The method checks if a given facet is not in the list of
+   * effectively disabled facets. Useful for checking facets which are disabled by default.
+   *
+   * @param facetName
+   * @return
+   */
+  public boolean isFacetEnabled(String facetName) {
+    return Arrays.stream(getEffectiveDisabledFacets()).noneMatch(facetName::equals);
   }
 }

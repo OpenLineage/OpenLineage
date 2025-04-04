@@ -105,8 +105,11 @@ public class SaveIntoDataSourceCommandVisitor
                   event.getClass().getName(),
                   context.getSparkSession().get().sqlContext(),
                   command.options());
-      return Collections.singletonList(
-          outputDataset().getDataset(datasetIdentifier, getSchema(command)));
+
+      return datasetIdentifier != null
+          ? Collections.singletonList(
+              outputDataset().getDataset(datasetIdentifier, getSchema(command)))
+          : Collections.emptyList();
     }
 
     // Kafka has some special handling because the Source and Sink relations require different

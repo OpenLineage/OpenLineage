@@ -100,6 +100,7 @@ class SparkGenericIntegrationTest {
             .config("spark.openlineage.job.owners.person", "John Smith")
             .config("spark.openlineage.run.tags", "run;set:up:SERVICE")
             .config("spark.openlineage.parentJobNamespace", "parent-namespace")
+            .config("spark.openlineage.facets.debug.disabled", "false")
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .getOrCreate();
   }
@@ -235,6 +236,23 @@ class SparkGenericIntegrationTest {
               }
               return null;
             });
+
+    // at least one event should have the debug facet with app start metrics above 0
+    assertThat(
+            events.stream()
+                .map(e -> e.getRun().getFacets().getAdditionalProperties().get("debug"))
+                .filter(Objects::nonNull)
+                .map(
+                    debugFacet ->
+                        ((OpenLineage.DefaultRunFacet) debugFacet)
+                            .getAdditionalProperties()
+                            .get("metrics"))
+                .map(m -> (List<Map<String, Object>>) ((Map<String, Object>) m).get("metrics"))
+                .flatMap(List::stream)
+                .filter(m -> "openlineage.spark.event.app.start".equals(m.get("name"))))
+        .isNotNull()
+        .filteredOn(m -> (Double) m.get("value") > 0)
+        .isNotEmpty();
   }
 
   @Test

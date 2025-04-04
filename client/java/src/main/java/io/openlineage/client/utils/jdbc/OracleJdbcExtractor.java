@@ -52,8 +52,8 @@ public class OracleJdbcExtractor implements JdbcExtractor {
     }
     List<String> components = Arrays.stream(uri.split(":")).collect(Collectors.toList());
     String last = components.remove(components.size() - 1);
-    if (last.contains("]") || last.matches("^\\d+$")) {
-      // '[ip:v:6]' or 'host:1521'
+    if (last.contains("]") || last.matches("^\\d+$") || last.contains("/")) {
+      // '[ip:v:6]' or 'host:1521' or 'host:1521/serviceName'
       return uri;
     }
     // 'host:1521:sid' -> 'host:1521/sid'
