@@ -127,6 +127,12 @@ class JdbcDatasetUtilsTestForOracle {
                 "jdbc:oracle:thin:@//hostname:1522/serviceName", "schema.table1", new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1522")
         .hasFieldOrPropertyWithValue("name", "serviceName.schema.table1");
+
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                    "jdbc:oracle:thin:@ldap://oid:5000/mydb1,cn=OracleContext,dc=myco,dc=com", "schema.table1", new Properties()))
+            .hasFieldOrPropertyWithValue("namespace", "oracle://oid:5000")
+            .hasFieldOrPropertyWithValue("name", "mydb1.schema.table1");
   }
 
   @Test
