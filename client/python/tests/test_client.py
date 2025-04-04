@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
+from openlineage.client import event_v2
 from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions, OpenLineageConfig
 from openlineage.client.facets import FacetsConfig
 from openlineage.client.generated.environment_variables_run import (
@@ -874,19 +875,62 @@ class TestOpenLineageConfigLoader:
             assert config == expected_config
 
 
-def test_update_job_tag_facet_creates_new_facet(transport):
+@pytest.fixture(
+    scope="module", params=[("V1", RunEvent, Job, Run), ("V2", event_v2.RunEvent, event_v2.Job, event_v2.Run)]
+)
+def run_event_multi(request):
+    """
+    Parameterized run events that allow us to test both versions for run events
+    """
+    event_version = request.param[0]
+    event_type = request.param[1]
+    job_type = request.param[2]
+    run_type = request.param[3]
+
+    job = job_type(name="name", namespace="namespace")
+    run = run_type(runId="69f4acab-b87d-4fc0-b27b-8ea950370ff3")
+    event_args = {
+        "eventTime": "2021-11-03T10:53:52.427343",
+        "eventType": RunState.START,
+        "producer": "producer",
+        "schemaURL": "http:foo.com/schema",
+        "job": job,
+        "run": run,
+    }
+    if event_version == "V2":
+        del event_args["eventType"]
+        del event_args["schemaURL"]
+
+    return event_type(**event_args)
+
+
+@pytest.fixture(scope="module", params=[("V1", JobEvent, Job), ("V2", event_v2.JobEvent, event_v2.Job)])
+def job_event_multi(request):
+    """
+    Parameterized job events that allow us to test both versions for job events
+    """
+    event_version = request.param[0]
+    event_type = request.param[1]
+    job_type = request.param[2]
+
+    job_args = {"name": "name", "namespace": "namespace"}
+    job = job_type(**job_args)
+    event_args = {
+        "eventTime": "2021-11-03T10:53:52.427343",
+        "producer": "producer",
+        "schemaURL": "http:foo.com/schema",
+        "job": job,
+    }
+    if event_version == "V2":
+        del event_args["schemaURL"]
+    return event_type(**event_args)
+
+
+def test_client_creates_new_job_tag_facet(transport, run_event_multi):
     tag_environment_variables = {
         "OPENLINEAGE__TAGS__JOB__ENVIRONMENT": "PRODUCTION",
         "OPENLINEAGE__TAGS__JOB__pipeline": "SALES",
     }
-
-    run_event = RunEvent(
-        RunState.START,
-        "2021-11-03T10:53:52.427343",
-        Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
-        Job("openlineage", "job"),
-        "producer",
-    )
 
     tags = [
         TagsJobFacetFields("environment", "PRODUCTION", "USER"),
@@ -895,39 +939,25 @@ def test_update_job_tag_facet_creates_new_facet(transport):
 
     with patch.dict(os.environ, tag_environment_variables):
         client = OpenLineageClient(transport=transport)
-        client.emit(run_event)
+        client.emit(run_event_multi)
         assert transport.event.job.facets.get("tags")
         event_tags = sorted(transport.event.job.facets["tags"].tags, key=lambda x: x.key)
         expected_tags = sorted(tags, key=lambda x: x.key)
         assert event_tags == expected_tags
 
 
-def test_update_job_tag_facet_updates_existing_facet(transport):
+def test_client_updates_existing_job_tags_facet(transport, run_event_multi):
     tag_environment_variables = {
         "OPENLINEAGE__TAGS__JOB__ENVIRONMENT": "PRODUCTION",
         "OPENLINEAGE__TAGS__JOB__pipeline": "SALES",
     }
 
-    run_event = RunEvent(
-        RunState.START,
-        "2021-11-03T10:53:52.427343",
-        Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
-        Job(
-            namespace="openlineage",
-            name="job",
-            facets={
-                "tags": TagsRunFacet(
-                    tags=[
-                        TagsJobFacetFields("environment", "STAGING", "USER"),
-                        TagsJobFacetFields("foo", "bar", "USER"),
-                    ]
-                )
-            },
-        ),
-        "producer",
-    )
+    existing_tags = [
+        TagsJobFacetFields("environment", "STAGING", "USER"),
+        TagsJobFacetFields("foo", "bar", "USER"),
+    ]
+    run_event_multi.job.facets["tags"] = TagsJobFacet(tags=existing_tags)
 
-    # One existing tag (not updated), one existing tag (updated), one new tag from the user
     tags = [
         TagsJobFacetFields("foo", "bar", "USER"),
         TagsJobFacetFields("environment", "PRODUCTION", "USER"),
@@ -936,26 +966,18 @@ def test_update_job_tag_facet_updates_existing_facet(transport):
 
     with patch.dict(os.environ, tag_environment_variables):
         client = OpenLineageClient(transport=transport)
-        client.emit(run_event)
+        client.emit(run_event_multi)
         assert transport.event.job.facets.get("tags")
         event_tags = sorted(transport.event.job.facets["tags"].tags, key=lambda x: x.key)
         expected_tags = sorted(tags, key=lambda x: x.key)
         assert event_tags == expected_tags
 
 
-def test_update_run_tag_facet_creates_new_facet(transport):
+def test_client_creates_new_run_tags_facet(transport, run_event_multi):
     tag_environment_variables = {
         "OPENLINEAGE__TAGS__RUN__ENVIRONMENT": "PRODUCTION",
         "OPENLINEAGE__TAGS__RUN__pipeline": "SALES",
     }
-
-    run_event = RunEvent(
-        RunState.START,
-        "2021-11-03T10:53:52.427343",
-        Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
-        Job("openlineage", "job"),
-        "producer",
-    )
 
     tags = [
         TagsRunFacetFields("environment", "PRODUCTION", "USER"),
@@ -964,36 +986,24 @@ def test_update_run_tag_facet_creates_new_facet(transport):
 
     with patch.dict(os.environ, tag_environment_variables):
         client = OpenLineageClient(transport=transport)
-        client.emit(run_event)
+        client.emit(run_event_multi)
         assert transport.event.run.facets.get("tags")
         event_tags = sorted(transport.event.run.facets["tags"].tags, key=lambda x: x.key)
         expected_tags = sorted(tags, key=lambda x: x.key)
         assert event_tags == expected_tags
 
 
-def test_update_run_tag_facet_updates_existing_facet(transport):
+def test_client_updates_existing_run_tags_facet(transport, run_event_multi):
     tag_environment_variables = {
         "OPENLINEAGE__TAGS__RUN__ENVIRONMENT": "PRODUCTION",
         "OPENLINEAGE__TAGS__RUN__pipeline": "SALES",
     }
 
-    run_event = RunEvent(
-        RunState.START,
-        "2021-11-03T10:53:52.427343",
-        Run(
-            runId="69f4acab-b87d-4fc0-b27b-8ea950370ff3",
-            facets={
-                "tags": TagsJobFacet(
-                    tags=[
-                        TagsRunFacetFields("ENVIRONMENT", "STAGING", "USER"),
-                        TagsRunFacetFields("foo", "bar", "USER"),
-                    ]
-                )
-            },
-        ),
-        Job("openlineage", "job"),
-        "producer",
-    )
+    existing_tags = [
+        TagsRunFacetFields("ENVIRONMENT", "STAGING", "USER"),
+        TagsRunFacetFields("foo", "bar", "USER"),
+    ]
+    run_event_multi.run.facets["tags"] = TagsRunFacet(tags=existing_tags)
 
     # One existing tag (not updated), one existing tag (updated), one new tag from the user
     tags = [
@@ -1004,36 +1014,25 @@ def test_update_run_tag_facet_updates_existing_facet(transport):
 
     with patch.dict(os.environ, tag_environment_variables):
         client = OpenLineageClient(transport=transport)
-        client.emit(run_event)
+        client.emit(run_event_multi)
         assert transport.event.run.facets.get("tags")
         event_tags = sorted(transport.event.run.facets["tags"].tags, key=lambda x: x.key)
         expected_tags = sorted(tags, key=lambda x: x.key)
         assert event_tags == expected_tags
 
 
-def test_update_tag_facet_keeps_key_case(transport):
+def test_client_keeps_key_case_for_existing_tags(transport, run_event_multi):
     tag_environment_variables = {
         "OPENLINEAGE__TAGS__RUN__ENVIRONMENT": "PRODUCTION",
         "OPENLINEAGE__TAGS__RUN__pipeline": "SALES",
     }
 
-    run_event = RunEvent(
-        RunState.START,
-        "2021-11-03T10:53:52.427343",
-        Run(
-            runId="69f4acab-b87d-4fc0-b27b-8ea950370ff3",
-            facets={
-                "tags": TagsJobFacet(
-                    tags=[
-                        TagsRunFacetFields("environment", "STAGING", "USER"),
-                        TagsRunFacetFields("PIPELINE", "FINANCE", "USER"),
-                    ]
-                )
-            },
-        ),
-        Job("openlineage", "job"),
-        "producer",
-    )
+    tags = [
+        TagsRunFacetFields("environment", "STAGING", "USER"),
+        TagsRunFacetFields("PIPELINE", "FINANCE", "USER"),
+    ]
+
+    run_event_multi.run.facets["tags"] = TagsRunFacet(tags=tags)
 
     tags = [
         TagsRunFacetFields("environment", "PRODUCTION", "USER"),
@@ -1042,8 +1041,57 @@ def test_update_tag_facet_keeps_key_case(transport):
 
     with patch.dict(os.environ, tag_environment_variables):
         client = OpenLineageClient(transport=transport)
-        client.emit(run_event)
+        client.emit(run_event_multi)
         assert transport.event.run.facets.get("tags")
         event_tags = sorted(transport.event.run.facets["tags"].tags, key=lambda x: x.key)
+        expected_tags = sorted(tags, key=lambda x: x.key)
+        assert event_tags == expected_tags
+
+
+def test_client_creates_tag_facets_for_job_events(transport, job_event_multi):
+    """
+    Same code is used for run and job events to update facets. This just verifies
+    it works for job events.
+    """
+    tag_environment_variables = {
+        "OPENLINEAGE__TAGS__JOB__environment": "production",
+        "OPENLINEAGE__TAGS__JOB__pipeline": "sales",
+    }
+
+    tags = [
+        TagsJobFacetFields("environment", "production", "USER"),
+        TagsJobFacetFields("pipeline", "sales", "USER"),
+    ]
+
+    with patch.dict(os.environ, tag_environment_variables):
+        client = OpenLineageClient(transport=transport)
+        client.emit(job_event_multi)
+        assert transport.event.job.facets.get("tags")
+        event_tags = sorted(transport.event.job.facets["tags"].tags, key=lambda x: x.key)
+        expected_tags = sorted(tags, key=lambda x: x.key)
+        assert event_tags == expected_tags
+
+
+def test_client_does_not_update_run_tags_for_job_events(transport, job_event_multi):
+    """
+    Verify we do not try to update run tags in a job event. It will throw and exception
+    if we do.
+    """
+    tag_environment_variables = {
+        "OPENLINEAGE__TAGS__JOB__environment": "production",
+        "OPENLINEAGE__TAGS__JOB__pipeline": "sales",
+        "OPENLINEAGE__TAGS__RUN__pipeline": "sales",
+    }
+
+    tags = [
+        TagsJobFacetFields("environment", "production", "USER"),
+        TagsJobFacetFields("pipeline", "sales", "USER"),
+    ]
+
+    with patch.dict(os.environ, tag_environment_variables):
+        client = OpenLineageClient(transport=transport)
+        client.emit(job_event_multi)
+        assert transport.event.job.facets.get("tags")
+        event_tags = sorted(transport.event.job.facets["tags"].tags, key=lambda x: x.key)
         expected_tags = sorted(tags, key=lambda x: x.key)
         assert event_tags == expected_tags

@@ -11,6 +11,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
@@ -315,6 +316,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   /** To close the underlying resources. */
   public static void close() {
+    circuitBreaker.close();
     clear();
   }
 
@@ -380,6 +382,14 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private static void initializeMetrics(OpenLineageConfig<?> openLineageConfig) {
     meterRegistry =
         MicrometerProvider.addMeterRegistryFromConfig(openLineageConfig.getMetricsConfig());
+
+    // register SimpleMeterRegistry if no other registries are present and debug facet is enabled
+    if (((CompositeMeterRegistry) meterRegistry).getRegistries().isEmpty()
+        && openLineageConfig.getFacetsConfig() != null
+        && openLineageConfig.getFacetsConfig().isFacetEnabled("debug")) {
+      ((CompositeMeterRegistry) meterRegistry).add(new SimpleMeterRegistry());
+    }
+
     String disabledFacets;
     if (openLineageConfig.getFacetsConfig() != null
         && openLineageConfig.getFacetsConfig().getDisabledFacets() != null) {
@@ -391,6 +401,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     } else {
       disabledFacets = "";
     }
+
     meterRegistry
         .config()
         .commonTags(

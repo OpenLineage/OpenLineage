@@ -121,6 +121,12 @@ class JdbcDatasetUtilsTestForOracle {
                 "jdbc:oracle:thin:@//hostname/serviceName", "schema.table1", new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1521")
         .hasFieldOrPropertyWithValue("name", "serviceName.schema.table1");
+
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:oracle:thin:@//hostname:1522/serviceName", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1522")
+        .hasFieldOrPropertyWithValue("name", "serviceName.schema.table1");
   }
 
   @Test
@@ -129,6 +135,12 @@ class JdbcDatasetUtilsTestForOracle {
             JdbcDatasetUtils.getDatasetIdentifier(
                 "jdbc:oracle:thin:@hostname:sid", "schema.table1", new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1521")
+        .hasFieldOrPropertyWithValue("name", "sid.schema.table1");
+
+    assertThat(
+            JdbcDatasetUtils.getDatasetIdentifier(
+                "jdbc:oracle:thin:@hostname:1522:sid", "schema.table1", new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://hostname:1522")
         .hasFieldOrPropertyWithValue("name", "sid.schema.table1");
   }
 

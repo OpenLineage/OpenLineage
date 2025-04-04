@@ -5,7 +5,6 @@
 
 set -e
 
-source "$(dirname "${BASH_SOURCE[0]}")/set-java-version.sh"
 JAVA_VERSION=${JAVA_VERSION:-17}
 RULESET_FILE=${RULESET_FILE:-client/java/pmd-openlineage.xml}
 
@@ -24,7 +23,6 @@ for arg in "$@"; do
 done
 
 echo "Using Java version: $JAVA_VERSION"
-
 source "$(dirname "${BASH_SOURCE[0]}")/set-java-version.sh"
 set_java_version "$JAVA_VERSION"
 
