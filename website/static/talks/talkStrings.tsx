@@ -11,6 +11,18 @@ export type Talk = {
 
 export const Talks: Talk[] = [
   {
+    conf: "move(data) 2025",
+    date: "2025-03-20",
+    image: "move_data_2025.png",
+    title: "Following the Data Breadcrumbs: Data Lineage using OpenLineage",
+    speakers: ["Rahul Madan, Atlan"],
+    description:
+      "Whether you're troubleshooting data issues, planning pipeline changes, or ensuring compliance, this session will equip you with the knowledge to leverage OpenLineage for better data visibility and control. Demystify data lineage and its critical role in modern data ecosystems, explore real-world use cases that demonstrate the power of lineage tracking, and learn how following your data's breadcrumbs (Data Lineage) can transform your team's efficiency and data reliability!",
+    video_url: "https://www.youtube.com/embed/fSL110nYCYo",
+    conf_url:
+      "https://movedata.airbyte.com/",
+  },
+  {
     conf: "Airflow Summit 2024",
     date: "2024-09-10",
     image: "airflow_summit_v2.png",
