@@ -29,6 +29,15 @@ export const Consumers: Array<Partner> = [
     org_url: "https://atlan.com",
   },
   {
+    image: "dd_logo_h_rgb.svg",
+    org: "Datadog",
+    full_name: "Datadog",
+    description:
+      "Datadog's OpenLineage integration uses job and dataset metadata from Airflow, Spark, and dbt to provide visibility into the performance and reliability of data pipelines.",
+    docs_url: "https://docs.datadoghq.com/data_jobs/airflow/",
+    org_url: "https://datadoghq.com/",
+  },
+  {
     image: "datahub_logo.svg",
     org: "DataHub",
     full_name: "DataHub",
