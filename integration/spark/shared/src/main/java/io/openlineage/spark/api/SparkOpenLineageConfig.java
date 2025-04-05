@@ -38,6 +38,9 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   private String parentJobName;
   private String parentJobNamespace;
   private String parentRunId;
+  private String rootParentJobName;
+  private String rootParentJobNamespace;
+  private String rootParentRunId;
   private String overriddenAppName;
   @NonNull private String debugFacet;
   private String testExtensionProvider;
@@ -55,6 +58,9 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       String parentJobName,
       String parentJobNamespace,
       String parentRunId,
+      String rootParentJobName,
+      String rootParentJobNamespace,
+      String rootParentRunId,
       String overriddenAppName,
       String testExtensionProvider,
       JobNameConfig jobName,
@@ -73,6 +79,9 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     this.parentJobName = parentJobName;
     this.parentJobNamespace = parentJobNamespace;
     this.parentRunId = parentRunId;
+    this.rootParentJobName = rootParentJobName;
+    this.rootParentJobNamespace = rootParentJobNamespace;
+    this.rootParentRunId = rootParentRunId;
     this.overriddenAppName = overriddenAppName;
     this.testExtensionProvider = testExtensionProvider;
     this.jobName = jobName;
@@ -149,6 +158,9 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(parentJobName, other.parentJobName),
         mergePropertyWith(parentJobNamespace, other.parentJobNamespace),
         mergePropertyWith(parentRunId, other.parentRunId),
+        mergePropertyWith(rootParentJobName, other.rootParentJobName),
+        mergePropertyWith(rootParentJobNamespace, other.rootParentJobNamespace),
+        mergePropertyWith(rootParentRunId, other.rootParentRunId),
         mergePropertyWith(overriddenAppName, other.overriddenAppName),
         mergePropertyWith(testExtensionProvider, other.testExtensionProvider),
         mergePropertyWith(jobName, other.jobName),

@@ -187,10 +187,7 @@ class {{ class_name }}:
             DeprecationWarning,
             stacklevel=2
         )
-        return cls(
-            run=Run(runId=runId),
-            job=Job(namespace=namespace,name=name)
-        )
+        return cls(run=Run(runId=runId), job=Job(namespace=namespace, name=name))
 {%- endif -%}
 {#- add validator methods -#}
 {%- for field in fields -%}

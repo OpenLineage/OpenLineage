@@ -1,16 +1,20 @@
 [tool.ruff]
 line-length = 110
-select = [
+lint.select = [
     "F",
     "E",
     "W",
     "I001"
 ]
 target-version = "py37"
-ignore-init-module-imports = true
+lint.ignore-init-module-imports = true
 src = ["openlineage", "tests"]
 namespace-packages = ["openlineage/common"]
 
 [tool.pytest.ini_options]
 # suspending GreatExpectations from tests
 addopts = "-p no:warnings --ignore=tests/great_expectations"
+
+[tool.hatch.build]
+exclude = [".idea", ".ruff_cache", ".gitignore", "setup.cfg"]
+targets.wheel = {packages = ["openlineage"]}
