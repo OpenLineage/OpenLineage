@@ -163,11 +163,11 @@ class OpenLineageClient:
         if type(event) not in get_args(Event):
             msg = "`emit` only accepts RunEvent, DatasetEvent, JobEvent classes"
             raise ValueError(msg)
-        
+
         if log.isEnabledFor(logging.DEBUG):
             val = Serde.to_json(event).encode("utf-8")
             log.debug("OpenLineageClient will *try* to emit event %s", val)
-            
+
         if not self.transport:
             log.error("Tried to emit OpenLineage event, but transport is not configured.")
             return
