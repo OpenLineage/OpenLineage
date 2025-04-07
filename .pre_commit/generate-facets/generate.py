@@ -204,7 +204,7 @@ def parse_and_generate(locations):
     return output
 
 
-def generate_facet_v2_module(module_location):
+def generate_facet_v2_module(module_location: str):
     modules = [name for _, name, _ in pkgutil.iter_modules([module_location]) if name != "base"]
 
     facet_v2_template = (TEMPLATES_LOCATION / "facet_v2.jinja2").read_text()
@@ -286,7 +286,7 @@ def main(output_location):
             path.parent.mkdir(parents=True)
         if body:
             format_and_save_output(body, path, path.name == "open_lineage.py")
-    generate_facet_v2_module(DEFAULT_OUTPUT_LOCATION)
+    generate_facet_v2_module(str(DEFAULT_OUTPUT_LOCATION))
 
 
 if __name__ == "__main__":

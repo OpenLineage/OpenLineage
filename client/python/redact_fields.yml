@@ -175,6 +175,17 @@
     - class_name: Run
       redact_fields:
         - runId
+    - class_name: RootRun
+      redact_fields:
+        - runId
+    - class_name: RootJob
+      redact_fields:
+        - namespace
+        - name
+    - class_name: Root
+      redact_fields:
+        - run
+        - job
 - module: processing_engine_run
   classes:
     - class_name: ProcessingEngineRunFacet
