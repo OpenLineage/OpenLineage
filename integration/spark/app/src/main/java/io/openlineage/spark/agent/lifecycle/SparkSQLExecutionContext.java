@@ -334,7 +334,16 @@ class SparkSQLExecutionContext implements ExecutionContext {
     return PlanUtils.parentRunFacet(
         eventEmitter.getApplicationRunId(),
         eventEmitter.getApplicationJobName(),
-        eventEmitter.getJobNamespace());
+        eventEmitter.getJobNamespace(),
+        eventEmitter
+            .getRootParentRunId()
+            .orElse(eventEmitter.getParentRunId().orElse(eventEmitter.getApplicationRunId())),
+        eventEmitter
+            .getRootParentJobName()
+            .orElse(eventEmitter.getParentJobName().orElse(eventEmitter.getApplicationJobName())),
+        eventEmitter
+            .getRootParentJobNamespace()
+            .orElse(eventEmitter.getParentJobNamespace().orElse(eventEmitter.getJobNamespace())));
   }
 
   protected OpenLineage.JobBuilder buildJob() {

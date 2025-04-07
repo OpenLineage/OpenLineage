@@ -137,7 +137,17 @@ class SparkApplicationExecutionContext implements ExecutionContext {
       return ol.newParentRunFacet(
           ol.newParentRunFacetRun(eventEmitter.getParentRunId().get()),
           ol.newParentRunFacetJob(
-              eventEmitter.getParentJobNamespace().get(), eventEmitter.getParentJobName().get()));
+              eventEmitter.getParentJobNamespace().get(), eventEmitter.getParentJobName().get()),
+          ol.newParentRunFacetRoot(
+              ol.newRootRun(
+                  eventEmitter.getRootParentRunId().orElse(eventEmitter.getParentRunId().get())),
+              ol.newRootJob(
+                  eventEmitter
+                      .getRootParentJobNamespace()
+                      .orElse(eventEmitter.getParentJobNamespace().get()),
+                  eventEmitter
+                      .getRootParentJobName()
+                      .orElse(eventEmitter.getParentJobName().get()))));
     }
     return null;
   }

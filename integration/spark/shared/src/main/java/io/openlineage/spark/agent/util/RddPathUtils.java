@@ -65,6 +65,11 @@ public class RddPathUtils {
     public Stream<Path> extract(HadoopRDD rdd) {
       org.apache.hadoop.fs.Path[] inputPaths = FileInputFormat.getInputPaths(rdd.getJobConf());
       Configuration hadoopConf = rdd.getConf();
+      if (log.isDebugEnabled()) {
+        log.debug("Hadoop RDD class {}", rdd.getClass());
+        log.debug("Hadoop RDD input paths {}", Arrays.toString(inputPaths));
+        log.debug("Hadoop RDD job conf {}", rdd.getJobConf());
+      }
       return Arrays.stream(inputPaths).map(p -> PlanUtils.getDirectoryPath(p, hadoopConf));
     }
   }
@@ -78,6 +83,9 @@ public class RddPathUtils {
 
     @Override
     public Stream<Path> extract(MapPartitionsRDD rdd) {
+      if (log.isDebugEnabled()) {
+        log.debug("Parent RDD: {}", rdd.prev());
+      }
       return findRDDPaths(rdd.prev());
     }
   }
@@ -161,6 +169,9 @@ public class RddPathUtils {
     try {
       return new Path(path).getParent();
     } catch (Exception e) {
+      if (log.isDebugEnabled()) {
+        log.debug("Cannot get parent of path {}", path, e);
+      }
       return null;
     }
   }
