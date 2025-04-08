@@ -122,6 +122,7 @@ The following parameters can be specified:
 |-------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------|
 | openlineage.transport.type                | The transport type used for event emit, default type is `console`                                                                                                                   | http                                    |
 | openlineage.facets.disabled               | List of facets to disable, enclosed in `[]` (required from 0.21.x) and separated by `;`, default is `[spark_unknown;spark.logicalPlan;]` (currently must contain `;`)               | \[some_facet1;some_facet1\]             |
+| openlineage.job.namespace | Specifies OpenLineage `namespace` for all emitted jobs. | openlineage.job.namespace=flink://my.flink.domain:8081 |
 | openlineage.job.owners.\<ownership-type\> | Specifies ownership of the job. Multiple entries with different types are allowed. Config key name and value are used to create job ownership type and name (available since 1.13). | openlineage.job.owners.team="Some Team" |
 
 ## Transports
