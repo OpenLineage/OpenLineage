@@ -22,7 +22,7 @@ import org.testcontainers.utility.DockerImageName;
 @Slf4j
 public class HiveContainerTestUtils {
 
-  static final DockerImageName HIVE_IMAGE = DockerImageName.parse("apache/hive").withTag("3.1.3");
+  static final DockerImageName HIVE_IMAGE = DockerImageName.parse("quay.io/openlineage/hive").withTag("3.1.3");
 
   public static GenericContainer<?> makeHiveContainer(Network network) {
     GenericContainer<?> container =
