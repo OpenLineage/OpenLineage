@@ -158,7 +158,7 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
     String jobNamespace =
         Optional.ofNullable(context.getConfig())
             .map(FlinkOpenLineageConfig::getJobConfig)
-            .map(j -> j.getName())
+            .map(j -> j.getNamespace())
             .orElse(DEFAULT_NAMESPACE);
 
     JobIdentifier jobId =

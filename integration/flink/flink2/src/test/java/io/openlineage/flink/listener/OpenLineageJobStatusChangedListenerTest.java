@@ -84,6 +84,7 @@ class OpenLineageJobStatusChangedListenerTest {
             .collect(Collectors.toList())
             .get(0);
 
+    assertThat(event.getJob().getNamespace()).isEqualTo("flink-jobs");
     assertThat(event.getJob().getName()).isEqualTo("event-job-name");
     assertThat(event.getRun().getRunId()).isNotNull();
     assertThat(event.getEventType()).isEqualTo(EventType.START);
@@ -99,14 +100,14 @@ class OpenLineageJobStatusChangedListenerTest {
                 "file",
                 "openlineage.transport.location",
                 eventFileLocation,
-                "openlineage.job.jobName",
+                "openlineage.job.name",
                 "config-job-name"));
 
     when(context.getConfiguration()).thenReturn(configuration);
 
     listener = new OpenLineageJobStatusChangedListener(context, factory);
     JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
-    when(createdEvent.jobName()).thenReturn("config-job-name");
+    when(createdEvent.jobName()).thenReturn("event-job-name");
     listener.onEvent(createdEvent);
 
     Path path = Path.of(eventFileLocation);
@@ -118,7 +119,43 @@ class OpenLineageJobStatusChangedListenerTest {
             .collect(Collectors.toList())
             .get(0);
 
+    assertThat(event.getJob().getNamespace()).isEqualTo("flink-jobs");
     assertThat(event.getJob().getName()).isEqualTo("config-job-name");
+    assertThat(event.getRun().getRunId()).isNotNull();
+    assertThat(event.getEventType()).isEqualTo(EventType.START);
+  }
+
+  @Test
+  @SneakyThrows
+  void testOnEventWithJobNamespaceInConfig() {
+    Configuration configuration =
+        Configuration.fromMap(
+            Map.of(
+                "openlineage.transport.type",
+                "file",
+                "openlineage.transport.location",
+                eventFileLocation,
+                "openlineage.job.namespace",
+                "flink://my.flink.domain:8081"));
+
+    when(context.getConfiguration()).thenReturn(configuration);
+
+    listener = new OpenLineageJobStatusChangedListener(context, factory);
+    JobCreatedEvent createdEvent = mock(JobCreatedEvent.class);
+    when(createdEvent.jobName()).thenReturn("event-job-name");
+    listener.onEvent(createdEvent);
+
+    Path path = Path.of(eventFileLocation);
+    assertThat(Files.exists(path)).isTrue();
+
+    RunEvent event =
+        Files.readAllLines(path).stream()
+            .map(OpenLineageClientUtils::runEventFromJson)
+            .collect(Collectors.toList())
+            .get(0);
+
+    assertThat(event.getJob().getNamespace()).isEqualTo("flink://my.flink.domain:8081");
+    assertThat(event.getJob().getName()).isEqualTo("event-job-name");
     assertThat(event.getRun().getRunId()).isNotNull();
     assertThat(event.getEventType()).isEqualTo(EventType.START);
   }
@@ -153,9 +190,11 @@ class OpenLineageJobStatusChangedListenerTest {
 
     assertThat(eventsEmitted).hasSize(2);
 
+    assertThat(eventsEmitted.get(0).getJob().getNamespace()).isEqualTo("flink-jobs");
     assertThat(eventsEmitted.get(0).getJob().getName()).isEqualTo("event-job-name");
     assertThat(eventsEmitted.get(0).getEventType()).isEqualTo(EventType.START);
 
+    assertThat(eventsEmitted.get(1).getJob().getNamespace()).isEqualTo("flink-jobs");
     assertThat(eventsEmitted.get(1).getJob().getName()).isEqualTo("event-job-name");
     assertThat(eventsEmitted.get(1).getEventType()).isEqualTo(EventType.COMPLETE);
   }
