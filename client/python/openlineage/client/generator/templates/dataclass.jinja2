@@ -56,7 +56,7 @@ class {{ class_name }}:
 {#- schemaURL & producer are special cases for fields -#}
 {%- for field in fields if field.name not in [private_prefix+'schemaURL', private_prefix+'producer'] -%}
     {#-
-        in main generation script we don't translate these types into string 
+        in main generation script we don't translate these types into string
         so we can use original types for generating validators
     -#}
     {%- if 'uuid' in field.type_hint -%}
@@ -69,7 +69,7 @@ class {{ class_name }}:
         {%- set type_hint = field.type_hint -%}
     {%- endif -%}
     {%- if field.field %}
-    {{ field.name }}: {{ type_hint }} = 
+    {{ field.name }}: {{ type_hint }} =
         {#- attrs requires field() for validators -#}
         {%- if 'True' == validators.validator_needed(field.type_hint) -%} attr.field(default={{ field.field }}
         {%- else -%} {{ field.field }} {%- endif -%}
@@ -140,7 +140,7 @@ class {{ class_name }}:
     _base_skip_redact: ClassVar[list[str]] = ["{{ private_prefix }}producer", "{{ private_prefix }}schemaURL"]
     _additional_skip_redact: ClassVar[list[str]] = []
 
-    def __attrs_post_init__(self) -> None: 
+    def __attrs_post_init__(self) -> None:
         if not self.{{ private_prefix }}producer:
             self.{{ private_prefix }}producer = PRODUCER
         self.{{ private_prefix }}schemaURL = self._get_schema()
