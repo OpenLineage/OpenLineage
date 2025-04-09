@@ -46,7 +46,7 @@ class Adapter(Enum):
     ATHENA = "athena"
     DUCKDB = "duckdb"
     TRINO = "trino"
-    GLUE = "glue" 
+    GLUE = "glue"
 
     @staticmethod
     def adapters() -> str:
