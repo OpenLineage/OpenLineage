@@ -271,6 +271,7 @@ This transport requires the artifact `org.apache.kafka:kafka-clients:3.1.0` (or 
 - `messageKey` - string, key for all Kafka messages produced by transport. Optional, default value described below. Added in v1.13.0.
 
   Default values for `messageKey` are:
+  - `run:{rootJob.namespace}/{rootJob.name}` - for RunEvent with parent facet containing link to `root` job
   - `run:{parentJob.namespace}/{parentJob.name}` - for RunEvent with parent facet
   - `run:{job.namespace}/{job.name}` - for RunEvent
   - `job:{job.namespace}/{job.name}` - for JobEvent
@@ -351,7 +352,7 @@ kafkaProperties.setProperty("value.serializer", "org.apache.kafka.common.seriali
 KafkaConfig kafkaConfig = new KafkaConfig();
 KafkaConfig.setTopicName("openlineage.events");
 KafkaConfig.setProperties(kafkaProperties);
-KafkaConfig.setLocalServerId("some-value");
+KafkaConfig.setMessageKey("some-key");
 
 OpenLineageClient client = OpenLineageClient.builder()
   .transport(
@@ -367,6 +368,7 @@ It is recommended to provide `messageKey` if Job hierarchy is used. It can be an
 hierarchy, like `Airflow task -> Spark application`.
 
 Default values are:
+- `run:{rootJob.namespace}/{rootJob.name}` - for RunEvent with parent facet containing link to `root` job
 - `run:{parentJob.namespace}/{parentJob.name}/{parentRun.id}` - for RunEvent with parent facet
 - `run:{job.namespace}/{job.name}/{run.id}` - for RunEvent
 - `job:{job.namespace}/{job.name}` - for JobEvent
@@ -630,7 +632,7 @@ HttpConfig httpConfig = new HttpConfig();
 httpConfig.setUrl("http://example.com/api");
 KafkaConfig kafkaConfig = new KafkaConfig();
 KafkaConfig.setTopicName("openlineage.events");
-KafkaConfig.setLocalServerId("some-value");
+KafkaConfig.setMessageKey("some-key");
 
 CompositeConfig compositeConfig = new CompositeConfig(Arrays.asList(
   new HttpTransport(httpConfig),
