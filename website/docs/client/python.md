@@ -332,6 +332,7 @@ It can be installed also by specifying kafka client extension: `pip install open
 - `messageKey` - string, key for all Kafka messages produced by transport. Optional, default value described below. Added in v1.13.0.
 
   Default values for `messageKey` are:
+  - `run:{rootJob.namespace}/{rootJob.name}` - for RunEvent with parent facet containing link to `root` job
   - `run:{parentJob.namespace}/{parentJob.name}` - for RunEvent with parent facet
   - `run:{job.namespace}/{job.name}` - for RunEvent
   - `job:{job.namespace}/{job.name}` - for JobEvent
