@@ -80,10 +80,7 @@ public class OracleJdbcExtractor implements JdbcExtractor {
     String firstLdapUri = null;
     for (String token : tokens) {
       String lowerToken = token.toLowerCase(Locale.ROOT);
-      if (lowerToken.contains("ldap://")
-          || lowerToken.contains("ldaps://")
-          || lowerToken.contains("ldap:")
-          || lowerToken.contains("ldaps:")) {
+      if (lowerToken.contains("ldap:") || lowerToken.contains("ldaps:")) {
         // In case a prefix like "jdbc:oracle:thin:@" exists, take the substring starting from
         // "ldap"
         int idx = lowerToken.indexOf("ldap");
