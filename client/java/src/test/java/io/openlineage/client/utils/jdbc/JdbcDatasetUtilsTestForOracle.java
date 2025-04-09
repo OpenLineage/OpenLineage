@@ -244,44 +244,58 @@ class JdbcDatasetUtilsTestForOracle {
   void testGetDatasetIdentifierWithLDAPFormat() {
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                "jdbc:oracle:thin:@ldap://oid:5000/mydb1,cn=OracleContext,dc=myco,dc=com", "schema.table1", new Properties()))
+                "jdbc:oracle:thin:@ldap://oid:5000/mydb1,cn=OracleContext,dc=myco,dc=com",
+                "schema.table1",
+                new Properties()))
         .hasFieldOrPropertyWithValue("namespace", "oracle://oid:5000")
         .hasFieldOrPropertyWithValue("name", "mydb1.schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                    "jdbc:oracle:thin:@ldap:ldap.example.com:5000/mydb1,cn=OracleContext,dc=com", "schema.table1", new Properties()))
-            .hasFieldOrPropertyWithValue("namespace", "oracle://ldap.example.com:5000")
-            .hasFieldOrPropertyWithValue("name", "mydb1.schema.table1");
+                "jdbc:oracle:thin:@ldap:ldap.example.com:5000/mydb1,cn=OracleContext,dc=com",
+                "schema.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://ldap.example.com:5000")
+        .hasFieldOrPropertyWithValue("name", "mydb1.schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                    "jdbc:oracle:thin:@ldaps:ldaps.example.com:5000/mydb1,cn=OracleContext,dc=com", "schema.table1", new Properties()))
-            .hasFieldOrPropertyWithValue("namespace", "oracle://ldaps.example.com:5000")
-            .hasFieldOrPropertyWithValue("name", "mydb1.schema.table1");
+                "jdbc:oracle:thin:@ldaps:ldaps.example.com:5000/mydb1,cn=OracleContext,dc=com",
+                "schema.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://ldaps.example.com:5000")
+        .hasFieldOrPropertyWithValue("name", "mydb1.schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                    "jdbc:oracle:thin:@ldap://ldap1.example.com:5000/cn=salesdept,cn=OracleContext,dc=com/mydb1 ldap://ldap2.example.com:3500/cn=salesdept,cn=OracleContext,dc=com/mydb1 ldap://ldap3.example.com:3500/cn=salesdept,cn=OracleContext,dc=com/mydb1", "schema.table1", new Properties()))
-            .hasFieldOrPropertyWithValue("namespace", "oracle://ldap1.example.com:5000")
-            .hasFieldOrPropertyWithValue("name", "mydb1.schema.table1");
+                "jdbc:oracle:thin:@ldap://ldap1.example.com:5000/cn=salesdept,cn=OracleContext,dc=com/mydb1 ldap://ldap2.example.com:3500/cn=salesdept,cn=OracleContext,dc=com/mydb1 ldap://ldap3.example.com:3500/cn=salesdept,cn=OracleContext,dc=com/mydb1",
+                "schema.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://ldap1.example.com:5000")
+        .hasFieldOrPropertyWithValue("name", "mydb1.schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                    "jdbc:oracle:thin:@ldap://ldap1.example.com:5000/cn=salesdept,cn=OracleContext,dc=com/mydb1", "schema.table1", new Properties()))
-            .hasFieldOrPropertyWithValue("namespace", "oracle://ldap1.example.com:5000")
-            .hasFieldOrPropertyWithValue("name", "mydb1.schema.table1");
+                "jdbc:oracle:thin:@ldap://ldap1.example.com:5000/cn=salesdept,cn=OracleContext,dc=com/mydb1",
+                "schema.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://ldap1.example.com:5000")
+        .hasFieldOrPropertyWithValue("name", "mydb1.schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                    "jdbc:oracle:thin:@ldap:ldap1.example.com:5000/cn=salesdept,cn=OracleContext,dc=com/mydb1", "schema.table1", new Properties()))
-            .hasFieldOrPropertyWithValue("namespace", "oracle://ldap1.example.com:5000")
-            .hasFieldOrPropertyWithValue("name", "mydb1.schema.table1");
+                "jdbc:oracle:thin:@ldap:ldap1.example.com:5000/cn=salesdept,cn=OracleContext,dc=com/mydb1",
+                "schema.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://ldap1.example.com:5000")
+        .hasFieldOrPropertyWithValue("name", "mydb1.schema.table1");
 
     assertThat(
             JdbcDatasetUtils.getDatasetIdentifier(
-                    "jdbc:oracle:thin:@ldap:ldap1.example.com:5000/cn=salesdept,cn=OracleContext,dc=com/mydb1 ldap:ldap2.example.com:3500/cn=salesdept,cn=OracleContext,dc=com/mydb1 ldap:ldap3.example.com:3500/cn=salesdept,cn=OracleContext,dc=com/mydb1", "schema.table1", new Properties()))
-            .hasFieldOrPropertyWithValue("namespace", "oracle://ldap1.example.com:5000")
-            .hasFieldOrPropertyWithValue("name", "mydb1.schema.table1");
+                "jdbc:oracle:thin:@ldap:ldap1.example.com:5000/cn=salesdept,cn=OracleContext,dc=com/mydb1 ldap:ldap2.example.com:3500/cn=salesdept,cn=OracleContext,dc=com/mydb1 ldap:ldap3.example.com:3500/cn=salesdept,cn=OracleContext,dc=com/mydb1",
+                "schema.table1",
+                new Properties()))
+        .hasFieldOrPropertyWithValue("namespace", "oracle://ldap1.example.com:5000")
+        .hasFieldOrPropertyWithValue("name", "mydb1.schema.table1");
   }
 }
