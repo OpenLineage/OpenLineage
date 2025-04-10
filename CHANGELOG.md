@@ -1,12 +1,29 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.29.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.31.0...HEAD)
+
+## [1.31.0](https://github.com/OpenLineage/OpenLineage/compare/1.30.1...1.31.0) - 2025-04-10
+
+### Added
+
+* **Java:** added support for LDAP connection strings [`#3612`](https://github.com/OpenLineage/OpenLineage/pull/3612) [@luke-hoffman1](https://github.com/luke-hoffman1)
+* **dbt:** added support for dbt-glue adapter [`#3625`](https://github.com/OpenLineage/OpenLineage/pull/3625) [@mehdimld](https://github.com/mehdimld)
+* **Python:** introduced CLI for facet generator [`#3605`](https://github.com/OpenLineage/OpenLineage/pull/3605) [@kuba0221](https://github.com/kuba0221)
+* **spec:** optional root parent run ID added to ParentRunFacet [`#3572`](https://github.com/OpenLineage/OpenLineage/pull/3572) [@mobuchowski](https://github.com/mobuchowski)
+
+### Changed
+
+* **Java:** use parent.root facet as primary source for Kafka messageKey [`#3622`](https://github.com/OpenLineage/OpenLineage/pull/3622) [@dolfinus](https://github.com/dolfinus)
+* **Python:** use parent.root facet as primary source for Kafka messageKey [`#3624`](https://github.com/OpenLineage/OpenLineage/pull/3624) [@dolfinus](https://github.com/dolfinus)
 
 ### Fixed
+
+* **Flink2:** fix job namespace retrieval from config [`#3621`](https://github.com/OpenLineage/OpenLineage/pull/3621) [@dolfinus](https://github.com/dolfinus)
+* **Spark:** extract column lineage from query string [`#3582`](https://github.com/OpenLineage/OpenLineage/pull/3582) [@ddebowczyk92](https://github.com/ddebowczyk92)
+* **Spark:** fix duplicate input dataset creation when RelationV2 is a child of SubqueryAlias [`#3607`](https://github.com/OpenLineage/OpenLineage/pull/3607) [@ddebowczyk92](https://github.com/ddebowczyk92)
+* **Java:** fix Oracle thin JDBC URL normalization [`#3586`](https://github.com/OpenLineage/OpenLineage/pull/3586) [@dolfinus](https://github.com/dolfinus)
 * **Spark: fix internal metrics sent through DebugFacet.** [`#3594`](https://github.com/OpenLineage/OpenLineage/pull/3594) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
   *Register simple micrometer registry when no other registry configured.*
-
-## [1.30.1](https://github.com/OpenLineage/OpenLineage/compare/1.29.0...1.30.0) - 2025-03-26
 
 ### Fixed
 
