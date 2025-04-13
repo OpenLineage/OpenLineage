@@ -60,7 +60,7 @@ ext {
     mockitoVersion = '5.17.0'
     micrometerVersion = '1.14.5'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
-    guavaVersion = '33.4.6-jre'
+    guavaVersion = '33.4.7-jre'
 }
 
 configurations {
