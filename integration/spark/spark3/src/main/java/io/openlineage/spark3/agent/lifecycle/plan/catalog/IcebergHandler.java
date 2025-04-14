@@ -9,8 +9,8 @@ import static io.openlineage.spark.agent.util.PathUtils.GLUE_TABLE_PREFIX;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
-import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
+import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.agent.util.AwsUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.StringJoiner;
 import javax.annotation.Nullable;
 import lombok.SneakyThrows;
@@ -135,8 +136,7 @@ public class IcebergHandler implements CatalogHandler {
         maybeTableLocation.orElseGet(
             () -> reconstructDefaultLocation(new Path(warehouseLocation), identifier));
     DatasetIdentifier di = PathUtils.fromPath(tableLocation);
-    maybeSymlink.ifPresent(
-        symlink -> di.withSymlink(symlink.getName(), symlink.getNamespace(), SymlinkType.TABLE));
+    maybeSymlink.ifPresent(di::merge);
     return di;
   }
 
@@ -163,6 +163,9 @@ public class IcebergHandler implements CatalogHandler {
     } else if ("glue".equals(catalogType)) {
       log.debug("Getting symlink for glue");
       value = getGlueIdentifier(tableName, session);
+    } else if ("jdbc".equals(catalogType)) {
+      log.debug("Getting symlink for jdbc catalog");
+      value = getJdbcIdentifier(catalogUri, tableName);
     } else {
       log.debug("Getting symlink using warehouse location and table name");
       String warehouseLocation = catalogConf.get(CatalogProperties.WAREHOUSE_LOCATION);
@@ -232,6 +235,18 @@ public class IcebergHandler implements CatalogHandler {
     String arn =
         AwsUtils.getGlueArn(sparkContext.getConf(), sparkContext.hadoopConfiguration()).get();
     return new DatasetIdentifier(GLUE_TABLE_PREFIX + table.replace(".", "/"), arn);
+  }
+
+  @SneakyThrows
+  private DatasetIdentifier getJdbcIdentifier(String connectionString, String table) {
+    // JdbcDatasetUtils assumes database name in the connection string is database name from the
+    // table - while
+    // it is not the case for iceberg tables, as the database name in the connection string is only
+    // the
+    // database name where the catalog keeps it's metadata
+    DatasetIdentifier di =
+        JdbcDatasetUtils.getDatasetIdentifier(connectionString, table, new Properties());
+    return new DatasetIdentifier(table, di.getNamespace());
   }
 
   @SneakyThrows

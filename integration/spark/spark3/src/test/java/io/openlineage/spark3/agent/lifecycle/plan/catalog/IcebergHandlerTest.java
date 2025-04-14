@@ -30,6 +30,7 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -38,8 +39,8 @@ import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import scala.collection.immutable.Map;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@EnabledIfSystemProperty(named = "spark.version", matches = "([34].*)") // Spark version >= 3.*
 class IcebergHandlerTest {
-
   private OpenLineageContext context = mock(OpenLineageContext.class);
   private IcebergHandler icebergHandler = new IcebergHandler(context);
   private SparkSession sparkSession = mock(SparkSession.class);
@@ -164,6 +165,52 @@ class IcebergHandlerTest {
     assertThat(datasetIdentifier.getSymlinks())
         .singleElement()
         .hasFieldOrPropertyWithValue("namespace", "http://lakehouse-host:8080")
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "jdbc:mysql://test.1234567890.us-west-2.rds.amazonaws.com:3306/database,mysql://test.1234567890.us-west-2.rds.amazonaws.com:3306",
+    "jdbc:postgresql://localhost:5432/mydb?ssl=true&applicationName=myApp,postgres://localhost:5432",
+    "jdbc:oracle:thin:@//myhost:1521/myservice?TNS_ADMIN=/path/to/tns,oracle://myhost:1521",
+    "jdbc:sqlserver://localhost:1433;databaseName=mydb;user=me;password=secret,sqlserver://localhost:1433",
+  })
+  @SneakyThrows
+  void testGetDatasetIdentifierForJDBC(String connectionUri, String namespace) {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog.test.type",
+                "jdbc",
+                "spark.sql.catalog.test.uri",
+                connectionUri,
+                "spark.sql.catalog.test.warehouse",
+                "s3://lakehouse/warehouse"));
+
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+
+    when(sparkCatalog.name()).thenReturn("test");
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().location()).thenReturn("s3://lakehouse/warehouse/database/table");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession,
+            sparkCatalog,
+            Identifier.of(new String[] {"database"}, "table"),
+            new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "s3://lakehouse")
+        .hasFieldOrPropertyWithValue("name", "warehouse/database/table");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", namespace)
         .hasFieldOrPropertyWithValue("name", "database.table")
         .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
   }
