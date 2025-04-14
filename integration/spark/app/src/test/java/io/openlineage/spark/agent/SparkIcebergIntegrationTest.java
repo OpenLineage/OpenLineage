@@ -9,6 +9,7 @@ import static io.openlineage.spark.agent.MockServerUtils.getEventsEmitted;
 import static io.openlineage.spark.agent.MockServerUtils.getEventsEmittedWithJobName;
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
+import static org.apache.spark.sql.functions.col;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
@@ -732,6 +733,70 @@ class SparkIcebergIntegrationTest {
         .asInstanceOf(InstanceOfAssertFactories.MAP)
         .containsEntry("addedRecords", 1)
         .containsEntry("addedDataFiles", 1);
+  }
+
+  @Test
+  void testInputDuplicatesFromSelfJoin() {
+    clearTables("tbl_duplicates1", "tbl_duplicates2", "temp");
+    createTempDataset(2).createOrReplaceTempView("temp");
+
+    spark.sql("CREATE TABLE tbl_duplicates1 USING iceberg AS SELECT * FROM temp");
+    spark.sql(
+        "CREATE TABLE tbl_duplicates2 USING iceberg SELECT t1.a as a1, t2.a as a2 FROM tbl_duplicates1 t1 JOIN tbl_duplicates1 t2 ON t1.a = t2.b");
+
+    MockServerUtils.getEventsEmitted(mockServer).stream()
+        .map(RunEvent::getInputs)
+        .map(inputs -> inputs.stream().map(InputDataset::getName).collect(Collectors.toList()))
+        .forEach(
+            // make sure inputs name do not repeat
+            inputs -> assertThat(inputs).doesNotHaveDuplicates());
+  }
+
+  @Test
+  void testInputDuplicatesFromJoiningSameTableTwice() {
+    String tableA = "TableA";
+    String tableB = "TableB";
+    String outputTable = "TableC";
+
+    clearTables(tableA, tableB, outputTable);
+    createTempDataset(5).write().format("iceberg").mode("overwrite").saveAsTable(tableA);
+    createTempDataset(3).write().format("iceberg").mode("overwrite").saveAsTable(tableB);
+
+    Dataset<Row> dfA = spark.read().table(tableA);
+    Dataset<Row> dfB = spark.read().table(tableB);
+
+    // Use aliases for tableB to distinguish the two join instances
+    Dataset<Row> dfB_alias1 = dfB.alias("b1");
+    Dataset<Row> dfB_alias2 = dfB.alias("b2");
+
+    Dataset<Row> output =
+        dfA.join(
+                dfB_alias1,
+                dfA.col("a").equalTo(col("b1.b")), // Join condition 1: dfA.a = b1.b
+                "left")
+            .join(
+                dfB_alias2,
+                dfA.col("b").equalTo(col("b2.b")), // Join condition 2: dfA.b = b2.b
+                "left")
+            .select(
+                dfA.col("a").alias(tableA + "_a"), // Select cols to avoid ambiguity
+                dfA.col("b").alias(tableA + "_b"),
+                col("b1.a").alias("b1_a"),
+                col("b2.a").alias("b2_a"));
+
+    output.write().format("iceberg").mode("overwrite").saveAsTable(outputTable);
+
+    MockServerUtils.getEventsEmitted(mockServer).stream()
+        .map(RunEvent::getInputs)
+        .map(inputs -> inputs.stream().map(InputDataset::getName).collect(Collectors.toList()))
+        .forEach(
+            inputNames -> {
+              System.out.println("Checking Inputs: " + inputNames);
+              assertThat(inputNames)
+                  .describedAs(
+                      "Input dataset names within a single RunEvent should not have duplicates")
+                  .doesNotHaveDuplicates();
+            });
   }
 
   private void clearTables(String... tables) {

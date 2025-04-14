@@ -22,6 +22,7 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.FacetUtils;
@@ -32,6 +33,7 @@ import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
@@ -254,7 +257,7 @@ class OpenLineageRunEventBuilder {
     Function1<LogicalPlan, Collection<InputDataset>> inputVisitor =
         visitLogicalPlan(PlanUtils.merge(inputDatasetQueryPlanVisitors));
 
-    List<InputDataset> datasets =
+    Map<DatasetIdentifier, InputDataset> uniqueDatasetsMap =
         Stream.concat(
                 buildDatasets(nodes, inputDatasetBuilders),
                 openLineageContext
@@ -266,7 +269,19 @@ class OpenLineageRunEventBuilder {
                                 .flatMap(Collection::stream)
                                 .map(((Class<InputDataset>) InputDataset.class)::cast))
                     .orElse(Stream.empty()))
-            .collect(Collectors.toList());
+            .collect(
+                Collectors.toMap(
+                    dataset -> new DatasetIdentifier(dataset.getNamespace(), dataset.getName()),
+
+                    // Value Mapper: The dataset itself
+                    Function.identity(),
+
+                    // Merge Function: If duplicates found, keep the first one encountered
+                    (ds1, ds2) -> ds1));
+
+    // Get the unique datasets as a List for subsequent processing
+    List<InputDataset> datasets = new ArrayList<>(uniqueDatasetsMap.values());
+
     OpenLineage openLineage = openLineageContext.getOpenLineage();
     if (!datasets.isEmpty()) {
       Map<String, InputDatasetFacet> inputFacetsMap = new HashMap<>();
