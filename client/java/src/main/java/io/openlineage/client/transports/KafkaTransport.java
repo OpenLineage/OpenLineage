@@ -49,7 +49,7 @@ public final class KafkaTransport extends Transport {
       - run.facets.parent.job
       - run.job
     */
-    String defaultResult = "run:" + job.getNamespace() + "/" + job.getName();
+    final String defaultResult = "run:" + job.getNamespace() + "/" + job.getName();
 
     final OpenLineage.RunFacets runFacets = run.getFacets();
     if (runFacets == null) {

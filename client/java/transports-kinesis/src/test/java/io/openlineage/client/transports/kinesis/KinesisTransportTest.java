@@ -69,6 +69,130 @@ class KinesisTransportTest {
   }
 
   @Test
+  void clientEmitsRunEventWithParentFacetKinesisTransport() throws IOException {
+    KinesisProducer producer = Mockito.mock(KinesisProducer.class);
+    KinesisConfig config = new KinesisConfig();
+
+    Properties properties = new Properties();
+    properties.setProperty("MinConnections", "1");
+
+    config.setRegion("us-west-2");
+    config.setRoleArn("test-role");
+    config.setStreamName("test-stream");
+    config.setProperties(properties);
+
+    KinesisTransport transport = new KinesisTransport(producer, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    when(producer.addUserRecord(any(UserRecord.class))).thenReturn(mock(ListenableFuture.class));
+
+    OpenLineage openLineage = new OpenLineage(URI.create("http://test.producer"));
+    OpenLineage.ParentRunFacetJob parentJob =
+        new OpenLineage.ParentRunFacetJobBuilder()
+            .namespace("parent-namespace")
+            .name("parent-job")
+            .build();
+    OpenLineage.ParentRunFacetRun parentRun =
+        new OpenLineage.ParentRunFacetRunBuilder()
+            .runId(UUID.fromString("d9cb8e0b-a410-435e-a619-da5e87ba8508"))
+            .build();
+    OpenLineage.ParentRunFacet parentRunFacet =
+        openLineage.newParentRunFacetBuilder().job(parentJob).run(parentRun).build();
+    OpenLineage.RunFacets runFacets =
+        new OpenLineage.RunFacetsBuilder().parent(parentRunFacet).build();
+
+    OpenLineage.Job job =
+        new OpenLineage.JobBuilder().namespace("test-namespace").name("test-job").build();
+    OpenLineage.Run run =
+        new OpenLineage.RunBuilder()
+            .runId(UUID.fromString("ea445b5c-22eb-457a-8007-01c7c52b6e54"))
+            .facets(runFacets)
+            .build();
+    OpenLineage.RunEvent event = openLineage.newRunEventBuilder().job(job).run(run).build();
+    client.emit(event);
+
+    ArgumentCaptor<UserRecord> captor = ArgumentCaptor.forClass(UserRecord.class);
+
+    verify(producer, times(1)).addUserRecord(captor.capture());
+
+    assertThat(captor.getValue().getStreamName()).isEqualTo("test-stream");
+    assertThat(captor.getValue().getPartitionKey()).isEqualTo("run:parent-namespace/parent-job");
+
+    String data = new String(captor.getValue().getData().array(), "UTF-8");
+    String serialized = OpenLineageClientUtils.toJson(event);
+    assertThat(data).isEqualTo(serialized);
+  }
+
+  @Test
+  void clientEmitsRunEventWithRootParentFacetKinesisTransport() throws IOException {
+    KinesisProducer producer = Mockito.mock(KinesisProducer.class);
+    KinesisConfig config = new KinesisConfig();
+
+    Properties properties = new Properties();
+    properties.setProperty("MinConnections", "1");
+
+    config.setRegion("us-west-2");
+    config.setRoleArn("test-role");
+    config.setStreamName("test-stream");
+    config.setProperties(properties);
+
+    KinesisTransport transport = new KinesisTransport(producer, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    when(producer.addUserRecord(any(UserRecord.class))).thenReturn(mock(ListenableFuture.class));
+
+    OpenLineage.RootJob rootJob =
+        new OpenLineage.RootJobBuilder().namespace("root-namespace").name("root-job").build();
+    OpenLineage.RootRun rootRun =
+        new OpenLineage.RootRunBuilder()
+            .runId(UUID.fromString("ad0995e1-49f1-432d-92b6-2e2739034c13"))
+            .build();
+    OpenLineage.ParentRunFacetRoot rootParent =
+        new OpenLineage.ParentRunFacetRootBuilder().job(rootJob).run(rootRun).build();
+
+    OpenLineage openLineage = new OpenLineage(URI.create("http://test.producer"));
+    OpenLineage.ParentRunFacetJob parentJob =
+        new OpenLineage.ParentRunFacetJobBuilder()
+            .namespace("parent-namespace")
+            .name("parent-job")
+            .build();
+    OpenLineage.ParentRunFacetRun parentRun =
+        new OpenLineage.ParentRunFacetRunBuilder()
+            .runId(UUID.fromString("d9cb8e0b-a410-435e-a619-da5e87ba8508"))
+            .build();
+    OpenLineage.ParentRunFacet parentRunFacet =
+        openLineage
+            .newParentRunFacetBuilder()
+            .job(parentJob)
+            .run(parentRun)
+            .root(rootParent)
+            .build();
+    OpenLineage.RunFacets runFacets =
+        new OpenLineage.RunFacetsBuilder().parent(parentRunFacet).build();
+
+    OpenLineage.Job job =
+        new OpenLineage.JobBuilder().namespace("test-namespace").name("test-job").build();
+    OpenLineage.Run run =
+        new OpenLineage.RunBuilder()
+            .runId(UUID.fromString("ea445b5c-22eb-457a-8007-01c7c52b6e54"))
+            .facets(runFacets)
+            .build();
+    OpenLineage.RunEvent event = openLineage.newRunEventBuilder().job(job).run(run).build();
+    client.emit(event);
+
+    ArgumentCaptor<UserRecord> captor = ArgumentCaptor.forClass(UserRecord.class);
+
+    verify(producer, times(1)).addUserRecord(captor.capture());
+
+    assertThat(captor.getValue().getStreamName()).isEqualTo("test-stream");
+    assertThat(captor.getValue().getPartitionKey()).isEqualTo("run:root-namespace/root-job");
+
+    String data = new String(captor.getValue().getData().array(), "UTF-8");
+    String serialized = OpenLineageClientUtils.toJson(event);
+    assertThat(data).isEqualTo(serialized);
+  }
+
+  @Test
   void clientEmitsDatasetEventKinesisTransport() throws IOException {
     KinesisProducer producer = Mockito.mock(KinesisProducer.class);
     KinesisConfig config = new KinesisConfig();
