@@ -38,7 +38,13 @@ public class OracleJdbcExtractor implements JdbcExtractor {
     return extractUri(uri, properties);
   }
 
+  @SuppressWarnings("PMD")
   private JdbcLocation extractUri(String uri, Properties properties) throws URISyntaxException {
+    // Handle LDAP connection strings, including cases with multiple LDAP URIs
+    if (uri.toLowerCase(Locale.ROOT).contains("ldap")) {
+      uri = handleLdapConnectionString(uri);
+    }
+
     // convert 'tcp://'' protocol to 'oracle://'', convert ':sid' format to '/sid'
     String normalizedUri = uri.replaceFirst(PROTOCOL_PART, "");
     normalizedUri = SCHEME + "://" + fixSidFormat(normalizedUri);
@@ -58,5 +64,49 @@ public class OracleJdbcExtractor implements JdbcExtractor {
     }
     // 'host:1521:sid' -> 'host:1521/sid'
     return StringUtils.join(components, ":") + "/" + last;
+  }
+
+  /**
+   * Handles LDAP connection strings by extracting and normalizing the host/port and database name.
+   * Supports multiple LDAP URIs and different LDAP prefix formats.
+   *
+   * @param uri The original URI string that might contain LDAP connection information
+   * @return A normalized URI with host/port and database name extracted from the LDAP string
+   */
+  @SuppressWarnings("PMD")
+  private String handleLdapConnectionString(String uri) {
+    // Split original URI by whitespace to cover scenarios with multiple LDAP URIs
+    String[] tokens = uri.split("\\\\s+");
+    String firstLdapUri = null;
+    for (String token : tokens) {
+      String lowerToken = token.toLowerCase(Locale.ROOT);
+      if (lowerToken.contains("ldap:") || lowerToken.contains("ldaps:")) {
+        // In case a prefix like "jdbc:oracle:thin:@" exists, take the substring starting from
+        // "ldap"
+        int idx = lowerToken.indexOf("ldap");
+        firstLdapUri = token.substring(idx);
+        break;
+      }
+    }
+
+    if (firstLdapUri != null) {
+      String withoutPrefix = firstLdapUri.replaceFirst("(?i)ldaps?:(//)?", "");
+
+      // Split the string by "/" into all segments.
+      // The first segment is the host:port and the last segment is the database name.
+      String[] parts = withoutPrefix.split("/");
+      if (parts.length >= 1) {
+        String hostPort = parts[0];
+        String dbName = "";
+        if (parts.length > 1) {
+          // Use the last segment as the database name.
+          dbName = parts[parts.length - 1].split(",")[0];
+        }
+        // Normalize the URI for further processing.
+        return hostPort + "/" + dbName;
+      }
+    }
+
+    return uri;
   }
 }

@@ -7,9 +7,8 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 import attr
 from openlineage.client import event_v2
-from openlineage.client.facet import ParentRunFacet
 from openlineage.client.facet_v2 import parent_run
-from openlineage.client.run import DatasetEvent, JobEvent
+from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields
@@ -18,6 +17,8 @@ from packaging.version import Version
 if TYPE_CHECKING:
     from confluent_kafka import KafkaError, Message
     from openlineage.client.client import Event
+    from openlineage.client.facet import ParentRunFacet
+
 log = logging.getLogger(__name__)
 
 _T = TypeVar("_T", bound="KafkaConfig")
@@ -80,17 +81,38 @@ class KafkaTransport(Transport):
             self.kafka_config,
         )
 
-    def _get_message_key(self, event: Event) -> str:
+    def _get_message_key(self, event: Event) -> str | None:
         if isinstance(event, (DatasetEvent, event_v2.DatasetEvent)):
             return f"dataset:{event.dataset.namespace}/{event.dataset.name}"
 
         if isinstance(event, (JobEvent, event_v2.JobEvent)):
             return f"job:{event.job.namespace}/{event.job.name}"
 
+        if isinstance(event, (RunEvent, event_v2.RunEvent)):
+            return self._get_run_message_key(event)
+
+        return None
+
+    def _get_run_message_key(self, event: RunEvent | event_v2.RunEvent) -> str:
+        """
+        To keep order of events in Kafka topic, we need to send them to the same partition.
+        This is the case for:
+            1. different runs of the same job.
+            2. runs in the chain parent -> child -> grandchild.
+
+        For (1) Kafka message_key has format "run:<namespace>/<name>".
+        For (2) source for `<namespace>` and `<name>` is selected using this order:
+        - run.facets.parent.root.job
+        - run.facets.parent.job
+        - run.job
+        """
+
+        run_default_result = f"run:{event.job.namespace}/{event.job.name}"
+
         run_facets: dict[str, Any] = event.run.facets or {}
-        parent_run_facet: ParentRunFacet | parent_run.ParentRunFacet = run_facets.get(
-            "parent"
-        ) or ParentRunFacet({}, {})
+        parent_run_facet: ParentRunFacet | parent_run.ParentRunFacet | None = run_facets.get("parent")
+        if not parent_run_facet:
+            return run_default_result
 
         parent_job_namespace: str | None = None
         parent_job_name: str | None = None
@@ -98,19 +120,19 @@ class KafkaTransport(Transport):
             (
                 parent_job_namespace,
                 parent_job_name,
-            ) = self._get_message_key_args_from_parent_run_facet_v2(parent_run_facet)
+            ) = self._get_run_message_key_args_from_parent_run_facet_v2(parent_run_facet)
         else:
             (
                 parent_job_namespace,
                 parent_job_name,
-            ) = self._get_message_key_args_from_parent_run_facet(parent_run_facet)
+            ) = self._get_run_message_key_args_from_parent_run_facet(parent_run_facet)
 
-        if parent_job_namespace and parent_job_name:
-            return f"run:{parent_job_namespace}/{parent_job_name}"
+        if not parent_job_namespace or not parent_job_name:
+            return run_default_result
 
-        return f"run:{event.job.namespace}/{event.job.name}"
+        return f"run:{parent_job_namespace}/{parent_job_name}"
 
-    def _get_message_key_args_from_parent_run_facet(
+    def _get_run_message_key_args_from_parent_run_facet(
         self,
         parent_run_facet: ParentRunFacet,
     ) -> tuple[str | None, str | None]:
@@ -118,10 +140,15 @@ class KafkaTransport(Transport):
         parent_job_name = parent_run_facet.job.get("name")
         return parent_job_namespace, parent_job_name
 
-    def _get_message_key_args_from_parent_run_facet_v2(
+    def _get_run_message_key_args_from_parent_run_facet_v2(
         self,
         parent_run_facet: parent_run.ParentRunFacet,
     ) -> tuple[str, str]:
+        if parent_run_facet.root:
+            root_job_namespace: str = parent_run_facet.root.job.namespace
+            root_job_name: str = parent_run_facet.root.job.name
+            return root_job_namespace, root_job_name
+
         parent_job_namespace: str = parent_run_facet.job.namespace
         parent_job_name: str = parent_run_facet.job.name
         return parent_job_namespace, parent_job_name

@@ -9,11 +9,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
+from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 
 if TYPE_CHECKING:
     from openlineage.client.client import Event
-from openlineage.client.serde import Serde
 
 log = logging.getLogger(__name__)
 

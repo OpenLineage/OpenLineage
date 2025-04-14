@@ -10,7 +10,7 @@ from setuptools import find_namespace_packages, setup
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "1.31.0"
+__version__ = "1.32.0"
 
 requirements = [
     "attrs>=20.0",
@@ -43,6 +43,7 @@ extras_require = {
         "apache-airflow-providers-dbt-cloud<3.2.0",
         "airflow-provider-great-expectations==0.1.5",
         "great-expectations<=0.15.23",
+        "notebook<7.4.0",
         "protobuf>=3.20,<4.23",
     ],
 }
