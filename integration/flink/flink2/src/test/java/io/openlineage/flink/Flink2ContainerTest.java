@@ -6,14 +6,22 @@
 package io.openlineage.flink;
 
 import static java.nio.file.Files.readAllBytes;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
 
 import com.google.common.io.Resources;
+import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
+import io.openlineage.client.OpenLineageClientUtils;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
@@ -39,7 +47,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Tag("integration-test")
 @Testcontainers
 @Slf4j
-class ContainerTest {
+class Flink2ContainerTest {
 
   private static final Network network = Network.newNetwork();
   private static MockServerClient mockServerClient;
@@ -181,6 +189,34 @@ class ContainerTest {
         jobProperties,
         generateEvents,
         "Emitting checkpoint event");
+
+    List<RunEvent> events =
+        Arrays.stream(mockServerClient.retrieveRecordedRequests(request("/api/v1/lineage")))
+            .map(HttpRequest::getBodyAsString)
+            .map(OpenLineageClientUtils::runEventFromJson)
+            .collect(Collectors.toList());
+
+    // check schema facet from Avro app for input topic
+    Optional<InputDataset> input = events.stream().flatMap(e -> e.getInputs().stream()).findFirst();
+    assertThat(input.get().getFacets().getSchema()).isNotNull();
+    List<SchemaDatasetFacetFields> fields = input.get().getFacets().getSchema().getFields();
+
+    assertThat(fields).hasSize(2);
+    assertThat(fields.get(0)).extracting("name", "type").contains("id", "string");
+    assertThat(fields.get(1)).extracting("name", "type").contains("version", "long");
+
+    // check schema facet from Avro app for output topic
+    Optional<OutputDataset> output =
+        events.stream().flatMap(e -> e.getOutputs().stream()).findFirst();
+    assertThat(output.get().getFacets().getSchema()).isNotNull();
+    fields = output.get().getFacets().getSchema().getFields();
+
+    // TODO: consistent field types "String" vs "string" in avro
+    // output schema won't work until https://github.com/apache/flink-connector-kafka/pull/171
+    assertThat(fields).hasSize(3);
+    assertThat(fields.get(0)).extracting("name", "type").contains("id", "string");
+    assertThat(fields.get(1)).extracting("name", "type").contains("version", "long");
+    assertThat(fields.get(2)).extracting("name", "type").contains("counter", "long");
 
     verify(
         "events/expected_kafka_topic_pattern.json",

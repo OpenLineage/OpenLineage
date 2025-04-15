@@ -22,6 +22,10 @@ repositories {
 
 group 'io.openlineage.flink'
 
+shadowJar {
+    zip64 true
+}
+
 ext {
     flinkVersion = project.getProperty('flink.version')
     flinkVersionShort = flinkVersion.substring(0,4)
