@@ -19,7 +19,6 @@ plugins {
 
 group = 'io.openlineage'
 archivesBaseName='openlineage-hive'
-version = '1.0.0-SNAPSHOT'
 
 ext {
     isReleaseVersion = !version.endsWith('-SNAPSHOT')

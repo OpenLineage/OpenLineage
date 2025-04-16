@@ -951,33 +951,33 @@ jobs:
 
   # HIVE
 
-#  release-integration-hive:
-#    working_directory: ~/openlineage/integration/hive
-#    machine:
-#      image: ubuntu-2404:current
-#    steps:
-#      - *checkout_project_root
-#      - run:
-#          name: Generate cache key
-#          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
-#      - restore_cache:
-#          keys:
-#            - v1-release-client-java-{{ checksum "/tmp/checksum.txt" }}
-#      - attach_workspace:
-#          at: ~/
-#      - set_java_version
-#      - run: |
-#          # Get, then decode the GPG private key used to sign *.jar
-#          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-#          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-#          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
-#
-#          # Publish *.jar
-#          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository
-#          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository
-#      - store_artifacts:
-#          path: ./build/libs
-#          destination: hive-client-artifacts
+  release-integration-hive:
+    working_directory: ~/openlineage/integration/hive
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
+      - restore_cache:
+          keys:
+            - v1-release-client-java-{{ checksum "/tmp/checksum.txt" }}
+      - attach_workspace:
+          at: ~/
+      - set_java_version
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+
+          # Publish *.jar
+          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository
+          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository
+      - store_artifacts:
+          path: ./build/libs
+          destination: hive-client-artifacts
 
   build-integration-hive:
     working_directory: ~/openlineage/integration/hive

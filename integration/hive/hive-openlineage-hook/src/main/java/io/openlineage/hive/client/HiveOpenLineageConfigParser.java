@@ -52,9 +52,6 @@ public class HiveOpenLineageConfigParser {
     ObjectNode objectNode = JSON.createObjectNode();
     for (String key : configKeys) {
       ObjectNode nodePointer = objectNode;
-      // TODO: Figure out why the conf values are XML-escaped multiple times when running
-      //  acceptance tests on Dataproc
-      //  See b/369429658
       String possiblyEscapedValue = conf.get(CONF_PREFIX + key);
       String value = unescapeValue(possiblyEscapedValue);
       if (StringUtils.isNotBlank(value)) {
