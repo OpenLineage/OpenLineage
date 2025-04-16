@@ -5,6 +5,7 @@
 package io.openlineage.hive.client;
 
 import static com.google.common.hash.Hashing.sha512;
+import static io.openlineage.client.utils.UUIDUtils.generateNewUUID;
 
 import io.openlineage.client.Clients;
 import io.openlineage.client.OpenLineage.RunEvent;
@@ -13,10 +14,10 @@ import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.hive.api.OpenLineageContext;
 import io.openlineage.hive.util.NetworkUtils;
-import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
+import java.util.UUID;
 
 @Getter
 @Slf4j
@@ -29,13 +30,13 @@ public class EventEmitter implements AutoCloseable {
   public EventEmitter(OpenLineageContext olContext) {
     Configuration conf = olContext.getHadoopConf();
     this.client = Clients.newClient(olContext.getOpenLineageConfig());
-    this.runId = UUID.randomUUID();
+    this.runId = generateNewUUID();
     this.jobNamespace =
         conf.get(
-            HiveOpenLineageConfigParser.NAMESPACE_KEY, getJobNamespace(olContext.getQueryString()));
+            HiveOpenLineageConfigParser.NAMESPACE_KEY, NetworkUtils.LOCAL_IP_ADDRESS.getHostName());
     this.jobName =
         conf.get(
-            HiveOpenLineageConfigParser.JOB_NAME_KEY, NetworkUtils.LOCAL_IP_ADDRESS.getHostName());
+            HiveOpenLineageConfigParser.JOB_NAME_KEY, getJobNamespace(olContext.getQueryString()));
   }
 
   public void emit(RunEvent event) {
