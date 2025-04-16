@@ -191,13 +191,12 @@ def integrationTestConfiguration = {
         showStandardStreams = true
     }
     var buildDirectory = layout.buildDirectory;
-
     systemProperties = [
             "build.dir"                           : buildDirectory.get().asFile.absolutePath,
             "resources.dir"                       : buildDirectory.get().dir("resources/test").asFile.absolutePath,
             'junit.platform.output.capture.stdout': 'true',
             'junit.platform.output.capture.stderr': 'true',
-            '.hive.hook.jar': "${archivesBaseName}-shadow.jar",
+            '.hive.hook.jar': "${archivesBaseName}-${version}-shadow.jar",
     ]
     classpath =  project.sourceSets.test.runtimeClasspath
 }

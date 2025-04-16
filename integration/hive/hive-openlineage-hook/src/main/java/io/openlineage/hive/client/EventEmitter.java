@@ -14,10 +14,10 @@ import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.hive.api.OpenLineageContext;
 import io.openlineage.hive.util.NetworkUtils;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
-import java.util.UUID;
 
 @Getter
 @Slf4j
