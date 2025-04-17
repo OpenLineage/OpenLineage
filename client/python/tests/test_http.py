@@ -31,6 +31,18 @@ def test_http_loads_full_config() -> None:
                 "api_key": "1500100900",
             },
             "compression": "gzip",
+            "retry": {
+                "total": 7,
+                "connect": 3,
+                "read": 2,
+                "status": 5,
+                "other": 1,
+                "allowed_methods": ["POST"],
+                "status_forcelist": [500, 502, 503, 504],
+                "backoff_factor": 0.5,
+                "raise_on_redirect": False,
+                "raise_on_status": False,
+            },
         },
     )
 
@@ -39,8 +51,63 @@ def test_http_loads_full_config() -> None:
     assert config.verify is False
     assert config.auth.api_key == "1500100900"
     assert config.session is None
-    assert config.adapter is None
     assert config.compression is HttpCompression.GZIP
+    assert config.retry == {
+        "total": 7,
+        "connect": 3,
+        "read": 2,
+        "status": 5,
+        "other": 1,
+        "allowed_methods": ["POST"],
+        "status_forcelist": [500, 502, 503, 504],
+        "backoff_factor": 0.5,
+        "raise_on_redirect": False,
+        "raise_on_status": False,
+    }
+
+
+def test_http_client_loads_retry() -> None:
+    total = 7
+    connect = 3
+    read = 2
+    status = 5
+    other = 1
+    backoff = 0.5
+
+    config = HttpConfig.from_dict(
+        {
+            "type": "http",
+            "url": "http://backend:5000",
+            "retry": {
+                "total": total,
+                "connect": connect,
+                "read": read,
+                "status": status,
+                "other": other,
+                "allowed_methods": ["POST"],
+                "status_forcelist": [500, 502, 503, 504, 590],
+                "backoff_factor": backoff,
+                "raise_on_redirect": False,
+                "raise_on_status": False,
+            },
+        },
+    )
+
+    client = OpenLineageClient(transport=HttpTransport(config))
+    assert client.transport.kind == "http"
+    assert client.transport.url == "http://backend:5000"
+    retry = client.transport._prepare_adapter().max_retries  # noqa: SLF001
+
+    assert retry.total == total
+    assert retry.read == read
+    assert retry.connect == connect
+    assert retry.status == status
+    assert retry.other == other
+    assert retry.allowed_methods == ["POST"]
+    assert retry.status_forcelist == [500, 502, 503, 504, 590]
+    assert retry.backoff_factor == backoff
+    assert retry.raise_on_redirect is False
+    assert retry.raise_on_status is False
 
 
 def test_http_loads_minimal_config() -> None:
@@ -83,7 +150,7 @@ def test_client_with_http_transport_emits(mocker: MockerFixture) -> None:
     transport.session.post.assert_called_once_with(
         url="http://backend:5000/api/v1/lineage",
         data=Serde.to_json(event),
-        headers={},
+        headers={"Content-Type": "application/json"},
         timeout=5.0,
         verify=True,
     )
@@ -114,7 +181,7 @@ def test_client_with_http_transport_emits_custom_endpoint(mocker: MockerFixture)
     transport.session.post.assert_called_once_with(
         url="http://backend:5000/custom/lineage",
         data=Serde.to_json(event),
-        headers={},
+        headers={"Content-Type": "application/json"},
         timeout=5.0,
         verify=True,
     )

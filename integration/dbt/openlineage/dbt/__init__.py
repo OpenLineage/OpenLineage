@@ -190,6 +190,7 @@ def consume_structured_logs(
         return_code = 1
 
     logger.info("Emitted %d OpenLineage events", emitted_events)
+    logger.info("Underlying dbt execution returned %d", return_code)
     return return_code
 
 
@@ -308,6 +309,7 @@ def consume_local_artifacts(
                 exc_info=True,
             )
     logger.info("Emitted %d OpenLineage events", emitted_events)
+    logger.info("Underlying dbt execution returned %d", return_code)
     return return_code
 
 

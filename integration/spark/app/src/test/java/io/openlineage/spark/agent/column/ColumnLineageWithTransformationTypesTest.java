@@ -403,6 +403,26 @@ class ColumnLineageWithTransformationTypesTest {
     assertCountDatasetDependencies(facet, 0);
   }
 
+  @Test
+  void simpleQueryMultipleJoinsToSameTable() {
+    createTable("t1", "oder_id;int", "order_date;int", "shipped_date;int");
+    createTable("t2", "date_id;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(
+            getSchemaFacet("oder_id;int", "order_date;int", "shipped_date;int"),
+            "SELECT "
+                + "t1.oder_id, "
+                + "t2alias1.date_id as order_date, "
+                + "t2alias2.date_id as shipped_date "
+                + "FROM t1 "
+                + "LEFT JOIN t2 t2alias1 ON t1.order_date = t2alias1.date_id "
+                + "LEFT JOIN t2 t2alias2 ON t1.shipped_date = t2alias2.date_id "
+                + "WHERE t1.order_date IS NOT NULL "
+                + "AND t1.shipped_date IS NOT NULL");
+    assertCountColumnDependencies(facet, 3);
+    assertCountDatasetDependencies(facet, 6);
+  }
+
   @NotNull
   private OpenLineage.ColumnLineageDatasetFacet getFacetForQuery(
       OpenLineage.SchemaDatasetFacet schemaFacet, String query) {

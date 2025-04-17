@@ -104,7 +104,7 @@ def test_client_sends_proper_json_with_minimal_run_event() -> None:
     session.post.assert_called_with(
         url="http://example.com/api/v1/lineage",
         data=body,
-        headers={},
+        headers={"Content-Type": "application/json"},
         timeout=5.0,
         verify=True,
     )
@@ -132,7 +132,7 @@ def test_client_sends_proper_json_with_minimal_dataset_event() -> None:
     session.post.assert_called_with(
         url="http://example.com/api/v1/lineage",
         data=body,
-        headers={},
+        headers={"Content-Type": "application/json"},
         timeout=5.0,
         verify=True,
     )
@@ -161,7 +161,7 @@ def test_client_sends_proper_json_with_minimal_job_event() -> None:
     session.post.assert_called_with(
         url="http://example.com/api/v1/lineage",
         data=body,
-        headers={},
+        headers={"Content-Type": "application/json"},
         timeout=5.0,
         verify=True,
     )
@@ -863,6 +863,28 @@ class TestOpenLineageConfigLoader:
                     "tags": {
                         "job": {"a": "b", "c": "d"},
                         "run": {"a": "b", "c": "d"},
+                    }
+                },
+            ),
+            (
+                {
+                    "OPENLINEAGE__TRANSPORT__TYPE": "http",
+                    "OPENLINEAGE__TRANSPORT__URL": "http://localhost:5050",
+                    "OPENLINEAGE__TRANSPORT__RETRY__TOTAL": "5",
+                    "OPENLINEAGE__TRANSPORT__RETRY__BACKOFF_FACTOR": "0.2",
+                    "OPENLINEAGE__TRANSPORT__RETRY__ALLOWED_METHODS": '["GET", "POST"]',
+                    "OPENLINEAGE__TRANSPORT__RETRY__STATUS_FORCELIST": "[500, 502, 503, 504]",
+                },
+                {
+                    "transport": {
+                        "type": "http",
+                        "url": "http://localhost:5050",
+                        "retry": {
+                            "total": 5,
+                            "backoff_factor": 0.2,
+                            "allowed_methods": ["GET", "POST"],
+                            "status_forcelist": [500, 502, 503, 504],
+                        },
                     }
                 },
             ),
