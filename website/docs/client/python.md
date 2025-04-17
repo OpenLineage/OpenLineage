@@ -232,6 +232,13 @@ Allows sending events to HTTP endpoint, using [requests](https://requests.readth
   - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`. Added in v1.13.0.
 - `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
+- `retry` - dictionary of additional configuration options passed to [`urllib3.util.Retry`](https://urllib3.readthedocs.io/en/1.26.20/reference/urllib3.util.html) object. Added in v1.33.0. Defaults are below; those are non-exhaustive options, but the ones that are set by default. Look at  [`urllib3.util.Retry`](https://urllib3.readthedocs.io/en/1.26.20/reference/urllib3.util.html) options for full reference.
+  - `total` - total number of retries to be attempted. Default is `5`.
+  - `read` - number of retries to be attempted on read errors. Default is `5`.
+  - `connect` - number of retries to be attempted on connection errors. Default is `5`.
+  - `backoff_factor` - a backoff factor to apply between attempts after the second try, default is `0.3`.
+  - `status_forcelist` - a set of integer HTTP status codes that we should force a retry on, default is `[500, 502, 503, 504]`.
+  - `allowed_methods` - a set of HTTP methods that we should retry on, default is `["HEAD", "POST"]`.
 
 #### Behavior
 
@@ -253,6 +260,13 @@ transport:
     type: api_key
     apiKey: f048521b-dfe8-47cd-9c65-0cb07d57591e
   compression: gzip
+  retry:
+    total: 5
+    read: 5
+    connect: 5
+    backoff_factor: 0.3
+    status_forcelist: [500, 502, 503, 504]
+    allowed_methods: ["HEAD", "POST"]
 ```
 
 </TabItem>
