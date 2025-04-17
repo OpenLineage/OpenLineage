@@ -11,10 +11,11 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import attr
+import urllib3.util
 
 if TYPE_CHECKING:
     from openlineage.client.client import Event, OpenLineageClientOptions
-    from requests.adapters import HTTPAdapter, Response
+    from requests import Response
 
 import http.client as http_client
 
@@ -22,6 +23,7 @@ from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields, try_import_from_string
 from requests import Session
+from requests.adapters import HTTPAdapter
 
 log = logging.getLogger(__name__)
 
@@ -89,6 +91,17 @@ class HttpConfig(Config):
     adapter: HTTPAdapter | None = attr.ib(default=None)
     # custom headers support
     custom_headers: dict[str, str] = attr.ib(factory=dict)
+    # retry settings
+    retry: dict[str, Any] = attr.ib(
+        default={
+            "total": 5,
+            "read": 5,
+            "connect": 5,
+            "backoff_factor": 0.3,
+            "status_forcelist": [500, 502, 503, 504],
+            "allowed_methods": ["HEAD", "POST"],
+        }
+    )
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> HttpConfig:
@@ -149,20 +162,10 @@ class HttpTransport(Transport):
         self.session = None
         if config.session:
             self.session = config.session
-            self.session.headers["Content-Type"] = "application/json"
-            auth_headers = self._auth_headers(config.auth)
-            self.session.headers.update(auth_headers)
-            self.session.headers.update(config.custom_headers)
+            self._prepare_session(self.session)
         self.timeout = config.timeout
         self.verify = config.verify
         self.compression = config.compression
-
-        if config.adapter:
-            self.set_adapter(config.adapter)
-
-    def set_adapter(self, adapter: HTTPAdapter) -> None:
-        if self.session:
-            self.session.mount(self.url, adapter)
 
     def emit(self, event: Event) -> Response:
         # If anyone overrides debuglevel manually, we can potentially leak secrets to logs.
@@ -170,9 +173,6 @@ class HttpTransport(Transport):
         prev_debuglevel = http_client.HTTPConnection.debuglevel
         http_client.HTTPConnection.debuglevel = 0
         body, headers = self._prepare_request(Serde.to_json(event))
-
-        # Update headers with custom headers from the config
-        headers.update(self.config.custom_headers)
 
         if self.session:
             resp = self.session.post(
@@ -183,10 +183,8 @@ class HttpTransport(Transport):
                 verify=self.verify,
             )
         else:
-            headers["Content-Type"] = "application/json"
-            headers.update(self._auth_headers(self.config.auth))
-            headers.update(self.config.custom_headers)
             with Session() as session:
+                self._prepare_session(session)
                 resp = session.post(
                     url=urljoin(self.url, self.endpoint),
                     data=body,
@@ -205,8 +203,24 @@ class HttpTransport(Transport):
             return {"Authorization": bearer}
         return {}
 
-    def _prepare_request(self, event_str: str) -> tuple[bytes | str, dict[str, str]]:
-        if self.compression == HttpCompression.GZIP:
-            return gzip.compress(event_str.encode("utf-8")), {"Content-Encoding": "gzip"}
+    def _prepare_session(self, session: Session) -> None:
+        if self.config.adapter:
+            session.mount(self.url, self.config.adapter)
+        else:
+            session.mount(self.url, self._prepare_adapter())
 
-        return event_str, {}
+    def _prepare_adapter(self) -> HTTPAdapter:
+        retry = urllib3.util.Retry(**self.config.retry)
+        return HTTPAdapter(max_retries=retry)
+
+    def _prepare_request(self, event_str: str) -> tuple[bytes | str, dict[str, str]]:
+        headers = {
+            "Content-Type": "application/json",
+            **self._auth_headers(self.config.auth),
+            **self.config.custom_headers,
+        }
+        if self.compression == HttpCompression.GZIP:
+            headers["Content-Encoding"] = "gzip"
+            return gzip.compress(event_str.encode("utf-8")), headers
+
+        return event_str, headers
