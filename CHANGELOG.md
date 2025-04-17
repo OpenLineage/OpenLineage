@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.31.0...HEAD)
 
+### Fixed
+
+* **Spark:** define equals for TransformedInput to avoid duplicates [`#3644`](https://github.com/OpenLineage/OpenLineage/pull/3644) [@tnazarew](https://github.com/tnazarew)
+
 ## [1.31.0](https://github.com/OpenLineage/OpenLineage/compare/1.30.1...1.31.0) - 2025-04-10
 
 ### Added
