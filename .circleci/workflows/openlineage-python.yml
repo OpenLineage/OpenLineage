@@ -77,10 +77,10 @@ workflows:
           matrix:
             parameters:
               airflow-image: [
-                'apache/airflow:2.3.4-python3.8',
-                'apache/airflow:2.4.3-python3.8',
-                'apache/airflow:2.5.2-python3.8',
-                'apache/airflow:2.6.1-python3.8'
+                'apache/airflow:2.3.4-python3.9',
+                'apache/airflow:2.4.3-python3.9',
+                'apache/airflow:2.5.2-python3.9',
+                'apache/airflow:2.6.1-python3.9'
               ]
           context: integration-tests
           requires:
@@ -111,13 +111,6 @@ workflows:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-          name: "CPython 3.8"
-          tox_env: py38
-          py_env: "3.8"
-      - unit-test-client-python:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           name: "CPython 3.9"
           tox_env: py39
           py_env: "3.9"
@@ -139,6 +132,20 @@ workflows:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+          name: "CPython 3.12"
+          tox_env: py312
+          py_env: "3.12"
+      - unit-test-client-python:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+          name: "CPython 3.13"
+          tox_env: py313
+          py_env: "3.13"
+      - unit-test-client-python:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           name: "type checker"
           tox_env: type
           py_env: "3.11"
@@ -147,10 +154,11 @@ workflows:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           requires:
-            - "CPython 3.8"
             - "CPython 3.9"
             - "CPython 3.10"
             - "CPython 3.11"
+            - "CPython 3.12"
+            - "CPython 3.13"
             - "type checker"
       - build-client-python:
           filters:
