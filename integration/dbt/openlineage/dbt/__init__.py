@@ -186,8 +186,9 @@ def consume_structured_logs(
         logger.error(e)
         return_code = 1
 
-    if last_event and last_event.eventType != RunState.COMPLETE:
-        return_code = 1
+    if last_event and not processor.received_dbt_command_completed:
+        # TODO: Emit a complete event if we have not received one ?
+        logger.warning("dbt execution did finish, but we did not receive a CommandCompleted dbt event.")
 
     logger.info("Emitted %d OpenLineage events", emitted_events)
     logger.info("Underlying dbt execution returned %d", return_code)

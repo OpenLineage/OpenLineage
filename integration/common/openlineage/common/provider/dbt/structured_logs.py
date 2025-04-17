@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from collections import defaultdict
 from functools import cached_property
 from typing import Dict, Generator, List, Optional, TextIO
@@ -73,6 +74,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self._compiled_manifest: Dict = {}
         self._dbt_version: Optional[str] = None
         self._dbt_log_file: Optional[TextIO] = None
+        self.received_dbt_command_completed = False
 
     @cached_property
     def dbt_command(self) -> str:
@@ -163,6 +165,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         elif dbt_event_name == "CommandCompleted":
             end_event = self._parse_command_completed_event(dbt_event)
+            self.received_dbt_command_completed = True
             return end_event
 
         if get_node_unique_id(dbt_event) is None:
@@ -542,9 +545,14 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                     parse_manifest = False
 
                 yield from incremental_reader.read_lines()
+                time.sleep(0.1)
 
-            if self._dbt_log_file is not None:
-                yield from incremental_reader.read_lines()
+            if self._dbt_log_file is not None and not self.received_dbt_command_completed:
+                # If we haven't received a CommandCompleted event for a second after the process finished
+                # we're surely not going to receive it anymore.
+                for _ in range(10):
+                    yield from incremental_reader.read_lines()
+                    time.sleep(0.1)
 
         except Exception:
             self.logger.exception("An exception occurred in OL code. dbt is still running.")
