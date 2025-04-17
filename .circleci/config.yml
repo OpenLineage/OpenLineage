@@ -49,7 +49,7 @@ jobs:
   # workflow
   determine_changed_modules:
     docker:
-      - image: cimg/python:3.8
+      - image: cimg/python:3.9
     steps:
       - checkout
       - github-cli/setup
