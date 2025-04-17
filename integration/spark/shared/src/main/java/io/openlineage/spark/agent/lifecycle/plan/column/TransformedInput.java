@@ -26,8 +26,12 @@ public class TransformedInput {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     TransformedInput that = (TransformedInput) o;
     return Objects.equals(input, that.input)
         && Objects.equals(transformationInfo, that.transformationInfo);
