@@ -8,6 +8,7 @@ package io.openlineage.flink;
 import io.openlineage.flink.api.OpenLineageContext.JobIdentifier;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTrackerFactory;
+import io.openlineage.flink.utils.ClassUtils;
 import io.openlineage.flink.utils.JobTypeUtils;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContextFactory;
@@ -88,6 +89,11 @@ public class OpenLineageFlinkJobListener implements JobListener {
     @Override
     public OpenLineageFlinkJobListener build() {
       Validate.notNull(super.executionEnvironment, "StreamExecutionEnvironment has to be provided");
+      Validate.isTrue(
+          !ClassUtils.hasFlink2Classes(),
+          "OpenLineageFlinkJobListener detected Flink 2 classes. "
+              + "This integration method is not supposed to work with Flink 2 - "
+              + "please check docs https://openlineage.io/docs/next/integrations/flink/flink2");
 
       if (super.jobNamespace == null) {
         super.jobNamespace(

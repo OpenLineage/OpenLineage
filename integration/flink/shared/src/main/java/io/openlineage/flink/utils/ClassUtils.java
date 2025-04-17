@@ -48,4 +48,16 @@ public class ClassUtils {
     }
     return false;
   }
+
+  public static boolean hasFlink2Classes() {
+    try {
+      ClassUtils.class
+          .getClassLoader()
+          .loadClass("org.apache.flink.streaming.api.lineage.LineageGraph");
+      return true;
+    } catch (Exception e) {
+      // swallow- we don't care
+    }
+    return false;
+  }
 }
