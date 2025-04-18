@@ -74,12 +74,7 @@ class KafkaTransport(Transport):
         self.producer = None
         if not self._is_airflow_sqlalchemy:
             self._setup_producer(self.kafka_config.config)
-        log.debug(
-            "Constructing OpenLineage transport that will send events "
-            "to kafka topic `%s` using the following config: %s",
-            self.topic,
-            self.kafka_config,
-        )
+        log.debug("Constructing OpenLineage transport that will send events to kafka topic `%s`", self.topic)
 
     def _get_message_key(self, event: Event) -> str | None:
         if isinstance(event, (DatasetEvent, event_v2.DatasetEvent)):

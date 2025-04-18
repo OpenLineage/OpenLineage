@@ -24,9 +24,10 @@ class CompositeConfig(Config):
 
     Attributes:
         transports:
-            A list of dictionaries, where each dictionary represents the configuration
+            A list or dict of dictionaries, where each dictionary represents the configuration
             for a child transport. Each dictionary should contain the necessary parameters
-            to initialize a specific transport instance.
+            to initialize a specific transport instance. If dict of dictionaries is passed,
+            keys of the dict will be treated as transport names.
 
         continue_on_failure:
             If set to True, the CompositeTransport will attempt to emit the event using
@@ -56,6 +57,10 @@ class CompositeTransport(Transport):
     def __init__(self, config: CompositeConfig) -> None:
         """Initialize a CompositeTransport object."""
         self.config = config
+        log.debug(
+            "Constructing OpenLineage composite transport with the following transports: %s",
+            [str(x) for x in self.transports],
+        )
 
     @cached_property
     def transports(self) -> list[Transport]:
@@ -76,11 +81,11 @@ class CompositeTransport(Transport):
         """Emit an event using all transports in the config."""
         for transport in self.transports:
             try:
-                log.debug("Emitting event using %s", transport.kind)
+                log.debug("Emitting event using transport %s", transport)
                 transport.emit(event)
             except Exception as e:  # noqa: BLE001
                 if self.config.continue_on_failure:
-                    log.warning("Transport %s failed to emit event with error: %s", transport.kind, e)
+                    log.warning("Transport %s failed to emit event with error: %s", transport, e)
                 else:
-                    msg = f"Transport {transport.kind} failed to emit event"
+                    msg = f"Transport {transport} failed to emit event"
                     raise RuntimeError(msg) from e
