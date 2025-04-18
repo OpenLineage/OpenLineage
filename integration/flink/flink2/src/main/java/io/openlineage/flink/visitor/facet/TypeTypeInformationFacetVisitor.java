@@ -10,23 +10,26 @@ import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFieldsBuilder;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.converter.LineageDatasetWithIdentifier;
-import io.openlineage.flink.util.KafkaDatasetFacetUtil;
 import io.openlineage.flink.util.TypeDatasetFacetUtil;
+import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.GenericTypeInfo;
+import org.apache.flink.api.java.typeutils.PojoTypeInfo;
+import org.apache.flink.connector.kafka.lineage.TypeDatasetFacet;
 
 /** Class used to extract type information from the facets returned by the collector */
 @Slf4j
-public class TypeInformationFacetVisitor implements DatasetFacetVisitor {
+public class TypeTypeInformationFacetVisitor implements DatasetFacetVisitor {
 
   private final OpenLineageContext context;
 
-  public TypeInformationFacetVisitor(OpenLineageContext context) {
+  public TypeTypeInformationFacetVisitor(OpenLineageContext context) {
     this.context = context;
   }
 
@@ -38,33 +41,39 @@ public class TypeInformationFacetVisitor implements DatasetFacetVisitor {
       return false;
     }
 
-    return KafkaDatasetFacetUtil.getFacet(dataset.getFlinkDataset()).isPresent();
+    Optional<TypeDatasetFacet> typeDatasetFacet =
+        TypeDatasetFacetUtil.getFacet(dataset.getFlinkDataset());
+
+    return typeDatasetFacet
+        .filter(datasetFacet -> datasetFacet.getTypeInformation() != null)
+        .map(TypeDatasetFacet::getTypeInformation)
+        .map(TypeInformation::getTypeClass)
+        .filter(
+            c ->
+                GenericTypeInfo.class.isAssignableFrom(c) || PojoTypeInfo.class.isAssignableFrom(c))
+        .isPresent();
   }
 
   @Override
   public void apply(
       LineageDatasetWithIdentifier dataset, OpenLineage.DatasetFacetsBuilder builder) {
+    Optional<TypeDatasetFacet> typeDatasetFacet =
+        TypeDatasetFacetUtil.getFacet(dataset.getFlinkDataset());
     TypeInformation typeInformation =
-        TypeDatasetFacetUtil.getFacet(dataset.getFlinkDataset())
-            .map(f -> f.getTypeInformation())
-            .orElse(null);
+        typeDatasetFacet.map(TypeDatasetFacet::getTypeInformation).orElse(null);
 
-    // TODO: support GenericAvroRecord & support protobuf
-    if (typeInformation instanceof GenericTypeInfo) {
-      builder.schema(
-          context
-              .getOpenLineage()
-              .newSchemaDatasetFacetBuilder()
-              .fields(from((GenericTypeInfo) typeInformation))
-              .build());
-    } else {
-      log.warn("Could not extract schema from type {}", typeInformation);
-    }
+    builder.schema(
+        context
+            .getOpenLineage()
+            .newSchemaDatasetFacetBuilder()
+            .fields(fromFields(typeInformation.getTypeClass().getFields()))
+            .build());
   }
 
-  private List<SchemaDatasetFacetFields> from(GenericTypeInfo genericTypeInfo) {
-    return Arrays.stream(genericTypeInfo.getTypeClass().getFields())
+  private List<SchemaDatasetFacetFields> fromFields(Field... fields) {
+    return Arrays.stream(fields)
         .filter(f -> Modifier.isPublic(f.getModifiers()))
+        .filter(field -> !Modifier.isStatic(field.getModifiers()))
         .map(
             f ->
                 new SchemaDatasetFacetFieldsBuilder()
