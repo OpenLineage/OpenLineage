@@ -7,7 +7,7 @@ import tempfile
 import time
 from os import listdir
 from os.path import exists, isfile, join
-from typing import Any, Dict, List
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -17,7 +17,7 @@ from openlineage.client.transport.file import FileConfig, FileTransport
 from openlineage.client.uuid import generate_new_uuid
 
 
-def emit_test_events(client: OpenLineageClient, debuff_time: int = 0) -> List[Dict[str, Any]]:
+def emit_test_events(client: OpenLineageClient, debuff_time: int = 0) -> list[dict[str, Any]]:
     test_event_set = [
         {
             "eventType": RunState.START,
@@ -48,7 +48,7 @@ def emit_test_events(client: OpenLineageClient, debuff_time: int = 0) -> List[Di
     return test_event_set
 
 
-def assert_test_events(log_line: List[Dict[str, Any]], test_event: List[Dict[str, Any]]) -> None:
+def assert_test_events(log_line: list[dict[str, Any]], test_event: list[dict[str, Any]]) -> None:
     assert log_line["eventType"] == test_event["eventType"].name
     assert log_line["job"]["name"] == test_event["name"]
     assert log_line["job"]["namespace"] == test_event["namespace"]
