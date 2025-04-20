@@ -54,9 +54,9 @@ optional-dependencies.docs = [
 ]
 
 optional-dependencies.generator = [
-  "ruff==0.3.5",
+  "ruff==0.11.6",
   "click",
-  "datamodel-code-generator==0.25.4"
+  "datamodel-code-generator==0.30.0"
 ]
 
 [tool.hatch.build]
