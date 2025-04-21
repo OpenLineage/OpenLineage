@@ -108,12 +108,29 @@ spotless {
         target project.fileTree(project.rootDir) {
             include 'build/classes/java/main/io/openlineage/flink/**/*.java'
             exclude '**/io/openlineage/flink/avro/**/*.*'
+            exclude '**/io/openlineage/flink/proto/**/*.*'
         }
     }
 }
 
 spotlessJava {
     dependsOn("compileJava", "compileTestJava", "generateAvroJava")
+}
+
+pmd {
+    consoleOutput = true
+    toolVersion = "6.46.0"
+    rulesMinimumPriority = 5
+    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
+    ruleSets = []
+    ignoreFailures = false
+
+    pmdMain {
+        excludes = [
+            '**/io/openlineage/flink/avro/**/*.*',
+            '**/io/openlineage/flink/proto/**/*.*',
+        ]
+    }
 }
 
 avro {
