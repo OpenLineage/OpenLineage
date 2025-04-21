@@ -23,13 +23,6 @@ repositories {
 
 group 'io.openlineage.flink'
 
-shadowJar {
-    zip64 true
-    manifest {
-        attributes 'Main-Class': 'io.openlineage.flink.FlinkStatefulApplication'
-    }
-}
-
 ext {
     flinkVersion = project.getProperty('flink.version')
     flinkVersionShort = flinkVersion.substring(0,4)
@@ -97,6 +90,13 @@ dependencies {
 
     implementation "org.apache.iceberg:iceberg-flink-runtime-${versions.alternativeShort}:${versions.iceberg}"
     implementation "com.google.protobuf:protobuf-java:3.25.3"
+}
+
+shadowJar {
+    zip64 true
+    manifest {
+        attributes 'Main-Class': 'io.openlineage.flink.FlinkStatefulApplication'
+    }
 }
 
 assemble {
