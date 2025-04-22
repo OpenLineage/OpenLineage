@@ -3,18 +3,14 @@ version: '3'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:6.2.1
-    hostname: zookeeper
-    container_name: zookeeper
     ports:
       - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_SERVER_ID: 1
 
-  kafka:
+  kafka-host:
     image: confluentinc/cp-kafka:6.2.1
-    hostname: kafka
-    container_name: kafka
     ports:
       - "19092:19092"
     environment:
@@ -33,8 +29,6 @@ services:
 
   schema-registry:
     image: confluentinc/cp-schema-registry:6.2.1
-    hostname: schema-registry
-    container_name: schema-registry
     ports:
       - "28081:28081"
     environment:
@@ -43,16 +37,14 @@ services:
       SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081,http://0.0.0.0:28081
     depends_on:
       - zookeeper
-      - kafka
+      - kafka-host
 
   # This "container" is a workaround to pre-create topics before running Flink application containers
   kafka-topic-setup:
     image: confluentinc/cp-kafka:6.2.1
-    hostname: kafka-topic-setup
-    container_name: kafka-topic-setup
     depends_on:
       - zookeeper
-      - kafka
+      - kafka-host
       - schema-registry
     entrypoint: [ '/bin/sh', '-c' ]
     command: |
@@ -69,8 +61,16 @@ services:
       "
 
   jobmanager:
-    image: flink:1.14.2-scala_2.11
-    container_name: jobmanager
+    image: flink:1.19.2-scala_2.12-java11
+    depends_on:
+      zookeeper:
+        condition: service_started
+      kafka-host:
+        condition: service_started
+      schema-registry:
+        condition: service_started
+      kafka-topic-setup:
+        condition: service_completed_successfully
     ports:
       - "18081:8081"
     command: standalone-job --job-classname io.openlineage.flink.FlinkStatefulApplication --input-topics "io.openlineage.flink.kafka.input" --output-topics "io.openlineage.flink.kafka.output"
@@ -81,21 +81,11 @@ services:
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
         parallelism.default: 1
-
-    depends_on:
-      - zookeeper
-      - kafka
-      - schema-registry
-      - kafka-topic-setup
+        openlineage.transport.type: console
 
   taskmanager:
-    image: flink:1.14.2-scala_2.11
-    container_name: taskmanager
+    image: flink:1.19.2-scala_2.12-java11
     depends_on:
-      - zookeeper
-      - kafka
-      - schema-registry
-      - kafka-topic-setup
       - jobmanager
     command: taskmanager
     volumes:

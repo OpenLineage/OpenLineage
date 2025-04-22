@@ -11,30 +11,29 @@ and sends out the [OutputEvent](src/main/avro/io/openlineage/flink/avro/event/Ou
 ## Pre-requisites
 
 1. Docker
-2. Java 8+
+2. Java 11+
 
 ## Getting started
 
 ### Quickstart
 To be able to start the cluster flink-stataful-application has to be build:
 ```
-./gradle build
+./gradlew build
 ```
 which will create `build/lib` folder with complete artifact (`*.jar`).
 
 This artifact will be mounted to the Flink (`/opt/flink/usrlib`).
-Next, start the docker container (from the folder where docker-compose is [located](src/docker/docker-compose.yml):
+Next, start the docker container:
 ```bash
-docker-compose up -d
+docker compose -f src/docker/docker-compose.yml up -d
 ```
-`-d` - detached mode
 
 This will start Flink cluster on [localhost:18081](http://localhost:18081/). Flink application will be up and running.
 Stateful flink application will run with state in memory.
 Kafka BootstrapServers on `'127.0.0.1:19092'` and SchemaRegistry on` 'http://0.0.0.0:28081'`
 
 ```bash
-> docker-compose ps
+$ docker compose -f src/docker/docker-compose.yml ps
 
       Name                     Command               State                      Ports
 --------------------------------------------------------------------------------------------------------
@@ -44,12 +43,17 @@ schema-registry     /etc/confluent/docker/run        Up       0.0.0.0:28081->280
 taskmanager         /docker-entrypoint.sh task ...   Up       6123/tcp, 8081/tcp
 zookeeper           /etc/confluent/docker/run        Up       0.0.0.0:2181->2181/tcp, 2888/tcp, 3888/tcp
 kafka-topic-setup   /bin/sh -c                       Exit 0
-
 ```
+
+`jobmanager` command uses Console transport, so container logs contain OpenLineage events:
+```bash
+$ docker compose -f src/docker/docker-compose.yml logs -f jobmanager
+```
+
 ### Testing
 
 To be able to test if the Flink application is able to process events we have to sent events to the Input topic, and we can expect events in output topic.
-For this purpose, there is [Sandbox](src/test/groovy/io/openlineage/sandbox/Sandbox.groovy) created with useful commands to try-out.
+For this purpose, there is [Sandbox](src/test/groovy/io/openlineage/kafka/sandbox/Sandbox.groovy) created with useful commands to try-out.
 
 ----
 SPDX-License-Identifier: Apache-2.0\
