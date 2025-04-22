@@ -36,7 +36,7 @@ sourceSets {
 
 dependencies {
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
-    implementation(platform("software.amazon.awssdk:bom:2.31.21"))
+    implementation(platform("software.amazon.awssdk:bom:2.31.25"))
     implementation("software.amazon.awssdk:auth")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:url-connection-client")
