@@ -44,6 +44,9 @@ class Transport:
     def emit(self, event: Event) -> Any:
         raise NotImplementedError
 
+    def __str__(self) -> str:
+        return f"<{self.__class__.__name__}(name={self.name}, kind={self.kind})>"
+
 
 class TransportFactory:
     def create(self, config: dict[str, str] | None = None) -> Transport:
