@@ -6,7 +6,7 @@ lint.select = [
     "W",
     "I001"
 ]
-target-version = "py37"
+target-version = "py39"
 lint.ignore-init-module-imports = true
 src = ["openlineage", "tests"]
 namespace-packages = ["openlineage/common"]

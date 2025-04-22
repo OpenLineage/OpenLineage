@@ -1,4 +1,4 @@
-ARG AIRFLOW_IMAGE=apache/airflow:2.4.3-python3.8
+ARG AIRFLOW_IMAGE=apache/airflow:2.4.3-python3.9
 FROM $AIRFLOW_IMAGE AS airflow
 COPY integration/dbt /app/openlineage/integration/dbt
 COPY integration/common /app/openlineage/integration/common
@@ -29,7 +29,7 @@ RUN python -m virtualenv dbt_venv && pwd && source dbt_venv/bin/activate && \
     python -m pip install -r tests/integration/tests/airflow/dbt-requirements.txt && deactivate  # We need separate env to run dbt due to dependency conflicts
 
 
-FROM python:3.8-slim as integration
+FROM python:3.9-slim as integration
 RUN mkdir -p /app/openlineage
 RUN apt-get update && \
     apt-get install -y python3-dev default-libmysqlclient-dev build-essential pkg-config
