@@ -239,3 +239,7 @@
       redact_fields: []
     - class_name: TagsRunFacet
       redact_fields: []
+- module: catalog_dataset
+  classes:
+    - class_name: CatalogDatasetFacet
+      redact_fields: []
