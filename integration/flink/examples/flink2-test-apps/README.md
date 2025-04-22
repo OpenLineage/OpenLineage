@@ -16,8 +16,8 @@ and sends out the [OutputEvent](src/main/avro/io/openlineage/flink/avro/event/Ou
 ## Getting started
 
 ### Quickstart
-To be able to start the cluster, `FlinkStatefulApplication` has to be build:
-```bash
+To be able to start the cluster, `FlinkSqlApplication` has to be build:
+```
 ./gradlew build
 ```
 which will create `build/lib` folder with complete artifact (`*.jar`).
@@ -35,6 +35,7 @@ Kafka BootstrapServers on `'127.0.0.1:19092'` and SchemaRegistry on` 'http://0.0
 ```bash
 docker compose -f src/docker/docker-compose.yml ps
 ```
+
 ```
       Name                     Command               State                      Ports
 --------------------------------------------------------------------------------------------------------
