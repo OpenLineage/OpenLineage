@@ -20,6 +20,7 @@ import org.apache.flink.streaming.api.lineage.LineageDataset;
 import org.apache.flink.streaming.api.lineage.LineageDatasetFacet;
 import org.apache.flink.table.catalog.CatalogBaseTable;
 import org.apache.flink.table.catalog.ContextResolvedTable;
+import org.apache.flink.table.catalog.GenericInMemoryCatalog;
 import org.apache.flink.table.planner.lineage.TableLineageDataset;
 import org.apache.flink.table.planner.lineage.TableLineageDatasetImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,11 +33,15 @@ class KafkaTableLineageDatasetIdentifierVisitorTest {
   ContextResolvedTable contextResolvedTable = mock(ContextResolvedTable.class, RETURNS_DEEP_STUBS);
   CatalogBaseTable catalogBaseTable = mock(CatalogBaseTable.class);
   TableLineageDataset table;
+  GenericInMemoryCatalog catalog = mock(GenericInMemoryCatalog.class, RETURNS_DEEP_STUBS);
 
   @BeforeEach
   void setup() {
     when(contextResolvedTable.getTable()).thenReturn(catalogBaseTable);
-    when(contextResolvedTable.getIdentifier().asSummaryString()).thenReturn("tableName");
+    when(contextResolvedTable.getIdentifier().asSummaryString())
+        .thenReturn("default_catalog.tableName");
+    when(contextResolvedTable.getCatalog()).thenReturn(Optional.of(catalog));
+    when(catalog.getName()).thenReturn("default_catalog");
 
     table =
         new TableLineageDatasetImpl(
@@ -45,7 +50,7 @@ class KafkaTableLineageDatasetIdentifierVisitorTest {
                 new LineageDataset() {
                   @Override
                   public String name() {
-                    return "tableName";
+                    return catalog.getName() + ".tableName";
                   }
 
                   @Override
@@ -89,8 +94,7 @@ class KafkaTableLineageDatasetIdentifierVisitorTest {
         .hasFieldOrPropertyWithValue("namespace", "kafka://localhost:1000");
 
     assertThat(datasetIdentifiers.iterator().next().getSymlinks())
-        .containsExactlyInAnyOrder(
-            new Symlink("tableName", "kafka://localhost:1000", SymlinkType.TABLE));
+        .containsExactlyInAnyOrder(new Symlink("tableName", "flink://", SymlinkType.TABLE));
   }
 
   @Test
@@ -108,5 +112,24 @@ class KafkaTableLineageDatasetIdentifierVisitorTest {
     Collection<DatasetIdentifier> datasetIdentifiers = visitor.apply(table);
     assertThat(datasetIdentifiers.iterator().next())
         .hasFieldOrPropertyWithValue("namespace", "kafka://localhost:1000");
+  }
+
+  @Test
+  void testApplyCallsCatalogProvider() {
+    when(contextResolvedTable.getIdentifier().asSummaryString())
+        .thenReturn("default_catalog.tableName");
+    when(catalogBaseTable.getOptions())
+        .thenReturn(
+            Map.of(
+                "connector", "kafka",
+                "properties.bootstrap.servers", "localhost:1000",
+                "topic", "topic-name"));
+
+    Collection<DatasetIdentifier> datasetIdentifiers = visitor.apply(table);
+
+    // verify catalog name is removed from table name
+    assertThat(datasetIdentifiers.iterator().next().getSymlinks().get(0))
+        .extracting("name")
+        .isEqualTo("tableName");
   }
 }

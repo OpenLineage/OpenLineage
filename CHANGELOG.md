@@ -5,6 +5,7 @@
 ### Fixed
 
 * **Spark:** define equals for TransformedInput to avoid duplicates [`#3644`](https://github.com/OpenLineage/OpenLineage/pull/3644) [@tnazarew](https://github.com/tnazarew)
+* **Flink:** remove catalog name from symlink table identifier.** [`#3657`](https://github.com/OpenLineage/OpenLineage/pull/3657) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 
 ## [1.31.0](https://github.com/OpenLineage/OpenLineage/compare/1.30.1...1.31.0) - 2025-04-10
 

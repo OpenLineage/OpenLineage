@@ -49,8 +49,8 @@
         },
         "symlinks" : {
         "identifiers" : [ {
-          "namespace" : "kafka://kafka-host:9092",
-          "name" : "default_catalog.default_database.kafka_input",
+          "namespace" : "flink://",
+          "name" : "default_database.kafka_input",
           "type" : "TABLE"
         } ]
       }
@@ -89,8 +89,8 @@
       },
       "symlinks" : {
         "identifiers" : [ {
-          "namespace" : "kafka://kafka-host:9092",
-          "name" : "default_catalog.default_database.kafka_output",
+          "namespace" : "flink://",
+          "name" : "default_database.kafka_output",
           "type" : "TABLE"
         } ]
       }
