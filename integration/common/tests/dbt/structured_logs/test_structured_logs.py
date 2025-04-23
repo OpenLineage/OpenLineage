@@ -1,8 +1,10 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+import datetime
 import json
 from enum import Enum
 from typing import Dict
+from unittest import mock
 
 import attr
 import pytest
@@ -157,14 +159,13 @@ def patch_get_dbt_profiles_dir(monkeypatch):
         "postgres_dbt_build",
     ],
 )
-def test_parse(target, command_line, logs_path, expected_ol_events_path, manifest_path, monkeypatch):
-    def dummy_run_dbt_command(self):
+@mock.patch("openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._run_dbt_command")
+def test_parse(mock_dbt_run_command, target, command_line, logs_path, expected_ol_events_path, manifest_path):
+    def parsed():
+        processor.received_dbt_command_completed = True
         return open(logs_path).readlines()
 
-    monkeypatch.setattr(
-        "openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._run_dbt_command",
-        dummy_run_dbt_command,
-    )
+    mock_dbt_run_command.side_effect = parsed
 
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -190,12 +191,8 @@ def test_parse(target, command_line, logs_path, expected_ol_events_path, manifes
     ],
     ids=["postgres", "snowflake"],
 )
-def test_adapter_type(target, expected_adapter_type, monkeypatch):
-    monkeypatch.setattr(
-        "openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._run_dbt_command",
-        lambda *args, **kwargs: [],
-    )
-
+@mock.patch("openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._run_dbt_command")
+def test_adapter_type(mock_dbt_run_command, target, expected_adapter_type):
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
@@ -203,6 +200,12 @@ def test_adapter_type(target, expected_adapter_type, monkeypatch):
         target=target,
         dbt_command_line=["dbt", "run", "..."],
     )
+
+    def parsed():
+        processor.received_dbt_command_completed = True
+        return []
+
+    mock_dbt_run_command.side_effect = parsed
 
     try:
         next(processor.parse())
@@ -220,11 +223,13 @@ def test_adapter_type(target, expected_adapter_type, monkeypatch):
     ],
     ids=["postgres", "snowflake"],
 )
-def test_dataset_namespace(target, expected_dataset_namespace, monkeypatch):
-    monkeypatch.setattr(
-        "openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._run_dbt_command",
-        lambda *args, **kwargs: [],
-    )
+@mock.patch("openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._run_dbt_command")
+def test_dataset_namespace(mock_run_dbt_command, target, expected_dataset_namespace):
+    def parsed():
+        processor.received_dbt_command_completed = True
+        return []
+
+    mock_run_dbt_command.side_effect = parsed
 
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -333,16 +338,21 @@ def test_dataset_namespace(target, expected_dataset_namespace, monkeypatch):
         "skipped_test_NodeFinished",
     ],
 )
-def test_parse_dbt_events(dbt_log_events, expected_ol_events, dbt_event_type, manifest_path, monkeypatch):
+@mock.patch("openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._run_dbt_command")
+def test_parse_dbt_events(
+    mock_dbt_run_command, dbt_log_events, expected_ol_events, dbt_event_type, manifest_path
+):
     """
     This tests:
     1. the parent/child relationship of OL events
     2. the runId remains the same for the START/COMPLETE/FAIL OL events
     """
-    monkeypatch.setattr(
-        "openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._run_dbt_command",
-        lambda self: [json.dumps(dbt_event) for dbt_event in yaml.safe_load(open(dbt_log_events))],
-    )
+
+    def parsed():
+        processor.received_dbt_command_completed = True
+        return [json.dumps(dbt_event) for dbt_event in yaml.safe_load(open(dbt_log_events))]
+
+    mock_dbt_run_command.side_effect = parsed
 
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -682,4 +692,31 @@ def test_parent_run_metadata(dbt_log_events, expected_ol_events, parent_id_env_v
     actual_ol_events = list(ol_event_to_dict(event) for event in processor.parse())
     expected_ol_events = yaml.safe_load(open(expected_ol_events))
 
+    assert match(expected=expected_ol_events, result=actual_ol_events, ordered_list=True)
+
+
+@mock.patch("datetime.datetime", wraps=datetime.datetime)
+def test_missing_command_completed(mock_dt, monkeypatch):
+    missing_command_completed = (
+        "./tests/dbt/structured_logs/postgres/events/logs/missing_command_completed.yaml"
+    )
+    missing_command_completed_ol_events = (
+        "./tests/dbt/structured_logs/postgres/events/results/missing_command_completed_OL.yaml"
+    )
+    mock_dt.now.return_value = datetime.datetime(2024, 1, 1, 0, 0, 0, 1)
+    monkeypatch.setattr(
+        "openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._run_dbt_command",
+        lambda self: [json.dumps(dbt_event) for dbt_event in yaml.safe_load(open(missing_command_completed))],
+    )
+
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir="tests/dbt/structured_logs",
+        target="postgres",
+        dbt_command_line=["dbt", "run", "..."],
+    )
+    processor.manifest_path = "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
+    actual_ol_events = list(ol_event_to_dict(event) for event in processor.parse())
+    expected_ol_events = yaml.safe_load(open(missing_command_completed_ol_events))
     assert match(expected=expected_ol_events, result=actual_ol_events, ordered_list=True)

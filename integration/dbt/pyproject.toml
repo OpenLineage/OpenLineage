@@ -1,12 +1,12 @@
 [tool.ruff]
 line-length = 110
-select = [
+lint.select = [
     "F",
     "E",
     "W",
     "I001"
 ]
 target-version = "py39"
-ignore-init-module-imports = true
+lint.ignore-init-module-imports = true
 src = ["openlineage", "tests"]
 namespace-packages = ["openlineage/common"]

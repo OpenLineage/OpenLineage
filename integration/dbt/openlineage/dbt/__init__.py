@@ -166,12 +166,10 @@ def consume_structured_logs(
     )
 
     client = OpenLineageClient()
-    last_event = None
     emitted_events = 0
     try:
         for event in processor.parse():
             try:
-                last_event = event
                 client.emit(event)
                 emitted_events += 1
             except Exception as e:
@@ -184,9 +182,6 @@ def consume_structured_logs(
                 )
     except UnsupportedDbtCommand as e:
         logger.error(e)
-        return_code = 1
-
-    if last_event and last_event.eventType != RunState.COMPLETE:
         return_code = 1
 
     logger.info("Emitted %d OpenLineage events", emitted_events)
@@ -277,14 +272,14 @@ def consume_local_artifacts(
         events = []
 
     if return_code == 0:
-        last_event = dbt_run_event_end(
+        terminal_event = dbt_run_event_end(
             run_id=dbt_run_metadata.run_id,
             job_namespace=dbt_run_metadata.job_namespace,
             job_name=dbt_run_metadata.job_name,
             parent_run_metadata=parent_run_metadata,
         )
     else:
-        last_event = dbt_run_event_failed(
+        terminal_event = dbt_run_event_failed(
             run_id=dbt_run_metadata.run_id,
             job_namespace=dbt_run_metadata.job_namespace,
             job_name=dbt_run_metadata.job_name,
@@ -292,7 +287,7 @@ def consume_local_artifacts(
         )
 
     for event in tqdm(
-        events + [last_event],
+        events + [terminal_event],
         desc="Emitting OpenLineage events",
         initial=1,
         total=len(events) + 2,

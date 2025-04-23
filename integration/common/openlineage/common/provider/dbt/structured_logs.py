@@ -1,9 +1,11 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+import datetime
 import json
 import os
 import subprocess
 import sys
+import time
 from collections import defaultdict
 from functools import cached_property
 from typing import Dict, Generator, List, Optional, TextIO
@@ -73,6 +75,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self._compiled_manifest: Dict = {}
         self._dbt_version: Optional[str] = None
         self._dbt_log_file: Optional[TextIO] = None
+        self.received_dbt_command_completed = False
 
     @cached_property
     def dbt_command(self) -> str:
@@ -111,7 +114,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         if self._compiled_manifest != {}:
             return self._compiled_manifest
         elif os.path.isfile(self.manifest_path):
-            self._compiled_manifest = self.load_metadata(self.manifest_path, [2, 3, 4, 5, 6, 7], self.logger)
+            self._compiled_manifest = self.load_metadata(self.manifest_path, list(range(2, 13)), self.logger)
             return self._compiled_manifest
         else:
             return {}
@@ -135,6 +138,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             ol_event = self._parse_structured_log_event(line)
             if ol_event:
                 yield ol_event
+
+        if not self.received_dbt_command_completed:
+            # We did not receive the CommandCompleted event, so we emit an abort event
+            yield self._get_dbt_command_abort_event()
 
     def _parse_structured_log_event(self, line: str) -> Optional[RunEvent]:
         """
@@ -163,6 +170,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         elif dbt_event_name == "CommandCompleted":
             end_event = self._parse_command_completed_event(dbt_event)
+            self.received_dbt_command_completed = True
             return end_event
 
         if get_node_unique_id(dbt_event) is None:
@@ -208,6 +216,30 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         )
 
         return start_event
+
+    def _get_dbt_command_abort_event(self):
+        run_facets = self.dbt_version_facet()
+        parent_run_metadata = get_parent_run_metadata()
+        if parent_run_metadata:
+            run_facets["parent"] = parent_run_metadata.to_openlineage()
+
+        job_facets = {
+            "jobType": job_type_job.JobTypeJobFacet(
+                jobType="JOB",
+                integration="DBT",
+                processingType="BATCH",
+                producer=self.producer,
+            )
+        }
+        return generate_run_event(
+            event_type=RunState.ABORT,
+            event_time=datetime.datetime.now().isoformat(),  # Current time - no other data source
+            run_id=self.dbt_run_metadata.run_id,
+            job_name=self.dbt_run_metadata.job_name,
+            job_namespace=self.dbt_run_metadata.job_namespace,
+            job_facets=job_facets,
+            run_facets=run_facets,
+        )
 
     def _parse_node_start_event(self, event: Dict) -> RunEvent:
         node_unique_id = get_node_unique_id(event)
@@ -542,9 +574,16 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                     parse_manifest = False
 
                 yield from incremental_reader.read_lines()
+                time.sleep(0.1)
 
-            if self._dbt_log_file is not None:
+            max_loops = 10
+            i = 0
+            while (
+                self._dbt_log_file is not None and not self.received_dbt_command_completed and i < max_loops
+            ):
                 yield from incremental_reader.read_lines()
+                time.sleep(0.1)
+                i += 1
 
         except Exception:
             self.logger.exception("An exception occurred in OL code. dbt is still running.")
