@@ -268,6 +268,7 @@ class OpenLineageRunEventBuilder {
                     .orElse(Stream.empty()))
             .collect(Collectors.toList());
     OpenLineage openLineage = openLineageContext.getOpenLineage();
+    openLineageContext.getVisitedNodes().clearVisitedNodes();
     if (!datasets.isEmpty()) {
       Map<String, InputDatasetFacet> inputFacetsMap = new HashMap<>();
       nodes.forEach(
