@@ -33,9 +33,7 @@ means no other events related to this run will be emitted.
 Additionally, we allow `OTHER` to be sent anytime before the terminal states, 
 also before `START`. The purpose of this is the agility to send additional
 metadata outside standard run cycle - e.g., on a run that hasn't yet started 
-but is already awaiting the resources. 
-
-![image](./run-life-cycle.svg)
+but is already awaiting the resources.
 
 ## Typical Scenarios
 
