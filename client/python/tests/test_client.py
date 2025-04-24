@@ -217,17 +217,30 @@ def test_client_filters_exact_job_name_events(
         factory.create.return_value = transport
         client = OpenLineageClient(factory=factory)
 
-        run = Run(runId=str(generate_new_uuid()))
         event = RunEvent(
             eventType=RunState.START,
             eventTime="2021-11-03T10:53:52.427343",
-            run=run,
+            run=Run(runId=str(generate_new_uuid())),
             job=Job(name=name, namespace=""),
             producer="",
             schemaURL="",
         )
 
         client.emit(event)
+        assert transport.emit.called == should_emit
+
+        transport.emit.reset_mock()
+        assert transport.emit.called is False
+
+        event2 = event_v2.RunEvent(
+            eventType=event_v2.RunState.START,
+            eventTime="2021-11-03T10:53:52.427343",
+            run=event_v2.Run(runId=str(generate_new_uuid())),
+            job=event_v2.Job(name=name, namespace=""),
+            producer="",
+        )
+
+        client.emit(event2)
         assert transport.emit.called == should_emit
 
 
@@ -479,6 +492,22 @@ def test_add_environment_facets():
         [EnvironmentVariable(name="ENV_VAR_1", value="value1")]
     )
 
+    event2 = event_v2.RunEvent(
+        eventType=event_v2.RunState.START,
+        eventTime="2021-11-03T10:53:52.427343",
+        run=run,
+        job=event_v2.Job(name="name", namespace=""),
+        producer="",
+    )
+    event2.run.facets = {}
+
+    modified_event2 = client.add_environment_facets(event2)
+
+    assert "environmentVariables" in modified_event2.run.facets
+    assert modified_event2.run.facets["environmentVariables"] == EnvironmentVariablesRunFacet(
+        [EnvironmentVariable(name="ENV_VAR_1", value="value1")]
+    )
+
 
 @patch("openlineage.client.client.OpenLineageClient._find_yaml_config_path")
 @patch("openlineage.client.client.OpenLineageClient._get_config_file_content")
@@ -635,6 +664,21 @@ def test_add_environment_facets_with_custom_env_var(mock_resolve_transport) -> N
     )
 
     client.emit(event)
+    assert mock_transport.emit.call_args[0][0].run.facets[
+        "environmentVariables"
+    ] == EnvironmentVariablesRunFacet([EnvironmentVariable(name="CUSTOM_ENV_VAR", value="custom_value")])
+
+    mock_transport.emit.reset_mock()
+    assert mock_transport.emit.call_args is None
+
+    event2 = event_v2.RunEvent(
+        eventType=event_v2.RunState.START,
+        eventTime="2021-11-03T10:53:52.427343",
+        run=run,
+        job=event_v2.Job(name="name", namespace=""),
+        producer="",
+    )
+    client.emit(event2)
     assert mock_transport.emit.call_args[0][0].run.facets[
         "environmentVariables"
     ] == EnvironmentVariablesRunFacet([EnvironmentVariable(name="CUSTOM_ENV_VAR", value="custom_value")])

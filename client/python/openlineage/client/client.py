@@ -153,7 +153,7 @@ class OpenLineageClient:
     ) -> Event | None:
         """Filters jobs according to config-defined events"""
         for _filter in self._filters:
-            if isinstance(event, RunEvent) and _filter.filter_event(event) is None:
+            if isinstance(event, (RunEvent, event_v2.RunEvent)) and _filter.filter_event(event) is None:
                 return None
         return event
 
@@ -397,7 +397,10 @@ class OpenLineageClient:
         """
         Adds environment variables as facets to the event object.
         """
-        if isinstance(event, RunEvent) and (env_vars := self._collect_environment_variables()):
+        if isinstance(event, (RunEvent, event_v2.RunEvent)) and (
+            env_vars := self._collect_environment_variables()
+        ):
+            event.run.facets = event.run.facets or {}
             event.run.facets["environmentVariables"] = EnvironmentVariablesRunFacet(
                 environmentVariables=[
                     EnvironmentVariable(name=name, value=value) for name, value in env_vars.items()
