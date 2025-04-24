@@ -47,7 +47,7 @@ Make your changes
 1. Create the facet in `/spec/facets/` (Core spec changes go in `/spec/OpenLineage.json`) 
 1. Create an example JSON representation of the facet in `/spec/facets/tests/` 
 
-Configure Java clent
+Configure Java client
 
 1. cd `/client/java`
 1. `./gradlew clean publishToMavenLocal` (Publish code to the local Maven project.)
