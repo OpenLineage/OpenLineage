@@ -333,9 +333,9 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
       assertThat(input.get().getName()).isEqualTo(inputTopic);
       assertThat(input.get().getFacets().getSymlinks().getIdentifiers().get(0))
           .hasFieldOrPropertyWithValue("type", "TABLE")
-          .hasFieldOrPropertyWithValue("name", "default_catalog.default_database.kafka_input");
+          .hasFieldOrPropertyWithValue("name", "default_database.kafka_input");
       assertThat(input.get().getFacets().getSymlinks().getIdentifiers().get(0).getNamespace())
-          .startsWith("kafka://localhost:");
+          .startsWith("flink://");
       List<SchemaDatasetFacetFields> inputFields = input.get().getFacets().getSchema().getFields();
       assertThat(inputFields).hasSize(5);
       assertFieldPresent(inputFields, "price", "DECIMAL(38, 18)");
@@ -371,9 +371,9 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
 
       assertThat(output.get().getFacets().getSymlinks().getIdentifiers().get(0))
           .hasFieldOrPropertyWithValue("type", "TABLE")
-          .hasFieldOrPropertyWithValue("name", "default_catalog.default_database.kafka_output");
+          .hasFieldOrPropertyWithValue("name", "default_database.kafka_output");
       assertThat(output.get().getFacets().getSymlinks().getIdentifiers().get(0).getNamespace())
-          .startsWith("kafka://localhost:");
+          .startsWith("flink://");
 
       // test SQL comments
       assertThat(input.get().getFacets().getDocumentation())
