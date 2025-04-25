@@ -66,6 +66,8 @@ For Airflow 2.7+ use the native Airflow OpenLineage provider
 
 ### Airflow 2.3 - 2.6
 
+> **Note:** As of version 1.33.0, Airflow versions below 2.5.0 are no longer supported.
+
 The integration automatically registers itself starting from Airflow 2.3 if it's installed on the Airflow worker's Python.
 This means you don't have to do anything besides configuring it, which is described in the Configuration section.
 
@@ -316,7 +318,7 @@ $ AIRFLOW_IMAGE=<name-of-airflow-image> ./tests/integration/docker/up.sh
 ```
 
 ```bash
-$ AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.9 ./tests/integration/docker/up.sh
+$ AIRFLOW_IMAGE=apache/airflow:2.5.2-python3.9 ./tests/integration/docker/up.sh
 ```
 
 When using `run-dev-airflow.sh`, you can add the `-i` flag or `--attach-integration` flag to run integration tests in a dev environment.
