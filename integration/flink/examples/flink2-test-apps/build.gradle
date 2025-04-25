@@ -22,10 +22,6 @@ repositories {
 
 group 'io.openlineage.flink'
 
-shadowJar {
-    zip64 true
-}
-
 ext {
     flinkVersion = project.getProperty('flink.version')
     flinkVersionShort = flinkVersion.substring(0,4)
@@ -45,16 +41,9 @@ dependencies {
     implementation "com.typesafe:config:1.4.3"
 
     implementation "io.openlineage:openlineage-flink:$project.version"
-    implementation "org.apache.flink:flink-connector-kafka:3.4-SNAPSHOT" // need to be built locally
-
-    implementation("org.apache.flink:flink-avro-confluent-registry:2.1-SNAPSHOT") {
-        exclude group: "org.apache.flink:flink-core"
-    }
-    implementation("org.apache.flink:flink-avro:2.1-SNAPSHOT") {
-        exclude group: "org.apache.flink:flink-core"
-    }
-//    implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
-//    implementation "org.apache.flink:flink-avro:$flinkVersion"
+    implementation "org.apache.flink:flink-connector-kafka:4.0.0-2.0"
+    implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
+    implementation "org.apache.flink:flink-avro:$flinkVersion"
 
     compileOnly "org.apache.flink:flink-streaming-java:$flinkVersion"
     compileOnly "org.apache.flink:flink-runtime-web:$flinkVersion"
@@ -66,7 +55,7 @@ dependencies {
     compileOnly "org.apache.flink:flink-table-common:$flinkVersion"
     compileOnly "org.apache.flink:flink-table-runtime:$flinkVersion"
     compileOnly "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
-    compileOnly "org.apache.flink:flink-connector-kafka:3.4-SNAPSHOT" // need to be built locally
+    compileOnly "org.apache.flink:flink-connector-kafka:4.0.0-2.0"
 }
 
 shadowJar {

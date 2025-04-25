@@ -29,7 +29,6 @@ public class AvroTypeDatasetFacetVisitorDelegate {
   }
 
   public static boolean isApplicable() {
-    // TODO: test this is not applicable when no avro classes are on the classpath
     return ClassUtils.hasAvroClasses();
   }
 
@@ -49,6 +48,4 @@ public class AvroTypeDatasetFacetVisitorDelegate {
       return Optional.empty();
     }
   }
-
-  // TODO: write tests to this class
 }

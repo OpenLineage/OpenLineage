@@ -7,6 +7,7 @@ package io.openlineage.flink.visitor.identifier;
 
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.flink.util.KafkaDatasetFacetUtil;
+import io.openlineage.flink.wrapper.TableLineageDatasetWrapper;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
@@ -20,6 +21,12 @@ import org.apache.flink.streaming.api.lineage.LineageDataset;
 public class KafkaTopicListDatasetIdentifierVisitor implements DatasetIdentifierVisitor {
   @Override
   public boolean isDefinedAt(LineageDataset dataset) {
+    // TableLineageDatasetImpl is not available on the classpath in real workloads (like container
+    // tests
+    if (new TableLineageDatasetWrapper(dataset).isTableLineageDataset()) {
+      return false;
+    }
+
     return KafkaDatasetFacetUtil.isOnClasspath() && !getTopicList(dataset).isEmpty();
   }
 

@@ -32,11 +32,12 @@ public class TypeDatasetFacetVisitor implements DatasetFacetVisitor {
 
   public TypeDatasetFacetVisitor(OpenLineageContext context) {
     this.context = context;
-    this.avroDelegate =
-        Optional.of(AvroTypeDatasetFacetVisitorDelegate.isApplicable())
-            .filter(Boolean::booleanValue)
-            .map(b -> new AvroTypeDatasetFacetVisitorDelegate(context))
-            .orElse(null);
+
+    if (AvroTypeDatasetFacetVisitorDelegate.isApplicable()) {
+      avroDelegate = new AvroTypeDatasetFacetVisitorDelegate(context);
+    } else {
+      avroDelegate = null;
+    }
   }
 
   @Override

@@ -7,6 +7,7 @@ package io.openlineage.flink.listener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -38,7 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class OpenLineageJobStatusChangedListenerTest {
-  Context context = mock(Context.class);
+  Context context = mock(Context.class, RETURNS_DEEP_STUBS);
   Flink2VisitorFactory factory = mock(Flink2VisitorFactory.class);
   OpenLineageJobStatusChangedListener listener;
   String eventFileLocation;

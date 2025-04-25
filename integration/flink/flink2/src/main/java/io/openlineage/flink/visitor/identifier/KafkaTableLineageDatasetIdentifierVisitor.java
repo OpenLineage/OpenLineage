@@ -37,8 +37,6 @@ public class KafkaTableLineageDatasetIdentifierVisitor implements DatasetIdentif
       return false;
     }
 
-    // TODO: get comment from catalogBaseTable's comment field
-
     Map<String, String> options = table.getOptions();
     if (options == null) {
       log.info("Table options are null for dataset {}", dataset);

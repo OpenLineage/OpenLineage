@@ -19,6 +19,7 @@ import org.apache.flink.connector.kafka.lineage.DefaultKafkaDatasetFacet;
 import org.apache.flink.connector.kafka.lineage.DefaultKafkaDatasetIdentifier;
 import org.apache.flink.connector.kafka.lineage.KafkaDatasetFacet;
 import org.apache.flink.streaming.api.lineage.LineageDataset;
+import org.apache.flink.table.planner.lineage.TableLineageDatasetImpl;
 import org.junit.jupiter.api.Test;
 
 class KafkaTopicListDatasetIdentifierVisitorTest {
@@ -43,6 +44,16 @@ class KafkaTopicListDatasetIdentifierVisitorTest {
 
     when(dataset.facets()).thenReturn(Collections.singletonMap("kafka", facetWithTopicList));
     assertThat(visitor.isDefinedAt(dataset)).isTrue();
+  }
+
+  @Test
+  void testIsDefinedForTableLineageDatasetImpl() {
+    KafkaDatasetFacet facetWithTopicList =
+        new DefaultKafkaDatasetFacet(
+            DefaultKafkaDatasetIdentifier.ofTopics(Arrays.asList("topic")), new Properties());
+    TableLineageDatasetImpl dataset = mock(TableLineageDatasetImpl.class);
+    when(dataset.facets()).thenReturn(Collections.singletonMap("kafka", facetWithTopicList));
+    assertThat(visitor.isDefinedAt(dataset)).isFalse();
   }
 
   @Test

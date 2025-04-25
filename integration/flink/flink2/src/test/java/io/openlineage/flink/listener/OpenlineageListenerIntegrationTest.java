@@ -53,19 +53,19 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.junit.ClassRule;
-import org.junit.FixMethodOrder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.rules.TemporaryFolder;
-import org.junit.runners.MethodSorters;
 
 /** Tests for job status changed listener. */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @Tag("integration-test")
 public class OpenlineageListenerIntegrationTest extends TestLogger {
 
@@ -102,6 +102,7 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
 
   @Nested
   @TestInstance(Lifecycle.PER_CLASS)
+  @TestMethodOrder(OrderAnnotation.class)
   class KafkaSpecificTests {
 
     @BeforeAll
@@ -131,6 +132,7 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
 
     @org.junit.jupiter.api.Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    @Order(1)
     void testKafkaJob() throws Exception {
       KafkaSource<PartitionAndValue> source =
           KafkaSource.<PartitionAndValue>builder()
@@ -152,47 +154,46 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
                       .build())
               .build();
 
-      try (StreamExecutionEnvironment env =
-          StreamExecutionEnvironment.getExecutionEnvironment(createConfiguration())) {
+      StreamExecutionEnvironment env =
+          StreamExecutionEnvironment.getExecutionEnvironment(createConfiguration());
+      env.setParallelism(2);
+      DataStream<PartitionAndValue> stream =
+          env.fromSource(source, WatermarkStrategy.noWatermarks(), "testBasicRead");
 
-        env.setParallelism(2);
-        DataStream<PartitionAndValue> stream =
-            env.fromSource(source, WatermarkStrategy.noWatermarks(), "testBasicRead");
+      stream.sinkTo(sink);
+      env.execute();
 
-        stream.sinkTo(sink);
-        env.execute();
+      List<RunEvent> events = LineageTestUtils.fromFile(EVENTS_FILE);
+      assertThat(events).isNotEmpty();
 
-        List<RunEvent> events = LineageTestUtils.fromFile(EVENTS_FILE);
-        assertThat(events).isNotEmpty();
+      InputDataset inputDataset = LineageTestUtils.getInputDatasets(events).get(0);
+      OutputDataset outputDateset = LineageTestUtils.getOutputDatasets(events).get(0);
 
-        InputDataset inputDataset = LineageTestUtils.getInputDatasets(events).get(0);
-        OutputDataset outputDateset = LineageTestUtils.getOutputDatasets(events).get(0);
+      assertThat(outputDateset.getNamespace()).startsWith("kafka://kafka-cluster");
+      assertThat(outputDateset.getName()).startsWith(OUTPUT_TOPIC);
 
-        assertThat(outputDateset.getNamespace()).startsWith("kafka://kafka-cluster");
-        assertThat(outputDateset.getName()).startsWith(OUTPUT_TOPIC);
+      assertThat(outputDateset.getFacets().getSchema().getFields()).hasSize(2);
+      assertThat(outputDateset.getFacets().getSchema().getFields().get(0))
+          .hasFieldOrPropertyWithValue("name", "tp")
+          .hasFieldOrPropertyWithValue("type", "String");
+      assertThat(outputDateset.getFacets().getSchema().getFields().get(1))
+          .hasFieldOrPropertyWithValue("name", "value")
+          .hasFieldOrPropertyWithValue("type", "int");
 
-        assertThat(outputDateset.getFacets().getSchema().getFields()).hasSize(2);
-        assertThat(outputDateset.getFacets().getSchema().getFields().get(0))
-            .hasFieldOrPropertyWithValue("name", "tp")
-            .hasFieldOrPropertyWithValue("type", "String");
-        assertThat(outputDateset.getFacets().getSchema().getFields().get(1))
-            .hasFieldOrPropertyWithValue("name", "value")
-            .hasFieldOrPropertyWithValue("type", "int");
+      assertThat(inputDataset.getNamespace()).startsWith("kafka://kafka-cluster");
+      assertThat(inputDataset.getName()).startsWith(TOPIC1);
 
-        assertThat(inputDataset.getNamespace()).startsWith("kafka://kafka-cluster");
-        assertThat(inputDataset.getName()).startsWith(TOPIC1);
-
-        assertThat(inputDataset.getFacets().getSchema().getFields()).hasSize(2);
-        assertThat(inputDataset.getFacets().getSchema().getFields().get(0))
-            .hasFieldOrPropertyWithValue("name", "tp")
-            .hasFieldOrPropertyWithValue("type", "String");
-        assertThat(inputDataset.getFacets().getSchema().getFields().get(1))
-            .hasFieldOrPropertyWithValue("name", "value")
-            .hasFieldOrPropertyWithValue("type", "int");
-      }
+      assertThat(inputDataset.getFacets().getSchema().getFields()).hasSize(2);
+      assertThat(inputDataset.getFacets().getSchema().getFields().get(0))
+          .hasFieldOrPropertyWithValue("name", "tp")
+          .hasFieldOrPropertyWithValue("type", "String");
+      assertThat(inputDataset.getFacets().getSchema().getFields().get(1))
+          .hasFieldOrPropertyWithValue("name", "value")
+          .hasFieldOrPropertyWithValue("type", "int");
     }
 
     @org.junit.jupiter.api.Test
+    @Order(2)
     void testKafkaJobReadingTopicPattern() throws Exception {
       KafkaSource<PartitionAndValue> source =
           KafkaSource.<PartitionAndValue>builder()
@@ -214,24 +215,24 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
                       .build())
               .build();
 
-      try (StreamExecutionEnvironment env =
-          StreamExecutionEnvironment.getExecutionEnvironment(createConfiguration())) {
+      StreamExecutionEnvironment env =
+          StreamExecutionEnvironment.getExecutionEnvironment(createConfiguration());
+      env.setParallelism(2);
+      DataStream<PartitionAndValue> stream =
+          env.fromSource(source, WatermarkStrategy.noWatermarks(), "testBasicRead");
 
-        env.setParallelism(2);
-        DataStream<PartitionAndValue> stream =
-            env.fromSource(source, WatermarkStrategy.noWatermarks(), "testBasicRead");
+      stream.sinkTo(sink);
+      env.execute();
 
-        stream.sinkTo(sink);
-        env.execute();
-
-        List<RunEvent> events = LineageTestUtils.fromFile(EVENTS_FILE);
-        assertThat(LineageTestUtils.getInputDatasets(events).stream().map(d -> d.getName()))
-            .containsExactly("topic1", "topic2");
-      }
+      List<RunEvent> events = LineageTestUtils.fromFile(EVENTS_FILE);
+      assertThat(LineageTestUtils.getInputDatasets(events).stream().map(d -> d.getName()))
+          .containsExactly("topic1", "topic2");
     }
 
+    // For some reason this test has to be run as the last one
     @org.junit.jupiter.api.Test
     @SuppressWarnings("PMD.JUnitTestContainsTooManyAsserts")
+    @Order(3)
     void testSqlSourceSink() throws Exception {
       StreamExecutionEnvironment env =
           StreamExecutionEnvironment.getExecutionEnvironment(createConfiguration());
@@ -240,8 +241,8 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
 
       // we always use a different topic name for each parameterized topic,
       // in order to make sure the topic can be created.
-      final String inputTopic = "tstopic_" + "_" + UUID.randomUUID();
-      final String outputTopic = "tstopic_" + "_" + UUID.randomUUID();
+      final String inputTopic = "input_topic_" + "_" + UUID.randomUUID();
+      final String outputTopic = "output_topic_" + "_" + UUID.randomUUID();
       createTestTopic(inputTopic, 1, 1);
 
       // ---------- Produce an event time stream into Kafka -------------------
@@ -327,21 +328,25 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
               .map(OpenLineageClientUtils::runEventFromJson)
               .collect(Collectors.toList());
 
-      Optional<InputDataset> input =
+      // find the event with the input and output datasets
+      Optional<RunEvent> event =
           events.stream()
               .filter(e -> e.getInputs() != null)
-              .filter(e -> e.getInputs().size() > 0)
-              .map(e -> e.getInputs().get(0))
-              .findAny();
-      assertThat(input).isPresent();
-      assertThat(input.get().getNamespace()).startsWith("kafka://kafka-cluster:");
-      assertThat(input.get().getName()).isEqualTo(inputTopic);
-      assertThat(input.get().getFacets().getSymlinks().getIdentifiers().get(0))
+              .filter(e -> !e.getInputs().isEmpty())
+              .filter(e -> e.getOutputs() != null)
+              .filter(e -> !e.getOutputs().isEmpty())
+              .findFirst();
+      assertThat(event).isPresent();
+
+      InputDataset input = event.get().getInputs().get(0);
+      assertThat(input.getNamespace()).startsWith("kafka://kafka-cluster:");
+      assertThat(input.getName()).isEqualTo(inputTopic);
+      assertThat(input.getFacets().getSymlinks().getIdentifiers().get(0))
           .hasFieldOrPropertyWithValue("type", "TABLE")
           .hasFieldOrPropertyWithValue("name", "default_catalog.default_database.kafka_input");
-      assertThat(input.get().getFacets().getSymlinks().getIdentifiers().get(0).getNamespace())
+      assertThat(input.getFacets().getSymlinks().getIdentifiers().get(0).getNamespace())
           .startsWith("kafka://kafka-cluster:");
-      List<SchemaDatasetFacetFields> inputFields = input.get().getFacets().getSchema().getFields();
+      List<SchemaDatasetFacetFields> inputFields = input.getFacets().getSchema().getFields();
       assertThat(inputFields).hasSize(5);
       assertFieldPresent(inputFields, "price", "DECIMAL(38, 18)");
       assertFieldPresent(inputFields, "currency", "STRING");
@@ -349,24 +354,10 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
       assertFieldPresent(inputFields, "log_time", "TIME(0)");
       assertFieldPresent(inputFields, "log_ts", "TIMESTAMP(3)");
 
-      assertThat(
-              events.stream()
-                  .filter(e -> e.getOutputs() != null)
-                  .filter(e -> e.getOutputs().size() > 0)
-                  .map(e -> e.getOutputs().get(0))
-                  .findAny())
-          .isPresent();
-
-      Optional<OutputDataset> output =
-          events.stream()
-              .filter(e -> e.getOutputs() != null)
-              .filter(e -> e.getOutputs().size() > 0)
-              .map(e -> e.getOutputs().get(0))
-              .findAny();
-      assertThat(output.get().getNamespace()).startsWith("kafka://kafka-cluster:");
-      assertThat(output.get().getName()).isEqualTo(outputTopic);
-      List<SchemaDatasetFacetFields> outputFields =
-          output.get().getFacets().getSchema().getFields();
+      OutputDataset output = event.get().getOutputs().get(0);
+      assertThat(output.getNamespace()).startsWith("kafka://kafka-cluster:");
+      assertThat(output.getName()).isEqualTo(outputTopic);
+      List<SchemaDatasetFacetFields> outputFields = output.getFacets().getSchema().getFields();
       assertFieldPresent(outputFields, "ts_interval", "STRING");
       assertFieldPresent(outputFields, "max_log_date", "STRING");
       assertFieldPresent(outputFields, "max_log_time", "STRING");
@@ -374,17 +365,17 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
       assertFieldPresent(outputFields, "counter", "BIGINT");
       assertFieldPresent(outputFields, "max_price", "DECIMAL(38, 18)");
 
-      assertThat(output.get().getFacets().getSymlinks().getIdentifiers().get(0))
+      assertThat(output.getFacets().getSymlinks().getIdentifiers().get(0))
           .hasFieldOrPropertyWithValue("type", "TABLE")
           .hasFieldOrPropertyWithValue("name", "default_catalog.default_database.kafka_output");
-      assertThat(output.get().getFacets().getSymlinks().getIdentifiers().get(0).getNamespace())
+      assertThat(output.getFacets().getSymlinks().getIdentifiers().get(0).getNamespace())
           .startsWith("kafka://kafka-cluster:");
 
       // test SQL comments
-      assertThat(input.get().getFacets().getDocumentation())
+      assertThat(input.getFacets().getDocumentation())
           .extracting("description")
           .isEqualTo("My Complex Input Table");
-      assertThat(output.get().getFacets().getDocumentation())
+      assertThat(output.getFacets().getDocumentation())
           .extracting("description")
           .isEqualTo("My Complex Output Table");
 

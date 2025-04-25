@@ -25,6 +25,7 @@ import org.apache.flink.connector.kafka.lineage.DefaultKafkaDatasetFacet;
 import org.apache.flink.connector.kafka.lineage.DefaultKafkaDatasetIdentifier;
 import org.apache.flink.connector.kafka.lineage.KafkaDatasetFacet;
 import org.apache.flink.streaming.api.lineage.LineageDataset;
+import org.apache.flink.table.planner.lineage.TableLineageDatasetImpl;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.PartitionInfo;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +55,7 @@ class KafkaTopicPatternDatasetIdentifierVisitorTest {
             DefaultKafkaDatasetIdentifier.ofTopics(Arrays.asList("topic")));
     when(dataset.facets()).thenReturn(Collections.singletonMap("otherFacet", facetWithTopicList));
     assertThat(visitor.isDefinedAt(dataset)).isFalse();
+    assertThat(visitor.isDefinedAt(mock(TableLineageDatasetImpl.class))).isFalse();
 
     when(dataset.facets()).thenReturn(Collections.singletonMap("kafka", facetWithTopicList));
     assertThat(visitor.isDefinedAt(dataset)).isFalse();
@@ -63,6 +65,16 @@ class KafkaTopicPatternDatasetIdentifierVisitorTest {
             DefaultKafkaDatasetIdentifier.ofPattern(Pattern.compile("topic*")), new Properties());
     when(dataset.facets()).thenReturn(Collections.singletonMap("kafka", facetWithTopicPattern));
     assertThat(visitor.isDefinedAt(dataset)).isTrue();
+  }
+
+  @Test
+  void testIsDefinedForTableLineageDatasetImpl() {
+    KafkaDatasetFacet facetWithTopicPattern =
+        new DefaultKafkaDatasetFacet(
+            DefaultKafkaDatasetIdentifier.ofPattern(Pattern.compile("topic*")), new Properties());
+    TableLineageDatasetImpl dataset = mock(TableLineageDatasetImpl.class);
+    when(dataset.facets()).thenReturn(Collections.singletonMap("kafka", facetWithTopicPattern));
+    assertThat(visitor.isDefinedAt(dataset)).isFalse();
   }
 
   @Test
