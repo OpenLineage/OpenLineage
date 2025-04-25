@@ -27,10 +27,10 @@ import org.apache.flink.streaming.api.lineage.LineageDatasetFacet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Tests for {@link TypeTypeInformationFacetVisitor} class. */
-class TypeTypeInformationFacetVisitorTest {
+/** Tests for {@link TypeDatasetFacetVisitor} class. */
+class TypeDatasetFacetVisitorTest {
   OpenLineageContext context = mock(OpenLineageContext.class);
-  TypeTypeInformationFacetVisitor facetVisitor = new TypeTypeInformationFacetVisitor(context);
+  TypeDatasetFacetVisitor facetVisitor = new TypeDatasetFacetVisitor(context);
   OpenLineage.DatasetFacetsBuilder builder =
       new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI).newDatasetFacetsBuilder();
   LineageDataset flinkDataset = mock(LineageDataset.class);

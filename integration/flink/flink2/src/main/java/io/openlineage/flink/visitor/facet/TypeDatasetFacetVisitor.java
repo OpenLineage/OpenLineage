@@ -25,12 +25,18 @@ import org.apache.flink.connector.kafka.lineage.TypeDatasetFacet;
 
 /** Class used to extract type information from the facets returned by the collector */
 @Slf4j
-public class TypeTypeInformationFacetVisitor implements DatasetFacetVisitor {
+public class TypeDatasetFacetVisitor implements DatasetFacetVisitor {
 
   private final OpenLineageContext context;
+  private final AvroTypeDatasetFacetVisitorDelegate avroDelegate;
 
-  public TypeTypeInformationFacetVisitor(OpenLineageContext context) {
+  public TypeDatasetFacetVisitor(OpenLineageContext context) {
     this.context = context;
+    this.avroDelegate =
+        Optional.of(AvroTypeDatasetFacetVisitorDelegate.isApplicable())
+            .filter(Boolean::booleanValue)
+            .map(b -> new AvroTypeDatasetFacetVisitorDelegate(context))
+            .orElse(null);
   }
 
   @Override
@@ -41,17 +47,7 @@ public class TypeTypeInformationFacetVisitor implements DatasetFacetVisitor {
       return false;
     }
 
-    Optional<TypeDatasetFacet> typeDatasetFacet =
-        TypeDatasetFacetUtil.getFacet(dataset.getFlinkDataset());
-
-    return typeDatasetFacet
-        .filter(datasetFacet -> datasetFacet.getTypeInformation() != null)
-        .map(TypeDatasetFacet::getTypeInformation)
-        .map(TypeInformation::getTypeClass)
-        .filter(
-            c ->
-                GenericTypeInfo.class.isAssignableFrom(c) || PojoTypeInfo.class.isAssignableFrom(c))
-        .isPresent();
+    return TypeDatasetFacetUtil.getFacet(dataset.getFlinkDataset()).isPresent();
   }
 
   @Override
@@ -62,12 +58,19 @@ public class TypeTypeInformationFacetVisitor implements DatasetFacetVisitor {
     TypeInformation typeInformation =
         typeDatasetFacet.map(TypeDatasetFacet::getTypeInformation).orElse(null);
 
-    builder.schema(
-        context
-            .getOpenLineage()
-            .newSchemaDatasetFacetBuilder()
-            .fields(fromFields(typeInformation.getTypeClass().getFields()))
-            .build());
+    Class typeClazz = typeInformation.getTypeClass();
+
+    if (avroDelegate != null && avroDelegate.isDefinedAt(typeInformation)) {
+      avroDelegate.delegate(typeInformation).ifPresent(builder::schema);
+    } else if (typeInformation instanceof GenericTypeInfo
+        || typeInformation instanceof PojoTypeInfo) {
+      builder.schema(
+          context
+              .getOpenLineage()
+              .newSchemaDatasetFacetBuilder()
+              .fields(fromFields(typeClazz.getFields()))
+              .build());
+    }
   }
 
   private List<SchemaDatasetFacetFields> fromFields(Field... fields) {
