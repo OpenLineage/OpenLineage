@@ -38,7 +38,7 @@ x-airflow-base: &airflow-base
     OPENLINEAGE_URL: http://backend:5000
     OPENLINEAGE_NAMESPACE: food_delivery
     OPENLINEAGE_EXTRACTORS: custom_extractor.CustomExtractor
-    SNOWFLAKE_AIRFLOW_TEST_VERSION: 2.3.4  # bump this when moving to new Airflow version - only single process can test Snowflake now
+    SNOWFLAKE_AIRFLOW_TEST_VERSION: 2.5.2  # bump this when moving to new Airflow version - only single process can test Snowflake now
     SNOWFLAKE_ACCOUNT_ID: ${SNOWFLAKE_ACCOUNT_ID}
     SNOWFLAKE_USER: ${SNOWFLAKE_USER}
     SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
