@@ -6,7 +6,7 @@ export const Producers: Array<Partner> = [
     org: "Airflow",
     full_name: "Airflow",
     description: "A library integrates DAGs for automatic metadata collection.",
-    docs_url: "https://github.com/OpenLineage/OpenLineage/blob/main/integration/airflow",
+    docs_url: "https://airflow.apache.org/docs/apache-airflow-providers-openlineage",
     org_url: "https://airflow.apache.org",
   },
   {
