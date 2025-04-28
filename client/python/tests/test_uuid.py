@@ -12,7 +12,11 @@ def test_generate_new_uuid_returns_uuidv7():
     assert generate_new_uuid().version == 7  # noqa: PLR2004
 
 
-def test_generate_static_uuid_returns_different_result_on_each_call():
+def test_generate_new_uuid_returns_different_result_on_each_call():
+    result1 = generate_new_uuid()
+    result2 = generate_new_uuid()
+    assert result1 != result2
+
     instant = datetime.now()
     result1 = generate_new_uuid(instant)
     result2 = generate_new_uuid(instant)
