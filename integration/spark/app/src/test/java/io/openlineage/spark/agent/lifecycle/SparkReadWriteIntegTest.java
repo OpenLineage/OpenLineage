@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import static io.openlineage.client.OpenLineage.RunEvent;
+import static org.apache.spark.sql.functions.col;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -775,6 +776,74 @@ class SparkReadWriteIntegTest {
         .get()
         .hasFieldOrPropertyWithValue(NAMESPACE, namespace)
         .hasFieldOrPropertyWithValue(NAME, bDatasetName);
+  }
+
+  @Test
+  void testDoesNotCreateDuplicatedInputDatasets(@TempDir Path writeDir, SparkSession spark)
+      throws InterruptedException, TimeoutException {
+    String ordersInputPath = "src/test/resources/debug/orders";
+    String datesInputPath = "src/test/resources/debug/dates";
+    String outputPath = writeDir + "/some_output";
+
+    Dataset<Row> ordersDF =
+        spark.read().option("header", true).option("inferSchema", true).csv(ordersInputPath);
+
+    Dataset<Row> dateDF =
+        spark.read().option("header", true).option("inferSchema", true).csv(datesInputPath);
+
+    String dateIdCol = "date_id";
+    Dataset<Row> orderAnalysisBase =
+        ordersDF.join(
+            dateDF.alias("order_dates"),
+            ordersDF.col("order_date").equalTo(dateDF.col(dateIdCol)),
+            "left");
+
+    for (String colName : dateDF.columns()) {
+      if (!dateIdCol.equals(colName)) {
+        orderAnalysisBase = orderAnalysisBase.withColumnRenamed(colName, "order_" + colName);
+      }
+    }
+    orderAnalysisBase = orderAnalysisBase.drop(col(dateIdCol));
+
+    orderAnalysisBase =
+        orderAnalysisBase.join(
+            dateDF.alias("ship_dates"),
+            orderAnalysisBase.col("shipped_date").equalTo(dateDF.col(dateIdCol)),
+            "left");
+
+    for (String colName : dateDF.columns()) {
+      if (!dateIdCol.equals(colName)) {
+        orderAnalysisBase = orderAnalysisBase.withColumnRenamed(colName, "ship_" + colName);
+      }
+    }
+    orderAnalysisBase = orderAnalysisBase.drop(col(dateIdCol));
+
+    Dataset<Row> intermediateDF =
+        orderAnalysisBase.select(col("order_id").alias("intermediate_order_id"));
+
+    Dataset<Row> finalOutput =
+        orderAnalysisBase.join(
+            intermediateDF,
+            orderAnalysisBase.col("order_id").equalTo(intermediateDF.col("intermediate_order_id")),
+            "inner");
+
+    finalOutput.write().option("header", true).mode("overwrite").csv(outputPath);
+
+    StaticExecutionContextFactory.waitForExecutionEnd();
+
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(1)).emit(lineageEvent.capture());
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+    ObjectAssert<RunEvent> completionEvent =
+        assertThat(events)
+            .filteredOn(e -> e.getEventType().equals(RunEvent.EventType.COMPLETE))
+            .isNotEmpty()
+            .last();
+    completionEvent
+        .extracting(RunEvent::getInputs, InstanceOfAssertFactories.list(InputDataset.class))
+        .hasSize(2);
   }
 
   private CompletableFuture sendMessage(

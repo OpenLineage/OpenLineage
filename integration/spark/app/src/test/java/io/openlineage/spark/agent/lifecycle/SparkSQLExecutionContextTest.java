@@ -25,6 +25,7 @@ import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark.api.VisitedNodes;
 import java.util.Optional;
 import java.util.UUID;
 import org.apache.spark.scheduler.JobFailed;
@@ -70,6 +71,7 @@ class SparkSQLExecutionContextTest {
     when(olContext.getOpenLineage()).thenReturn(openLineage);
     when(olContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
     when(olContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    when(olContext.getVisitedNodes()).thenReturn(new VisitedNodes());
     when(olContext.getRunUuid())
         .thenReturn(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b"));
 

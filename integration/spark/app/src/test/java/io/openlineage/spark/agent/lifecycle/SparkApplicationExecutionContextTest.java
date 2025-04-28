@@ -29,6 +29,7 @@ import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark.api.VisitedNodes;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
@@ -67,6 +68,7 @@ class SparkApplicationExecutionContextTest {
     when(olContext.getSparkContext()).thenReturn(Optional.of(spark.sparkContext()));
     when(olContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
     when(olContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    when(olContext.getVisitedNodes()).thenReturn(new VisitedNodes());
     when(olContext.getApplicationUuid())
         .thenReturn(UUID.fromString("993426b3-1ca7-44af-8473-8e58c757ebd1"));
 
