@@ -30,6 +30,7 @@ ext {
     bigqueryVersion = "0.42.0"
     databricksVersion = "0.1.4"
     deltaVersion = "1.1.0"
+    unityCatalogVersion = "0.2.0"
     icebergVersion = "1.4.3"
     jacksonVersion = "2.15.3"
     junit5Version = "5.11.4"
@@ -88,6 +89,7 @@ dependencies {
         exclude group: "com.fasterxml.jackson.module"
     }
     scala212CompileOnly("io.delta:delta-core_2.12:${deltaVersion}")
+    scala212CompileOnly("io.unitycatalog:unitycatalog-spark_2.12:${unityCatalogVersion}")
     scala212CompileOnly("org.apache.iceberg:iceberg-spark-runtime-3.2_2.12:${icebergVersion}")
     scala212CompileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
@@ -100,6 +102,7 @@ dependencies {
         exclude group: "com.fasterxml.jackson.module"
     }
     testScala212Implementation("io.delta:delta-core_2.12:${deltaVersion}")
+    testScala212Implementation("io.unitycatalog:unitycatalog-spark_2.12:${unityCatalogVersion}")
     testScala212Implementation("org.apache.iceberg:iceberg-spark-runtime-3.2_2.12:${icebergVersion}")
     testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
 
@@ -123,6 +126,7 @@ dependencies {
         exclude group: "com.fasterxml.jackson.module"
     }
     scala213CompileOnly("io.delta:delta-core_2.13:${deltaVersion}")
+    scala213CompileOnly("io.unitycatalog:unitycatalog-spark_2.13:${unityCatalogVersion}")
     scala213CompileOnly("org.apache.iceberg:iceberg-spark-runtime-3.2_2.13:${icebergVersion}")
 
     testScala213Implementation("org.apache.spark:spark-hive_2.13:${sparkVersion}")
@@ -134,6 +138,7 @@ dependencies {
         exclude group: "com.fasterxml.jackson.module"
     }
     testScala213Implementation("io.delta:delta-core_2.13:${deltaVersion}")
+    testScala213Implementation("io.unitycatalog:unitycatalog-spark_2.13:${unityCatalogVersion}")
     testScala213Implementation("org.apache.iceberg:iceberg-spark-runtime-3.2_2.13:${icebergVersion}")
     testScala213Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
 
