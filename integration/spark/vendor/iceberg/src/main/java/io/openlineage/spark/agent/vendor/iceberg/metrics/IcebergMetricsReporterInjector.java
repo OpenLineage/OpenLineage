@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.vendor.iceberg.metrics;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -76,9 +77,10 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
    */
   private Optional<CatalogPlugin> getCatalog(LogicalPlan plan) {
     if (plan instanceof DataSourceV2Relation) {
-      return Optional.ofNullable(((DataSourceV2Relation) plan).catalog().get());
+      return ScalaConversionUtils.asJavaOptional(((DataSourceV2Relation) plan).catalog());
     } else if (plan instanceof DataSourceV2ScanRelation) {
-      return Optional.ofNullable(((DataSourceV2ScanRelation) plan).relation().catalog().get());
+      return ScalaConversionUtils.asJavaOptional(
+          ((DataSourceV2ScanRelation) plan).relation().catalog());
     }
 
     Optional<CatalogPlugin> catalog = getCatalogFromCaseClass(plan);
