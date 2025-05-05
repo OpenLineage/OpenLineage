@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.dataset.DatasetConfig;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -107,5 +108,23 @@ class DatasetNamespaceCombinedResolverTest {
       URI someUri = new URI("kafka://other-host:9091");
       assertThat(resolvers.resolveHost(someUri)).isEqualTo(someUri);
     }
+  }
+
+  @Test
+  void testResolveSymlinks() {
+    HostListNamespaceResolverConfig resolverConfig =
+        new HostListNamespaceResolverConfig(Arrays.asList("host1", "host2"), null);
+    this.config = new DatasetConfig();
+    this.config.setNamespaceResolvers(Collections.singletonMap("cluster", resolverConfig));
+
+    DatasetIdentifier identifier =
+        new DatasetIdentifier(
+            "name",
+            "host1",
+            Collections.singletonList(
+                new DatasetIdentifier.Symlink("name", "host2", SymlinkType.TABLE)));
+
+    DatasetIdentifier resolved = new DatasetNamespaceCombinedResolver(config).resolve(identifier);
+    assertThat(resolved.getSymlinks().get(0).getNamespace()).isEqualTo("cluster");
   }
 }

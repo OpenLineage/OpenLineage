@@ -15,7 +15,7 @@
     }
   },
   "inputs" : [ {
-    "namespace" : "kafka://kafka-host:9092",
+    "namespace" : "kafka://kafka-cluster-prod:9092",
     "name" : "io.openlineage.flink.kafka.input1",
     "facets" : {
       "schema" : {
@@ -49,7 +49,7 @@
         },
         "symlinks" : {
         "identifiers" : [ {
-          "namespace" : "kafka://kafka-host:9092",
+          "namespace" : "kafka://kafka-cluster-prod:9092",
           "name" : "default_catalog.default_database.kafka_input",
           "type" : "TABLE"
         } ]
@@ -57,7 +57,7 @@
     }
   } ],
   "outputs" : [ {
-    "namespace" : "kafka://kafka-host:9092",
+    "namespace" : "kafka://kafka-cluster-prod:9092",
     "name" : "io.openlineage.flink.kafka.output",
     "facets" : {
       "schema" : {
@@ -89,7 +89,7 @@
       },
       "symlinks" : {
         "identifiers" : [ {
-          "namespace" : "kafka://kafka-host:9092",
+          "namespace" : "kafka://kafka-cluster-prod:9092",
           "name" : "default_catalog.default_database.kafka_output",
           "type" : "TABLE"
         } ]

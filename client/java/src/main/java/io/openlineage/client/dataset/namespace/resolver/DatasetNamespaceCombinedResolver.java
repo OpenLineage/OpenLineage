@@ -8,10 +8,12 @@ package io.openlineage.client.dataset.namespace.resolver;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.dataset.DatasetConfig;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.DatasetIdentifier.Symlink;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Utility class to resolve hosts based on the dataset host resolver configured. Methods of the
@@ -56,8 +58,12 @@ public class DatasetNamespaceCombinedResolver {
   }
 
   public DatasetIdentifier resolve(DatasetIdentifier identifier) {
+    List<Symlink> resolvedSymlinks =
+        identifier.getSymlinks().stream()
+            .map(s -> new Symlink(s.getName(), resolve(s.getNamespace()), s.getType()))
+            .collect(Collectors.toList());
     return new DatasetIdentifier(
-        identifier.getName(), resolve(identifier.getNamespace()), identifier.getSymlinks());
+        identifier.getName(), resolve(identifier.getNamespace()), resolvedSymlinks);
   }
 
   /**

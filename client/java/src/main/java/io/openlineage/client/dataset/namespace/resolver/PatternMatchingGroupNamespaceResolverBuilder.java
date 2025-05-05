@@ -19,7 +19,9 @@ public class PatternMatchingGroupNamespaceResolverBuilder
   }
 
   @Override
-  public HostListNamespaceResolver build(String name, DatasetNamespaceResolverConfig config) {
-    return new HostListNamespaceResolver(name, (HostListNamespaceResolverConfig) config);
+  public PatternMatchingGroupNamespaceResolver build(
+      String name, DatasetNamespaceResolverConfig config) {
+    return new PatternMatchingGroupNamespaceResolver(
+        (PatternMatchingGroupNamespaceResolverConfig) config);
   }
 }
