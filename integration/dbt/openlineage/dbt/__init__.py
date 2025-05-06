@@ -164,7 +164,7 @@ def consume_structured_logs(
         models=models,
         selector=model_selector,
     )
-
+    logger.info(f"dbt-ol will read logs from {processor.dbt_log_file_path}")
     client = OpenLineageClient()
     emitted_events = 0
     try:
