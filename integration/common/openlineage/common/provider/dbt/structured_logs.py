@@ -77,6 +77,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self._dbt_log_file: Optional[TextIO] = None
         self.received_dbt_command_completed = False
 
+        self.dbt_command_return_code = 0
+
     @cached_property
     def dbt_command(self) -> str:
         return get_dbt_command(self.dbt_command_line)
@@ -592,6 +594,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         finally:
             if self._dbt_log_file is not None:
                 self._dbt_log_file.close()
+            self.dbt_command_return_code = process.returncode
 
     def _open_dbt_log_file(self):
         """
