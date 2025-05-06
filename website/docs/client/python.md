@@ -722,6 +722,52 @@ client = OpenLineageClient()
 
 </Tabs>
 
+### Amazon DataZone
+
+The `AmazonDataZoneTransport` requires `boto3` package to be additionally installed. It can be done via `pip install openlineage-python[datazone]`. This transport will send event to DataZone / SageMaker Unified Studio domain.
+
+#### Configuration
+
+- `type` - string, must be `"amazon_datazone_api"`. Required.
+- `domainId` - string, specifies the DataZone / SageMaker Unified Studio domain id. The lineage events will be then sent to the following domain. Required.
+- `endpointOverride` - string, overrides the default HTTP endpoint for Amazon DataZone client.
+  Default value will be set by AWS SDK to [following endpoints](https://docs.aws.amazon.com/general/latest/gr/datazone.html#datazone_region) based on the region.
+  Optional, default: None
+
+#### Behavior
+
+- Events are serialized to JSON, and then dispatched to the `DataZone` / `SageMaker Unified Studio` endpoint.
+
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: amazon_datazone_api
+  domainId: dzd-domain-id
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.amazon_datazone import AmazonDataZoneTransport, AmazonDataZoneConfig
+
+datazone_config = AmazonDataZoneConfig(
+  domainId="dzd-domain-id",
+)
+
+client = OpenLineageClient(transport=AmazonDataZoneTransport(datazone_config))
+```
+
+</TabItem>
+
+</Tabs>
+
 ### Custom Transport Type
 
 To implement a custom transport, follow the instructions in [`transport.py`](https://github.com/OpenLineage/OpenLineage/blob/main/client/python/openlineage/client/transport/transport.py).

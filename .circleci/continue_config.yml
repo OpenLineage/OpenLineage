@@ -495,6 +495,8 @@ jobs:
           path: transports-gcs/build/test-results/test
       - store_test_results:
           path: transports-s3/build/test-results/test
+      - store_test_results:
+          path: transports-datazone/build/test-results/test
       - store_artifacts:
           path: build/reports/tests/test
           destination: test-report
@@ -506,6 +508,9 @@ jobs:
           destination: test-report
       - store_artifacts:
           path: transports-s3/build/reports/tests/test
+          destination: test-report
+      - store_artifacts:
+          path: transports-datazone/build/reports/tests/test
           destination: test-report
       - store_artifacts:
           path: build/reports/tests/pmd
@@ -521,6 +526,9 @@ jobs:
           destination: libs
       - store_artifacts:
           path: transports-s3/build/libs
+          destination: libs
+      - store_artifacts:
+          path: transports-datazone/build/libs
           destination: libs
       - save_cache:
           key: v1-client-java-{{ checksum "/tmp/checksum.txt" }}
@@ -553,6 +561,9 @@ jobs:
       - store_artifacts:
           path: ./transports-s3/build/libs
           destination: transports-s3-artifacts
+      - store_artifacts:
+          path: ./transports-datazone/build/libs
+          destination: transports-datazone-artifacts
       - save_cache:
           key: v1-release-client-java-{{ checksum "/tmp/checksum.txt" }}
           paths:
