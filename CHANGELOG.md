@@ -1,6 +1,31 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.32.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.31.0...HEAD)
+
+## [1.32.1](https://github.com/OpenLineage/OpenLineage/compare/1.32.0...1.32.1) - 2025-05-06
+
+### Added
+
+* **Avro: support schema facet for Avro datasets** [`#3650`](https://github.com/OpenLineage/OpenLineage/pull/3650) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *This PR adds support for schema facets in Avro datasets.*
+* **Java: add UUIDUtils.generateStaticUUID utility** [`#3672`](https://github.com/OpenLineage/OpenLineage/pull/3672) [@martinovm](https://github.com/martinovm)  
+  *Provides utility method for generating static UUIDs.*
+
+### Fixed
+
+* **dbt: forward dbt's return code** [`#3682`](https://github.com/OpenLineage/OpenLineage/pull/3682) [@MassyB](https://github.com/MassyB)  
+  *Forwards dbt's process return code correctly.*
+* **dbt: handle dbt log file rotation** [`#3683`](https://github.com/OpenLineage/OpenLineage/pull/3683) [@MassyB](https://github.com/MassyB)  
+  *Implements log rotation handling to avoid log file overflow.*
+* **Flink2: fix dataset namespace resolvers** [`#3676`](https://github.com/OpenLineage/OpenLineage/pull/3676) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Correctly resolves dataset namespaces in Flink2.*
+* **Spark: ensure Spark Job Name suffix extraction** [`#3667`](https://github.com/OpenLineage/OpenLineage/pull/3667) [@luke-hoffman1](https://github.com/luke-hoffman1)  
+  *Adds condition and unit test to correctly extract Spark Job Name suffix.*
+* **Spark: fix NoSuchElementException when calling get() on Option.None** [`#3673`](https://github.com/OpenLineage/OpenLineage/pull/3673) [@ddebowczyk92](https://github.com/ddebowczyk92)  
+  *Prevents exceptions when Option.None is encountered.*
+* **Spark: avoid InputDataset duplicates by skipping visited nodes** [`#3663`](https://github.com/OpenLineage/OpenLineage/pull/3663) [@ddebowczyk92](https://github.com/ddebowczyk92)  
+  *Ensures nodes aren't revisited, avoiding duplicate InputDataset creation.*
+
 
 ## [1.32.0](https://github.com/OpenLineage/OpenLineage/compare/1.31.0...1.32.0) - 2025-04-24
 
