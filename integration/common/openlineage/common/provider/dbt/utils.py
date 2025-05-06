@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import logging
 import os
+import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
 
@@ -15,6 +16,7 @@ PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integ
 # for which command structured logs consumption is implemented
 HANDLED_COMMANDS = ["run", "seed", "snapshot", "test", "build"]
 CONSUME_STRUCTURED_LOGS_COMMAND_OPTION = "--consume-structured-logs"
+DBT_LOG_FILE_MAX_BYTES = str(100 * 1024 * 1024)
 
 log = logging.getLogger(__name__)
 
@@ -83,20 +85,28 @@ def get_dbt_profiles_dir(command: List[str]) -> str:
     from_command = parse_single_arg(command, ["--profiles-dir"])
     from_env_var = os.getenv("DBT_PROFILES_DIR")
     default_dir = "~/.dbt/"
-    return from_command or from_env_var or default_dir
+    current_working_directory = os.getcwd()
+    return from_command or from_env_var or current_working_directory or default_dir
 
 
 def get_dbt_log_path(command: List[str]) -> str:
     """
     Based on this https://docs.getdbt.com/reference/global-configs/logs
-    Gets the path of the dbt log file
+    Gets the absolute path of the dbt log file.
+    If the user doesn't specify the log path, we generate a random name for the logs directory
     """
-    project_dir = parse_single_arg(command, ["--project-dir"], default="./")
-    default_log_path = os.path.join(project_dir, "logs")
+    project_dir: str = parse_single_arg(command, ["--project-dir"], default="./")
+    default_log_dirname = generate_random_log_file_name()
     from_command = parse_single_arg(command, ["--log-path"], default=None)
     from_env_var = os.getenv("DBT_LOG_PATH")
-    logs_dir = from_command or from_env_var or default_log_path
-    return os.path.expanduser(os.path.join(logs_dir, "dbt.log"))
+    log_dirname = from_command or from_env_var or default_log_dirname
+    return os.path.expanduser(os.path.join(project_dir, log_dirname, "dbt.log"))
+
+
+def generate_random_log_file_name() -> str:
+    random_uuid = str(uuid.uuid4())
+    log_directory_name = f"dbt-logs-{random_uuid}"
+    return log_directory_name
 
 
 def get_parent_run_metadata():
