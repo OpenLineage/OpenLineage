@@ -259,6 +259,8 @@ public class SaveIntoDataSourceCommandVisitor
       return Optional.ofNullable(command.options().get("kustotable"))
           .filter(Option::isDefined)
           .map(Option::get);
+    } else if (command.options().get("table").isDefined()) {
+      return Optional.of(command.options().get("table").get());
     } else if (command.dataSource() instanceof RelationProvider
         || command.dataSource() instanceof SchemaRelationProvider) {
       return ScalaConversionUtils.fromMap(command.options()).keySet().stream()
