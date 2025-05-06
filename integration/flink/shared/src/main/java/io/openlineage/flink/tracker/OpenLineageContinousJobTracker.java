@@ -52,6 +52,11 @@ public class OpenLineageContinousJobTracker {
 
     CloseableHttpClient httpClient = HttpClients.createDefault();
 
+    if (context.getJobId() == null || context.getJobId().getFlinkJobId() == null) {
+      log.error("Cannot start tracking thread, JobId is null. Can happen only in tests");
+      return;
+    }
+
     String url =
         String.format(
             "%s/%s/checkpoints", this.jobsApiUrl, context.getJobId().getFlinkJobId().toString());

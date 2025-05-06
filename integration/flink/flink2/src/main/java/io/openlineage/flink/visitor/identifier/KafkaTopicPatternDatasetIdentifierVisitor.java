@@ -11,6 +11,7 @@ import io.openlineage.flink.config.FlinkDatasetConfig;
 import io.openlineage.flink.config.FlinkDatasetKafkaConfig;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import io.openlineage.flink.util.KafkaDatasetFacetUtil;
+import io.openlineage.flink.wrapper.TableLineageDatasetWrapper;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +37,12 @@ public class KafkaTopicPatternDatasetIdentifierVisitor implements DatasetIdentif
 
   @Override
   public boolean isDefinedAt(LineageDataset dataset) {
+    // TableLineageDatasetImpl is not available on the classpath in real workloads (like container
+    // tests
+    if (new TableLineageDatasetWrapper(dataset).isTableLineageDataset()) {
+      return false;
+    }
+
     Optional<Boolean> resolveTopics =
         Optional.ofNullable(context)
             .map(OpenLineageContext::getConfig)

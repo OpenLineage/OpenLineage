@@ -9,7 +9,7 @@ import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.Flink2VisitorFactory;
 import io.openlineage.flink.visitor.facet.DatasetFacetVisitor;
 import io.openlineage.flink.visitor.facet.TableLineageFacetVisitor;
-import io.openlineage.flink.visitor.facet.TypeInformationFacetVisitor;
+import io.openlineage.flink.visitor.facet.TypeDatasetFacetVisitor;
 import io.openlineage.flink.visitor.identifier.DatasetIdentifierVisitor;
 import io.openlineage.flink.visitor.identifier.KafkaTableLineageDatasetIdentifierVisitor;
 import io.openlineage.flink.visitor.identifier.KafkaTopicListDatasetIdentifierVisitor;
@@ -31,7 +31,7 @@ public class OpenLineageJobStatusChangedListenerFactory implements JobStatusChan
       @Override
       public Collection<DatasetFacetVisitor> loadDatasetFacetVisitors(OpenLineageContext context) {
         return Arrays.asList(
-            new TypeInformationFacetVisitor(context), new TableLineageFacetVisitor(context));
+            new TypeDatasetFacetVisitor(context), new TableLineageFacetVisitor(context));
       }
 
       @Override

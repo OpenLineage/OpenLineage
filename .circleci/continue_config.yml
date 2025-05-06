@@ -991,11 +991,6 @@ jobs:
       - attach_workspace:
           at: ~/
       - run: chmod -R 777 data/iceberg/db
-      - when:
-          condition:
-            equal: [ 2.0-preview1, << parameters.flink-version >> ]
-          steps:
-            - run: ./flink2/buildFlinkConnectorKafka.sh
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
@@ -1070,11 +1065,6 @@ jobs:
             - v1-integration-flink-{{ checksum "/tmp/checksum.txt" }}
       - attach_workspace:
           at: ~/
-      - when:
-          condition:
-            equal: [ 2.0-preview1, << parameters.flink-version >> ]
-          steps:
-            - run: ./flink2/buildFlinkConnectorKafka.sh
       - run: ./gradlew --no-daemon --console=plain --stacktrace build check -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail

@@ -60,4 +60,14 @@ public class ClassUtils {
     }
     return false;
   }
+
+  public static boolean hasAvroClasses() {
+    try {
+      ClassUtils.class.getClassLoader().loadClass("org.apache.avro.Schema");
+      return true;
+    } catch (Exception e) {
+      // swallow- we don't care
+    }
+    return false;
+  }
 }
