@@ -734,6 +734,10 @@ def test_run_dbt_command(dbt_process_return_code, expected_processor_return_code
     process_mock = mock.Mock()
     monkeypatch.setattr("openlineage.common.provider.dbt.structured_logs.subprocess.Popen", popen_mock)
     monkeypatch.setattr("openlineage.common.provider.dbt.structured_logs.IncrementalFileReader", mock.Mock())
+    monkeypatch.setattr(
+        "openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._open_dbt_log_file",
+        mock.Mock(),
+    )
     popen_mock.return_value = process_mock
     process_mock.returncode = dbt_process_return_code
     process_mock.poll.return_value = 1
@@ -827,6 +831,10 @@ def test_executed_dbt_command_line(input_dbt_command_line, expected_dbt_command_
     popen_mock = mock.Mock()
     monkeypatch.setattr("openlineage.common.provider.dbt.structured_logs.subprocess.Popen", popen_mock)
     monkeypatch.setattr("openlineage.common.provider.dbt.structured_logs.IncrementalFileReader", mock.Mock())
+    monkeypatch.setattr(
+        "openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._open_dbt_log_file",
+        mock.Mock(),
+    )
     monkeypatch.setattr(
         "openlineage.common.provider.dbt.utils.generate_random_log_file_name", lambda: DUMMY_RANDOM_LOG_FILE
     )
