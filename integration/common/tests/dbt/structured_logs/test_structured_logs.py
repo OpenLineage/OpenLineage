@@ -11,6 +11,7 @@ import pytest
 import yaml
 from openlineage.common.provider.dbt.processor import Adapter
 from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
+from openlineage.common.provider.dbt.utils import DBT_LOG_FILE_MAX_BYTES
 from openlineage.common.test import match
 from openlineage.common.utils import get_from_nullable_chain
 
@@ -18,6 +19,7 @@ from openlineage.common.utils import get_from_nullable_chain
 # helpers
 ###########
 DUMMY_UUID_4 = "e2c4a0ab-d119-4828-b9c4-96ffd4c79d4f"
+DUMMY_RANDOM_LOG_FILE = "dbt-logs-e2c4a0ab-d119-4828-b9c4-96ffd4c79d4f"
 
 
 def ol_event_to_dict(event) -> Dict:
@@ -732,6 +734,10 @@ def test_run_dbt_command(dbt_process_return_code, expected_processor_return_code
     process_mock = mock.Mock()
     monkeypatch.setattr("openlineage.common.provider.dbt.structured_logs.subprocess.Popen", popen_mock)
     monkeypatch.setattr("openlineage.common.provider.dbt.structured_logs.IncrementalFileReader", mock.Mock())
+    monkeypatch.setattr(
+        "openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._open_dbt_log_file",
+        mock.Mock(),
+    )
     popen_mock.return_value = process_mock
     process_mock.returncode = dbt_process_return_code
     process_mock.poll.return_value = 1
@@ -749,3 +755,145 @@ def test_run_dbt_command(dbt_process_return_code, expected_processor_return_code
     list(processor._run_dbt_command())
 
     assert expected_processor_return_code == processor.dbt_command_return_code
+
+
+@pytest.mark.parametrize(
+    "input_dbt_command_line, expected_dbt_command_line",
+    [
+        (
+            [
+                "dbt",
+                "run",
+                "--select",
+                "orders",
+                "--vars",
+                "{'foo': 'bar'}",
+                "--profiles-dir",
+                "my_profiles_dir",
+            ],
+            [
+                "dbt",
+                "run",
+                "--select",
+                "orders",
+                "--vars",
+                "{'foo': 'bar'}",
+                "--profiles-dir",
+                "my_profiles_dir",
+                "--log-format-file",
+                "json",
+                "--log-level-file",
+                "debug",
+                "--log-path",
+                DUMMY_RANDOM_LOG_FILE,
+                "--log-file-max-bytes",
+                DBT_LOG_FILE_MAX_BYTES,
+                "--write-json",
+            ],
+        ),
+        (
+            [
+                "dbt",
+                "run",
+                "--select",
+                "orders",
+                "--vars",
+                "{'foo': 'bar'}",
+                "--profiles-dir",
+                "my_profiles_dir",
+                "--log-path",
+                "dbt-logs-1234",
+            ],
+            [
+                "dbt",
+                "run",
+                "--select",
+                "orders",
+                "--vars",
+                "{'foo': 'bar'}",
+                "--profiles-dir",
+                "my_profiles_dir",
+                "--log-path",
+                "dbt-logs-1234",
+                "--log-format-file",
+                "json",
+                "--log-level-file",
+                "debug",
+                "--log-file-max-bytes",
+                DBT_LOG_FILE_MAX_BYTES,
+                "--write-json",
+            ],
+        ),
+    ],
+    ids=["with_no_log_path", "with_log_path"],
+)
+def test_executed_dbt_command_line(input_dbt_command_line, expected_dbt_command_line, monkeypatch):
+    popen_mock = mock.Mock()
+    monkeypatch.setattr("openlineage.common.provider.dbt.structured_logs.subprocess.Popen", popen_mock)
+    monkeypatch.setattr("openlineage.common.provider.dbt.structured_logs.IncrementalFileReader", mock.Mock())
+    monkeypatch.setattr(
+        "openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._open_dbt_log_file",
+        mock.Mock(),
+    )
+    monkeypatch.setattr(
+        "openlineage.common.provider.dbt.utils.generate_random_log_file_name", lambda: DUMMY_RANDOM_LOG_FILE
+    )
+
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir="tests/dbt/structured_logs",
+        target="postgres",
+        dbt_command_line=input_dbt_command_line,
+    )
+    processor.manifest_path = "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
+    processor.received_dbt_command_completed = True
+
+    list(processor._run_dbt_command())
+
+    actual_command_line = popen_mock.call_args[0][0]
+    assert actual_command_line == expected_dbt_command_line
+
+
+@pytest.mark.parametrize(
+    "input_dbt_command_line, expected_dbt_log_file_path",
+    [
+        (
+            ["dbt", "run", "--select", "orders", "--project-dir", "my-dbt-project"],
+            f"my-dbt-project/{DUMMY_RANDOM_LOG_FILE}/dbt.log",
+        ),
+        (
+            [
+                "dbt",
+                "run",
+                "--select",
+                "orders",
+                "--project-dir",
+                "my-dbt-project",
+                "--log-path",
+                "dbt-logs-1234",
+            ],
+            "my-dbt-project/dbt-logs-1234/dbt.log",
+        ),
+        (
+            ["dbt", "run", "--select", "orders", "--log-path", "dbt-logs-1234"],
+            "./dbt-logs-1234/dbt.log",
+        ),
+    ],
+    ids=["with_no_log_path", "with_log_path", "without_project_dir"],
+)
+def test_logfile_path(input_dbt_command_line, expected_dbt_log_file_path, monkeypatch):
+    monkeypatch.setattr(
+        "openlineage.common.provider.dbt.utils.generate_random_log_file_name", lambda: DUMMY_RANDOM_LOG_FILE
+    )
+
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir="tests/dbt/structured_logs",
+        target="postgres",
+        dbt_command_line=input_dbt_command_line,
+    )
+    processor.manifest_path = "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
+
+    assert processor.dbt_log_file_path == expected_dbt_log_file_path

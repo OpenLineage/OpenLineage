@@ -27,6 +27,7 @@ from openlineage.common.provider.dbt.processor import (
     UnsupportedDbtCommand,
 )
 from openlineage.common.provider.dbt.utils import (
+    DBT_LOG_FILE_MAX_BYTES,
     HANDLED_COMMANDS,
     generate_run_event,
     get_dbt_command,
@@ -60,6 +61,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.dbt_command_line: List[str] = dbt_command_line
         self.profiles_dir: str = get_dbt_profiles_dir(command=self.dbt_command_line)
         self.dbt_log_file_path: str = get_dbt_log_path(command=self.dbt_command_line)
+        self.dbt_log_dirname: str = self.dbt_log_file_path.split("/")[-2]
         self.parent_run_metadata: ParentRunMetadata = get_parent_run_metadata()
 
         self.node_id_to_ol_run_id: Dict[str, str] = defaultdict(lambda: str(generate_new_uuid()))
@@ -558,8 +560,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         """
         dbt_command_line = add_command_line_args(
             self.dbt_command_line,
-            arg_names=["--log-format-file", "--log-level-file"],
-            arg_values=["json", "debug"],
+            arg_names=["--log-format-file", "--log-level-file", "--log-path", "--log-file-max-bytes"],
+            arg_values=["json", "debug", self.dbt_log_dirname, DBT_LOG_FILE_MAX_BYTES],
         )
         dbt_command_line = add_or_replace_command_line_option(
             dbt_command_line, option="--write-json", replace_option="--no-write-json"
