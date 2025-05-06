@@ -76,6 +76,7 @@ def test_consume_structured_logs(command_line, os_envs, function_kwargs, monkeyp
     mockDbtStructuredLogsProcessor = Mock(
         return_value=mock_dbt_structured_logs_processor
     )  # instance returned
+    mock_dbt_structured_logs_processor.dbt_command_return_code = 0
 
     monkeypatch.setattr("os.environ", os_envs)
     monkeypatch.setattr("openlineage.dbt.consume_structured_logs", mock_consume_structured_logs)
