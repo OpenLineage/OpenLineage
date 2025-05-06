@@ -720,3 +720,32 @@ def test_missing_command_completed(mock_dt, monkeypatch):
     actual_ol_events = list(ol_event_to_dict(event) for event in processor.parse())
     expected_ol_events = yaml.safe_load(open(missing_command_completed_ol_events))
     assert match(expected=expected_ol_events, result=actual_ol_events, ordered_list=True)
+
+
+@pytest.mark.parametrize(
+    "dbt_process_return_code, expected_processor_return_code",
+    [(0, 0), (1, 1), (2, 2)],
+    ids=["success", "failure", "error"],
+)
+def test_run_dbt_command(dbt_process_return_code, expected_processor_return_code, monkeypatch):
+    popen_mock = mock.Mock()
+    process_mock = mock.Mock()
+    monkeypatch.setattr("openlineage.common.provider.dbt.structured_logs.subprocess.Popen", popen_mock)
+    monkeypatch.setattr("openlineage.common.provider.dbt.structured_logs.IncrementalFileReader", mock.Mock())
+    popen_mock.return_value = process_mock
+    process_mock.returncode = dbt_process_return_code
+    process_mock.poll.return_value = 1
+
+    processor = DbtStructuredLogsProcessor(
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+        job_namespace="dbt-test-namespace",
+        project_dir="tests/dbt/structured_logs",
+        target="postgres",
+        dbt_command_line=["dbt", "run", "..."],
+    )
+    processor.manifest_path = "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
+    processor.received_dbt_command_completed = True
+
+    list(processor._run_dbt_command())
+
+    assert expected_processor_return_code == processor.dbt_command_return_code
