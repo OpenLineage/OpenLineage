@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombinedResolver;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.Flink2VisitorFactory;
@@ -26,11 +27,13 @@ class OpenLineageDatasetExtractor {
   private final OpenLineageContext context;
   private final Collection<DatasetFacetVisitor> facetVisitors;
   private final Collection<DatasetIdentifierVisitor> identifierVisitors;
+  private final DatasetNamespaceCombinedResolver namespaceResolver;
 
   OpenLineageDatasetExtractor(OpenLineageContext context, Flink2VisitorFactory visitorFactory) {
     this.context = context;
     this.facetVisitors = visitorFactory.loadDatasetFacetVisitors(context);
     this.identifierVisitors = visitorFactory.loadDatasetIdentifierVisitors(context);
+    this.namespaceResolver = new DatasetNamespaceCombinedResolver(context.getConfig());
   }
 
   List<InputDataset> extractInputs(LineageGraph graph) {
@@ -108,12 +111,14 @@ class OpenLineageDatasetExtractor {
       // no visitors to be applied
       return Collections.singletonList(
           new LineageDatasetWithIdentifier(
-              new DatasetIdentifier(dataset.name(), dataset.namespace()), dataset));
+              namespaceResolver.resolve(new DatasetIdentifier(dataset.name(), dataset.namespace())),
+              dataset));
     }
 
     return identifierVisitors.stream()
         .filter(v -> v.isDefinedAt(dataset))
         .flatMap(v -> v.apply(dataset).stream())
+        .map(namespaceResolver::resolve)
         .map(di -> new LineageDatasetWithIdentifier(di, dataset))
         .collect(Collectors.toList());
   }

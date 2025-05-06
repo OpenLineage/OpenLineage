@@ -85,6 +85,11 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
     configuration.setString("openlineage.transport.type", "file");
     configuration.setString("openlineage.transport.location", EVENTS_FILE);
 
+    configuration.setString(
+        "openlineage.dataset.namespaceResolvers.kafka-cluster.type", "hostList");
+    configuration.setString(
+        "openlineage.dataset.namespaceResolvers.kafka-cluster.hosts", "[localhost;localhost2]");
+
     // To check events with local Marquez
     // configuration.setString("openlineage.transport.type", "http");
     // configuration.setString("openlineage.transport.url", "http://localhost:9000");
@@ -163,7 +168,7 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
         InputDataset inputDataset = LineageTestUtils.getInputDatasets(events).get(0);
         OutputDataset outputDateset = LineageTestUtils.getOutputDatasets(events).get(0);
 
-        assertThat(outputDateset.getNamespace()).startsWith("kafka://localhost");
+        assertThat(outputDateset.getNamespace()).startsWith("kafka://kafka-cluster");
         assertThat(outputDateset.getName()).startsWith(OUTPUT_TOPIC);
 
         assertThat(outputDateset.getFacets().getSchema().getFields()).hasSize(2);
@@ -174,7 +179,7 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
             .hasFieldOrPropertyWithValue("name", "value")
             .hasFieldOrPropertyWithValue("type", "int");
 
-        assertThat(inputDataset.getNamespace()).startsWith("kafka://localhost");
+        assertThat(inputDataset.getNamespace()).startsWith("kafka://kafka-cluster");
         assertThat(inputDataset.getName()).startsWith(TOPIC1);
 
         assertThat(inputDataset.getFacets().getSchema().getFields()).hasSize(2);
@@ -329,13 +334,13 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
               .map(e -> e.getInputs().get(0))
               .findAny();
       assertThat(input).isPresent();
-      assertThat(input.get().getNamespace()).startsWith("kafka://localhost:");
+      assertThat(input.get().getNamespace()).startsWith("kafka://kafka-cluster:");
       assertThat(input.get().getName()).isEqualTo(inputTopic);
       assertThat(input.get().getFacets().getSymlinks().getIdentifiers().get(0))
           .hasFieldOrPropertyWithValue("type", "TABLE")
           .hasFieldOrPropertyWithValue("name", "default_catalog.default_database.kafka_input");
       assertThat(input.get().getFacets().getSymlinks().getIdentifiers().get(0).getNamespace())
-          .startsWith("kafka://localhost:");
+          .startsWith("kafka://kafka-cluster:");
       List<SchemaDatasetFacetFields> inputFields = input.get().getFacets().getSchema().getFields();
       assertThat(inputFields).hasSize(5);
       assertFieldPresent(inputFields, "price", "DECIMAL(38, 18)");
@@ -358,7 +363,7 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
               .filter(e -> e.getOutputs().size() > 0)
               .map(e -> e.getOutputs().get(0))
               .findAny();
-      assertThat(output.get().getNamespace()).startsWith("kafka://localhost:");
+      assertThat(output.get().getNamespace()).startsWith("kafka://kafka-cluster:");
       assertThat(output.get().getName()).isEqualTo(outputTopic);
       List<SchemaDatasetFacetFields> outputFields =
           output.get().getFacets().getSchema().getFields();
@@ -373,7 +378,7 @@ public class OpenlineageListenerIntegrationTest extends TestLogger {
           .hasFieldOrPropertyWithValue("type", "TABLE")
           .hasFieldOrPropertyWithValue("name", "default_catalog.default_database.kafka_output");
       assertThat(output.get().getFacets().getSymlinks().getIdentifiers().get(0).getNamespace())
-          .startsWith("kafka://localhost:");
+          .startsWith("kafka://kafka-cluster:");
 
       // test SQL comments
       assertThat(input.get().getFacets().getDocumentation())

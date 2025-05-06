@@ -18,7 +18,7 @@ public class PatternNamespaceResolverBuilder implements DatasetNamespaceResolver
   }
 
   @Override
-  public HostListNamespaceResolver build(String name, DatasetNamespaceResolverConfig config) {
-    return new HostListNamespaceResolver(name, (HostListNamespaceResolverConfig) config);
+  public PatternNamespaceResolver build(String name, DatasetNamespaceResolverConfig config) {
+    return new PatternNamespaceResolver(name, (PatternNamespaceResolverConfig) config);
   }
 }
