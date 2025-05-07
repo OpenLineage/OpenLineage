@@ -37,7 +37,6 @@ import org.apache.iceberg.spark.SparkSessionCatalog;
 import org.apache.iceberg.spark.source.SparkTable;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 
@@ -269,12 +268,12 @@ public class IcebergHandler implements CatalogHandler {
         SparkSessionCatalog sparkCatalog = (SparkSessionCatalog) tableCatalog;
         return Optional.ofNullable(sparkCatalog.icebergCatalog().loadTable(tableIdentifier));
       }
-    } catch (NoSuchTableException e) {
-      // don't log stack trace for missing tables
-      log.warn("Failed to load table from catalog: {}", identifier);
-      return Optional.empty();
     } catch (ClassCastException e) {
       log.error("Failed to load table from catalog: {}", identifier, e);
+      return Optional.empty();
+    } catch (Exception e) {
+      // don't log stack trace for missing tables
+      log.warn("Failed to load table from catalog: {}", identifier);
       return Optional.empty();
     }
   }
