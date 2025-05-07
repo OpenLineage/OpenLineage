@@ -9,6 +9,7 @@ from openlineage.client.transport.file import FileTransport
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.kafka import KafkaConfig, KafkaTransport
 from openlineage.client.transport.msk_iam import MSKIAMConfig, MSKIAMTransport
+from openlineage.client.transport.amazon_datazone import AmazonDataZoneConfig, AmazonDataZoneTransport
 from openlineage.client.transport.noop import NoopTransport
 from openlineage.client.transport.transport import Config, Transport, TransportFactory
 
@@ -20,6 +21,7 @@ _factory.register_transport(MSKIAMTransport.kind, MSKIAMTransport)
 _factory.register_transport(ConsoleTransport.kind, ConsoleTransport)
 _factory.register_transport(NoopTransport.kind, NoopTransport)
 _factory.register_transport(FileTransport.kind, FileTransport)
+_factory.register_transport(AmazonDataZoneTransport.kind, AmazonDataZoneTransport)
 
 
 def get_default_factory() -> DefaultTransportFactory:
@@ -43,6 +45,8 @@ __all__ = [
     "MSKIAMTransport",
     "MSKIAMConfig",
     "ConsoleTransport",
+    "AmazonDataZoneTransport"
+    "AmazonDataZoneConfig",
     "NoopTransport",
     "Transport",
     "register_transport",
