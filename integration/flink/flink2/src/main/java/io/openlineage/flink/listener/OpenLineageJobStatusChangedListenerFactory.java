@@ -11,6 +11,7 @@ import io.openlineage.flink.visitor.facet.DatasetFacetVisitor;
 import io.openlineage.flink.visitor.facet.TableLineageFacetVisitor;
 import io.openlineage.flink.visitor.facet.TypeDatasetFacetVisitor;
 import io.openlineage.flink.visitor.identifier.DatasetIdentifierVisitor;
+import io.openlineage.flink.visitor.identifier.JdbcTableLineageDatasetIdentifierVisitor;
 import io.openlineage.flink.visitor.identifier.KafkaTableLineageDatasetIdentifierVisitor;
 import io.openlineage.flink.visitor.identifier.KafkaTopicListDatasetIdentifierVisitor;
 import io.openlineage.flink.visitor.identifier.KafkaTopicPatternDatasetIdentifierVisitor;
@@ -40,6 +41,7 @@ public class OpenLineageJobStatusChangedListenerFactory implements JobStatusChan
         return Arrays.asList(
             new KafkaTopicPatternDatasetIdentifierVisitor(context),
             new KafkaTopicListDatasetIdentifierVisitor(),
+            new JdbcTableLineageDatasetIdentifierVisitor(),
             new KafkaTableLineageDatasetIdentifierVisitor());
       }
     };
