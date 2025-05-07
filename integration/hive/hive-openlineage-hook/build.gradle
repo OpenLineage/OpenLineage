@@ -18,7 +18,7 @@ plugins {
 group = "io.openlineage"
 
 ext {
-    openLineageVersion = '1.24.2'
+    openLineageVersion = version
     cloudDataLineageVersion = '0.46.0'
     producerClientVersion = '1.0.0'
     cloudStorageVersion = '2.45.0'

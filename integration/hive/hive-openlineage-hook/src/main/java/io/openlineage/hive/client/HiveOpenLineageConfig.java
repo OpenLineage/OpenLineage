@@ -8,6 +8,8 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.dataset.DatasetConfig;
+import io.openlineage.client.job.JobConfig;
+import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
 import java.util.HashMap;
@@ -25,13 +27,16 @@ public class HiveOpenLineageConfig extends OpenLineageConfig<HiveOpenLineageConf
   @Setter private JobConfig job;
 
   public HiveOpenLineageConfig(
-      TransportConfig transportConfig,
-      FacetsConfig facetsConfig,
-      DatasetConfig datasetConfig,
-      CircuitBreakerConfig circuitBreaker,
-      Map metricsConfig,
-      JobConfig job) {
-    super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig);
+          TransportConfig transportConfig,
+          FacetsConfig facetsConfig,
+          DatasetConfig datasetConfig,
+          CircuitBreakerConfig circuitBreaker,
+          Map metricsConfig,
+          RunConfig runConfig,
+          io.openlineage.client.job.JobConfig jobConfig,
+          JobConfig job
+          ) {
+    super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig, runConfig, jobConfig);
     this.job = job;
   }
 
@@ -56,6 +61,8 @@ public class HiveOpenLineageConfig extends OpenLineageConfig<HiveOpenLineageConf
         mergePropertyWith(datasetConfig, other.datasetConfig),
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
         mergePropertyWith(metricsConfig, other.metricsConfig),
+        mergePropertyWith(runConfig, other.runConfig),
+        mergePropertyWith(jobConfig, other.jobConfig),
         mergePropertyWith(job, other.job));
   }
 }

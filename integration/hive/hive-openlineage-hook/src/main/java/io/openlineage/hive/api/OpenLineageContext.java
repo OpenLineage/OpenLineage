@@ -30,8 +30,6 @@ import org.apache.hadoop.hive.ql.parse.SemanticAnalyzer;
 @Value
 @Builder
 public class OpenLineageContext {
-  UUID runUuid = UUID.randomUUID();
-
   /**
    * A non-null, preconfigured {@link OpenLineage} client instance for constructing OpenLineage
    * model objects
