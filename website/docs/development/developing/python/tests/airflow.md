@@ -4,10 +4,6 @@ sidebar_position: 2
 ---
 
 OpenLineage provides an integration with Apache Airflow. As Airflow is actively developed and major changes happen quite often it is advised to test OpenLineage integration against multiple Airflow versions. In the current CI process OpenLineage is tested against following versions:
-* 2.1.4 (2.0+ upgrade)
-* 2.2.4
-* 2.3.4 (TaskListener API introduced)
-* 2.4.3
 * 2.5.2
 * 2.6.1
 
@@ -23,15 +19,12 @@ tox -l
 ```
 that should list:
 ```
-py3-airflow-2.1.4
-py3-airflow-2.2.4
-py3-airflow-2.3.4
-py3-airflow-2.4.3
-py3-airflow.2.5.0
+py3-airflow-2.5.2
+py3-airflow-2.6.1
 ```
 Then you can run tests in chosen environment, e.g.:
 ```
-tox -e py3-airflow-2.3.4
+tox -e py3-airflow-2.5.2
 ```
 `setup.cfg` contains tox-related configuration. By default `tox` command runs:
 1. `flake8` linting
@@ -53,7 +46,7 @@ AIRFLOW_IMAGE=<name-of-airflow-image> ./tests/integration/docker/up.sh
 ```
 e.g.
 ```bash
-AIRFLOW_IMAGE=apache/airflow:2.3.4-python3.7 ./tests/integration/docker/up.sh
+AIRFLOW_IMAGE=apache/airflow:2.5.2-python3.9 ./tests/integration/docker/up.sh
 ```
 #### What tests are ran
 The actual setup is to run all defined Airflow DAGs, collect OpenLineage events and check if they meet requirements.
