@@ -1,0 +1,5 @@
+{"name": "Sally", "age": 23, "location": {"state": "WY", "county": "Fremont"}, "friends": []}
+{"name": "Varun", "age": 34, "location": {"state": "NE", "county": "Douglas"}, "friends": [{"name": "Arjun", "age": 3}]}
+{"name": "George", "age": 52, "location": {"state": "NY"}, "friends": [{"name": "Fred"}, {"name": "Amy", "age": 15}]}
+{"name": "Haruki", "age": 21, "location": {"state": "AK", "county": "Denali"}}
+{"name": "Sheila", "age": 63, "friends": [{"name": "Nancy", "age": 22}]}
