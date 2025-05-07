@@ -258,7 +258,7 @@ public class PlanUtils {
         return p;
       }
     } catch (IOException e) {
-      log.warn("Unable to get file system for path ", e);
+      log.warn("Unable to get file system for path: {}", e.getMessage());
       return p;
     }
   }
