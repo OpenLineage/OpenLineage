@@ -8,6 +8,10 @@ This does not demonstrate how to configure the `HiveOpenLineageHook`.
 Please refer to the [Configuration](configuration/configuration.md) section.
 :::
 
+:::info
+Currently we only support Hive 3
+:::
+
 :::warning
 In case of using the Hive integration on [Google Cloud Dataproc](https://cloud.google.com/dataproc) see [Dataproc installation](#dataproc-installation)
 :::
