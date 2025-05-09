@@ -3,11 +3,6 @@ sidebar_position: 7
 title: Column-Level Lineage
 ---
 
-:::warning
-
-Column-level lineage works only with Spark 3.
-:::
-
 :::info
 Column-level lineage for Spark is turned on by default and requires no additional work to be done. The following documentation describes its internals. 
 :::

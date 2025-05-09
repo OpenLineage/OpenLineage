@@ -1,6 +1,6 @@
 ---
 title: Testing
-sidebar_position: 8 
+sidebar_position: 11
 ---
 
 # Testing
@@ -61,7 +61,7 @@ enableHiveSupport: true
 packages:
   - org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.5.2
 sparkConf:
-  spark.openlineage.debugFacet: enabled
+  spark.openlineage.debugFacet.disabled: false
 ```
 
 * `sparkVersion` and `scalaBinaryVersion` are used to determine Spark and Scala version to be tested. Spark is run on docker from the images available in 
