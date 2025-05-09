@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from openlineage.client.generated import (
+    catalog_dataset,
     column_lineage_dataset,
     data_quality_assertions_dataset,
     data_quality_metrics_input_dataset,
@@ -53,6 +54,7 @@ __all__ = [
     "OutputDatasetFacet",
     "RunFacet",
     "set_producer",
+    "catalog_dataset",
     "column_lineage_dataset",
     "data_quality_assertions_dataset",
     "data_quality_metrics_input_dataset",
