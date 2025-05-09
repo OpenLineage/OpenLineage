@@ -14,7 +14,7 @@ export const Talks: Talk[] = [
     conf: "Iceberg Summit 2025",
     date: "2025-04-09",
     image: "iceberg_summit_2025.png",
-    title: "Operationalizing Iceberg Metrics with OpenLineage\n",
+    title: "Operationalizing Iceberg Metrics with OpenLineage",
     speakers: ["Paweł Leszczyński"],
     description:
       "Recent efforts by the OpenLineage community have enriched lineage metadata with Iceberg’s scan and commit reports, which provides beneficial insights on data read and written. This knowledge can be applied for optimizing costs, as it enables the identification of jobs with the highest cost reduction potential. In this talk, we introduce OpenLineage to the Iceberg community and present the community's efforts to include Iceberg’s scan and commit reports within the lineage metadata collected.",
