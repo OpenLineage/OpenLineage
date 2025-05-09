@@ -8,4 +8,4 @@ enableHiveSupport: true
 packages:
   - org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:1.5.2
 sparkConf:
-  spark.openlineage.debugFacet: enabled
+  spark.openlineage.debugFacet.disabled: false
