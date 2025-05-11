@@ -6,7 +6,10 @@
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -15,6 +18,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
@@ -417,5 +421,85 @@ class IcebergHandlerTest {
 
     assertThat(version.isPresent()).isTrue();
     assertThat(version.get()).isEqualTo("1500100900");
+  }
+
+  @Test
+  void testGetHadoopCatalogData() {
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkCatalog.name()).thenReturn("test");
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2(
+                "spark.sql.catalog.test.type",
+                "hadoop",
+                "spark.sql.catalog.test.warehouse",
+                "hdfs://namenode:9000/path/to/warehouse"));
+
+    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacet =
+        icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
+    assertTrue(catalogDatasetFacet.isPresent());
+
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get();
+
+    assertEquals("test", facet.getName());
+    assertEquals("hadoop", facet.getType());
+    assertEquals("iceberg", facet.getFramework());
+    assertEquals("hdfs://namenode:9000/path/to/warehouse", facet.getWarehouseUri());
+    assertNull(facet.getMetadataUri());
+  }
+
+  @Test
+  void testGetGlueCatalogData() {
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkCatalog.name()).thenReturn("test");
+    when(runtimeConfig.getAll()).thenReturn(new Map.Map1("spark.sql.catalog.test.type", "hadoop"));
+
+    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacet =
+        icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
+    assertTrue(catalogDatasetFacet.isPresent());
+
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get();
+
+    assertEquals("test", facet.getName());
+    assertEquals("hadoop", facet.getType());
+    assertEquals("iceberg", facet.getFramework());
+  }
+
+  @Test
+  void testGetJdbcCatalogData() {
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkCatalog.name()).thenReturn("test");
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3(
+                "spark.sql.catalog.test.type",
+                "jdbc",
+                "spark.sql.catalog.test.uri",
+                "jdbc:mysql://test.1234567890.us-west-2.rds.amazonaws.com:3306/default",
+                "spark.sql.catalog.test.warehouse",
+                "s3://bucket/path/to/iceberg/warehouse"));
+
+    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacet =
+        icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
+    assertTrue(catalogDatasetFacet.isPresent());
+
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get();
+
+    assertEquals("test", facet.getName());
+    assertEquals("jdbc", facet.getType());
+    assertEquals(
+        "jdbc:mysql://test.1234567890.us-west-2.rds.amazonaws.com:3306/default",
+        facet.getMetadataUri());
+    assertEquals("s3://bucket/path/to/iceberg/warehouse", facet.getWarehouseUri());
+    assertEquals("iceberg", facet.getFramework());
   }
 }

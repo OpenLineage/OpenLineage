@@ -124,6 +124,8 @@ public class CreateReplaceDatasetBuilder
 
     CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, tableProperties)
         .map(storageDatasetFacet -> builder.getFacets().storage(storageDatasetFacet));
+    CatalogUtils3.getCatalogDatasetFacet(context, tableCatalog, tableProperties)
+        .ifPresent(catalogDatasetFacet -> builder.getFacets().catalog(catalogDatasetFacet));
     return Collections.singletonList(outputDataset().getDataset(di.get(), builder));
   }
 
