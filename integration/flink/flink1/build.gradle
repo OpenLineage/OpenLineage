@@ -22,12 +22,12 @@ ext {
     compileFlinkVersion = project.getProperty('flink.flink1.version')
     testedFlinkVersion = project.getProperty('flink.version')
     assertjVersion = '3.27.3'
-    junit5Version = '5.11.4'
-    lombokVersion = '1.18.36'
+    junit5Version = '5.12.2'
+    lombokVersion = '1.18.38'
     jacksonVersion = "2.15.3"
     mockitoVersion = '5.2.0'
-    testcontainersVersion = '1.20.5'
-    micrometerVersion = '1.14.4'
+    testcontainersVersion = '1.21.0'
+    micrometerVersion = '1.14.6'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
@@ -46,10 +46,10 @@ dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.4.2'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.4.4'
     testImplementation "org.apache.flink:flink-java:$testedFlinkVersion"
     testImplementation "org.apache.flink:flink-streaming-java:$testedFlinkVersion"
-    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation platform('org.junit:junit-bom:5.12.2')
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
