@@ -26,13 +26,24 @@ public class AwsUtils {
   @SneakyThrows
   public static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
     if (isHiveUsingGlue(sparkConf, hadoopConf)) {
+      log.info("Hive using Glue");
       return awsRegion()
           .flatMap(
               region ->
                   getGlueCatalogId(sparkConf, hadoopConf)
                       .map(glueCatalogId -> "arn:aws:glue:" + region + ":" + glueCatalogId));
     } else {
-      return Optional.empty();
+      log.debug("NOT Hive using Glue");
+      try {
+        return awsRegion()
+            .flatMap(
+                region ->
+                    getGlueCatalogId(sparkConf, hadoopConf)
+                        .map(glueCatalogId -> "arn:aws:glue:" + region + ":" + glueCatalogId));
+      } catch (Exception e) {
+        log.error("Failed to retrieve Glue", e);
+        return Optional.empty();
+      }
     }
   }
 

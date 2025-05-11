@@ -9,6 +9,7 @@ import static io.openlineage.spark.agent.MockServerUtils.getEventsEmittedWithJob
 import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.InputDatasetInputFacets;
 import io.openlineage.client.OpenLineage.OutputDataset;
@@ -18,6 +19,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.SneakyThrows;
@@ -190,6 +192,27 @@ class SparkRestIcebergIntegrationTest {
         .extracting("snapshotId")
         .asInstanceOf(InstanceOfAssertFactories.LONG)
         .isGreaterThan(0);
+
+    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacet =
+        runEvents.stream()
+            .flatMap(e -> e.getInputs().stream())
+            .filter(e -> e.getName().endsWith("scan_source"))
+            .map(dataset -> dataset.getFacets().getCatalog())
+            .filter(Objects::nonNull)
+            .findFirst();
+
+    assertThat(catalogDatasetFacet).isPresent();
+    OpenLineage.CatalogDatasetFacet catalog = catalogDatasetFacet.get();
+    assertThat(catalog.getType()).isEqualTo("rest");
+    assertThat(catalog.getFramework()).isEqualTo("iceberg");
+    assertThat(catalog.getName()).isEqualTo("rest");
+    assertThat(catalog.getMetadataUri())
+        .isEqualTo(
+            "http://"
+                + icebergRestContainer.getHost()
+                + ":"
+                + icebergRestContainer.getMappedPort(8181));
+    assertThat(catalog.getSource()).isEqualTo("spark");
   }
 
   private void clearTables(String... tables) {

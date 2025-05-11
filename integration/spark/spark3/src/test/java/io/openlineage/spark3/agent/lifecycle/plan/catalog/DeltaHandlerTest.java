@@ -10,6 +10,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
@@ -34,8 +35,9 @@ import scala.Option;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class DeltaHandlerTest {
+  OpenLineageContext context = mock(OpenLineageContext.class);
   DeltaCatalog deltaCatalog = mock(DeltaCatalog.class);
-  DeltaHandler deltaHandler = new DeltaHandler(mock(OpenLineageContext.class));
+  DeltaHandler deltaHandler = new DeltaHandler(context);
   SparkSession sparkSession = mock(SparkSession.class);
   SparkContext sparkContext = mock(SparkContext.class);
 
@@ -212,5 +214,21 @@ class DeltaHandlerTest {
         .hasFieldOrPropertyWithValue("name", "/some/location");
 
     assertThat(datasetIdentifier.getSymlinks()).hasSize(0);
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetCatalogDatasetFacet() {
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+    when(deltaCatalog.name()).thenReturn("name");
+
+    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacet =
+        deltaHandler.getCatalogDatasetFacet(deltaCatalog, Collections.emptyMap());
+    assertThat(catalogDatasetFacet.isPresent()).isTrue();
+
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get();
+    assertThat(facet.getName()).isEqualTo("name");
+    assertThat(facet.getFramework()).isEqualTo("delta");
+    assertThat(facet.getType()).isEqualTo("delta");
   }
 }

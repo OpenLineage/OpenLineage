@@ -100,6 +100,14 @@ public class CatalogUtils3 {
         : Optional.empty();
   }
 
+  public static Optional<OpenLineage.CatalogDatasetFacet> getCatalogDatasetFacet(
+      OpenLineageContext context, TableCatalog catalog, Map<String, String> properties) {
+    Optional<CatalogHandler> catalogHandler = getCatalogHandler(context, catalog);
+    return catalogHandler.isPresent()
+        ? catalogHandler.get().getCatalogDatasetFacet(catalog, properties)
+        : Optional.empty();
+  }
+
   public static Optional<String> getDatasetVersion(
       OpenLineageContext context,
       TableCatalog catalog,
