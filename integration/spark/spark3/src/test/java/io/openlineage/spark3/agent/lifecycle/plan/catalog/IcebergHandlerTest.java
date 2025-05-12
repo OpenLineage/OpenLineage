@@ -21,7 +21,11 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.iceberg.Table;
+import org.apache.iceberg.catalog.Catalog;
+import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.spark.SparkCatalog;
+import org.apache.iceberg.spark.SparkSessionCatalog;
 import org.apache.iceberg.spark.source.SparkTable;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
@@ -260,7 +264,8 @@ class IcebergHandlerTest {
   @ParameterizedTest
   @MethodSource("missingTableOptions")
   @SneakyThrows
-  void testGetDatasetIdentifierMissingTable(Identifier identifier, String name, String location) {
+  void testGetDatasetIdentifierMissingSparkCatalogTable(
+      Identifier identifier, String name, String location) {
     when(sparkSession.conf()).thenReturn(runtimeConfig);
     when(runtimeConfig.getAll())
         .thenReturn(
@@ -274,6 +279,88 @@ class IcebergHandlerTest {
 
     when(sparkCatalog.name()).thenReturn("test");
     when(sparkCatalog.loadTable(identifier)).thenThrow(new NoSuchTableException(identifier));
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", location);
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "file:/tmp/iceberg")
+        .hasFieldOrPropertyWithValue("name", name)
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierForIcebergTable() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog.test",
+                "org.apache.iceberg.spark.SparkSessionCatalog",
+                "spark.sql.catalog.test.type",
+                "hadoop",
+                "spark.sql.catalog.test.warehouse",
+                "file:/tmp/warehouse"));
+
+    SparkSessionCatalog sparkCatalog = mock(SparkSessionCatalog.class);
+    when(sparkCatalog.name()).thenReturn("test");
+
+    Catalog icebergCatalog = mock(Catalog.class);
+    when(sparkCatalog.icebergCatalog()).thenReturn(icebergCatalog);
+
+    TableIdentifier tableIdentifier = TableIdentifier.of("database", "table");
+    Table icebergTable = mock(Table.class, RETURNS_DEEP_STUBS);
+    when(icebergCatalog.loadTable(tableIdentifier)).thenReturn(icebergTable);
+    when(icebergTable.location()).thenReturn("file:/tmp/warehouse/database/table");
+
+    Identifier identifier = Identifier.of(new String[] {"database"}, "table");
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession, sparkCatalog, identifier, new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/database/table");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "file:/tmp/warehouse")
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @ParameterizedTest
+  @MethodSource("missingTableOptions")
+  @SneakyThrows
+  void testGetDatasetIdentifierMissingIcebergCatalogTable(
+      Identifier identifier, String name, String location) {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog.test",
+                "org.apache.iceberg.spark.SparkSessionCatalog",
+                "spark.sql.catalog.test.type",
+                "hadoop",
+                "spark.sql.catalog.test.warehouse",
+                "file:/tmp/iceberg"));
+
+    SparkSessionCatalog sparkCatalog = mock(SparkSessionCatalog.class);
+    when(sparkCatalog.name()).thenReturn("test");
+
+    Catalog icebergCatalog = mock(Catalog.class);
+    when(sparkCatalog.icebergCatalog()).thenReturn(icebergCatalog);
+
+    TableIdentifier tableIdentifier = TableIdentifier.parse(identifier.toString());
+    when(icebergCatalog.loadTable(tableIdentifier))
+        .thenThrow(new org.apache.iceberg.exceptions.NoSuchTableException(identifier.toString()));
 
     DatasetIdentifier datasetIdentifier =
         icebergHandler.getDatasetIdentifier(

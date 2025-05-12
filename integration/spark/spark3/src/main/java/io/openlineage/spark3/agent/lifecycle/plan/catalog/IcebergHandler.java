@@ -272,9 +272,12 @@ public class IcebergHandler implements CatalogHandler {
       log.error("Failed to load table from catalog: {}", identifier, e);
       return Optional.empty();
     } catch (Exception e) {
-      // don't log stack trace for missing tables
-      log.warn("Failed to load table from catalog: {}", identifier);
-      return Optional.empty();
+      if (e instanceof org.apache.spark.sql.catalyst.analysis.NoSuchTableException
+          || e instanceof org.apache.iceberg.exceptions.NoSuchTableException) {
+        // probably trying to obtain table details on START event while table does not exist
+        return Optional.empty();
+      }
+      throw e;
     }
   }
 
