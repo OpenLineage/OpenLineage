@@ -64,9 +64,10 @@ import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.HttpTransport;
 import io.openlineage.client.transports.KafkaConfig;
 import io.openlineage.client.transports.KafkaTransport;
+import java.net.URI;
 
 HttpConfig httpConfig = new HttpConfig();
-httpConfig.setUrl("http://example.com/api");
+httpConfig.setUrl(new URI("http://example.com/api"));
 KafkaConfig kafkaConfig = new KafkaConfig();
 KafkaConfig.setTopicName("openlineage.events");
 KafkaConfig.setMessageKey("some-key");
