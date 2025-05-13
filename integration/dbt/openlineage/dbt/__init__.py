@@ -47,13 +47,16 @@ def dbt_run_event(
     state: RunState,
     job_name: str,
     job_namespace: str,
-    run_id: str = str(generate_new_uuid()),
+    run_id: Optional[str] = None,
     parent: Optional[ParentRunMetadata] = None,
 ) -> RunEvent:
     return RunEvent(
         eventType=state,
         eventTime=datetime.now(timezone.utc).isoformat(),
-        run=Run(runId=run_id, facets={"parent": parent.to_openlineage()} if parent else {}),
+        run=Run(
+            runId=run_id or str(generate_new_uuid()),
+            facets={"parent": parent.to_openlineage()} if parent else {},
+        ),
         job=Job(
             namespace=parent.job_namespace if parent else job_namespace,
             name=job_name,
