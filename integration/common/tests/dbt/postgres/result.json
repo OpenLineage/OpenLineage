@@ -49,9 +49,7 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "customer_id",
-					"type": "",
-					"description": ""
+					"name": "customer_id"
 				}]
 			}
 		},
@@ -108,13 +106,9 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "order_id",
-					"type": "",
-					"description": ""
+					"name": "order_id"
 				}, {
-					"name": "status",
-					"type": "",
-					"description": ""
+					"name": "status"
 				}]
 			}
 		},
@@ -171,13 +165,9 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "payment_id",
-					"type": "",
-					"description": ""
+					"name": "payment_id"
 				}, {
-					"name": "payment_method",
-					"type": "",
-					"description": ""
+					"name": "payment_method"
 				}]
 			}
 		},
@@ -226,9 +216,7 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "customer_id",
-					"type": "",
-					"description": ""
+					"name": "customer_id"
 				}]
 			}
 		}
@@ -246,13 +234,9 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "order_id",
-					"type": "",
-					"description": ""
+					"name": "order_id"
 				}, {
-					"name": "status",
-					"type": "",
-					"description": ""
+					"name": "status"
 				}]
 			}
 		}
@@ -270,13 +254,9 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "payment_id",
-					"type": "",
-					"description": ""
+					"name": "payment_id"
 				}, {
-					"name": "payment_method",
-					"type": "",
-					"description": ""
+					"name": "payment_method"
 				}]
 			}
 		}
@@ -296,39 +276,30 @@
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
 					"name": "non_empty_column",
-					"type": "",
 					"description": "This is a test column"
 				}, {
 					"name": "empty_column",
-					"type": "",
 					"description": "This is a test column"
 				}, {
 					"name": "customer_id",
-					"type": "",
 					"description": "This is a unique identifier for a customer"
 				}, {
 					"name": "first_name",
-					"type": "",
 					"description": "Customer's first name. PII."
 				}, {
 					"name": "last_name",
-					"type": "",
 					"description": "Customer's last name. PII."
 				}, {
 					"name": "first_order",
-					"type": "",
 					"description": "Date (UTC) of a customer's first order"
 				}, {
 					"name": "most_recent_order",
-					"type": "",
 					"description": "Date (UTC) of a customer's most recent order"
 				}, {
 					"name": "number_of_orders",
-					"type": "",
 					"description": "Count of the number of orders a customer has placed"
 				}, {
 					"name": "total_order_amount",
-					"type": "",
 					"description": "Total value (AUD) of a customer's orders"
 				}]
 			}
@@ -385,13 +356,9 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "order_id",
-					"type": "",
-					"description": ""
+					"name": "order_id"
 				}, {
-					"name": "status",
-					"type": "",
-					"description": ""
+					"name": "status"
 				}]
 			}
 		}
@@ -409,13 +376,9 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "payment_id",
-					"type": "",
-					"description": ""
+					"name": "payment_id"
 				}, {
-					"name": "payment_method",
-					"type": "",
-					"description": ""
+					"name": "payment_method"
 				}]
 			}
 		}
@@ -435,39 +398,30 @@
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
-					"type": "",
 					"description": "This is a unique identifier for an order"
 				}, {
 					"name": "customer_id",
-					"type": "",
 					"description": "Foreign key to the customers table"
 				}, {
 					"name": "order_date",
-					"type": "",
 					"description": "Date (UTC) that the order was placed"
 				}, {
 					"name": "status",
-					"type": "",
 					"description": "Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |"
 				}, {
 					"name": "amount",
-					"type": "",
 					"description": "Total amount (AUD) of the order"
 				}, {
 					"name": "credit_card_amount",
-					"type": "",
 					"description": "Amount of the order (AUD) paid for by credit card"
 				}, {
 					"name": "coupon_amount",
-					"type": "",
 					"description": "Amount of the order (AUD) paid for by coupon"
 				}, {
 					"name": "bank_transfer_amount",
-					"type": "",
 					"description": "Amount of the order (AUD) paid for by bank transfer"
 				}, {
 					"name": "gift_card_amount",
-					"type": "",
 					"description": "Amount of the order (AUD) paid for by gift card"
 				}]
 			}
@@ -525,9 +479,7 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "customer_id",
-					"type": "",
-					"description": ""
+					"name": "customer_id"
 				}]
 			}
 		},
@@ -584,13 +536,9 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "order_id",
-					"type": "",
-					"description": ""
+					"name": "order_id"
 				}, {
-					"name": "status",
-					"type": "",
-					"description": ""
+					"name": "status"
 				}]
 			}
 		},
@@ -647,13 +595,9 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "payment_id",
-					"type": "",
-					"description": ""
+					"name": "payment_id"
 				}, {
-					"name": "payment_method",
-					"type": "",
-					"description": ""
+					"name": "payment_method"
 				}]
 			}
 		},
@@ -702,9 +646,7 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "customer_id",
-					"type": "",
-					"description": ""
+					"name": "customer_id"
 				}]
 			}
 		}
@@ -722,13 +664,9 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "order_id",
-					"type": "",
-					"description": ""
+					"name": "order_id"
 				}, {
-					"name": "status",
-					"type": "",
-					"description": ""
+					"name": "status"
 				}]
 			}
 		}
@@ -746,13 +684,9 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "payment_id",
-					"type": "",
-					"description": ""
+					"name": "payment_id"
 				}, {
-					"name": "payment_method",
-					"type": "",
-					"description": ""
+					"name": "payment_method"
 				}]
 			}
 		}
@@ -772,39 +706,30 @@
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
 					"name": "non_empty_column",
-					"type": "",
 					"description": "This is a test column"
 				}, {
 					"name": "empty_column",
-					"type": "",
 					"description": "This is a test column"
 				}, {
 					"name": "customer_id",
-					"type": "",
 					"description": "This is a unique identifier for a customer"
 				}, {
 					"name": "first_name",
-					"type": "",
 					"description": "Customer's first name. PII."
 				}, {
 					"name": "last_name",
-					"type": "",
 					"description": "Customer's last name. PII."
 				}, {
 					"name": "first_order",
-					"type": "",
 					"description": "Date (UTC) of a customer's first order"
 				}, {
 					"name": "most_recent_order",
-					"type": "",
 					"description": "Date (UTC) of a customer's most recent order"
 				}, {
 					"name": "number_of_orders",
-					"type": "",
 					"description": "Count of the number of orders a customer has placed"
 				}, {
 					"name": "total_order_amount",
-					"type": "",
 					"description": "Total value (AUD) of a customer's orders"
 				}]
 			}
@@ -861,13 +786,9 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "order_id",
-					"type": "",
-					"description": ""
+					"name": "order_id"
 				}, {
-					"name": "status",
-					"type": "",
-					"description": ""
+					"name": "status"
 				}]
 			}
 		}
@@ -885,13 +806,9 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "payment_id",
-					"type": "",
-					"description": ""
+					"name": "payment_id"
 				}, {
-					"name": "payment_method",
-					"type": "",
-					"description": ""
+					"name": "payment_method"
 				}]
 			}
 		}
@@ -911,39 +828,30 @@
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
-					"type": "",
 					"description": "This is a unique identifier for an order"
 				}, {
 					"name": "customer_id",
-					"type": "",
 					"description": "Foreign key to the customers table"
 				}, {
 					"name": "order_date",
-					"type": "",
 					"description": "Date (UTC) that the order was placed"
 				}, {
 					"name": "status",
-					"type": "",
 					"description": "Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |"
 				}, {
 					"name": "amount",
-					"type": "",
 					"description": "Total amount (AUD) of the order"
 				}, {
 					"name": "credit_card_amount",
-					"type": "",
 					"description": "Amount of the order (AUD) paid for by credit card"
 				}, {
 					"name": "coupon_amount",
-					"type": "",
 					"description": "Amount of the order (AUD) paid for by coupon"
 				}, {
 					"name": "bank_transfer_amount",
-					"type": "",
 					"description": "Amount of the order (AUD) paid for by bank transfer"
 				}, {
 					"name": "gift_card_amount",
-					"type": "",
 					"description": "Amount of the order (AUD) paid for by gift card"
 				}]
 			}

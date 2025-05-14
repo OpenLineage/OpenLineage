@@ -66,8 +66,7 @@
 			},
 			"schema": {
 				"fields": [{
-					"name": "id",
-					"type": ""
+					"name": "id"
 				}]
 			}
 		}
@@ -110,8 +109,7 @@
 			},
 			"schema": {
 				"fields": [{
-					"name": "id",
-					"type": ""
+					"name": "id"
 				}]
 			}
 		}

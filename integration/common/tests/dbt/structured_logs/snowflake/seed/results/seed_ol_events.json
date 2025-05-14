@@ -64,12 +64,6 @@
           "dataSource":{
             "name":"snowflake://mysnowflakeaccount.us-east-1.aws",
             "uri":"snowflake://mysnowflakeaccount.us-east-1.aws"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }
@@ -560,12 +554,6 @@
           "dataSource":{
             "name":"snowflake://mysnowflakeaccount.us-east-1.aws",
             "uri":"snowflake://mysnowflakeaccount.us-east-1.aws"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }

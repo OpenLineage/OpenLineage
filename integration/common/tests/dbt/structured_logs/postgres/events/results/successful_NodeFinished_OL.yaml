@@ -65,12 +65,6 @@
           "dataSource": {
             "name": "postgres://postgres:5432",
             "uri": "postgres://postgres:5432"
-          },
-          "schema": {
-            "fields": [ ]
-          },
-          "documentation": {
-            "description": ""
           }
         }
       }
@@ -87,15 +81,9 @@
           "schema": {
             "fields": [
               {
-                "name": "customer_id",
-                "type": "",
-                "description": "",
-                "fields": [ ]
+                "name": "customer_id"
               }
             ]
-          },
-          "documentation": {
-            "description": ""
           }
         },
         "outputFacets": { }
@@ -141,12 +129,6 @@
           "dataSource":{
             "name":"postgres://postgres:5432",
             "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       }
@@ -164,14 +146,9 @@
             "fields":[
               {
                 "name":"customer_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }

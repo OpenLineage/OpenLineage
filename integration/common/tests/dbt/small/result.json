@@ -68,8 +68,7 @@
 			},
 			"schema": {
 				"fields": [{
-					"name": "id",
-					"type": ""
+					"name": "id"
 				}]
 			},
 			"documentation": {

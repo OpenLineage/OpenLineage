@@ -49,9 +49,6 @@
 			"dataSource": {
 				"name": "redshift://foo_host:1111",
 				"uri": "redshift://foo_host:1111"
-			},
-			"schema": {
-				"fields": []
 			}
 		}
 	}],
@@ -65,8 +62,7 @@
 			},
 			"schema": {
 				"fields": [{
-					"name": "id",
-					"type": ""
+					"name": "id"
 				}]
 			}
 		},

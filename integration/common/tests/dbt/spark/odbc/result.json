@@ -33,7 +33,6 @@
 			"schema": {
 				"fields": [{
 					"name": "id",
-					"type": "",
 					"description": "The primary key for this table"
 				}]
 			}
@@ -74,7 +73,6 @@
 			"schema": {
 				"fields": [{
 					"name": "id",
-					"type": "",
 					"description": "The primary key for this table"
 				}]
 			}
@@ -91,7 +89,6 @@
 			"schema": {
 				"fields": [{
 					"name": "id",
-					"type": "",
 					"description": "The primary key for this table"
 				}]
 			}
@@ -133,7 +130,6 @@
 			"schema": {
 				"fields": [{
 					"name": "id",
-					"type": "",
 					"description": "The primary key for this table"
 				}]
 			}
@@ -174,7 +170,6 @@
 			"schema": {
 				"fields": [{
 					"name": "id",
-					"type": "",
 					"description": "The primary key for this table"
 				}]
 			}
@@ -191,7 +186,6 @@
 			"schema": {
 				"fields": [{
 					"name": "id",
-					"type": "",
 					"description": "The primary key for this table"
 				}]
 			}

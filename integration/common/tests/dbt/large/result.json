@@ -130,11 +130,9 @@
 			},
 			"schema": {
 				"fields": [{
-					"name": "order_id",
-					"type": ""
+					"name": "order_id"
 				}, {
-					"name": "status",
-					"type": ""
+					"name": "status"
 				}]
 			}
 		}
@@ -178,11 +176,9 @@
 			},
 			"schema": {
 				"fields": [{
-					"name": "payment_id",
-					"type": ""
+					"name": "payment_id"
 				}, {
-					"name": "payment_method",
-					"type": ""
+					"name": "payment_method"
 				}]
 			}
 		},
@@ -228,8 +224,7 @@
 			},
 			"schema": {
 				"fields": [{
-					"name": "customer_id",
-					"type": ""
+					"name": "customer_id"
 				}]
 			}
 		}
@@ -269,11 +264,9 @@
 			},
 			"schema": {
 				"fields": [{
-					"name": "order_id",
-					"type": ""
+					"name": "order_id"
 				}, {
-					"name": "status",
-					"type": ""
+					"name": "status"
 				}]
 			}
 		}
@@ -287,11 +280,9 @@
 			},
 			"schema": {
 				"fields": [{
-					"name": "payment_id",
-					"type": ""
+					"name": "payment_id"
 				}, {
-					"name": "payment_method",
-					"type": ""
+					"name": "payment_method"
 				}]
 			}
 		}
@@ -306,32 +297,23 @@
 			},
 			"schema": {
 				"fields": [{
-					"name": "order_id",
-					"type": ""
+					"name": "order_id"
 				}, {
-					"name": "customer_id",
-					"type": ""
+					"name": "customer_id"
 				}, {
-					"name": "order_date",
-					"type": ""
+					"name": "order_date"
 				}, {
-					"name": "status",
-					"type": ""
+					"name": "status"
 				}, {
-					"name": "amount",
-					"type": ""
+					"name": "amount"
 				}, {
-					"name": "credit_card_amount",
-					"type": ""
+					"name": "credit_card_amount"
 				}, {
-					"name": "coupon_amount",
-					"type": ""
+					"name": "coupon_amount"
 				}, {
-					"name": "bank_transfer_amount",
-					"type": ""
+					"name": "bank_transfer_amount"
 				}, {
-					"name": "gift_card_amount",
-					"type": ""
+					"name": "gift_card_amount"
 				}]
 			}
 		},
@@ -376,8 +358,7 @@
 			},
 			"schema": {
 				"fields": [{
-					"name": "customer_id",
-					"type": ""
+					"name": "customer_id"
 				}]
 			}
 		}
@@ -391,11 +372,9 @@
 			},
 			"schema": {
 				"fields": [{
-					"name": "order_id",
-					"type": ""
+					"name": "order_id"
 				}, {
-					"name": "status",
-					"type": ""
+					"name": "status"
 				}]
 			}
 		}
@@ -409,11 +388,9 @@
 			},
 			"schema": {
 				"fields": [{
-					"name": "payment_id",
-					"type": ""
+					"name": "payment_id"
 				}, {
-					"name": "payment_method",
-					"type": ""
+					"name": "payment_method"
 				}]
 			}
 		}
@@ -432,26 +409,19 @@
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 				"fields": [{
-					"name": "customer_id",
-					"type": ""
+					"name": "customer_id"
 				}, {
-					"name": "first_name",
-					"type": ""
+					"name": "first_name"
 				}, {
-					"name": "last_name",
-					"type": ""
+					"name": "last_name"
 				}, {
-					"name": "first_order",
-					"type": ""
+					"name": "first_order"
 				}, {
-					"name": "most_recent_order",
-					"type": ""
+					"name": "most_recent_order"
 				}, {
-					"name": "number_of_orders",
-					"type": ""
+					"name": "number_of_orders"
 				}, {
-					"name": "total_order_amount",
-					"type": ""
+					"name": "total_order_amount"
 				}]
 			}
 		}

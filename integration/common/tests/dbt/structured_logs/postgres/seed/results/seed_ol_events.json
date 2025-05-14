@@ -64,12 +64,6 @@
           "dataSource":{
             "name":"postgres://postgres:5432",
             "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }
@@ -412,12 +406,6 @@
           "dataSource":{
             "name":"postgres://postgres:5432",
             "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }
