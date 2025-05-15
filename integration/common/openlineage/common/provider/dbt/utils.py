@@ -17,26 +17,22 @@ PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integ
 HANDLED_COMMANDS = ["run", "seed", "snapshot", "test", "build"]
 CONSUME_STRUCTURED_LOGS_COMMAND_OPTION = "--consume-structured-logs"
 DBT_LOG_FILE_MAX_BYTES = str(100 * 1024 * 1024)
+TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 log = logging.getLogger(__name__)
 
 
-def get_event_timestamp(timestamp: str):
+def format_event_timestamp(timestamp: str) -> str:
     """
     dbt events have a discrepancy in their timestamp formats
     This converts a given timestamp string to %Y-%m-%dT%H:%M:%S.%fZ
-    It returns the given timestamp if it couldn't do the conversion
+    It returns the original timestamp if it couldn't do the conversion
     """
-    output_format = "%Y-%m-%dT%H:%M:%S.%fZ"
-    input_formats = ["%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%S.%f"]
-    for input_format in input_formats:
-        try:
-            iso_timestamp = datetime.strptime(timestamp, input_format).strftime(output_format)
-            return iso_timestamp
-        except ValueError:
-            pass  # ignore and pass to the other format
-
-    return timestamp
+    try:
+        iso_timestamp = datetime.fromisoformat(timestamp).strftime(TIMESTAMP_FORMAT)
+        return iso_timestamp
+    except ValueError:
+        return timestamp
 
 
 def get_dbt_command(dbt_command_line: List[str]) -> Optional[str]:
