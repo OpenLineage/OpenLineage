@@ -411,7 +411,7 @@ jobs:
       - run: cp -r ../client/python python
       - attach_workspace:
           at: .
-      - run: AIRFLOW_IMAGE=apache/airflow:2.3.4-python3.9 ./airflow/tests/integration/docker/up-failure.sh << parameters.failure-type >>
+      - run: AIRFLOW_IMAGE=apache/airflow:2.5.2-python3.9 ./airflow/tests/integration/docker/up-failure.sh << parameters.failure-type >>
       - store_artifacts:
           path: airflow/tests/integration/failures/airflow/logs
           destination: airflow-logs

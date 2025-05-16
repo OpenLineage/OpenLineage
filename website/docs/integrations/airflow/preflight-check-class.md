@@ -94,11 +94,11 @@ class CheckOpenLineage:
             )
         version_output = process.stdout.strip()
         parsed_version = Version(version_output)
-        if parsed_version < Version("2.3"):
+        if parsed_version < Version("2.5"):
             raise RuntimeError(
-                "OpenLineage is not supported in Airflow versions <2.3"
+                "OpenLineage is not supported in Airflow versions <2.5"
                 )
-        elif parsed_version >= Version("2.8"):
+        elif parsed_version >= Version("2.7"):
             log.info("OpenLineage Provider can be used.")
             return True, version_output
         return False, version_output
