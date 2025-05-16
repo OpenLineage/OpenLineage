@@ -63,12 +63,6 @@
           "dataSource":{
             "name":"postgres://postgres:5432",
             "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       }
@@ -86,14 +80,9 @@
             "fields":[
               {
                 "name":"customer_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }
@@ -583,12 +572,6 @@
           "dataSource":{
             "name":"postgres://postgres:5432",
             "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       }
@@ -606,14 +589,9 @@
             "fields":[
               {
                 "name":"customer_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }
@@ -659,12 +637,6 @@
           "dataSource":{
             "name":"postgres://postgres:5432",
             "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       }
@@ -682,20 +654,13 @@
             "fields":[
               {
                 "name":"order_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               },
               {
                 "name":"status",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }
@@ -1185,12 +1150,6 @@
           "dataSource":{
             "name":"postgres://postgres:5432",
             "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       }
@@ -1208,20 +1167,13 @@
             "fields":[
               {
                 "name":"order_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               },
               {
                 "name":"status",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }
@@ -1267,12 +1219,6 @@
           "dataSource":{
             "name":"postgres://postgres:5432",
             "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       }
@@ -1290,20 +1236,13 @@
             "fields":[
               {
                 "name":"payment_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               },
               {
                 "name":"payment_method",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }
@@ -1793,12 +1732,6 @@
           "dataSource":{
             "name":"postgres://postgres:5432",
             "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       }
@@ -1816,20 +1749,13 @@
             "fields":[
               {
                 "name":"payment_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               },
               {
                 "name":"payment_method",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }
@@ -1880,14 +1806,9 @@
             "fields":[
               {
                 "name":"customer_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       },
@@ -1903,20 +1824,13 @@
             "fields":[
               {
                 "name":"order_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               },
               {
                 "name":"status",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       },
@@ -1932,20 +1846,13 @@
             "fields":[
               {
                 "name":"payment_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               },
               {
                 "name":"payment_method",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       }
@@ -1963,43 +1870,36 @@
             "fields":[
               {
                 "name":"customer_id",
-                "type":"",
                 "description":"This is a unique identifier for a customer",
                 "fields":[ ]
               },
               {
                 "name":"first_name",
-                "type":"",
                 "description":"Customer's first name. PII.",
                 "fields":[ ]
               },
               {
                 "name":"last_name",
-                "type":"",
                 "description":"Customer's last name. PII.",
                 "fields":[ ]
               },
               {
                 "name":"first_order",
-                "type":"",
                 "description":"Date (UTC) of a customer's first order",
                 "fields":[ ]
               },
               {
                 "name":"most_recent_order",
-                "type":"",
                 "description":"Date (UTC) of a customer's most recent order",
                 "fields":[ ]
               },
               {
                 "name":"number_of_orders",
-                "type":"",
                 "description":"Count of the number of orders a customer has placed",
                 "fields":[ ]
               },
               {
                 "name":"total_order_amount",
-                "type":"",
                 "description":"Total value (AUD) of a customer's orders",
                 "fields":[ ]
               }
@@ -2501,14 +2401,9 @@
             "fields":[
               {
                 "name":"customer_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       },
@@ -2524,20 +2419,13 @@
             "fields":[
               {
                 "name":"order_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               },
               {
                 "name":"status",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       },
@@ -2553,20 +2441,13 @@
             "fields":[
               {
                 "name":"payment_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               },
               {
                 "name":"payment_method",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       }
@@ -2584,43 +2465,36 @@
             "fields":[
               {
                 "name":"customer_id",
-                "type":"",
                 "description":"This is a unique identifier for a customer",
                 "fields":[ ]
               },
               {
                 "name":"first_name",
-                "type":"",
                 "description":"Customer's first name. PII.",
                 "fields":[ ]
               },
               {
                 "name":"last_name",
-                "type":"",
                 "description":"Customer's last name. PII.",
                 "fields":[ ]
               },
               {
                 "name":"first_order",
-                "type":"",
                 "description":"Date (UTC) of a customer's first order",
                 "fields":[ ]
               },
               {
                 "name":"most_recent_order",
-                "type":"",
                 "description":"Date (UTC) of a customer's most recent order",
                 "fields":[ ]
               },
               {
                 "name":"number_of_orders",
-                "type":"",
                 "description":"Count of the number of orders a customer has placed",
                 "fields":[ ]
               },
               {
                 "name":"total_order_amount",
-                "type":"",
                 "description":"Total value (AUD) of a customer's orders",
                 "fields":[ ]
               }
@@ -2678,20 +2552,13 @@
             "fields":[
               {
                 "name":"order_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               },
               {
                 "name":"status",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       },
@@ -2707,20 +2574,13 @@
             "fields":[
               {
                 "name":"payment_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               },
               {
                 "name":"payment_method",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       }
@@ -2738,55 +2598,46 @@
             "fields":[
               {
                 "name":"order_id",
-                "type":"",
                 "description":"This is a unique identifier for an order",
                 "fields":[ ]
               },
               {
                 "name":"customer_id",
-                "type":"",
                 "description":"Foreign key to the customers table",
                 "fields":[ ]
               },
               {
                 "name":"order_date",
-                "type":"",
                 "description":"Date (UTC) that the order was placed",
                 "fields":[ ]
               },
               {
                 "name":"status",
-                "type":"",
                 "description":"Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |",
                 "fields":[ ]
               },
               {
                 "name":"amount",
-                "type":"",
                 "description":"Total amount (AUD) of the order",
                 "fields":[ ]
               },
               {
                 "name":"credit_card_amount",
-                "type":"",
                 "description":"Amount of the order (AUD) paid for by credit card",
                 "fields":[ ]
               },
               {
                 "name":"coupon_amount",
-                "type":"",
                 "description":"Amount of the order (AUD) paid for by coupon",
                 "fields":[ ]
               },
               {
                 "name":"bank_transfer_amount",
-                "type":"",
                 "description":"Amount of the order (AUD) paid for by bank transfer",
                 "fields":[ ]
               },
               {
                 "name":"gift_card_amount",
-                "type":"",
                 "description":"Amount of the order (AUD) paid for by gift card",
                 "fields":[ ]
               }
@@ -3288,20 +3139,13 @@
             "fields":[
               {
                 "name":"order_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               },
               {
                 "name":"status",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       },
@@ -3317,20 +3161,13 @@
             "fields":[
               {
                 "name":"payment_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               },
               {
                 "name":"payment_method",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       }
@@ -3348,55 +3185,46 @@
             "fields":[
               {
                 "name":"order_id",
-                "type":"",
                 "description":"This is a unique identifier for an order",
                 "fields":[ ]
               },
               {
                 "name":"customer_id",
-                "type":"",
                 "description":"Foreign key to the customers table",
                 "fields":[ ]
               },
               {
                 "name":"order_date",
-                "type":"",
                 "description":"Date (UTC) that the order was placed",
                 "fields":[ ]
               },
               {
                 "name":"status",
-                "type":"",
                 "description":"Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |",
                 "fields":[ ]
               },
               {
                 "name":"amount",
-                "type":"",
                 "description":"Total amount (AUD) of the order",
                 "fields":[ ]
               },
               {
                 "name":"credit_card_amount",
-                "type":"",
                 "description":"Amount of the order (AUD) paid for by credit card",
                 "fields":[ ]
               },
               {
                 "name":"coupon_amount",
-                "type":"",
                 "description":"Amount of the order (AUD) paid for by coupon",
                 "fields":[ ]
               },
               {
                 "name":"bank_transfer_amount",
-                "type":"",
                 "description":"Amount of the order (AUD) paid for by bank transfer",
                 "fields":[ ]
               },
               {
                 "name":"gift_card_amount",
-                "type":"",
                 "description":"Amount of the order (AUD) paid for by gift card",
                 "fields":[ ]
               }

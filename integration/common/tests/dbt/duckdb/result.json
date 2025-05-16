@@ -29,38 +29,31 @@
                     "fields": [
                         {
                             "description": "This is a unique identifier for a customer",
-                            "name": "customer_id",
-                            "type": ""
+                            "name": "customer_id"
                         },
                         {
                             "description": "Customer's first name. PII.",
-                            "name": "first_name",
-                            "type": ""
+                            "name": "first_name"
                         },
                         {
                             "description": "Customer's last name. PII.",
-                            "name": "last_name",
-                            "type": ""
+                            "name": "last_name"
                         },
                         {
                             "description": "Date (UTC) of a customer's first order",
-                            "name": "first_order",
-                            "type": ""
+                            "name": "first_order"
                         },
                         {
                             "description": "Date (UTC) of a customer's most recent order",
-                            "name": "most_recent_order",
-                            "type": ""
+                            "name": "most_recent_order"
                         },
                         {
                             "description": "Count of the number of orders a customer has placed",
-                            "name": "number_of_orders",
-                            "type": ""
+                            "name": "number_of_orders"
                         },
                         {
                             "description": "Total value (AUD) of a customer's orders",
-                            "name": "total_order_amount",
-                            "type": ""
+                            "name": "total_order_amount"
                         }
                     ]
                 }
@@ -113,38 +106,31 @@
                     "fields": [
                         {
                             "description": "This is a unique identifier for a customer",
-                            "name": "customer_id",
-                            "type": ""
+                            "name": "customer_id"
                         },
                         {
                             "description": "Customer's first name. PII.",
-                            "name": "first_name",
-                            "type": ""
+                            "name": "first_name"
                         },
                         {
                             "description": "Customer's last name. PII.",
-                            "name": "last_name",
-                            "type": ""
+                            "name": "last_name"
                         },
                         {
                             "description": "Date (UTC) of a customer's first order",
-                            "name": "first_order",
-                            "type": ""
+                            "name": "first_order"
                         },
                         {
                             "description": "Date (UTC) of a customer's most recent order",
-                            "name": "most_recent_order",
-                            "type": ""
+                            "name": "most_recent_order"
                         },
                         {
                             "description": "Count of the number of orders a customer has placed",
-                            "name": "number_of_orders",
-                            "type": ""
+                            "name": "number_of_orders"
                         },
                         {
                             "description": "Total value (AUD) of a customer's orders",
-                            "name": "total_order_amount",
-                            "type": ""
+                            "name": "total_order_amount"
                         }
                     ]
                 }

@@ -68,43 +68,36 @@
             "fields":[
               {
                 "name":"customer_id",
-                "type":"",
                 "description":"This is a unique identifier for a customer",
                 "fields":[ ]
               },
               {
                 "name":"first_name",
-                "type":"",
                 "description":"Customer's first name. PII.",
                 "fields":[ ]
               },
               {
                 "name":"last_name",
-                "type":"",
                 "description":"Customer's last name. PII.",
                 "fields":[ ]
               },
               {
                 "name":"first_order",
-                "type":"",
                 "description":"Date (UTC) of a customer's first order",
                 "fields":[ ]
               },
               {
                 "name":"most_recent_order",
-                "type":"",
                 "description":"Date (UTC) of a customer's most recent order",
                 "fields":[ ]
               },
               {
                 "name":"number_of_orders",
-                "type":"",
                 "description":"Count of the number of orders a customer has placed",
                 "fields":[ ]
               },
               {
                 "name":"total_order_amount",
-                "type":"",
                 "description":"Total value (AUD) of a customer's orders",
                 "fields":[ ]
               }
@@ -124,12 +117,6 @@
           "dataSource":{
             "name":"postgres://postgres:5432",
             "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }
@@ -180,43 +167,36 @@
             "fields":[
               {
                 "name":"customer_id",
-                "type":"",
                 "description":"This is a unique identifier for a customer",
                 "fields":[ ]
               },
               {
                 "name":"first_name",
-                "type":"",
                 "description":"Customer's first name. PII.",
                 "fields":[ ]
               },
               {
                 "name":"last_name",
-                "type":"",
                 "description":"Customer's last name. PII.",
                 "fields":[ ]
               },
               {
                 "name":"first_order",
-                "type":"",
                 "description":"Date (UTC) of a customer's first order",
                 "fields":[ ]
               },
               {
                 "name":"most_recent_order",
-                "type":"",
                 "description":"Date (UTC) of a customer's most recent order",
                 "fields":[ ]
               },
               {
                 "name":"number_of_orders",
-                "type":"",
                 "description":"Count of the number of orders a customer has placed",
                 "fields":[ ]
               },
               {
                 "name":"total_order_amount",
-                "type":"",
                 "description":"Total value (AUD) of a customer's orders",
                 "fields":[ ]
               }
@@ -245,12 +225,6 @@
           "dataSource":{
             "name":"postgres://postgres:5432",
             "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }
