@@ -1,0 +1,38 @@
+/*
+/* Copyright 2018-2025 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+plugins {
+    id 'eclipse'
+    id 'jacoco'
+    id 'java'
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+    id 'com.adarshr.test-logger' version '3.2.0'
+    id 'com.diffplug.spotless' version '7.0.2'
+    id 'com.gradleup.shadow' version '8.3.6'
+    id 'pmd'
+    id 'io.freefair.lombok' version '8.13.1'
+}
+
+ext {
+    projectDescription = 'DataZone OpenLineage transport library'
+    awsSdkVersion = '2.31.15'
+}
+
+dependencies {
+    compileOnly('com.google.code.findbugs:jsr305:3.0.2')
+    implementation("software.amazon.awssdk:auth:${awsSdkVersion}")
+    implementation("software.amazon.awssdk:datazone:${awsSdkVersion}")
+    implementation("software.amazon.awssdk:apache-client:${awsSdkVersion}")
+}
+
+shadowJar {
+    relocate 'software.amazon', 'io.openlineage.client.shaded.software.amazon'
+    relocate 'org.apache', 'io.openlineage.client.shaded.org.apache'
+    exclude 'org.slf4j'
+}
+
+apply from: '../transports.build.gradle'

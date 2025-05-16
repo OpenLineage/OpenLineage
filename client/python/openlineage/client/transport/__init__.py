@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+from openlineage.client.transport.amazon_datazone import AmazonDataZoneConfig, AmazonDataZoneTransport
 from openlineage.client.transport.composite import CompositeTransport
 from openlineage.client.transport.console import ConsoleTransport
 from openlineage.client.transport.factory import DefaultTransportFactory
@@ -25,6 +26,7 @@ _factory.register_transport(ConsoleTransport.kind, ConsoleTransport)
 _factory.register_transport(NoopTransport.kind, NoopTransport)
 _factory.register_transport(FileTransport.kind, FileTransport)
 _factory.register_transport(TransformTransport.kind, TransformTransport)
+_factory.register_transport(AmazonDataZoneTransport.kind, AmazonDataZoneTransport)
 
 
 def get_default_factory() -> DefaultTransportFactory:
@@ -44,6 +46,8 @@ __all__ = [
     "Config",
     "Transport",
     "TransportFactory",
+    "AmazonDataZoneConfig",
+    "AmazonDataZoneTransport",
     "CompositeTransport",
     "ConsoleTransport",
     "FileTransport",
