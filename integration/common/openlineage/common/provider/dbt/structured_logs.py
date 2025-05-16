@@ -18,7 +18,7 @@ from openlineage.client.facet_v2 import (
     sql_job,
 )
 from openlineage.client.run import InputDataset
-from openlineage.client.uuid import generate_new_uuid
+from openlineage.client.uuid import generate_new_uuid, generate_static_uuid
 from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
 from openlineage.common.provider.dbt.processor import (
     DbtVersionRunFacet,
@@ -29,11 +29,12 @@ from openlineage.common.provider.dbt.processor import (
 from openlineage.common.provider.dbt.utils import (
     DBT_LOG_FILE_MAX_BYTES,
     HANDLED_COMMANDS,
+    TIMESTAMP_FORMAT,
+    format_event_timestamp,
     generate_run_event,
     get_dbt_command,
     get_dbt_log_path,
     get_dbt_profiles_dir,
-    get_event_timestamp,
     get_job_type,
     get_node_unique_id,
     get_parent_run_metadata,
@@ -64,7 +65,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.dbt_log_dirname: str = self.dbt_log_file_path.split("/")[-2]
         self.parent_run_metadata: ParentRunMetadata = get_parent_run_metadata()
 
-        self.node_id_to_ol_run_id: Dict[str, str] = defaultdict(lambda: str(generate_new_uuid()))
+        self.node_id_to_ol_run_id: Dict[str, str] = {}
 
         # sql query ids are incremented sequentially per node_id
         self.node_id_to_sql_query_id: Dict[str, Dict[str, int]] = defaultdict(lambda: {"next_id": 1})
@@ -193,13 +194,22 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         return ol_event
 
+    def _generate_run_id(self, timestamp_str: str, node_unique_id: Optional[str]) -> str:
+        try:
+            timestamp = datetime.datetime.fromisoformat(timestamp_str)
+            return str(generate_static_uuid(timestamp, str(node_unique_id).encode("utf-8")))
+        except ValueError:
+            # use current timestamp
+            return str(generate_new_uuid())
+
     def _parse_dbt_start_command_event(self, event) -> RunEvent:
-        event_time = get_event_timestamp(event["info"]["ts"])
+        event_time = event["info"]["ts"]
+        start_event_run_id = self._generate_run_id(event_time, get_node_unique_id(event))
+
         run_facets = self.dbt_version_facet()
         if self.parent_run_metadata:
             run_facets["parent"] = self.parent_run_metadata.to_openlineage()
 
-        start_event_run_id = str(generate_new_uuid())
         job_facets = {
             "jobType": job_type_job.JobTypeJobFacet(
                 jobType=get_job_type(event),
@@ -211,7 +221,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         start_event = generate_run_event(
             event_type=RunState.START,
-            event_time=event_time,
+            event_time=format_event_timestamp(event_time),
             run_id=start_event_run_id,
             job_name=self.job_name,
             job_namespace=self.job_namespace,
@@ -235,9 +245,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 producer=self.producer,
             )
         }
+        event_time = datetime.datetime.now(timezone=datetime.timezone.utc)
         return generate_run_event(
             event_type=RunState.ABORT,
-            event_time=datetime.datetime.now().isoformat(),  # Current time - no other data source
+            event_time=event_time.strftime(TIMESTAMP_FORMAT),  # Current time - no other data source
             run_id=self.dbt_run_metadata.run_id,
             job_name=self.dbt_run_metadata.job_name,
             job_namespace=self.dbt_run_metadata.job_namespace,
@@ -245,10 +256,16 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             run_facets=run_facets,
         )
 
+    def _get_node_run_id(self, timestamp_str: str, node_unique_id: str) -> str:
+        return self.node_id_to_ol_run_id.setdefault(
+            node_unique_id,
+            self._generate_run_id(timestamp_str, node_unique_id),
+        )
+
     def _parse_node_start_event(self, event: Dict) -> RunEvent:
         node_unique_id = get_node_unique_id(event)
-        run_id = self.node_id_to_ol_run_id[node_unique_id]
-        node_start_time = get_event_timestamp(event["data"]["node_info"]["node_started_at"])
+        node_start_time = event["data"]["node_info"]["node_started_at"]
+        run_id = self._get_node_run_id(node_start_time, node_unique_id)
 
         parent_run_metadata = self.dbt_run_metadata.to_openlineage()
         run_facets = {"parent": parent_run_metadata, **self.dbt_version_facet()}
@@ -271,7 +288,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         return generate_run_event(
             event_type=RunState.START,
-            event_time=node_start_time,
+            event_time=format_event_timestamp(node_start_time),
             run_id=run_id,
             run_facets=run_facets,
             job_name=job_name,
@@ -282,14 +299,13 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         )
 
     def parse_node_finished_event(self, event) -> RunEvent:
-        resource_type = event["data"]["node_info"]["resource_type"]
         node_unique_id = get_node_unique_id(event)
-        node_finished_at = get_event_timestamp(event["data"]["node_info"]["node_finished_at"])
-        if node_finished_at == "":
-            node_finished_at = get_event_timestamp(event["data"]["node_info"]["node_started_at"])
+        resource_type = event["data"]["node_info"]["resource_type"]
+        node_started_at = event["data"]["node_info"]["node_started_at"]
+        node_finished_at = event["data"]["node_info"]["node_finished_at"] or node_started_at
         node_status = event["data"]["node_info"]["node_status"]
-        run_id = self.node_id_to_ol_run_id[node_unique_id]
 
+        run_id = self._get_node_run_id(node_started_at, node_unique_id)
         parent_run_metadata = self.dbt_run_metadata.to_openlineage()
         run_facets = {"parent": parent_run_metadata, **self.dbt_version_facet()}
 
@@ -345,7 +361,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         return generate_run_event(
             event_type=event_type,
-            event_time=node_finished_at,
+            event_time=format_event_timestamp(node_finished_at),
             run_id=run_id,
             run_facets=run_facets,
             job_name=job_name,
@@ -380,9 +396,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _parse_sql_query_event(self, event) -> RunEvent:
         node_unique_id = get_node_unique_id(event)
-        node_start_run_id = self.node_id_to_ol_run_id[node_unique_id]
-        sql_ol_run_id = str(generate_new_uuid())
         sql_start_at = event["info"]["ts"]
+        sql_text = event["data"]["sql"]
+
+        sql_ol_run_id = self._generate_run_id(sql_start_at, sql_text)
+        node_start_run_id = self._get_node_run_id(sql_start_at, node_unique_id)
 
         parent_run = ParentRunMetadata(
             run_id=node_start_run_id,
@@ -402,12 +420,12 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 processingType="BATCH",
                 producer=self.producer,
             ),
-            "sql": sql_job.SQLJobFacet(query=event["data"]["sql"]),
+            "sql": sql_job.SQLJobFacet(query=sql_text),
         }
 
         sql_event = generate_run_event(
             event_type=RunState.START,
-            event_time=sql_start_at,
+            event_time=format_event_timestamp(sql_start_at),
             run_id=sql_ol_run_id,
             run_facets=run_facets,
             job_name=self._get_sql_job_name(event),
@@ -429,7 +447,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         dbt_node_type = event["info"]["name"]
         run_state = RunState.OTHER
-        event_time = get_event_timestamp(event["info"]["ts"])
+        event_time = event["info"]["ts"]
         run_facets = sql_ol_run_event.run.facets
 
         if dbt_node_type == "CatchableExceptionOnRun":
@@ -444,7 +462,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         return generate_run_event(
             event_type=run_state,
-            event_time=event_time,
+            event_time=format_event_timestamp(event_time),
             run_id=sql_ol_run_event.run.runId,
             run_facets=run_facets,
             job_name=sql_ol_run_event.job.name,
@@ -454,7 +472,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _parse_command_completed_event(self, event) -> RunEvent:
         success = event["data"]["success"]
-        event_time = get_event_timestamp(event["data"]["completed_at"])
+        event_time = event["data"]["completed_at"]
         run_facets = self.dbt_version_facet()
         if success:
             run_state = RunState.COMPLETE
@@ -481,7 +499,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         return generate_run_event(
             event_type=run_state,
-            event_time=event_time,
+            event_time=format_event_timestamp(event_time),
             run_id=self.dbt_run_metadata.run_id,
             job_name=self.dbt_run_metadata.job_name,
             job_namespace=self.dbt_run_metadata.job_namespace,

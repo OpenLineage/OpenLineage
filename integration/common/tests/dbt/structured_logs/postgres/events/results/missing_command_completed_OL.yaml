@@ -180,7 +180,7 @@
   },
   # OL event for not found CommandCompleted log event
   {
-    "eventTime": "2024-01-01T00:00:00.000001",
+    "eventTime": "2024-01-01T00:00:00.000001Z",
     "run": {
       "runId": "{{ any(result) }}",
       "facets": {
