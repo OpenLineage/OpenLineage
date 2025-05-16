@@ -29,6 +29,11 @@ public interface CatalogHandler {
     return Optional.empty();
   }
 
+  default Optional<OpenLineage.CatalogDatasetFacet> getCatalogDatasetFacet(
+      TableCatalog tableCatalog, Map<String, String> properties) {
+    return Optional.empty();
+  }
+
   /** Try to find string that uniquely identifies version of a dataset. */
   default Optional<String> getDatasetVersion(
       TableCatalog catalog, Identifier identifier, Map<String, String> properties) {

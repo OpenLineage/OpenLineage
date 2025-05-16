@@ -28,6 +28,7 @@ import org.apache.spark.sql.delta.catalog.DeltaTableV2;
 
 @Slf4j
 public class DeltaHandler implements CatalogHandler {
+  private static final String DELTA = "delta";
   private final OpenLineageContext context;
 
   public DeltaHandler(OpenLineageContext context) {
@@ -81,12 +82,31 @@ public class DeltaHandler implements CatalogHandler {
   }
 
   @Override
+  public Optional<OpenLineage.CatalogDatasetFacet> getCatalogDatasetFacet(
+      TableCatalog tableCatalog, Map<String, String> properties) {
+    String name = tableCatalog.name();
+    if (name == null || name.isEmpty()) {
+      name = "spark_catalog"; // default
+    }
+    OpenLineage.CatalogDatasetFacetBuilder builder =
+        context
+            .getOpenLineage()
+            .newCatalogDatasetFacetBuilder()
+            .name(name)
+            .framework(DELTA)
+            .type(DELTA)
+            .source("spark");
+
+    return Optional.of(builder.build());
+  }
+
+  @Override
   public Optional<OpenLineage.StorageDatasetFacet> getStorageDatasetFacet(
       Map<String, String> properties) {
     return Optional.of(
         context
             .getOpenLineage()
-            .newStorageDatasetFacet("delta", "parquet")); // Delta is always parquet
+            .newStorageDatasetFacet(DELTA, "parquet")); // Delta is always parquet
   }
 
   @SneakyThrows
@@ -136,6 +156,6 @@ public class DeltaHandler implements CatalogHandler {
 
   @Override
   public String getName() {
-    return "delta";
+    return DELTA;
   }
 }

@@ -71,6 +71,45 @@ public class IcebergHandler implements CatalogHandler {
   }
 
   @Override
+  public Optional<OpenLineage.CatalogDatasetFacet> getCatalogDatasetFacet(
+      TableCatalog tableCatalog, Map<String, String> properties) {
+    Optional<Map<String, String>> catalogConf =
+        context
+            .getSparkSession()
+            .map(SparkSession::conf)
+            .map(conf -> conf.getAll())
+            .map(ScalaConversionUtils::fromMap)
+            .map(map -> getCatalogProperties(map, tableCatalog.name()));
+
+    if (!catalogConf.isPresent()) {
+      return Optional.empty();
+    }
+    Map<String, String> conf = catalogConf.get();
+    String catalogType = getCatalogType(conf);
+
+    OpenLineage.CatalogDatasetFacetBuilder builder =
+        context
+            .getOpenLineage()
+            .newCatalogDatasetFacetBuilder()
+            .name(tableCatalog.name())
+            .framework("iceberg")
+            .type(catalogType)
+            .source("spark");
+
+    String warehouseLocation = conf.get(CatalogProperties.WAREHOUSE_LOCATION);
+    if (warehouseLocation != null && !warehouseLocation.trim().isEmpty()) {
+      builder.warehouseUri(warehouseLocation);
+    }
+
+    String catalogUri = conf.get(CatalogProperties.URI);
+    if (catalogUri != null && !catalogUri.trim().isEmpty()) {
+      builder.metadataUri(catalogUri);
+    }
+
+    return Optional.of(builder.build());
+  }
+
+  @Override
   public DatasetIdentifier getDatasetIdentifier(
       SparkSession session,
       TableCatalog tableCatalog,
@@ -169,6 +208,7 @@ public class IcebergHandler implements CatalogHandler {
           FilesystemDatasetUtils.fromLocationAndName(
               new Path(warehouseLocation).toUri(), tableName);
     }
+    log.debug("Received symlink {}", value);
     return Optional.ofNullable(value);
   }
 
@@ -228,9 +268,10 @@ public class IcebergHandler implements CatalogHandler {
   @SneakyThrows
   private DatasetIdentifier getGlueIdentifier(String table, SparkSession sparkSession) {
     SparkContext sparkContext = sparkSession.sparkContext();
-    String arn =
-        AwsUtils.getGlueArn(sparkContext.getConf(), sparkContext.hadoopConfiguration()).get();
-    return new DatasetIdentifier(GLUE_TABLE_PREFIX + table.replace(".", "/"), arn);
+    Optional<String> arn =
+        AwsUtils.getGlueArn(sparkContext.getConf(), sparkContext.hadoopConfiguration());
+    return arn.map(s -> new DatasetIdentifier(GLUE_TABLE_PREFIX + table.replace(".", "/"), s))
+        .orElse(null);
   }
 
   @SneakyThrows
