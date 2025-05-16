@@ -544,6 +544,182 @@ config = CompositeConfig.from_dict(
 client = OpenLineageClient(transport=CompositeTransport(config))
 ```
 </TabItem>
+<TabItem value="env_vars" label="Environment Variables">
+
+```python
+import os
+from openlineage.client import OpenLineageClient
+
+os.environ["OPENLINEAGE__TRANSPORT__TYPE"] = "composite"
+os.environ["OPENLINEAGE__TRANSPORT__CONTINUE_ON_FAILURE"] = "true"
+
+# First transport - transform with http
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TYPE"] = "transform"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSFORMER_CLASS"] = "openlineage.client.transport.transform.JobNamespaceReplaceTransformer"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSFORMER_PROPERTIES"] = '{"new_job_namespace": "new_namespace_value"}'
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSPORT__TYPE"] = "http"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSPORT__URL"] = "http://backend:5000"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSPORT__ENDPOINT"] = "api/v1/lineage"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSPORT__AUTH__TYPE"] = "api_key"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSPORT__AUTH__API_KEY"] = "1500100900"
+
+# Second transport - http 
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TYPE"] = "http"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__URL"] = "http://another-backend:5000"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__ENDPOINT"] = "another/endpoint/v2"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__AUTH__TYPE"] = "api_key"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__AUTH__API_KEY"] = "bf6128d06dc2"
+
+client = OpenLineageClient()
+```
+</TabItem>
+
+</Tabs>
+
+### Transform
+
+The `TransformTransport` is designed to enable event manipulation before emitting the event. 
+Together with `CompositeTransport`, it can be used to send different events into multiple backends.
+
+#### Configuration
+
+- `type` - string, must be "transform". Required.
+- `transport` - Transport configuration to emit modified events. Required.
+- `transformer_class` - class name of the event transformer. Class has to implement `openlineage.client.transports.transform.EventTransformer` interface and be a fully qualified class name that can be imported. Required.
+- `transformer_properties` - Extra properties to be passed as `properties` kwarg into `transformer_class` constructor. Optional, default is `{}`.
+
+#### Behavior
+
+- The configured `transformer_class` will be used to alter events before the emission.
+- Modified events will be passed into the configured `transport` for further processing.
+- If transformation fails, event emission will be skipped.
+- If modified event is None, event emission will be skipped.
+
+#### `EventTransformer` interface
+
+```python
+from __future__ import annotations
+
+from typing import Any
+from openlineage.client.client import Event
+
+class EventTransformer:
+    def __init__(self, properties: dict[str, Any]) -> None:
+        self.properties = properties
+
+    def transform(self, event: Event) -> Event | None:
+        raise NotImplementedError
+```
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: transform
+  transformer_class: openlineage.client.transport.transform.JobNamespaceReplaceTransformer
+  transformer_properties:
+    new_job_namespace: new_value
+  transport:
+    type: http
+    url: https://backend:5000
+    endpoint: api/v1/lineage
+    timeout: 5
+    verify: false
+    auth:
+      type: api_key
+      apiKey: f048521b-dfe8-47cd-9c65-0cb07d57591e
+    compression: gzip
+    retry:
+      total: 5
+      read: 5
+      connect: 5
+      backoff_factor: 0.3
+      status_forcelist: [500, 502, 503, 504]
+      allowed_methods: ["HEAD", "POST"]
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.transform import TransformTransport, TransformConfig
+
+transform_config = TransformConfig(
+    transport={
+        "type": "http",
+        "url": "http://backend:5000",
+        "endpoint": "api/v1/lineage",
+        "verify": False,
+        "auth": {
+            "type": "api_key",
+            "api_key": "1500100900",
+        },
+        "compression": "gzip",
+        "retry": {
+            "total": 7,
+            "connect": 3,
+            "read": 2,
+            "status": 5,
+            "other": 1,
+            "allowed_methods": ["POST"],
+            "status_forcelist": [500, 502, 503, 504],
+            "backoff_factor": 0.5,
+            "raise_on_redirect": False,
+            "raise_on_status": False,
+        },
+    },
+    transformer_class="openlineage.client.transport.transform.JobNamespaceReplaceTransformer",
+    transformer_properties={"new_job_namespace": "new_namespace"}
+)
+
+client = OpenLineageClient(transport=TransformTransport(transform_config))
+```
+</TabItem>
+<TabItem value="env_vars" label="Environment Variables">
+
+```python
+import os
+from openlineage.client import OpenLineageClient
+
+os.environ["OPENLINEAGE__TRANSPORT__TYPE"] = "transform"
+
+# Transformer
+os.environ["OPENLINEAGE__TRANSPORT__TRANSFORMER_CLASS"] = "openlineage.client.transport.transform.JobNamespaceReplaceTransformer"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSFORMER_PROPERTIES"] = '{"new_job_namespace": "new_namespace"}'
+
+# Transport
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__TYPE"] = "http"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__URL"] = "http://backend:5000"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__ENDPOINT"] = "api/v1/lineage"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__VERIFY"] = "false"
+
+# Transport Auth
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__AUTH__TYPE"] = "api_key"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__AUTH__API_KEY"] = "1500100900"
+
+# Transport Compression
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__COMPRESSION"] = "gzip"
+
+# Transport Retry settings
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__TOTAL"] = "7"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__CONNECT"] = "3"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__READ"] = "2"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__STATUS"] = "5"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__OTHER"] = "1"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__ALLOWED_METHODS"] = '["POST"]'
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__STATUS_FORCELIST"] = "[500, 502, 503, 504]"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__BACKOFF_FACTOR"] = "0.5"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__RAISE_ON_REDIRECT"] = "false"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__RAISE_ON_STATUS"] = "false"
+
+client = OpenLineageClient()
+```
+</TabItem>
+
 </Tabs>
 
 ### Custom Transport Type

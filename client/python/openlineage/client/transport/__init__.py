@@ -10,6 +10,10 @@ from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.kafka import KafkaConfig, KafkaTransport
 from openlineage.client.transport.msk_iam import MSKIAMConfig, MSKIAMTransport
 from openlineage.client.transport.noop import NoopTransport
+from openlineage.client.transport.transform.transform import (
+    TransformConfig,
+    TransformTransport,
+)
 from openlineage.client.transport.transport import Config, Transport, TransportFactory
 
 _factory = DefaultTransportFactory()
@@ -20,6 +24,7 @@ _factory.register_transport(MSKIAMTransport.kind, MSKIAMTransport)
 _factory.register_transport(ConsoleTransport.kind, ConsoleTransport)
 _factory.register_transport(NoopTransport.kind, NoopTransport)
 _factory.register_transport(FileTransport.kind, FileTransport)
+_factory.register_transport(TransformTransport.kind, TransformTransport)
 
 
 def get_default_factory() -> DefaultTransportFactory:
@@ -34,17 +39,21 @@ def register_transport(clazz: type[Transport]) -> type[Transport]:
 
 
 __all__ = [
+    "register_transport",
+    "get_default_factory",
     "Config",
+    "Transport",
     "TransportFactory",
+    "CompositeTransport",
+    "ConsoleTransport",
+    "FileTransport",
     "HttpConfig",
     "HttpTransport",
     "KafkaConfig",
     "KafkaTransport",
-    "MSKIAMTransport",
     "MSKIAMConfig",
-    "ConsoleTransport",
+    "MSKIAMTransport",
     "NoopTransport",
-    "Transport",
-    "register_transport",
-    "get_default_factory",
+    "TransformConfig",
+    "TransformTransport",
 ]
