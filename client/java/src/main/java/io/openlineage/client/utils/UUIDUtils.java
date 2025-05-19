@@ -72,8 +72,11 @@ public class UUIDUtils {
   @SneakyThrows
   public static UUID generateStaticUUID(Instant instant, byte[] data) {
     MessageDigest md = MessageDigest.getInstance("SHA-1");
-    byte[] hash = md.digest(data);
+    // if data is some static value, e.g. job name, mix it with instant to make it more random
+    md.update(instant.toString().getBytes("UTF-8"));
+    md.update(data);
 
+    byte[] hash = md.digest();
     long hasbMsb = 0;
     long hasbLsb = 0;
     for (int i = 0; i < 8; i++) hasbMsb = (hasbMsb << 8) | (hash[i] & 0xff);
