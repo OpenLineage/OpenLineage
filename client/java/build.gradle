@@ -58,7 +58,7 @@ ext {
     junit5Version = '5.11.4'
     lombokVersion = '1.18.38'
     mockitoVersion = '5.17.0'
-    micrometerVersion = '1.14.6'
+    micrometerVersion = '1.15.0'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
     guavaVersion = '33.4.8-jre'
 }
