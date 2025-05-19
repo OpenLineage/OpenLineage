@@ -924,6 +924,72 @@ OpenLineageClient client = OpenLineageClient.builder()
 </TabItem>
 </Tabs>
 
+### [DataZone Transport](https://github.com/OpenLineage/OpenLineage/blob/main/client/java/transports-datazone/src/main/java/io/openlineage/client/transports/datazone/AmazonDataZoneTransport.java)
+
+To use this transport in your project, you need to include `io.openlineage:transports-datazone` artifact in
+your build configuration. This is particularly important for environments like `Spark`, where this transport must be on
+the classpath for lineage events to be emitted correctly.
+
+#### Configuration
+
+- `type` - string, must be `"amazon_datazone_api"`. Required.
+- `domainId` - string, specifies the DataZone / SageMaker Unified Studio domain id. The lineage events will be then sent to the following domain. Required.
+- `endpointOverride` - string, overrides the default HTTP endpoint for Amazon DataZone client.
+  Default value will be set by AWS SDK to [following endpoints](https://docs.aws.amazon.com/general/latest/gr/datazone.html#datazone_region) based on the region.
+  Optional, default: None
+
+#### Behavior
+
+- Events are serialized to JSON, and then dispatched to the `DataZone` / `SageMaker Unified Studio` endpoint.
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: amazon_datazone_api
+  domainId: dzd-domain-id
+```
+
+</TabItem>
+<TabItem value="spark" label="Spark Config">
+
+```ini
+spark.openlineage.transport.type=amazon_datazone_api
+spark.openlineage.transport.domainId=dzd-domain-id
+```
+
+</TabItem>
+<TabItem value="flink" label="Flink Config">
+
+```ini
+openlineage.transport.type=amazon_datazone_api
+openlineage.transport.domainId=dzd-domain-id
+```
+
+</TabItem>
+<TabItem value="java" label="Java Code">
+
+```java
+import io.openlineage.client.OpenLineageClient;
+import io.openlineage.client.transports.datazone.AmazonDataZoneTransportConfig;
+import io.openlineage.client.transports.datazone.AmazonDataZoneTransport;
+
+AmazonDataZoneTransportConfig datazoneConfig = new AmazonDataZoneTransportConfig();
+
+datazoneConfig.setDomainId("dzd-domain-id");
+
+OpenLineageClient client = OpenLineageClient.builder()
+        .transport(
+                new AmazonDataZoneTransport(datazoneConfig))
+        .build();
+```
+
+</TabItem>
+</Tabs>
+
 
 import S3Transport from './s3_transport.md';
 
