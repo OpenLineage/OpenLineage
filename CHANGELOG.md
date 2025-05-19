@@ -1,6 +1,39 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.31.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.33.0...HEAD)
+
+## [1.33.0](https://github.com/OpenLineage/OpenLineage/compare/1.32.1...1.33.0) - 2025-05-19
+
+### Added
+
+* **Python: add TransformTransport for Python client** [`#3697`](https://github.com/OpenLineage/OpenLineage/pull/3697) [@kacpermuda](https://github.com/kacpermuda)  
+  *Introduces the TransformTransport class for event transformations.*
+* **Spec: add CatalogDatasetFacet** [`#3659`](https://github.com/OpenLineage/OpenLineage/pull/3659) [@mobuchowski](https://github.com/mobuchowski)  
+  *Adds specification of the CatalogDatasetFacet.*
+* **Spark: implement CatalogDatasetFacet** [`#3695`](https://github.com/OpenLineage/OpenLineage/pull/3695) [@mobuchowski](https://github.com/mobuchowski)  
+  *Implements CatalogDatasetFacet for Spark integration.*
+* **Transport: add Amazon DataZone transport** [`#3685`](https://github.com/OpenLineage/OpenLineage/pull/3685) [@shinabel](https://github.com/shinabel)  
+  *Adds support for publishing events to Amazon DataZone via dedicated transport.*
+* **dbt: generate new runId for each start event** [`#3696`](https://github.com/OpenLineage/OpenLineage/pull/3696) [@dolfinus](https://github.com/dolfinus)  
+  *Ensures dbt start events have unique run identifiers when calling id generation methods multiple times.*
+* **JobNamespaceReplaceTransformer: modify parent run facet** [`#3706`](https://github.com/OpenLineage/OpenLineage/pull/3706) [@kacpermuda](https://github.com/kacpermuda)  
+  *Allows modifications of the parent run facet through JobNamespaceReplaceTransformer.*
+
+### Changed
+
+* **dbt: remove empty facets** [`#3700`](https://github.com/OpenLineage/OpenLineage/pull/3700) [@dolfinus](https://github.com/dolfinus)  
+  *Prevents empty facets from being emitted by dbt integration.*
+* **Spark: broaden exception handling for Iceberg table writes** [`#3686`](https://github.com/OpenLineage/OpenLineage/pull/3686) [@luke-hoffman1](https://github.com/luke-hoffman1)  
+  *Broadens exception handling to address missing column-level lineage issues.*
+
+### Fixed
+
+* **dbt: skip database if not set** [`#3707`](https://github.com/OpenLineage/OpenLineage/pull/3707) [@dolfinus](https://github.com/dolfinus)  
+  *Ensures database field is optional and handled gracefully.*
+* **Spark: don't swallow exceptions in getIcebergTable** [`#3688`](https://github.com/OpenLineage/OpenLineage/pull/3688) [@dolfinus](https://github.com/dolfinus)  
+  *Improves exception visibility during Iceberg table retrieval.*
+* **Flink 2: support JDBC naming** [`#3681`](https://github.com/OpenLineage/OpenLineage/pull/3681) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Correctly handles JDBC dataset naming conventions in Flink 2 integration.*
 
 ## [1.32.1](https://github.com/OpenLineage/OpenLineage/compare/1.32.0...1.32.1) - 2025-05-06
 
@@ -40,7 +73,7 @@
 
 ### Fixed
 
-* **Core:** check for RunEvent v2 in filters and env_var_facet [`#3664`](https://github.com/OpenLineage/OpenLineage/pull/3664) [@mudakacper](https://github.com/mudakacper)
+* **Core:** check for RunEvent v2 in filters and env_var_facet [`#3664`](https://github.com/OpenLineage/OpenLineage/pull/3664) [@kacpermuda](https://github.com/kacpermuda)
 * **dbt:** more robust handling of dbt CommandCompleted event [`#3661`](https://github.com/OpenLineage/OpenLineage/pull/3661) [@mobuchowski](https://github.com/mobuchowski)
 * **Spark:** define equals for TransformedInput to avoid duplicates [`#3644`](https://github.com/OpenLineage/OpenLineage/pull/3644) [@tnazarew](https://github.com/tnazarew)
 * **Flink:** prevent initializing Flink2 listener for Flink1 [`#3645`](https://github.com/OpenLineage/OpenLineage/pull/3645) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
