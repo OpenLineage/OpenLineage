@@ -280,18 +280,18 @@ class DbtArtifactProcessor:
             run_id = str(generate_new_uuid())
             if name.startswith("snapshot."):
                 jobType = "SNAPSHOT"
-                job_name = (
-                    f"{output_node['database']}.{output_node['schema']}"
-                    f".{self.removeprefix(run['unique_id'], 'snapshot.')}"
-                    + (".build.snapshot" if self.command == "build" else ".snapshot")
-                )
+                job_name = self._format_dataset_name(
+                    output_node["database"],
+                    output_node["schema"],
+                    self.removeprefix(run["unique_id"], "snapshot."),
+                ) + (".build.snapshot" if self.command == "build" else ".snapshot")
             else:
                 jobType = "MODEL"
-                job_name = (
-                    f"{output_node['database']}.{output_node['schema']}"
-                    f".{self.removeprefix(run['unique_id'], 'model.')}"
-                    + (".build.run" if self.command == "build" else "")
-                )
+                job_name = self._format_dataset_name(
+                    output_node["database"],
+                    output_node["schema"],
+                    self.removeprefix(run["unique_id"], "model."),
+                ) + (".build.run" if self.command == "build" else "")
 
             if self.manifest_version >= 7:  # type: ignore
                 sql = output_node.get("compiled_code", None)
@@ -359,11 +359,11 @@ class DbtArtifactProcessor:
                 ModelNode(node), assertion_facet, has_facets=False
             )
 
-            job_name = (
-                f"{node['database']}.{node['schema']}."
-                f"{self.removeprefix(node['unique_id'], 'model.')}"
-                + (".build.test" if self.command == "build" else ".test")
-            )
+            job_name = self._format_dataset_name(
+                node["database"],
+                node["schema"],
+                self.removeprefix(node["unique_id"], "model."),
+            ) + (".build.test" if self.command == "build" else ".test")
 
             job_facets: Dict[str, JobFacet] = {
                 "jobType": job_type_job.JobTypeJobFacet(
@@ -533,6 +533,9 @@ class DbtArtifactProcessor:
                 )
         return OutputDataset(name=name, namespace=namespace, facets=facets, outputFacets=output_facets)
 
+    def _format_dataset_name(self, database: Optional[str], schema: Optional[str], table: str) -> str:
+        return ".".join(list(filter(None, [database, schema, table])))
+
     def extract_dataset_data(
         self,
         node: ModelNode,
@@ -570,9 +573,11 @@ class DbtArtifactProcessor:
             facets = {}
         return (
             self.dataset_namespace,
-            f"{node.metadata_node['database']}."
-            f"{node.metadata_node['schema']}."
-            f"{node.metadata_node['name']}",
+            self._format_dataset_name(
+                node.metadata_node["database"],
+                node.metadata_node["schema"],
+                node.metadata_node["name"],
+            ),
             facets,
             input_facets,
         )
@@ -725,10 +730,15 @@ class DbtArtifactProcessor:
                         inputFields=[
                             column_lineage_dataset.InputField(
                                 namespace=namespace,
-                                name=f"{column_meta.origin.database}.{column_meta.origin.schema}.{column_meta.origin.name}",  # type: ignore
+                                name=self._format_dataset_name(
+                                    column_meta.origin.database,
+                                    column_meta.origin.schema,
+                                    column_meta.origin.name,
+                                ),
                                 field=column_meta.name,
                             )
                             for column_meta in cll_item.lineage
+                            if column_meta.origin
                         ],
                     )
             if fields:
