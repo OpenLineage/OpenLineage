@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from openlineage.client.event_v2 import InputDataset, Job, OutputDataset, Run, RunEvent, RunState
-from openlineage.common.provider.dbt.processor import ParentRunMetadata
+from openlineage.common.provider.dbt.facets import ParentRunMetadata
 from openlineage.common.utils import get_from_nullable_chain, parse_single_arg
 
 __version__ = "1.34.0"
