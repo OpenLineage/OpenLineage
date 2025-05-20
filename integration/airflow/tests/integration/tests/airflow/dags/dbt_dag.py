@@ -54,7 +54,7 @@ t2 = BashOperator(
 
 t1 >> t2
 
-if os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION", "2.3.4") == AIRFLOW_VERSION:
+if os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION", "2.5.2") == AIRFLOW_VERSION:
     t3 = BashOperator(
         task_id="dbt_seed_snowflake",
         dag=dag,
