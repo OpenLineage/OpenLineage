@@ -6,22 +6,31 @@
 package io.openlineage.spark.agent.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.rdd.MapPartitionsRDD;
+import org.apache.spark.rdd.NewHadoopRDD;
 import org.apache.spark.rdd.ParallelCollectionRDD;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.rdd.UnionRDD;
 import org.apache.spark.sql.execution.datasources.FilePartition;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.sql.execution.datasources.PartitionedFile;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import scala.Tuple2;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
@@ -69,6 +78,56 @@ class RddPathUtilsTest {
     assertThat(rddPaths).hasSize(2);
     assertThat(rddPaths.get(0).toString()).isEqualTo("/some-path1");
     assertThat(rddPaths.get(1).toString()).isEqualTo("/some-path2");
+  }
+
+  @Test
+  void testFindRDDPathsForUnionRDD() throws IllegalAccessException {
+    UnionRDD unionRdd = mock(UnionRDD.class);
+    ParallelCollectionRDD rdd1 = mock(ParallelCollectionRDD.class);
+    ParallelCollectionRDD rdd2 = mock(ParallelCollectionRDD.class);
+
+    Seq<Tuple2<String, Integer>> data1 =
+        JavaConverters.asScalaIteratorConverter(
+                Arrays.asList(new Tuple2<>("/some-path2/data-file-654342.snappy.parquet", 345))
+                    .iterator())
+            .asScala()
+            .toSeq();
+    Seq<Tuple2<String, Integer>> data2 =
+        JavaConverters.asScalaIteratorConverter(
+                Arrays.asList(new Tuple2<>("/some-path1/data-file-325342.snappy.parquet", 345))
+                    .iterator())
+            .asScala()
+            .toSeq();
+    FieldUtils.writeDeclaredField(rdd1, "data", data1, true);
+    FieldUtils.writeDeclaredField(rdd2, "data", data2, true);
+
+    when(unionRdd.rdds()).thenReturn(ScalaConversionUtils.fromList(Arrays.asList(rdd1, rdd2)));
+
+    List rddPaths = PlanUtils.findRDDPaths(Collections.singletonList(unionRdd));
+    assertThat(rddPaths)
+        .hasSize(2)
+        .map(o -> ((Path) o).toString())
+        .containsExactlyInAnyOrder("/some-path1", "/some-path2");
+  }
+
+  @Test
+  void testNewHadoopRDDExtractor() throws IllegalAccessException {
+    SparkConf sparkConf = new SparkConf();
+    sparkConf.setMaster("local[*]").setAppName("test");
+    SparkContext sparkContext = new SparkContext(sparkConf);
+    NewHadoopRDD rdd = new NewHadoopRDD(sparkContext, null, null, null, new Configuration());
+
+    try (MockedStatic<FileInputFormat> ignored = mockStatic(FileInputFormat.class)) {
+      when(FileInputFormat.getInputPaths(any()))
+          .thenReturn(new Path[] {new Path("some-path1"), new Path("some-path2")});
+
+      List rddPaths = PlanUtils.findRDDPaths(Collections.singletonList(rdd));
+      assertThat(rddPaths)
+          .hasSize(2)
+          .map(o -> ((Path) o).toString())
+          .containsExactlyInAnyOrder("some-path1", "some-path2");
+    }
+    sparkContext.stop();
   }
 
   @Test

@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.33.0...HEAD)
 
+### Added
+
+* **Spark: Support dynamic frames.** [`#3691`](https://github.com/OpenLineage/OpenLineage/pull/3691) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Support lineage extraction from `UnionRdd` and `NewHadoopRDD`, which makes dynamic frames docker based test passing.*
+
 ## [1.33.0](https://github.com/OpenLineage/OpenLineage/compare/1.32.1...1.33.0) - 2025-05-19
 
 ### Added

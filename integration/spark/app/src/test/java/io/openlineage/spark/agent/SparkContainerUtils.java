@@ -79,7 +79,7 @@ public class SparkContainerUtils {
     return container;
   }
 
-  static void mountPath(GenericContainer<?> container, Path sourcePath, Path targetPath) {
+  public static void mountPath(GenericContainer<?> container, Path sourcePath, Path targetPath) {
     if (log.isDebugEnabled()) {
       log.debug(
           "[image={}]: Mount volume '{}:{}'",
@@ -91,7 +91,7 @@ public class SparkContainerUtils {
   }
 
   @SneakyThrows
-  static void mountFiles(GenericContainer<?> container, Path sourceDir, Path targetDir) {
+  public static void mountFiles(GenericContainer<?> container, Path sourceDir, Path targetDir) {
     if (!Files.exists(sourceDir)) {
       log.warn("Source directory {} does not exist, skipping mount", sourceDir);
       return;
