@@ -28,19 +28,22 @@ public class DebugRunFacet extends OpenLineage.DefaultRunFacet {
   private final SparkConfigDebugFacet config;
   private final LogicalPlanDebugFacet logicalPlan;
   private final MetricsDebugFacet metrics;
+  private final List<String> logs;
 
   public DebugRunFacet(
       SparkConfigDebugFacet config,
       ClasspathDebugFacet classpath,
       SystemDebugFacet system,
       LogicalPlanDebugFacet logicalPlan,
-      MetricsDebugFacet metricsDebugFacet) {
+      MetricsDebugFacet metricsDebugFacet,
+      List<String> logs) {
     super(Versions.OPEN_LINEAGE_PRODUCER_URI);
     this.config = config;
     this.classpath = classpath;
     this.system = system;
     this.logicalPlan = logicalPlan;
     this.metrics = metricsDebugFacet;
+    this.logs = logs;
   }
 
   /** Entries from SparkConf that can be valuable for debugging. */

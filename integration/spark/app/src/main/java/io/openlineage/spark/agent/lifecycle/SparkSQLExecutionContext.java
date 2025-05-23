@@ -102,8 +102,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
                     olContext
                         .getOpenLineage()
                         .newRunEventBuilder()
-                        .eventTime(toZonedTime(startEvent.time()))
-                        .eventType(eventType))
+                        .eventTime(toZonedTime(startEvent.time())))
+                .eventType(eventType)
                 .jobBuilder(buildJob())
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
@@ -149,8 +149,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
                     olContext
                         .getOpenLineage()
                         .newRunEventBuilder()
-                        .eventTime(toZonedTime(endEvent.time()))
-                        .eventType(eventType))
+                        .eventTime(toZonedTime(endEvent.time())))
+                .eventType(eventType)
                 .jobBuilder(buildJob())
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
@@ -182,8 +182,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
                     olContext
                         .getOpenLineage()
                         .newRunEventBuilder()
-                        .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
-                        .eventType(RUNNING))
+                        .eventTime(ZonedDateTime.now(ZoneOffset.UTC)))
+                .eventType(RUNNING)
                 .jobBuilder(buildJob())
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
@@ -212,8 +212,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
                     olContext
                         .getOpenLineage()
                         .newRunEventBuilder()
-                        .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
-                        .eventType(RUNNING))
+                        .eventTime(ZonedDateTime.now(ZoneOffset.UTC)))
+                .eventType(RUNNING)
                 .jobBuilder(buildJob())
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
@@ -265,8 +265,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
                     olContext
                         .getOpenLineage()
                         .newRunEventBuilder()
-                        .eventTime(toZonedTime(jobStart.time()))
-                        .eventType(eventType))
+                        .eventTime(toZonedTime(jobStart.time())))
+                .eventType(eventType)
                 .jobBuilder(buildJob())
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());
@@ -314,8 +314,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
                     olContext
                         .getOpenLineage()
                         .newRunEventBuilder()
-                        .eventTime(toZonedTime(jobEnd.time()))
-                        .eventType(eventType))
+                        .eventTime(toZonedTime(jobEnd.time())))
+                .eventType(eventType)
                 .jobBuilder(buildJob())
                 .jobFacetsBuilder(getJobFacetsBuilder(olContext.getQueryExecution().get()))
                 .build());

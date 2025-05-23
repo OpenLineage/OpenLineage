@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
@@ -86,6 +87,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
     SparkOpenLineageConfig olConfig = new SparkOpenLineageConfig();
     olConfig.setOverriddenAppName("test_rdd");
     when(olContext.getOpenLineageConfig()).thenReturn(olConfig);
+    when(olContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, new TestOpenLineageEventHandlerFactory());
 
