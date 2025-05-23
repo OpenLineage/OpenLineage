@@ -11,8 +11,8 @@ import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.hive.api.OpenLineageContext;
 import io.openlineage.hive.client.HiveOpenLineageConfig;
 import io.openlineage.hive.client.Versions;
-import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.HashSet;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,7 @@ class HivePropertiesFacetBuilderTest {
     return OpenLineageContext.builder()
         .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
         .queryString("xxx")
-        .eventTime(Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.of("UTC")))
+        .eventTime(ZonedDateTime.now(ZoneId.of("UTC")))
         .eventType(EventType.OTHER)
         .readEntities(new HashSet<>())
         .writeEntities(new HashSet<>())
