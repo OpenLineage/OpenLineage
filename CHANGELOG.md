@@ -10,6 +10,9 @@
   *Added OpenLineage Hive integration*
 * **Java: Add Location Symlink type** [`#3717`](https://github.com/OpenLineage/OpenLineage/pull/3717) [@tnazarew](https://github.com/tnazarew)  
   *Add new symlink type representing physical location of dataset*
+* **Spark: Smart debug facet.** [`#3715`](https://github.com/OpenLineage/OpenLineage/pull/3715) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Automatically turn on debug facet in case of spark connector anomalies detected. See "Debugging" section in Spark integration docs for more details.*
+
 
 ## [1.33.0](https://github.com/OpenLineage/OpenLineage/compare/1.32.1...1.33.0) - 2025-05-19
 
