@@ -1,0 +1,47 @@
+workflows:
+  openlineage-hive:
+    jobs:
+      - test-integration-hive:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+          requires:
+            - build-integration-sql-java
+            - build-client-java
+      - build-integration-hive:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+          context: << pipeline.parameters.build-context >>
+          requires:
+           - build-integration-sql-java
+           - build-client-java
+      #FIXME - jarVerification step not defined in hive gradle, for now commented out the step
+#      - jar-verification-hive:
+#          filters:
+#            tags:
+#              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+#          requires:
+#            - build-integration-hive
+      - integration-test-integration-hive:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+          context: integration-tests
+          requires:
+            - build-integration-hive
+      - workflow_complete:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+          requires:
+            - integration-test-integration-hive
+      - release-integration-hive:
+          context: release
+          requires:
+            - integration-test-integration-hive
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              only: main

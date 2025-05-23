@@ -1,0 +1,180 @@
+{
+  "eventType": "COMPLETE",
+  "run": {
+    "facets": {
+      "processing_engine": {
+        "version": "3.1.3",
+        "name": "hive"
+      }
+    }
+  },
+  "job": {
+    "namespace": "default",
+    "name": "createtable_as_select.test.monthly_transaction_summary"
+  },
+  "inputs": [
+    {
+      "namespace": "hive://localhost:9083",
+      "name": "test.transactions",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "submissiondate",
+              "type": "date"
+            },
+            {
+              "name": "transactionamount",
+              "type": "double"
+            },
+            {
+              "name": "transactiontype",
+              "type": "string"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file",
+              "name": "/opt/hive/data/warehouse/test.db/transactions",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "hive://localhost:9083",
+      "name": "test.monthly_transaction_summary",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "month",
+              "type": "string"
+            },
+            {
+              "name": "transactiontype",
+              "type": "string"
+            },
+            {
+              "name": "totalamount",
+              "type": "double"
+            },
+            {
+              "name": "transactioncount",
+              "type": "bigint"
+            }
+          ]
+        },
+        "columnLineage": {
+          "fields": {
+            "month": {
+              "inputFields": [
+                {
+                  "namespace": "hive://localhost:9083",
+                  "name": "test.transactions",
+                  "field": "submissiondate",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "TRANSFORMATION",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "transactiontype": {
+              "inputFields": [
+                {
+                  "namespace": "hive://localhost:9083",
+                  "name": "test.transactions",
+                  "field": "transactiontype",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "totalamount": {
+              "inputFields": [
+                {
+                  "namespace": "hive://localhost:9083",
+                  "name": "test.transactions",
+                  "field": "transactionamount",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "AGGREGATION",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "dataset": [
+            {
+              "namespace": "hive://localhost:9083",
+              "name": "test.transactions",
+              "field": "submissiondate",
+              "transformations": [
+                {
+                  "type": "INDIRECT",
+                  "subtype": "GROUP_BY",
+                  "description": "",
+                  "masking": false
+                },
+                {
+                  "type": "INDIRECT",
+                  "subtype": "SORT",
+                  "description": "",
+                  "masking": false
+                }
+              ]
+            },
+            {
+              "namespace": "hive://localhost:9083",
+              "name": "test.transactions",
+              "field": "transactiontype",
+              "transformations": [
+                {
+                  "type": "INDIRECT",
+                  "subtype": "GROUP_BY",
+                  "description": "",
+                  "masking": false
+                },
+                {
+                  "type": "INDIRECT",
+                  "subtype": "SORT",
+                  "description": "",
+                  "masking": false
+                }
+              ]
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file",
+              "name": "/opt/hive/data/warehouse/test.db/monthly_transaction_summary",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

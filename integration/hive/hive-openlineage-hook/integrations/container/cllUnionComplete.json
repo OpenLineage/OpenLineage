@@ -1,0 +1,174 @@
+{
+  "eventType": "COMPLETE",
+  "run": {
+    "facets": {
+      "processing_engine": {
+        "version": "3.1.3",
+        "name": "hive"
+      },
+      "hive_properties": {
+        "properties": {
+          "hive.execution.engine": "mr"
+        }
+      }
+    }
+  },
+  "job": {
+    "namespace": "default",
+    "name": "createtable_as_select.test.xxx"
+  },
+  "inputs": [
+    {
+      "namespace": "hive://localhost:9083",
+      "name": "test.t1",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "int"
+            },
+            {
+              "name": "b",
+              "type": "string"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file",
+              "name": "/opt/hive/data/warehouse/test.db/t1",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "namespace": "hive://localhost:9083",
+      "name": "test.t2",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "int"
+            },
+            {
+              "name": "c",
+              "type": "string"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file",
+              "name": "/opt/hive/data/warehouse/test.db/t2",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "hive://localhost:9083",
+      "name": "test.xxx",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "int"
+            },
+            {
+              "name": "b",
+              "type": "string"
+            },
+            {
+              "name": "source",
+              "type": "string"
+            }
+          ]
+        },
+        "columnLineage": {
+          "fields": {
+            "a": {
+              "inputFields": [
+                {
+                  "namespace": "hive://localhost:9083",
+                  "name": "test.t2",
+                  "field": "a",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "hive://localhost:9083",
+                  "name": "test.t1",
+                  "field": "a",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            },
+            "b": {
+              "inputFields": [
+                {
+                  "namespace": "hive://localhost:9083",
+                  "name": "test.t1",
+                  "field": "b",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                },
+                {
+                  "namespace": "hive://localhost:9083",
+                  "name": "test.t2",
+                  "field": "c",
+                  "transformations": [
+                    {
+                      "type": "DIRECT",
+                      "subtype": "IDENTITY",
+                      "description": "",
+                      "masking": false
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "dataset": []
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file",
+              "name": "/opt/hive/data/warehouse/test.db/xxx",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
