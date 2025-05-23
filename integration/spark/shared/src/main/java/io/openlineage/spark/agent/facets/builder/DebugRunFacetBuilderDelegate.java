@@ -46,13 +46,18 @@ public class DebugRunFacetBuilderDelegate {
     this.olContext = olContext;
   }
 
-  protected DebugRunFacet buildFacet() {
+  public DebugRunFacet buildFacet() {
+    return buildFacet(Collections.emptyList());
+  }
+
+  public DebugRunFacet buildFacet(List<String> logs) {
     return new DebugRunFacet(
         buildSparkConfigDebugFacet(),
         buildClasspathDebugFacet(),
         buildSystemDebugFacet(),
         buildLogicalPlanDebugFacet(),
-        buildMetricsDebugFacet());
+        buildMetricsDebugFacet(),
+        logs);
   }
 
   private SparkConfigDebugFacet buildSparkConfigDebugFacet() {
@@ -100,11 +105,12 @@ public class DebugRunFacetBuilderDelegate {
   }
 
   private LogicalPlanDebugFacet buildLogicalPlanDebugFacet() {
-    return olContext
-        .getQueryExecution()
-        .map(qe -> qe.optimizedPlan())
-        .map(plan -> scanLogicalPlan(plan))
-        .map(list -> new LogicalPlanDebugFacet(list))
+    if (!olContext.hasLogicalPlan()) {
+      return null;
+    }
+    return Optional.ofNullable(olContext.getLogicalPlan())
+        .map(this::scanLogicalPlan)
+        .map(LogicalPlanDebugFacet::new)
         .orElse(null);
   }
 

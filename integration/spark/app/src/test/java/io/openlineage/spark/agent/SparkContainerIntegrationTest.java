@@ -11,10 +11,13 @@ import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
+import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -388,5 +391,44 @@ class SparkContainerIntegrationTest {
         Collections.singletonList("spark.openlineage.facets.debug.disabled=false"),
         "spark_emit_metrics.py");
     verifyEvents(mockServerClient, "pysparkMetricsEnd.json");
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = "spark.version", matches = "([34].*)")
+  void testSmartDebugFacet() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network,
+        openLineageClientMockContainer,
+        "testSmartDebugFacet",
+        Collections.emptyList(),
+        Arrays.asList(
+            "spark.openlineage.debug.smart=enabled",
+            "spark.openlineage.debug.smartMode=any-missing",
+            "spark.openlineage.facets.debug.disabled=true" // make sure debug facet is disabled
+            ),
+        "spark_smart_debug.py");
+
+    List<RunEvent> events =
+        Arrays.stream(
+                mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+            .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+            .collect(Collectors.toList());
+
+    Map<EventType, RunFacet> debugFacets =
+        events.stream()
+            .filter(e -> e.getOutputs().isEmpty())
+            .filter(e -> e.getRun().getFacets().getAdditionalProperties().containsKey("debug"))
+            .collect(
+                Collectors.toMap(
+                    RunEvent::getEventType,
+                    r -> r.getRun().getFacets().getAdditionalProperties().get("debug")));
+
+    // make sure debug facet is included only once and this happens for COMPLETE event
+    assertThat(debugFacets).hasSize(1).containsKey(EventType.COMPLETE);
+    List<String> logs =
+        (List<String>) debugFacets.get(EventType.COMPLETE).getAdditionalProperties().get("logs");
+    assertThat(logs).containsExactly("No input datasets detected", "No output datasets detected");
+
+    // TODO: verify a case when inputs were generated at other event
   }
 }

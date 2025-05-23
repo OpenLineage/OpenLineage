@@ -138,7 +138,8 @@ class DebugRunFacetBuilderDelegateTest {
     when(leaf1.nodeName()).thenReturn("LogicalRelation");
     when(leaf2.nodeName()).thenReturn("LogicalRelation");
 
-    when(queryExecution.optimizedPlan()).thenReturn(root);
+    when(openLineageContext.getLogicalPlan()).thenReturn(root);
+    when(openLineageContext.hasLogicalPlan()).thenReturn(Boolean.TRUE);
     when(root.children())
         .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(node)));
     when(node.children()).thenReturn(ScalaConversionUtils.fromList(Arrays.asList(leaf1, leaf2)));
