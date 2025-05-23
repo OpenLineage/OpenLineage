@@ -86,8 +86,8 @@ class SparkApplicationExecutionContext implements ExecutionContext {
                 .runEventBuilder(
                     openLineage
                         .newRunEventBuilder()
-                        .eventTime(toZonedTime(applicationStart.time()))
-                        .eventType(START))
+                        .eventTime(toZonedTime(applicationStart.time())))
+                .eventType(START)
                 .jobBuilder(getJobBuilder())
                 .jobFacetsBuilder(getJobFacetsBuilder())
                 .overwriteRunId(Optional.of(olContext.getApplicationUuid()))
@@ -117,8 +117,8 @@ class SparkApplicationExecutionContext implements ExecutionContext {
                     olContext
                         .getOpenLineage()
                         .newRunEventBuilder()
-                        .eventTime(toZonedTime(applicationEnd.time()))
-                        .eventType(COMPLETE))
+                        .eventTime(toZonedTime(applicationEnd.time())))
+                .eventType(COMPLETE)
                 .jobBuilder(getJobBuilder())
                 .jobFacetsBuilder(getJobFacetsBuilder())
                 .overwriteRunId(Optional.of(olContext.getApplicationUuid()))
