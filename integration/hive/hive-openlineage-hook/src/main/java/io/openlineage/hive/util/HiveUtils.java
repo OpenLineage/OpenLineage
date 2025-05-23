@@ -86,7 +86,7 @@ public class HiveUtils {
       DatasetIdentifier di =
           new DatasetIdentifier(table.getFullyQualifiedName(), table.getCatName());
       return di.withSymlink(
-          symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.TABLE);
+          symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.LOCATION);
     }
     return new DatasetIdentifier(table.getFullyQualifiedName(), table.getCatName());
   }
