@@ -139,7 +139,7 @@
 	}]
 }, {
 	"eventType": "COMPLETE",
-	"eventTime": "2021-07-05T11:43:17.218104Z",
+	"eventTime": "2021-07-05T11:43:17.218104+00:00",
 	"run": {
 		"runId": "{{ any(result) }}",
 		"facets": {
@@ -186,7 +186,7 @@
 	}]
 }, {
 	"eventType": "COMPLETE",
-	"eventTime": "2021-07-05T11:43:18.375002Z",
+	"eventTime": "2021-07-05T11:43:18.375002+00:00",
 	"run": {
 		"facets": {
 			"parent": {
@@ -231,7 +231,7 @@
 	}]
 }, {
 	"eventType": "COMPLETE",
-	"eventTime": "2021-07-05T11:43:21.900891Z",
+	"eventTime": "2021-07-05T11:43:21.900891+00:00",
 	"run": {
 		"runId": "{{ any(result) }}",
 		"facets": {
