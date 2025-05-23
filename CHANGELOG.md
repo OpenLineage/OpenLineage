@@ -8,6 +8,8 @@
   *Support lineage extraction from `UnionRdd` and `NewHadoopRDD`, which makes dynamic frames docker based test passing.*
 * **Hive: Integration added.** [`#3555`](https://github.com/OpenLineage/OpenLineage/pull/3555) [@tnazarew](https://github.com/tnazarew) with [@ddebowczyk92](https://github.com/ddebowczyk92), [@jphalip](https://github.com/jphalip)
   *Added OpenLineage Hive integration*
+* **Java: Add Location Symlink type** [`#3717`](https://github.com/OpenLineage/OpenLineage/pull/3717) [@tnazarew](https://github.com/tnazarew)  
+  *Add new symlink type representing physical location of dataset*
 
 ## [1.33.0](https://github.com/OpenLineage/OpenLineage/compare/1.32.1...1.33.0) - 2025-05-19
 
