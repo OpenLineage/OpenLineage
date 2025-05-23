@@ -19,11 +19,10 @@ from openlineage.client.facet_v2 import (
 )
 from openlineage.client.run import InputDataset
 from openlineage.client.uuid import generate_new_uuid
+from openlineage.common.provider.dbt.facets import DbtVersionRunFacet, ParentRunMetadata
 from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
 from openlineage.common.provider.dbt.processor import (
-    DbtVersionRunFacet,
     ModelNode,
-    ParentRunMetadata,
     UnsupportedDbtCommand,
 )
 from openlineage.common.provider.dbt.utils import (

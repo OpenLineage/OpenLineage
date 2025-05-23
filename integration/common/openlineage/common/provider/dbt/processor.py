@@ -11,7 +11,6 @@ from typing import Dict, List, Optional, Sequence, Tuple
 import attr
 from openlineage.client.event_v2 import Dataset, InputDataset, Job, OutputDataset, Run, RunEvent, RunState
 from openlineage.client.facet_v2 import (
-    BaseFacet,
     DatasetFacet,
     InputDatasetFacet,
     JobFacet,
@@ -22,13 +21,12 @@ from openlineage.client.facet_v2 import (
     documentation_dataset,
     job_type_job,
     output_statistics_output_dataset,
-    parent_run,
     schema_dataset,
     sql_job,
 )
 from openlineage.client.uuid import generate_new_uuid
+from openlineage.common.provider.dbt.facets import DbtVersionRunFacet, ParentRunMetadata
 from openlineage.common.provider.snowflake import fix_account_name
-from openlineage.common.schema import GITHUB_LOCATION
 from openlineage.common.utils import get_from_multiple_chains, get_from_nullable_chain
 from openlineage_sql import parse as parse_sql
 
@@ -125,41 +123,6 @@ class DbtRunContext:
     manifest: Dict = attr.ib()
     run_results: Dict = attr.ib()
     catalog: Optional[Dict] = attr.ib(default=None)
-
-
-@attr.s
-class ParentRunMetadata:
-    run_id: str = attr.ib()
-    job_name: str = attr.ib()
-    job_namespace: str = attr.ib()
-    root_parent_job_name: Optional[str] = attr.ib(default=None)
-    root_parent_job_namespace: Optional[str] = attr.ib(default=None)
-    root_parent_run_id: Optional[str] = attr.ib(default=None)
-
-    def to_openlineage(self) -> parent_run.ParentRunFacet:
-        root = None
-        if self.root_parent_run_id and self.root_parent_job_namespace and self.root_parent_job_name:
-            root = parent_run.Root(
-                run=parent_run.RootRun(runId=self.root_parent_run_id),
-                job=parent_run.RootJob(
-                    namespace=self.root_parent_job_namespace, name=self.root_parent_job_name
-                ),
-            )
-
-        return parent_run.ParentRunFacet(
-            run=parent_run.Run(runId=self.run_id),
-            job=parent_run.Job(namespace=self.job_namespace, name=self.job_name),
-            root=root,
-        )
-
-
-@attr.s
-class DbtVersionRunFacet(BaseFacet):
-    version: str = attr.ib()
-
-    @staticmethod
-    def _get_schema() -> str:
-        return GITHUB_LOCATION + "dbt-version-run-facet.json"
 
 
 class DbtArtifactProcessor:
