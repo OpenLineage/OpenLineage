@@ -194,8 +194,7 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
                   .satisfies(
                       inputField -> {
                         assertThat(inputField.getNamespace()).isEqualTo("hive://localhost:9083");
-                        assertThat(inputField.getName())
-                            .isEqualTo("test.t1");
+                        assertThat(inputField.getName()).isEqualTo("test.t1");
                         assertThat(inputField.getField()).isEqualTo("a");
                       });
 
@@ -206,8 +205,7 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
                   .satisfies(
                       inputField -> {
                         assertThat(inputField.getNamespace()).isEqualTo("hive://localhost:9083");
-                        assertThat(inputField.getName())
-                            .isEqualTo("test.t3");
+                        assertThat(inputField.getName()).isEqualTo("test.t3");
                         assertThat(inputField.getField()).isEqualTo("d");
                       });
 
@@ -219,7 +217,8 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
                   .satisfies(
                       identifier -> {
                         assertThat(identifier.getNamespace()).isEqualTo("file");
-                        assertThat(identifier.getName()).isEqualTo("/opt/hive/data/warehouse/test.db/xxx");
+                        assertThat(identifier.getName())
+                            .isEqualTo("/opt/hive/data/warehouse/test.db/xxx");
                         assertThat(identifier.getType()).isEqualTo("TABLE");
                       });
             });

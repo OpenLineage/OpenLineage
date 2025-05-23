@@ -37,5 +37,4 @@ public class HiveOpenLineageConfigParserTest {
     assertThat(config.getMetricsConfig()).isNull();
     assertThat(config.getDatasetConfig()).isNull();
   }
-
 }
