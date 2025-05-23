@@ -3,7 +3,9 @@ sidebar_position: 2
 title: Configuration parameters
 ---
 :::info
-This list doesn't include transport configuration parameters, see [Transport](transport.md)
+This list doesn't include information transport configuration parameters, see [Transport](transport.md)
+
+Additionally, any properties from OpenLineage client can be defined using `hive.openlineage` instead of `openlineage`  
 :::
 ## Configuration
 
