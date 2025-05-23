@@ -568,7 +568,7 @@ jobs:
           key: v1-release-client-java-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.m2
-
+  # SPARK
   release-integration-spark:
     working_directory: ~/openlineage/integration/spark
     machine:
@@ -959,6 +959,164 @@ jobs:
             - slack/notify:
                 event: pass
                 template: basic_success_1
+
+  # HIVE
+
+  release-integration-hive:
+    working_directory: ~/openlineage/integration/hive
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
+      - restore_cache:
+          keys:
+            - v1-release-client-java-{{ checksum "/tmp/checksum.txt" }}
+      - attach_workspace:
+          at: ~/
+      - set_java_version
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+
+          # Publish *.jar
+          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository
+          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository
+      - store_artifacts:
+          path: ./build/libs
+          destination: hive-client-artifacts
+
+  build-integration-hive:
+    working_directory: ~/openlineage/integration/hive
+    parameters:
+      release:
+        type: boolean
+        default: false
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
+      - set_java_version:
+          java_version: "8"
+      - restore_cache:
+          keys:
+            - v1-integration-hive-{{ checksum "/tmp/checksum.txt" }}
+      - attach_workspace:
+          at: ~/
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+                  
+          ./gradlew --console=plain javadoc sourceJar shadowJar 
+          ./gradlew --console=plain publishToMavenLocal
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - .m2/repository/io/openlineage/openlineage-hive
+            - openlineage/integration/hive/build-cache
+            - openlineage/integration/hive/build/libs
+      - store_artifacts:
+          path: build/libs
+          destination: libs
+      - save_cache:
+          key: v1-integration-hive-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  test-integration-hive:
+    working_directory: ~/openlineage/integration/hive
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
+      - attach_workspace:
+          at: ~/
+      - set_java_version:
+          java_version: "8"
+      - restore_cache:
+          keys:
+            - v1-integration-hive-{{ checksum "/tmp/checksum.txt" }}
+      - run: |
+          echo "Setting default Java to ${JAVA_BIN}"
+          sudo update-alternatives --set java ${JAVA_BIN}
+          sudo update-alternatives --set javac ${JAVAC_BIN}
+      - run: ./gradlew --no-daemon --console=plain --stacktrace build check
+      - run:
+          when: on_fail
+          command: cat build/test-results/test/TEST-*.xml
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
+      - store_submodule_tests:
+          submodule: hive-openlineage-hook
+      - store_artifacts:
+          path: build/reports/tests/pmd
+          destination: pmd-report
+
+  integration-test-integration-hive:
+    working_directory: ~/openlineage/integration/hive
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
+      - restore_cache:
+          keys:
+            - v1-integration-hive-{{ checksum "/tmp/checksum.txt" }}
+      - attach_workspace:
+          at: ~/
+      - run: ./gradlew --no-daemon --console=plain integrationTest -x test
+      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
+      - store_test_results:
+          path: app/build/test-results/integrationTest
+      - store_artifacts:
+          path: app/build/reports/tests/integrationTest
+          destination: test-report
+      - save_cache:
+          key: v1-integration-hive-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  jar-verification-hive:
+    working_directory: ~/openlineage/integration/hive
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
+      - restore_cache:
+          keys:
+            - v1-integration-hive-{{ checksum "/tmp/checksum.txt" }}
+      - set_java_version
+      - attach_workspace:
+          at: ~/
+      - run: ./gradlew --no-daemon --console=plain clean jarVerification
 
   # FLINK
 

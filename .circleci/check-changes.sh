@@ -73,6 +73,7 @@ else
     check_change proxy/backend/ true openlineage-proxy-backend.yml
     check_change proxy/fluentd/ true openlineage-proxy-fluentd.yml
     check_change website false openlineage-website.yml
+    check_change integration/hive true openlineage-java.yml openlineage-hive.yml
 fi
 touch workflow_files.txt
 FILES=$(sort workflow_files.txt | uniq | tr "\n" " ")

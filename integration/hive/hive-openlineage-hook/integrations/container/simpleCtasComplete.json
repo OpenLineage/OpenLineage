@@ -1,0 +1,152 @@
+{
+  "eventType": "COMPLETE",
+  "run": {
+    "facets": {
+      "processing_engine": {
+        "version": "3.1.3",
+        "name": "hive"
+      },
+      "hive_properties": {
+        "properties": {
+          "hive.execution.engine": "mr"
+        }
+      }
+    }
+  },
+  "job": {
+    "namespace": "default",
+    "name": "createtable_as_select.test.result_t"
+  },
+  "inputs": [
+    {
+      "namespace": "hive://localhost:9083",
+      "name": "test.employees",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "int"
+            },
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "team",
+              "type": "int"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file",
+              "name": "/opt/hive/data/warehouse/test.db/employees",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "namespace": "hive://localhost:9083",
+      "name": "test.managers",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "int"
+            },
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "team",
+              "type": "int"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file",
+              "name": "/opt/hive/data/warehouse/test.db/managers",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "namespace": "hive://localhost:9083",
+      "name": "test.teams",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "int"
+            },
+            {
+              "name": "type",
+              "type": "int"
+            },
+            {
+              "name": "building",
+              "type": "string"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file",
+              "name": "/opt/hive/data/warehouse/test.db/teams",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "hive://localhost:9083",
+      "name": "test.result_t",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "type",
+              "type": "int"
+            },
+            {
+              "name": "building",
+              "type": "string"
+            },
+            {
+              "name": "manager",
+              "type": "string"
+            },
+            {
+              "name": "employee",
+              "type": "string"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file",
+              "name": "/opt/hive/data/warehouse/test.db/result_t",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
