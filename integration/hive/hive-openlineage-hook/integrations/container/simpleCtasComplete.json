@@ -43,7 +43,7 @@
             {
               "namespace": "file",
               "name": "/opt/hive/data/warehouse/test.db/employees",
-              "type": "TABLE"
+              "type": "LOCATION"
             }
           ]
         }
@@ -74,7 +74,7 @@
             {
               "namespace": "file",
               "name": "/opt/hive/data/warehouse/test.db/managers",
-              "type": "TABLE"
+              "type": "LOCATION"
             }
           ]
         }
@@ -105,7 +105,7 @@
             {
               "namespace": "file",
               "name": "/opt/hive/data/warehouse/test.db/teams",
-              "type": "TABLE"
+              "type": "LOCATION"
             }
           ]
         }
@@ -142,7 +142,7 @@
             {
               "namespace": "file",
               "name": "/opt/hive/data/warehouse/test.db/result_t",
-              "type": "TABLE"
+              "type": "LOCATION"
             }
           ]
         }

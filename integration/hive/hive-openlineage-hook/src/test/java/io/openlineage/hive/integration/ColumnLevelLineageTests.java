@@ -219,7 +219,7 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
                         assertThat(identifier.getNamespace()).isEqualTo("file");
                         assertThat(identifier.getName())
                             .isEqualTo("/opt/hive/data/warehouse/test.db/xxx");
-                        assertThat(identifier.getType()).isEqualTo("TABLE");
+                        assertThat(identifier.getType()).isEqualTo("LOCATION");
                       });
             });
   }
