@@ -39,7 +39,7 @@
             {
               "namespace": "file",
               "name": "/opt/hive/data/warehouse/test.db/t1",
-              "type": "TABLE"
+              "type": "LOCATION"
             }
           ]
         }
@@ -107,7 +107,7 @@
             {
               "namespace": "file",
               "name": "/opt/hive/data/warehouse/test.db/xxx",
-              "type": "TABLE"
+              "type": "LOCATION"
             }
           ]
         }

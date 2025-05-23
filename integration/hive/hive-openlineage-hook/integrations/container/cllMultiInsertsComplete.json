@@ -39,7 +39,7 @@
             {
               "namespace": "file",
               "name": "/opt/hive/data/warehouse/test.db/t4",
-              "type": "TABLE"
+              "type": "LOCATION"
             }
           ]
         }
@@ -66,7 +66,7 @@
             {
               "namespace": "file",
               "name": "/opt/hive/data/warehouse/test.db/t3",
-              "type": "TABLE"
+              "type": "LOCATION"
             }
           ]
         }
@@ -174,7 +174,7 @@
             {
               "namespace": "file",
               "name": "/opt/hive/data/warehouse/test.db/t2",
-              "type": "TABLE"
+              "type": "LOCATION"
             }
           ]
         }
@@ -267,7 +267,7 @@
             {
               "namespace": "file",
               "name": "/opt/hive/data/warehouse/test.db/t1",
-              "type": "TABLE"
+              "type": "LOCATION"
             }
           ]
         }

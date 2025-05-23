@@ -38,7 +38,7 @@
             {
               "namespace": "file",
               "name": "/opt/hive/data/warehouse/test.db/transactions",
-              "type": "TABLE"
+              "type": "LOCATION"
             }
           ]
         }
@@ -170,7 +170,7 @@
             {
               "namespace": "file",
               "name": "/opt/hive/data/warehouse/test.db/monthly_transaction_summary",
-              "type": "TABLE"
+              "type": "LOCATION"
             }
           ]
         }
