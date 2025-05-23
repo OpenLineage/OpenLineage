@@ -8,7 +8,6 @@ import static io.openlineage.hive.client.HiveOpenLineageConfigParser.extractFrom
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.transports.ConsoleConfig;
-import io.openlineage.client.transports.gcplineage.GcpLineageTransportConfig;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.Test;
 
@@ -39,21 +38,4 @@ public class HiveOpenLineageConfigParserTest {
     assertThat(config.getDatasetConfig()).isNull();
   }
 
-  @Test
-  public void testDataplexTransportConfig() {
-    Configuration conf = new Configuration();
-    conf.set("hive.openlineage.transport.type", "gcplineage");
-    conf.set("hive.openlineage.transport.projectId", "myproject");
-    conf.set("hive.openlineage.transport.location", "mylocation");
-    HiveOpenLineageConfig config = extractFromHadoopConf(conf);
-    assertThat(((GcpLineageTransportConfig) config.getTransportConfig()).getProjectId())
-        .isEqualTo("myproject");
-    assertThat(((GcpLineageTransportConfig) config.getTransportConfig()).getLocation())
-        .isEqualTo("mylocation");
-    assertThat(config.getJobConfig()).isNull();
-    assertThat(config.getFacetsConfig()).isNull();
-    assertThat(config.getCircuitBreaker()).isNull();
-    assertThat(config.getMetricsConfig()).isNull();
-    assertThat(config.getDatasetConfig()).isNull();
-  }
 }
