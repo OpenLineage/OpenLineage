@@ -246,6 +246,7 @@ class RddExecutionContext implements ExecutionContext {
       log.info("Output RDDs are empty: skipping sending OpenLineage event");
       return;
     }
+    // TODO: include smart debug facet - write unit tests
     OpenLineage.RunEvent event =
         olContext
             .getOpenLineage()
