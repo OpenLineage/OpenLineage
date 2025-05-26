@@ -11,7 +11,7 @@ Example:
 ```json
 {
     ...
-    "job": {
+    "inputs": {
         "facets": {
             "_producer": "https://some.producer.com/version/1.0",
             "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/TagsDatasetFacet.json",
