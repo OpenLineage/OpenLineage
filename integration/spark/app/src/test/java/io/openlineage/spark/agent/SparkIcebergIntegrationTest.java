@@ -551,11 +551,11 @@ class SparkIcebergIntegrationTest {
       return;
     }
 
-    clearTables("temp", "scan_source1", "scan_target");
+    clearTables("temp", "scan_report_source", "scan_target");
     createTempDataset(3).createOrReplaceTempView("temp");
 
-    spark.sql("CREATE TABLE scan_source1 USING iceberg AS SELECT * FROM temp");
-    spark.sql("CREATE TABLE scan_target USING iceberg AS SELECT * FROM scan_source1");
+    spark.sql("CREATE TABLE scan_report_source USING iceberg AS SELECT * FROM temp");
+    spark.sql("CREATE TABLE scan_target USING iceberg AS SELECT * FROM scan_report_source");
 
     // make sure all event wer generated
     List<RunEvent> runEvents = getEventsEmittedWithJobName(mockServer, "scan_target");
@@ -563,7 +563,7 @@ class SparkIcebergIntegrationTest {
     List<InputDatasetInputFacets> inputFacets =
         runEvents.stream()
             .flatMap(e -> e.getInputs().stream())
-            .filter(e -> e.getName().endsWith("scan_source1"))
+            .filter(e -> e.getName().endsWith("scan_report_source"))
             .map(InputDataset::getInputFacets)
             .filter(Objects::nonNull)
             .collect(Collectors.toList());

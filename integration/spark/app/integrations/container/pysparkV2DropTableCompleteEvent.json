@@ -9,10 +9,6 @@
       "namespace": "file",
       "name": "/tmp/iceberg/default/iceberg_drop_table_test",
       "facets": {
-        "dataSource": {
-          "name": "file",
-          "uri": "file"
-        },
         "lifecycleStateChange": {
           "lifecycleStateChange": "DROP"
         },
