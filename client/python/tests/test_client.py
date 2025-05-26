@@ -608,6 +608,36 @@ def test_composite_transport_with_aliased_url_and_overriden_alias() -> None:
     os.environ,
     {
         "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT": '{"type": "http", "url": "https://data-obs-intake.datadoghq.com", '
+        '"auth": {"type": "apiKey", "apiKey": "YOUR_API_KEY"}, '
+        '"async_config": {"enabled": true}}',
+    },
+)
+def test_async_transport_with_enabled_async_flag() -> None:
+    transport: HttpTransport = OpenLineageClient().transport
+    assert transport.kind == HttpTransport.kind
+    print(transport.config)
+    assert transport.config.async_config.enabled is True
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP__ASYNC_CONFIG__ENABLED": "true",
+    },
+)
+def test_async_transport_with_overwritten_enabled_async_flag() -> None:
+    transport: HttpTransport = OpenLineageClient().transport
+    assert transport.kind == HttpTransport.kind
+    print(transport.config)
+    assert transport.config.async_config.enabled is True
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
         "OPENLINEAGE__TRANSPORT__TYPE": "composite",
         "OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP__TYPE": "console",
         "OPENLINEAGE__TRANSPORT__TRANSPORTS__ANOTHER__TYPE": "console",
