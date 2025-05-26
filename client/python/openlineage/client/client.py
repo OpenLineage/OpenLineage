@@ -35,7 +35,7 @@ from openlineage.client.transport import (
     TransportFactory,
     get_default_factory,
 )
-from openlineage.client.transport.http import HttpConfig, HttpTransport, create_token_provider
+from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
 
 Event_v1 = Union[RunEvent, DatasetEvent, JobEvent]
@@ -48,7 +48,7 @@ class OpenLineageClientOptions:
     timeout: float = attr.ib(default=5.0)
     verify: bool = attr.ib(default=True)
     api_key: str = attr.ib(default=None)
-    adapter: HTTPAdapter = attr.ib(default=None)
+    adapter: HTTPAdapter = attr.ib(default=None)  # Deprecated: no longer used with httpx
 
 
 @attr.s
@@ -89,7 +89,7 @@ class OpenLineageClient:
         self,
         url: str | None = None,
         options: OpenLineageClientOptions | None = None,
-        session: Session | None = None,
+        session: Session | None = None,  # Deprecated: no longer used with httpx
         transport: Transport | None = None,
         factory: TransportFactory | None = None,
         *,
@@ -103,6 +103,20 @@ class OpenLineageClient:
         if url:
             warnings.warn(
                 message="Initializing OpenLineageClient with url, options and session is deprecated.",
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+
+        if session is not None:
+            warnings.warn(
+                message="The 'session' parameter is deprecated and no longer used with httpx transport.",
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+
+        if options and options.adapter is not None:
+            warnings.warn(
+                message="The 'adapter' option is deprecated and no longer used with httpx transport.",
                 category=DeprecationWarning,
                 stacklevel=2,
             )
@@ -239,7 +253,7 @@ class OpenLineageClient:
 
         # 2. Check if transport is provided explicitly
         if kwargs.get("transport"):
-            return cast(Transport, kwargs["transport"])
+            return cast("Transport", kwargs["transport"])
 
         # 3. Check if transport configuration is provided in YAML config file
         if self.config.transport and self.config.transport.get("type"):
@@ -293,42 +307,52 @@ class OpenLineageClient:
                     return path
                 if path and verbose:
                     log.debug("OpenLineage config file is missing or not readable: `%s`.", path)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 # We can get different errors depending on system
                 if verbose:
                     log.exception("Couldn't check if OpenLineage config file is readable: `%s`", path)
         return None
 
-    @staticmethod
-    def _http_transport_from_env_variables() -> HttpTransport:
-        config = HttpConfig(
-            url=os.environ["OPENLINEAGE_URL"],
-            auth=create_token_provider(
-                {
-                    "type": "api_key",
-                    "apiKey": os.environ.get("OPENLINEAGE_API_KEY", ""),
-                },
-            ),
-        )
+    def _http_transport_from_env_variables(self) -> HttpTransport:
+        # Start with basic config from legacy environment variables
+        config_dict = {
+            "url": os.environ["OPENLINEAGE_URL"],
+            "auth": {
+                "type": "api_key",
+                "apiKey": os.environ.get("OPENLINEAGE_API_KEY", ""),
+            },
+        }
+
         endpoint = os.environ.get("OPENLINEAGE_ENDPOINT", None)
         if endpoint is not None:
-            config.endpoint = endpoint
+            config_dict["endpoint"] = endpoint
 
-        return HttpTransport(config)
+        # Merge with any OPENLINEAGE__TRANSPORT__* environment variables
+        env_config = self._load_config_from_env_variables()
+        if env_config and "transport" in env_config:
+            config_dict = deep_merge_dicts(config_dict, env_config["transport"])
+
+        return HttpTransport(HttpConfig.from_dict(config_dict))
 
     @staticmethod
     def _http_transport_from_url(
         url: str,
         options: OpenLineageClientOptions | None,
-        session: Session | None,
+        session: Session | None,  # Deprecated: no longer used with httpx
     ) -> HttpTransport:
+        if session is not None:
+            warnings.warn(
+                message="The 'session' parameter is deprecated and no longer used with httpx transport.",
+                category=DeprecationWarning,
+                stacklevel=3,
+            )
         if not options:
             options = OpenLineageClientOptions()
         return HttpTransport(
             HttpConfig.from_options(
                 url=url,
                 options=options,
-                session=session,
+                session=session,  # Will be ignored in from_options
             ),
         )
 

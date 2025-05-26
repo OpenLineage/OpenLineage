@@ -48,7 +48,16 @@ def test_optional_attributed_not_validated():
     nominal_time_run.NominalTimeRunFacet(nominalStartTime="2020-12-17T03:00:00.001Z")
 
 
-def test_custom_facet() -> None:
+@mock.patch("httpx.Client")
+def test_custom_facet(mock_client_class) -> None:
+    # Mock the context manager and post method
+    mock_client = mock.MagicMock()
+    mock_response = mock.MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     session = mock.MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -73,7 +82,10 @@ def test_custom_facet() -> None:
 
     client.emit(event)
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["content"])
 
     expected_event = {
         "eventType": "START",
@@ -104,7 +116,16 @@ def test_custom_facet() -> None:
 
 #
 # def test_full_core_event_serializes_properly(facet_mocker, event_mocker) -> None:
-def test_full_core_event_serializes_properly() -> None:
+@mock.patch("httpx.Client")
+def test_full_core_event_serializes_properly(mock_client_class) -> None:
+    # Mock the context manager and post method
+    mock_client = mock.MagicMock()
+    mock_response = mock.MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     session = mock.MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -195,13 +216,16 @@ def test_full_core_event_serializes_properly() -> None:
 
         client.emit(event)
 
-        event_sent = json.loads(session.post.call_args.kwargs["data"])
+        # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["content"])
 
-        dirpath = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(dirpath, "example_full_event.json")) as f:
-            expected_event = json.load(f)
+    dirpath = os.path.dirname(os.path.realpath(__file__))
+    with open(os.path.join(dirpath, "example_full_event.json")) as f:
+        expected_event = json.load(f)
 
-        assert expected_event == event_sent
+    assert expected_event == event_sent
 
 
 def test_with_additional_properties_adds_new_properties():
