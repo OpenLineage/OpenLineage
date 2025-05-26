@@ -10,7 +10,7 @@ from click.testing import CliRunner
 from openlineage.client.generator.cli import get_base_spec, main
 
 
-@mock.patch("openlineage.client.generator.cli.requests.get")
+@mock.patch("openlineage.client.generator.cli.httpx.get")
 def test_get_base_spec(mock_get) -> None:
     mock_response = mock.MagicMock()
     mock_response.text = '{"$id": "test_id", "$defs": {}}'

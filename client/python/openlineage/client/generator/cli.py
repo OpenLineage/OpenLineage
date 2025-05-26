@@ -6,7 +6,7 @@ import pathlib
 import tempfile
 
 import click
-import requests
+import httpx
 from openlineage.client.generator.base import (
     camel_to_snake,
     format_and_save_output,
@@ -19,7 +19,7 @@ BASE_SPEC_URL = "https://openlineage.io/spec/2-0-2/OpenLineage.json"
 
 def get_base_spec() -> pathlib.Path:
     """Get the base spec from the OpenLineage repository."""
-    response = requests.get(BASE_SPEC_URL, timeout=10)
+    response = httpx.get(BASE_SPEC_URL, timeout=10)
     response.raise_for_status()  # Raise an HTTPError for bad responses
     tmpfile = pathlib.Path(tempfile.mkdtemp()) / "OpenLineage.json"
     tmpfile.write_text(response.text)

@@ -44,6 +44,16 @@ class Transport:
     def emit(self, event: Event) -> Any:
         raise NotImplementedError
 
+    def wait_for_completion(self, timeout: float = 10.0) -> bool:
+        """
+        Block until all events are processed or timeout is reached.
+        If the transport is fully synchronous, this method should be a no-op and return True.
+
+        Returns:
+            bool: True if all events were processed, False if some events were not processed
+        """
+        return True
+
     def __str__(self) -> str:
         return f"<{self.__class__.__name__}(name={self.name}, kind={self.kind})>"
 

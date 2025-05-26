@@ -266,13 +266,22 @@ jobs:
         type: string
       py_env:
         type: string
-    docker:
-      - image: cimg/python:<< parameters.py_env >>
+    machine:
+      image: ubuntu-2204:current
     steps:
       - *checkout_project_root
-      - run: python -m pip install tox uv
-      - run: python -m tox r -e "<< parameters.tox_env >>" --notest
-      - run: python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
+      - run:
+          name: Install uv and Python << parameters.py_env >>
+          command: |
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            source $HOME/.local/bin/env
+            uv python install << parameters.py_env >>
+      - run:
+          name: Run tests with uv
+          command: |
+            source $HOME/.local/bin/env
+            uv run --python << parameters.py_env >> python -m tox r -e "<< parameters.tox_env >>" --notest
+            uv run --python << parameters.py_env >> python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
 
   unit-tests-client-python:
     working_directory: ~/openlineage/client/python

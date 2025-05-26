@@ -4,6 +4,8 @@
 
 ### Added
 
+* **Python: Asynchronous HTTP transport implementation** [@mobuchowski](https://github.com/mobuchowski)  
+  *Adds high-performance asynchronous HTTP transport with event ordering guarantees, configurable concurrency, and comprehensive error handling. Features START-before-completion event ordering, bounded queues, and real-time statistics.*
 * **Spark: Support dynamic frames.** [`#3691`](https://github.com/OpenLineage/OpenLineage/pull/3691) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Support lineage extraction from `UnionRdd` and `NewHadoopRDD`, which makes dynamic frames docker based test passing.*
 * **Hive: Integration added.** [`#3555`](https://github.com/OpenLineage/OpenLineage/pull/3555) [@tnazarew](https://github.com/tnazarew) with [@ddebowczyk92](https://github.com/ddebowczyk92), [@jphalip](https://github.com/jphalip)

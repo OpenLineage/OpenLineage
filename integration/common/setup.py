@@ -22,7 +22,7 @@ project_urls = {
 requirements = [
     "attrs>=19.3.0",
     f"openlineage-python=={__version__}",
-    f"openlineage_sql=={__version__}",
+    "openlineage_sql>=1.33.0",
 ]
 
 extras_require = {

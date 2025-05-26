@@ -56,7 +56,7 @@ class Fields(RedactMixin):
             init_name = a.alias
             if init_name not in kwargs:
                 kwargs[init_name] = getattr(self, attr_name)
-        return cast(Fields, new_class(**kwargs))
+        return cast("Fields", new_class(**kwargs))
 
 
 @attr.define
@@ -93,7 +93,7 @@ class InputField(RedactMixin):
             init_name = a.alias
             if init_name not in kwargs:
                 kwargs[init_name] = getattr(self, attr_name)
-        return cast(InputField, new_class(**kwargs))
+        return cast("InputField", new_class(**kwargs))
 
     @staticmethod
     def _get_schema() -> str:
@@ -134,4 +134,4 @@ class Transformation(RedactMixin):
             init_name = a.alias
             if init_name not in kwargs:
                 kwargs[init_name] = getattr(self, attr_name)
-        return cast(Transformation, new_class(**kwargs))
+        return cast("Transformation", new_class(**kwargs))

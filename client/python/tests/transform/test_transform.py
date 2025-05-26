@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import datetime
 import os
-from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -13,9 +12,6 @@ from openlineage.client.event_v2 import BaseEvent, Job, Run, RunEvent, RunState
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transform import EventTransformer, TransformConfig, TransformTransport
 from openlineage.client.uuid import generate_new_uuid
-
-if TYPE_CHECKING:
-    from pytest_mock import MockerFixture
 
 
 class NoopEventTransformer(EventTransformer):
@@ -121,14 +117,21 @@ def test_base_event_transformer_str():
     assert obj_str == "<NoopEventTransformer({'first': 'val', 'second': 'val2'})>"
 
 
-def test_client_with_transform_transport_emits(mocker: MockerFixture) -> None:
-    session = mocker.patch("requests.Session")
+@patch("httpx.Client")
+def test_client_with_transform_transport_emits(mock_client_class) -> None:
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     config = TransformConfig.from_dict(
         {
             "transport": {
                 "type": "http",
                 "url": "http://backend:5000",
-                "session": session,
             },
             "transformer_class": "tests.transform.test_transform.NoopEventTransformer",
         }
@@ -145,23 +148,35 @@ def test_client_with_transform_transport_emits(mocker: MockerFixture) -> None:
     )
 
     client.emit(event)
-    transport.transport.session.post.assert_called_once_with(
-        url="http://backend:5000/api/v1/lineage",
-        data=Serde.to_json(event),
-        headers={"Content-Type": "application/json"},
-        timeout=5.0,
-        verify=True,
-    )
+
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+
+    assert call_args.kwargs["url"] == "http://backend:5000/api/v1/lineage"
+    assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
+
+    # Verify the content is the serialized event
+    actual_content = call_args.kwargs["content"]
+    expected_content = Serde.to_json(event)
+    assert actual_content == expected_content
 
 
-def test_client_with_transform_transport_emits_modified_event(mocker: MockerFixture) -> None:
-    session = mocker.patch("requests.Session")
+@patch("httpx.Client")
+def test_client_with_transform_transport_emits_modified_event(mock_client_class) -> None:
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     config = TransformConfig.from_dict(
         {
             "transport": {
                 "type": "http",
                 "url": "http://backend:5000",
-                "session": session,
             },
             "transformer_class": "tests.transform.test_transform.SampleEventTransformer",
         }
@@ -187,13 +202,18 @@ def test_client_with_transform_transport_emits_modified_event(mocker: MockerFixt
     )
 
     client.emit(event)
-    transport.transport.session.post.assert_called_once_with(
-        url="http://backend:5000/api/v1/lineage",
-        data=Serde.to_json(modified_event),
-        headers={"Content-Type": "application/json"},
-        timeout=5.0,
-        verify=True,
-    )
+
+    # Verify the post was called with the modified event
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+
+    assert call_args.kwargs["url"] == "http://backend:5000/api/v1/lineage"
+    assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
+
+    # Verify the content is the serialized modified event
+    actual_content = call_args.kwargs["content"]
+    expected_content = Serde.to_json(modified_event)
+    assert actual_content == expected_content
 
     # Assert the original event is unchanged
     assert event == RunEvent(
@@ -205,16 +225,23 @@ def test_client_with_transform_transport_emits_modified_event(mocker: MockerFixt
     )
 
 
+@patch("httpx.Client")
 def test_client_with_transform_transport_skips_emission_when_transformed_event_is_none(
-    mocker: MockerFixture,
+    mock_client_class,
 ) -> None:
-    session = mocker.patch("requests.Session")
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     config = TransformConfig.from_dict(
         {
             "transport": {
                 "type": "http",
                 "url": "http://backend:5000",
-                "session": session,
             },
             "transformer_class": "tests.transform.test_transform.AlwaysNoneEventTransformer",
         }
@@ -232,19 +259,27 @@ def test_client_with_transform_transport_skips_emission_when_transformed_event_i
 
     client.emit(event)
 
-    transport.transport.session.post.assert_not_called()
+    # Should not be called since transformer returns None
+    mock_client.post.assert_not_called()
 
 
-def test_client_with_transform_transport_emits_modified_deprecated_event(mocker: MockerFixture) -> None:
+@patch("httpx.Client")
+def test_client_with_transform_transport_emits_modified_deprecated_event(mock_client_class) -> None:
     from openlineage.client.run import Job, Run, RunEvent, RunState
 
-    session = mocker.patch("requests.Session")
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     config = TransformConfig.from_dict(
         {
             "transport": {
                 "type": "http",
                 "url": "http://backend:5000",
-                "session": session,
             },
             "transformer_class": "tests.transform.test_transform.SampleEventTransformer",
         }
@@ -270,13 +305,18 @@ def test_client_with_transform_transport_emits_modified_deprecated_event(mocker:
     )
 
     client.emit(event)
-    transport.transport.session.post.assert_called_once_with(
-        url="http://backend:5000/api/v1/lineage",
-        data=Serde.to_json(modified_event),
-        headers={"Content-Type": "application/json"},
-        timeout=5.0,
-        verify=True,
-    )
+
+    # Verify the post was called with the modified event
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+
+    assert call_args.kwargs["url"] == "http://backend:5000/api/v1/lineage"
+    assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
+
+    # Verify the content is the serialized modified event
+    actual_content = call_args.kwargs["content"]
+    expected_content = Serde.to_json(modified_event)
+    assert actual_content == expected_content
 
     # Assert the original event is unchanged
     assert event == RunEvent(
@@ -288,7 +328,7 @@ def test_client_with_transform_transport_emits_modified_deprecated_event(mocker:
     )
 
 
-@patch("requests.Session.post")
+@patch("httpx.Client")
 @patch.dict(
     os.environ,
     {
@@ -300,18 +340,24 @@ def test_client_with_transform_transport_emits_modified_deprecated_event(mocker:
         "OPENLINEAGE__TRANSPORT__TRANSPORT__CUSTOM_HEADERS__ANOTHER_HEADER": "second",
     },
 )
-def test_transform_transport_from_env_vars_emits(mock_post):
+def test_transform_transport_from_env_vars_emits(mock_client_class):
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     transport = OpenLineageClient().transport
     mock_event = MagicMock()
 
-    with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'), patch(
-        "gzip.compress", return_value=b"compressed_data"
-    ):
+    with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
         transport.emit(mock_event)
 
-    mock_post.assert_called_once()
-    _, kwargs = mock_post.call_args
-    headers = kwargs["headers"]
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    headers = call_args.kwargs["headers"]
 
     assert headers["custom_header"] == "FIRST"
     assert headers["another_header"] == "second"
@@ -355,14 +401,21 @@ def test_client_with_transform_transport_fails_initialization_if_transformer_is_
         TransformTransport(config)
 
 
-def test_client_with_transform_transport_fails_when_transform_fails(mocker: MockerFixture) -> None:
-    session = mocker.patch("requests.Session")
+@patch("httpx.Client")
+def test_client_with_transform_transport_fails_when_transform_fails(mock_client_class) -> None:
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     config = TransformConfig.from_dict(
         {
             "transport": {
                 "type": "http",
                 "url": "http://backend:5000",
-                "session": session,
             },
             "transformer_class": "tests.transform.test_transform.AlwaysFailingTransformer",
         }
@@ -381,4 +434,5 @@ def test_client_with_transform_transport_fails_when_transform_fails(mocker: Mock
     with pytest.raises(ZeroDivisionError):
         client.emit(event)
 
-    transport.transport.session.post.assert_not_called()
+    # Should not be called since transformer failed
+    mock_client.post.assert_not_called()

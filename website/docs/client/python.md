@@ -218,7 +218,7 @@ environment variables:
 
 ### HTTP
 
-Allows sending events to HTTP endpoint, using [requests](https://requests.readthedocs.io/).
+Allows sending events to HTTP endpoint, using [httpx](https://www.python-httpx.org/). Supports both synchronous and asynchronous transport modes for different performance requirements.
 
 #### Configuration
 
@@ -232,7 +232,11 @@ Allows sending events to HTTP endpoint, using [requests](https://requests.readth
   - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`. Added in v1.13.0.
 - `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
-- `retry` - dictionary of additional configuration options passed to [`urllib3.util.Retry`](https://urllib3.readthedocs.io/en/1.26.20/reference/urllib3.util.html) object. Added in v1.33.0. Defaults are below; those are non-exhaustive options, but the ones that are set by default. Look at  [`urllib3.util.Retry`](https://urllib3.readthedocs.io/en/1.26.20/reference/urllib3.util.html) options for full reference.
+- `async_config` - dictionary specifying asynchronous transport configuration. Optional, by default async mode is disabled.
+  - `enabled` - boolean enabling asynchronous event emission. Optional, default: `false`.
+  - `max_queue_size` - integer specifying maximum events in processing queue. Optional, default: `1000000`.
+  - `max_concurrent_requests` - integer specifying maximum parallel HTTP requests. Optional, default: `100`.
+- `retry` - dictionary of additional configuration options for HTTP retries. Added in v1.33.0. Defaults are below; those are non-exhaustive options, but the ones that are set by default.
   - `total` - total number of retries to be attempted. Default is `5`.
   - `read` - number of retries to be attempted on read errors. Default is `5`.
   - `connect` - number of retries to be attempted on connection errors. Default is `5`.
@@ -242,7 +246,30 @@ Allows sending events to HTTP endpoint, using [requests](https://requests.readth
 
 #### Behavior
 
-Events are serialized to JSON, and then are send as HTTP POST request with `Content-Type: application/json`.
+Events are serialized to JSON, and then are sent as HTTP POST request with `Content-Type: application/json`.
+
+**Synchronous Mode (default)**: Events are sent immediately and the call blocks until completion. Uses httpx with built-in retry support and raises exceptions on failure.
+
+**Asynchronous Mode**: When `async_config.enabled` is `true`, events are processed asynchronously with the following features:
+
+- **Event Ordering Guarantees**: START events are sent before their corresponding COMPLETE, FAIL, or ABORT events
+- **High Throughput**: Non-blocking event emission with configurable concurrent processing
+- **Queue Management**: Bounded queue prevents memory exhaustion with configurable size
+- **Advanced Error Handling**: Retry logic with exponential backoff for network and server errors
+- **Event Tracking**: Real-time statistics on pending, successful, and failed events
+
+##### Async Mode Event Flow
+
+1. Events are queued for processing (START events immediately, completion events wait if their START is pending)
+2. Worker thread processes events using configurable parallelism
+3. Successful START events trigger release of pending completion events
+4. Event statistics are tracked and available via `get_stats()`
+
+##### Async Mode Additional Methods
+
+- `wait_for_completion(timeout)` - Wait for all events to be processed
+- `get_stats()` - Get processing statistics (`{"pending": 0, "success": 10, "failed": 0}`)
+- `shutdown(wait, timeout)` - Graceful shutdown with optional wait
 
 #### Examples
 
@@ -270,6 +297,33 @@ transport:
 ```
 
 </TabItem>
+<TabItem value="yaml-async" label="Yaml Config (Async)">
+
+```yaml
+transport:
+  type: http
+  url: https://backend:5000
+  endpoint: api/v1/lineage
+  timeout: 5
+  verify: false
+  auth:
+    type: api_key
+    apiKey: f048521b-dfe8-47cd-9c65-0cb07d57591e
+  compression: gzip
+  async_config:
+    enabled: true
+    max_queue_size: 1000000
+    max_concurrent_requests: 100
+  retry:
+    total: 5
+    read: 5
+    connect: 5
+    backoff_factor: 0.3
+    status_forcelist: [500, 502, 503, 504]
+    allowed_methods: ["HEAD", "POST"]
+```
+
+</TabItem>
 <TabItem value="python" label="Python Code">
 
 ```python
@@ -286,6 +340,43 @@ http_config = HttpConfig(
 )
 
 client = OpenLineageClient(transport=HttpTransport(http_config))
+```
+</TabItem>
+<TabItem value="python-async" label="Python Code (Async)">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.http import ApiKeyTokenProvider, HttpConfig, HttpCompression, HttpTransport, AsyncConfig
+
+http_config = HttpConfig(
+  url="https://backend:5000",
+  endpoint="api/v1/lineage",
+  timeout=5,
+  verify=False,
+  auth=ApiKeyTokenProvider({"apiKey": "f048521b-dfe8-47cd-9c65-0cb07d57591e"}),
+  compression=HttpCompression.GZIP,
+  async_config=AsyncConfig(
+    enabled=True,
+    max_queue_size=1000000,
+    max_concurrent_requests=100
+  )
+)
+
+client = OpenLineageClient(transport=HttpTransport(http_config))
+
+# Emit events asynchronously
+client.emit(start_event)      # Non-blocking
+client.emit(complete_event)   # Waits for START success, then sent
+
+# Wait for all events to complete
+client.transport.wait_for_completion(timeout=30)
+
+# Get processing statistics  
+stats = client.transport.get_stats()
+print(f"Pending: {stats['pending']}, Success: {stats['success']}, Failed: {stats['failed']}")
+
+# Graceful shutdown
+client.transport.shutdown(wait=True, timeout=30)
 ```
 </TabItem>
 

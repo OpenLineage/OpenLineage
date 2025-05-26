@@ -41,14 +41,10 @@ def register_transport(clazz: type[Transport]) -> type[Transport]:
 
 
 __all__ = [
-    "register_transport",
-    "get_default_factory",
-    "Config",
-    "Transport",
-    "TransportFactory",
     "AmazonDataZoneConfig",
     "AmazonDataZoneTransport",
     "CompositeTransport",
+    "Config",
     "ConsoleTransport",
     "FileTransport",
     "HttpConfig",
@@ -60,4 +56,8 @@ __all__ = [
     "NoopTransport",
     "TransformConfig",
     "TransformTransport",
+    "Transport",
+    "TransportFactory",
+    "get_default_factory",
+    "register_transport",
 ]
