@@ -16,7 +16,8 @@ public class DatasetIdentifier {
   List<Symlink> symlinks;
 
   public enum SymlinkType {
-    TABLE
+    TABLE,
+    LOCATION
   };
 
   public DatasetIdentifier(String name, String namespace) {
