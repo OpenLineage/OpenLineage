@@ -618,33 +618,57 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         dbt_command_line = add_or_replace_command_line_option(
             dbt_command_line, option="--write-json", replace_option="--no-write-json"
         )
+
         self._open_dbt_log_file()
+        self.logger.debug(f"Opened log file `{self.dbt_log_file_path}`")
         incremental_reader = IncrementalFileReader(self._dbt_log_file)
+        last_size = os.stat(self.dbt_log_file_path).st_size
+
+        self.logger.debug(f"Running dbt command: `{dbt_command_line}`")
         process = subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr, text=True)
         parse_manifest = True
+        last_log = datetime.datetime.now()
         try:
             while process.poll() is None:
+                if (datetime.datetime.now() - last_log) >= datetime.timedelta(seconds=10):
+                    self.logger.debug("dbt process is still running: waiting for logs to appear")
+                    last_log = datetime.datetime.now()
                 if parse_manifest and has_lines(self._dbt_log_file) > 0:
                     # Load the manifest as soon as it exists
                     self.compiled_manifest
                     parse_manifest = False
+                    self.logger.debug("Parsed manifest file")
 
-                yield from incremental_reader.read_lines()
-                time.sleep(0.1)
+                current_size = os.stat(self.dbt_log_file_path).st_size
+                if current_size > last_size:
+                    yield from incremental_reader.read_lines(current_size - last_size)
+                    last_size = current_size
 
+                time.sleep(0.01)
+
+            self.logger.debug("dbt process has exited. Waiting for logs to be flushed")
             max_loops = 10
             i = 0
             while (
                 self._dbt_log_file is not None and not self.received_dbt_command_completed and i < max_loops
             ):
-                yield from incremental_reader.read_lines()
+                current_size = os.stat(self.dbt_log_file_path).st_size
+                yield from incremental_reader.read_lines(current_size - last_size)
+                last_size = current_size
                 time.sleep(0.1)
                 i += 1
+            self.logger.debug("Finished waiting for logs to be flushed")
 
         except Exception:
             self.logger.exception("An exception occurred in OL code. dbt is still running.")
+            last_log = datetime.datetime.now()
             while process.poll() is None:
+                if (datetime.datetime.now() - last_log) >= datetime.timedelta(seconds=10):
+                    self.logger.debug("dbt process is still running. Further logs won't be processed")
+                    last_log = datetime.datetime.now()
+                time.sleep(0.1)
                 pass  # wait for the process to finish
+            self.logger.debug("dbt process has finished")
         finally:
             if self._dbt_log_file is not None:
                 self._dbt_log_file.close()
@@ -712,15 +736,18 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             return self.parent_run_metadata.root_parent_run_id
         if self.dbt_run_metadata is not None:
             return self.dbt_run_metadata.root_parent_run_id
+        return None
 
     def get_root_parent_job_namespace(self):
         if self.parent_run_metadata is not None:
             return self.parent_run_metadata.root_parent_job_namespace
         if self.dbt_run_metadata is not None:
             return self.dbt_run_metadata.root_parent_job_namespace
+        return None
 
     def get_root_parent_job_name(self):
         if self.parent_run_metadata is not None:
             return self.parent_run_metadata.root_parent_job_name
         if self.dbt_run_metadata is not None:
             return self.dbt_run_metadata.root_parent_job_name
+        return None
