@@ -61,6 +61,6 @@ public class HiveUtilsTest {
     DatasetIdentifier.Symlink symlink = datasetIdentifier.getSymlinks().get(0);
     assertThat(symlink.getName()).isEqualTo("/path/to/my/table");
     assertThat(symlink.getNamespace()).isEqualTo("file");
-    assertThat(symlink.getType().name()).isEqualTo("TABLE");
+    assertThat(symlink.getType().name()).isEqualTo("LOCATION");
   }
 }
