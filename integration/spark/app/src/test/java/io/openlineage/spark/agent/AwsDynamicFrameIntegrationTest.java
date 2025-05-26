@@ -7,8 +7,6 @@ package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_LOG4J2_PROPERTIES_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_LOG4J_PROPERTIES_PATH;
-import static io.openlineage.spark.agent.SparkContainerProperties.CONTAINER_SPARK_JARS_DIR;
-import static io.openlineage.spark.agent.SparkContainerProperties.HOST_ADDITIONAL_JARS_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LIB_DIR;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LOG4J2_PROPERTIES_PATH;
 import static io.openlineage.spark.agent.SparkContainerProperties.HOST_LOG4J_PROPERTIES_PATH;
@@ -23,7 +21,6 @@ import static org.mockserver.model.HttpRequest.request;
 
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClientUtils;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
@@ -110,16 +107,12 @@ class AwsDynamicFrameIntegrationTest {
             .dependsOn(mockServerContainer)
             .withCommand(command.toString());
 
-    final Path buildDir = Paths.get(System.getProperty("build.dir")).toAbsolutePath();
     mountPath(container, HOST_RESOURCES_DIR.resolve("test_data"), Paths.get("/test_data"));
     mountFiles(
         container, HOST_RESOURCES_DIR.resolve("spark_scripts"), Paths.get("/opt/spark_scripts"));
-    Path targetDir = Paths.get("/opt/spark/jars/");
-    mountFiles(container, buildDir.resolve("libs"), targetDir);
     mountPath(container, HOST_LOG4J_PROPERTIES_PATH, CONTAINER_LOG4J_PROPERTIES_PATH);
     mountPath(container, HOST_LOG4J2_PROPERTIES_PATH, CONTAINER_LOG4J2_PROPERTIES_PATH);
-    mountFiles(container, HOST_ADDITIONAL_JARS_DIR, CONTAINER_SPARK_JARS_DIR);
-    mountFiles(container, HOST_LIB_DIR, targetDir);
+    mountFiles(container, HOST_LIB_DIR, Paths.get("/opt/spark/jars/"));
 
     container.start();
 
