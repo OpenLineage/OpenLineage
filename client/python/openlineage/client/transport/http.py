@@ -49,8 +49,8 @@ class HttpCompression(Enum):
 
 @attr.s
 class AsyncConfig:
-    enabled: bool = attr.ib(default=False)
-    max_queue_size: int = attr.ib(default=1000)
+    enabled: bool = attr.ib(default=True)
+    max_queue_size: int = attr.ib(default=1000000)
     max_concurrent_requests: int = attr.ib(default=100)
 
 
@@ -65,6 +65,8 @@ class ApiKeyTokenProvider(TokenProvider):
             self.api_key = config["apiKey"]
 
     def get_bearer(self) -> str | None:
+        if self.api_key is None or self.api_key == "":
+            return None
         return f"Bearer {self.api_key}"
 
 
@@ -478,7 +480,6 @@ class AsyncEmitter(Emitter):
                             resp.status_code,
                         )
                         log.debug("Response body: %s", resp.text)
-                        log.debug("Request headers: %s", headers)
                         break
 
                     await asyncio.sleep(self.config.retry.get("backoff_factor", 0.3) * (2**attempt))
@@ -644,7 +645,7 @@ class HttpConfig(Config):
             specified_dict["compression"] = HttpCompression(compression)
         async_config = specified_dict.get("async_config", {})
         if async_config.get("enabled", False):
-            specified_dict["async_config"] = AsyncConfig(async_config)
+            specified_dict["async_config"] = AsyncConfig(**async_config)
         else:
             specified_dict["async_config"] = AsyncConfig()
         return cls(**specified_dict)
