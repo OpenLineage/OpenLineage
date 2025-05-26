@@ -29,7 +29,7 @@ from openlineage.client.facet import (
 from openlineage.client.run import SCHEMA_URL, Dataset, Job, Run, RunEvent, RunState
 
 
-@pytest.fixture()
+@pytest.fixture
 def event() -> dict[str, Any]:
     return {
         "eventType": "START",

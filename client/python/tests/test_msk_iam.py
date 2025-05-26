@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
 
-@pytest.fixture()
+@pytest.fixture
 def event() -> RunEvent:
     return RunEvent(
         eventType=RunState.START,

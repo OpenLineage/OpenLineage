@@ -104,7 +104,7 @@ class BaseFacet(RedactMixin):
             init_name = a.alias
             if init_name not in kwargs:
                 kwargs[init_name] = getattr(self, attr_name)
-        return cast(BaseFacet, new_class(**kwargs))
+        return cast("BaseFacet", new_class(**kwargs))
 
     @staticmethod
     def _get_schema() -> str:

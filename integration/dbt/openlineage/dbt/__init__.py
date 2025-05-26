@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import logging.config
 import os
 import subprocess
 import sys
@@ -107,14 +108,41 @@ def dbt_run_event_failed(
     )
 
 
-openlineage_logger = logging.getLogger("openlineage.dbt")
-openlineage_logger.setLevel(os.getenv("OPENLINEAGE_DBT_LOGGING", "INFO"))
-openlineage_logger.addHandler(logging.StreamHandler(sys.stdout))
-# deprecated dbtol logger
-logger = logging.getLogger("dbtol")
-for handler in openlineage_logger.handlers:
-    logger.addHandler(handler)
-    logger.setLevel(openlineage_logger.level)
+def set_up_logger():
+    """
+    Set up the logger for the OpenLineage dbt wrapper.
+    """
+    log_format = "[%(asctime)s] [%(levelname)s] [%(name)s:%(lineno)d] - %(message)s"
+    logging.config.dictConfig(
+        {
+            "version": 1,
+            "disable_existing_loggers": False,
+            "formatters": {
+                "default": {
+                    "format": log_format,
+                }
+            },
+            "handlers": {
+                "console": {
+                    "class": "logging.StreamHandler",
+                    "formatter": "default",
+                    "stream": sys.stdout,
+                },
+            },
+            "loggers": {
+                "openlineage": {
+                    "handlers": ["console"],
+                    "level": os.getenv("OPENLINEAGE_DBT_LOGGING", "INFO").upper(),
+                    "propagate": True,
+                },
+            },
+        }
+    )
+    logger = logging.getLogger("openlineage.dbt")
+    return logger
+
+
+logger = set_up_logger()
 
 
 def main():
@@ -151,7 +179,10 @@ def main():
 def consume_structured_logs(
     target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]
 ):
-    logger.info("This wrapper will send OpenLineage events while the models are executing.")
+    logger.info(
+        "This wrapper is using --consume-structured-logs: will send OpenLineage "
+        "events while the models are executing."
+    )
     dbt_integration_return_code = 0
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
     dbt_command_line = remove_command_line_option(sys.argv, CONSUME_STRUCTURED_LOGS_COMMAND_OPTION)
@@ -175,6 +206,8 @@ def consume_structured_logs(
             try:
                 client.emit(event)
                 emitted_events += 1
+                if emitted_events % 50 == 0:
+                    logger.debug(f"Processed {emitted_events} events")
             except Exception as e:
                 logger.warning(
                     "OpenLineage client failed to emit event %s runId %s. Exception: %s",
@@ -183,6 +216,10 @@ def consume_structured_logs(
                     e,
                     exc_info=True,
                 )
+
+        # Will wait for async events to be sent if async config is enabled\
+        logger.debug("Waiting for events to be sent.")
+        client.transport.wait_for_completion(10.0)
     except UnsupportedDbtCommand as e:
         logger.error(e)
         dbt_integration_return_code = 1
