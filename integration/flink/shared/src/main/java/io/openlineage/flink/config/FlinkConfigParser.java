@@ -60,7 +60,7 @@ public class FlinkConfigParser {
               OpenLineageClientUtils.loadOpenLineageConfigYaml(
                   new DefaultConfigPathProvider(), new TypeReference<FlinkOpenLineageConfig>() {}));
     } catch (OpenLineageClientException e) {
-      log.info("Couldn't log config from file, will read it from FlinkConf");
+      log.info("Couldn't log config from file, will read it from FlinkConf", e);
       configFromFile = Optional.empty();
     }
     return configFromFile;
