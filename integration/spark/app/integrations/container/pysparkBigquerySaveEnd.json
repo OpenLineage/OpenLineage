@@ -23,10 +23,37 @@
       }
     }
   ],
-  "outputs": [
-    {
-      "namespace": "bigquery",
-      "name": "{PROJECT_ID}.{DATASET_ID}.{JAVA_VERSION}_{SPARK_VERSION}_{SCALA_VERSION}_target"
+  "outputs": [{
+    "namespace": "bigquery",
+    "name": "{PROJECT_ID}.{DATASET_ID}.{JAVA_VERSION}_{SPARK_VERSION}_{SCALA_VERSION}_target",
+    "facets": {
+      "schema": {
+        "fields": [{
+          "name": "a",
+          "type": "long"
+        }, {
+          "name": "b",
+          "type": "long"
+        }]
+      },
+      "columnLineage": {
+        "fields": {
+          "a": {
+            "inputFields": [{
+              "namespace": "bigquery",
+              "name": "{PROJECT_ID}.{DATASET_ID}.{JAVA_VERSION}_{SPARK_VERSION}_{SCALA_VERSION}_source",
+              "field": "a"
+            }]
+          },
+          "b": {
+            "inputFields": [{
+              "namespace": "bigquery",
+              "name": "{PROJECT_ID}.{DATASET_ID}.{JAVA_VERSION}_{SPARK_VERSION}_{SCALA_VERSION}_source",
+              "field": "b"
+            }]
+          }
+        }
+      }
     }
-  ]
+  }]
 }
