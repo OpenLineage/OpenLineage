@@ -220,7 +220,11 @@ public class FlinkContainerUtils {
 
   static String getOpenLineageJarPath() {
     return Arrays.stream((new File("build/libs")).listFiles())
-        .filter(file -> file.getName().startsWith("openlineage-flink"))
+        .filter(
+            file ->
+                file.getName().startsWith("openlineage-flink")
+                    && !file.getName().endsWith("-javadoc.jar")
+                    && !file.getName().endsWith("-sources.jar"))
         .map(file -> file.getPath())
         .findAny()
         .get();
