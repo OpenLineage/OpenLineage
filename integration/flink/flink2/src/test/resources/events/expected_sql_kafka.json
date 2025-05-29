@@ -1,7 +1,15 @@
 {
   "schemaURL" : "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
   "eventType" : "START",
-  "run" : {
+  "run": {
+    "runId": "${json-unit.any-string}",
+    "facets": {
+      "processing_engine": {
+        "version": "${json-unit.regex}2\\.\\d+.*",
+        "name": "flink",
+        "openlineageAdapterVersion": "${json-unit.any-string}"
+      }
+    }
   },
   "job" : {
     "namespace" : "flink-jobs",

@@ -10,6 +10,11 @@
         "in-progress": "${json-unit.any-number}",
         "restored": "${json-unit.any-number}",
         "total": "${json-unit.any-number}"
+      },
+      "processing_engine": {
+        "version": "${json-unit.regex}2\\.\\d+.*",
+        "name": "flink",
+        "openlineageAdapterVersion": "${json-unit.any-string}"
       }
     }
   },
