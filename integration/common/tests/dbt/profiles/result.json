@@ -26,9 +26,14 @@
 				"job": {"name": "dbt-job-name", "namespace": "dbt"},
 				"run": {"runId": "{{ any(result) }}"}
 			},
-                "dbt_version": {
-                    "version": "{{ any(result) }}"
-                }
+			"dbt_version": {
+				"version": "{{ any(result) }}"
+			},
+			"processing_engine": {
+				"name": "dbt",
+				"version": "{{ any(result) }}",
+				"openlineageAdapterVersion": "{{ any(result) }}"
+			}
 		}
 	},
 	"job": {

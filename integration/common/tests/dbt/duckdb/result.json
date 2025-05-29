@@ -67,6 +67,11 @@
             "dbt_version": {
                 "version": "1.8.9"
             },
+			"processing_engine": {
+				"name": "dbt",
+				"version": "1.8.9",
+				"openlineageAdapterVersion": "{{ any(result) }}"
+			},
             "parent": {
                 "job": {
                     "name": "dbt-job-name",
@@ -144,6 +149,11 @@
             "dbt_version": {
                 "version": "1.8.9"
             },
+			"processing_engine": {
+				"name": "dbt",
+				"version": "1.8.9",
+				"openlineageAdapterVersion": "{{ any(result) }}"
+			},
             "parent": {
                 "job": {
                     "name": "dbt-job-name",
