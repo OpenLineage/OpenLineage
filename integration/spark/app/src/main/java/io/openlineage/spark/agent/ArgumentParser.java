@@ -45,8 +45,6 @@ public class ArgumentParser {
   public static final String SPARK_CONF_JOB_NAME_REPLACE_DOT_WITH_UNDERSCORE =
       "spark.openlineage.jobName.replaceDotWithUnderscore";
 
-  private static final String SPARK_CONF_DEBUG_FACET = "spark.openlineage.debugFacet";
-
   private static final String SPARK_TEST_EXTENSION_PROVIDER =
       "spark.openlineage.testExtensionProvider";
 
@@ -126,7 +124,6 @@ public class ArgumentParser {
     findSparkConfigKey(conf, SPARK_CONF_PARENT_JOB_NAMESPACE)
         .ifPresent(config::setParentJobNamespace);
     findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID).ifPresent(config::setParentRunId);
-    findSparkConfigKey(conf, SPARK_CONF_DEBUG_FACET).ifPresent(config::setDebugFacet);
     findSparkConfigKey(conf, SPARK_TEST_EXTENSION_PROVIDER)
         .ifPresent(config::setTestExtensionProvider);
     findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_APPEND_DATASET_NAME)
