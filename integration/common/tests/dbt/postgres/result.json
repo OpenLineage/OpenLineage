@@ -1,6 +1,6 @@
 [{
 	"eventType": "START",
-	"eventTime": "2022-12-14T21:28:16.899571Z",
+	"eventTime": "2022-12-14T21:28:16.899571+00:00",
 	"run": {
 		"runId": "{{ any(result) }}",
 		"facets": {
@@ -64,7 +64,7 @@
 	}]
 }, {
 	"eventType": "START",
-	"eventTime": "2022-12-14T21:28:16.997052Z",
+	"eventTime": "2022-12-14T21:28:16.997052+00:00",
 	"run": {
 		"runId": "{{ any(result) }}",
 		"facets": {
@@ -130,7 +130,7 @@
 	}]
 }, {
 	"eventType": "START",
-	"eventTime": "2022-12-14T21:28:17.045744Z",
+	"eventTime": "2022-12-14T21:28:17.045744+00:00",
 	"run": {
 		"runId": "{{ any(result) }}",
 		"facets": {
@@ -196,7 +196,7 @@
 	}]
 }, {
 	"eventType": "START",
-	"eventTime": "2022-12-14T21:28:17.093727Z",
+	"eventTime": "2022-12-14T21:28:17.093727+00:00",
 	"run": {
 		"runId": "{{ any(result) }}",
 		"facets": {
@@ -336,7 +336,7 @@
 	}]
 }, {
 	"eventType": "START",
-	"eventTime": "2022-12-14T21:28:17.156316Z",
+	"eventTime": "2022-12-14T21:28:17.156316+00:00",
 	"run": {
 		"runId": "{{ any(result) }}",
 		"facets": {
@@ -465,7 +465,7 @@
 	}]
 }, {
 	"eventType": "COMPLETE",
-	"eventTime": "2022-12-14T21:28:16.964210Z",
+	"eventTime": "2022-12-14T21:28:16.964210+00:00",
 	"run": {
 		"runId": "{{ any(result) }}",
 		"facets": {
@@ -529,7 +529,7 @@
 	}]
 }, {
 	"eventType": "COMPLETE",
-	"eventTime": "2022-12-14T21:28:17.030362Z",
+	"eventTime": "2022-12-14T21:28:17.030362+00:00",
 	"run": {
 		"runId": "{{ any(result) }}",
 		"facets": {
@@ -595,7 +595,7 @@
 	}]
 }, {
 	"eventType": "COMPLETE",
-	"eventTime": "2022-12-14T21:28:17.076892Z",
+	"eventTime": "2022-12-14T21:28:17.076892+00:00",
 	"run": {
 		"runId": "{{ any(result) }}",
 		"facets": {
@@ -661,7 +661,7 @@
 	}]
 }, {
 	"eventType": "COMPLETE",
-	"eventTime": "2022-12-14T21:28:17.140203Z",
+	"eventTime": "2022-12-14T21:28:17.140203+00:00",
 	"run": {
 		"runId": "{{ any(result) }}",
 		"facets": {
@@ -801,7 +801,7 @@
 	}]
 }, {
 	"eventType": "COMPLETE",
-	"eventTime": "2022-12-14T21:28:17.196590Z",
+	"eventTime": "2022-12-14T21:28:17.196590+00:00",
 	"run": {
 		"runId": "{{ any(result) }}",
 		"facets": {

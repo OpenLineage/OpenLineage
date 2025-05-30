@@ -1,6 +1,6 @@
 [
     {
-        "eventTime": "2021-08-25T11:00:25.277467+00:00",
+        "eventTime": "2021-07-05T11:43:14.756283+00:00",
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
         "run": {
@@ -91,7 +91,7 @@
         "outputs": []
     },
     {
-        "eventTime": "2021-08-25T11:00:25.277467+00:00",
+        "eventTime": "2021-07-05T11:43:17.338870+00:00",
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
         "run": {
@@ -262,7 +262,7 @@
         "outputs": []
     },
     {
-        "eventTime": "2021-08-25T11:00:25.277467+00:00",
+        "eventTime": "2021-07-05T11:43:22.037678+00:00",
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
         "run": {
@@ -353,7 +353,7 @@
         "outputs": []
     },
     {
-        "eventTime": "2021-08-25T11:00:25.277467+00:00",
+        "eventTime": "2021-07-05T11:43:22.037678+00:00",
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
         "run": {
@@ -454,7 +454,7 @@
         "outputs": []
     },
     {
-        "eventTime": "2021-08-25T11:00:25.277467+00:00",
+        "eventTime": "2021-07-05T11:43:22.037678+00:00",
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
         "run": {
@@ -555,7 +555,7 @@
         "outputs": []
     },
     {
-        "eventTime": "2021-08-25T11:00:25.277467+00:00",
+        "eventTime": "2021-07-05T11:43:17.218104+00:00",
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
         "run": {
@@ -646,7 +646,7 @@
         "outputs": []
     },
     {
-        "eventTime": "2021-08-25T11:00:25.277467+00:00",
+        "eventTime": "2021-07-05T11:43:24.406553+00:00",
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
         "run": {
@@ -817,7 +817,7 @@
         "outputs": []
     },
     {
-        "eventTime": "2021-08-25T11:00:25.277467+00:00",
+        "eventTime": "2021-07-05T11:43:24.406553+00:00",
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
         "run": {
@@ -908,7 +908,7 @@
         "outputs": []
     },
     {
-        "eventTime": "2021-08-25T11:00:25.277467+00:00",
+        "eventTime": "2021-07-05T11:43:24.406553+00:00",
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
         "run": {
@@ -1009,7 +1009,7 @@
         "outputs": []
     },
     {
-        "eventTime": "2021-08-25T11:00:25.277467+00:00",
+        "eventTime": "2021-07-05T11:43:24.406553+00:00",
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
         "run": {
