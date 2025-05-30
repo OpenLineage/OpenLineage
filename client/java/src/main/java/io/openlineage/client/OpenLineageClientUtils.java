@@ -133,6 +133,21 @@ public final class OpenLineageClientUtils {
   }
 
   /**
+   * Performs a deep copy of an object by serializing it to JSON and then deserializing it back to
+   * its original type.
+   *
+   * @param object The object to be deep copied.
+   * @param type The Jackson TypeReference used for deserialization.
+   * @param <T> The generic type of the object.
+   * @return A deep copy of the input object.
+   */
+  public static <T> T deepCopy(@NonNull final T object, TypeReference<T> type)
+      throws UncheckedIOException {
+    String jsonValue = toJson(object);
+    return fromJson(jsonValue, type);
+  }
+
+  /**
    * Convenience method to convert a JSON string directly into a {@link RunEvent} instance.
    *
    * @param json The JSON string representing a {@link RunEvent}.
