@@ -6,7 +6,14 @@
     "name": "flink_topic_pattern"
   },
   "run": {
-    "runId": "${json-unit.any-string}"
+    "runId": "${json-unit.any-string}",
+    "facets": {
+      "processing_engine": {
+        "version": "${json-unit.regex}1\\.\\d+\\.\\d+",
+        "name": "flink",
+        "openlineageAdapterVersion": "${json-unit.any-string}"
+      }
+    }
   },
   "inputs": [
     {
