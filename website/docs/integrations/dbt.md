@@ -17,6 +17,21 @@ This integration is implemented as a wrapper script, `dbt-ol`, that calls `dbt` 
 
 ## Preparing a dbt project for OpenLineage
 
+Right now, `openlineage-dbt` supports only these dbt adapters:
+
+* `bigquery`
+* `snowflake`
+* `spark` (`thrift` and `odbc`, but not `local`)
+* `redshift`
+* `athena`
+* `glue`
+* `postgres`
+* `trino`
+* `databricks`
+* `sqlserver`
+* `dremio`
+* `duckdb`
+
 First, we need to install the integration:
 
 ```bash
@@ -34,6 +49,8 @@ Finally, we can optionally specify a namespace where the lineage events will be 
 ```bash
 OPENLINEAGE_NAMESPACE=dev
 ```
+
+More configuration parameters can be found in [Python client documentation](../client/python.md#configuration)
 
 ## Running dbt with OpenLineage
 
