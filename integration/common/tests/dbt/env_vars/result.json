@@ -29,6 +29,11 @@
 			},
 			"dbt_version": {
 				"version": "{{ any(result) }}"
+			},
+			"processing_engine": {
+				"name": "dbt",
+				"version": "{{ any(result) }}",
+				"openlineageAdapterVersion": "{{ any(result) }}"
 			}
 		}
 	},

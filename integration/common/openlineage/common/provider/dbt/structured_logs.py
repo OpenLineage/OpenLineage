@@ -15,6 +15,7 @@ from openlineage.client.facet_v2 import (
     data_quality_assertions_dataset,
     error_message_run,
     job_type_job,
+    processing_engine_run,
     sql_job,
 )
 from openlineage.client.run import InputDataset
@@ -36,6 +37,9 @@ from openlineage.common.provider.dbt.utils import (
     get_job_type,
     get_node_unique_id,
     get_parent_run_metadata,
+)
+from openlineage.common.provider.dbt.utils import (
+    __version__ as openlineage_version,
 )
 from openlineage.common.utils import (
     IncrementalFileReader,
@@ -194,7 +198,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     def _parse_dbt_start_command_event(self, event) -> RunEvent:
         event_time = get_event_timestamp(event["info"]["ts"])
-        run_facets = self.dbt_version_facet()
+        run_facets = {
+            **self.dbt_version_facet(),
+            "processing_engine": self.processing_engine_facet(),
+        }
         if self.parent_run_metadata:
             run_facets["parent"] = self.parent_run_metadata.to_openlineage()
 
@@ -221,7 +228,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         return start_event
 
     def _get_dbt_command_abort_event(self):
-        run_facets = self.dbt_version_facet()
+        run_facets = {
+            **self.dbt_version_facet(),
+            "processing_engine": self.processing_engine_facet(),
+        }
         parent_run_metadata = get_parent_run_metadata()
         if parent_run_metadata:
             run_facets["parent"] = parent_run_metadata.to_openlineage()
@@ -249,8 +259,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         run_id = self.node_id_to_ol_run_id[node_unique_id]
         node_start_time = get_event_timestamp(event["data"]["node_info"]["node_started_at"])
 
-        parent_run_metadata = self.dbt_run_metadata.to_openlineage()
-        run_facets = {"parent": parent_run_metadata, **self.dbt_version_facet()}
+        run_facets = {
+            **self.dbt_version_facet(),
+            "parent": self.dbt_run_metadata.to_openlineage(),
+            "processing_engine": self.processing_engine_facet(),
+        }
 
         job_name = self._get_job_name(event)
         job_facets = {
@@ -289,8 +302,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         node_status = event["data"]["node_info"]["node_status"]
         run_id = self.node_id_to_ol_run_id[node_unique_id]
 
-        parent_run_metadata = self.dbt_run_metadata.to_openlineage()
-        run_facets = {"parent": parent_run_metadata, **self.dbt_version_facet()}
+        run_facets = {
+            **self.dbt_version_facet(),
+            "parent": self.dbt_run_metadata.to_openlineage(),
+            "processing_engine": self.processing_engine_facet(),
+        }
 
         job_name = self._get_job_name(event)
 
@@ -392,7 +408,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             root_parent_job_name=self.get_root_parent_job_name(),
         )
 
-        run_facets = {"parent": parent_run.to_openlineage(), **self.dbt_version_facet()}
+        run_facets = {
+            **self.dbt_version_facet(),
+            "parent": parent_run.to_openlineage(),
+            "processing_engine": self.processing_engine_facet(),
+        }
 
         job_facets = {
             "jobType": job_type_job.JobTypeJobFacet(
@@ -454,7 +474,15 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     def _parse_command_completed_event(self, event) -> RunEvent:
         success = event["data"]["success"]
         event_time = get_event_timestamp(event["data"]["completed_at"])
-        run_facets = self.dbt_version_facet()
+        run_facets = {
+            **self.dbt_version_facet(),
+            "processing_engine": self.processing_engine_facet(),
+        }
+
+        parent_run_metadata = get_parent_run_metadata()
+        if parent_run_metadata:
+            run_facets["parent"] = parent_run_metadata.to_openlineage()
+
         if success:
             run_state = RunState.COMPLETE
         else:
@@ -463,11 +491,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             run_facets["errorMessage"] = error_message_run.ErrorMessageRunFacet(
                 message=error_message, programmingLanguage="sql"
             )
-
-        parent_run_metadata = get_parent_run_metadata()
-
-        if parent_run_metadata:
-            run_facets["parent"] = parent_run_metadata.to_openlineage()
 
         job_facets = {
             "jobType": job_type_job.JobTypeJobFacet(
@@ -515,8 +538,20 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             root_parent_job_namespace=root_parent_job_namespace,
         )
 
-    def dbt_version_facet(self) -> DbtVersionRunFacet:
+    # TODO: remove after deprecation period
+    def dbt_version_facet(self) -> Dict[str, DbtVersionRunFacet]:
+        self.logger.debug(
+            "dbt_version facet is deprecated, and will be removed in future versions. "
+            "Use processing_engine facet instead."
+        )
         return {"dbt_version": DbtVersionRunFacet(version=self.dbt_version)}
+
+    def processing_engine_facet(self) -> processing_engine_run.ProcessingEngineRunFacet:
+        return processing_engine_run.ProcessingEngineRunFacet(
+            name="dbt",
+            version=self.dbt_version,  # type: ignore[arg-type]
+            openlineageAdapterVersion=openlineage_version,
+        )
 
     def _get_sql_query_id(self, timestamp: str, node_id: str) -> int:
         """
