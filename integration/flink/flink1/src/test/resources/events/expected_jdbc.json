@@ -4,6 +4,16 @@
     "namespace" : "flink_job_namespace",
     "name": "flink_examples_jdbc"
   },
+  "run": {
+    "runId": "${json-unit.any-string}",
+    "facets": {
+      "processing_engine": {
+        "version": "${json-unit.regex}1\\.\\d+\\.\\d+",
+        "name": "flink",
+        "openlineageAdapterVersion": "${json-unit.any-string}"
+      }
+    }
+  },
   "inputs": [{
     "namespace": "postgres://postgres:5432",
     "name": "postgres.source_event"

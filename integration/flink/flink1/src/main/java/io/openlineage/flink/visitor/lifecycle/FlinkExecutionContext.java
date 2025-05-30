@@ -18,6 +18,7 @@ import io.openlineage.flink.SinkLineage;
 import io.openlineage.flink.TransformationUtils;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.CheckpointFacet;
+import io.openlineage.flink.client.Versions;
 import io.openlineage.flink.visitor.Visitor;
 import io.openlineage.flink.visitor.VisitorFactory;
 import io.openlineage.flink.visitor.VisitorFactoryImpl;
@@ -36,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.runtime.util.EnvironmentInformation;
 
 @Slf4j
 @Builder
@@ -54,9 +56,19 @@ public class FlinkExecutionContext implements ExecutionContext {
         .getCircuitBreaker()
         .run(
             () -> {
+              OpenLineage openLineage = olContext.getOpenLineage();
               RunEvent runEvent =
                   buildEventForEventType(EventType.START)
-                      .run(new OpenLineage.RunBuilder().runId(olContext.getRunUuid()).build())
+                      .run(
+                          openLineage
+                              .newRunBuilder()
+                              .runId(olContext.getRunUuid())
+                              .facets(
+                                  openLineage
+                                      .newRunFacetsBuilder()
+                                      .processing_engine(buildProcessingEngineFacet(openLineage))
+                                      .build())
+                              .build())
                       .build();
               log.debug("Posting event for onJobSubmitted {}: {}", olContext.getJobId(), runEvent);
               olContext
@@ -73,20 +85,24 @@ public class FlinkExecutionContext implements ExecutionContext {
   }
 
   @Override
-  public void onJobCheckpoint(CheckpointFacet facet) {
+  public void onJobCheckpoint(CheckpointFacet checkpointFacet) {
     log.debug("JobClient - jobId: {}", olContext.getJobId());
     olContext
         .getCircuitBreaker()
         .run(
             () -> {
+              OpenLineage openLineage = olContext.getOpenLineage();
               RunEvent runEvent =
                   buildEventForEventType(EventType.RUNNING)
                       .run(
-                          new OpenLineage.RunBuilder()
+                          openLineage
+                              .newRunBuilder()
                               .runId(olContext.getRunUuid())
                               .facets(
-                                  new OpenLineage.RunFacetsBuilder()
-                                      .put("checkpoints", facet)
+                                  openLineage
+                                      .newRunFacetsBuilder()
+                                      .processing_engine(buildProcessingEngineFacet(openLineage))
+                                      .put("checkpoints", checkpointFacet)
                                       .build())
                               .build())
                       .build();
@@ -138,7 +154,13 @@ public class FlinkExecutionContext implements ExecutionContext {
                   .getEventEmitter()
                   .emit(
                       commonEventBuilder()
-                          .run(openLineage.newRun(olContext.getRunUuid(), null))
+                          .run(
+                              openLineage.newRun(
+                                  olContext.getRunUuid(),
+                                  openLineage
+                                      .newRunFacetsBuilder()
+                                      .processing_engine(buildProcessingEngineFacet(openLineage))
+                                      .build()))
                           .eventType(EventType.COMPLETE)
                           .build());
               olContext
@@ -169,6 +191,7 @@ public class FlinkExecutionContext implements ExecutionContext {
                                   olContext.getRunUuid(),
                                   openLineage
                                       .newRunFacetsBuilder()
+                                      .processing_engine(buildProcessingEngineFacet(openLineage))
                                       .errorMessage(
                                           openLineage.newErrorMessageRunFacet(
                                               failed.getMessage(),
@@ -212,6 +235,15 @@ public class FlinkExecutionContext implements ExecutionContext {
                 olContext.getJobId().getJobName(),
                 jobFacets))
         .eventTime(ZonedDateTime.now());
+  }
+
+  private OpenLineage.ProcessingEngineRunFacet buildProcessingEngineFacet(OpenLineage openLineage) {
+    return openLineage
+        .newProcessingEngineRunFacetBuilder()
+        .name("flink")
+        .version(EnvironmentInformation.getVersion())
+        .openlineageAdapterVersion(Versions.getVersion())
+        .build();
   }
 
   private JobFacetsBuilder buildOwnershipFacet(JobFacetsBuilder builder) {
