@@ -48,8 +48,6 @@ workflows:
           matrix:
               parameters:
                 airflow-version: [
-                  'airflow-2.3.4',
-                  'airflow-2.4.3',
                   'airflow-2.5.2',
                   'airflow-2.6.1'
                 ]
@@ -77,8 +75,6 @@ workflows:
           matrix:
             parameters:
               airflow-image: [
-                'apache/airflow:2.3.4-python3.9',
-                'apache/airflow:2.4.3-python3.9',
                 'apache/airflow:2.5.2-python3.9',
                 'apache/airflow:2.6.1-python3.9'
               ]
