@@ -99,6 +99,10 @@ See [CONTRIBUTING.md](https://github.com/OpenLineage/OpenLineage/blob/main/CONTR
 
 If you discover a vulnerability in the project, please [open an issue](https://github.com/OpenLineage/OpenLineage/issues/new/choose) and attach the "security" label.
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=OpenLineage/OpenLineage&type=Date)](https://www.star-history.com/#OpenLineage/OpenLineage&Date)
+
 ----
 SPDX-License-Identifier: Apache-2.0\
 Copyright 2018-2025 contributors to the OpenLineage project
