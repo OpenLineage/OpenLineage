@@ -160,6 +160,11 @@
               }
             ]
           }
+        },
+        "outputFacets": {
+          "outputStatistics": {
+            "rowCount": 2
+          }
         }
       }
     ]

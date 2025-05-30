@@ -303,6 +303,11 @@
               }
             ]
           }
+        },
+        "outputFacets": {
+          "outputStatistics": {
+            "rowCount": 1
+          }
         }
       }
     ]
@@ -370,7 +375,11 @@
             ]
           }
         },
-        "outputFacets": {}
+        "outputFacets": {
+          "outputStatistics": {
+            "rowCount": 1
+          }
+        }
       }
     ]
   },
@@ -431,6 +440,11 @@
                 "name": "customer_id"
               }
             ]
+          }
+        },
+        "outputFacets": {
+          "outputStatistics": {
+            "rowCount": 1
           }
         }
       }
@@ -560,7 +574,11 @@
             ]
           }
         },
-        "outputFacets": {}
+        "outputFacets": {
+          "outputStatistics": {
+            "rowCount": 1
+          }
+        }
       }
     ]
   },
@@ -705,6 +723,11 @@
                 "name": "total_order_amount"
               }
             ]
+          }
+        },
+        "outputFacets": {
+          "outputStatistics": {
+            "rowCount": 1
           }
         }
       }
