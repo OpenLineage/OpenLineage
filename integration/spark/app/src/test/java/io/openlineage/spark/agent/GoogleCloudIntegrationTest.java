@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
 import java.io.IOException;
 import java.net.URI;
@@ -164,6 +165,62 @@ class GoogleCloudIntegrationTest {
         "pysparkBigqueryInsertStart.json",
         "pysparkBigqueryInsertEnd.json",
         "pysparkBigquerySaveEnd.json");
+  }
+
+  @Test
+  @EnabledIfSystemProperty(
+      named = SPARK_VERSION_PROPERTY,
+      matches = SPARK_3_3) // Spark version >= 3.*
+  void testReadAndWriteFromBigqueryWithIndirectMode() {
+    String source_table = String.format("%s.%s.%s_source", PROJECT_ID, DATASET_ID, VERSION_NAME);
+    String target_table = String.format("%s.%s.%s_target", PROJECT_ID, DATASET_ID, VERSION_NAME);
+    log.info("Source Table: {}", source_table);
+    log.info("Target Table: {}", target_table);
+
+    Dataset<Row> dataset = getTestDataset();
+    dataset
+        .write()
+        .format("bigquery")
+        .option("table", source_table)
+        .option("writeMethod", "indirect")
+        .mode("overwrite")
+        .save();
+
+    Dataset<Row> first = spark.read().format("bigquery").option("table", source_table).load();
+
+    first
+        .write()
+        .format("bigquery")
+        .option("table", target_table)
+        .option("writeMethod", "indirect")
+        .mode("overwrite")
+        .save();
+
+    HashMap<String, String> replacements = new HashMap<>();
+    replacements.put("{NAMESPACE}", NAMESPACE);
+    replacements.put("{PROJECT_ID}", PROJECT_ID);
+    replacements.put("{DATASET_ID}", DATASET_ID);
+    replacements.put("{BUCKET_NAME}", BUCKET_NAME);
+    replacements.put("{JAVA_VERSION}", JAVA_VERSION);
+    replacements.put("{SPARK_VERSION}", SPARK_VERSION);
+    replacements.put("{SCALA_VERSION}", SCALA_VERSION);
+
+    if (log.isDebugEnabled()) {
+      logRunEvents();
+    }
+
+    List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
+    verifyEvents(
+        mockServer, replacements, "pysparkBigquerySaveStart.json", "pysparkBigquerySaveEnd.json");
+
+    // make sure that indirect temp job events are not emitted
+    assertThat(
+            events.stream()
+                .flatMap(event -> event.getOutputs().stream())
+                .map(OutputDataset::getName)
+                .distinct()
+                .collect(Collectors.toList()))
+        .doesNotContainSequence("spark-bigquery-local");
   }
 
   @Test
