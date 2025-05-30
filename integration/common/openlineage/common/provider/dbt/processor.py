@@ -188,7 +188,8 @@ class DbtArtifactProcessor:
         if self.command not in ["run", "build", "test", "seed", "snapshot"]:
             if self.should_raise_on_unsupported_command:
                 raise UnsupportedDbtCommand(
-                    f"Not recognized run command " f"{self.command} - should be run, test, seed or build"
+                    f"Not recognized run command {self.command} - "
+                    "should be run, build, test, seed or snapshot"
                 )
             else:
                 return events
@@ -449,7 +450,7 @@ class DbtArtifactProcessor:
             )
         else:
             # Should not happen?
-            raise ValueError(f"Run status was {status}, " f"should be in ['success', 'skipped', 'error']")
+            raise ValueError(f"Run status was {status}, should be in ['success', 'skipped', 'error']")
 
     def node_to_dataset(
         self,
@@ -584,7 +585,7 @@ class DbtArtifactProcessor:
             self.adapter_type = Adapter[profile["type"].upper()]
         except KeyError:
             raise NotImplementedError(
-                f"Only {Adapter.adapters()} adapters are supported right now. " f"Passed {profile['type']}"
+                f"Only {Adapter.adapters()} adapters are supported right now. Passed {profile['type']}"
             )
 
     def extract_dataset_namespace(self, profile: Dict):
@@ -635,11 +636,11 @@ class DbtArtifactProcessor:
                 return f"spark://{profile['host']}{port}"
             else:
                 raise NotImplementedError(
-                    f"Connection method `{profile['method']}` is not " f"supported for spark adapter."
+                    f"Connection method `{profile['method']}` is not supported for spark adapter."
                 )
         else:
             raise NotImplementedError(
-                f"Only {Adapter.adapters()} adapters are supported right now. " f"Passed {profile['type']}"
+                f"Only {Adapter.adapters()} adapters are supported right now. Passed {profile['type']}"
             )
 
     def get_run(self, run_id: str) -> Run:
