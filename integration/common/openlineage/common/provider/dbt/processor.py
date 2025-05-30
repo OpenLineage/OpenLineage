@@ -21,11 +21,13 @@ from openlineage.client.facet_v2 import (
     documentation_dataset,
     job_type_job,
     output_statistics_output_dataset,
+    processing_engine_run,
     schema_dataset,
     sql_job,
 )
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtVersionRunFacet, ParentRunMetadata
+from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
 from openlineage.common.provider.snowflake import fix_account_name
 from openlineage.common.utils import get_from_multiple_chains, get_from_nullable_chain
 from openlineage_sql import parse as parse_sql
@@ -643,7 +645,10 @@ class DbtArtifactProcessor:
             )
 
     def get_run(self, run_id: str) -> Run:
-        run_facets = {"dbt_version": self.dbt_version_facet()}
+        run_facets = {
+            "dbt_version": self.dbt_version_facet(),
+            "processing_engine": self.processing_engine_facet(),
+        }
         if self._dbt_run_metadata:
             run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
         return Run(
@@ -651,8 +656,20 @@ class DbtArtifactProcessor:
             facets=run_facets,
         )
 
-    def dbt_version_facet(self):
-        return DbtVersionRunFacet(version=self.run_metadata["dbt_version"])
+    # TODO: remove after deprecation period
+    def dbt_version_facet(self) -> DbtVersionRunFacet:
+        self.logger.debug(
+            "dbt_version facet is deprecated, and will be removed in future versions. "
+            "Use processing_engine facet instead."
+        )
+        return DbtVersionRunFacet(version=self.run_metadata["dbt_version"])  # type: ignore[index]
+
+    def processing_engine_facet(self) -> processing_engine_run.ProcessingEngineRunFacet:
+        return processing_engine_run.ProcessingEngineRunFacet(
+            name="dbt",
+            version=self.run_metadata["dbt_version"],  # type: ignore[index]
+            openlineageAdapterVersion=openlineage_version,
+        )
 
     @staticmethod
     def get_timings(timings: List[Dict]) -> Tuple[str, str]:

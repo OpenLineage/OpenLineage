@@ -6,6 +6,11 @@
       "facets":{
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
         }
       }
     },
@@ -40,6 +45,11 @@
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
         }
       }
     },
@@ -183,6 +193,11 @@
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
         }
       }
     },
@@ -220,6 +235,11 @@
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
         }
       }
     },
@@ -257,6 +277,11 @@
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
         }
       }
     },
@@ -391,6 +416,11 @@
       "facets":{
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
         }
       }
     },
