@@ -332,7 +332,11 @@
 				}]
 			}
 		},
-		"outputFacets": {}
+		"outputFacets": {
+			"outputStatistics": {
+				"rowCount": 100
+			}
+		}
 	}]
 }, {
 	"eventType": "START",
@@ -461,7 +465,11 @@
 				}]
 			}
 		},
-		"outputFacets": {}
+		"outputFacets": {
+			"outputStatistics": {
+				"rowCount": 99
+			}
+		}
 	}]
 }, {
 	"eventType": "COMPLETE",
