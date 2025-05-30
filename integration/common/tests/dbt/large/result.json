@@ -146,6 +146,11 @@
 					"name": "status"
 				}]
 			}
+		},
+		"outputFacets": {
+			"outputStatistics": {
+				"rowCount": 1
+			}
 		}
 	}]
 }, {
@@ -202,7 +207,11 @@
 				}]
 			}
 		},
-		"outputFacets": {}
+		"outputFacets": {
+			"outputStatistics": {
+				"rowCount": 1
+			}
+		}
 	}]
 }, {
 	"eventType": "COMPLETE",
@@ -253,6 +262,11 @@
 				"fields": [{
 					"name": "customer_id"
 				}]
+			}
+		},
+		"outputFacets": {
+			"outputStatistics": {
+				"rowCount": 1
 			}
 		}
 	}]
@@ -355,7 +369,11 @@
 				}]
 			}
 		},
-		"outputFacets": {}
+		"outputFacets": {
+			"outputStatistics": {
+				"rowCount": 1
+			}
+		}
 	}]
 }, {
 	"eventType": "COMPLETE",
@@ -472,6 +490,11 @@
 				}, {
 					"name": "total_order_amount"
 				}]
+			}
+		},
+		"outputFacets": {
+			"outputStatistics": {
+				"rowCount": 1
 			}
 		}
 	}]
