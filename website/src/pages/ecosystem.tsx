@@ -72,7 +72,7 @@ const LogoCard = (partner: Partner) => {
         >
           <CardActionArea sx={{ padding: 0 }}>
             <CardMedia
-              sx={{ minWidth: 340, minHeight: 170, padding: 0 }}
+              sx={{ width: 340, height: 170, padding: 0 }}
               component="img"
               src={require(`@site/static/img/${partner.image}`).default}
               title={partner.org}
