@@ -1,43 +1,49 @@
 {
-  "eventType" : "COMPLETE",
-  "job" : {
-    "namespace" : "iceberg-namespace",
-    "name" : "iceberg_integration_test.overwrite_partitions_dynamic.spark_catalog_default_partitioned_tbl"
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "iceberg-namespace",
+    "name": "iceberg_integration_test.overwrite_partitions_dynamic.spark_catalog_default_partitioned_tbl"
   },
-  "inputs" : [ ],
-  "outputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/iceberg/default/partitioned_tbl",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [ {
-          "name" : "a",
-          "type" : "long"
-        }, {
-          "name" : "b",
-          "type" : "long"
-        }, {
-          "name" : "c",
-          "type" : "long"
-        } ]
-      },
-      "symlinks": {
-        "identifiers": [
-          {
-            "namespace": "file:/tmp/iceberg",
-            "name": "default.partitioned_tbl",
-            "type": "TABLE"
-          }
-        ]
-      },
-      "lifecycleStateChange": {
-        "lifecycleStateChange": "OVERWRITE"
-      },
-      "version" : {}
+  "inputs": [],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/iceberg/default/partitioned_tbl",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "long"
+            },
+            {
+              "name": "c",
+              "type": "long"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/iceberg",
+              "name": "default.partitioned_tbl",
+              "type": "TABLE"
+            }
+          ]
+        },
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "OVERWRITE"
+        },
+        "version": {}
+      }
     }
-  } ]
+  ]
 }

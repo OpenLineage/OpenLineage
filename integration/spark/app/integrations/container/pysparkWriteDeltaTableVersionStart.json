@@ -1,46 +1,47 @@
 {
-  "eventType" : "START",
-  "job" : {
-    "namespace" : "delta-namespace",
-    "name" : "delta_integration_test.append_data_exec_v1.spark_catalog_default_versioned_table"
+  "eventType": "START",
+  "job": {
+    "namespace": "delta-namespace",
+    "name": "delta_integration_test.append_data_exec_v1.spark_catalog_default_versioned_table"
   },
-  "inputs": [ {
-    "namespace" : "file",
-    "name" : "/tmp/delta/versioned_input_table",
-    "facets" : {
-      "dataSource": {
-        "name": "file",
-        "uri": "file"
-      },
-      "version" : {
-        "datasetVersion" : "3"
-      },
-      "schema": {
-        "fields": [
-          {
-            "name": "a",
-            "type": "long"
-          },
-          {
-            "name": "b",
-            "type": "long"
-          },
-          {
-            "name" : "c",
-            "type" : "long"
-          }
-        ]
-      },
-      "symlinks": {
-        "identifiers": [
-          {
-            "namespace": "file:/tmp/delta",
-            "name": "default.versioned_input_table",
-            "type": "TABLE"
-          }
-        ]
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/delta/versioned_input_table",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "version": {
+          "datasetVersion": "3"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "long"
+            },
+            {
+              "name": "c",
+              "type": "long"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/delta",
+              "name": "default.versioned_input_table",
+              "type": "TABLE"
+            }
+          ]
+        }
       }
     }
-  }
   ]
 }

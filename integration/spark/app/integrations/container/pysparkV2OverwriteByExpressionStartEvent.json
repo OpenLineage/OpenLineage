@@ -1,8 +1,8 @@
 {
-  "eventType" : "START",
-  "job" : {
-    "namespace" : "iceberg-namespace",
+  "eventType": "START",
+  "job": {
+    "namespace": "iceberg-namespace"
   },
-  "inputs" : [ ],
-  "outputs" : [ ]
+  "inputs": [],
+  "outputs": []
 }

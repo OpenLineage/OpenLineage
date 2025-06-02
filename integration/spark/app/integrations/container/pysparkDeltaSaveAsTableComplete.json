@@ -40,8 +40,8 @@
             }
           ]
         },
-        "lifecycleStateChange" : {
-          "lifecycleStateChange" : "CREATE"
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "CREATE"
         }
       },
       "name": "/tmp/delta/movies",

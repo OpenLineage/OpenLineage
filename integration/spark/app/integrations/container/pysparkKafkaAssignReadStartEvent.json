@@ -2,10 +2,8 @@
   "eventType": "START",
   "run": {
     "facets": {
-      "spark.logicalPlan": {
-      },
-      "spark_unknown": {
-      },
+      "spark.logicalPlan": {},
+      "spark_unknown": {},
       "processing_engine": {}
     }
   },

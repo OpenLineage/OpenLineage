@@ -1,58 +1,65 @@
 {
-  "eventType" : "START",
-  "job" : {
-    "namespace" : "iceberg-namespace",
-    "name" : "iceberg_integration_test.append_data.spark_catalog_default_append_table"
+  "eventType": "START",
+  "job": {
+    "namespace": "iceberg-namespace",
+    "name": "iceberg_integration_test.append_data.spark_catalog_default_append_table"
   },
-  "inputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/iceberg/default/append_source1",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [ {
-          "name" : "a",
-          "type" : "long"
-        }]
-      },
-      "version" : {},
-      "symlinks": {
-        "identifiers": [
-          {
-            "namespace": "file:/tmp/iceberg",
-            "name": "default.append_source1",
-            "type": "TABLE"
-          }
-        ]
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/iceberg/default/append_source1",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            }
+          ]
+        },
+        "version": {},
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/iceberg",
+              "name": "default.append_source1",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "namespace": "file",
+      "name": "/tmp/iceberg/default/append_source2",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            }
+          ]
+        },
+        "version": {},
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/iceberg",
+              "name": "default.append_source2",
+              "type": "TABLE"
+            }
+          ]
+        }
       }
     }
-  }, {
-    "namespace" : "file",
-    "name" : "/tmp/iceberg/default/append_source2",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [ {
-          "name" : "a",
-          "type" : "long"
-        }]
-      },
-      "version" : {},
-      "symlinks": {
-        "identifiers": [
-          {
-            "namespace": "file:/tmp/iceberg",
-            "name": "default.append_source2",
-            "type": "TABLE"
-          }
-        ]
-      }
-    }
-  } ]
+  ]
 }

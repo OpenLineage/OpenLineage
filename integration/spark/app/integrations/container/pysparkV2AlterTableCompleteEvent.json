@@ -1,28 +1,33 @@
 {
-  "eventType" : "COMPLETE",
-  "job" : {
-    "namespace" : "iceberg-namespace",
-    "name" : "iceberg_integration_test.alter_table.default_alter_table_test"
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "iceberg-namespace",
+    "name": "iceberg_integration_test.alter_table.default_alter_table_test"
   },
-  "inputs" : [ ],
-  "outputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/iceberg/default/alter_table_test",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [ {
-          "name" : "a",
-          "type" : "string"
-        }, {
-          "name" : "c",
-          "type" : "string"
-        } ]
-      },
-      "version" : {}
+  "inputs": [],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/iceberg/default/alter_table_test",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "string"
+            },
+            {
+              "name": "c",
+              "type": "string"
+            }
+          ]
+        },
+        "version": {}
+      }
     }
-  } ]
+  ]
 }

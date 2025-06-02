@@ -3,7 +3,7 @@
   "run": {
     "facets": {
       "parent": {
-        "run": { },
+        "run": {},
         "job": {
           "namespace": "default",
           "name": "cli_test_application"

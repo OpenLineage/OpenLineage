@@ -39,7 +39,7 @@
     },
     "InsertIntoHadoopFsRelationCommand": {
       "type": "object",
-      "properties":{
+      "properties": {
         "outputPath": {
           "type": "string"
         }
@@ -48,7 +48,7 @@
     },
     "LogicalRelation": {
       "type": "object",
-      "properties":{
+      "properties": {
         "relation": {
           "anyOf": [
             {
@@ -64,7 +64,7 @@
     },
     "HadoopFsRelation": {
       "type": "object",
-      "properties":{
+      "properties": {
         "relation": {
           "type": "object",
           "properties": {
@@ -78,7 +78,7 @@
     },
     "JDBCRelation": {
       "type": "object",
-      "properties":{
+      "properties": {
         "relation": {
           "type": "object",
           "properties": {
@@ -90,6 +90,5 @@
       },
       "additionalProperties": true
     }
-
   }
 }
