@@ -1,478 +1,563 @@
-[{
-	"eventType": "START",
-	"eventTime": "{{ is_datetime(result) }}",
-	"run": {
-		"runId": "{{ any(result) }}"
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "DEMO_DB.public.jaffle_shop.stg_orders"
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [],
-	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_orders"
-	}]
-}, {
-	"eventType": "START",
-	"eventTime": "{{ is_datetime(result) }}",
-	"run": {
-		"runId": "{{ any(result) }}"
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "DEMO_DB.public.jaffle_shop.stg_payments"
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [],
-	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_payments"
-	}]
-}, {
-	"eventType": "START",
-	"eventTime": "{{ is_datetime(result) }}",
-	"run": {
-		"runId": "{{ any(result) }}"
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "DEMO_DB.public.jaffle_shop.stg_customers"
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [],
-	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_customers"
-	}]
-}, {
-	"eventType": "START",
-	"eventTime": "{{ is_datetime(result) }}",
-	"run": {
-		"runId": "{{ any(result) }}"
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "DEMO_DB.public.jaffle_shop.orders"
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_orders"
-	}, {
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_payments"
-	}],
-	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.orders"
-	}]
-}, {
-	"eventType": "START",
-	"eventTime": "{{ is_datetime(result) }}",
-	"run": {
-		"runId": "{{ any(result) }}"
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "DEMO_DB.public.jaffle_shop.customers"
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_customers"
-	}, {
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_orders"
-	}, {
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_payments"
-	}],
-	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.customers"
-	}]
-}, {
-	"eventType": "COMPLETE",
-	"eventTime": "{{ is_datetime(result) }}",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"job": {"name": "dbt-job-name", "namespace": "dbt"},
-				"run": {"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "0.21.0"
-			},
-			"processing_engine": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
-				"name": "dbt",
-				"version": "0.21.0",
-				"openlineageAdapterVersion": "{{ any(result) }}"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "DEMO_DB.public.jaffle_shop.stg_orders",
-		"facets": {
-			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-				"query": "with source as (\n    select * from DEMO_DB.public.raw_orders\n\n),\n\nrenamed as (\n\n    select\n        id as order_id,\n        user_id as customer_id,\n        order_date,\n        status\n\n    from source\n\n)\n\nselect * from renamed"
-			}
-		}
-	},
-	"inputs": [],
-	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_orders",
-		"facets": {
-			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1.aws",
-				"uri": "snowflake://ASDF1234.eu-central-1.aws"
-			},
-			"schema": {
-				"fields": [{
-					"name": "order_id"
-				}, {
-					"name": "status"
-				}]
-			}
-		}
-	}]
-}, {
-	"eventType": "COMPLETE",
-	"eventTime": "2021-07-05T11:43:17.218104Z",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"job": {"name": "dbt-job-name", "namespace": "dbt"},
-				"run": {"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "0.21.0"
-			},
-			"processing_engine": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
-				"name": "dbt",
-				"version": "0.21.0",
-				"openlineageAdapterVersion": "{{ any(result) }}"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "DEMO_DB.public.jaffle_shop.stg_payments",
-		"facets": {
-			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-				"query": "with source as (\n    select * from DEMO_DB.public.raw_payments\n\n),\n\nrenamed as (\n\n    select\n        id as payment_id,\n        order_id,\n        payment_method,\n\n        --`amount` is currently stored in cents, so we convert it to dollars\n        amount / 100 as amount\n\n    from source\n\n)\n\nselect * from renamed"
-			}
-		}
-	},
-	"inputs": [],
-	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_payments",
-		"facets": {
-			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1.aws",
-				"uri": "snowflake://ASDF1234.eu-central-1.aws"
-			},
-			"schema": {
-				"fields": [{
-					"name": "payment_id"
-				}, {
-					"name": "payment_method"
-				}]
-			}
-		},
-		"outputFacets": {}
-	}]
-}, {
-	"eventType": "COMPLETE",
-	"eventTime": "2021-07-05T11:43:18.375002Z",
-	"run": {
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"job": {"name": "dbt-job-name", "namespace": "dbt"},
-				"run": {"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "0.21.0"
-			},
-			"processing_engine": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
-				"name": "dbt",
-				"version": "0.21.0",
-				"openlineageAdapterVersion": "{{ any(result) }}"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "DEMO_DB.public.jaffle_shop.stg_customers",
-		"facets": {
-			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-				"query": "with source as (\n    select * from DEMO_DB.public.raw_customers\n\n),\n\nrenamed as (\n\n    select\n        id as customer_id,\n        first_name,\n        last_name\n\n    from source\n\n)\n\nselect * from renamed"
-			}
-		}
-	},
-	"inputs": [],
-	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_customers",
-		"facets": {
-			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1.aws",
-				"uri": "snowflake://ASDF1234.eu-central-1.aws"
-			},
-			"schema": {
-				"fields": [{
-					"name": "customer_id"
-				}]
-			}
-		}
-	}]
-}, {
-	"eventType": "COMPLETE",
-	"eventTime": "2021-07-05T11:43:21.900891Z",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"job": {"name": "dbt-job-name", "namespace": "dbt"},
-				"run": {"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "0.21.0"
-			},
-			"processing_engine": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
-				"name": "dbt",
-				"version": "0.21.0",
-				"openlineageAdapterVersion": "{{ any(result) }}"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "DEMO_DB.public.jaffle_shop.orders",
-		"facets": {
-			"sql": {
-				"query": "\n\nwith orders as (\n\n    select * from DEMO_DB.public.stg_orders\n\n),\n\npayments as (\n\n    select * from DEMO_DB.public.stg_payments\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by 1\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n    left join order_payments using (order_id)\n\n)\n\nselect * from final"
-			}
-		}
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_orders",
-		"facets": {
-			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1.aws",
-				"uri": "snowflake://ASDF1234.eu-central-1.aws"
-			},
-			"schema": {
-				"fields": [{
-					"name": "order_id"
-				}, {
-					"name": "status"
-				}]
-			}
-		}
-	}, {
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_payments",
-		"facets": {
-			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1.aws",
-				"uri": "snowflake://ASDF1234.eu-central-1.aws"
-			},
-			"schema": {
-				"fields": [{
-					"name": "payment_id"
-				}, {
-					"name": "payment_method"
-				}]
-			}
-		}
-	}],
-	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.orders",
-		"facets": {
-			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1.aws",
-				"uri": "snowflake://ASDF1234.eu-central-1.aws"
-			},
-			"schema": {
-				"fields": [{
-					"name": "order_id"
-				}, {
-					"name": "customer_id"
-				}, {
-					"name": "order_date"
-				}, {
-					"name": "status"
-				}, {
-					"name": "amount"
-				}, {
-					"name": "credit_card_amount"
-				}, {
-					"name": "coupon_amount"
-				}, {
-					"name": "bank_transfer_amount"
-				}, {
-					"name": "gift_card_amount"
-				}]
-			}
-		},
-		"outputFacets": {}
-	}]
-}, {
-	"eventType": "COMPLETE",
-	"eventTime": "{{ is_datetime(result) }}",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"job": {"name": "dbt-job-name", "namespace": "dbt"},
-				"run": {"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "0.21.0"
-			},
-			"processing_engine": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
-				"name": "dbt",
-				"version": "0.21.0",
-				"openlineageAdapterVersion": "{{ any(result) }}"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "DEMO_DB.public.jaffle_shop.customers",
-		"facets": {
-			"sql": {
-				"query": "with customers as (\n\n    select * from DEMO_DB.public.stg_customers\n\n),\n\norders as (\n\n    select * from DEMO_DB.public.stg_orders\n\n),\n\npayments as (\n\n    select * from DEMO_DB.public.stg_payments\n\n),\n\ncustomer_orders as (\n\n        select\n        customer_id,\n\n        min(order_date) as first_order,\n        max(order_date) as most_recent_order,\n        count(order_id) as number_of_orders\n    from orders\n\n    group by 1\n\n),\n\ncustomer_payments as (\n\n    select\n        orders.customer_id,\n        sum(amount) as total_amount\n\n    from payments\n\n    left join orders using (order_id)\n\n    group by 1\n\n),\n\nfinal as (\n\n    select\n        customers.customer_id,\n        customers.first_name,\n        customers.last_name,\n        customer_orders.first_order,\n        customer_orders.most_recent_order,\n        customer_orders.number_of_orders,\n        customer_payments.total_amount as customer_lifetime_value\n\n    from customers\n\n    left join customer_orders using (customer_id)\n\n    left join customer_payments using (customer_id)\n\n)\n\nselect * from final"
-			},
-			"jobType": {
-				"jobType": "MODEL",
-				"integration": "DBT",
-				"processingType": "BATCH"
-			}
-		}
-	},
-	"inputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_customers",
-		"facets": {
-			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1.aws",
-				"uri": "snowflake://ASDF1234.eu-central-1.aws"
-			},
-			"schema": {
-				"fields": [{
-					"name": "customer_id"
-				}]
-			}
-		}
-	}, {
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_orders",
-		"facets": {
-			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1.aws",
-				"uri": "snowflake://ASDF1234.eu-central-1.aws"
-			},
-			"schema": {
-				"fields": [{
-					"name": "order_id"
-				}, {
-					"name": "status"
-				}]
-			}
-		}
-	}, {
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.stg_payments",
-		"facets": {
-			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1.aws",
-				"uri": "snowflake://ASDF1234.eu-central-1.aws"
-			},
-			"schema": {
-				"fields": [{
-					"name": "payment_id"
-				}, {
-					"name": "payment_method"
-				}]
-			}
-		}
-	}],
-	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
-		"name": "DEMO_DB.public.customers",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "snowflake://ASDF1234.eu-central-1.aws",
-				"uri": "snowflake://ASDF1234.eu-central-1.aws"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "customer_id"
-				}, {
-					"name": "first_name"
-				}, {
-					"name": "last_name"
-				}, {
-					"name": "first_order"
-				}, {
-					"name": "most_recent_order"
-				}, {
-					"name": "number_of_orders"
-				}, {
-					"name": "total_order_amount"
-				}]
-			}
-		}
-	}]
-}]
+[
+  {
+    "eventType": "START",
+    "eventTime": "{{ is_datetime(result) }}",
+    "run": {
+      "runId": "{{ any(result) }}"
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "DEMO_DB.public.jaffle_shop.stg_orders"
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [],
+    "outputs": [
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_orders"
+      }
+    ]
+  },
+  {
+    "eventType": "START",
+    "eventTime": "{{ is_datetime(result) }}",
+    "run": {
+      "runId": "{{ any(result) }}"
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "DEMO_DB.public.jaffle_shop.stg_payments"
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [],
+    "outputs": [
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_payments"
+      }
+    ]
+  },
+  {
+    "eventType": "START",
+    "eventTime": "{{ is_datetime(result) }}",
+    "run": {
+      "runId": "{{ any(result) }}"
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "DEMO_DB.public.jaffle_shop.stg_customers"
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [],
+    "outputs": [
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_customers"
+      }
+    ]
+  },
+  {
+    "eventType": "START",
+    "eventTime": "{{ is_datetime(result) }}",
+    "run": {
+      "runId": "{{ any(result) }}"
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "DEMO_DB.public.jaffle_shop.orders"
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_orders"
+      },
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_payments"
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.orders"
+      }
+    ]
+  },
+  {
+    "eventType": "START",
+    "eventTime": "{{ is_datetime(result) }}",
+    "run": {
+      "runId": "{{ any(result) }}"
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "DEMO_DB.public.jaffle_shop.customers"
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_customers"
+      },
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_orders"
+      },
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_payments"
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.customers"
+      }
+    ]
+  },
+  {
+    "eventType": "COMPLETE",
+    "eventTime": "{{ is_datetime(result) }}",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "job": { "name": "dbt-job-name", "namespace": "dbt" },
+          "run": { "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11" }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "0.21.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "0.21.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "DEMO_DB.public.jaffle_shop.stg_orders",
+      "facets": {
+        "sql": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from DEMO_DB.public.raw_orders\n\n),\n\nrenamed as (\n\n    select\n        id as order_id,\n        user_id as customer_id,\n        order_date,\n        status\n\n    from source\n\n)\n\nselect * from renamed"
+        }
+      }
+    },
+    "inputs": [],
+    "outputs": [
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_orders",
+        "facets": {
+          "dataSource": {
+            "name": "snowflake://ASDF1234.eu-central-1.aws",
+            "uri": "snowflake://ASDF1234.eu-central-1.aws"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "order_id"
+              },
+              {
+                "name": "status"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "eventType": "COMPLETE",
+    "eventTime": "2021-07-05T11:43:17.218104Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "job": { "name": "dbt-job-name", "namespace": "dbt" },
+          "run": { "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11" }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "0.21.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "0.21.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "DEMO_DB.public.jaffle_shop.stg_payments",
+      "facets": {
+        "sql": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from DEMO_DB.public.raw_payments\n\n),\n\nrenamed as (\n\n    select\n        id as payment_id,\n        order_id,\n        payment_method,\n\n        --`amount` is currently stored in cents, so we convert it to dollars\n        amount / 100 as amount\n\n    from source\n\n)\n\nselect * from renamed"
+        }
+      }
+    },
+    "inputs": [],
+    "outputs": [
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_payments",
+        "facets": {
+          "dataSource": {
+            "name": "snowflake://ASDF1234.eu-central-1.aws",
+            "uri": "snowflake://ASDF1234.eu-central-1.aws"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "payment_id"
+              },
+              {
+                "name": "payment_method"
+              }
+            ]
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventType": "COMPLETE",
+    "eventTime": "2021-07-05T11:43:18.375002Z",
+    "run": {
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "job": { "name": "dbt-job-name", "namespace": "dbt" },
+          "run": { "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11" }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "0.21.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "0.21.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "DEMO_DB.public.jaffle_shop.stg_customers",
+      "facets": {
+        "sql": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from DEMO_DB.public.raw_customers\n\n),\n\nrenamed as (\n\n    select\n        id as customer_id,\n        first_name,\n        last_name\n\n    from source\n\n)\n\nselect * from renamed"
+        }
+      }
+    },
+    "inputs": [],
+    "outputs": [
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_customers",
+        "facets": {
+          "dataSource": {
+            "name": "snowflake://ASDF1234.eu-central-1.aws",
+            "uri": "snowflake://ASDF1234.eu-central-1.aws"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "customer_id"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "eventType": "COMPLETE",
+    "eventTime": "2021-07-05T11:43:21.900891Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "job": { "name": "dbt-job-name", "namespace": "dbt" },
+          "run": { "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11" }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "0.21.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "0.21.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "DEMO_DB.public.jaffle_shop.orders",
+      "facets": {
+        "sql": {
+          "query": "\n\nwith orders as (\n\n    select * from DEMO_DB.public.stg_orders\n\n),\n\npayments as (\n\n    select * from DEMO_DB.public.stg_payments\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by 1\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n    left join order_payments using (order_id)\n\n)\n\nselect * from final"
+        }
+      }
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_orders",
+        "facets": {
+          "dataSource": {
+            "name": "snowflake://ASDF1234.eu-central-1.aws",
+            "uri": "snowflake://ASDF1234.eu-central-1.aws"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "order_id"
+              },
+              {
+                "name": "status"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_payments",
+        "facets": {
+          "dataSource": {
+            "name": "snowflake://ASDF1234.eu-central-1.aws",
+            "uri": "snowflake://ASDF1234.eu-central-1.aws"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "payment_id"
+              },
+              {
+                "name": "payment_method"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.orders",
+        "facets": {
+          "dataSource": {
+            "name": "snowflake://ASDF1234.eu-central-1.aws",
+            "uri": "snowflake://ASDF1234.eu-central-1.aws"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "order_id"
+              },
+              {
+                "name": "customer_id"
+              },
+              {
+                "name": "order_date"
+              },
+              {
+                "name": "status"
+              },
+              {
+                "name": "amount"
+              },
+              {
+                "name": "credit_card_amount"
+              },
+              {
+                "name": "coupon_amount"
+              },
+              {
+                "name": "bank_transfer_amount"
+              },
+              {
+                "name": "gift_card_amount"
+              }
+            ]
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventType": "COMPLETE",
+    "eventTime": "{{ is_datetime(result) }}",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "job": { "name": "dbt-job-name", "namespace": "dbt" },
+          "run": { "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11" }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "0.21.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "0.21.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "DEMO_DB.public.jaffle_shop.customers",
+      "facets": {
+        "sql": {
+          "query": "with customers as (\n\n    select * from DEMO_DB.public.stg_customers\n\n),\n\norders as (\n\n    select * from DEMO_DB.public.stg_orders\n\n),\n\npayments as (\n\n    select * from DEMO_DB.public.stg_payments\n\n),\n\ncustomer_orders as (\n\n        select\n        customer_id,\n\n        min(order_date) as first_order,\n        max(order_date) as most_recent_order,\n        count(order_id) as number_of_orders\n    from orders\n\n    group by 1\n\n),\n\ncustomer_payments as (\n\n    select\n        orders.customer_id,\n        sum(amount) as total_amount\n\n    from payments\n\n    left join orders using (order_id)\n\n    group by 1\n\n),\n\nfinal as (\n\n    select\n        customers.customer_id,\n        customers.first_name,\n        customers.last_name,\n        customer_orders.first_order,\n        customer_orders.most_recent_order,\n        customer_orders.number_of_orders,\n        customer_payments.total_amount as customer_lifetime_value\n\n    from customers\n\n    left join customer_orders using (customer_id)\n\n    left join customer_payments using (customer_id)\n\n)\n\nselect * from final"
+        },
+        "jobType": {
+          "jobType": "MODEL",
+          "integration": "DBT",
+          "processingType": "BATCH"
+        }
+      }
+    },
+    "inputs": [
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_customers",
+        "facets": {
+          "dataSource": {
+            "name": "snowflake://ASDF1234.eu-central-1.aws",
+            "uri": "snowflake://ASDF1234.eu-central-1.aws"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "customer_id"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_orders",
+        "facets": {
+          "dataSource": {
+            "name": "snowflake://ASDF1234.eu-central-1.aws",
+            "uri": "snowflake://ASDF1234.eu-central-1.aws"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "order_id"
+              },
+              {
+                "name": "status"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.stg_payments",
+        "facets": {
+          "dataSource": {
+            "name": "snowflake://ASDF1234.eu-central-1.aws",
+            "uri": "snowflake://ASDF1234.eu-central-1.aws"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "payment_id"
+              },
+              {
+                "name": "payment_method"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "snowflake://ASDF1234.eu-central-1.aws",
+        "name": "DEMO_DB.public.customers",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "snowflake://ASDF1234.eu-central-1.aws",
+            "uri": "snowflake://ASDF1234.eu-central-1.aws"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "customer_id"
+              },
+              {
+                "name": "first_name"
+              },
+              {
+                "name": "last_name"
+              },
+              {
+                "name": "first_order"
+              },
+              {
+                "name": "most_recent_order"
+              },
+              {
+                "name": "number_of_orders"
+              },
+              {
+                "name": "total_order_amount"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+]

@@ -1,73 +1,86 @@
-[{
-	"eventType": "START",
-	"eventTime": "2021-07-07T12:44:46.069306Z",
-	"run": {
-		"runId": "{{ any(result) }}"
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "random-gcp-project.dbt_prod1.dbt_test.test_model"
-	},
-	"inputs": [{
-		"namespace": "bigquery",
-		"name": "random-gcp-project.dbt_prod1.source_table"
-	}],
-	"outputs": [{
-		"namespace": "bigquery",
-		"name": "random-gcp-project.dbt_prod1.test_model"
-	}]
-}, {
-	"eventType": "COMPLETE",
-	"eventTime": "{{ is_datetime(result) }}",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"job": {"name": "dbt-job-name", "namespace": "dbt"},
-				"run": {"runId": "{{ any(result) }}"}
-			},
-			"dbt_version": {
-				"version": "{{ any(result) }}"
-			},
-			"processing_engine": {
-				"name": "dbt",
-				"version": "{{ any(result) }}",
-				"openlineageAdapterVersion": "{{ any(result) }}"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "random-gcp-project.dbt_prod1.dbt_test.test_model",
-		"facets": {
-			"sql": {
-				"query": "select *\nfrom `random-gcp-project`.`dbt_prod1`.`source_table`\nwhere id = 1"
-			}
-		}
-	},
-	"inputs": [{
-		"namespace": "bigquery",
-		"name": "random-gcp-project.dbt_prod1.source_table",
-		"facets": {
-			"dataSource": {
-				"name": "bigquery",
-				"uri": "bigquery"
-			}
-		}
-	}],
-	"outputs": [{
-		"namespace": "bigquery",
-		"name": "random-gcp-project.dbt_prod1.test_model",
-		"facets": {
-			"dataSource": {
-				"name": "bigquery",
-				"uri": "bigquery"
-			},
-			"schema": {
-				"fields": [{
-					"name": "id"
-				}]
-			}
-		}
-	}]
-}]
+[
+  {
+    "eventType": "START",
+    "eventTime": "2021-07-07T12:44:46.069306Z",
+    "run": {
+      "runId": "{{ any(result) }}"
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "random-gcp-project.dbt_prod1.dbt_test.test_model"
+    },
+    "inputs": [
+      {
+        "namespace": "bigquery",
+        "name": "random-gcp-project.dbt_prod1.source_table"
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "bigquery",
+        "name": "random-gcp-project.dbt_prod1.test_model"
+      }
+    ]
+  },
+  {
+    "eventType": "COMPLETE",
+    "eventTime": "{{ is_datetime(result) }}",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "job": { "name": "dbt-job-name", "namespace": "dbt" },
+          "run": { "runId": "{{ any(result) }}" }
+        },
+        "dbt_version": {
+          "version": "{{ any(result) }}"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "{{ any(result) }}",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "random-gcp-project.dbt_prod1.dbt_test.test_model",
+      "facets": {
+        "sql": {
+          "query": "select *\nfrom `random-gcp-project`.`dbt_prod1`.`source_table`\nwhere id = 1"
+        }
+      }
+    },
+    "inputs": [
+      {
+        "namespace": "bigquery",
+        "name": "random-gcp-project.dbt_prod1.source_table",
+        "facets": {
+          "dataSource": {
+            "name": "bigquery",
+            "uri": "bigquery"
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "bigquery",
+        "name": "random-gcp-project.dbt_prod1.test_model",
+        "facets": {
+          "dataSource": {
+            "name": "bigquery",
+            "uri": "bigquery"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "id"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+]
