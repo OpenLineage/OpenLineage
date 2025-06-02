@@ -1,9 +1,9 @@
 {
-  "eventType" : "START",
-  "job" : {
-    "namespace" :  "iceberg-namespace",
-    "name" : "iceberg_integration_test.replace_data.spark_catalog_default_tbl_delete"
+  "eventType": "START",
+  "job": {
+    "namespace": "iceberg-namespace",
+    "name": "iceberg_integration_test.replace_data.spark_catalog_default_tbl_delete"
   },
-  "inputs" : [ ],
-  "outputs" : [ ]
+  "inputs": [],
+  "outputs": []
 }

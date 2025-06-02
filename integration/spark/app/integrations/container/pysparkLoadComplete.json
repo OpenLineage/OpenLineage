@@ -1,36 +1,41 @@
 {
-  "eventType" : "COMPLETE",
-  "job" : {
-    "namespace" : "testCreateAsSelectAndLoad",
-    "name" : "open_lineage_integration_ctas_load.execute_load_data_command.default_tbl1"
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "testCreateAsSelectAndLoad",
+    "name": "open_lineage_integration_ctas_load.execute_load_data_command.default_tbl1"
   },
-  "inputs" : [ ],
-  "outputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/ctas_load/tbl1",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [ {
-          "name" : "a",
-          "type" : "long"
-        }, {
-          "name" : "b",
-          "type" : "long"
-        } ]
-      },
-      "symlinks": {
-        "identifiers": [
-          {
-            "namespace": "file:/tmp/ctas_load",
-            "name": "default.tbl1",
-            "type": "TABLE"
-          }
-        ]
+  "inputs": [],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/ctas_load/tbl1",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "long"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/ctas_load",
+              "name": "default.tbl1",
+              "type": "TABLE"
+            }
+          ]
+        }
       }
     }
-  } ]
+  ]
 }

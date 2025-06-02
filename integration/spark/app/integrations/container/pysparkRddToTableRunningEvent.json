@@ -1,8 +1,7 @@
 {
   "eventType": "RUNNING",
   "run": {
-    "facets": {
-    }
+    "facets": {}
   },
   "job": {
     "namespace": "testPysparkRddToTable",

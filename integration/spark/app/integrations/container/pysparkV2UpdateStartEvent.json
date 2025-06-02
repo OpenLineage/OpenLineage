@@ -1,9 +1,9 @@
 {
-  "eventType" : "START",
-  "job" : {
-    "namespace" :  "iceberg-namespace",
-    "name" : "iceberg_integration_test.atomic_create_table_as_select.default_tbl_update"
+  "eventType": "START",
+  "job": {
+    "namespace": "iceberg-namespace",
+    "name": "iceberg_integration_test.atomic_create_table_as_select.default_tbl_update"
   },
-  "inputs" : [ ],
-  "outputs" : [ ]
+  "inputs": [],
+  "outputs": []
 }

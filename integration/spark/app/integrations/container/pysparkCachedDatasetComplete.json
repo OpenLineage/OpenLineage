@@ -1,9 +1,9 @@
 {
-  "eventType" : "START",
-  "job" : {
-    "namespace" : "cachedDataset"
+  "eventType": "START",
+  "job": {
+    "namespace": "cachedDataset"
   },
-  "inputs" : [
+  "inputs": [
     {
       "namespace": "file",
       "name": "/tmp/caching/temp",

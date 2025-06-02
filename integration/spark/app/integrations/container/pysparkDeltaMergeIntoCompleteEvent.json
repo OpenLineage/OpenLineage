@@ -3,7 +3,7 @@
   "job": {
     "namespace": "delta-namespace"
   },
-  "inputs": [ ],
+  "inputs": [],
   "outputs": [
     {
       "namespace": "file",
@@ -25,7 +25,7 @@
             }
           ]
         },
-        "columnLineage": { }
+        "columnLineage": {}
       }
     }
   ]

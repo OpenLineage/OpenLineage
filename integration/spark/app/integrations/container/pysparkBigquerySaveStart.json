@@ -3,23 +3,30 @@
   "job": {
     "namespace": "{NAMESPACE}"
   },
-  "inputs": [{
-    "namespace": "bigquery",
-    "name": "{PROJECT_ID}.{DATASET_ID}.{JAVA_VERSION}_{SPARK_VERSION}_{SCALA_VERSION}_source",
-    "facets": {
-      "schema": {
-        "fields": [{
-          "name": "a",
-          "type": "long"
-        }, {
-          "name": "b",
-          "type": "long"
-        }]
+  "inputs": [
+    {
+      "namespace": "bigquery",
+      "name": "{PROJECT_ID}.{DATASET_ID}.{JAVA_VERSION}_{SPARK_VERSION}_{SCALA_VERSION}_source",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "long"
+            }
+          ]
+        }
       }
     }
-  }],
-  "outputs": [{
-    "namespace": "bigquery",
-    "name": "{PROJECT_ID}.{DATASET_ID}.{JAVA_VERSION}_{SPARK_VERSION}_{SCALA_VERSION}_target"
-  }]
+  ],
+  "outputs": [
+    {
+      "namespace": "bigquery",
+      "name": "{PROJECT_ID}.{DATASET_ID}.{JAVA_VERSION}_{SPARK_VERSION}_{SCALA_VERSION}_target"
+    }
+  ]
 }
