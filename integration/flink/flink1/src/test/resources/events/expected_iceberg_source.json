@@ -1,8 +1,8 @@
 {
-  "eventType" : "START",
-  "job" : {
-    "namespace" : "flink_job_namespace",
-    "name" : "flink_examples_iceberg_source"
+  "eventType": "START",
+  "job": {
+    "namespace": "flink_job_namespace",
+    "name": "flink_examples_iceberg_source"
   },
   "run": {
     "runId": "${json-unit.any-string}",
@@ -14,34 +14,44 @@
       }
     }
   },
-  "inputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/warehouse/db/source",
-    "facets" : {
-      "schema" : {
-        "fields" : [ {
-          "name" : "x",
-          "type" : "INTEGER"
-        }, {
-          "name" : "y",
-          "type" : "INTEGER"
-        } ]
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/warehouse/db/source",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "x",
+              "type": "INTEGER"
+            },
+            {
+              "name": "y",
+              "type": "INTEGER"
+            }
+          ]
+        }
       }
     }
-  } ],
-  "outputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/warehouse/db/sink",
-    "facets" : {
-      "schema" : {
-        "fields" : [ {
-          "name" : "x",
-          "type" : "INTEGER"
-        }, {
-          "name" : "y",
-          "type" : "INTEGER"
-        } ]
+  ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/warehouse/db/sink",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "x",
+              "type": "INTEGER"
+            },
+            {
+              "name": "y",
+              "type": "INTEGER"
+            }
+          ]
+        }
       }
     }
-  }]
+  ]
 }
