@@ -15,6 +15,9 @@
         "version": "${json-unit.regex}2\\.\\d+.*",
         "name": "flink",
         "openlineageAdapterVersion": "${json-unit.any-string}"
+      },
+      "flink_job": {
+        "jobId": "${json-unit.any-string}"
       }
     }
   },

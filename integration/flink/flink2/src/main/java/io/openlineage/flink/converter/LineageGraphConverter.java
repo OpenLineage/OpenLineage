@@ -10,6 +10,7 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.client.Versions;
+import io.openlineage.flink.facets.FlinkJobDetailsFacet;
 import io.openlineage.flink.visitor.Flink2VisitorFactory;
 import java.time.ZonedDateTime;
 import org.apache.flink.runtime.util.EnvironmentInformation;
@@ -49,10 +50,21 @@ public class LineageGraphConverter {
                                 .version(EnvironmentInformation.getVersion())
                                 .openlineageAdapterVersion(Versions.getVersion())
                                 .build())
+                        .put("flink_job", buildJobDetailsFacet())
                         .build())
                 .build())
         .inputs(datasetExtractor.extractInputs(graph))
         .outputs(datasetExtractor.extractOutputs(graph))
         .build();
+  }
+
+  private FlinkJobDetailsFacet buildJobDetailsFacet() {
+    OpenLineageContext.JobIdentifier jobId = context.getJobId();
+    if (jobId == null || jobId.getFlinkJobId() == null) {
+      return null;
+    }
+
+    String flinkJobId = jobId.getFlinkJobId().toString();
+    return new FlinkJobDetailsFacet(flinkJobId);
   }
 }

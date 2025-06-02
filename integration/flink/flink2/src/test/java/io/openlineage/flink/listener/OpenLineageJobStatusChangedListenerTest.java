@@ -174,7 +174,7 @@ class OpenLineageJobStatusChangedListenerTest {
     // emit complete event
     DefaultJobExecutionStatusEvent statusEvent =
         new DefaultJobExecutionStatusEvent(
-            mock(JobID.class),
+            new JobID(1, 2),
             "jobName",
             JobStatus.RUNNING,
             JobStatus.FINISHED,
@@ -213,11 +213,7 @@ class OpenLineageJobStatusChangedListenerTest {
     // emit fail event
     DefaultJobExecutionStatusEvent statusEvent =
         new DefaultJobExecutionStatusEvent(
-            mock(JobID.class),
-            "jobName",
-            JobStatus.RUNNING,
-            JobStatus.FAILED,
-            mock(Throwable.class));
+            new JobID(1, 2), "jobName", JobStatus.RUNNING, JobStatus.FAILED, mock(Throwable.class));
     listener.onEvent(statusEvent);
 
     List<RunEvent> eventsEmitted =
