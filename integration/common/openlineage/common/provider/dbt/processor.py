@@ -224,6 +224,7 @@ class DbtArtifactProcessor:
                 continue
 
             output_node = nodes[name]
+            now = datetime.datetime.now(datetime.timezone.utc)
             started_at, completed_at = self.get_timings(run["timing"])
 
             inputs = []
@@ -292,8 +293,8 @@ class DbtArtifactProcessor:
             events.add(
                 self.to_openlineage_events(
                     run["status"],
-                    started_at,
-                    completed_at,
+                    started_at or now,
+                    completed_at or now,
                     self.get_run(run_id),
                     Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
                     [self.node_to_dataset(node, has_facets=True) for node in inputs],
@@ -303,22 +304,30 @@ class DbtArtifactProcessor:
         return events
 
     def parse_test(self, context: DbtRunContext, nodes: Dict) -> DbtEvents:
-        # The tests can have different timings, so just take current time
-        started_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
-
         assertions = self.parse_assertions(context, nodes)
+        now = datetime.datetime.now(datetime.timezone.utc)
 
         events = DbtEvents()
         manifest_nodes = {**context.manifest["nodes"], **context.manifest["sources"]}
         for name, node in manifest_nodes.items():
             if not name.startswith("model.") and not name.startswith("source."):
                 continue
-            if len(assertions[name]) == 0:
+
+            assertion_items = []
+            min_started_at: Optional[datetime.datetime] = None
+            max_completed_at: Optional[datetime.datetime] = None
+            for started_at, completed_at, assertion in assertions[name]:
+                assertion_items.append(assertion)
+                min_started_at = min(filter(None, [min_started_at, started_at]), default=min_started_at)
+                max_completed_at = max(
+                    filter(None, [max_completed_at, completed_at]), default=max_completed_at
+                )
+
+            if not assertion_items:
                 continue
 
             assertion_facet = data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet(
-                assertions=assertions[name]
+                assertions=assertion_items
             )
 
             namespace, name, _, _ = self.extract_dataset_data(
@@ -345,8 +354,8 @@ class DbtArtifactProcessor:
             events.add(
                 self.to_openlineage_events(
                     "success",
-                    started_at,
-                    completed_at,
+                    min_started_at or now,
+                    max_completed_at or now,
                     self.get_run(run_id),
                     Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
                     [
@@ -365,7 +374,9 @@ class DbtArtifactProcessor:
 
     def parse_assertions(
         self, context: DbtRunContext, nodes: Dict
-    ) -> Dict[str, List[data_quality_assertions_dataset.Assertion]]:
+    ) -> Dict[
+        str, List[Tuple[datetime.datetime, datetime.datetime, data_quality_assertions_dataset.Assertion]]
+    ]:
         assertions = collections.defaultdict(list)
         for run in context.run_results["results"]:
             if not run["unique_id"].startswith("test."):
@@ -385,11 +396,16 @@ class DbtArtifactProcessor:
                 name = test_node["test_metadata"]["name"]
                 node_columns = test_node["test_metadata"]
 
+            started_at, completed_at = self.get_timings(run["timing"])
             assertions[model_node].append(
-                data_quality_assertions_dataset.Assertion(
-                    assertion=name,
-                    success=True if run["status"] == "pass" else False,
-                    column=get_from_nullable_chain(node_columns, ["kwargs", "column_name"]),
+                (
+                    started_at,
+                    completed_at,
+                    data_quality_assertions_dataset.Assertion(
+                        assertion=name,
+                        success=True if run["status"] == "pass" else False,
+                        column=get_from_nullable_chain(node_columns, ["kwargs", "column_name"]),
+                    ),
                 )
             )
 
@@ -403,13 +419,13 @@ class DbtArtifactProcessor:
         except Exception as e:
             if self.skip_errors:
                 return None
-            raise ValueError from e
+            raise e
 
     def _to_openlineage_events(
         self,
         status: str,
-        started_at: str,
-        completed_at: str,
+        started_at: datetime.datetime,
+        completed_at: datetime.datetime,
         run: Run,
         job: Job,
         inputs: List[InputDataset],
@@ -417,7 +433,7 @@ class DbtArtifactProcessor:
     ) -> Optional[DbtRunResult]:
         start = RunEvent(
             eventType=RunState.START,
-            eventTime=started_at,
+            eventTime=started_at.isoformat(),
             run=run,
             job=job,
             producer=self.producer,
@@ -429,7 +445,7 @@ class DbtArtifactProcessor:
                 start,
                 complete=RunEvent(
                     eventType=RunState.COMPLETE,
-                    eventTime=completed_at,
+                    eventTime=completed_at.isoformat(),
                     run=run,
                     job=job,
                     producer=self.producer,
@@ -442,7 +458,7 @@ class DbtArtifactProcessor:
                 start,
                 fail=RunEvent(
                     eventType=RunState.FAIL,
-                    eventTime=completed_at,
+                    eventTime=completed_at.isoformat(),
                     run=run,
                     job=job,
                     producer=self.producer,
@@ -672,16 +688,32 @@ class DbtArtifactProcessor:
             openlineageAdapterVersion=openlineage_version,
         )
 
-    @staticmethod
-    def get_timings(timings: List[Dict]) -> Tuple[str, str]:
+    @classmethod
+    def parse_timestamp(cls, timestamp: Optional[str]) -> Optional[datetime.datetime]:
+        if not timestamp:
+            return None
+
+        try:
+            result = datetime.datetime.fromisoformat(timestamp)
+            if result.tzinfo is None:
+                result = result.replace(tzinfo=datetime.timezone.utc)
+            return result
+        except ValueError:
+            return None
+
+    @classmethod
+    def get_timings(
+        cls, timings: List[Dict]
+    ) -> Tuple[Optional[datetime.datetime], Optional[datetime.datetime]]:
         """Extract timing info from run_result's timing dict"""
         try:
             timing = list(filter(lambda x: x["name"] == "execute", timings))[0]
-            return timing["started_at"], timing["completed_at"]
+            started_at = cls.parse_timestamp(timing["started_at"])
+            completed_at = cls.parse_timestamp(timing["completed_at"])
+            return started_at, completed_at
         except IndexError:
             # Run failed: there is no timing data
-            timing_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
-            return timing_str, timing_str
+            return None, None
 
     @staticmethod
     def removeprefix(string: str, prefix: str) -> str:

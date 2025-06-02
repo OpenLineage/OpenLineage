@@ -1,6 +1,6 @@
 [{
 	"eventType": "START",
-	"eventTime": "2021-07-07T12:44:46.069306Z",
+	"eventTime": "2021-07-07T12:44:46.069306+00:00",
 	"run": {
 		"runId": "{{ any(result) }}"
 	},

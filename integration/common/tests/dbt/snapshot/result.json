@@ -1,6 +1,6 @@
 [
   {
-    "eventTime": "2023-04-16T21:37:18.150055Z",
+    "eventTime": "2023-04-16T21:37:18.150055+00:00",
     "eventType": "START",
     "inputs": [
       {
@@ -80,7 +80,7 @@
     }
   },
   {
-    "eventTime": "2023-04-16T21:37:18.384583Z",
+    "eventTime": "2023-04-16T21:37:18.384583+00:00",
     "eventType": "COMPLETE",
     "inputs": [
       {

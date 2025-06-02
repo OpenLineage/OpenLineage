@@ -83,9 +83,7 @@ def test_dbt_parse_and_compare_event(path, parent_run_metadata):
     ],
 )
 @mock.patch("openlineage.common.provider.dbt.processor.generate_new_uuid")
-@mock.patch("datetime.datetime")
-def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata, path):
-    mock_datetime.now.return_value.isoformat.return_value = "2021-08-25T11:00:25.277467+00:00"
+def test_dbt_parse_dbt_test_event(mock_uuid, parent_run_metadata, path):
     mock_uuid.side_effect = [
         "6edf42ed-d8d0-454a-b819-d09b9067ff99",
         "1a69c0a7-04bb-408b-980e-cbbfb1831ef7",
