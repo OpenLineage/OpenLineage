@@ -1,7 +1,7 @@
 {
-  "eventType" : "START",
-  "job" : {
-    "namespace" : "flink_job_namespace",
+  "eventType": "START",
+  "job": {
+    "namespace": "flink_job_namespace",
     "name": "flink_legacy_kafka_topic_pattern"
   },
   "run": {
