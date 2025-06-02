@@ -1,9 +1,9 @@
 {
-  "eventType" : "START",
-  "job" : {
-    "namespace" : "delta-namespace",
-    "name" : "delta_integration_test.atomic_replace_table.default_tbl"
+  "eventType": "START",
+  "job": {
+    "namespace": "delta-namespace",
+    "name": "delta_integration_test.atomic_replace_table.default_tbl"
   },
-  "inputs" : [ ],
-  "outputs" : [ ]
+  "inputs": [],
+  "outputs": []
 }

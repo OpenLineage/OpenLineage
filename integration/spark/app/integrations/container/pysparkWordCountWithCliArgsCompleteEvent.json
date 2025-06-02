@@ -1,8 +1,7 @@
 {
   "eventType": "COMPLETE",
   "run": {
-    "facets": {
-    }
+    "facets": {}
   },
   "job": {
     "namespace": "testPysparkWordCountWithCliArgs"

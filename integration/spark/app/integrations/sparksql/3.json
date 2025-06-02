@@ -74,9 +74,7 @@
                 {
                   "class": "org.apache.spark.sql.catalyst.expressions.aggregate.Count",
                   "num-children": 1,
-                  "children": [
-                    0
-                  ]
+                  "children": [0]
                 },
                 {
                   "class": "org.apache.spark.sql.catalyst.expressions.Literal",

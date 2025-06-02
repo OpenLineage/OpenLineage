@@ -8,10 +8,7 @@
           "properties": {
             "spark.output.stats": {
               "type": "object",
-              "required": [
-                "rowCount",
-                "size"
-              ],
+              "required": ["rowCount", "size"],
               "properties": {
                 "rowCount": {
                   "type": "integer"

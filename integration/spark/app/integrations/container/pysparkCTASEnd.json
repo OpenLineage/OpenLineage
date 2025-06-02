@@ -1,53 +1,63 @@
 {
-  "eventType" : "COMPLETE",
-  "job" : {
-    "namespace" : "testCreateAsSelectAndLoad"
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "testCreateAsSelectAndLoad"
   },
-  "inputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/ctas_load/temp",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [ {
-          "name" : "a",
-          "type" : "long"
-        }, {
-          "name" : "b",
-          "type" : "long"
-        } ]
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/ctas_load/temp",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "long"
+            }
+          ]
+        }
       }
     }
-  } ],
-  "outputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/ctas_load/tbl1",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [ {
-          "name" : "a",
-          "type" : "long"
-        }, {
-          "name" : "b",
-          "type" : "long"
-        } ]
-      },
-      "symlinks": {
-        "identifiers": [
-          {
-            "namespace": "file:/tmp/ctas_load",
-            "name": "default.tbl1",
-            "type": "TABLE"
-          }
-        ]
+  ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/ctas_load/tbl1",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "long"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/ctas_load",
+              "name": "default.tbl1",
+              "type": "TABLE"
+            }
+          ]
+        }
       }
     }
-  } ]
+  ]
 }

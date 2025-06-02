@@ -1,37 +1,42 @@
 {
-  "eventType" : "START",
-  "job" : {
-    "namespace" : "iceberg-namespace",
-    "name" : "iceberg_integration_test.replace_data.spark_catalog_default_events"
+  "eventType": "START",
+  "job": {
+    "namespace": "iceberg-namespace",
+    "name": "iceberg_integration_test.replace_data.spark_catalog_default_events"
   },
-  "inputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/iceberg/default/updates",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [ {
-          "name" : "event_id",
-          "type" : "long"
-        }, {
-          "name" : "updated_at",
-          "type" : "long"
-        } ]
-      },
-      "version" : {},
-      "symlinks": {
-        "identifiers": [
-          {
-            "namespace": "file:/tmp/iceberg",
-            "name": "default.updates",
-            "type": "TABLE"
-          }
-        ]
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/iceberg/default/updates",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "event_id",
+              "type": "long"
+            },
+            {
+              "name": "updated_at",
+              "type": "long"
+            }
+          ]
+        },
+        "version": {},
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/iceberg",
+              "name": "default.updates",
+              "type": "TABLE"
+            }
+          ]
+        }
       }
     }
-  } ],
-  "outputs" : [ ]
+  ],
+  "outputs": []
 }

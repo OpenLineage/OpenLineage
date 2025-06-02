@@ -8,9 +8,7 @@
           "properties": {
             "spark.error": {
               "type": "object",
-              "required": [
-                "message"
-              ],
+              "required": ["message"],
               "properties": {
                 "message": {
                   "type": "string"
