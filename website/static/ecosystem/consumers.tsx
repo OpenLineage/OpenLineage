@@ -145,7 +145,6 @@ export const Consumers: Array<Partner> = [
     docs_url: "https://docs.selectstar.com/",
     org_url: "https://www.selectstar.com/",
   },
-];
  {
     image: "Collibra-Logo-RGB.png",
     org: "Collibra",
@@ -153,3 +152,4 @@ export const Consumers: Array<Partner> = [
     docs_url: "https://www.collibra.com/products/data-lineage",
     org_url: "https://www.collibra.com/"
   },
+];
