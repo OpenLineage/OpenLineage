@@ -1,13 +1,13 @@
 {
-  "eventType" : "RUNNING",
+  "eventType": "RUNNING",
   "eventTime": "${json-unit.any-string}",
-  "job" : {
-    "namespace" : "flink_job_namespace",
+  "job": {
+    "namespace": "flink_job_namespace",
     "name": "flink_topic_pattern"
   },
   "run": {
     "runId": "${json-unit.any-string}",
-    "facets" : {
+    "facets": {
       "checkpoints": {
         "completed": "${json-unit.any-number}",
         "failed": "${json-unit.any-number}",
