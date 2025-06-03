@@ -1,43 +1,46 @@
-[{
-    "eventType" : "START",
-    "inputs" : [
-        {
-            "name" : "{{ env_var('GOOGLE_CLOUD_STORAGE_SOURCE_URI') }}",
-            "namespace" : "{{ env_var('GOOGLE_CLOUD_STORAGE_SOURCE_URI') | url_scheme_authority }}"
-        }
+[
+  {
+    "eventType": "START",
+    "inputs": [
+      {
+        "name": "{{ env_var('GOOGLE_CLOUD_STORAGE_SOURCE_URI') }}",
+        "namespace": "{{ env_var('GOOGLE_CLOUD_STORAGE_SOURCE_URI') | url_scheme_authority }}"
+      }
     ],
-    "job" : {
-        "facets": {},
-        "name" : "gcs_dag.gcs_task"
+    "job": {
+      "facets": {},
+      "name": "gcs_dag.gcs_task"
     },
-    "outputs" : [
-        {
-            "name" : "{{ env_var('GOOGLE_CLOUD_STORAGE_DESTINATION_URI') }}",
-            "namespace" : "{{ env_var('GOOGLE_CLOUD_STORAGE_DESTINATION_URI') | url_scheme_authority }}"
-        }
+    "outputs": [
+      {
+        "name": "{{ env_var('GOOGLE_CLOUD_STORAGE_DESTINATION_URI') }}",
+        "namespace": "{{ env_var('GOOGLE_CLOUD_STORAGE_DESTINATION_URI') | url_scheme_authority }}"
+      }
     ],
-    "run" : {
-        "facets" : {}
+    "run": {
+      "facets": {}
     }
-},{
-    "eventType" : "COMPLETE",
-    "inputs" : [
-        {
-            "name" : "{{ env_var('GOOGLE_CLOUD_STORAGE_SOURCE_URI') }}",
-            "namespace" : "{{ env_var('GOOGLE_CLOUD_STORAGE_SOURCE_URI') | url_scheme_authority }}"
-        }
+  },
+  {
+    "eventType": "COMPLETE",
+    "inputs": [
+      {
+        "name": "{{ env_var('GOOGLE_CLOUD_STORAGE_SOURCE_URI') }}",
+        "namespace": "{{ env_var('GOOGLE_CLOUD_STORAGE_SOURCE_URI') | url_scheme_authority }}"
+      }
     ],
-    "job" : {
-        "facets": {},
-        "name" : "gcs_dag.gcs_task"
+    "job": {
+      "facets": {},
+      "name": "gcs_dag.gcs_task"
     },
-    "outputs" : [
-        {
-            "name" : "{{ env_var('GOOGLE_CLOUD_STORAGE_DESTINATION_URI') }}",
-            "namespace" : "{{ env_var('GOOGLE_CLOUD_STORAGE_DESTINATION_URI') | url_scheme_authority }}"
-        }
+    "outputs": [
+      {
+        "name": "{{ env_var('GOOGLE_CLOUD_STORAGE_DESTINATION_URI') }}",
+        "namespace": "{{ env_var('GOOGLE_CLOUD_STORAGE_DESTINATION_URI') | url_scheme_authority }}"
+      }
     ],
-    "run" : {
-        "facets" : {}
+    "run": {
+      "facets": {}
     }
-}]
+  }
+]

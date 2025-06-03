@@ -26,8 +26,8 @@
             }
           ]
         },
-        "lifecycleStateChange" : {
-          "lifecycleStateChange" : "CREATE"
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "CREATE"
         },
         "symlinks": {
           "identifiers": [

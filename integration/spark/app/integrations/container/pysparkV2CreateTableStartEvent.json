@@ -1,9 +1,9 @@
 {
-  "eventType" : "START",
-  "job" : {
-    "namespace" : "iceberg-namespace",
-    "name" : "iceberg_integration_test.create_table.default_create_table_test"
+  "eventType": "START",
+  "job": {
+    "namespace": "iceberg-namespace",
+    "name": "iceberg_integration_test.create_table.default_create_table_test"
   },
-  "inputs" : [ ],
-  "outputs" : [ ]
+  "inputs": [],
+  "outputs": []
 }

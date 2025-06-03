@@ -1,37 +1,60 @@
 {
-  "eventType" : "START",
-  "job" : {
-    "namespace" : "flink_job_namespace",
+  "eventType": "START",
+  "job": {
+    "namespace": "flink_job_namespace",
     "name": "flink_examples_iceberg"
   },
-  "inputs": [{
-    "namespace": "file",
-    "name": "/tmp/warehouse/db/source",
+  "run": {
+    "runId": "${json-unit.any-string}",
     "facets": {
-      "schema": {
-        "fields": [{
-          "name": "x",
-          "type": "INTEGER"
-        }, {
-          "name": "y",
-          "type": "INTEGER"
-        }]
+      "processing_engine": {
+        "version": "${json-unit.regex}1\\.\\d+\\.\\d+",
+        "name": "flink",
+        "openlineageAdapterVersion": "${json-unit.any-string}"
+      },
+      "flink_job": {
+        "jobId": "${json-unit.any-string}"
       }
     }
-  }],
-  "outputs" : [{
-  "namespace" : "file",
-  "name" : "/tmp/warehouse/db/sink",
-  "facets" : {
-    "schema" : {
-      "fields" : [ {
-        "name" : "x",
-        "type" : "INTEGER"
-      }, {
-        "name" : "y",
-        "type" : "INTEGER"
-      } ]
+  },
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/warehouse/db/source",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "x",
+              "type": "INTEGER"
+            },
+            {
+              "name": "y",
+              "type": "INTEGER"
+            }
+          ]
+        }
+      }
     }
-  }
-  }]
+  ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/warehouse/db/sink",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "x",
+              "type": "INTEGER"
+            },
+            {
+              "name": "y",
+              "type": "INTEGER"
+            }
+          ]
+        }
+      }
+    }
+  ]
 }

@@ -1,47 +1,51 @@
 {
-  "eventType" : "COMPLETE",
-  "job" : {
-    "namespace" : "delta-namespace",
-    "name" : "delta_integration_test.append_data_exec_v1.spark_catalog_default_versioned_table"
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "delta-namespace",
+    "name": "delta_integration_test.append_data_exec_v1.spark_catalog_default_versioned_table"
   },
-  "outputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/delta/versioned_table",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [
-          {
-            "name" : "a",
-            "type" : "long"
-          }, {
-            "name" : "b",
-            "type" : "long"
-          }, {
-            "name" : "c",
-            "type" : "long"
-          }
-        ]
-      },
-      "symlinks": {
-        "identifiers": [
-          {
-            "namespace": "file:/tmp/delta",
-            "name": "default.versioned_table",
-            "type": "TABLE"
-          }
-        ]
-      },
-      "storage" : {
-        "storageLayer" : "delta",
-        "fileFormat" : "parquet"
-      },
-      "version" : {
-        "datasetVersion" : "2"
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/delta/versioned_table",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "long"
+            },
+            {
+              "name": "c",
+              "type": "long"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/delta",
+              "name": "default.versioned_table",
+              "type": "TABLE"
+            }
+          ]
+        },
+        "storage": {
+          "storageLayer": "delta",
+          "fileFormat": "parquet"
+        },
+        "version": {
+          "datasetVersion": "2"
+        }
       }
     }
-  } ]
+  ]
 }

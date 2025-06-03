@@ -286,7 +286,8 @@
             }
           }
         },
-        "symlinks": {"identifiers": [
+        "symlinks": {
+          "identifiers": [
             {
               "namespace": "file:/tmp/cll_test",
               "name": "default.tbl1",

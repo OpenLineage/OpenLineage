@@ -14,7 +14,20 @@ Wrapper script for automatic metadata collection from dbt
 - [Python >= 3.8](https://www.python.org/downloads)
 - [dbt >= 0.20](https://www.getdbt.com/)
 
-Right now, `openlineage-dbt` only supports `bigquery`, `snowflake`, `spark`,`redshift`, `athena` and `glue` dbt adapters.
+Right now, `openlineage-dbt` supports only these dbt adapters:
+
+* `bigquery`
+* `snowflake`
+* `spark` (`thrift` and `odbc`, but not `local`)
+* `redshift`
+* `athena`
+* `glue`
+* `postgres`
+* `trino`
+* `databricks`
+* `sqlserver`
+* `dremio`
+* `duckdb`
 
 ## Installation
 
@@ -30,23 +43,24 @@ $ pip install .
 
 ## Configuration
 
+### Transport
 
-### `HTTP` Backend Environment Variables
+`openlineage-dbt` uses the OpenLineage Python client to push data to the OpenLineage backend, so any way of configuring Python client will work here as well:
 
-`openlineage-dbt` uses the OpenLineage client to push data to the OpenLineage backend.
+```ini
+OPENLINEAGE_URL=http://localhost:5000
+OPENLINEAGE_API_KEY=abc
+```
 
-The OpenLineage client depends on environment variables:
+dbt integration-specific environment variables:
 
-* `OPENLINEAGE_URL` - point to service which will consume OpenLineage events
-* `OPENLINEAGE_API_KEY` - set if consumer of OpenLineage events requires `Bearer` authentication key
 * `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` namespace for job namespace.
-
 
 ### Logging
 
 In addition to conventional logging approaches, the OpenLineage dbt wrapper script provides an alternative way of configuring its logging behavior. By setting the `OPENLINEAGE_DBT_LOGGING` environment variable, you can establish the logging level for the `openlineage.dbt` and its child modules.
 
-You can also set log level of `dbtol` which is deprecated.
+You can also set log level of `dbtol` Python module but this is deprecated.
 
 ## Usage
 

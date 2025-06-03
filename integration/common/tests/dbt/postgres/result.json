@@ -1,861 +1,1060 @@
-[{
-	"eventType": "START",
-	"eventTime": "2022-12-14T21:28:16.899571Z",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"run": {
-					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
-				},
-				"job": {
-					"namespace": "dbt",
-					"name": "dbt-job-name"
-				}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "1.3.1"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "postgres.public.jaffle_shop.stg_customers",
-		"facets": {
-			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-				"query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_customers\"\n\n),\n\nrenamed as (\n\n    select\n        id as customer_id,\n        first_name,\n        last_name\n\n    from source\n\n)\n\nselect * from renamed"
-			}
-		}
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [],
-	"outputs": [{
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_customers",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "customer_id"
-				}]
-			}
-		},
-		"outputFacets": {}
-	}]
-}, {
-	"eventType": "START",
-	"eventTime": "2022-12-14T21:28:16.997052Z",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"run": {
-					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
-				},
-				"job": {
-					"namespace": "dbt",
-					"name": "dbt-job-name"
-				}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "1.3.1"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "postgres.public.jaffle_shop.stg_orders",
-		"facets": {
-			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-				"query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_orders\"\n\n),\n\nrenamed as (\n\n    select\n        id as order_id,\n        user_id as customer_id,\n        order_date,\n        status\n\n    from source\n\n)\n\nselect * from renamed"
-			}
-		}
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [],
-	"outputs": [{
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_orders",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "order_id"
-				}, {
-					"name": "status"
-				}]
-			}
-		},
-		"outputFacets": {}
-	}]
-}, {
-	"eventType": "START",
-	"eventTime": "2022-12-14T21:28:17.045744Z",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"run": {
-					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
-				},
-				"job": {
-					"namespace": "dbt",
-					"name": "dbt-job-name"
-				}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "1.3.1"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "postgres.public.jaffle_shop.stg_payments",
-		"facets": {
-			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-				"query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_payments\"\n\n),\n\nrenamed as (\n\n    select\n        id as payment_id,\n        order_id,\n        payment_method,\n\n        -- `amount` is currently stored in cents, so we convert it to dollars\n        amount / 100 as amount\n\n    from source\n\n)\n\nselect * from renamed"
-			}
-		}
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [],
-	"outputs": [{
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_payments",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "payment_id"
-				}, {
-					"name": "payment_method"
-				}]
-			}
-		},
-		"outputFacets": {}
-	}]
-}, {
-	"eventType": "START",
-	"eventTime": "2022-12-14T21:28:17.093727Z",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"run": {
-					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
-				},
-				"job": {
-					"namespace": "dbt",
-					"name": "dbt-job-name"
-				}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "1.3.1"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "postgres.public.jaffle_shop.customers"
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [{
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_customers",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "customer_id"
-				}]
-			}
-		}
-	}, {
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_orders",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "order_id"
-				}, {
-					"name": "status"
-				}]
-			}
-		}
-	}, {
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_payments",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "payment_id"
-				}, {
-					"name": "payment_method"
-				}]
-			}
-		}
-	}],
-	"outputs": [{
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.customers",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "non_empty_column",
-					"description": "This is a test column"
-				}, {
-					"name": "empty_column",
-					"description": "This is a test column"
-				}, {
-					"name": "customer_id",
-					"description": "This is a unique identifier for a customer"
-				}, {
-					"name": "first_name",
-					"description": "Customer's first name. PII."
-				}, {
-					"name": "last_name",
-					"description": "Customer's last name. PII."
-				}, {
-					"name": "first_order",
-					"description": "Date (UTC) of a customer's first order"
-				}, {
-					"name": "most_recent_order",
-					"description": "Date (UTC) of a customer's most recent order"
-				}, {
-					"name": "number_of_orders",
-					"description": "Count of the number of orders a customer has placed"
-				}, {
-					"name": "total_order_amount",
-					"description": "Total value (AUD) of a customer's orders"
-				}]
-			}
-		},
-		"outputFacets": {}
-	}]
-}, {
-	"eventType": "START",
-	"eventTime": "2022-12-14T21:28:17.156316Z",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"run": {
-					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
-				},
-				"job": {
-					"namespace": "dbt",
-					"name": "dbt-job-name"
-				}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "1.3.1"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "postgres.public.jaffle_shop.orders",
-		"facets": {
-			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-				"query": "\n\nwith orders as (\n\n    select * from \"postgres\".\"public\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"postgres\".\"public\".\"stg_payments\"\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final"
-			}
-		}
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [{
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_orders",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "order_id"
-				}, {
-					"name": "status"
-				}]
-			}
-		}
-	}, {
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_payments",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "payment_id"
-				}, {
-					"name": "payment_method"
-				}]
-			}
-		}
-	}],
-	"outputs": [{
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.orders",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "order_id",
-					"description": "This is a unique identifier for an order"
-				}, {
-					"name": "customer_id",
-					"description": "Foreign key to the customers table"
-				}, {
-					"name": "order_date",
-					"description": "Date (UTC) that the order was placed"
-				}, {
-					"name": "status",
-					"description": "Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |"
-				}, {
-					"name": "amount",
-					"description": "Total amount (AUD) of the order"
-				}, {
-					"name": "credit_card_amount",
-					"description": "Amount of the order (AUD) paid for by credit card"
-				}, {
-					"name": "coupon_amount",
-					"description": "Amount of the order (AUD) paid for by coupon"
-				}, {
-					"name": "bank_transfer_amount",
-					"description": "Amount of the order (AUD) paid for by bank transfer"
-				}, {
-					"name": "gift_card_amount",
-					"description": "Amount of the order (AUD) paid for by gift card"
-				}]
-			}
-		},
-		"outputFacets": {}
-	}]
-}, {
-	"eventType": "COMPLETE",
-	"eventTime": "2022-12-14T21:28:16.964210Z",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"run": {
-					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
-				},
-				"job": {
-					"namespace": "dbt",
-					"name": "dbt-job-name"
-				}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "1.3.1"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "postgres.public.jaffle_shop.stg_customers",
-		"facets": {
-			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-				"query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_customers\"\n\n),\n\nrenamed as (\n\n    select\n        id as customer_id,\n        first_name,\n        last_name\n\n    from source\n\n)\n\nselect * from renamed"
-			}
-		}
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [],
-	"outputs": [{
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_customers",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "customer_id"
-				}]
-			}
-		},
-		"outputFacets": {}
-	}]
-}, {
-	"eventType": "COMPLETE",
-	"eventTime": "2022-12-14T21:28:17.030362Z",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"run": {
-					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
-				},
-				"job": {
-					"namespace": "dbt",
-					"name": "dbt-job-name"
-				}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "1.3.1"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "postgres.public.jaffle_shop.stg_orders",
-		"facets": {
-			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-				"query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_orders\"\n\n),\n\nrenamed as (\n\n    select\n        id as order_id,\n        user_id as customer_id,\n        order_date,\n        status\n\n    from source\n\n)\n\nselect * from renamed"
-			}
-		}
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [],
-	"outputs": [{
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_orders",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "order_id"
-				}, {
-					"name": "status"
-				}]
-			}
-		},
-		"outputFacets": {}
-	}]
-}, {
-	"eventType": "COMPLETE",
-	"eventTime": "2022-12-14T21:28:17.076892Z",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"run": {
-					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
-				},
-				"job": {
-					"namespace": "dbt",
-					"name": "dbt-job-name"
-				}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "1.3.1"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "postgres.public.jaffle_shop.stg_payments",
-		"facets": {
-			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-				"query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_payments\"\n\n),\n\nrenamed as (\n\n    select\n        id as payment_id,\n        order_id,\n        payment_method,\n\n        -- `amount` is currently stored in cents, so we convert it to dollars\n        amount / 100 as amount\n\n    from source\n\n)\n\nselect * from renamed"
-			}
-		}
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [],
-	"outputs": [{
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_payments",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "payment_id"
-				}, {
-					"name": "payment_method"
-				}]
-			}
-		},
-		"outputFacets": {}
-	}]
-}, {
-	"eventType": "COMPLETE",
-	"eventTime": "2022-12-14T21:28:17.140203Z",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"run": {
-					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
-				},
-				"job": {
-					"namespace": "dbt",
-					"name": "dbt-job-name"
-				}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "1.3.1"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "postgres.public.jaffle_shop.customers"
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [{
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_customers",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "customer_id"
-				}]
-			}
-		}
-	}, {
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_orders",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "order_id"
-				}, {
-					"name": "status"
-				}]
-			}
-		}
-	}, {
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_payments",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "payment_id"
-				}, {
-					"name": "payment_method"
-				}]
-			}
-		}
-	}],
-	"outputs": [{
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.customers",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "non_empty_column",
-					"description": "This is a test column"
-				}, {
-					"name": "empty_column",
-					"description": "This is a test column"
-				}, {
-					"name": "customer_id",
-					"description": "This is a unique identifier for a customer"
-				}, {
-					"name": "first_name",
-					"description": "Customer's first name. PII."
-				}, {
-					"name": "last_name",
-					"description": "Customer's last name. PII."
-				}, {
-					"name": "first_order",
-					"description": "Date (UTC) of a customer's first order"
-				}, {
-					"name": "most_recent_order",
-					"description": "Date (UTC) of a customer's most recent order"
-				}, {
-					"name": "number_of_orders",
-					"description": "Count of the number of orders a customer has placed"
-				}, {
-					"name": "total_order_amount",
-					"description": "Total value (AUD) of a customer's orders"
-				}]
-			}
-		},
-		"outputFacets": {}
-	}]
-}, {
-	"eventType": "COMPLETE",
-	"eventTime": "2022-12-14T21:28:17.196590Z",
-	"run": {
-		"runId": "{{ any(result) }}",
-		"facets": {
-			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
-				"run": {
-					"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
-				},
-				"job": {
-					"namespace": "dbt",
-					"name": "dbt-job-name"
-				}
-			},
-			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "1.3.1"
-			}
-		}
-	},
-	"job": {
-		"namespace": "job-namespace",
-		"name": "postgres.public.jaffle_shop.orders",
-		"facets": {
-			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-				"query": "\n\nwith orders as (\n\n    select * from \"postgres\".\"public\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"postgres\".\"public\".\"stg_payments\"\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final"
-			}
-		}
-	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-	"inputs": [{
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_orders",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "order_id"
-				}, {
-					"name": "status"
-				}]
-			}
-		}
-	}, {
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.stg_payments",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "payment_id"
-				}, {
-					"name": "payment_method"
-				}]
-			}
-		}
-	}],
-	"outputs": [{
-		"namespace": "postgres://POSTGRES_HOST:1234",
-		"name": "postgres.public.orders",
-		"facets": {
-			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
-				"name": "postgres://POSTGRES_HOST:1234",
-				"uri": "postgres://POSTGRES_HOST:1234"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-				"fields": [{
-					"name": "order_id",
-					"description": "This is a unique identifier for an order"
-				}, {
-					"name": "customer_id",
-					"description": "Foreign key to the customers table"
-				}, {
-					"name": "order_date",
-					"description": "Date (UTC) that the order was placed"
-				}, {
-					"name": "status",
-					"description": "Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |"
-				}, {
-					"name": "amount",
-					"description": "Total amount (AUD) of the order"
-				}, {
-					"name": "credit_card_amount",
-					"description": "Amount of the order (AUD) paid for by credit card"
-				}, {
-					"name": "coupon_amount",
-					"description": "Amount of the order (AUD) paid for by coupon"
-				}, {
-					"name": "bank_transfer_amount",
-					"description": "Amount of the order (AUD) paid for by bank transfer"
-				}, {
-					"name": "gift_card_amount",
-					"description": "Amount of the order (AUD) paid for by gift card"
-				}]
-			}
-		},
-		"outputFacets": {}
-	}]
-}]
+[
+  {
+    "eventType": "START",
+    "eventTime": "2022-12-14T21:28:16.899571Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+          },
+          "job": {
+            "namespace": "dbt",
+            "name": "dbt-job-name"
+          }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.3.1"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.3.1",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "postgres.public.jaffle_shop.stg_customers",
+      "facets": {
+        "sql": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_customers\"\n\n),\n\nrenamed as (\n\n    select\n        id as customer_id,\n        first_name,\n        last_name\n\n    from source\n\n)\n\nselect * from renamed"
+        }
+      }
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [],
+    "outputs": [
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_customers",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "customer_id"
+              }
+            ]
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventType": "START",
+    "eventTime": "2022-12-14T21:28:16.997052Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+          },
+          "job": {
+            "namespace": "dbt",
+            "name": "dbt-job-name"
+          }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.3.1"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.3.1",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "postgres.public.jaffle_shop.stg_orders",
+      "facets": {
+        "sql": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_orders\"\n\n),\n\nrenamed as (\n\n    select\n        id as order_id,\n        user_id as customer_id,\n        order_date,\n        status\n\n    from source\n\n)\n\nselect * from renamed"
+        }
+      }
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [],
+    "outputs": [
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_orders",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "order_id"
+              },
+              {
+                "name": "status"
+              }
+            ]
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventType": "START",
+    "eventTime": "2022-12-14T21:28:17.045744Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+          },
+          "job": {
+            "namespace": "dbt",
+            "name": "dbt-job-name"
+          }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.3.1"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.3.1",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "postgres.public.jaffle_shop.stg_payments",
+      "facets": {
+        "sql": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_payments\"\n\n),\n\nrenamed as (\n\n    select\n        id as payment_id,\n        order_id,\n        payment_method,\n\n        -- `amount` is currently stored in cents, so we convert it to dollars\n        amount / 100 as amount\n\n    from source\n\n)\n\nselect * from renamed"
+        }
+      }
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [],
+    "outputs": [
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_payments",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "payment_id"
+              },
+              {
+                "name": "payment_method"
+              }
+            ]
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventType": "START",
+    "eventTime": "2022-12-14T21:28:17.093727Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+          },
+          "job": {
+            "namespace": "dbt",
+            "name": "dbt-job-name"
+          }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.3.1"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.3.1",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "postgres.public.jaffle_shop.customers"
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_customers",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "customer_id"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_orders",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "order_id"
+              },
+              {
+                "name": "status"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_payments",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "payment_id"
+              },
+              {
+                "name": "payment_method"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.customers",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "non_empty_column",
+                "description": "This is a test column"
+              },
+              {
+                "name": "empty_column",
+                "description": "This is a test column"
+              },
+              {
+                "name": "customer_id",
+                "description": "This is a unique identifier for a customer"
+              },
+              {
+                "name": "first_name",
+                "description": "Customer's first name. PII."
+              },
+              {
+                "name": "last_name",
+                "description": "Customer's last name. PII."
+              },
+              {
+                "name": "first_order",
+                "description": "Date (UTC) of a customer's first order"
+              },
+              {
+                "name": "most_recent_order",
+                "description": "Date (UTC) of a customer's most recent order"
+              },
+              {
+                "name": "number_of_orders",
+                "description": "Count of the number of orders a customer has placed"
+              },
+              {
+                "name": "total_order_amount",
+                "description": "Total value (AUD) of a customer's orders"
+              }
+            ]
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventType": "START",
+    "eventTime": "2022-12-14T21:28:17.156316Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+          },
+          "job": {
+            "namespace": "dbt",
+            "name": "dbt-job-name"
+          }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.3.1"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.3.1",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "postgres.public.jaffle_shop.orders",
+      "facets": {
+        "sql": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "\n\nwith orders as (\n\n    select * from \"postgres\".\"public\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"postgres\".\"public\".\"stg_payments\"\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final"
+        }
+      }
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_orders",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "order_id"
+              },
+              {
+                "name": "status"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_payments",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "payment_id"
+              },
+              {
+                "name": "payment_method"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.orders",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "order_id",
+                "description": "This is a unique identifier for an order"
+              },
+              {
+                "name": "customer_id",
+                "description": "Foreign key to the customers table"
+              },
+              {
+                "name": "order_date",
+                "description": "Date (UTC) that the order was placed"
+              },
+              {
+                "name": "status",
+                "description": "Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |"
+              },
+              {
+                "name": "amount",
+                "description": "Total amount (AUD) of the order"
+              },
+              {
+                "name": "credit_card_amount",
+                "description": "Amount of the order (AUD) paid for by credit card"
+              },
+              {
+                "name": "coupon_amount",
+                "description": "Amount of the order (AUD) paid for by coupon"
+              },
+              {
+                "name": "bank_transfer_amount",
+                "description": "Amount of the order (AUD) paid for by bank transfer"
+              },
+              {
+                "name": "gift_card_amount",
+                "description": "Amount of the order (AUD) paid for by gift card"
+              }
+            ]
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventType": "COMPLETE",
+    "eventTime": "2022-12-14T21:28:16.964210Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+          },
+          "job": {
+            "namespace": "dbt",
+            "name": "dbt-job-name"
+          }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.3.1"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.3.1",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "postgres.public.jaffle_shop.stg_customers",
+      "facets": {
+        "sql": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_customers\"\n\n),\n\nrenamed as (\n\n    select\n        id as customer_id,\n        first_name,\n        last_name\n\n    from source\n\n)\n\nselect * from renamed"
+        }
+      }
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [],
+    "outputs": [
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_customers",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "customer_id"
+              }
+            ]
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventType": "COMPLETE",
+    "eventTime": "2022-12-14T21:28:17.030362Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+          },
+          "job": {
+            "namespace": "dbt",
+            "name": "dbt-job-name"
+          }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.3.1"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.3.1",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "postgres.public.jaffle_shop.stg_orders",
+      "facets": {
+        "sql": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_orders\"\n\n),\n\nrenamed as (\n\n    select\n        id as order_id,\n        user_id as customer_id,\n        order_date,\n        status\n\n    from source\n\n)\n\nselect * from renamed"
+        }
+      }
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [],
+    "outputs": [
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_orders",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "order_id"
+              },
+              {
+                "name": "status"
+              }
+            ]
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventType": "COMPLETE",
+    "eventTime": "2022-12-14T21:28:17.076892Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+          },
+          "job": {
+            "namespace": "dbt",
+            "name": "dbt-job-name"
+          }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.3.1"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.3.1",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "postgres.public.jaffle_shop.stg_payments",
+      "facets": {
+        "sql": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_payments\"\n\n),\n\nrenamed as (\n\n    select\n        id as payment_id,\n        order_id,\n        payment_method,\n\n        -- `amount` is currently stored in cents, so we convert it to dollars\n        amount / 100 as amount\n\n    from source\n\n)\n\nselect * from renamed"
+        }
+      }
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [],
+    "outputs": [
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_payments",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "payment_id"
+              },
+              {
+                "name": "payment_method"
+              }
+            ]
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventType": "COMPLETE",
+    "eventTime": "2022-12-14T21:28:17.140203Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+          },
+          "job": {
+            "namespace": "dbt",
+            "name": "dbt-job-name"
+          }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.3.1"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.3.1",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "postgres.public.jaffle_shop.customers"
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_customers",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "customer_id"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_orders",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "order_id"
+              },
+              {
+                "name": "status"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_payments",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "payment_id"
+              },
+              {
+                "name": "payment_method"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.customers",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "non_empty_column",
+                "description": "This is a test column"
+              },
+              {
+                "name": "empty_column",
+                "description": "This is a test column"
+              },
+              {
+                "name": "customer_id",
+                "description": "This is a unique identifier for a customer"
+              },
+              {
+                "name": "first_name",
+                "description": "Customer's first name. PII."
+              },
+              {
+                "name": "last_name",
+                "description": "Customer's last name. PII."
+              },
+              {
+                "name": "first_order",
+                "description": "Date (UTC) of a customer's first order"
+              },
+              {
+                "name": "most_recent_order",
+                "description": "Date (UTC) of a customer's most recent order"
+              },
+              {
+                "name": "number_of_orders",
+                "description": "Count of the number of orders a customer has placed"
+              },
+              {
+                "name": "total_order_amount",
+                "description": "Total value (AUD) of a customer's orders"
+              }
+            ]
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  },
+  {
+    "eventType": "COMPLETE",
+    "eventTime": "2022-12-14T21:28:17.196590Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"
+          },
+          "job": {
+            "namespace": "dbt",
+            "name": "dbt-job-name"
+          }
+        },
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.3.1"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.3.1",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job": {
+      "namespace": "job-namespace",
+      "name": "postgres.public.jaffle_shop.orders",
+      "facets": {
+        "sql": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "\n\nwith orders as (\n\n    select * from \"postgres\".\"public\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"postgres\".\"public\".\"stg_payments\"\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final"
+        }
+      }
+    },
+    "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "inputs": [
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_orders",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "order_id"
+              },
+              {
+                "name": "status"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.stg_payments",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "payment_id"
+              },
+              {
+                "name": "payment_method"
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "postgres://POSTGRES_HOST:1234",
+        "name": "postgres.public.orders",
+        "facets": {
+          "dataSource": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DatasourceDatasetFacet.json#/$defs/DatasourceDatasetFacet",
+            "name": "postgres://POSTGRES_HOST:1234",
+            "uri": "postgres://POSTGRES_HOST:1234"
+          },
+          "schema": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
+            "fields": [
+              {
+                "name": "order_id",
+                "description": "This is a unique identifier for an order"
+              },
+              {
+                "name": "customer_id",
+                "description": "Foreign key to the customers table"
+              },
+              {
+                "name": "order_date",
+                "description": "Date (UTC) that the order was placed"
+              },
+              {
+                "name": "status",
+                "description": "Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |"
+              },
+              {
+                "name": "amount",
+                "description": "Total amount (AUD) of the order"
+              },
+              {
+                "name": "credit_card_amount",
+                "description": "Amount of the order (AUD) paid for by credit card"
+              },
+              {
+                "name": "coupon_amount",
+                "description": "Amount of the order (AUD) paid for by coupon"
+              },
+              {
+                "name": "bank_transfer_amount",
+                "description": "Amount of the order (AUD) paid for by bank transfer"
+              },
+              {
+                "name": "gift_card_amount",
+                "description": "Amount of the order (AUD) paid for by gift card"
+              }
+            ]
+          }
+        },
+        "outputFacets": {}
+      }
+    ]
+  }
+]

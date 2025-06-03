@@ -1,509 +1,549 @@
 [
   {
-    "eventTime":"2024-11-22T15:58:03.518877Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
+    "eventTime": "2024-11-22T15:58:03.518877Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
         }
       }
     },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"dbt-run-jaffle_shop",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"JOB"
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "dbt-run-jaffle_shop",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "JOB"
         }
       }
     },
-    "eventType":"START",
-    "inputs":[ ],
-    "outputs":[ ]
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
   },
   {
-    "eventTime":"2024-11-22T15:58:08.383825Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-11-22T15:58:08.383825Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"dbt-run-jaffle_shop"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "dbt-run-jaffle_shop"
           }
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
         }
       }
     },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"model.jaffle_shop.orders",
-      "facets":{
-        "jobType":{
-          "_deleted":null,
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"MODEL"
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "model.jaffle_shop.orders",
+      "facets": {
+        "jobType": {
+          "_deleted": null,
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "MODEL"
         }
       }
     },
-    "eventType":"START",
-    "inputs":[
+    "eventType": "START",
+    "inputs": [
       {
-        "namespace":"postgres://postgres:5432",
-        "name":"postgres.public.stg_orders",
-        "facets":{
-          "dataSource":{
-            "name":"postgres://postgres:5432",
-            "uri":"postgres://postgres:5432"
+        "namespace": "postgres://postgres:5432",
+        "name": "postgres.public.stg_orders",
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432"
           },
-          "schema":{
-            "fields":[
+          "schema": {
+            "fields": [
               {
-                "name":"order_id",
-                "fields":[ ]
+                "name": "order_id",
+                "fields": []
               },
               {
-                "name":"status",
-                "fields":[ ]
+                "name": "status",
+                "fields": []
               }
             ]
           }
         }
       },
       {
-        "namespace":"postgres://postgres:5432",
-        "name":"postgres.public.stg_payments",
-        "facets":{
-          "dataSource":{
-            "name":"postgres://postgres:5432",
-            "uri":"postgres://postgres:5432"
+        "namespace": "postgres://postgres:5432",
+        "name": "postgres.public.stg_payments",
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432"
           },
-          "schema":{
-            "fields":[
+          "schema": {
+            "fields": [
               {
-                "name":"payment_id",
-                "fields":[ ]
+                "name": "payment_id",
+                "fields": []
               },
               {
-                "name":"payment_method",
-                "fields":[ ]
+                "name": "payment_method",
+                "fields": []
               }
             ]
           }
         }
       }
     ],
-    "outputs":[
+    "outputs": [
       {
-        "namespace":"postgres://postgres:5432",
-        "name":"postgres.public.orders",
-        "facets":{
-          "dataSource":{
-            "name":"postgres://postgres:5432",
-            "uri":"postgres://postgres:5432"
+        "namespace": "postgres://postgres:5432",
+        "name": "postgres.public.orders",
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432"
           },
-          "schema":{
-            "fields":[
+          "schema": {
+            "fields": [
               {
-                "name":"order_id",
-                "description":"This is a unique identifier for an order",
-                "fields":[ ]
+                "name": "order_id",
+                "description": "This is a unique identifier for an order",
+                "fields": []
               },
               {
-                "name":"customer_id",
-                "description":"Foreign key to the customers table",
-                "fields":[ ]
+                "name": "customer_id",
+                "description": "Foreign key to the customers table",
+                "fields": []
               },
               {
-                "name":"order_date",
-                "description":"Date (UTC) that the order was placed",
-                "fields":[ ]
+                "name": "order_date",
+                "description": "Date (UTC) that the order was placed",
+                "fields": []
               },
               {
-                "name":"status",
-                "description":"Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |",
-                "fields":[ ]
+                "name": "status",
+                "description": "Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |",
+                "fields": []
               },
               {
-                "name":"amount",
-                "description":"Total amount (AUD) of the order",
-                "fields":[ ]
+                "name": "amount",
+                "description": "Total amount (AUD) of the order",
+                "fields": []
               },
               {
-                "name":"credit_card_amount",
-                "description":"Amount of the order (AUD) paid for by credit card",
-                "fields":[ ]
+                "name": "credit_card_amount",
+                "description": "Amount of the order (AUD) paid for by credit card",
+                "fields": []
               },
               {
-                "name":"coupon_amount",
-                "description":"Amount of the order (AUD) paid for by coupon",
-                "fields":[ ]
+                "name": "coupon_amount",
+                "description": "Amount of the order (AUD) paid for by coupon",
+                "fields": []
               },
               {
-                "name":"bank_transfer_amount",
-                "description":"Amount of the order (AUD) paid for by bank transfer",
-                "fields":[ ]
+                "name": "bank_transfer_amount",
+                "description": "Amount of the order (AUD) paid for by bank transfer",
+                "fields": []
               },
               {
-                "name":"gift_card_amount",
-                "description":"Amount of the order (AUD) paid for by gift card",
-                "fields":[ ]
+                "name": "gift_card_amount",
+                "description": "Amount of the order (AUD) paid for by gift card",
+                "fields": []
               }
             ]
           },
-          "documentation":{
-            "description":"This table has basic information about orders, as well as some derived facts based on payments"
+          "documentation": {
+            "description": "This table has basic information about orders, as well as some derived facts based on payments"
           }
         },
-        "outputFacets":{ }
+        "outputFacets": {}
       }
     ]
   },
   {
-    "eventTime":"2024-11-22T15:58:08.778689Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-11-22T15:58:08.778689Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"model.jaffle_shop.orders"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "model.jaffle_shop.orders"
           }
         },
         "dbt_version": {
           "version": "1.8.2"
-        }
-      }
-    },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"model.jaffle_shop.orders.sql.1",
-      "facets":{
-        "jobType":{
-          "_deleted":null,
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"SQL"
         },
-        "sql":{
-          "_deleted":null,
-          "query":"BEGIN"
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
         }
       }
     },
-    "eventType":"START",
-    "inputs":[ ],
-    "outputs":[ ]
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "model.jaffle_shop.orders.sql.1",
+      "facets": {
+        "jobType": {
+          "_deleted": null,
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "_deleted": null,
+          "query": "BEGIN"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
   },
   {
-    "eventTime":"2024-11-22T15:58:08.868341Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-11-22T15:58:08.868341Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"model.jaffle_shop.orders"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "model.jaffle_shop.orders"
           }
         },
         "dbt_version": {
           "version": "1.8.2"
-        }
-      }
-    },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"model.jaffle_shop.orders.sql.1",
-      "facets":{
-        "jobType":{
-          "_deleted":null,
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"SQL"
         },
-        "sql":{
-          "_deleted":null,
-          "query":"BEGIN"
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
         }
       }
     },
-    "eventType":"COMPLETE",
-    "inputs":[ ],
-    "outputs":[ ]
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "model.jaffle_shop.orders.sql.1",
+      "facets": {
+        "jobType": {
+          "_deleted": null,
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "_deleted": null,
+          "query": "BEGIN"
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "outputs": []
   },
   {
-    "eventTime":"2024-11-22T15:58:08.885601Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-11-22T15:58:08.885601Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"model.jaffle_shop.orders"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "model.jaffle_shop.orders"
           }
         },
         "dbt_version": {
           "version": "1.8.2"
-        }
-      }
-    },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"model.jaffle_shop.orders.sql.2",
-      "facets":{
-        "jobType":{
-          "_deleted":null,
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"SQL"
         },
-        "sql":{
-          "_deleted":null,
-          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"dev\", \"node_id\": \"model.jaffle_shop.orders\"} */\n\n  \n    \n\n  create  table \"postgres\".\"public\".\"orders__dbt_tmp\"\n  \n  \n    as\n  \n  (\n    \n\nwith orders as (\n\n    select * from \"postgres\".\"public\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"postgres\".\"public\".\"stg_payments\"\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\nlkjlkjkj\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final\n  );\n  "
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
         }
       }
     },
-    "eventType":"START",
-    "inputs":[ ],
-    "outputs":[ ]
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "model.jaffle_shop.orders.sql.2",
+      "facets": {
+        "jobType": {
+          "_deleted": null,
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "_deleted": null,
+          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"dev\", \"node_id\": \"model.jaffle_shop.orders\"} */\n\n  \n    \n\n  create  table \"postgres\".\"public\".\"orders__dbt_tmp\"\n  \n  \n    as\n  \n  (\n    \n\nwith orders as (\n\n    select * from \"postgres\".\"public\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"postgres\".\"public\".\"stg_payments\"\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\nlkjlkjkj\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final\n  );\n  "
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
   },
   {
-    "eventTime":"2024-11-22T15:58:08.942303Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-11-22T15:58:08.942303Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"model.jaffle_shop.orders"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "model.jaffle_shop.orders"
           }
         },
-        "errorMessage":{
-          "message":"Database Error in model orders (models/orders.sql)\n  syntax error at or near \"final\"\n  LINE 43: final as (\n           ^\n  compiled code at target/run/jaffle_shop/models/orders.sql",
-          "programmingLanguage":"sql",
-          "stackTrace":"Traceback (most recent call last):\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/postgres/connections.py\", line 74, in exception_handler\n    yield\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/sql/connections.py\", line 93, in add_query\n    cursor.execute(sql, bindings)\npsycopg2.errors.SyntaxError: syntax error at or near \"final\"\nLINE 43: final as (\n         ^\n\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/base.py\", line 368, in safe_run\n    result = self.compile_and_execute(manifest, ctx)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/base.py\", line 314, in compile_and_execute\n    result = self.run(ctx.node, manifest)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/base.py\", line 415, in run\n    return self.execute(compiled_node, manifest)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/run.py\", line 298, in execute\n    result = MacroGenerator(\n  File \"/usr/local/lib/python3.10/site-packages/dbt/clients/jinja.py\", line 84, in __call__\n    return self.call_macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt_common/clients/jinja.py\", line 322, in call_macro\n    return macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 768, in __call__\n    return self._invoke(arguments, autoescape)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 782, in _invoke\n    rv = self._func(*arguments)\n  File \"<template>\", line 82, in macro\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/sandbox.py\", line 394, in call\n    return __context.call(__obj, *args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 303, in call\n    return __obj(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/clients/jinja.py\", line 84, in __call__\n    return self.call_macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt_common/clients/jinja.py\", line 322, in call_macro\n    return macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 768, in __call__\n    return self._invoke(arguments, autoescape)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 782, in _invoke\n    rv = self._func(*arguments)\n  File \"<template>\", line 52, in macro\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/sandbox.py\", line 394, in call\n    return __context.call(__obj, *args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 303, in call\n    return __obj(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/base/impl.py\", line 390, in execute\n    return self.connections.execute(sql=sql, auto_begin=auto_begin, fetch=fetch, limit=limit)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/sql/connections.py\", line 157, in execute\n    _, cursor = self.add_query(sql, auto_begin)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/sql/connections.py\", line 76, in add_query\n    with self.exception_handler(sql):\n  File \"/usr/local/lib/python3.10/contextlib.py\", line 153, in __exit__\n    self.gen.throw(typ, value, traceback)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/postgres/connections.py\", line 85, in exception_handler\n    raise DbtDatabaseError(str(e).strip()) from e\ndbt_common.exceptions.base.DbtDatabaseError: Database Error in model orders (models/orders.sql)\n  syntax error at or near \"final\"\n  LINE 43: final as (\n           ^\n  compiled code at target/run/jaffle_shop/models/orders.sql\n"
+        "errorMessage": {
+          "message": "Database Error in model orders (models/orders.sql)\n  syntax error at or near \"final\"\n  LINE 43: final as (\n           ^\n  compiled code at target/run/jaffle_shop/models/orders.sql",
+          "programmingLanguage": "sql",
+          "stackTrace": "Traceback (most recent call last):\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/postgres/connections.py\", line 74, in exception_handler\n    yield\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/sql/connections.py\", line 93, in add_query\n    cursor.execute(sql, bindings)\npsycopg2.errors.SyntaxError: syntax error at or near \"final\"\nLINE 43: final as (\n         ^\n\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/base.py\", line 368, in safe_run\n    result = self.compile_and_execute(manifest, ctx)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/base.py\", line 314, in compile_and_execute\n    result = self.run(ctx.node, manifest)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/base.py\", line 415, in run\n    return self.execute(compiled_node, manifest)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/task/run.py\", line 298, in execute\n    result = MacroGenerator(\n  File \"/usr/local/lib/python3.10/site-packages/dbt/clients/jinja.py\", line 84, in __call__\n    return self.call_macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt_common/clients/jinja.py\", line 322, in call_macro\n    return macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 768, in __call__\n    return self._invoke(arguments, autoescape)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 782, in _invoke\n    rv = self._func(*arguments)\n  File \"<template>\", line 82, in macro\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/sandbox.py\", line 394, in call\n    return __context.call(__obj, *args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 303, in call\n    return __obj(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/clients/jinja.py\", line 84, in __call__\n    return self.call_macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt_common/clients/jinja.py\", line 322, in call_macro\n    return macro(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 768, in __call__\n    return self._invoke(arguments, autoescape)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 782, in _invoke\n    rv = self._func(*arguments)\n  File \"<template>\", line 52, in macro\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/sandbox.py\", line 394, in call\n    return __context.call(__obj, *args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/jinja2/runtime.py\", line 303, in call\n    return __obj(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/base/impl.py\", line 390, in execute\n    return self.connections.execute(sql=sql, auto_begin=auto_begin, fetch=fetch, limit=limit)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/sql/connections.py\", line 157, in execute\n    _, cursor = self.add_query(sql, auto_begin)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/sql/connections.py\", line 76, in add_query\n    with self.exception_handler(sql):\n  File \"/usr/local/lib/python3.10/contextlib.py\", line 153, in __exit__\n    self.gen.throw(typ, value, traceback)\n  File \"/usr/local/lib/python3.10/site-packages/dbt/adapters/postgres/connections.py\", line 85, in exception_handler\n    raise DbtDatabaseError(str(e).strip()) from e\ndbt_common.exceptions.base.DbtDatabaseError: Database Error in model orders (models/orders.sql)\n  syntax error at or near \"final\"\n  LINE 43: final as (\n           ^\n  compiled code at target/run/jaffle_shop/models/orders.sql\n"
         },
         "dbt_version": {
           "version": "1.8.2"
-        }
-      }
-    },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"model.jaffle_shop.orders.sql.2",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"SQL"
         },
-        "sql":{
-          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"dev\", \"node_id\": \"model.jaffle_shop.orders\"} */\n\n  \n    \n\n  create  table \"postgres\".\"public\".\"orders__dbt_tmp\"\n  \n  \n    as\n  \n  (\n    \n\nwith orders as (\n\n    select * from \"postgres\".\"public\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"postgres\".\"public\".\"stg_payments\"\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\nlkjlkjkj\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final\n  );\n  "
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
         }
       }
     },
-    "eventType":"FAIL",
-    "inputs":[ ],
-    "outputs":[ ]
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "model.jaffle_shop.orders.sql.2",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"dev\", \"node_id\": \"model.jaffle_shop.orders\"} */\n\n  \n    \n\n  create  table \"postgres\".\"public\".\"orders__dbt_tmp\"\n  \n  \n    as\n  \n  (\n    \n\nwith orders as (\n\n    select * from \"postgres\".\"public\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"postgres\".\"public\".\"stg_payments\"\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\nlkjlkjkj\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final\n  );\n  "
+        }
+      }
+    },
+    "eventType": "FAIL",
+    "inputs": [],
+    "outputs": []
   },
   {
-    "eventTime":"2024-11-22T15:58:08.958993Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-11-22T15:58:08.958993Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"dbt-run-jaffle_shop"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "dbt-run-jaffle_shop"
           }
         },
-        "errorMessage":{
-          "message":"Database Error in model orders (models/orders.sql)\n  syntax error at or near \"final\"\n  LINE 43: final as (\n           ^\n  compiled code at target/run/jaffle_shop/models/orders.sql",
-          "programmingLanguage":"sql",
-          "stackTrace":null
+        "errorMessage": {
+          "message": "Database Error in model orders (models/orders.sql)\n  syntax error at or near \"final\"\n  LINE 43: final as (\n           ^\n  compiled code at target/run/jaffle_shop/models/orders.sql",
+          "programmingLanguage": "sql",
+          "stackTrace": null
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
         }
       }
     },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"model.jaffle_shop.orders",
-      "facets":{
-        "jobType":{
-          "_deleted":null,
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"MODEL"
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "model.jaffle_shop.orders",
+      "facets": {
+        "jobType": {
+          "_deleted": null,
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "MODEL"
         }
       }
     },
-    "eventType":"FAIL",
-    "inputs":[
+    "eventType": "FAIL",
+    "inputs": [
       {
-        "namespace":"postgres://postgres:5432",
-        "name":"postgres.public.stg_orders",
-        "facets":{
-          "dataSource":{
-            "name":"postgres://postgres:5432",
-            "uri":"postgres://postgres:5432"
+        "namespace": "postgres://postgres:5432",
+        "name": "postgres.public.stg_orders",
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432"
           },
-          "schema":{
-            "fields":[
+          "schema": {
+            "fields": [
               {
-                "name":"order_id",
-                "fields":[ ]
+                "name": "order_id",
+                "fields": []
               },
               {
-                "name":"status",
-                "fields":[ ]
+                "name": "status",
+                "fields": []
               }
             ]
           }
         }
       },
       {
-        "namespace":"postgres://postgres:5432",
-        "name":"postgres.public.stg_payments",
-        "facets":{
-          "dataSource":{
-            "name":"postgres://postgres:5432",
-            "uri":"postgres://postgres:5432"
+        "namespace": "postgres://postgres:5432",
+        "name": "postgres.public.stg_payments",
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432"
           },
-          "schema":{
-            "fields":[
+          "schema": {
+            "fields": [
               {
-                "name":"payment_id",
-                "fields":[ ]
+                "name": "payment_id",
+                "fields": []
               },
               {
-                "name":"payment_method",
-                "fields":[ ]
+                "name": "payment_method",
+                "fields": []
               }
             ]
           }
         }
       }
     ],
-    "outputs":[
+    "outputs": [
       {
-        "namespace":"postgres://postgres:5432",
-        "name":"postgres.public.orders",
-        "facets":{
-          "dataSource":{
-            "name":"postgres://postgres:5432",
-            "uri":"postgres://postgres:5432"
+        "namespace": "postgres://postgres:5432",
+        "name": "postgres.public.orders",
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432"
           },
-          "schema":{
-            "fields":[
+          "schema": {
+            "fields": [
               {
-                "name":"order_id",
-                "description":"This is a unique identifier for an order",
-                "fields":[ ]
+                "name": "order_id",
+                "description": "This is a unique identifier for an order",
+                "fields": []
               },
               {
-                "name":"customer_id",
-                "description":"Foreign key to the customers table",
-                "fields":[ ]
+                "name": "customer_id",
+                "description": "Foreign key to the customers table",
+                "fields": []
               },
               {
-                "name":"order_date",
-                "description":"Date (UTC) that the order was placed",
-                "fields":[ ]
+                "name": "order_date",
+                "description": "Date (UTC) that the order was placed",
+                "fields": []
               },
               {
-                "name":"status",
-                "description":"Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |",
-                "fields":[ ]
+                "name": "status",
+                "description": "Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |",
+                "fields": []
               },
               {
-                "name":"amount",
-                "description":"Total amount (AUD) of the order",
-                "fields":[ ]
+                "name": "amount",
+                "description": "Total amount (AUD) of the order",
+                "fields": []
               },
               {
-                "name":"credit_card_amount",
-                "description":"Amount of the order (AUD) paid for by credit card",
-                "fields":[ ]
+                "name": "credit_card_amount",
+                "description": "Amount of the order (AUD) paid for by credit card",
+                "fields": []
               },
               {
-                "name":"coupon_amount",
-                "description":"Amount of the order (AUD) paid for by coupon",
-                "fields":[ ]
+                "name": "coupon_amount",
+                "description": "Amount of the order (AUD) paid for by coupon",
+                "fields": []
               },
               {
-                "name":"bank_transfer_amount",
-                "description":"Amount of the order (AUD) paid for by bank transfer",
-                "fields":[ ]
+                "name": "bank_transfer_amount",
+                "description": "Amount of the order (AUD) paid for by bank transfer",
+                "fields": []
               },
               {
-                "name":"gift_card_amount",
-                "description":"Amount of the order (AUD) paid for by gift card",
-                "fields":[ ]
+                "name": "gift_card_amount",
+                "description": "Amount of the order (AUD) paid for by gift card",
+                "fields": []
               }
             ]
           },
-          "documentation":{
-            "description":"This table has basic information about orders, as well as some derived facts based on payments"
+          "documentation": {
+            "description": "This table has basic information about orders, as well as some derived facts based on payments"
           }
         },
-        "outputFacets":{ }
+        "outputFacets": {}
       }
     ]
   },
   {
-    "eventTime":"2024-11-22T15:58:09.771069Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "errorMessage":{
-          "message":"Command `dbt run` failed at 15:58:09.771069 after 6.60 seconds",
-          "programmingLanguage":"sql",
-          "stackTrace":null
+    "eventTime": "2024-11-22T15:58:09.771069Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "errorMessage": {
+          "message": "Command `dbt run` failed at 15:58:09.771069 after 6.60 seconds",
+          "programmingLanguage": "sql",
+          "stackTrace": null
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
         }
       }
     },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"dbt-run-jaffle_shop",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"JOB"
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "dbt-run-jaffle_shop",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "JOB"
         }
       }
     },
-    "eventType":"FAIL",
-    "inputs":[ ],
-    "outputs":[ ]
+    "eventType": "FAIL",
+    "inputs": [],
+    "outputs": []
   }
 ]

@@ -4,15 +4,18 @@
     "namespace": "generic-namespace",
     "facets": {
       "tags": {
-        "tags": [{
-          "key": "spark",
-          "value": "true",
-          "source": "CONFIG"
-        }, {
-          "key": "key",
-          "value": "value",
-          "source": "CONFIG"
-        }]
+        "tags": [
+          {
+            "key": "spark",
+            "value": "true",
+            "source": "CONFIG"
+          },
+          {
+            "key": "key",
+            "value": "value",
+            "source": "CONFIG"
+          }
+        ]
       }
     }
   },
@@ -25,15 +28,18 @@
         }
       },
       "tags": {
-        "tags": [{
-          "key": "run",
-          "value": "true",
-          "source": "CONFIG"
-        }, {
-          "key": "set",
-          "value": "up",
-          "source": "SERVICE"
-        }]
+        "tags": [
+          {
+            "key": "run",
+            "value": "true",
+            "source": "CONFIG"
+          },
+          {
+            "key": "set",
+            "value": "up",
+            "source": "SERVICE"
+          }
+        ]
       }
     }
   }
