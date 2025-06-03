@@ -1,8 +1,8 @@
 {
-  "eventType" : "START",
+  "eventType": "START",
   "eventTime": "${json-unit.any-string}",
-  "job" : {
-    "namespace" : "flink_job_namespace",
+  "job": {
+    "namespace": "flink_job_namespace",
     "name": "flink_conf_job"
   },
   "run": {
@@ -80,4 +80,4 @@
       }
     }
   ]
-},
+}
