@@ -44,7 +44,7 @@ class Fields(RedactMixin):
 
         new_class = attr.make_class(
             self.__class__.__name__,
-            {k: attr.field() for k in kwargs if k not in current_attrs},
+            {k: attr.field(default=None) for k in kwargs if k not in current_attrs},
             bases=(self.__class__,),
         )
         new_class.__module__ = self.__class__.__module__
@@ -81,7 +81,7 @@ class InputField(RedactMixin):
 
         new_class = attr.make_class(
             self.__class__.__name__,
-            {k: attr.field() for k in kwargs if k not in current_attrs},
+            {k: attr.field(default=None) for k in kwargs if k not in current_attrs},
             bases=(self.__class__,),
         )
         new_class.__module__ = self.__class__.__module__
@@ -122,7 +122,7 @@ class Transformation(RedactMixin):
 
         new_class = attr.make_class(
             self.__class__.__name__,
-            {k: attr.field() for k in kwargs if k not in current_attrs},
+            {k: attr.field(default=None) for k in kwargs if k not in current_attrs},
             bases=(self.__class__,),
         )
         new_class.__module__ = self.__class__.__module__

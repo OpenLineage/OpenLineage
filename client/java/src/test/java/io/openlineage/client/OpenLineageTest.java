@@ -107,7 +107,8 @@ class OpenLineageTest {
                     "ns",
                     "ds",
                     ol.newDatasetFacetsBuilder()
-                        .documentation(ol.newDocumentationDatasetFacet("foo"))
+                        .documentation(
+                            ol.newDocumentationDatasetFacetBuilder().description("foo").build())
                         .build()))
             .build();
 
@@ -134,7 +135,9 @@ class OpenLineageTest {
                     "ns",
                     "ds",
                     ol.newDatasetFacetsBuilder()
-                        .put(documentation, ol.newDocumentationDatasetFacet("foo"))
+                        .put(
+                            documentation,
+                            ol.newDocumentationDatasetFacetBuilder().description("foo").build())
                         .build()))
             .build();
 
