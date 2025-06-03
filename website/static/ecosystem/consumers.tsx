@@ -148,6 +148,7 @@ export const Consumers: Array<Partner> = [
  {
     image: "Collibra-Logo-RGB.png",
     org: "Collibra",
+    full_name: "Collibra",
     description: "Collibra exposes operational lineage from Apache Airflow, AWS Glue and more using OpenLineage to help unify governance for data and AI.",
     docs_url: "https://www.collibra.com/products/data-lineage",
     org_url: "https://www.collibra.com/"
