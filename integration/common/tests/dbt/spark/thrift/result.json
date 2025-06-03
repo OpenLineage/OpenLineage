@@ -44,11 +44,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -102,11 +122,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -160,11 +200,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -332,10 +392,16 @@
         "parent": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
           "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -494,10 +560,16 @@
         "parent": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
           "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -576,11 +648,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -619,11 +711,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -729,11 +841,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -772,11 +904,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -826,11 +978,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -884,11 +1056,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -942,11 +1134,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -1099,11 +1311,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -1247,11 +1479,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -1330,11 +1582,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -1373,11 +1645,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -1421,11 +1713,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -1469,11 +1781,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }
@@ -1512,11 +1844,31 @@
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
     "run": {
       "facets": {
+        "dbt_version": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
+          "version": "1.0.0"
+        },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "1.0.0",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a"
         }
       }
     }

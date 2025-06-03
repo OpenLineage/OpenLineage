@@ -12,6 +12,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "63229a72-6e73-4195-bb46-1a509d42989a"
         }
       }
     },
@@ -52,6 +55,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "63229a72-6e73-4195-bb46-1a509d42989a"
         }
       }
     },
@@ -150,6 +156,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "63229a72-6e73-4195-bb46-1a509d42989a"
         }
       }
     },

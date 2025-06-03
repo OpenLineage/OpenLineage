@@ -12,6 +12,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "64ed10c9-aef9-4b7d-95fa-e913654fb381"
         }
       }
     },
@@ -43,6 +46,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "64ed10c9-aef9-4b7d-95fa-e913654fb381"
         }
       }
     },
