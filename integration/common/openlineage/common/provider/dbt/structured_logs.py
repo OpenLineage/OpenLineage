@@ -148,7 +148,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         if not self.received_dbt_command_completed:
             # We did not receive the CommandCompleted event, so we emit an abort event
-            yield self._get_dbt_command_abort_event()
+            ol_event = self._get_dbt_command_abort_event()
+            if ol_event:
+                yield ol_event
 
     def _parse_structured_log_event(self, line: str) -> Optional[RunEvent]:
         """
@@ -244,6 +246,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 producer=self.producer,
             )
         }
+        if not self.dbt_run_metadata:
+            return None
         return generate_run_event(
             event_type=RunState.ABORT,
             event_time=datetime.datetime.now().isoformat(),  # Current time - no other data source
