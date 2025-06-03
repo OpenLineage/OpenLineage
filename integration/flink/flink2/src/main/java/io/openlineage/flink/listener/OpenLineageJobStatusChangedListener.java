@@ -18,6 +18,7 @@ import io.openlineage.flink.client.Versions;
 import io.openlineage.flink.config.FlinkConfigParser;
 import io.openlineage.flink.config.FlinkOpenLineageConfig;
 import io.openlineage.flink.converter.LineageGraphConverter;
+import io.openlineage.flink.facets.FlinkJobDetailsFacet;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
 import io.openlineage.flink.util.JobStatusUtil;
 import io.openlineage.flink.visitor.Flink2VisitorFactory;
@@ -38,6 +39,7 @@ import org.apache.flink.streaming.runtime.execution.JobCreatedEvent;
 @Slf4j
 public class OpenLineageJobStatusChangedListener implements JobStatusChangedListener {
   public static final String DEFAULT_NAMESPACE = "flink-jobs";
+  public static final String FLINK_JOB_FACET_KEY = "flink_job";
   private final OpenLineageContext context;
   private final LineageGraphConverter graphConverter;
   private OpenLineageContinousJobTracker tracker;
@@ -112,6 +114,7 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
                             .newRunFacetsBuilder()
                             .processing_engine(buildProcessingEngineFacet(openLineage))
                             .put("checkpoints", checkpointFacet)
+                            .put(FLINK_JOB_FACET_KEY, buildJobDetailsFacet())
                             .build())
                     .build())
             .build();
@@ -140,6 +143,7 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
                         openLineage
                             .newRunFacetsBuilder()
                             .processing_engine(buildProcessingEngineFacet(openLineage))
+                            .put(FLINK_JOB_FACET_KEY, buildJobDetailsFacet())
                             .build())
                     .build())
             .build();
@@ -150,7 +154,7 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
     }
   }
 
-  RunEventBuilder commonEventBuilder() {
+  private RunEventBuilder commonEventBuilder() {
     return context
         .getOpenLineage()
         .newRunEventBuilder()
@@ -173,7 +177,17 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
         .build();
   }
 
-  void loadJobId(JobCreatedEvent createdEvent) {
+  private FlinkJobDetailsFacet buildJobDetailsFacet() {
+    JobIdentifier jobId = context.getJobId();
+    if (jobId == null || jobId.getFlinkJobId() == null) {
+      return null;
+    }
+
+    String flinkJobId = jobId.getFlinkJobId().toString();
+    return new FlinkJobDetailsFacet(flinkJobId);
+  }
+
+  private void loadJobId(JobCreatedEvent createdEvent) {
     String jobName =
         Optional.ofNullable(context.getConfig())
             .map(FlinkOpenLineageConfig::getJobConfig)

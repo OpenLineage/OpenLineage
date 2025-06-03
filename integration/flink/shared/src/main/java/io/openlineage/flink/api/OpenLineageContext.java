@@ -64,6 +64,6 @@ public class OpenLineageContext {
     private String jobNamespace;
 
     /** Assigned during the event emitted. */
-    @Setter private JobID flinkJobId;
+    private JobID flinkJobId;
   }
 }

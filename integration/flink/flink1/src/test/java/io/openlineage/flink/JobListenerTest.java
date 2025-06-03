@@ -47,7 +47,7 @@ class JobListenerTest {
       JobIdentifier.builder()
           .jobNamespace("some-job-namespace")
           .jobName("some-job-name")
-          .flinkJobId(mock(JobID.class))
+          .flinkJobId(new JobID(1, 2))
           .build();
   List<Transformation<?>> transformations = new ArrayList<>();
   OpenLineageFlinkJobListener listener;
@@ -113,7 +113,7 @@ class JobListenerTest {
         JobIdentifier.builder()
             .jobNamespace(customNamespace)
             .jobName(customJobName)
-            .flinkJobId(mock(JobID.class))
+            .flinkJobId(new JobID(1, 2))
             .build();
 
     StreamExecutionEnvironment streamExecutionEnvironment =
