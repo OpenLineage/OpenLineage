@@ -37,7 +37,7 @@ public class FlinkExecutionContextTest {
       JobIdentifier.builder()
           .jobNamespace("jobNamespace")
           .jobName("jobName")
-          .flinkJobId(mock(JobID.class))
+          .flinkJobId(new JobID(1, 2))
           .build();
 
   @AfterEach
