@@ -3,6 +3,7 @@
     "root_doc_url": "https://github.com/OpenLineage/OpenLineage/tree/main/spec",
     "produced_facets": [
       "ol:core:ColumnLineageDatasetFacet.json",
+      "ol:core:DatabaseHierarchyDatasetFacet.json",
       "ol:core:DataQualityAssertionsDatasetFacet.json",
       "ol:core:DataQualityMetricsInputDatasetFacet.json",
       "ol:core:DatasetTypeDatasetFacet.json",
