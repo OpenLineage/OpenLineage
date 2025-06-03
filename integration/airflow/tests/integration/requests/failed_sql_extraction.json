@@ -14,15 +14,18 @@
         "extractionError": {
           "totalTasks": 1,
           "failedTasks": 1,
-          "errors": [{
-            "errorMessage": "Expected: TABLE, VIEW, INDEX, ROLE, SCHEMA, FUNCTION, PROCEDURE, STAGE, TRIGGER, SECRET or SEQUENCE after DROP, found: POLICY at Line: 1, Column: 6",
-            "task": "DROP POLICY IF EXISTS name ON table_name",
-            "taskNumber": 0
-          }]
+          "errors": [
+            {
+              "errorMessage": "Expected: TABLE, VIEW, INDEX, ROLE, SCHEMA, FUNCTION, PROCEDURE, STAGE, TRIGGER, SECRET or SEQUENCE after DROP, found: POLICY at Line: 1, Column: 6",
+              "task": "DROP POLICY IF EXISTS name ON table_name",
+              "taskNumber": 0
+            }
+          ]
         }
       }
     }
-  }, {
+  },
+  {
     "eventType": "COMPLETE",
     "job": {
       "facets": {
@@ -37,11 +40,13 @@
         "extractionError": {
           "totalTasks": 1,
           "failedTasks": 1,
-          "errors": [{
-            "errorMessage": "Expected: TABLE, VIEW, INDEX, ROLE, SCHEMA, FUNCTION, PROCEDURE, STAGE, TRIGGER, SECRET or SEQUENCE after DROP, found: POLICY at Line: 1, Column: 6",
-            "task": "DROP POLICY IF EXISTS name ON table_name",
-            "taskNumber": 0
-          }]
+          "errors": [
+            {
+              "errorMessage": "Expected: TABLE, VIEW, INDEX, ROLE, SCHEMA, FUNCTION, PROCEDURE, STAGE, TRIGGER, SECRET or SEQUENCE after DROP, found: POLICY at Line: 1, Column: 6",
+              "task": "DROP POLICY IF EXISTS name ON table_name",
+              "taskNumber": 0
+            }
+          ]
         }
       }
     }

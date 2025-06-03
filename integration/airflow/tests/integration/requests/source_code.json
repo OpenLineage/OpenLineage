@@ -44,8 +44,7 @@
             {
               "type": "operator",
               "name": "PythonOperator",
-              "properties": {
-              }
+              "properties": {}
             }
           ]
         }
@@ -71,8 +70,7 @@
             {
               "type": "operator",
               "name": "BashOperator",
-              "properties": {
-              }
+              "properties": {}
             }
           ]
         }

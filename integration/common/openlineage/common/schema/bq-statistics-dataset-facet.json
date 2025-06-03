@@ -18,10 +18,7 @@
               "example": 321
             }
           },
-          "required": [
-            "rowCount",
-            "size"
-          ]
+          "required": ["rowCount", "size"]
         }
       ],
       "type": "object"
