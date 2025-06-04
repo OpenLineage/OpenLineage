@@ -47,6 +47,7 @@ class Adapter(Enum):
     DUCKDB = "duckdb"
     TRINO = "trino"
     GLUE = "glue"
+    CLICKHOUSE = "clickhouse"
 
     @staticmethod
     def adapters() -> str:
@@ -603,6 +604,8 @@ class DbtArtifactProcessor:
             return f"redshift://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.POSTGRES:
             return f"postgres://{profile['host']}:{profile['port']}"
+        elif self.adapter_type == Adapter.CLICKHOUSE:
+            return f"clickhouse://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.TRINO:
             return f"trino://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.DATABRICKS:
