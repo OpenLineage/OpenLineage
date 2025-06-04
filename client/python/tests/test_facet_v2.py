@@ -233,9 +233,10 @@ def test_with_additional_properties_works_with_attr_asdict():
 
     assert asdict(changed_facet) == {
         "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
-        "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/DocumentationJobFacet.json#/$defs/DocumentationJobFacet",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/DocumentationJobFacet.json#/$defs/DocumentationJobFacet",
         "_deleted": None,
         "description": "desc",
+        "contentType": None,
         "new_prop": "new_value",
     }
 
