@@ -58,7 +58,11 @@ public class TableLineageFacetVisitor implements DatasetFacetVisitor {
         .ifPresent(
             description ->
                 builder.documentation(
-                    context.getOpenLineage().newDocumentationDatasetFacet(description)));
+                    context
+                        .getOpenLineage()
+                        .newDocumentationDatasetFacetBuilder()
+                        .description(description)
+                        .build()));
 
     builder.schema(context.getOpenLineage().newSchemaDatasetFacet(datasetFacetFields));
   }
