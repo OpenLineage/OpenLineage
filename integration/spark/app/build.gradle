@@ -29,7 +29,7 @@ ext {
     activeRuntimeElementsConfiguration = "scala" + scala.replace(".", "") + "RuntimeElements"
 
     assertjVersion = '3.27.3'
-    bigqueryVersion = '0.35.1'
+    bigqueryVersion = '0.42.2'
     junit5Version = '5.11.4'
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.5'
@@ -500,12 +500,30 @@ void addDependenciesToConfiguration(String configurationName, String spark, Stri
 }
 
 List<Dependency> bigqueryDependencies(String spark, String scala) {
-    return [
-            dependencies.create("com.google.cloud.spark:spark-bigquery-with-dependencies_${scala}:${bigqueryVersion}", {
-                exclude(group: 'com.fasterxml.jackson.core')
-                exclude(group: 'com.fasterxml.jackson.module')
-            })
-    ]
+    final def registry = [
+            "3.2.4": [
+                dependencies.create("com.google.cloud.spark:spark-3.2-bigquery:${bigqueryVersion}",
+                        { transitive = false }
+                )
+            ],
+            "3.3.4": [
+                dependencies.create("com.google.cloud.spark:spark-3.3-bigquery:${bigqueryVersion}",
+                        { transitive = false }
+                )
+            ],
+            "3.4.3": [
+                dependencies.create("com.google.cloud.spark:spark-3.4-bigquery:${bigqueryVersion}",
+                        { transitive = false }
+                )
+            ],
+            "3.5.4": [
+                dependencies.create("com.google.cloud.spark:spark-3.5-bigquery:${bigqueryVersion}",
+                        { transitive = false }
+                )
+            ]
+    ];
+
+    return registry.get(spark, [])
 }
 
 List<Dependency> icebergDependencies(String spark, String scala) {

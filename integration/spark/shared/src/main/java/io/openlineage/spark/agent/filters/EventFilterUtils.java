@@ -29,6 +29,7 @@ public class EventFilterUtils {
             new DatabricksEventFilter(context),
             new SparkNodesFilter(context),
             new CreateViewFilter(context),
+            new BigQueryIntermediateJobFilter(context),
             new AdaptivePlanEventFilter(context))
         .anyMatch(
             filter -> {

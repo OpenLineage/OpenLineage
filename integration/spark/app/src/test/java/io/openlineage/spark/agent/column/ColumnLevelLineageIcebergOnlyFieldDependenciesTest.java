@@ -120,7 +120,7 @@ class ColumnLevelLineageIcebergOnlyFieldDependenciesTest {
             .queryExecution(queryExecution)
             .meterRegistry(new SimpleMeterRegistry())
             .openLineageConfig(config)
-            .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
+            .sparkExtensionVisitorWrapper(mock(SparkOpenLineageExtensionVisitorWrapper.class))
             .build();
 
     context
