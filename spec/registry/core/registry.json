@@ -2,6 +2,7 @@
   "producer": {
     "root_doc_url": "https://github.com/OpenLineage/OpenLineage/tree/main/spec",
     "produced_facets": [
+      "ol:core:CatalogDatasetFacet.json",
       "ol:core:ColumnLineageDatasetFacet.json",
       "ol:core:DataQualityAssertionsDatasetFacet.json",
       "ol:core:DataQualityMetricsInputDatasetFacet.json",
@@ -10,6 +11,7 @@
       "ol:core:DatasourceDatasetFacet.json",
       "ol:core:DocumentationDatasetFacet.json",
       "ol:core:DocumentationJobFacet.json",
+      "ol:core:EnvironmentVariablesRunFacet.json",
       "ol:core:ErrorMessageRunFacet.json",
       "ol:core:ExternalQueryRunFacet.json",
       "ol:core:ExtractionErrorRunFacet.json",
