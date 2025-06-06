@@ -17,6 +17,7 @@ import io.openlineage.spark.agent.facets.DebugRunFacet.MetricsNode;
 import io.openlineage.spark.agent.facets.DebugRunFacet.SparkConfigDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.SystemDebugFacet;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.DebugConfig;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,17 +43,29 @@ public class DebugRunFacetBuilderDelegate {
           "org.apache.iceberg.catalog.Catalog",
           "com.google.cloud.spark.bigquery.BigQueryRelation");
 
+  private static final int DEFAULT_PAYLOAD_SIZE_LIMIT_IN_KILOBYTES = 100;
+
   public DebugRunFacetBuilderDelegate(OpenLineageContext olContext) {
     this.olContext = olContext;
   }
 
-  protected DebugRunFacet buildFacet() {
+  public DebugRunFacet buildFacet() {
+    return buildFacet(Collections.emptyList());
+  }
+
+  public DebugRunFacet buildFacet(List<String> logs) {
+    int payloadSizeLimitInKilobytes =
+        Optional.ofNullable(olContext.getOpenLineageConfig().getDebugConfig())
+            .map(DebugConfig::getPayloadSizeLimitInKilobytes)
+            .orElse(DEFAULT_PAYLOAD_SIZE_LIMIT_IN_KILOBYTES);
     return new DebugRunFacet(
         buildSparkConfigDebugFacet(),
         buildClasspathDebugFacet(),
         buildSystemDebugFacet(),
         buildLogicalPlanDebugFacet(),
-        buildMetricsDebugFacet());
+        buildMetricsDebugFacet(),
+        logs,
+        payloadSizeLimitInKilobytes);
   }
 
   private SparkConfigDebugFacet buildSparkConfigDebugFacet() {
@@ -100,15 +113,25 @@ public class DebugRunFacetBuilderDelegate {
   }
 
   private LogicalPlanDebugFacet buildLogicalPlanDebugFacet() {
-    return olContext
-        .getQueryExecution()
-        .map(qe -> qe.optimizedPlan())
-        .map(plan -> scanLogicalPlan(plan))
-        .map(list -> new LogicalPlanDebugFacet(list))
+    if (!olContext.hasLogicalPlan()) {
+      return null;
+    }
+    return Optional.ofNullable(olContext.getLogicalPlan())
+        .map(this::scanLogicalPlan)
+        .map(LogicalPlanDebugFacet::new)
         .orElse(null);
   }
 
   private MetricsDebugFacet buildMetricsDebugFacet() {
+    boolean metricsDisabled =
+        Optional.ofNullable(olContext.getOpenLineageConfig().getDebugConfig())
+            .map(DebugConfig::isMetricsDisabled)
+            .orElse(false);
+
+    if (metricsDisabled) {
+      return null;
+    }
+
     // We don't use other meters than gauge, counter and timer - add method here if you want to use
     // them.
     return new MetricsDebugFacet(

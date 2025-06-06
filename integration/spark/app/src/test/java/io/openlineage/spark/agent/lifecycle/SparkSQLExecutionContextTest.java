@@ -24,6 +24,7 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
+import io.openlineage.spark.api.OpenLineageRunStatus;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.VisitedNodes;
 import java.util.Optional;
@@ -67,6 +68,9 @@ class SparkSQLExecutionContextTest {
   void setup(SparkSession spark) {
     when(olContext.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(olContext.getSparkContext()).thenReturn(Optional.of(spark.sparkContext()));
+    when(olContext.getLineageRunStatus()).thenReturn(new OpenLineageRunStatus());
+    when(queryExecution.sparkPlan())
+        .thenReturn(mock(org.apache.spark.sql.execution.SparkPlan.class));
     when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
     when(olContext.getOpenLineage()).thenReturn(openLineage);
     when(olContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());

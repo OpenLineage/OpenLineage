@@ -8,6 +8,9 @@ package io.openlineage.spark.agent.lifecycle;
 import static io.openlineage.spark.agent.util.TimeUtils.toZonedTime;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineage.RunFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.spark.agent.EventEmitter;
@@ -16,6 +19,7 @@ import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.builder.SparkJobDetailsFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilderDelegate;
 import io.openlineage.spark.agent.facets.builder.SparkPropertyFacetBuilder;
+import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -226,7 +230,7 @@ class RddExecutionContext implements ExecutionContext {
                     .getOpenLineage()
                     .newRunBuilder()
                     .runId(runId)
-                    .facets(buildRunFacets(null, jobStart))
+                    .facets(buildRunFacets(null, jobStart).build())
                     .build())
             .job(buildJob(jobStart.jobId()))
             .build();
@@ -246,20 +250,30 @@ class RddExecutionContext implements ExecutionContext {
       log.info("Output RDDs are empty: skipping sending OpenLineage event");
       return;
     }
+
+    List<InputDataset> inputDatasets = buildInputs(inputs);
+    List<OutputDataset> outputDatasets = buildOutputs(outputs);
+    RunFacetsBuilder runFacetsBuilder =
+        buildRunFacets(buildJobErrorFacet(jobEnd.jobResult()), jobEnd);
+
+    olContext.getLineageRunStatus().capturedInputs(inputDatasets.size());
+    olContext.getLineageRunStatus().capturedOutputs(outputDatasets.size());
+    FacetUtils.attachSmartDebugFacet(olContext, runFacetsBuilder);
+
     OpenLineage.RunEvent event =
         olContext
             .getOpenLineage()
             .newRunEventBuilder()
             .eventTime(toZonedTime(jobEnd.time()))
             .eventType(getEventType(jobEnd.jobResult()))
-            .inputs(buildInputs(inputs))
-            .outputs(buildOutputs(outputs))
+            .inputs(inputDatasets)
+            .outputs(outputDatasets)
             .run(
                 olContext
                     .getOpenLineage()
                     .newRunBuilder()
                     .runId(runId)
-                    .facets(buildRunFacets(buildJobErrorFacet(jobEnd.jobResult()), jobEnd))
+                    .facets(runFacetsBuilder.build())
                     .build())
             .job(buildJob(jobEnd.jobId()))
             .build();
@@ -267,7 +281,8 @@ class RddExecutionContext implements ExecutionContext {
     eventEmitter.emit(event);
   }
 
-  protected OpenLineage.RunFacets buildRunFacets(ErrorFacet jobError, SparkListenerEvent event) {
+  protected OpenLineage.RunFacetsBuilder buildRunFacets(
+      ErrorFacet jobError, SparkListenerEvent event) {
     OpenLineage.RunFacetsBuilder runFacetsBuilder =
         olContext.getOpenLineage().newRunFacetsBuilder();
     runFacetsBuilder.parent(buildApplicationParentFacet());
@@ -282,7 +297,7 @@ class RddExecutionContext implements ExecutionContext {
 
     runEventBuilder.buildRunFacets(event, runFacetsBuilder);
 
-    return runFacetsBuilder.build();
+    return runFacetsBuilder;
   }
 
   private void addProcessingEventFacet(OpenLineage.RunFacetsBuilder b0) {

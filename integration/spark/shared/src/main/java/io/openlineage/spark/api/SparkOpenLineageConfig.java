@@ -42,7 +42,6 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   private String rootParentJobNamespace;
   private String rootParentRunId;
   private String overriddenAppName;
-  @NonNull private String debugFacet;
   private String testExtensionProvider;
   private JobNameConfig jobName;
   private VendorsConfig vendors;
@@ -52,6 +51,9 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
 
   @JsonProperty("filter")
   private FilterConfig filterConfig;
+
+  @JsonProperty("debug")
+  private DebugConfig debugConfig;
 
   public SparkOpenLineageConfig(
       String namespace,

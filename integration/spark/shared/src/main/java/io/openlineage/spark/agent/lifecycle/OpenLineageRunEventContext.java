@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.lifecycle;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.JobBuilder;
 import io.openlineage.client.OpenLineage.ParentRunFacet;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunEventBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,6 +50,7 @@ public class OpenLineageRunEventContext {
   private Optional<Integer> jobId;
   private Optional<UUID> overwriteRunId;
   private SparkListenerEvent event;
+  private EventType eventType;
 
   public List<Object> loadNodes(Map<Integer, Stage> stageMap, Map<Integer, ActiveJob> jobMap) {
     List<Object> nodes = new ArrayList<>();
