@@ -1,13 +1,13 @@
 {
-  "eventType" : "START",
+  "eventType": "START",
   "eventTime": "${json-unit.any-string}",
-  "job" : {
-    "namespace" : "flink_job_namespace",
+  "job": {
+    "namespace": "flink_job_namespace",
     "name": "flink_examples_stateful",
     "facets": {
       "jobType": {
-        "processingType" : "STREAMING",
-        "jobType" : "JOB",
+        "processingType": "STREAMING",
+        "jobType": "JOB",
         "integration": "FLINK"
       }
     }
@@ -87,4 +87,4 @@
       }
     }
   ]
-},
+}
