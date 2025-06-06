@@ -49,7 +49,7 @@ class HttpCompression(Enum):
 
 @attr.s
 class AsyncConfig:
-    enabled: bool = attr.ib(default=True)
+    enabled: bool = attr.ib(default=False)
     max_queue_size: int = attr.ib(default=1000000)
     max_concurrent_requests: int = attr.ib(default=100)
 

@@ -139,6 +139,9 @@ def set_up_logger():
         }
     )
     logger = logging.getLogger("openlineage.dbt")
+    custom_logging_level = os.getenv("OPENLINEAGE_CLIENT_LOGGING", None)
+    if custom_logging_level:
+        logger.setLevel(custom_logging_level)
     return logger
 
 

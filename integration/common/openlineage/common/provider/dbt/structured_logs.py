@@ -64,7 +64,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.dbt_command_line: List[str] = dbt_command_line
         self.profiles_dir: str = get_dbt_profiles_dir(command=self.dbt_command_line)
         self.dbt_log_file_path: str = get_dbt_log_path(command=self.dbt_command_line)
-        self.dbt_log_dirname: str = self.dbt_log_file_path.split("/")[-2]
+        self.dbt_log_dirname: str = "/".join(self.dbt_log_file_path.split("/")[:-1])
         self.parent_run_metadata: ParentRunMetadata = get_parent_run_metadata()
 
         self.node_id_to_ol_run_id: Dict[str, str] = defaultdict(lambda: str(generate_new_uuid()))
