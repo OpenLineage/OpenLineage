@@ -11,6 +11,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -50,6 +53,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -120,6 +126,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -162,6 +171,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -204,6 +216,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -246,6 +261,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -288,6 +306,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -330,6 +351,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -372,6 +396,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -414,6 +441,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -456,6 +486,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -498,6 +531,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -540,6 +576,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -582,6 +621,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -624,6 +666,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -694,6 +739,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -768,6 +816,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -810,6 +861,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -852,6 +906,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -894,6 +951,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -936,6 +996,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -978,6 +1041,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1020,6 +1086,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1062,6 +1131,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1104,6 +1176,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1146,6 +1221,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1188,6 +1266,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1230,6 +1311,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1272,6 +1356,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1346,6 +1433,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1420,6 +1510,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1462,6 +1555,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1504,6 +1600,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1546,6 +1645,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1588,6 +1690,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1630,6 +1735,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1672,6 +1780,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1714,6 +1825,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1756,6 +1870,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1798,6 +1915,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1840,6 +1960,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1882,6 +2005,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1924,6 +2050,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -1998,6 +2127,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2154,6 +2286,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2196,6 +2331,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2238,6 +2376,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2280,6 +2421,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2322,6 +2466,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2364,6 +2511,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2406,6 +2556,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2448,6 +2601,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2490,6 +2646,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2532,6 +2691,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2574,6 +2736,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2616,6 +2781,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2658,6 +2826,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2814,6 +2985,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -2962,6 +3136,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -3004,6 +3181,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -3046,6 +3226,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -3088,6 +3271,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -3130,6 +3316,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -3172,6 +3361,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -3214,6 +3406,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -3256,6 +3451,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -3298,6 +3496,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -3340,6 +3541,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -3382,6 +3586,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -3424,6 +3631,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -3466,6 +3676,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },
@@ -3605,6 +3818,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "917ea72a-ecb5-4fd3-bd1f-b52ffeed4d0d"
         }
       }
     },

@@ -11,6 +11,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "b0ed168e-1926-42da-aa25-6b3eb826074b"
         }
       }
     },
@@ -50,6 +53,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "b0ed168e-1926-42da-aa25-6b3eb826074b"
         }
       }
     },
@@ -199,6 +205,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "b0ed168e-1926-42da-aa25-6b3eb826074b"
         }
       }
     },
@@ -243,6 +252,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "b0ed168e-1926-42da-aa25-6b3eb826074b"
         }
       }
     },
@@ -287,6 +299,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "b0ed168e-1926-42da-aa25-6b3eb826074b"
         }
       }
     },
@@ -336,6 +351,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "b0ed168e-1926-42da-aa25-6b3eb826074b"
         }
       }
     },
@@ -383,6 +401,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "b0ed168e-1926-42da-aa25-6b3eb826074b"
         }
       }
     },
@@ -528,6 +549,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "b0ed168e-1926-42da-aa25-6b3eb826074b"
         }
       }
     },

@@ -20,7 +20,7 @@ from openlineage.client.facet_v2 import (
 )
 from openlineage.client.run import InputDataset
 from openlineage.client.uuid import generate_new_uuid
-from openlineage.common.provider.dbt.facets import DbtVersionRunFacet, ParentRunMetadata
+from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet, ParentRunMetadata
 from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
 from openlineage.common.provider.dbt.processor import (
     ModelNode,
@@ -79,6 +79,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         # will be populated when some dbt events are collected
         self._compiled_manifest: Dict = {}
         self._dbt_version: Optional[str] = None
+        self._dbt_invocation_id: Optional[str] = None
         self._dbt_log_file: Optional[TextIO] = None
         self.received_dbt_command_completed = False
 
@@ -94,6 +95,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         Extracted from the first structured log MainReportVersion
         """
         return self._dbt_version
+
+    @property
+    def invocation_id(self) -> Optional[str]:
+        return self._dbt_invocation_id
 
     @cached_property
     def catalog(self) -> Optional[Dict]:
@@ -170,9 +175,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             return None
 
         dbt_event_name = dbt_event["info"]["name"]
-
         if dbt_event_name == "MainReportVersion":
             self._dbt_version = dbt_event["data"]["version"][1:]
+            self._dbt_invocation_id = dbt_event["info"]["invocation_id"]
             start_event = self._parse_dbt_start_command_event(dbt_event)
             self._setup_dbt_run_metadata(start_event)
             return start_event
@@ -202,6 +207,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         event_time = get_event_timestamp(event["info"]["ts"])
         run_facets = {
             **self.dbt_version_facet(),
+            "dbt_run": self.dbt_run_run_facet(),
             "processing_engine": self.processing_engine_facet(),
         }
         if self.parent_run_metadata:
@@ -232,6 +238,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     def _get_dbt_command_abort_event(self):
         run_facets = {
             **self.dbt_version_facet(),
+            "dbt_run": self.dbt_run_run_facet(),
             "processing_engine": self.processing_engine_facet(),
         }
         parent_run_metadata = get_parent_run_metadata()
@@ -265,6 +272,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         run_facets = {
             **self.dbt_version_facet(),
+            "dbt_run": self.dbt_run_run_facet(),
             "parent": self.dbt_run_metadata.to_openlineage(),
             "processing_engine": self.processing_engine_facet(),
         }
@@ -308,6 +316,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         run_facets = {
             **self.dbt_version_facet(),
+            "dbt_run": self.dbt_run_run_facet(),
             "parent": self.dbt_run_metadata.to_openlineage(),
             "processing_engine": self.processing_engine_facet(),
         }
@@ -414,6 +423,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         run_facets = {
             **self.dbt_version_facet(),
+            "dbt_run": self.dbt_run_run_facet(),
             "parent": parent_run.to_openlineage(),
             "processing_engine": self.processing_engine_facet(),
         }
@@ -480,6 +490,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         event_time = get_event_timestamp(event["data"]["completed_at"])
         run_facets = {
             **self.dbt_version_facet(),
+            "dbt_run": self.dbt_run_run_facet(),
             "processing_engine": self.processing_engine_facet(),
         }
 
@@ -549,6 +560,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             "Use processing_engine facet instead."
         )
         return {"dbt_version": DbtVersionRunFacet(version=self.dbt_version)}
+
+    def dbt_run_run_facet(self) -> DbtRunRunFacet:
+        return DbtRunRunFacet(invocation_id=self.invocation_id)
 
     def processing_engine_facet(self) -> processing_engine_run.ProcessingEngineRunFacet:
         return processing_engine_run.ProcessingEngineRunFacet(

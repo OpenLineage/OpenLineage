@@ -78,6 +78,9 @@
             "name": "dbt-job-name",
             "namespace": "dbt"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "d205f9ce-0e55-4a5f-9f69-bfa170867a41"
         }
       }
     }

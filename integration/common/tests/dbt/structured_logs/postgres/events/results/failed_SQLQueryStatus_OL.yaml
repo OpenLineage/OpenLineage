@@ -12,6 +12,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "4a93eca8-2ed0-4e91-95fc-e8d27dd775a6"
         }
       }
     },
@@ -52,6 +55,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "4a93eca8-2ed0-4e91-95fc-e8d27dd775a6"
         }
       }
     },
@@ -122,6 +128,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "4a93eca8-2ed0-4e91-95fc-e8d27dd775a6"
         }
       }
     },
@@ -160,6 +169,9 @@
         },
         "dbt_version":{
           "version":"1.8.2"
+        },
+        "dbt_run": {
+          "invocation_id": "4a93eca8-2ed0-4e91-95fc-e8d27dd775a6"
         },
         "errorMessage":{
           "message":"Database Error in model stg_customers (models/staging/stg_customers.sql)\n  syntax error at or near \"renamed\"\n  LINE 12: renamed as (\n           ^\n  compiled code at target/run/jaffle_shop/models/staging/stg_customers.sql",

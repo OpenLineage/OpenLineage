@@ -3,7 +3,20 @@
     "eventType": "START",
     "eventTime": "{{ is_datetime(result) }}",
     "run": {
-      "runId": "{{ any(result) }}"
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "{{ any(result) }}"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "{{ any(result) }}",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2042a280-76c8-4f34-8415-8c8c3ca9a4ba"
+        }
+      }
     },
     "job": {
       "namespace": "job-namespace",
@@ -57,6 +70,9 @@
           "name": "dbt",
           "version": "{{ any(result) }}",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2042a280-76c8-4f34-8415-8c8c3ca9a4ba"
         }
       }
     },
@@ -107,6 +123,9 @@
           "name": "dbt",
           "version": "{{ any(result) }}",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2042a280-76c8-4f34-8415-8c8c3ca9a4ba"
         }
       }
     },

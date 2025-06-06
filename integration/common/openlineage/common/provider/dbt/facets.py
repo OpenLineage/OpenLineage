@@ -44,3 +44,12 @@ class DbtVersionRunFacet(BaseFacet):
     @staticmethod
     def _get_schema() -> str:
         return GITHUB_LOCATION + "dbt-version-run-facet.json"
+
+
+@attr.s
+class DbtRunRunFacet(BaseFacet):
+    invocation_id: str = attr.ib()
+
+    @staticmethod
+    def _get_schema() -> str:
+        return GITHUB_LOCATION + "dbt-run-run-facet.json"

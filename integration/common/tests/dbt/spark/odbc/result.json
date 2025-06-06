@@ -3,12 +3,19 @@
     "eventType": "START",
     "eventTime": "{{ is_datetime(result) }}",
     "run": {
+      "runId": "{{ any(result) }}",
       "facets": {
         "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "namespace": "dbt",
             "name": "dbt-job-name"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "3c9ba26f-7249-4274-bd5a-04dc6df605ba"
         }
       }
     },
@@ -49,12 +56,19 @@
     "eventType": "START",
     "eventTime": "{{ is_datetime(result) }}",
     "run": {
+      "runId": "{{ any(result) }}",
       "facets": {
         "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "namespace": "dbt",
             "name": "dbt-job-name"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "3c9ba26f-7249-4274-bd5a-04dc6df605ba"
         }
       }
     },
@@ -114,12 +128,19 @@
     "eventType": "COMPLETE",
     "eventTime": "{{ is_datetime(result) }}",
     "run": {
+      "runId": "{{ any(result) }}",
       "facets": {
         "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "namespace": "dbt",
             "name": "dbt-job-name"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "3c9ba26f-7249-4274-bd5a-04dc6df605ba"
         }
       }
     },
@@ -160,12 +181,19 @@
     "eventType": "COMPLETE",
     "eventTime": "{{ is_datetime(result) }}",
     "run": {
+      "runId": "{{ any(result) }}",
       "facets": {
         "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
           "job": {
             "namespace": "dbt",
             "name": "dbt-job-name"
           }
+        },
+        "dbt_run": {
+          "invocation_id": "3c9ba26f-7249-4274-bd5a-04dc6df605ba"
         }
       }
     },
