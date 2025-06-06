@@ -393,7 +393,11 @@
             ]
           }
         },
-        "outputFacets": {}
+        "outputFacets": {
+          "outputStatistics": {
+            "rowCount": 100
+          }
+        }
       }
     ]
   },
@@ -549,7 +553,11 @@
             ]
           }
         },
-        "outputFacets": {}
+        "outputFacets": {
+          "outputStatistics": {
+            "rowCount": 99
+          }
+        }
       }
     ]
   },

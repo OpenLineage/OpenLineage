@@ -142,6 +142,13 @@
               }
             ]
           }
+        },
+        "outputFacets": {
+          "outputStatistics": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-2/OutputStatisticsOutputDatasetFacet.json#/$defs/OutputStatisticsOutputDatasetFacet",
+            "rowCount": 2
+          }
         }
       }
     ]
