@@ -9,43 +9,85 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 class UUIDUtilsTest {
+  /** Extract timestamp from a UUIDv7. UUIDv7 has the timestamp in the first 48 bits */
+  private long extractTimestampFromUuid(UUID uuid) {
+    long msb = uuid.getMostSignificantBits();
+    return (msb >>> 16) & 0xFFFFFFFFFFFL; // 48 bits
+  }
 
-  @Test
-  void testGenerateNewUUIDResultIsAlwaysDifferent() {
-    UUID uuid1 = UUIDUtils.generateNewUUID();
-    UUID uuid2 = UUIDUtils.generateNewUUID();
-
-    assertThat(uuid1.version()).isEqualTo(7);
-    assertThat(uuid2.version()).isEqualTo(7);
-    assertThat(uuid1).isNotEqualTo(uuid2);
-
-    Instant instant = Instant.now();
-    uuid1 = UUIDUtils.generateNewUUID(instant);
-    uuid2 = UUIDUtils.generateNewUUID(instant);
-
-    assertThat(uuid1.version()).isEqualTo(7);
-    assertThat(uuid2.version()).isEqualTo(7);
-    assertThat(uuid1).isNotEqualTo(uuid2);
+  /** Extract random component from UUIDv7 for comparison */
+  private long extractRandomFromUuid(UUID uuid) {
+    return uuid.getLeastSignificantBits();
   }
 
   @Test
-  void testGenerateNewUUIDForInstantResultIsIncreasing() {
-    Instant instant1 = Instant.now();
-    Instant instant2 = instant1.plusMillis(1);
+  void testGenerateNewUUIDUniqueness() {
+    final int numUuids = 10000;
+    Set<UUID> uuids = new HashSet<>();
 
-    UUID uuid1 = UUIDUtils.generateNewUUID(instant1);
-    UUID uuid2 = UUIDUtils.generateNewUUID(instant2);
+    for (int i = 0; i < numUuids; i++) {
+      UUID uuid = UUIDUtils.generateNewUUID();
 
-    assertThat(uuid1.version()).isEqualTo(7);
-    assertThat(uuid2.version()).isEqualTo(7);
-    assertThat(uuid1).isNotEqualTo(uuid2);
-    assertThat(uuid1).isLessThan(uuid2);
+      assertThat(uuids).doesNotContain(uuid);
+      uuids.add(uuid);
+    }
+  }
+
+  @Test
+  void testGenerateNewUUIDUniquenessForSameInstant() {
+    final int numUuids = 10000;
+    Set<UUID> uuids = new HashSet<>();
+    Instant instant = Instant.now();
+
+    for (int i = 0; i < numUuids; i++) {
+      UUID uuid = UUIDUtils.generateNewUUID(instant);
+
+      assertThat(uuids).doesNotContain(uuid);
+      uuids.add(uuid);
+    }
+  }
+
+  @Test
+  void testGenerateNewUUIDMonotonicIncrease() throws InterruptedException {
+    final int numUuids = 100;
+
+    UUID prevUuid = UUIDUtils.generateNewUUID();
+    long prevTimestamp = extractTimestampFromUuid(prevUuid);
+
+    // Sleep to ensure timestamp changes
+    Thread.sleep(5);
+
+    for (int i = 0; i < numUuids; i++) {
+      UUID uuid = UUIDUtils.generateNewUUID();
+      long timestamp = extractTimestampFromUuid(uuid);
+
+      assertThat(timestamp).isGreaterThanOrEqualTo(prevTimestamp);
+      prevTimestamp = timestamp;
+    }
+  }
+
+  @Test
+  void testGenerateNewUUIDTimestampCorrelation() {
+    long before = Instant.now().toEpochMilli();
+    UUID uuid = UUIDUtils.generateNewUUID();
+    long after = Instant.now().toEpochMilli();
+
+    long timestamp = extractTimestampFromUuid(uuid);
+    assertThat(timestamp).isGreaterThanOrEqualTo(before).isLessThanOrEqualTo(after);
   }
 
   @Test
@@ -58,6 +100,106 @@ class UUIDUtilsTest {
 
     assertThat(uuid1.toString()).matches(s -> s.startsWith("0196ed52-e0d9-7"));
     assertThat(uuid2.toString()).matches(s -> s.startsWith("0196ed52-e0d9-7"));
+  }
+
+  @Test
+  void testGenerateNewUUIDRandomComponent() {
+    final int numUuids = 1000;
+    Set<Long> randomParts = new HashSet<>();
+
+    for (int i = 0; i < numUuids; i++) {
+      UUID uuid = UUIDUtils.generateNewUUID();
+      Long randomPart = extractRandomFromUuid(uuid);
+
+      assertThat(randomParts).doesNotContain(randomPart);
+      randomParts.add(randomPart);
+    }
+  }
+
+  @Test
+  void testGenerateNewUUIDRandomComponentForSameInstant() {
+    final int numUuids = 1000;
+    Instant instant = Instant.now();
+    Set<Long> randomParts = new HashSet<>();
+
+    for (int i = 0; i < numUuids; i++) {
+      UUID uuid = UUIDUtils.generateNewUUID(instant);
+      Long randomPart = extractRandomFromUuid(uuid);
+
+      assertThat(randomParts).doesNotContain(randomPart);
+      randomParts.add(randomPart);
+    }
+  }
+
+  @Test
+  void testGenerateNewUUIDParallelGeneration() throws InterruptedException {
+    final int numThreads = 8;
+    final int uuidsPerThread = 1000;
+    final Set<UUID> allUuids = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    final CountDownLatch latch = new CountDownLatch(numThreads);
+
+    ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+    for (int t = 0; t < numThreads; t++) {
+      executor.submit(
+          () -> {
+            try {
+              for (int i = 0; i < uuidsPerThread; i++) {
+                UUID uuid = UUIDUtils.generateNewUUID();
+
+                assertThat(allUuids).doesNotContain(uuid);
+                allUuids.add(uuid);
+              }
+            } finally {
+              latch.countDown();
+            }
+          });
+    }
+
+    latch.await();
+    executor.shutdown();
+    executor.awaitTermination(10, TimeUnit.SECONDS);
+
+    assertThat(allUuids).hasSize(numThreads * uuidsPerThread);
+  }
+
+  @Test
+  void testGenerateNewUUIDParallelGenerationForSameInstant() throws InterruptedException {
+    final int numThreads = 8;
+    final int uuidsPerThread = 1000;
+    Instant instant = Instant.now();
+    final Set<UUID> allUuids = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    final CountDownLatch latch = new CountDownLatch(numThreads);
+
+    ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+    for (int t = 0; t < numThreads; t++) {
+      executor.submit(
+          () -> {
+            try {
+              for (int i = 0; i < uuidsPerThread; i++) {
+                UUID uuid = UUIDUtils.generateNewUUID(instant);
+
+                assertThat(allUuids).doesNotContain(uuid);
+                allUuids.add(uuid);
+              }
+            } finally {
+              latch.countDown();
+            }
+          });
+    }
+
+    latch.await();
+    executor.shutdown();
+    executor.awaitTermination(10, TimeUnit.SECONDS);
+
+    assertThat(allUuids).hasSize(numThreads * uuidsPerThread);
+  }
+
+  @Test
+  void testGenerateNewUUIDVersion() {
+    UUID uuid = UUIDUtils.generateNewUUID();
+
+    assertThat(uuid.version()).isEqualTo(7);
+    assertThat(uuid.variant()).isEqualTo(2);
   }
 
   @Test

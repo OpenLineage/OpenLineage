@@ -7,11 +7,26 @@ package io.openlineage.client.utils;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Random;
 import java.util.UUID;
 import lombok.SneakyThrows;
 
 /** Class used to generate UUID values. */
 public class UUIDUtils {
+  // SecureRandom return truly random values, but it is 4x slower than Random.
+  private static final SecureRandom TRUE_RANDOM = new SecureRandom();
+  // Using ThreadLocal to avoid lock contention in multithread environment.
+  private static final ThreadLocal<Random> RANDOM =
+      new ThreadLocal<Random>() {
+        @Override
+        protected Random initialValue() {
+          // Random is pseudo-random, so it has to be initialized with a random seed
+          // to avoid producing same results in a different thread
+          long seed = TRUE_RANDOM.nextLong();
+          return new Random(seed);
+        }
+      };
+
   /**
    * Generate new UUID. Each function call returns a new UUID value.
    *
@@ -44,7 +59,7 @@ public class UUIDUtils {
    */
   public static UUID generateNewUUID(Instant instant) {
     long time = instant.toEpochMilli();
-    SecureRandom random = new SecureRandom();
+    Random random = RANDOM.get();
     long msb = (time << 16) | (random.nextLong() & 0x0fffL) | 0x7000L;
     long lsb = (random.nextLong() & 0x3fffffffffffffffL) | 0x8000000000000000L;
     return new UUID(msb, lsb);
