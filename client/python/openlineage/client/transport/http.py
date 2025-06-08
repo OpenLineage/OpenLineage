@@ -49,7 +49,7 @@ class HttpCompression(Enum):
 
 @attr.s
 class AsyncConfig:
-    enabled: bool = attr.ib(default=False)
+    enabled: bool = attr.ib(default=True)
     max_queue_size: int = attr.ib(default=1000000)
     max_concurrent_requests: int = attr.ib(default=100)
 
@@ -694,22 +694,26 @@ class HttpTransport(Transport):
         self.verify = config.verify
         self.compression = config.compression
 
-        # Set up emitter based on config
-        if config.async_config.enabled:
-            self.emitter = AsyncEmitter(config)
-            log.debug("Using async emitter for HTTP transport for %s", self.config.url)
-        else:
-            self.emitter = SyncEmitter(config)
-            log.debug("Using sync emitter for HTTP transport for %s", self.config.url)
+        self.async_emitter = AsyncEmitter(config)
+        log.debug("Using async emitter for HTTP transport for %s", self.config.url)
+        self.sync_emitter = SyncEmitter(config)
+        log.debug("Using sync emitter for HTTP transport for %s", self.config.url)
 
     def emit(self, event: Event) -> httpx.Response | None:
-        return self.emitter.emit(event)
+        try:
+            if jobtype := event.job.facets.get("jobType"):
+                if jobtype.integration == "AIRFLOW":
+                    return self.sync_emitter.emit(event)
+        except Exception as e:
+            log.debug("Failed to emit event synchronous:", e)
+
+        return self.async_emitter.emit(event)
 
     def wait_for_completion(self, timeout: float = 10.0) -> bool:
-        return self.emitter.wait_for_completion(timeout)
+        return self.async_emitter.wait_for_completion(timeout)
 
     def get_stats(self) -> dict[str, int]:
-        return self.emitter.get_stats()
+        return self.async_emitter.get_stats()
 
     def shutdown(self, wait: bool = True, timeout: float = 30.0) -> bool:
-        self.emitter.shutdown(wait, timeout)
+        self.async_emitter.shutdown(wait, timeout)
