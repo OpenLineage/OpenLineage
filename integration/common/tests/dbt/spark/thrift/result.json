@@ -482,6 +482,8 @@
     },
     "outputs": [
       {
+        "name": "default.orders",
+        "namespace": "spark://localhost:10000",
         "facets": {
           "dataSource": {
             "name": "spark://localhost:10000",
@@ -537,9 +539,11 @@
             ]
           }
         },
-        "name": "default.orders",
-        "namespace": "spark://localhost:10000",
-        "outputFacets": {}
+        "outputFacets": {
+          "outputStatistics": {
+            "size": 4722
+          }
+        }
       }
     ],
     "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
