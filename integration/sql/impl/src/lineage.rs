@@ -3,7 +3,7 @@
 
 use crate::CanonicalDialect;
 
-use sqlparser::ast::Ident;
+use sqlparser::ast::{Ident, ObjectName};
 use sqlparser::dialect::SnowflakeDialect;
 
 pub mod ident_wrapper {
@@ -21,6 +21,7 @@ pub struct ExtractionError {
 pub struct SqlMeta {
     pub table_lineage: TableLineage,
     pub column_lineage: Vec<ColumnLineage>,
+    pub wildcard_column_lineage: Vec<WildcardColumnLineageMeta>,
     pub errors: Vec<ExtractionError>,
 }
 
@@ -29,6 +30,7 @@ impl SqlMeta {
         mut in_tables: Vec<DbTableMeta>,
         mut out_tables: Vec<DbTableMeta>,
         mut column_lineage: Vec<ColumnLineage>,
+        wildcard_column_lineage: Vec<WildcardColumnLineageMeta>,
         errors: Vec<ExtractionError>,
     ) -> Self {
         in_tables.sort();
@@ -41,6 +43,7 @@ impl SqlMeta {
                 out_tables,
             },
             column_lineage,
+            wildcard_column_lineage,
             errors,
         }
     }
@@ -61,6 +64,23 @@ impl ColumnLineage {
     }
 }
 
+// Represents a column lineage for a scenario where descendant table columns are copied from a lineage table.
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
+pub struct WildcardColumnLineageMeta {
+    // Can be empty for queries which have no output table, to represent a wildcard column lineage
+    pub descendant: Option<DbTableMeta>,
+    pub lineage: DbTableMeta,
+}
+
+impl WildcardColumnLineageMeta {
+    pub fn new(descendant: Option<DbTableMeta>, lineage: DbTableMeta) -> Self {
+        WildcardColumnLineageMeta {
+            descendant,
+            lineage,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct ColumnMeta {
     pub origin: Option<DbTableMeta>,
@@ -70,6 +90,17 @@ pub struct ColumnMeta {
 impl ColumnMeta {
     pub fn new(name: String, origin: Option<DbTableMeta>) -> Self {
         ColumnMeta { name, origin }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+pub struct WildcardMeta {
+    pub origin: Option<ObjectName>
+}
+
+impl WildcardMeta {
+    pub fn new(origin: Option<ObjectName>) -> Self {
+        WildcardMeta { origin }
     }
 }
 
