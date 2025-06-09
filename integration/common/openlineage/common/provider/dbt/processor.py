@@ -282,6 +282,7 @@ class DbtArtifactProcessor:
                     get_from_nullable_chain(context.catalog, ["nodes", run["unique_id"]]),
                 ),
                 has_facets=True,
+                adapter_response=run.get("adapter_response", None),
             )
 
             # Add column lineage if SQL is available
@@ -463,41 +464,71 @@ class DbtArtifactProcessor:
         namespace, name, facets, _ = self.extract_dataset_data(node, None, has_facets)
         return Dataset(name=name, namespace=namespace, facets=facets)
 
-    def node_to_output_dataset(self, node: ModelNode, has_facets: bool = False) -> OutputDataset:
+    def node_to_output_dataset(
+        self,
+        node: ModelNode,
+        has_facets: bool = False,
+        adapter_response: Optional[Dict] = None,
+    ) -> OutputDataset:
         namespace, name, facets, _ = self.extract_dataset_data(node, None, has_facets)
-        output_facets: Dict[str, OutputDatasetFacet] = {}
-        if has_facets and node.catalog_node:
-            bytes = get_from_multiple_chains(
-                node.catalog_node,
-                [
-                    ["stats", "num_bytes", "value"],  # bigquery
-                    ["stats", "bytes", "value"],  # snowflake
+        if not has_facets:
+            return OutputDataset(name=name, namespace=namespace, facets=facets)
+
+        row_count = 0
+        byte_count = 0
+        if node.catalog_node:
+            row_count = (
+                get_from_multiple_chains(
+                    node.catalog_node,
                     [
-                        "stats",
-                        "size",
-                        "value",
-                    ],  # redshift (Note: size = count of 1MB blocks)
-                ],
-            )
-            rows = get_from_multiple_chains(
-                node.catalog_node,
-                [
-                    ["stats", "num_rows", "value"],  # bigquery
-                    ["stats", "row_count", "value"],  # snowflake
-                    ["stats", "rows", "value"],  # redshift
-                ],
-            )
-
-            if bytes:
-                bytes = int(bytes) if self.adapter_type != Adapter.REDSHIFT else int(rows) * (2**20)
-            if rows:
-                rows = int(rows)
-
-                output_facets[
-                    "outputStatistics"
-                ] = output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
-                    rowCount=rows, size=bytes
+                        ["stats", "num_rows", "value"],  # bigquery
+                        ["stats", "row_count", "value"],  # snowflake
+                        ["stats", "rows", "value"],  # redshift
+                    ],
                 )
+                or 0
+            )
+
+            byte_count = (
+                get_from_multiple_chains(
+                    node.catalog_node,
+                    [
+                        ["stats", "num_bytes", "value"],  # bigquery
+                        ["stats", "bytes", "value"],  # snowflake
+                    ],
+                )
+                or 0
+            )
+
+            if self.adapter_type == Adapter.REDSHIFT:
+                # size is the number of 1MB blocks
+                blocks_count = (
+                    get_from_multiple_chains(
+                        node.catalog_node,
+                        [
+                            ["stats", "size", "value"],
+                        ],
+                    )
+                    or 0
+                )
+                byte_count = byte_count or blocks_count * (2**20)
+
+        if adapter_response:
+            row_count = row_count or adapter_response.get("rows_affected", 0)
+            byte_count = byte_count or adapter_response.get("bytes_processed", 0)
+
+        row_count = int(row_count)
+        byte_count = int(byte_count)
+        if not row_count and not byte_count:
+            return OutputDataset(name=name, namespace=namespace, facets=facets)
+
+        output_facets: Dict[str, OutputDatasetFacet] = {}
+        output_facets[
+            "outputStatistics"
+        ] = output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
+            rowCount=row_count if row_count > 0 else None,
+            size=byte_count if byte_count > 0 else None,
+        )
         return OutputDataset(name=name, namespace=namespace, facets=facets, outputFacets=output_facets)
 
     def _format_dataset_name(self, database: Optional[str], schema: Optional[str], table: str) -> str:
