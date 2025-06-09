@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_utils::*;
-use openlineage_sql::{parse_sql, DbTableMeta, TableLineage};
+use openlineage_sql::{parse_sql, DbTableMeta, TableLineage, WildcardColumnLineageMeta};
 use sqlparser::dialect::SnowflakeDialect;
 
 #[test]
@@ -189,4 +189,54 @@ fn create_stage() {
             )]
         }
     )
+}
+
+#[test]
+fn select_wildcard_lineage() {
+    assert_eq!(
+        test_sql("Create table table0 as select * from table1;")
+            .unwrap()
+            .wildcard_column_lineage,
+        vec![
+            WildcardColumnLineageMeta {
+                descendant: Some(table("table1")),
+                lineage: table("table0"),
+            }
+        ]
+    );
+}
+
+#[test]
+fn select_wildcard_lineage_multiple_inputs() {
+    assert_eq!(
+        test_sql("Create table table0 as select * from table1 JOIN table2 on table1.a=table2.b;")
+            .unwrap()
+            .wildcard_column_lineage,
+        vec![
+            WildcardColumnLineageMeta {
+                descendant: Some(table("table1")),
+                lineage: table("table0"),
+            },
+            WildcardColumnLineageMeta {
+                descendant: Some(table("table2")),
+                lineage: table("table0"),
+            },
+        ]
+    );
+}
+
+#[test]
+fn select_wildcard_lineage_multiple_inputs_with_alias() {
+    assert_eq!(
+        test_sql("Create table table0 as select t1.* from table1 t1 JOIN table2 on table1.a=table2.b;")
+            .unwrap()
+            .wildcard_column_lineage,
+        vec![
+            WildcardColumnLineageMeta {
+                descendant: Some(table("table1")),
+                lineage: table("table0"),
+            }
+            // t2 wildcard column lineage is not included as it is not used in the output
+        ]
+    );
 }

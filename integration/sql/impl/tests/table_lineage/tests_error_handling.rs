@@ -28,6 +28,7 @@ fn test_failing_statement_with_insert() {
                     name: "key".to_string(),
                 }],
             }],
+            wildcard_column_lineage: vec![],
             errors: vec![
                 ExtractionError {
                     index: 0,

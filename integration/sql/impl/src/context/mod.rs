@@ -21,6 +21,7 @@ pub struct ContextFrame {
     table: Option<DbTableMeta>,
     // Specifies whether we are inside a column context and its name
     column: Option<ColumnMeta>,
+    wildcard: Option<WildcardMeta>,
     // The alias table is used to track back a chain of aliases back to the original
     // symbol. Only those symbols are meaningful outside of the processed query.
     aliases: AliasTable,
@@ -41,6 +42,7 @@ impl ContextFrame {
         ContextFrame {
             table: None,
             column: None,
+            wildcard: None,
             aliases: AliasTable::new(),
             column_ancestry: HashMap::new(),
             dependencies: HashSet::new(),
@@ -256,6 +258,18 @@ impl<'a> Context<'a> {
             frame.dependencies.extend(vec![name]);
         }
     }
+    // 
+    // pub fn add_wildcard_table(&mut self, table: Vec<Ident>) {
+    //     if let Some(frame) = self.frames.last_mut() {
+    //         let table = DbTableMeta::new(
+    //             table,
+    //             self.dialect,
+    //             self.default_schema.clone(),
+    //             self.default_database.clone(),
+    //         );
+    //         frame.wildcard.replace(WildcardMeta::new(Some(table)));
+    //     }
+    // }
 
     pub fn has_alias(&self, table: String) -> bool {
         for frame in self.frames.iter().rev() {
@@ -295,6 +309,12 @@ impl<'a> Context<'a> {
     pub fn set_column_context(&mut self, column: Option<ColumnMeta>) {
         if let Some(frame) = self.frames.last_mut() {
             frame.column = column;
+        }
+    }
+
+    pub fn set_wildcard_context(&mut self, wildcard_meta: Option<WildcardMeta>) {
+        if let Some(frame) = self.frames.last_mut() {
+            frame.wildcard = wildcard_meta;
         }
     }
 
@@ -585,7 +605,35 @@ impl<'a> Context<'a> {
         &mut frame.column_ancestry
     }
 
-    pub fn table_context(&self) -> &Option<DbTableMeta> {
+    pub fn wildcard_lineage(&self) -> Vec<WildcardColumnLineageMeta> {
+        let frame = self.frames.last().unwrap();
+        if let Some(wildcard) = &frame.wildcard {
+            match (wildcard.clone().origin, self.table_context()) {
+                (Some(object_name), Some(table)) => 
+                    vec![WildcardColumnLineageMeta {
+                        descendant: Some(DbTableMeta::new(
+                            object_name.0.clone(),
+                            self.dialect,
+                            self.default_schema.clone(),
+                            self.default_database.clone(),
+                        )),
+                        lineage: table.clone(),
+                    }],
+                (None, Some(table)) => 
+                    vec![WildcardColumnLineageMeta {
+                        descendant: None,
+                        lineage: table.clone(),
+                    }]
+                ,
+                _ => vec![],
+            }
+        } else {
+            vec![]
+        }
+    }
+
+
+pub fn table_context(&self) -> &Option<DbTableMeta> {
         let frame = self.frames.last().unwrap();
         &frame.table
     }
@@ -626,7 +674,7 @@ mod tests {
         // t2.x  t1.y    t1.b
         //   \   /         |
         //    \ /          |
-        //     x           b    (selected from "table")
+        //     a           b    (selected from "table")
         //     |          /|
         //     |        /  |
         //     |      /    |

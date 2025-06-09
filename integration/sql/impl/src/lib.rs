@@ -21,6 +21,7 @@ pub fn parse_multiple_statements(
     default_schema: Option<String>,
 ) -> Result<SqlMeta> {
     let mut column_lineage: Vec<ColumnLineage> = vec![];
+    let mut wildcard_column_lineage: Vec<WildcardColumnLineageMeta> = vec![];
     let mut errors: Vec<ExtractionError> = vec![];
     let mut context = Context::new(dialect, default_schema.clone(), None);
 
@@ -57,12 +58,14 @@ pub fn parse_multiple_statements(
                     lineage: Vec::from_iter(lineage),
                 }
             }));
+            wildcard_column_lineage.extend(context.wildcard_lineage());
         }
     }
     Ok(SqlMeta::new(
         context.inputs.into_iter().collect(),
         context.outputs.into_iter().collect(),
         column_lineage,
+        wildcard_column_lineage,
         errors,
     ))
 }

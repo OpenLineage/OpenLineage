@@ -9,8 +9,13 @@ import static io.openlineage.spark.agent.SparkTestUtils.createHttpServer;
 import static io.openlineage.spark.agent.SparkTestUtils.createSparkSession;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.ImmutableMap;
 import com.sun.net.httpserver.HttpServer;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalBuilder;
+import io.openlineage.client.OpenLineage.DatasetFacets;
+import io.openlineage.client.OpenLineage.InputField;
+import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.SparkTestUtils.OpenLineageEndpointHandler;
 import io.openlineage.spark.agent.SparkTestUtils.PostgreSQLTestContainer;
 import io.openlineage.spark.agent.SparkTestUtils.SchemaRecord;
@@ -20,13 +25,19 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -34,7 +45,7 @@ import org.testcontainers.utility.DockerImageName;
 @Tag("integration-test")
 @Testcontainers
 @Slf4j
-class MultipleTablesInJDBCSparkQueryTest {
+class PostgresJDBCSparkQueryTest {
   private static final OpenLineageEndpointHandler handler = new OpenLineageEndpointHandler();
 
   @Test
@@ -167,6 +178,62 @@ class MultipleTablesInJDBCSparkQueryTest {
               assertThat(names)
                   .containsExactlyInAnyOrder("openlineage.books", "openlineage.authors");
             });
+  }
+
+  @SneakyThrows
+  @ParameterizedTest
+  @CsvSource(value = {
+      "query;select * from authors",
+//      "query;select author_id, author_name from authors",
+//      "dbtable;authors"
+  }, delimiter = ';')
+  void testColumnLevelLineageWhenLoadingJDBC(String option, String value) {
+    HttpServer server = createHttpServer(handler);
+    PostgreSQLTestContainer postgres = startPostgresContainer();
+
+    SparkSession spark =
+        createSparkSession(
+            server.getAddress().getPort(), "testColumnLevelLineageWhenLoadingJDBC");
+
+    // Load authors with dbTable option set
+    Dataset<Row> authors = spark
+        .read()
+        .format("jdbc")
+        .option("url", postgres.getPostgres().getJdbcUrl())
+        .option("driver", "org.postgresql.Driver")
+        .option(option, value)
+        .option("user", postgres.getPostgres().getUsername())
+        .option("password", postgres.getPostgres().getPassword())
+        .load();
+
+    authors
+        .write()
+        .format("parquet")
+        .saveAsTable("spark_authors");
+
+    postgres.stop();
+    spark.stop();
+
+    // get column level lineage facet
+    List<OpenLineage.ColumnLineageDatasetFacet> columnLineageFacets =
+        handler.getEvents("test_column_level_lineage_when_loading_jdbc").stream()
+            .filter(event -> !event.getInputs().isEmpty())
+            .flatMap(e -> e.getOutputs().stream())
+            .map(OutputDataset::getFacets)
+            .map(DatasetFacets::getColumnLineage)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+    assertThat(columnLineageFacets).hasSizeGreaterThanOrEqualTo(1);
+    assertThat(columnLineageFacets.get(0).getFields().getAdditionalProperties())
+        .containsOnlyKeys("author_id", "author_name");
+
+    List<InputField> inputFields = columnLineageFacets.get(0).getFields().getAdditionalProperties().get("author_id").getInputFields();
+
+    assertThat(inputFields).hasSize(1);
+    assertThat(inputFields.get(0).getName()).isEqualTo("openlineage.authors");
+    assertThat(inputFields.get(0).getField()).isEqualTo("author_id");
+    assertThat(inputFields.get(0).getNamespace()).startsWith("postgres://");
   }
 
   private void loadSqlQuery(SparkSession spark, PostgreSQLTestContainer postgres, String query) {

@@ -514,7 +514,12 @@ impl Visit for Select {
                     context.set_column_context(Some(ColumnMeta::new(alias.value.clone(), None)));
                     expr.visit(context)?;
                 }
-                _ => {}
+                SelectItem::Wildcard(_options) => {
+                    context.set_wildcard_context(Some(WildcardMeta::new(None)));
+                }
+                SelectItem::QualifiedWildcard(expr, _options) => {
+                    context.set_wildcard_context(Some(WildcardMeta::new(Some(expr.clone()))));
+                }
             }
         }
 
