@@ -1,11 +1,8 @@
 package io.openlineage.client.transports.gcplineage;
 
-import static io.openlineage.client.OpenLineageClientUtils.newObjectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.transports.gcplineage.GcpLineageTransportConfig.Mode;
@@ -16,9 +13,7 @@ import java.util.Collections;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-public class GcpLineageTransportBuilderTest {
-
-  private static final ObjectMapper YML = newObjectMapper(new YAMLFactory());
+class GcpLineageTransportBuilderTest {
 
   @ParameterizedTest
   @CsvSource({"config/lowercase_async_config.yaml", "config/uppercase_async_config.yaml"})
