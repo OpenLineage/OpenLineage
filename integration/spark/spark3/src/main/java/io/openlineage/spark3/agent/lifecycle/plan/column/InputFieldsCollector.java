@@ -71,18 +71,11 @@ public class InputFieldsCollector {
 
   private static void discoverInputsFromNode(ColumnLevelLineageContext context, LogicalPlan node) {
     List<DatasetIdentifier> datasetIdentifiers = extractDatasetIdentifier(context, node);
-    if (isJDBCNode(node)) {
-      JdbcColumnLineageCollector.extractExternalInputs(context, node, datasetIdentifiers);
-    } else if (isQueryRelationNode(node)) {
+    if (isQueryRelationNode(node)) {
       QueryRelationColumnLineageCollector.extractExternalInputs(context, node);
     } else {
       extractInternalInputs(node, context.getBuilder(), datasetIdentifiers);
     }
-  }
-
-  private static boolean isJDBCNode(LogicalPlan node) {
-    return node instanceof LogicalRelation
-        && ((LogicalRelation) node).relation() instanceof JDBCRelation;
   }
 
   private static boolean isQueryRelationNode(LogicalPlan node) {
@@ -159,7 +152,7 @@ public class InputFieldsCollector {
     return Collections.emptyList();
   }
 
-  private static List<DatasetIdentifier> extractDatasetIdentifier(
+  static List<DatasetIdentifier> extractDatasetIdentifier(
       ColumnLevelLineageContext context, JDBCRelation relation) {
     Optional<SqlMeta> sqlMeta = JdbcSparkUtils.extractQueryFromSpark(relation);
     String jdbcUrl = relation.jdbcOptions().url();
