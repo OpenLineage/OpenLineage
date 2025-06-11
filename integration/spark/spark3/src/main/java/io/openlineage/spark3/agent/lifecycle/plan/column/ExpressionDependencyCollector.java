@@ -61,8 +61,6 @@ import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.Sort;
 import org.apache.spark.sql.catalyst.plans.logical.Union;
 import org.apache.spark.sql.catalyst.plans.logical.Window;
-import org.apache.spark.sql.execution.datasources.LogicalRelation;
-import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import scala.Option;
 import scala.Tuple2;
@@ -153,10 +151,6 @@ public class ExpressionDependencyCollector {
     } else if (node instanceof Window) {
       expressions.addAll(
           ScalaConversionUtils.<NamedExpression>fromSeq(((Window) node).windowExpressions()));
-    } else if (node instanceof LogicalRelation) {
-      if (((LogicalRelation) node).relation() instanceof JDBCRelation) {
-        JdbcColumnLineageCollector.extractExpressionsFromJDBC(context, node);
-      }
     } else if (node instanceof DataSourceV2Relation
         && ExtensionDataSourceV2Utils.hasQueryExtensionLineage((DataSourceV2Relation) node)) {
       QueryRelationColumnLineageCollector.extractExpressionsFromQuery(context, node);

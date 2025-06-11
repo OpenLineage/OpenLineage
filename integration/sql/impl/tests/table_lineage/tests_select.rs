@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_utils::*;
-use openlineage_sql::{TableLineage, WildcardColumnLineageMeta};
+use openlineage_sql::TableLineage;
 
 #[test]
 fn select_simple() {
@@ -239,30 +239,4 @@ fn select_snowflake_lateral() {
             out_tables: vec![],
         }
     )
-}
-
-#[test]
-fn select_wildcard_lineage() {
-    assert_eq!(
-        test_sql("SELECT t0.* FROM table0 t0")
-        .unwrap()
-        .wildcard_column_lineage,
-        vec![WildcardColumnLineageMeta {
-            descendant: None,
-            lineage: table("table0"),
-        }]
-    );
-}
-
-#[test]
-fn select_wildcard_lineage_for_context_frames() {
-    assert_eq!(
-        test_sql("WITH table0 AS (SELECT * FROM table1) SELECT * FROM table0")
-            .unwrap()
-            .wildcard_column_lineage,
-        vec![WildcardColumnLineageMeta {
-            descendant: None,
-            lineage: table("table1"),
-        }]
-    );
 }
