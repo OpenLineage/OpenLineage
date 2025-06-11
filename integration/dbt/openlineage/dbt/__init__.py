@@ -266,15 +266,6 @@ def consume_local_artifacts(
         job_name=start_event.job.name,
         job_namespace=start_event.job.namespace,
     )
-
-    # Failed start event emit should not stop dbt command from running.
-    emitted_events = 0
-    try:
-        client.emit(start_event)
-        emitted_events += 1
-    except Exception as e:
-        logger.warning("OpenLineage client failed to emit start event. Exception: %s", e)
-
     # Set parent run metadata to use it as parent run facet
     processor.dbt_run_metadata = dbt_run_metadata
 
@@ -326,11 +317,26 @@ def consume_local_artifacts(
             parent_run_metadata=parent_run_metadata,
         )
 
+    if events:
+        # Pass some run facets from extracted dbt events to wrapping start and stop events
+        event = events[0]
+        if "dbt_version" in event.run.facets:
+            start_event.run.facets["dbt_version"] = event.run.facets["dbt_version"]
+            terminal_event.run.facets["dbt_version"] = event.run.facets["dbt_version"]
+
+        if "processing_engine" in event.run.facets:
+            start_event.run.facets["processing_engine"] = event.run.facets["processing_engine"]
+            terminal_event.run.facets["processing_engine"] = event.run.facets["processing_engine"]
+
+        if "dbt_run" in event.run.facets:
+            start_event.run.facets["dbt_run"] = event.run.facets["dbt_run"]
+            terminal_event.run.facets["dbt_run"] = event.run.facets["dbt_run"]
+
+    emitted_events = 0
+    all_events = [start_event, *events, terminal_event]
     for event in tqdm(
-        events + [terminal_event],
+        all_events,
         desc="Emitting OpenLineage events",
-        initial=1,
-        total=len(events) + 2,
     ):
         try:
             client.emit(event)
