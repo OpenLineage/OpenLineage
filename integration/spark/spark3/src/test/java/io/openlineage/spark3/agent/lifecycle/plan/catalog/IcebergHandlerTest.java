@@ -502,4 +502,31 @@ class IcebergHandlerTest {
     assertEquals("s3://bucket/path/to/iceberg/warehouse", facet.getWarehouseUri());
     assertEquals("iceberg", facet.getFramework());
   }
+
+  @Test
+  void testGetBigQueryMetastoreCatalogData() {
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(sparkCatalog.name()).thenReturn("bq_metastore_catalog");
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2(
+                "spark.sql.catalog.bq_metastore_catalog.catalog-impl",
+                "org.apache.iceberg.gcp.bigquery.BigQueryMetastoreCatalog",
+                "spark.sql.catalog.bq_metastore_catalog.warehouse",
+                "gcs://bucket/path/to/iceberg/warehouse"));
+
+    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacet =
+        icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
+    assertTrue(catalogDatasetFacet.isPresent());
+
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get();
+
+    assertEquals("bq_metastore_catalog", facet.getName());
+    assertEquals("bigquerymetastore", facet.getType());
+    assertEquals("gcs://bucket/path/to/iceberg/warehouse", facet.getWarehouseUri());
+    assertEquals("iceberg", facet.getFramework());
+  }
 }
