@@ -75,7 +75,7 @@ public class GcpLineageTransport extends Transport {
 
     protected ProducerClientWrapper(GcpLineageTransportConfig config) throws IOException {
       LineageSettings settings;
-      if (GcpLineageTransportConfig.Mode.sync == config.getMode()) {
+      if (GcpLineageTransportConfig.Mode.SYNC == config.getMode()) {
         settings = createSyncSettings(config);
         syncLineageClient =
             SyncLineageProducerClient.create((SyncLineageProducerClientSettings) settings);
