@@ -50,9 +50,9 @@ The following properties are necessary for the automatic creation of the `Parent
 Additionally, in version 1.31.0 and later, the following properties are also added to `ParentRunFacet` that 
 allow easier connection of the root (top-level parent) job to the children jobs:
 
-- `spark.openlineage.parentJobNamespace`
-- `spark.openlineage.parentJobName`
-- `spark.openlineage.parentRunId`
+- `spark.openlineage.rootParentJobNamespace`
+- `spark.openlineage.rootParentJobName`
+- `spark.openlineage.rootParentRunId`
 
 
 Refer to the [Spark Configuration](spark_conf.md) documentation for more information on these properties.
