@@ -1,3 +1,7 @@
+/*
+/* Copyright 2018-2025 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 package io.openlineage.client.transports.gcplineage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,7 +21,7 @@ class GcpLineageTransportBuilderTest {
 
   @ParameterizedTest
   @CsvSource({"config/lowercase_async_config.yaml", "config/uppercase_async_config.yaml"})
-  public void buildFromYamlConfigLowercaseMode(String relativePath) throws URISyntaxException {
+  void buildFromYamlConfigLowercaseMode(String relativePath) throws URISyntaxException {
     Path path = Paths.get(this.getClass().getClassLoader().getResource(relativePath).toURI());
 
     OpenLineageConfig openLineageConfig =
