@@ -22,18 +22,15 @@ public class GcpLineageTransportBuilderTest {
 
   @ParameterizedTest
   @CsvSource({"config/lowercase_async_config.yaml", "config/uppercase_async_config.yaml"})
-  public void buildFromYamlConfigLowercaseMode(String relativePath)
-      throws URISyntaxException {
-    Path path = Paths.get(
-        this.getClass().getClassLoader().getResource(relativePath).toURI());
+  public void buildFromYamlConfigLowercaseMode(String relativePath) throws URISyntaxException {
+    Path path = Paths.get(this.getClass().getClassLoader().getResource(relativePath).toURI());
 
-    OpenLineageConfig openLineageConfig = OpenLineageClientUtils.loadOpenLineageConfigYaml(
-        () -> Collections.singletonList(path),
-        new TypeReference<OpenLineageConfig>() {
-        });
+    OpenLineageConfig openLineageConfig =
+        OpenLineageClientUtils.loadOpenLineageConfigYaml(
+            () -> Collections.singletonList(path), new TypeReference<OpenLineageConfig>() {});
 
-    GcpLineageTransportConfig gcpLineageTransportConfig = (GcpLineageTransportConfig) openLineageConfig.getTransportConfig();
+    GcpLineageTransportConfig gcpLineageTransportConfig =
+        (GcpLineageTransportConfig) openLineageConfig.getTransportConfig();
     assertEquals(Mode.ASYNC, gcpLineageTransportConfig.getMode());
   }
-
 }
