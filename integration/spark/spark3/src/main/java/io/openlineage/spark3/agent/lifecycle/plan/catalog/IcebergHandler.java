@@ -355,6 +355,12 @@ public class IcebergHandler implements CatalogHandler {
           "Default the catalog type to 'rest' because the catalog impl is {}",
           catalogConf.get(CATALOG_IMPL));
       return "rest";
+    } else if (catalogConf.containsKey(CATALOG_IMPL)
+        && catalogConf.get(CATALOG_IMPL).endsWith("BigQueryMetastoreCatalog")) {
+      log.debug(
+          "Default the catalog type to 'bigquerymetastore' because the catalog impl is {}",
+          catalogConf.get(CATALOG_IMPL));
+      return "bigquerymetastore";
     } else {
       return null;
     }
