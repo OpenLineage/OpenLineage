@@ -6,6 +6,7 @@
 package io.openlineage.client;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static com.fasterxml.jackson.databind.MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -76,6 +77,7 @@ public final class OpenLineageClientUtils {
     mapper.registerModule(new Jdk8Module());
     mapper.registerModule(new JavaTimeModule());
     mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    mapper.enable(ACCEPT_CASE_INSENSITIVE_ENUMS);
     mapper.disable(FAIL_ON_UNKNOWN_PROPERTIES);
     mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     return mapper;
