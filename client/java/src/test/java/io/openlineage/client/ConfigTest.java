@@ -33,9 +33,11 @@ import io.openlineage.client.transports.NoopTransport;
 import io.openlineage.client.transports.TransformTransport;
 import io.openlineage.client.transports.Transport;
 import io.openlineage.client.utils.TagField;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -44,6 +46,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -51,6 +54,15 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 
 class ConfigTest {
+
+  public static final String LOG_FILE_NAME = "test-logs.txt";
+
+  @BeforeAll
+  static void setupLogging() {
+    // Set this before any logger is created
+    System.setProperty("org.slf4j.simpleLogger.logFile", LOG_FILE_NAME);
+  }
+
   @BeforeEach
   void clear() {
     MicrometerProvider.clear();
@@ -400,5 +412,28 @@ class ConfigTest {
         .isEqualTo(
             Arrays.asList(
                 new TagField("surrounding", "whitespace"), new TagField("whitespace", "around")));
+  }
+
+  @Test
+  void testLoadNotExistingConfigFromYaml() throws IOException, InterruptedException {
+
+    try (MockedStatic mocked = mockStatic(Environment.class)) {
+      when(Environment.getAllEnvironmentVariables())
+          .thenReturn(Map.of("OPENLINEAGE__TRANSPORT__TYPE", "console"));
+
+      Clients.newClient(() -> List.of(Paths.get("config/notexist.yaml")));
+    }
+
+    // Give it a moment to write
+    Thread.sleep(100);
+
+    String content = new String(Files.readAllBytes(Paths.get(LOG_FILE_NAME)));
+    assertThat(content)
+        .contains(
+            "Unable to load config from [config/notexist.yaml]. Trying to load it from EnvVars");
+
+    Files.delete(Paths.get(LOG_FILE_NAME));
+
+    System.clearProperty("org.slf4j.simpleLogger.logFile");
   }
 }
