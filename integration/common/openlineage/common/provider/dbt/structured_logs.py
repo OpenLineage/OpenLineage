@@ -641,6 +641,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
                 current_size = os.stat(self.dbt_log_file_path).st_size
                 if current_size > last_size:
+                    self.logger.debug(
+                        f"Current file size: `{current_size}`, last size: `{last_size}`, "
+                        f"to read: `{current_size - last_size}`"
+                    )
                     yield from incremental_reader.read_lines(current_size - last_size)
                     last_size = current_size
 
@@ -653,8 +657,13 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 self._dbt_log_file is not None and not self.received_dbt_command_completed and i < max_loops
             ):
                 current_size = os.stat(self.dbt_log_file_path).st_size
-                yield from incremental_reader.read_lines(current_size - last_size)
-                last_size = current_size
+                if current_size > last_size:
+                    self.logger.debug(
+                        f"Current file size: `{current_size}`, last size: `{last_size}`, "
+                        f"to read: `{current_size - last_size}`"
+                    )
+                    yield from incremental_reader.read_lines(current_size - last_size)
+                    last_size = current_size
                 time.sleep(0.1)
                 i += 1
             self.logger.debug("Finished waiting for logs to be flushed")

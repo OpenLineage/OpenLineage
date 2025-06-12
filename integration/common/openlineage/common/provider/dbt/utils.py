@@ -16,7 +16,7 @@ PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integ
 # for which command structured logs consumption is implemented
 HANDLED_COMMANDS = ["run", "seed", "snapshot", "test", "build"]
 CONSUME_STRUCTURED_LOGS_COMMAND_OPTION = "--consume-structured-logs"
-DBT_LOG_FILE_MAX_BYTES = str(100 * 1024 * 1024)
+DBT_LOG_FILE_MAX_BYTES = str(5 * 1024 * 1024 * 1024)
 
 log = logging.getLogger(__name__)
 

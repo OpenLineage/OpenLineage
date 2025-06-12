@@ -702,12 +702,12 @@ class HttpTransport(Transport):
     def emit(self, event: Event) -> httpx.Response | None:
         try:
             if jobtype := event.job.facets.get("jobType"):
-                if jobtype.integration == "AIRFLOW":
-                    return self.sync_emitter.emit(event)
+                if jobtype.integration == "DBT":
+                    return self.async_emitter.emit(event)
         except Exception as e:
-            log.debug("Failed to emit event synchronous:", e)
+            log.debug("Failed to emit event asynchronous:", e)
 
-        return self.async_emitter.emit(event)
+        return self.sync_emitter.emit(event)
 
     def wait_for_completion(self, timeout: float = 10.0) -> bool:
         return self.async_emitter.wait_for_completion(timeout)
