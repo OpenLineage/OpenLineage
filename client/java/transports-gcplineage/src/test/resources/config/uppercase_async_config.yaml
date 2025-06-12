@@ -1,0 +1,6 @@
+transport:
+  type: gcplineage
+  projectId: your_gcp_project_id
+  location: us
+  mode: ASYNC
+  credentialsFile: path/to/credentials.json
