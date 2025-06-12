@@ -13,9 +13,14 @@ import io.openlineage.client.transports.NoopTransport;
 import io.openlineage.client.transports.Transport;
 import io.openlineage.client.transports.TransportFactory;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Factory class for creating new {@link OpenLineageClient} objects. */
 public final class Clients {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(Clients.class);
+
   private Clients() {}
 
   /**
@@ -35,6 +40,10 @@ public final class Clients {
           OpenLineageClientUtils.loadOpenLineageConfigYaml(
               configPathProvider, new TypeReference<OpenLineageConfig>() {});
     } catch (OpenLineageClientException e) {
+      LOGGER.warn(
+          "Unable to load config from {}. Trying to load it from EnvVars",
+          configPathProvider.getPaths(),
+          e);
       openLineageConfig =
           OpenLineageClientUtils.loadOpenLineageConfigFromEnvVars(
               new TypeReference<OpenLineageConfig>() {});
