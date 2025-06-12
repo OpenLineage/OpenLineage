@@ -102,7 +102,8 @@ repos:
         name: prettier
         description: ""
         entry: prettier --write --ignore-unknown
-        files: ^spec/|\.ts$|\.tsx$|^website.*\.js$|^website.*\.jsx$|\.css$|^\..*\.yaml$|\^\..*\.yml$
+        files: ^spec/|\.ts$|\.tsx$|^website.*\.js$|^website.*\.jsx$|\.css$|^\..*\.yaml$|\^\..*\.yml$|^integration/.*\.json$
+        exclude: run_results\.json|manifest\.json|catalog\.json|metadata/.*\.json|bigquery/.*\.json|data/great_expectations/|integration/airflow/tests/extractors/|test_data/serde/
         args: ["--print-width=120", "--prose-wrap=always"]
         language: node
         types: [text]

@@ -84,8 +84,8 @@ public class FlinkContainerUtils {
             MountableFile.forHostPath(Resources.getResource("InputEvent.avsc").getPath()),
             "/tmp/InputEvent.avsc")
         .withCopyFileToContainer(
-            MountableFile.forHostPath(Resources.getResource("events.json").getPath()),
-            "/tmp/events.json")
+            MountableFile.forHostPath(Resources.getResource("events.jsonl").getPath()),
+            "/tmp/events.jsonl")
         .withCommand(
             "/bin/bash",
             "-c",

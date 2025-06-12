@@ -157,13 +157,23 @@ class GoogleCloudIntegrationTest {
       logRunEvents();
     }
 
+    List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
+    assertThat(events).isNotEmpty();
+
+    // assert there is no event with two outputs (issue detected for 0.42.3)
+    assertThat(events.stream().map(e -> e.getOutputs().size()).filter(e -> e > 1)).isEmpty();
+
     verifyEvents(
-        mockServer,
-        replacements,
-        "pysparkBigquerySaveStart.json",
-        "pysparkBigqueryInsertStart.json",
-        "pysparkBigqueryInsertEnd.json",
-        "pysparkBigquerySaveEnd.json");
+        mockServer, replacements, "pysparkBigquerySaveStart.json", "pysparkBigquerySaveEnd.json");
+
+    // make sure that temp job events are not emitted
+    assertThat(
+            events.stream()
+                .map(event -> event.getJob().getName())
+                .filter(name -> name.contains("spark-bigquery-local"))
+                .distinct()
+                .collect(Collectors.toList()))
+        .isEmpty();
   }
 
   @Test

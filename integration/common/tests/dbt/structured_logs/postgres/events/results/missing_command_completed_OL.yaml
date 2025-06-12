@@ -12,6 +12,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "12e2a73c-5c0b-45d9-a8e1-28d63e831794"
         }
       }
     },
@@ -52,6 +55,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "12e2a73c-5c0b-45d9-a8e1-28d63e831794"
         }
       }
     },
@@ -116,6 +122,9 @@
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "dbt_run": {
+          "invocation_id": "12e2a73c-5c0b-45d9-a8e1-28d63e831794"
         },
         "processing_engine": {
           "name": "dbt",
@@ -183,6 +192,9 @@
           "name": "dbt",
           "version": "1.8.2",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "12e2a73c-5c0b-45d9-a8e1-28d63e831794"
         }
       }
     },

@@ -26,7 +26,7 @@ from openlineage.client.facet_v2 import (
     sql_job,
 )
 from openlineage.client.uuid import generate_new_uuid
-from openlineage.common.provider.dbt.facets import DbtVersionRunFacet, ParentRunMetadata
+from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet, ParentRunMetadata
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
 from openlineage.common.provider.snowflake import fix_account_name
 from openlineage.common.utils import get_from_multiple_chains, get_from_nullable_chain
@@ -47,6 +47,7 @@ class Adapter(Enum):
     DUCKDB = "duckdb"
     TRINO = "trino"
     GLUE = "glue"
+    CLICKHOUSE = "clickhouse"
 
     @staticmethod
     def adapters() -> str:
@@ -281,6 +282,7 @@ class DbtArtifactProcessor:
                     get_from_nullable_chain(context.catalog, ["nodes", run["unique_id"]]),
                 ),
                 has_facets=True,
+                adapter_response=run.get("adapter_response", None),
             )
 
             # Add column lineage if SQL is available
@@ -462,41 +464,71 @@ class DbtArtifactProcessor:
         namespace, name, facets, _ = self.extract_dataset_data(node, None, has_facets)
         return Dataset(name=name, namespace=namespace, facets=facets)
 
-    def node_to_output_dataset(self, node: ModelNode, has_facets: bool = False) -> OutputDataset:
+    def node_to_output_dataset(
+        self,
+        node: ModelNode,
+        has_facets: bool = False,
+        adapter_response: Optional[Dict] = None,
+    ) -> OutputDataset:
         namespace, name, facets, _ = self.extract_dataset_data(node, None, has_facets)
-        output_facets: Dict[str, OutputDatasetFacet] = {}
-        if has_facets and node.catalog_node:
-            bytes = get_from_multiple_chains(
-                node.catalog_node,
-                [
-                    ["stats", "num_bytes", "value"],  # bigquery
-                    ["stats", "bytes", "value"],  # snowflake
+        if not has_facets:
+            return OutputDataset(name=name, namespace=namespace, facets=facets)
+
+        row_count = 0
+        byte_count = 0
+        if node.catalog_node:
+            row_count = (
+                get_from_multiple_chains(
+                    node.catalog_node,
                     [
-                        "stats",
-                        "size",
-                        "value",
-                    ],  # redshift (Note: size = count of 1MB blocks)
-                ],
-            )
-            rows = get_from_multiple_chains(
-                node.catalog_node,
-                [
-                    ["stats", "num_rows", "value"],  # bigquery
-                    ["stats", "row_count", "value"],  # snowflake
-                    ["stats", "rows", "value"],  # redshift
-                ],
-            )
-
-            if bytes:
-                bytes = int(bytes) if self.adapter_type != Adapter.REDSHIFT else int(rows) * (2**20)
-            if rows:
-                rows = int(rows)
-
-                output_facets[
-                    "outputStatistics"
-                ] = output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
-                    rowCount=rows, size=bytes
+                        ["stats", "num_rows", "value"],  # bigquery
+                        ["stats", "row_count", "value"],  # snowflake
+                        ["stats", "rows", "value"],  # redshift
+                    ],
                 )
+                or 0
+            )
+
+            byte_count = (
+                get_from_multiple_chains(
+                    node.catalog_node,
+                    [
+                        ["stats", "num_bytes", "value"],  # bigquery
+                        ["stats", "bytes", "value"],  # snowflake
+                    ],
+                )
+                or 0
+            )
+
+            if self.adapter_type == Adapter.REDSHIFT:
+                # size is the number of 1MB blocks
+                blocks_count = (
+                    get_from_multiple_chains(
+                        node.catalog_node,
+                        [
+                            ["stats", "size", "value"],
+                        ],
+                    )
+                    or 0
+                )
+                byte_count = byte_count or blocks_count * (2**20)
+
+        if adapter_response:
+            row_count = row_count or adapter_response.get("rows_affected", 0)
+            byte_count = byte_count or adapter_response.get("bytes_processed", 0)
+
+        row_count = int(row_count)
+        byte_count = int(byte_count)
+        if not row_count and not byte_count:
+            return OutputDataset(name=name, namespace=namespace, facets=facets)
+
+        output_facets: Dict[str, OutputDatasetFacet] = {}
+        output_facets[
+            "outputStatistics"
+        ] = output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
+            rowCount=row_count if row_count > 0 else None,
+            size=byte_count if byte_count > 0 else None,
+        )
         return OutputDataset(name=name, namespace=namespace, facets=facets, outputFacets=output_facets)
 
     def _format_dataset_name(self, database: Optional[str], schema: Optional[str], table: str) -> str:
@@ -603,6 +635,8 @@ class DbtArtifactProcessor:
             return f"redshift://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.POSTGRES:
             return f"postgres://{profile['host']}:{profile['port']}"
+        elif self.adapter_type == Adapter.CLICKHOUSE:
+            return f"clickhouse://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.TRINO:
             return f"trino://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.DATABRICKS:
@@ -648,6 +682,7 @@ class DbtArtifactProcessor:
     def get_run(self, run_id: str) -> Run:
         run_facets = {
             "dbt_version": self.dbt_version_facet(),
+            "dbt_run": self.dbt_run_run_facet(),
             "processing_engine": self.processing_engine_facet(),
         }
         if self._dbt_run_metadata:
@@ -664,6 +699,9 @@ class DbtArtifactProcessor:
             "Use processing_engine facet instead."
         )
         return DbtVersionRunFacet(version=self.run_metadata["dbt_version"])  # type: ignore[index]
+
+    def dbt_run_run_facet(self) -> DbtRunRunFacet:
+        return DbtRunRunFacet(invocation_id=self.run_metadata["invocation_id"])  # type: ignore[index]
 
     def processing_engine_facet(self) -> processing_engine_run.ProcessingEngineRunFacet:
         return processing_engine_run.ProcessingEngineRunFacet(

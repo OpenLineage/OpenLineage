@@ -19,9 +19,9 @@ import lombok.ToString;
 public class GcpLineageTransportConfig
     implements TransportConfig, MergeConfig<GcpLineageTransportConfig> {
 
-  enum Mode {
-    sync,
-    async
+  public enum Mode {
+    SYNC,
+    ASYNC
   }
 
   @Getter @Setter private @Nullable String endpoint;

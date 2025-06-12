@@ -146,7 +146,6 @@ perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/flink/exam
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/flink/examples/flink2-test-apps/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/hive/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/hive/hive-openlineage-hook/src/main/resources/io/openlineage/hive/client/version.properties
-perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./proxy/backend/gradle.properties
 
 # (3) Bump version in docs
 perl -i -pe"s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./integration/spark/README.md
@@ -183,7 +182,6 @@ perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/spark-extensi
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/examples/flink1-test-apps/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/examples/flink2-test-apps/gradle.properties
-perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./proxy/backend/gradle.properties
 echo "version ${NEXT_VERSION}" > integration/spark/spark2/src/test/resources/io/openlineage/spark/agent/version.properties
 echo "version ${NEXT_VERSION}" > integration/spark/spark3/src/test/resources/io/openlineage/spark/agent/version.properties
 echo "version ${NEXT_VERSION}" > integration/spark-extension-interfaces/src/test/resources/io/openlineage/spark/shade/extension/v1/lifecycle/plan/version.properties

@@ -26,6 +26,7 @@ Right now, `openlineage-dbt` supports only these dbt adapters:
 * `athena`
 * `glue`
 * `postgres`
+* `clickhouse`
 * `trino`
 * `databricks`
 * `sqlserver`

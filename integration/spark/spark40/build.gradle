@@ -37,7 +37,7 @@ ext {
     mockitoVersion = "4.11.0"
     micrometerVersion = "1.14.4"
 
-    sparkVersion = project.findProperty("spark40.spark.version") + "-preview1"
+    sparkVersion = project.findProperty("spark40.spark.version")
     scalaBinaryVersion = "2.13"
     configurationName = scalaBinaryVersion.replace(".", "")
 }

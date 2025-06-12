@@ -30,7 +30,7 @@ def _is_disabled():
 
 
 if (
-    Version(AIRFLOW_VERSION) < Version("2.3.0.dev0")  # type: ignore
+    Version(AIRFLOW_VERSION) < Version("2.5.0.dev0")  # type: ignore
     or Version(AIRFLOW_VERSION) >= Version("2.8.0.b1")  # type: ignore
     or _is_disabled()
 ):

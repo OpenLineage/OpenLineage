@@ -411,7 +411,7 @@ jobs:
       - run: cp -r ../client/python python
       - attach_workspace:
           at: .
-      - run: AIRFLOW_IMAGE=apache/airflow:2.3.4-python3.9 ./airflow/tests/integration/docker/up-failure.sh << parameters.failure-type >>
+      - run: AIRFLOW_IMAGE=apache/airflow:2.5.2-python3.9 ./airflow/tests/integration/docker/up-failure.sh << parameters.failure-type >>
       - store_artifacts:
           path: airflow/tests/integration/failures/airflow/logs
           destination: airflow-logs
@@ -1264,71 +1264,6 @@ jobs:
       - run: bundle install
       - run: bundle exec rake test
 
-  build-proxy-backend:
-    working_directory: ~/openlineage/proxy/backend
-    docker:
-      - image: cimg/openjdk:17.0
-    steps:
-      - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
-      - restore_cache:
-          keys:
-            - v1-proxy-{{ checksum "/tmp/checksum.txt" }}
-      - run: ./gradlew --no-daemon --console=plain --stacktrace build
-      - run: ./gradlew --no-daemon --console=plain jacocoTestReport
-      - run: bash <(curl -s https://codecov.io/bash)
-      - store_test_results:
-          path: proxy/build/test-results/test
-      - store_artifacts:
-          path: build/reports/tests/test
-          destination: test-report
-      - save_cache:
-          key: v1-proxy-{{ checksum "/tmp/checksum.txt" }}
-          paths:
-            - ~/.gradle
-
-  build-image-proxy-backend:
-    working_directory: ~/openlineage/proxy/backend
-    machine:
-      image: ubuntu-2404:current
-    steps:
-      - *checkout_project_root
-      - run: docker build --no-cache --tag "openlineage/proxy:${CIRCLE_SHA1}" .
-      - run: docker save -o proxy.tar "openlineage/proxy:${CIRCLE_SHA1}"
-      - store_artifacts:
-          path: proxy.tar
-
-  release-proxy-backend:
-    working_directory: ~/openlineage/proxy/backend
-    docker:
-      - image: cimg/openjdk:17.0
-    steps:
-      - *checkout_project_root
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
-
-          # publish jar to maven local so it can be found by dependents
-          ./gradlew --info --console=plain publishToMavenLocal
-
-          # Publish *.jar
-          ./gradlew --info --console=plain publishToSonatype closeAndReleaseSonatypeStagingRepository
-
-  release-docker-proxy-backend:
-    working_directory: ~/openlineage/proxy/backend
-    machine:
-      image: ubuntu-2404:current
-    steps:
-      - *checkout_project_root
-      - run: |
-          ./docker/login.sh
-          if [ -n "$CIRCLE_TAG" ]; then
-            ./docker/build-and-push-proxy.sh $CIRCLE_TAG
-          fi
   run-pre-commit:
     # this job run pre-commit for Python client only
     # add dependency to other files when pre-commit runs related checks

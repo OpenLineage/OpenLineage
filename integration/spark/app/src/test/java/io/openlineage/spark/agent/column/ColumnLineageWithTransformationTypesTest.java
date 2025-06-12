@@ -104,7 +104,7 @@ class ColumnLineageWithTransformationTypesTest {
             .queryExecution(queryExecution)
             .meterRegistry(new SimpleMeterRegistry())
             .openLineageConfig(config)
-            .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
+            .sparkExtensionVisitorWrapper(mock(SparkOpenLineageExtensionVisitorWrapper.class))
             .build();
 
     FileSystem.get(spark.sparkContext().hadoopConfiguration()).delete(new Path(DATA_PATH), true);

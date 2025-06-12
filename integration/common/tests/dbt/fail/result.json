@@ -3,7 +3,20 @@
     "eventType": "START",
     "eventTime": "{{ is_datetime(result) }}",
     "run": {
-      "runId": "{{ any(result) }}"
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "{{ any(result) }}"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "{{ any(result) }}",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "8c814240-637d-4a36-937e-43787f5c79e0"
+        }
+      }
     },
     "job": {
       "namespace": "job-namespace",
@@ -92,6 +105,9 @@
           "name": "dbt",
           "version": "{{ any(result) }}",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "8c814240-637d-4a36-937e-43787f5c79e0"
         }
       }
     },
@@ -126,6 +142,13 @@
               }
             ]
           }
+        },
+        "outputFacets": {
+          "outputStatistics": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+            "_schemaURL": "https://openlineage.io/spec/facets/1-0-2/OutputStatisticsOutputDatasetFacet.json#/$defs/OutputStatisticsOutputDatasetFacet",
+            "rowCount": 2
+          }
         }
       }
     ]
@@ -147,6 +170,9 @@
           "name": "dbt",
           "version": "{{ any(result) }}",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "8c814240-637d-4a36-937e-43787f5c79e0"
         }
       }
     },
@@ -217,6 +243,9 @@
           "name": "dbt",
           "version": "{{ any(result) }}",
           "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "8c814240-637d-4a36-937e-43787f5c79e0"
         }
       }
     },

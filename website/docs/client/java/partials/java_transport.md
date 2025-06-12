@@ -830,7 +830,7 @@ GcpLineageTransportConfig gcplineageConfig = new GcpLineageTransportConfig();
 
 gcplineageConfig.setProjectId("your_gcp_project_id");
 gcplineageConfig.setLocation("your_gcp_location");
-gcplineageConfig.setMode("sync");
+gcplineageConfig.setMode(MODE.SYNC);
 gcplineageConfig.setCredentialsFile("path/to/credentials.json");
 
 OpenLineageClient client = OpenLineageClient.builder()

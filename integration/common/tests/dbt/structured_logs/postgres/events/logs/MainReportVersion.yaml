@@ -8,7 +8,7 @@
       "category":"",
       "code":"A001",
       "extra":{ },
-      "invocation_id":"b0ed168e-1926-42da-aa25-6b3eb826074b",
+      "invocation_id":"a1cb6f36-80a7-4f02-b9f6-c50e87f2c27f",
       "level":"info",
       "msg":"Running with dbt=1.8.2",
       "name":"MainReportVersion",
