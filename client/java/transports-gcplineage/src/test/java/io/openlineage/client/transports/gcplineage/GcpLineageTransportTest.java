@@ -10,13 +10,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.api.core.ApiFuture;
-import com.google.api.gax.rpc.AsyncTaskException;
-import com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventRequest;
-import com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventResponse;
 import com.google.cloud.datalineage.producerclient.helpers.OpenLineageHelper;
 import com.google.cloud.datalineage.producerclient.v1.AsyncLineageProducerClient;
 import com.google.cloud.datalineage.producerclient.v1.SyncLineageProducerClient;
+import datalineage.shaded.com.google.api.core.ApiFuture;
+import datalineage.shaded.com.google.api.gax.rpc.AsyncTaskException;
+import datalineage.shaded.com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventRequest;
+import datalineage.shaded.com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventResponse;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;

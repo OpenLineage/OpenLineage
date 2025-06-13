@@ -4,16 +4,6 @@
 */
 package io.openlineage.client.transports.gcplineage;
 
-import com.google.api.core.ApiFuture;
-import com.google.api.core.ApiFutureCallback;
-import com.google.api.core.ApiFutures;
-import com.google.api.gax.core.FixedCredentialsProvider;
-import com.google.auth.Credentials;
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.auth.oauth2.ServiceAccountCredentials;
-import com.google.cloud.datacatalog.lineage.v1.LineageSettings;
-import com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventRequest;
-import com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventResponse;
 import com.google.cloud.datalineage.producerclient.helpers.OpenLineageHelper;
 import com.google.cloud.datalineage.producerclient.v1.AsyncLineageClient;
 import com.google.cloud.datalineage.producerclient.v1.AsyncLineageProducerClient;
@@ -21,8 +11,18 @@ import com.google.cloud.datalineage.producerclient.v1.AsyncLineageProducerClient
 import com.google.cloud.datalineage.producerclient.v1.SyncLineageClient;
 import com.google.cloud.datalineage.producerclient.v1.SyncLineageProducerClient;
 import com.google.cloud.datalineage.producerclient.v1.SyncLineageProducerClientSettings;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.protobuf.Struct;
+import datalineage.shaded.com.google.api.core.ApiFuture;
+import datalineage.shaded.com.google.api.core.ApiFutureCallback;
+import datalineage.shaded.com.google.api.core.ApiFutures;
+import datalineage.shaded.com.google.api.gax.core.FixedCredentialsProvider;
+import datalineage.shaded.com.google.auth.Credentials;
+import datalineage.shaded.com.google.auth.oauth2.GoogleCredentials;
+import datalineage.shaded.com.google.auth.oauth2.ServiceAccountCredentials;
+import datalineage.shaded.com.google.cloud.datacatalog.lineage.v1.LineageSettings;
+import datalineage.shaded.com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventRequest;
+import datalineage.shaded.com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventResponse;
+import datalineage.shaded.com.google.common.util.concurrent.MoreExecutors;
+import datalineage.shaded.com.google.protobuf.Struct;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
