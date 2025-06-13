@@ -55,6 +55,9 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   @JsonProperty("debug")
   private DebugConfig debugConfig;
 
+  @JsonProperty("timeout")
+  private TimeoutConfig timeoutConfig;
+
   public SparkOpenLineageConfig(
       String namespace,
       String parentJobName,
