@@ -82,7 +82,16 @@ def test_client_passes_to_create_with_valid_url(url: str, res: str) -> None:
     assert OpenLineageClient(url=url, session=MagicMock()).transport.url == res
 
 
-def test_client_sends_proper_json_with_minimal_run_event() -> None:
+@patch("httpx.Client")
+def test_client_sends_proper_json_with_minimal_run_event(mock_client_class) -> None:
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
     client.emit(
@@ -101,16 +110,29 @@ def test_client_sends_proper_json_with_minimal_run_event() -> None:
         '"producer": "producer", "run": {"facets": {}, "runId": '
         f'"69f4acab-b87d-4fc0-b27b-8ea950370ff3"}}, "schemaURL": "{SCHEMA_URL}"}}'
     )
-    session.post.assert_called_with(
-        url="http://example.com/api/v1/lineage",
-        data=body,
-        headers={"Content-Type": "application/json"},
-        timeout=5.0,
-        verify=True,
-    )
+
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+
+    assert call_args.kwargs["url"] == "http://example.com/api/v1/lineage"
+    assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
+
+    # Verify the content is the expected JSON
+    actual_content = call_args.kwargs["content"]
+    assert actual_content == body
 
 
-def test_client_sends_proper_json_with_minimal_dataset_event() -> None:
+@patch("httpx.Client")
+def test_client_sends_proper_json_with_minimal_dataset_event(mock_client_class) -> None:
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -129,16 +151,29 @@ def test_client_sends_proper_json_with_minimal_dataset_event() -> None:
         '"2021-11-03T10:53:52.427343", "producer": "producer", '
         '"schemaURL": "datasetSchemaUrl"}'
     )
-    session.post.assert_called_with(
-        url="http://example.com/api/v1/lineage",
-        data=body,
-        headers={"Content-Type": "application/json"},
-        timeout=5.0,
-        verify=True,
-    )
+
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+
+    assert call_args.kwargs["url"] == "http://example.com/api/v1/lineage"
+    assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
+
+    # Verify the content is the expected JSON
+    actual_content = call_args.kwargs["content"]
+    assert actual_content == body
 
 
-def test_client_sends_proper_json_with_minimal_job_event() -> None:
+@patch("httpx.Client")
+def test_client_sends_proper_json_with_minimal_job_event(mock_client_class) -> None:
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -158,13 +193,16 @@ def test_client_sends_proper_json_with_minimal_job_event() -> None:
         '"schemaURL": "jobSchemaURL"}'
     )
 
-    session.post.assert_called_with(
-        url="http://example.com/api/v1/lineage",
-        data=body,
-        headers={"Content-Type": "application/json"},
-        timeout=5.0,
-        verify=True,
-    )
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+
+    assert call_args.kwargs["url"] == "http://example.com/api/v1/lineage"
+    assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
+
+    # Verify the content is the expected JSON
+    actual_content = call_args.kwargs["content"]
+    assert actual_content == body
 
 
 def test_client_uses_passed_transport() -> None:
@@ -525,7 +563,8 @@ def test_config_property_loads_yaml(mock_get_config_content, mock_find_yaml):
     {"OPENLINEAGE_URL": "http://example.com", "OPENLINEAGE_ENDPOINT": "v7", "OPENLINEAGE_API_KEY": "xxx"},
 )
 def test_http_transport_from_env_variables() -> None:
-    transport = OpenLineageClient._http_transport_from_env_variables()  # noqa: SLF001
+    client = OpenLineageClient()
+    transport = client._http_transport_from_env_variables()  # noqa: SLF001
     assert transport.kind == HttpTransport.kind
     assert transport.url == "http://example.com"
     assert transport.endpoint == "v7"
@@ -602,6 +641,35 @@ def test_composite_transport_with_aliased_url_and_overriden_alias() -> None:
     assert transport.kind == CompositeTransport.kind
     assert len(transport.transports) == 1
     assert transport.transports[0].kind == ConsoleTransport.kind
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT": '{"type": "http", "url": "https://data-obs-intake.datadoghq.com", '
+        '"auth": {"type": "apiKey", "apiKey": "YOUR_API_KEY"}, '
+        '"async_config": {"enabled": true}}',
+    },
+)
+def test_async_transport_with_enabled_async_flag() -> None:
+    transport: HttpTransport = OpenLineageClient().transport
+    assert transport.kind == HttpTransport.kind
+    print(transport.config)
+    assert transport.config.async_config.enabled is True
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__ASYNC_CONFIG__ENABLED": "true",
+    },
+)
+def test_async_transport_with_overwritten_enabled_async_flag() -> None:
+    transport: HttpTransport = OpenLineageClient().transport
+    assert transport.kind == HttpTransport.kind
+    assert transport.config.async_config.enabled is True
 
 
 @patch.dict(
