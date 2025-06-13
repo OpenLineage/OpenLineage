@@ -4,24 +4,29 @@
 */
 package io.openlineage.client.transports.gcplineage;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.api.core.ApiFuture;
-import com.google.api.gax.rpc.AsyncTaskException;
-import com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventRequest;
-import com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventResponse;
 import com.google.cloud.datalineage.producerclient.helpers.OpenLineageHelper;
 import com.google.cloud.datalineage.producerclient.v1.AsyncLineageProducerClient;
 import com.google.cloud.datalineage.producerclient.v1.SyncLineageProducerClient;
+import datalineage.shaded.com.google.api.core.ApiFuture;
+import datalineage.shaded.com.google.api.gax.rpc.AsyncTaskException;
+import datalineage.shaded.com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventRequest;
+import datalineage.shaded.com.google.cloud.datacatalog.lineage.v1.ProcessOpenLineageRunEventResponse;
+import datalineage.shaded.org.threeten.bp.Duration;
+import datalineage.shaded.org.threeten.bp.format.DateTimeParseException;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.Transport;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -107,6 +112,44 @@ class GcpLineageTransportTest {
     assertThrows(OpenLineageClientException.class, () -> client.emit(runEvent()));
   }
 
+  @SuppressWarnings({"unchecked", "PMD.AvoidAccessibilityAlteration"})
+  @Test
+  void testAsyncClientWithGracefulShutdownDuration() throws Exception {
+    GcpLineageTransportConfig config = new GcpLineageTransportConfig();
+    config.setProjectId("test-project");
+    config.setLocation("asia-southeast1");
+    config.setMode(GcpLineageTransportConfig.Mode.async);
+    config.setGracefulShutdownDuration("PT1H30M45S");
+
+    GcpLineageTransport gcpLineageTransport = new GcpLineageTransport(config);
+    GcpLineageTransport.ProducerClientWrapper wrapper =
+        getValue("producerClientWrapper", GcpLineageTransport.class, gcpLineageTransport);
+    AsyncLineageProducerClient client =
+        getValue("asyncLineageClient", GcpLineageTransport.ProducerClientWrapper.class, wrapper);
+    Duration actualDuration =
+        getValue("gracefulShutdownDuration", AsyncLineageProducerClient.class, client);
+
+    Duration expectedDuration = Duration.ofHours(1).plusMinutes(30).plusSeconds(45);
+    assertEquals(expectedDuration, actualDuration);
+    assertNotNull(wrapper);
+  }
+
+  @Test
+  void testAsyncClientWithInvalidGracefulShutdownDuration() {
+    // Initialize config programmatically with invalid duration
+    GcpLineageTransportConfig config = new GcpLineageTransportConfig();
+    config.setProjectId("test-project");
+    config.setLocation("us-central1");
+    config.setMode(GcpLineageTransportConfig.Mode.async);
+    config.setGracefulShutdownDuration("invalid-duration");
+
+    assertThrows(
+        DateTimeParseException.class,
+        () -> {
+          new GcpLineageTransport.ProducerClientWrapper(config);
+        });
+  }
+
   public static OpenLineage.RunEvent runEvent() {
     OpenLineage.Job job =
         new OpenLineage.JobBuilder().namespace("test-namespace").name("test-job").build();
@@ -119,5 +162,12 @@ class GcpLineageTransportTest {
         .job(job)
         .run(run)
         .build();
+  }
+
+  private <T, V> V getValue(String fieldName, Class<T> clazz, T object)
+      throws NoSuchFieldException, IllegalAccessException {
+    Field clientField = clazz.getDeclaredField(fieldName);
+    clientField.setAccessible(true);
+    return (V) clientField.get(object);
   }
 }
