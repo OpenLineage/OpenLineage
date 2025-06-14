@@ -31,6 +31,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandOutputDatasetB
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.column.JdbcColumnLineageVisitor;
 import io.openlineage.spark31.agent.lifecycle.plan.AlterTableDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoDelta11ColumnLineageVisitor;
 import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoIceberg013ColumnLineageVisitor;
@@ -112,7 +113,7 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
     if (MergeIntoIceberg013ColumnLineageVisitor.hasClasses()) {
       builder.add(new MergeIntoIceberg013ColumnLineageVisitor(context));
     }
-
+    builder.add(new JdbcColumnLineageVisitor(context));
     return builder.build();
   }
 }
