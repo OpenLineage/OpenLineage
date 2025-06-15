@@ -12,7 +12,7 @@ plugins {
 
 ext {
     assertjVersion = '3.27.3'
-    junit5Version = '5.11.4'
+    junit5Version = '5.13.1'
     mockitoVersion = '4.11.0'
     lombokVersion = '1.18.30'
     micrometerVersion = '1.14.1'
@@ -32,7 +32,7 @@ dependencies {
     compileOnly(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
 
     compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.2")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.5")
 
     testImplementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
     testImplementation(platform("org.junit:junit-bom:${junit5Version}"))
