@@ -38,7 +38,6 @@ public class PathUtils {
    * Create DatasetIdentifier from CatalogTable, using storage's locationURI if it exists. In other
    * way, use defaultTablePath.
    */
-  @SneakyThrows
   public static DatasetIdentifier fromCatalogTable(
       CatalogTable catalogTable, SparkSession sparkSession) {
     URI locationUri;
@@ -47,9 +46,23 @@ public class PathUtils {
     } else {
       locationUri = getDefaultLocationUri(sparkSession, catalogTable.identifier());
     }
-    DatasetIdentifier locationDataset = fromURI(locationUri);
-    // perform normalization
-    locationUri = FilesystemDatasetUtils.toLocation(locationDataset);
+    return fromCatalogTable(catalogTable, sparkSession, locationUri);
+  }
+
+  /** Create DatasetIdentifier from CatalogTable, using provided location. */
+  @SneakyThrows
+  public static DatasetIdentifier fromCatalogTable(
+      CatalogTable catalogTable, SparkSession sparkSession, Path location) {
+    return fromCatalogTable(catalogTable, sparkSession, location.toUri());
+  }
+
+  /** Create DatasetIdentifier from CatalogTable, using provided location. */
+  @SneakyThrows
+  public static DatasetIdentifier fromCatalogTable(
+      CatalogTable catalogTable, SparkSession sparkSession, URI location) {
+    // perform URL normalization
+    DatasetIdentifier locationDataset = fromURI(location);
+    URI locationUri = FilesystemDatasetUtils.toLocation(locationDataset);
 
     Optional<DatasetIdentifier> symlinkDataset = Optional.empty();
 
