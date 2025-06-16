@@ -12,6 +12,7 @@ import static io.openlineage.hive.hooks.TransformationInfo.Subtypes.WINDOW;
 
 import io.openlineage.hive.hooks.OutputCLL;
 import io.openlineage.hive.hooks.TransformationInfo;
+import io.openlineage.hive.udf.interfaces.UDFAdditionalLineage;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -93,7 +94,6 @@ public class ColumnLineageCollector {
       handleGenericExpression(outputCLL, outputColumn, (GenericExpr) expr, transformationInfo);
     } else {
       // TODO: NULLIF, NVL, NVL2, COALESCE
-      //  b/374205643
       throw new IllegalStateException("Unsupported expression: " + expr);
     }
   }
@@ -165,13 +165,10 @@ public class ColumnLineageCollector {
       String outputColumn,
       AggregateExpr agg,
       TransformationInfo transformationInfo) {
+    TransformationInfo updatedTransformationInfo =
+        transformationInfo.merge(TransformationInfo.aggregation(isMasking(agg)));
     for (BaseExpr child : agg.getChildren()) {
-      traverseExpression(
-          outputCLL,
-          outputColumn,
-          child,
-          transformationInfo.merge(
-              TransformationInfo.aggregation(isMasking(agg.getFunction().getClass()))));
+      traverseExpression(outputCLL, outputColumn, child, updatedTransformationInfo);
     }
   }
 
@@ -180,20 +177,10 @@ public class ColumnLineageCollector {
       String outputColumn,
       FunctionExpr func,
       TransformationInfo transformationInfo) {
-    boolean funcIsMasking;
-    if (func.getFunction() == null) {
-      funcIsMasking = false;
-    } else if (func.getFunction() instanceof GenericUDFBridge) {
-      funcIsMasking = isMasking(((GenericUDFBridge) func.getFunction()).getUdfClass());
-    } else {
-      funcIsMasking = isMasking(func.getFunction().getClass());
-    }
+    TransformationInfo updatedTransformationInfo =
+        transformationInfo.merge(TransformationInfo.transformation(isMasking(func)));
     for (BaseExpr child : func.getChildren()) {
-      traverseExpression(
-          outputCLL,
-          outputColumn,
-          child,
-          transformationInfo.merge(TransformationInfo.transformation(funcIsMasking)));
+      traverseExpression(outputCLL, outputColumn, child, updatedTransformationInfo);
     }
   }
 
@@ -202,13 +189,10 @@ public class ColumnLineageCollector {
       String outputColumn,
       UDTFExpr udtf,
       TransformationInfo transformationInfo) {
+    TransformationInfo updatedTransformationInfo =
+        transformationInfo.merge(TransformationInfo.transformation(isMasking(udtf)));
     for (BaseExpr child : udtf.getChildren()) {
-      traverseExpression(
-          outputCLL,
-          outputColumn,
-          child,
-          transformationInfo.merge(
-              TransformationInfo.transformation(isMasking(udtf.getFunction().getClass()))));
+      traverseExpression(outputCLL, outputColumn, child, updatedTransformationInfo);
     }
   }
 
@@ -276,6 +260,33 @@ public class ColumnLineageCollector {
             child,
             transformationInfo.merge(TransformationInfo.transformation()));
       }
+    }
+  }
+
+  static boolean isMasking(AggregateExpr agg) {
+    if (agg.getFunction() instanceof UDFAdditionalLineage) {
+      return ((UDFAdditionalLineage) agg.getFunction()).isMasking();
+    }
+    return isMasking(agg.getFunction().getClass());
+  }
+
+  static boolean isMasking(UDTFExpr udtf) {
+    if (udtf.getFunction() instanceof UDFAdditionalLineage) {
+      return ((UDFAdditionalLineage) udtf.getFunction()).isMasking();
+    }
+    return isMasking(udtf.getFunction().getClass());
+  }
+
+  static boolean isMasking(FunctionExpr func) {
+
+    if (func.getFunction() == null) {
+      return false;
+    } else if (func.getFunction() instanceof GenericUDFBridge) {
+      return isMasking(((GenericUDFBridge) func.getFunction()).getUdfClass());
+    } else if (func.getFunction() instanceof UDFAdditionalLineage) {
+      return ((UDFAdditionalLineage) func.getFunction()).isMasking();
+    } else {
+      return isMasking(func.getFunction().getClass());
     }
   }
 

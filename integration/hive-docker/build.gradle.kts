@@ -71,7 +71,7 @@ abstract class BuildDockerImageTask : DefaultTask() {
         val contextDir = dockerBuildContext.get().asFile
         val image = "${dockerImageName.get()}:${dockerImageTag.get()}"
         logger.lifecycle("Building Docker image: $image from context: $contextDir")
-        logger.lifecycle("Building Docker image: ${dockerImageName.get()}:${dockerImageTag.get()} from context: $contextDir")
+        logger.lifecycle("Building Docker image: ${dockerImageName.get()}-debug:${dockerImageTag.get()} from context: $contextDir")
 
         val commandParts = mutableListOf(
                 "docker", "buildx", "build",
