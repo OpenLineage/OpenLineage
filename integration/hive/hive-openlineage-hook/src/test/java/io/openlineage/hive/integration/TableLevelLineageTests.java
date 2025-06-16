@@ -12,12 +12,12 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 @Tag("integration-test")
-public class TableLevelLineageTests extends ContainerHiveTestBase {
+class TableLevelLineageTests extends ContainerHiveTestBase {
 
   public static final String HIVE_TEST_TABLE_DDL = "number INT, text STRING";
 
   @Test
-  public void testSelectAll() {
+  void testSelectAll() {
     createManagedHiveTable("test_table1", HIVE_TEST_TABLE_DDL);
     runHiveQuery("SELECT * FROM " + "test_table1");
     assertThat(mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
@@ -26,7 +26,7 @@ public class TableLevelLineageTests extends ContainerHiveTestBase {
 
   /** Check that a `INSERT VALUES(...)` query generates no events. */
   @Test
-  public void testInsertValues() {
+  void testInsertValues() {
     createManagedHiveTable("test_table2", HIVE_TEST_TABLE_DDL);
     runHiveQuery(String.format("INSERT INTO %s VALUES (99, 'hello')", "test_table2"));
     assertThat(mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
@@ -34,7 +34,7 @@ public class TableLevelLineageTests extends ContainerHiveTestBase {
   }
 
   @Test
-  public void testAddColumn() {
+  void testAddColumn() {
     createManagedHiveTable("test_table3", HIVE_TEST_TABLE_DDL);
     runHiveQuery(String.format("ALTER TABLE %s ADD COLUMNS (fl FLOAT)", "test_table3"));
     assertThat(mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
@@ -42,7 +42,7 @@ public class TableLevelLineageTests extends ContainerHiveTestBase {
   }
 
   @Test
-  public void testFailure() {
+  void testFailure() {
     createManagedHiveTable("unemployees", "id int, name string, team int");
     createManagedHiveTable("failure_table", "id int, name string, team int");
     runHiveQuery("INSERT INTO unemployees VALUES(1, 'hello', 1)");
@@ -68,7 +68,7 @@ public class TableLevelLineageTests extends ContainerHiveTestBase {
   }
 
   @Test
-  public void testSimpleCTAS() {
+  void testSimpleCTAS() {
     createManagedHiveTable("employees", "id int, name string, team int");
     createManagedHiveTable("managers", "id int, name string, team int");
     createManagedHiveTable("teams", "id int, type int, building string");

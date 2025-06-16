@@ -12,10 +12,10 @@ import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.junit.jupiter.api.Test;
 
-public class HiveUtilsTest {
+class HiveUtilsTest {
 
   @Test
-  public void testDatasetIdentifierFromSimpleTable() {
+  void testDatasetIdentifierFromSimpleTable() {
     org.apache.hadoop.hive.metastore.api.Table metastoreApiTable =
         new org.apache.hadoop.hive.metastore.api.Table();
     metastoreApiTable.setTableName("mytable");
@@ -29,7 +29,7 @@ public class HiveUtilsTest {
   }
 
   @Test
-  public void testDatasetIdentifierFromBigQueryTable() {
+  void testDatasetIdentifierFromBigQueryTable() {
     org.apache.hadoop.hive.metastore.api.Table metastoreApiTable =
         new org.apache.hadoop.hive.metastore.api.Table();
     metastoreApiTable.setTableName("mytable");
@@ -44,7 +44,7 @@ public class HiveUtilsTest {
   }
 
   @Test
-  public void testDatasetIdentifierTableWithLocation() {
+  void testDatasetIdentifierTableWithLocation() {
     org.apache.hadoop.hive.metastore.api.Table metastoreApiTable =
         new org.apache.hadoop.hive.metastore.api.Table();
     metastoreApiTable.setTableName("mytable");
