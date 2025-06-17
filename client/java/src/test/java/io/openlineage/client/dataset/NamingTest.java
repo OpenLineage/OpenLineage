@@ -14,7 +14,11 @@ class NamingTest {
   @Test
   void testBigQueryNaming() {
     Naming.BigQuery naming =
-        new Naming.BigQuery("my-project", "my_dataset", "my_table");
+        Naming.BigQuery.builder()
+            .projectId("my-project")
+            .datasetName("my_dataset")
+            .tableName("my_table")
+            .build();
     assertEquals("bigquery", naming.getNamespace());
     assertEquals("my-project.my_dataset.my_table", naming.getName());
   }
@@ -22,7 +26,12 @@ class NamingTest {
   @Test
   void testGlueNaming() {
     Naming.Glue naming =
-        new Naming.Glue("us-east-1", "123456789012", "my_db", "my_table");
+        Naming.Glue.builder()
+            .region("us-east-1")
+            .accountId("123456789012")
+            .databaseName("my_db")
+            .tableName("my_table")
+            .build();
     assertEquals("arn:aws:glue:us-east-1:123456789012", naming.getNamespace());
     assertEquals("table/my_db/my_table", naming.getName());
   }
@@ -30,8 +39,11 @@ class NamingTest {
   @Test
   void testPubSubNaming() {
     Naming.PubSubNaming naming =
-        new Naming.PubSubNaming(
-            Naming.PubSubNaming.PubSubResourceType.TOPIC, "my-project", "my-topic");
+        Naming.PubSubNaming.builder()
+            .resourceType(Naming.PubSubNaming.PubSubResourceType.TOPIC)
+            .projectId("my-project")
+            .resourceId("my-topic")
+            .build();
     assertEquals("pubsub", naming.getNamespace());
     assertEquals("topic:my-project:my-topic", naming.getName());
   }
@@ -39,7 +51,11 @@ class NamingTest {
   @Test
   void testAzureCosmosDbNaming() {
     Naming.AzureCosmosDB naming =
-        new Naming.AzureCosmosDB("my-host", "my-db", "my-collection");
+        Naming.AzureCosmosDB.builder()
+            .host("my-host")
+            .database("my-db")
+            .table("my-collection")
+            .build();
     assertEquals("azurecosmos://my-host/dbs/my-db", naming.getNamespace());
     assertEquals("colls/my-collection", naming.getName());
   }
@@ -47,7 +63,11 @@ class NamingTest {
   @Test
   void testAzureDataExplorerNaming() {
     Naming.AzureDataExplorer naming =
-        new Naming.AzureDataExplorer("my-host", "my-db", "my-table");
+        Naming.AzureDataExplorer.builder()
+            .host("my-host")
+            .database("my-db")
+            .table("my-table")
+            .build();
     assertEquals("azurekusto://my-host.kusto.windows.net", naming.getNamespace());
     assertEquals("my-db/my-table", naming.getName());
   }
@@ -55,7 +75,12 @@ class NamingTest {
   @Test
   void testAzureSynapseNaming() {
     Naming.AzureSynapse naming =
-        new Naming.AzureSynapse("my-host", "1433", "dbo", "my-table");
+        Naming.AzureSynapse.builder()
+            .host("my-host")
+            .port("1433")
+            .schema("dbo")
+            .table("my-table")
+            .build();
     assertEquals("sqlserver://my-host:1433", naming.getNamespace());
     assertEquals("dbo.my-table", naming.getName());
   }
@@ -63,14 +88,25 @@ class NamingTest {
   @Test
   void testCassandraNaming() {
     Naming.Cassandra naming =
-        new Naming.Cassandra("localhost", "9042", "my_keyspace", "my_table");
+        Naming.Cassandra.builder()
+            .host("localhost")
+            .port("9042")
+            .keyspace("my_keyspace")
+            .table("my_table")
+            .build();
     assertEquals("cassandra://localhost:9042", naming.getNamespace());
     assertEquals("my_keyspace.my_table", naming.getName());
   }
 
   @Test
   void testMySqlNaming() {
-    Naming.MySQL naming = new Naming.MySQL("localhost", "3306", "my_db", "my_table");
+    Naming.MySQL naming =
+        Naming.MySQL.builder()
+            .host("localhost")
+            .port("3306")
+            .database("my_db")
+            .table("my_table")
+            .build();
     assertEquals("mysql://localhost:3306", naming.getNamespace());
     assertEquals("my_db.my_table", naming.getName());
   }
@@ -78,7 +114,13 @@ class NamingTest {
   @Test
   void testCrateDbNaming() {
     Naming.CrateDB naming =
-        new Naming.CrateDB("localhost", "5432", "crate_db", "doc", "my_table");
+        Naming.CrateDB.builder()
+            .host("localhost")
+            .port("5432")
+            .database("crate_db")
+            .schema("doc")
+            .table("my_table")
+            .build();
     assertEquals("crate://localhost:5432", naming.getNamespace());
     assertEquals("crate_db.doc.my_table", naming.getName());
   }
@@ -86,7 +128,14 @@ class NamingTest {
   @Test
   void testDb2Naming() {
     Naming.DB2 naming =
-        new Naming.DB2("localhost", "50000", "db2inst1", "myschema", "my_table");
+        Naming.DB2
+            .builder()
+            .host("localhost")
+            .port("50000")
+            .database("db2inst1")
+            .schema("myschema")
+            .table("my_table")
+            .build();
     assertEquals("db2://localhost:50000", naming.getNamespace());
     assertEquals("db2inst1.myschema.my_table", naming.getName());
   }
@@ -94,7 +143,12 @@ class NamingTest {
   @Test
   void testOceanBaseNaming() {
     Naming.OceanBase naming =
-        new Naming.OceanBase("localhost", "2881", "my_db", "my_table");
+        Naming.OceanBase.builder()
+            .host("localhost")
+            .port("2881")
+            .database("my_db")
+            .table("my_table")
+            .build();
     assertEquals("oceanbase://localhost:2881", naming.getNamespace());
     assertEquals("my_db.my_table", naming.getName());
   }
@@ -102,7 +156,13 @@ class NamingTest {
   @Test
   void testOracleNaming() {
     Naming.Oracle naming =
-        new Naming.Oracle("localhost", "1521", "ORCLCDB", "myschema", "my_table");
+        Naming.Oracle.builder()
+            .host("localhost")
+            .port("1521")
+            .serviceName("ORCLCDB")
+            .schema("myschema")
+            .table("my_table")
+            .build();
     assertEquals("oracle://localhost:1521", naming.getNamespace());
     assertEquals("ORCLCDB.myschema.my_table", naming.getName());
   }
@@ -110,7 +170,13 @@ class NamingTest {
   @Test
   void testPostgresNaming() {
     Naming.Postgres naming =
-        new Naming.Postgres("localhost", "5432", "mydb", "my_schema", "my_table");
+        Naming.Postgres.builder()
+            .host("localhost")
+            .port("5432")
+            .database("mydb")
+            .schema("my_schema")
+            .table("my_table")
+            .build();
     assertEquals("postgres://localhost:5432", naming.getNamespace());
     assertEquals("mydb.my_schema.my_table", naming.getName());
   }
@@ -118,7 +184,12 @@ class NamingTest {
   @Test
   void testTeradataNaming() {
     Naming.Teradata naming =
-        new Naming.Teradata("teradata-host", "1025", "my_db", "my_table");
+        Naming.Teradata.builder()
+            .host("teradata-host")
+            .port("1025")
+            .database("my_db")
+            .table("my_table")
+            .build();
     assertEquals("teradata://teradata-host:1025", naming.getNamespace());
     assertEquals("my_db.my_table", naming.getName());
   }
@@ -126,7 +197,14 @@ class NamingTest {
   @Test
   void testRedshiftNaming() {
     Naming.Redshift naming =
-        new Naming.Redshift("cluster1", "us-east-1", "5439", "mydb", "my_schema", "my_table");
+        Naming.Redshift.builder()
+            .clusterIdentifier("cluster1")
+            .region("us-east-1")
+            .port("5439")
+            .database("mydb")
+            .schema("my_schema")
+            .table("my_table")
+            .build();
     assertEquals("redshift://cluster1.us-east-1:5439", naming.getNamespace());
     assertEquals("mydb.my_schema.my_table", naming.getName());
   }
@@ -134,7 +212,13 @@ class NamingTest {
   @Test
   void testSnowflakeNaming() {
     Naming.Snowflake naming =
-        new Naming.Snowflake("org-name", "acct-name", "db", "schema", "table");
+        Naming.Snowflake.builder()
+            .organizationName("org-name")
+            .accountName("acct-name")
+            .database("db")
+            .schema("schema")
+            .table("table")
+            .build();
     assertEquals("snowflake://org-name-acct-name", naming.getNamespace());
     assertEquals("db.schema.table", naming.getName());
   }
@@ -142,49 +226,68 @@ class NamingTest {
   @Test
   void testTrinoNaming() {
     Naming.Trino naming =
-        new Naming.Trino("localhost", "8080", "catalog", "schema", "table");
+        Naming.Trino.builder()
+            .host("localhost")
+            .port("8080")
+            .catalog("catalog")
+            .schema("schema")
+            .table("table")
+            .build();
     assertEquals("trino://localhost:8080", naming.getNamespace());
     assertEquals("catalog.schema.table", naming.getName());
   }
 
   @Test
   void testAbfssNaming() {
-    Naming.ABFSS naming = new Naming.ABFSS("container", "service", "path/to/data");
+    Naming.ABFSS naming =
+        Naming.ABFSS
+            .builder()
+            .container("container")
+            .service("service")
+            .path("path/to/data")
+            .build();
     assertEquals("abfss://container@service.dfs.core.windows.net", naming.getNamespace());
     assertEquals("path/to/data", naming.getName());
   }
 
   @Test
   void testDbfsNaming() {
-    Naming.DBFS naming = new Naming.DBFS("workspace", "/mnt/data");
+    Naming.DBFS naming = Naming.DBFS.builder().workspace("workspace").path("/mnt/data").build();
     assertEquals("dbfs://workspace", naming.getNamespace());
     assertEquals("/mnt/data", naming.getName());
   }
 
   @Test
   void testGcsNaming() {
-    Naming.GCS naming = new Naming.GCS("my-bucket", "path/to/file");
+    Naming.GCS naming =
+        Naming.GCS.builder().bucketName("my-bucket").objectKey("path/to/file").build();
     assertEquals("gs://my-bucket", naming.getNamespace());
     assertEquals("path/to/file", naming.getName());
   }
 
   @Test
   void testHdfsNaming() {
-    Naming.HDFS naming = new Naming.HDFS("namenode", "9000", "/data");
+    Naming.HDFS naming =
+        Naming.HDFS.builder().namenodeHost("namenode").namenodePort("9000").path("/data").build();
     assertEquals("hdfs://namenode:9000", naming.getNamespace());
     assertEquals("/data", naming.getName());
   }
 
   @Test
   void testKafkaNaming() {
-    Naming.Kafka naming = new Naming.Kafka("kafka-host", "9092", "my-topic");
+    Naming.Kafka naming =
+        Naming.Kafka.builder()
+            .bootstrapServerHost("kafka-host")
+            .port("9092")
+            .topic("my-topic")
+            .build();
     assertEquals("kafka://kafka-host:9092", naming.getNamespace());
     assertEquals("my-topic", naming.getName());
   }
 
   @Test
   void testLocalFsNaming() {
-    Naming.LocalFileSystem naming = new Naming.LocalFileSystem("/local/path");
+    Naming.LocalFileSystem naming = Naming.LocalFileSystem.builder().path("/local/path").build();
     assertEquals("file", naming.getNamespace());
     assertEquals("/local/path", naming.getName());
   }
@@ -192,21 +295,28 @@ class NamingTest {
   @Test
   void testRemoteFsNaming() {
     Naming.RemoteFileSystem naming =
-        new Naming.RemoteFileSystem("remote-host", "/remote/path");
+        Naming.RemoteFileSystem.builder().host("remote-host").path("/remote/path").build();
     assertEquals("file://remote-host", naming.getNamespace());
     assertEquals("/remote/path", naming.getName());
   }
 
   @Test
   void testS3Naming() {
-    Naming.S3 naming = new Naming.S3("my-bucket", "my/object/key");
+    Naming.S3 naming =
+        Naming.S3.builder().bucketName("my-bucket").objectKey("my/object/key").build();
     assertEquals("s3://my-bucket", naming.getNamespace());
     assertEquals("my/object/key", naming.getName());
   }
 
   @Test
   void testWasbsNaming() {
-    Naming.WASBS naming = new Naming.WASBS("container", "service", "object-key");
+    Naming.WASBS naming =
+        Naming.WASBS
+            .builder()
+            .containerName("container")
+            .serviceName("service")
+            .objectKey("object-key")
+            .build();
     assertEquals("wasbs://container@service.dfs.core.windows.net", naming.getNamespace());
     assertEquals("object-key", naming.getName());
   }

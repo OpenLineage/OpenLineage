@@ -327,6 +327,7 @@ public final class Naming {
   }
 
   /** Naming implementation for OceanBase. */
+  @Builder
   public static class OceanBase implements DatasetNaming {
     private final String host;
     private final String port;
@@ -436,22 +437,22 @@ public final class Naming {
   /** Naming implementation for Redshift. */
   @Builder
   public static class Redshift implements DatasetNaming {
-    private final String cluster_identifier;
-    private final String region_name;
+    private final String clusterIdentifier;
+    private final String region;
     private final String port;
     private final String database;
     private final String schema;
     private final String table;
 
     public Redshift(
-        String cluster_identifier,
-        String region_name,
+        String clusterIdentifier,
+        String region,
         String port,
         String database,
         String schema,
         String table) {
-      this.cluster_identifier = checkArgumentNotEmpty(cluster_identifier, "cluster_identifier");
-      this.region_name = checkArgumentNotEmpty(region_name, "region_name");
+      this.clusterIdentifier = checkArgumentNotEmpty(clusterIdentifier, "clusterIdentifier");
+      this.region = checkArgumentNotEmpty(region, "region");
       this.port = checkArgumentNotEmpty(port, "port");
       this.database = checkArgumentNotEmpty(database, "database");
       this.schema = checkArgumentNotEmpty(schema, "schema");
@@ -460,7 +461,7 @@ public final class Naming {
 
     @Override
     public String getNamespace() {
-      return "redshift://" + cluster_identifier + "." + region_name + ":" + port;
+      return "redshift://" + clusterIdentifier + "." + region + ":" + port;
     }
 
     @Override
@@ -472,20 +473,20 @@ public final class Naming {
   /** Naming implementation for Snowflake. */
   @Builder
   public static class Snowflake implements DatasetNaming {
-    private final String organization_name;
-    private final String account_name;
+    private final String organizationName;
+    private final String accountName;
     private final String database;
     private final String schema;
     private final String table;
 
     public Snowflake(
         String organization_name,
-        String account_name,
+        String accountName,
         String database,
         String schema,
         String table) {
-      this.organization_name = checkArgumentNotEmpty(organization_name, "organization_name");
-      this.account_name = checkArgumentNotEmpty(account_name, "account_name");
+      this.organizationName = checkArgumentNotEmpty(organization_name, "organizationName");
+      this.accountName = checkArgumentNotEmpty(accountName, "accountName");
       this.database = checkArgumentNotEmpty(database, "database");
       this.schema = checkArgumentNotEmpty(schema, "schema");
       this.table = checkArgumentNotEmpty(table, "table");
@@ -493,7 +494,7 @@ public final class Naming {
 
     @Override
     public String getNamespace() {
-      return "snowflake://" + organization_name + "-" + account_name;
+      return "snowflake://" + organizationName + "-" + accountName;
     }
 
     @Override
@@ -533,19 +534,19 @@ public final class Naming {
   /** Naming implementation for ABFSS. */
   @Builder
   public static class ABFSS implements DatasetNaming {
-    private final String containerName;
-    private final String serviceName;
+    private final String container;
+    private final String service;
     private final String path;
 
-    public ABFSS(String containerName, String serviceName, String path) {
-      this.containerName = checkArgumentNotEmpty(containerName, "containerName");
-      this.serviceName = checkArgumentNotEmpty(serviceName, "serviceName");
+    public ABFSS(String container, String service, String path) {
+      this.container = checkArgumentNotEmpty(container, "container");
+      this.service = checkArgumentNotEmpty(service, "service");
       this.path = checkArgumentNotEmpty(path, "path");
     }
 
     @Override
     public String getNamespace() {
-      return "abfss://" + containerName + "@" + serviceName + ".dfs.core.windows.net";
+      return "abfss://" + container + "@" + service + ".dfs.core.windows.net";
     }
 
     @Override
@@ -557,17 +558,17 @@ public final class Naming {
   /** Naming implementation for DBFS. */
   @Builder
   public static class DBFS implements DatasetNaming {
-    private final String workspaceName;
+    private final String workspace;
     private final String path;
 
-    public DBFS(String workspaceName, String path) {
-      this.workspaceName = checkArgumentNotEmpty(workspaceName, "workspaceName");
+    public DBFS(String workspace, String path) {
+      this.workspace = checkArgumentNotEmpty(workspace, "workspace");
       this.path = checkArgumentNotEmpty(path, "path");
     }
 
     @Override
     public String getNamespace() {
-      return "dbfs://" + workspaceName;
+      return "dbfs://" + workspace;
     }
 
     @Override
@@ -579,22 +580,22 @@ public final class Naming {
   /** Naming implementation for GCS. */
   @Builder
   public static class GCS implements DatasetNaming {
-    private final String bucket_name;
-    private final String object_key;
+    private final String bucketName;
+    private final String objectKey;
 
-    public GCS(String bucket_name, String object_key) {
-      this.bucket_name = checkArgumentNotEmpty(bucket_name, "bucket_name");
-      this.object_key = checkArgumentNotEmpty(object_key, "object_key");
+    public GCS(String bucketName, String objectKey) {
+      this.bucketName = checkArgumentNotEmpty(bucketName, "bucketName");
+      this.objectKey = checkArgumentNotEmpty(objectKey, "objectKey");
     }
 
     @Override
     public String getNamespace() {
-      return "gs://" + bucket_name;
+      return "gs://" + bucketName;
     }
 
     @Override
     public String getName() {
-      return object_key;
+      return objectKey;
     }
   }
 
