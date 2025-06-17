@@ -30,6 +30,7 @@ import io.openlineage.hive.client.Versions;
 import io.openlineage.hive.facets.HivePropertiesFacet;
 import io.openlineage.hive.facets.HivePropertiesFacetBuilder;
 import io.openlineage.hive.facets.HiveQueryInfoFacet;
+import io.openlineage.hive.facets.HiveSessionInfoFacet;
 import io.openlineage.hive.parsing.ColumnLineageCollector;
 import io.openlineage.hive.parsing.Parsing;
 import io.openlineage.hive.parsing.QueryExpr;
@@ -39,15 +40,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.hooks.Entity;
+import org.apache.hadoop.hive.ql.hooks.HookContext;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
 import org.apache.hadoop.hive.ql.metadata.Table;
+import org.apache.hadoop.hive.ql.parse.SemanticAnalyzer;
 import org.apache.hive.common.util.HiveVersionInfo;
 
 @Slf4j
@@ -70,15 +74,15 @@ public class Faceting {
       Entity.Type entityType = input.getType();
       if ((entityType == Entity.Type.TABLE || entityType == Entity.Type.PARTITION)
           && !input.isDummy()) {
-        sanitizeEntity(olContext.getHadoopConf(), input);
+        sanitizeEntity(olContext.getHookContext().getConf(), input);
         Table table = input.getTable();
         DatasetIdentifier di = HiveUtils.getDatasetIdentifierFromTable(table);
-        OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
-        SchemaDatasetFacet schemaFacet = getSchemaDatasetFacet(olContext, table);
+        OpenLineage ol = olContext.getOpenLineage();
+        SchemaDatasetFacet schemaFacet = getSchemaDatasetFacet(ol, table);
         SymlinksDatasetFacet symlinksDatasetFacet = getSymlinkFacets(ol, di);
         inputs.add(
             ol.newInputDatasetBuilder()
-                .namespace(getNamespace(olContext))
+                .namespace(getDatasetNamespace(olContext))
                 .name(di.getName())
                 .facets(
                     ol.newDatasetFacetsBuilder()
@@ -91,8 +95,8 @@ public class Faceting {
     return inputs;
   }
 
-  private static String getNamespace(OpenLineageContext olContext) {
-    Configuration conf = olContext.getHadoopConf();
+  private static String getDatasetNamespace(OpenLineageContext olContext) {
+    Configuration conf = olContext.getHookContext().getConf();
     if (conf.get("hive.metastore.uris") != null) {
       return conf.get("hive.metastore.uris").split(",")[0].replaceFirst(".*://", "hive://");
     }
@@ -109,28 +113,34 @@ public class Faceting {
 
   public static List<OutputDataset> getOutputDatasets(
       OpenLineageContext olContext, List<InputDataset> inputDatasets) {
+    HookContext hookContext = olContext.getHookContext();
+    SemanticAnalyzer semanticAnalyzer =
+        HiveUtils.analyzeQuery(
+            hookContext.getConf(),
+            hookContext.getQueryState(),
+            hookContext.getQueryPlan().getQueryString());
+
+    boolean datasetLineageEnabled =
+        hookContext
+            .getConf()
+            .getBoolean(HiveOpenLineageConfigParser.DATASET_LINEAGE_ENABLED_KEY, true);
+
     List<OutputDataset> outputs = new ArrayList<>();
     for (WriteEntity output : olContext.getWriteEntities()) {
       Entity.Type entityType = output.getType();
       if ((entityType == Entity.Type.TABLE || entityType == Entity.Type.PARTITION)
           && !output.isDummy()) {
-        sanitizeEntity(olContext.getHadoopConf(), output);
+        sanitizeEntity(olContext.getHookContext().getConf(), output);
         Table outputTable = output.getTable();
         DatasetIdentifier di = HiveUtils.getDatasetIdentifierFromTable(outputTable);
-        OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
-        SchemaDatasetFacet schemaFacet = getSchemaDatasetFacet(olContext, outputTable);
+        OpenLineage ol = olContext.getOpenLineage();
+        SchemaDatasetFacet schemaFacet = getSchemaDatasetFacet(ol, outputTable);
         SymlinksDatasetFacet symlinksFacet = getSymlinkFacets(ol, di);
         DatasetFacetsBuilder datasetFacetsBuilder =
             ol.newDatasetFacetsBuilder().schema(schemaFacet).symlinks(symlinksFacet);
         QueryExpr query =
-            Parsing.buildQueryTree(
-                olContext.getSemanticAnalyzer().getQB(), outputTable.getFullyQualifiedName());
+            Parsing.buildQueryTree(semanticAnalyzer.getQB(), outputTable.getFullyQualifiedName());
         OutputCLL outputCLL = ColumnLineageCollector.collectCLL(query, outputTable);
-        boolean datasetLineageEnabled =
-            olContext
-                .getHadoopConf()
-                .getBoolean(
-                    HiveOpenLineageConfigParser.CONF_PREFIX + "datasetLineageEnabled", true);
         ColumnLineageDatasetFacet columnsFacet =
             getColumnFacets(ol, datasetLineageEnabled, inputDatasets, outputCLL);
         if (!columnsFacet.getFields().getAdditionalProperties().isEmpty()) {
@@ -138,7 +148,7 @@ public class Faceting {
         }
         outputs.add(
             ol.newOutputDatasetBuilder()
-                .namespace(getNamespace(olContext))
+                .namespace(getDatasetNamespace(olContext))
                 .name(di.getName())
                 .facets(datasetFacetsBuilder.build())
                 .build());
@@ -261,46 +271,52 @@ public class Faceting {
     return null;
   }
 
-  public static SchemaDatasetFacet getSchemaDatasetFacet(
-      OpenLineageContext olContext, Table table) {
+  public static SchemaDatasetFacet getSchemaDatasetFacet(OpenLineage ol, Table table) {
     List<FieldSchema> columns = table.getCols();
     SchemaDatasetFacet schemaFacet = null;
     if (columns != null && !columns.isEmpty()) {
       List<SchemaDatasetFacetFields> fields = new ArrayList<>();
       for (FieldSchema column : columns) {
         fields.add(
-            olContext
-                .getOpenLineage()
-                .newSchemaDatasetFacetFieldsBuilder()
+            ol.newSchemaDatasetFacetFieldsBuilder()
                 .name(column.getName())
                 .type(column.getType())
                 .description(column.getComment())
                 .build());
       }
-      schemaFacet = olContext.getOpenLineage().newSchemaDatasetFacet(fields);
+      schemaFacet = ol.newSchemaDatasetFacet(fields);
     }
     return schemaFacet;
   }
 
-  private static OpenLineage.ProcessingEngineRunFacet getProcessingEngineFacet(
-      OpenLineageContext olContext) {
-    return olContext
-        .getOpenLineage()
-        .newProcessingEngineRunFacetBuilder()
+  private static OpenLineage.ProcessingEngineRunFacet getProcessingEngineFacet(OpenLineage ol) {
+    return ol.newProcessingEngineRunFacetBuilder()
         .name("hive")
         .version(HiveVersionInfo.getVersion())
-        .openlineageAdapterVersion(olContext.getOpenlineageHiveIntegrationVersion())
+        .openlineageAdapterVersion(Versions.getVersion())
         .build();
   }
 
   private static HivePropertiesFacet getHivePropertiesFacet(OpenLineageContext olContext) {
-    return new HivePropertiesFacetBuilder(olContext.getHadoopConf()).build();
+    return new HivePropertiesFacetBuilder(olContext.getHookContext().getConf()).build();
   }
 
   private static HiveQueryInfoFacet getHiveQueryInfoFacet(OpenLineageContext olContext) {
+    HookContext hookContext = olContext.getHookContext();
     return new HiveQueryInfoFacet()
-        .setQueryId(olContext.getQueryId())
-        .setOperationName(olContext.getOperationName());
+        .setQueryId(hookContext.getQueryState().getQueryId())
+        .setOperationName(hookContext.getOperationName());
+  }
+
+  private static HiveSessionInfoFacet getHiveSessionInfoFacet(OpenLineageContext olContext) {
+    HookContext hookContext = olContext.getHookContext();
+    return new HiveSessionInfoFacet()
+        .setUsername(
+            Optional.ofNullable(hookContext.getUserName()) // for HiveServer2
+                .filter(userName -> !userName.isEmpty() && !userName.equals("anonymous"))
+                .orElse(hookContext.getUgi().getShortUserName())) // for HiveCli
+        .setClientIp(hookContext.getIpAddress())
+        .setSessionId(hookContext.getSessionId());
   }
 
   public static RunEvent getRunEvent(EventEmitter emitter, OpenLineageContext olContext) {
@@ -310,8 +326,9 @@ public class Faceting {
             .runId(emitter.getRunId())
             .facets(
                 ol.newRunFacetsBuilder()
-                    .put("processing_engine", getProcessingEngineFacet(olContext))
+                    .put("processing_engine", getProcessingEngineFacet(ol))
                     .put("hive_query", getHiveQueryInfoFacet(olContext))
+                    .put("hive_session", getHiveSessionInfoFacet(olContext))
                     .put("hive_properties", getHivePropertiesFacet(olContext))
                     .build());
 
@@ -327,15 +344,18 @@ public class Faceting {
                 .namespace(emitter.getJobNamespace())
                 .name(jobName)
                 // TODO: Add job facets
-                .facets(
-                    ol.newJobFacetsBuilder()
-                        .put(
-                            "sql",
-                            ol.newSQLJobFacetBuilder().query(olContext.getQueryString()).build())
-                        .build())
+                .facets(ol.newJobFacetsBuilder().put("sql", getSQLJobFacet(olContext)).build())
                 .build())
         .inputs(inputDatasets)
         .outputs(outputDatasets)
+        .build();
+  }
+
+  private static OpenLineage.SQLJobFacet getSQLJobFacet(OpenLineageContext olContext) {
+    return olContext
+        .getOpenLineage()
+        .newSQLJobFacetBuilder()
+        .query(olContext.getHookContext().getQueryPlan().getQueryString())
         .build();
   }
 

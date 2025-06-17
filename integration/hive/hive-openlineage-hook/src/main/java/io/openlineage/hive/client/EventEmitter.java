@@ -26,7 +26,7 @@ public class EventEmitter implements AutoCloseable {
   private final String jobNamespace;
 
   public EventEmitter(OpenLineageContext olContext) {
-    Configuration conf = olContext.getHadoopConf();
+    Configuration conf = olContext.getHookContext().getConf();
     this.client = Clients.newClient(olContext.getOpenLineageConfig());
     this.runId = generateNewUUID();
     this.jobNamespace = conf.get(HiveOpenLineageConfigParser.NAMESPACE_KEY, "default");
@@ -43,8 +43,8 @@ public class EventEmitter implements AutoCloseable {
     }
   }
 
-  public static String getJobName(OpenLineageContext hookContext) {
-    return hookContext.getOperationName();
+  public static String getJobName(OpenLineageContext olContext) {
+    return olContext.getHookContext().getOperationName();
   }
 
   @Override

@@ -11,7 +11,6 @@ import io.openlineage.hive.api.OpenLineageContext;
 import io.openlineage.hive.client.EventEmitter;
 import io.openlineage.hive.client.HiveOpenLineageConfigParser;
 import io.openlineage.hive.client.Versions;
-import io.openlineage.hive.util.HiveUtils;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.HashSet;
@@ -23,7 +22,6 @@ import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
-import org.apache.hadoop.hive.ql.parse.SemanticAnalyzer;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
 
@@ -81,9 +79,6 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext {
           || validOutputs.isEmpty()) {
         return;
       }
-      SemanticAnalyzer semanticAnalyzer =
-          HiveUtils.analyzeQuery(
-              hookContext.getConf(), hookContext.getQueryState(), queryPlan.getQueryString());
       OpenLineage.RunEvent.EventType eventType;
       if (hookContext.getHookType() == HookType.POST_EXEC_HOOK) {
         // It is a successful query
@@ -95,18 +90,13 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext {
       OpenLineageContext olContext =
           OpenLineageContext.builder()
               .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-              .queryId(hookContext.getQueryState().getQueryId())
-              .queryString(hookContext.getQueryPlan().getQueryString())
-              .semanticAnalyzer(semanticAnalyzer)
+              .openLineageConfig(
+                  HiveOpenLineageConfigParser.extractFromHadoopConf(hookContext.getConf()))
+              .hookContext(hookContext)
               .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
               .eventType(eventType)
               .readEntities(validInputs)
               .writeEntities(validOutputs)
-              .hadoopConf(hookContext.getConf())
-              .openlineageHiveIntegrationVersion(Versions.getVersion())
-              .operationName(hookContext.getOperationName())
-              .openLineageConfig(
-                  HiveOpenLineageConfigParser.extractFromHadoopConf(hookContext.getConf()))
               .build();
       try (EventEmitter emitter = new EventEmitter(olContext)) {
         OpenLineage.RunEvent runEvent = Faceting.getRunEvent(emitter, olContext);
