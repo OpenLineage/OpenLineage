@@ -165,11 +165,11 @@ def job(job_name, sql, location):
         )
     return Job(namespace=namespace, name=job_name, facets=facets)
 
-@attr.s
+@attr.define
 class MyFacet(BaseFacet):
-    name: str = attr.ib()
-    age: str = attr.ib()
-    email: str = attr.ib()
+    name: str
+    age: str
+    email: str
     _additional_skip_redact: List[str] = ['name', 'age', 'email']
     def __init__(self, name, age, email):
         super().__init__()
@@ -349,11 +349,11 @@ for event in events:
 As you can see in the source code, there is a class called `MyFacet` which extends from the `BaseFacet` of OpenLineage, having three attributes of `name`, `age`, and `email`.
 
 ```python
-@attr.s
+@attr.define
 class MyFacet(BaseFacet):
-    name: str = attr.ib()
-    age: str = attr.ib()
-    email: str = attr.ib()
+    name: str
+    age: str
+    email: str
     _additional_skip_redact: List[str] = ['name', 'age', 'email']
     def __init__(self, name, age, email):
         super().__init__()
@@ -509,11 +509,11 @@ OpenLineage backend should be able to store this information when submitted, and
 You might have noticed the schema URL is actually that of `BaseFacet`. By default, if the facet class did not specify its own schema URL, that value would be that of BaseFacet. From the view of OpenLineage specification, this is legal. However, if you have your own JSON spec defined, and has it publically accessible, you can specify it by overriding the `_get_schema` function as such:
 
 ```python
-@attr.s
+@attr.define
 class MyFacet(BaseFacet):
-    name: str = attr.ib()
-    age: str = attr.ib()
-    email: str = attr.ib()
+    name: str
+    age: str
+    email: str
     _additional_skip_redact: List[str] = ['name', 'age', 'email']
     def __init__(self, name, age, email):
         super().__init__()

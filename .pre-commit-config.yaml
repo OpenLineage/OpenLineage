@@ -98,6 +98,19 @@ repos:
         entry: .pre_commit/check_version_update_path.sh
         files: new-version\.sh$|\.gradle$|gradle\.properties$|README\.md$|version\.properties$
         pass_filenames: false
+      - id: forbid-attr-s
+        name: Check for @attr.s
+        description: "Checks if @attr.s is used instead of desired @attr.define"
+        language: pygrep
+        entry: "@(attr\\.s|s)(\\s|\\n|\\()"
+        files: "\\.(py|md)$"
+        # Exclude tests directories and deprecated modules that can use @attr.s
+        exclude: |
+          (?x)^(
+            .*tests.* |
+            client/python/openlineage/client/facet\.py |
+            client/python/openlineage/client/run\.py
+          )$
       - id: prettier
         name: prettier
         description: ""

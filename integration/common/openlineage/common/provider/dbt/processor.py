@@ -69,36 +69,36 @@ class UnsupportedDbtCommand(Exception):
     pass
 
 
-@attr.s
+@attr.define
 class ModelNode:
-    metadata_node: Dict = attr.ib()
-    catalog_node: Optional[Dict] = attr.ib(default=None)
+    metadata_node: Dict
+    catalog_node: Optional[Dict] = None
 
 
-@attr.s
+@attr.define
 class DbtRun:
-    started_at: str = attr.ib()
-    completed_at: str = attr.ib()
-    status: str = attr.ib()
-    inputs: List[Dataset] = attr.ib()
-    output: Optional[Dataset] = attr.ib()
-    job_name: str = attr.ib()
-    namespace: str = attr.ib()
-    run_id: str = attr.ib(factory=lambda: str(generate_new_uuid()))
+    started_at: str
+    completed_at: str
+    status: str
+    inputs: List[Dataset]
+    output: Optional[Dataset]
+    job_name: str
+    namespace: str
+    run_id: str = attr.field(factory=lambda: str(generate_new_uuid()))
 
 
-@attr.s
+@attr.define
 class DbtRunResult:
-    start: RunEvent = attr.ib()
-    complete: Optional[RunEvent] = attr.ib(default=None)
-    fail: Optional[RunEvent] = attr.ib(default=None)
+    start: RunEvent
+    complete: Optional[RunEvent] = None
+    fail: Optional[RunEvent] = None
 
 
-@attr.s
+@attr.define
 class DbtEvents:
-    starts: List[RunEvent] = attr.ib(factory=list)
-    completes: List[RunEvent] = attr.ib(factory=list)
-    fails: List[RunEvent] = attr.ib(factory=list)
+    starts: List[RunEvent] = attr.field(factory=list)
+    completes: List[RunEvent] = attr.field(factory=list)
+    fails: List[RunEvent] = attr.field(factory=list)
 
     def events(self):
         return self.starts + self.completes + self.fails
@@ -121,11 +121,11 @@ class DbtEvents:
         raise NotImplementedError
 
 
-@attr.s
+@attr.define
 class DbtRunContext:
-    manifest: Dict = attr.ib()
-    run_results: Dict = attr.ib()
-    catalog: Optional[Dict] = attr.ib(default=None)
+    manifest: Dict
+    run_results: Dict
+    catalog: Optional[Dict] = None
 
 
 class DbtArtifactProcessor:

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from openlineage.client.generated.tags_run import TagsRunFacetFields
 
 
-@attr.s
+@attr.define
 class TagsConfig:
-    job: list[TagsJobFacetFields] = attr.ib(factory=list)
-    run: list[TagsRunFacetFields] = attr.ib(factory=list)
+    job: list[TagsJobFacetFields] = attr.field(factory=list)
+    run: list[TagsRunFacetFields] = attr.field(factory=list)

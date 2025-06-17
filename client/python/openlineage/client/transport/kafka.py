@@ -24,21 +24,21 @@ log = logging.getLogger(__name__)
 _T = TypeVar("_T", bound="KafkaConfig")
 
 
-@attr.s
+@attr.define
 class KafkaConfig(Config):
     # Kafka producer config
     # https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html#kafka-client-configuration
-    config: dict[str, str] = attr.ib()
+    config: dict[str, str]
 
     # Topic on which we should send messages
-    topic: str = attr.ib()
+    topic: str
 
     # Explicit key for Kafka producer
-    messageKey: str | None = attr.ib(default=None)  # noqa: N815
+    messageKey: str | None = None  # noqa: N815
 
     # Set to true if Kafka should flush after each event. The process that emits can be killed in
     # some cases - for example in Airflow integration, so flushing is desirable there.
-    flush: bool = attr.ib(default=True)
+    flush: bool = True
 
     @classmethod
     def from_dict(cls: type[_T], params: dict[str, Any]) -> _T:
