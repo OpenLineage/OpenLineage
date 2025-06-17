@@ -6,14 +6,21 @@ sidebar_position: 1
 
 OpenLineage was designed to enable large-scale observation of datasets as they move through a complex pipeline.
 
-Because of this, it integrates with various tools with the aim of emitting real-time lineage events as datasets are created and transformed. The object model is flexible, with abstract definitions for Dataset and Job that support a variety of underlying data architectures. OpenLineage cares how Datasets come into being, not just that relationships exist between them. Accordingly, its object model contains both Jobs *and* Datasets.
+Because of this, it integrates with various tools with the aim of emitting real-time lineage events as datasets are created and transformed. In addition to that, design lineage events can be emitted as transformations are created and altered. The object model is flexible, with abstract definitions for Dataset and Job that support a variety of underlying data architectures. OpenLineage cares how Datasets come into being, not just that relationships exist between them. Accordingly, its object model contains both Jobs *and* Datasets.
 
-Logically, an OpenLineage backend learns about Datasets by receiving information about Jobs that run. Most Jobs have at least one input or output Dataset, and a lineage graph can be created by weaving together observations of many Jobs across multiple platforms.
+Logically, an OpenLineage backend learns about Datasets primarily by receiving information about Jobs. Most Jobs have at least one input or output Dataset, and a lineage graph can be created by weaving together observations of many Jobs across multiple platforms.
 
-This information is in the form of **Run State Updates**, which contain information about Jobs, Datasets, and Runs.
 
-## Run State Update
-A Run State Update is prepared and sent when something important occurs within your pipeline, and each one can be thought of as a distinct observation. This commonly happens when a Job starts or finishes.
+OpenLineage defines multiple types of events to support both runtime and design lineage:
+
+- **Job Run State Updates** (`RunEvent`): describes the execution of a job, emitted at runtime.
+- **Job Metadata Updates (also known as static lineage)** (`JobEvent`): describes metadata about a job, such as its location in source code or declared inputs/outputs. Emitted at design-time and not associated with a `Run`.
+- **Dataset Metadata Updates** (`DatasetEvent`): describes metadata changes related to a dataset, such as schema, ownership, or documentation. Emitted at design-time and not associated with a `Run`.
+
+> ⚠️ Design lineage events (`DatasetEvent`, `JobEvent`) are **not** associated with a `Run` and represent **design-time metadata**.
+
+## Job Run State Update
+The `RunEvent` is prepared and sent when something important occurs within your pipeline, and each one can be thought of as a distinct observation. This commonly happens when a Job starts or finishes.
 
 The run state itself refers to a stage within the [run cycle](./run-cycle.md) of the current run. Usually, the first Run State for a Job would be `START` and the last would be `COMPLETE`. A run cycle is likely to have at least two Run State Updates, and perhaps more. Each one will also have timestamp of when this particular state change happened.
 
@@ -23,7 +30,22 @@ Each Run State Update can include detail about the Job, the Run, and the input a
 
 Each of these three core entities can also be extended through the use of facets, some of which are documented in the relevant sections below.
 
-## Job
+
+## Job Metadata Update
+The `JobEvent` provides a way to describe a job's static properties such as source code location, declared inputs and outputs, and documentation. JobEvent is emitted when a job’s metadata is created or updated — typically by a compiler, CI pipeline, or metadata extraction tool.
+
+![OpenLineage Object Model](object-model-job-event.svg)
+
+
+## Dataset Metadata Update
+The `DatasetEvent` allows metadata to be attached to a dataset outside the context of a job or a job run. This enables use cases such as static schema extraction, documentation generation, or governance. DatasetEvent is emitted when a dataset’s metadata is updated or first defined.
+
+![OpenLineage Object Model](object-model-dataset-event.svg)
+
+
+## Event Payload Structure
+
+### Job
 A Job is a process that consumes or produces Datasets.
 
 This is abstract, and can map to different things in different operational contexts. For example, a job could be a task in a workflow orchestration system. It could also be a model, a query, or a checkpoint. Depending on the system under observation, a Job can represent a small or large amount of work.
@@ -32,7 +54,7 @@ A Job is the part of the object model that represents a discrete bit of defined 
 
 Jobs are identified by a unique name within a `namespace`. They are expected to evolve over time and their changes can be captured through Run State Updates. 
 
-### Job Facets
+#### Job Facets
 Facets that can be used to augment the metadata of a Job include:
 
 - **sourceCodeLocation**: Captures the source code location and version (e.g., the git SHA) of the job.
@@ -41,14 +63,14 @@ Facets that can be used to augment the metadata of a Job include:
 
 For more details, please refer to the [Job Facets](./facets/job-facets).
 
-## Run
+### Run
 A Run is an instance of a Job that represents one of its occurrences in time.
 
 Each run will have a uniquely identifiable `runId` that is generated by the client as [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier). The client is responsible for maintaining the `runId` between different Run State Updates in the same Run. It is recommended to use [UUIDv7](https://datatracker.ietf.org/doc/draft-ietf-uuidrev-rfc4122bis/) format.
 
 Runs can be used to observe changes in Jobs between their instances. If, for example, you have cron running a Python script that repeats a query every day, this should result in a separate Run for each day.
 
-### Run Facets
+#### Run Facets
 
 Facets that can be used to augment the metadata of a Run include:
 
@@ -62,7 +84,7 @@ Facets that can be used to augment the metadata of a Run include:
 
 For more details, please refer to the [Run Facets](./facets/run-facets).
 
-## Dataset
+### Dataset
 A Dataset is an abstract representation of data. This can refer to a small amount or large amount of data, as long as it's discrete. For databases, this should be a table. For cloud storage, this is often an object in a bucket. This can represent a directory of a filesystem.
 
 It has a unique name within a namespace derived from its physical location (i.e., db.host.database.schema.table). The combined namespace and name for a Dataset should be enough to uniquely identify it within a data ecosystem.
