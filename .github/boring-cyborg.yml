@@ -26,9 +26,11 @@ labelPRBasedOnFilePath:
   area:integration/flink:
     - integration/flink/**/*
   area:integration/spark:
-    - integration/spark/**/*
+    - integration/spark*/**/*
   area:integration/sql:
     - integration/sql/**/*
+  area:integration/hive:
+    - integration/hive*/**/*
   area:proxy:
     - proxy/**/*
   area:spec:
