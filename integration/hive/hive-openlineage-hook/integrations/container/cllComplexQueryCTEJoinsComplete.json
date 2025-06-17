@@ -15,9 +15,41 @@
   },
   "job": {
     "namespace": "default",
-    "name": "createtable_as_select.test.xxx"
+    "name": "createtable_as_select.test.xxx",
+    "facets": {
+      "sql": {
+        "query": "CREATE TABLE xxx AS \nWITH tmp as (SELECT * FROM t1 where b = '1'),\n     tmp2 as (SELECT * FROM t2 where c = 1),\n     tmp3 as (SELECT tmp.a, b, c from tmp join tmp2 on tmp.a = tmp2.a)\nSELECT tmp3.a as a, b, c, d FROM tmp3 join t3 on tmp3.a = t3.a order by d"
+      }
+    }
   },
   "inputs": [
+    {
+      "namespace": "hive://localhost:9083",
+      "name": "test.t2",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "int"
+            },
+            {
+              "name": "c",
+              "type": "int"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file",
+              "name": "/opt/hive/data/warehouse/test.db/t2",
+              "type": "LOCATION"
+            }
+          ]
+        }
+      }
+    },
     {
       "namespace": "hive://localhost:9083",
       "name": "test.t3",
@@ -71,33 +103,6 @@
           ]
         }
       }
-    },
-    {
-      "namespace": "hive://localhost:9083",
-      "name": "test.t2",
-      "facets": {
-        "schema": {
-          "fields": [
-            {
-              "name": "a",
-              "type": "int"
-            },
-            {
-              "name": "c",
-              "type": "int"
-            }
-          ]
-        },
-        "symlinks": {
-          "identifiers": [
-            {
-              "namespace": "file",
-              "name": "/opt/hive/data/warehouse/test.db/t2",
-              "type": "LOCATION"
-            }
-          ]
-        }
-      }
     }
   ],
   "outputs": [
@@ -105,26 +110,6 @@
       "namespace": "hive://localhost:9083",
       "name": "test.xxx",
       "facets": {
-        "schema": {
-          "fields": [
-            {
-              "name": "a",
-              "type": "int"
-            },
-            {
-              "name": "b",
-              "type": "string"
-            },
-            {
-              "name": "c",
-              "type": "int"
-            },
-            {
-              "name": "d",
-              "type": "int"
-            }
-          ]
-        },
         "columnLineage": {
           "fields": {
             "a": {
@@ -165,18 +150,31 @@
           "dataset": [
             {
               "namespace": "hive://localhost:9083",
+              "name": "test.t3",
+              "field": "d",
+              "transformations": [
+                {
+                  "type": "INDIRECT",
+                  "subtype": "SORT",
+                  "description": "",
+                  "masking": false
+                }
+              ]
+            },
+            {
+              "namespace": "hive://localhost:9083",
               "name": "test.t2",
               "field": "a",
               "transformations": [
                 {
                   "type": "INDIRECT",
-                  "subtype": "FILTER",
+                  "subtype": "JOIN",
                   "description": "",
                   "masking": false
                 },
                 {
                   "type": "INDIRECT",
-                  "subtype": "JOIN",
+                  "subtype": "FILTER",
                   "description": "",
                   "masking": false
                 }
@@ -197,50 +195,18 @@
             },
             {
               "namespace": "hive://localhost:9083",
-              "name": "test.t3",
-              "field": "a",
-              "transformations": [
-                {
-                  "type": "INDIRECT",
-                  "subtype": "FILTER",
-                  "description": "",
-                  "masking": false
-                },
-                {
-                  "type": "INDIRECT",
-                  "subtype": "JOIN",
-                  "description": "",
-                  "masking": false
-                }
-              ]
-            },
-            {
-              "namespace": "hive://localhost:9083",
               "name": "test.t1",
               "field": "a",
               "transformations": [
                 {
                   "type": "INDIRECT",
-                  "subtype": "FILTER",
+                  "subtype": "JOIN",
                   "description": "",
                   "masking": false
                 },
                 {
                   "type": "INDIRECT",
-                  "subtype": "JOIN",
-                  "description": "",
-                  "masking": false
-                }
-              ]
-            },
-            {
-              "namespace": "hive://localhost:9083",
-              "name": "test.t3",
-              "field": "d",
-              "transformations": [
-                {
-                  "type": "INDIRECT",
-                  "subtype": "SORT",
+                  "subtype": "FILTER",
                   "description": "",
                   "masking": false
                 }
@@ -258,12 +224,49 @@
                   "masking": false
                 }
               ]
+            },
+            {
+              "namespace": "hive://localhost:9083",
+              "name": "test.t3",
+              "field": "a",
+              "transformations": [
+                {
+                  "type": "INDIRECT",
+                  "subtype": "JOIN",
+                  "description": "",
+                  "masking": false
+                },
+                {
+                  "type": "INDIRECT",
+                  "subtype": "FILTER",
+                  "description": "",
+                  "masking": false
+                }
+              ]
+            }
+          ]
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "int"
+            },
+            {
+              "name": "b",
+              "type": "string"
+            },
+            {
+              "name": "c",
+              "type": "int"
+            },
+            {
+              "name": "d",
+              "type": "int"
             }
           ]
         },
         "symlinks": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.0.0-SNAPSHOT/integration/hive",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SymlinksDatasetFacet.json#/$defs/SymlinksDatasetFacet",
           "identifiers": [
             {
               "namespace": "file",

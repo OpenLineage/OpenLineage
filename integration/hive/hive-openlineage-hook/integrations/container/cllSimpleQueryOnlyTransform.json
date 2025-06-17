@@ -15,7 +15,12 @@
   },
   "job": {
     "namespace": "default",
-    "name": "createtable_as_select.test.xxx"
+    "name": "createtable_as_select.test.xxx",
+    "facets": {
+      "sql": {
+        "query": "CREATE TABLE xxx AS SELECT concat(a, 'test') AS a, a+b as b FROM t1"
+      }
+    }
   },
   "inputs": [
     {
