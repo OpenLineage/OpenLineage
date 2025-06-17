@@ -5,6 +5,8 @@
 
 package io.openlineage.client.dataset;
 
+import lombok.Builder;
+
 /**
  * Utility class containing dataset naming helpers based on OpenLineage's dataset naming
  * specification.
@@ -17,13 +19,14 @@ public final class Naming {
   private Naming() {}
 
   /** Naming implementation for Athena. */
-  public static class AthenaNaming implements DatasetNaming {
+  @Builder
+  public static class Athena implements DatasetNaming {
     private final String regionName;
     private final String catalog;
     private final String database;
     private final String table;
 
-    public AthenaNaming(String regionName, String catalog, String database, String table) {
+    public Athena(String regionName, String catalog, String database, String table) {
       this.regionName = checkArgumentNotEmpty(regionName, "regionName");
       this.catalog = checkArgumentNotEmpty(catalog, "catalog");
       this.database = checkArgumentNotEmpty(database, "database");
@@ -42,13 +45,14 @@ public final class Naming {
   }
 
   /** Naming implementation for AWS Glue. */
-  public static class AWSGlueNaming implements DatasetNaming {
+  @Builder
+  public static class AWSGlue implements DatasetNaming {
     private final String region;
     private final String accountId;
     private final String databaseName;
     private final String tableName;
 
-    public AWSGlueNaming(String region, String accountId, String databaseName, String tableName) {
+    public AWSGlue(String region, String accountId, String databaseName, String tableName) {
       this.region = checkArgumentNotEmpty(region, "region");
       this.accountId = checkArgumentNotEmpty(accountId, "accountId");
       this.databaseName = checkArgumentNotEmpty(databaseName, "databaseName");
@@ -67,12 +71,13 @@ public final class Naming {
   }
 
   /** Naming implementation for Azure Cosmos DB. */
-  public static class AzureCosmosDBNaming implements DatasetNaming {
+  @Builder
+  public static class AzureCosmosDB implements DatasetNaming {
     private final String host;
     private final String database;
     private final String table;
 
-    public AzureCosmosDBNaming(String host, String database, String table) {
+    public AzureCosmosDB(String host, String database, String table) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.database = checkArgumentNotEmpty(database, "database");
       this.table = checkArgumentNotEmpty(table, "table");
@@ -90,12 +95,13 @@ public final class Naming {
   }
 
   /** Naming implementation for Azure Data Explorer. */
-  public static class AzureDataExplorerNaming implements DatasetNaming {
+  @Builder
+  public static class AzureDataExplorer implements DatasetNaming {
     private final String host;
     private final String database;
     private final String table;
 
-    public AzureDataExplorerNaming(String host, String database, String table) {
+    public AzureDataExplorer(String host, String database, String table) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.database = checkArgumentNotEmpty(database, "database");
       this.table = checkArgumentNotEmpty(table, "table");
@@ -112,13 +118,15 @@ public final class Naming {
     }
   }
 
-  public static class AzureSynapseNaming implements DatasetNaming {
+  /** Naming implementation for AzureSynapse. */
+  @Builder
+  public static class AzureSynapse implements DatasetNaming {
     private final String host;
     private final String port;
     private final String schema;
     private final String table;
 
-    public AzureSynapseNaming(String host, String port, String schema, String table) {
+    public AzureSynapse(String host, String port, String schema, String table) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.schema = checkArgumentNotEmpty(schema, "schema");
@@ -141,7 +149,8 @@ public final class Naming {
    *
    * <p>Namespace is always {@code "bigquery"}.
    */
-  public static class BigQueryNaming implements DatasetNaming {
+  @Builder
+  public static class BigQuery implements DatasetNaming {
     private final String projectId;
     private final String datasetName;
     private final String tableName;
@@ -153,7 +162,7 @@ public final class Naming {
      * @param datasetName the BigQuery dataset name (must be non-empty)
      * @param tableName the BigQuery table name (must be non-empty)
      */
-    public BigQueryNaming(String projectId, String datasetName, String tableName) {
+    public BigQuery(String projectId, String datasetName, String tableName) {
       this.projectId = checkArgumentNotEmpty(projectId, "projectId");
       this.datasetName = checkArgumentNotEmpty(datasetName, "datasetName");
       this.tableName = checkArgumentNotEmpty(tableName, "tableName");
@@ -171,13 +180,14 @@ public final class Naming {
   }
 
   /** Naming implementation for Cassandra. */
-  public static class CassandraNaming implements DatasetNaming {
+  @Builder
+  public static class Cassandra implements DatasetNaming {
     private final String host;
     private final String port;
     private final String keyspace;
     private final String table;
 
-    public CassandraNaming(String host, String port, String keyspace, String table) {
+    public Cassandra(String host, String port, String keyspace, String table) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.keyspace = checkArgumentNotEmpty(keyspace, "keyspace");
@@ -201,7 +211,8 @@ public final class Naming {
    * <p>Namespace follows: {@code arn:aws:glue:{region}:{accountId}}. Name follows: {@code
    * table/{databaseName}/{tableName}}.
    */
-  public static class GlueNaming implements DatasetNaming {
+  @Builder
+  public static class Glue implements DatasetNaming {
     private final String region;
     private final String accountId;
     private final String databaseName;
@@ -215,7 +226,7 @@ public final class Naming {
      * @param databaseName Glue database name (must be non-empty)
      * @param tableName Glue table name (must be non-empty)
      */
-    public GlueNaming(String region, String accountId, String databaseName, String tableName) {
+    public Glue(String region, String accountId, String databaseName, String tableName) {
       this.region = checkArgumentNotEmpty(region, "region");
       this.accountId = checkArgumentNotEmpty(accountId, "accountId");
       this.databaseName = checkArgumentNotEmpty(databaseName, "databaseName");
@@ -234,13 +245,14 @@ public final class Naming {
   }
 
   /** Naming implementation for MySQL. */
-  public static class MySQLNaming implements DatasetNaming {
+  @Builder
+  public static class MySQL implements DatasetNaming {
     private final String host;
     private final String port;
     private final String database;
     private final String table;
 
-    public MySQLNaming(String host, String port, String database, String table) {
+    public MySQL(String host, String port, String database, String table) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.database = checkArgumentNotEmpty(database, "database");
@@ -259,14 +271,15 @@ public final class Naming {
   }
 
   /** Naming implementation for CrateDB. */
-  public static class CrateDBNaming implements DatasetNaming {
+  @Builder
+  public static class CrateDB implements DatasetNaming {
     private final String host;
     private final String port;
     private final String database;
     private final String schema;
     private final String table;
 
-    public CrateDBNaming(String host, String port, String database, String schema, String table) {
+    public CrateDB(String host, String port, String database, String schema, String table) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.database = checkArgumentNotEmpty(database, "database");
@@ -286,14 +299,15 @@ public final class Naming {
   }
 
   /** Naming implementation for DB2. */
-  public static class DB2Naming implements DatasetNaming {
+  @Builder
+  public static class DB2 implements DatasetNaming {
     private final String host;
     private final String port;
     private final String database;
     private final String schema;
     private final String table;
 
-    public DB2Naming(String host, String port, String database, String schema, String table) {
+    public DB2(String host, String port, String database, String schema, String table) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.database = checkArgumentNotEmpty(database, "database");
@@ -313,13 +327,13 @@ public final class Naming {
   }
 
   /** Naming implementation for OceanBase. */
-  public static class OceanBaseNaming implements DatasetNaming {
+  public static class OceanBase implements DatasetNaming {
     private final String host;
     private final String port;
     private final String database;
     private final String table;
 
-    public OceanBaseNaming(String host, String port, String database, String table) {
+    public OceanBase(String host, String port, String database, String table) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.database = checkArgumentNotEmpty(database, "database");
@@ -338,14 +352,15 @@ public final class Naming {
   }
 
   /** Naming implementation for Oracle. */
-  public static class OracleNaming implements DatasetNaming {
+  @Builder
+  public static class Oracle implements DatasetNaming {
     private final String host;
     private final String port;
     private final String serviceName;
     private final String schema;
     private final String table;
 
-    public OracleNaming(String host, String port, String serviceName, String schema, String table) {
+    public Oracle(String host, String port, String serviceName, String schema, String table) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.serviceName = checkArgumentNotEmpty(serviceName, "serviceName");
@@ -365,14 +380,15 @@ public final class Naming {
   }
 
   /** Naming implementation for Postgres. */
-  public static class PostgresNaming implements DatasetNaming {
+  @Builder
+  public static class Postgres implements DatasetNaming {
     private final String host;
     private final String port;
     private final String database;
     private final String schema;
     private final String table;
 
-    public PostgresNaming(String host, String port, String database, String schema, String table) {
+    public Postgres(String host, String port, String database, String schema, String table) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.database = checkArgumentNotEmpty(database, "database");
@@ -392,13 +408,14 @@ public final class Naming {
   }
 
   /** Naming implementation for Teradata. */
-  public static class TeradataNaming implements DatasetNaming {
+  @Builder
+  public static class Teradata implements DatasetNaming {
     private final String host;
     private final String port;
     private final String database;
     private final String table;
 
-    public TeradataNaming(String host, String port, String database, String table) {
+    public Teradata(String host, String port, String database, String table) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.database = checkArgumentNotEmpty(database, "database");
@@ -417,7 +434,8 @@ public final class Naming {
   }
 
   /** Naming implementation for Redshift. */
-  public static class RedshiftNaming implements DatasetNaming {
+  @Builder
+  public static class Redshift implements DatasetNaming {
     private final String cluster_identifier;
     private final String region_name;
     private final String port;
@@ -425,7 +443,7 @@ public final class Naming {
     private final String schema;
     private final String table;
 
-    public RedshiftNaming(
+    public Redshift(
         String cluster_identifier,
         String region_name,
         String port,
@@ -452,14 +470,15 @@ public final class Naming {
   }
 
   /** Naming implementation for Snowflake. */
-  public static class SnowflakeNaming implements DatasetNaming {
+  @Builder
+  public static class Snowflake implements DatasetNaming {
     private final String organization_name;
     private final String account_name;
     private final String database;
     private final String schema;
     private final String table;
 
-    public SnowflakeNaming(
+    public Snowflake(
         String organization_name,
         String account_name,
         String database,
@@ -484,14 +503,15 @@ public final class Naming {
   }
 
   /** Naming implementation for Trino. */
-  public static class TrinoNaming implements DatasetNaming {
+  @Builder
+  public static class Trino implements DatasetNaming {
     private final String host;
     private final String port;
     private final String catalog;
     private final String schema;
     private final String table;
 
-    public TrinoNaming(String host, String port, String catalog, String schema, String table) {
+    public Trino(String host, String port, String catalog, String schema, String table) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.port = checkArgumentNotEmpty(port, "port");
       this.catalog = checkArgumentNotEmpty(catalog, "catalog");
@@ -511,14 +531,15 @@ public final class Naming {
   }
 
   /** Naming implementation for ABFSS. */
-  public static class ABFSSNaming implements DatasetNaming {
+  @Builder
+  public static class ABFSS implements DatasetNaming {
     private final String containerName;
     private final String serviceName;
     private final String path;
 
-    public ABFSSNaming(String containerName, String serviceName, String path) {
-      this.containerName = checkArgumentNotEmpty(containerName, "containeName");
-      this.serviceName = checkArgumentNotEmpty(serviceName, "servicName");
+    public ABFSS(String containerName, String serviceName, String path) {
+      this.containerName = checkArgumentNotEmpty(containerName, "containerName");
+      this.serviceName = checkArgumentNotEmpty(serviceName, "serviceName");
       this.path = checkArgumentNotEmpty(path, "path");
     }
 
@@ -534,11 +555,12 @@ public final class Naming {
   }
 
   /** Naming implementation for DBFS. */
-  public static class DBFSNaming implements DatasetNaming {
+  @Builder
+  public static class DBFS implements DatasetNaming {
     private final String workspaceName;
     private final String path;
 
-    public DBFSNaming(String workspaceName, String path) {
+    public DBFS(String workspaceName, String path) {
       this.workspaceName = checkArgumentNotEmpty(workspaceName, "workspaceName");
       this.path = checkArgumentNotEmpty(path, "path");
     }
@@ -555,11 +577,12 @@ public final class Naming {
   }
 
   /** Naming implementation for GCS. */
-  public static class GCSNaming implements DatasetNaming {
+  @Builder
+  public static class GCS implements DatasetNaming {
     private final String bucket_name;
     private final String object_key;
 
-    public GCSNaming(String bucket_name, String object_key) {
+    public GCS(String bucket_name, String object_key) {
       this.bucket_name = checkArgumentNotEmpty(bucket_name, "bucket_name");
       this.object_key = checkArgumentNotEmpty(object_key, "object_key");
     }
@@ -576,12 +599,13 @@ public final class Naming {
   }
 
   /** Naming implementation for HDFS. */
-  public static class HDFSNaming implements DatasetNaming {
+  @Builder
+  public static class HDFS implements DatasetNaming {
     private final String namenodeHost;
     private final String namenodePort;
     private final String path;
 
-    public HDFSNaming(String namenodeHost, String namenodePort, String path) {
+    public HDFS(String namenodeHost, String namenodePort, String path) {
       this.namenodeHost = checkArgumentNotEmpty(namenodeHost, "namenodeHost");
       this.namenodePort = checkArgumentNotEmpty(namenodePort, "namenodePort");
       this.path = checkArgumentNotEmpty(path, "path");
@@ -599,12 +623,13 @@ public final class Naming {
   }
 
   /** Naming implementation for Kafka. */
-  public static class KafkaNaming implements DatasetNaming {
+  @Builder
+  public static class Kafka implements DatasetNaming {
     private final String bootstrapServerHost;
     private final String port;
     private final String topic;
 
-    public KafkaNaming(String bootstrapServerHost, String port, String topic) {
+    public Kafka(String bootstrapServerHost, String port, String topic) {
       this.bootstrapServerHost = checkArgumentNotEmpty(bootstrapServerHost, "bootstrapServerHost");
       this.port = checkArgumentNotEmpty(port, "port");
       this.topic = checkArgumentNotEmpty(topic, "topic");
@@ -622,10 +647,11 @@ public final class Naming {
   }
 
   /** Naming implementation for Local File System. */
-  public static class LocalFileSystemNaming implements DatasetNaming {
+  @Builder
+  public static class LocalFileSystem implements DatasetNaming {
     private final String path;
 
-    public LocalFileSystemNaming(String path) {
+    public LocalFileSystem(String path) {
       this.path = checkArgumentNotEmpty(path, "path");
     }
 
@@ -641,11 +667,12 @@ public final class Naming {
   }
 
   /** Naming implementation for Remote File System. */
-  public static class RemoteFileSystemNaming implements DatasetNaming {
+  @Builder
+  public static class RemoteFileSystem implements DatasetNaming {
     private final String host;
     private final String path;
 
-    public RemoteFileSystemNaming(String host, String path) {
+    public RemoteFileSystem(String host, String path) {
       this.host = checkArgumentNotEmpty(host, "host");
       this.path = checkArgumentNotEmpty(path, "path");
     }
@@ -662,11 +689,12 @@ public final class Naming {
   }
 
   /** Naming implementation for S3. */
-  public static class S3Naming implements DatasetNaming {
+  @Builder
+  public static class S3 implements DatasetNaming {
     private final String bucketName;
     private final String objectKey;
 
-    public S3Naming(String bucketName, String objectKey) {
+    public S3(String bucketName, String objectKey) {
       this.bucketName = checkArgumentNotEmpty(bucketName, "bucketName");
       this.objectKey = checkArgumentNotEmpty(objectKey, "objectKey");
     }
@@ -683,25 +711,26 @@ public final class Naming {
   }
 
   /** Naming implementation for WASBS. */
-  public static class WASBSNaming implements DatasetNaming {
-    private final String container_name;
-    private final String service_name;
-    private final String object_key;
+  @Builder
+  public static class WASBS implements DatasetNaming {
+    private final String containerName;
+    private final String serviceName;
+    private final String objectKey;
 
-    public WASBSNaming(String container_name, String service_name, String object_key) {
-      this.container_name = checkArgumentNotEmpty(container_name, "container_name");
-      this.service_name = checkArgumentNotEmpty(service_name, "service_name");
-      this.object_key = checkArgumentNotEmpty(object_key, "object_key");
+    public WASBS(String containerName, String serviceName, String objectKey) {
+      this.containerName = checkArgumentNotEmpty(containerName, "containerName");
+      this.serviceName = checkArgumentNotEmpty(serviceName, "serviceName");
+      this.objectKey = checkArgumentNotEmpty(objectKey, "objectKey");
     }
 
     @Override
     public String getNamespace() {
-      return "wasbs://" + container_name + "@" + service_name + ".dfs.core.windows.net";
+      return "wasbs://" + containerName + "@" + serviceName + ".dfs.core.windows.net";
     }
 
     @Override
     public String getName() {
-      return object_key;
+      return objectKey;
     }
   }
 
@@ -715,6 +744,7 @@ public final class Naming {
    *   <li>{@code subscription:{projectId}:{subscriptionId}}
    * </ul>
    */
+  @Builder
   public static class PubSubNaming implements Naming.DatasetNaming {
 
     /** Enum representing supported Pub/Sub resource types. */
