@@ -12,8 +12,8 @@ import io.openlineage.hive.client.EventEmitter;
 import io.openlineage.hive.client.HiveOpenLineageConfigParser;
 import io.openlineage.hive.client.Versions;
 import io.openlineage.hive.util.HiveUtils;
-import java.time.Instant;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -95,9 +95,10 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext {
       OpenLineageContext olContext =
           OpenLineageContext.builder()
               .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+              .queryId(hookContext.getQueryState().getQueryId())
               .queryString(hookContext.getQueryPlan().getQueryString())
               .semanticAnalyzer(semanticAnalyzer)
-              .eventTime(Instant.ofEpochMilli(System.currentTimeMillis()).atZone(ZoneId.of("UTC")))
+              .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
               .eventType(eventType)
               .readEntities(validInputs)
               .writeEntities(validOutputs)

@@ -43,6 +43,8 @@ public class OpenLineageContext {
 
   @NonNull String queryString;
 
+  @NonNull String queryId;
+
   @NonNull String operationName;
 
   @NonNull Configuration hadoopConf;
