@@ -9,22 +9,22 @@ from openlineage.common.utils import get_from_nullable_chain
 from great_expectations.core import ExpectationValidationResult
 
 
-@attr.s
+@attr.define
 class ExpectationsParserResult:
     """
     Internal class to represent actual expectation values, per table and optionally per column
     """
 
-    facet_key: str = attr.ib()
-    value: Any = attr.ib()
-    column_id: Optional[str] = attr.ib(default=None)
+    facet_key: str
+    value: Any
+    column_id: Optional[str] = None
 
 
-@attr.s
+@attr.define
 class GreatExpectationsAssertion:
-    expectationType: str = attr.ib()
-    success: bool = attr.ib()
-    column: Optional[str] = attr.ib(default=None)
+    expectationType: str
+    success: bool
+    column: Optional[str] = None
 
 
 class ExpectationsParser:

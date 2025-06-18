@@ -1,14 +1,17 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
+import copy
 import json
 from unittest.mock import MagicMock
 
 import pytest
 from openlineage.client.facet_v2 import external_query_run
+from openlineage.client.serde import Serde
 from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.provider.bigquery import (
     BigQueryDatasetsProvider,
+    BigQueryErrorRunFacet,
     BigQueryJobRunFacet,
     BigQueryStatisticsDatasetFacet,
 )
@@ -224,3 +227,21 @@ def test_get_statistics_dataset_facet_with_stats():
     result = BigQueryDatasetsProvider._get_statistics_dataset_facet(properties)
     assert result.rowCount == 123
     assert result.size == 321
+
+
+def test_facet_copy_serialization_bq_job_run_facet():
+    facet = BigQueryJobRunFacet(cached=True, billedBytes=123, properties="properties", producer="producer")
+    facet_copy = copy.deepcopy(facet)
+    assert Serde.to_json(facet) == Serde.to_json(facet_copy)
+
+
+def test_facet_copy_serialization_bq_stats_dataset_facet():
+    facet = BigQueryStatisticsDatasetFacet(rowCount=123, size=321, producer="producer")
+    facet_copy = copy.deepcopy(facet)
+    assert Serde.to_json(facet) == Serde.to_json(facet_copy)
+
+
+def test_facet_copy_serialization_bq_error_run_facet():
+    facet = BigQueryErrorRunFacet(clientError="clientError", parserError="parserError", producer="producer")
+    facet_copy = copy.deepcopy(facet)
+    assert Serde.to_json(facet) == Serde.to_json(facet_copy)

@@ -5,6 +5,6 @@ from __future__ import annotations
 import attr
 
 
-@attr.s
+@attr.define
 class FacetsConfig:
-    environment_variables: list[str] = attr.ib(factory=list)
+    environment_variables: list[str] = attr.field(factory=list)

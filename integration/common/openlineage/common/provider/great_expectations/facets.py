@@ -14,38 +14,38 @@ from great_expectations.core.batch import BatchDefinition, BatchMarkers
 from great_expectations.core.id_dict import BatchKwargs, BatchSpec
 
 
-@attr.s
+@attr.define
 class GreatExpectationsRunFacet(BaseFacet):
     """
     Custom facet which describes the instance of GreatExpectations and the suite configuration
     """
 
-    great_expectations_version = attr.ib()
-    expectation_suite_name: str = attr.ib()
-    run_id: Dict = attr.ib()  # type: ignore
-    expectation_suite_meta: Dict = attr.ib()
-    validation_time: str = attr.ib()
-    batch_spec: Optional[BatchSpec] = attr.ib(default=None)
-    batch_markers: Optional[BatchMarkers] = attr.ib(default=None)
-    batch_kwargs: Optional[BatchKwargs] = attr.ib(default=None)
-    active_batch_definition: Union[None, IDDict, BatchDefinition] = attr.ib(default=None)
-    batch_parameters = attr.ib(default=None)
-    checkpoint_name: Optional[str] = attr.ib(default=None)
-    validation_id: Optional[str] = attr.ib(default=None)
-    checkpoint_id: Optional[str] = attr.ib(default=None)
+    great_expectations_version = attr.field()
+    expectation_suite_name: str = attr.field()
+    run_id: Dict = attr.field()  # type: ignore
+    expectation_suite_meta: Dict = attr.field()
+    validation_time: str = attr.field()
+    batch_spec: Optional[BatchSpec] = attr.field(default=None)
+    batch_markers: Optional[BatchMarkers] = attr.field(default=None)
+    batch_kwargs: Optional[BatchKwargs] = attr.field(default=None)
+    active_batch_definition: Union[None, IDDict, BatchDefinition] = attr.field(default=None)
+    batch_parameters = attr.field(default=None)
+    checkpoint_name: Optional[str] = attr.field(default=None)
+    validation_id: Optional[str] = attr.field(default=None)
+    checkpoint_id: Optional[str] = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:
         return "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/common/provider/ge-run-facet.json"
 
 
-@attr.s
+@attr.define
 class GreatExpectationsAssertionsDatasetFacet(BaseFacet):
     """
     This facet represents passed/failed status of asserted expectations on dataset
     """
 
-    assertions: List[GreatExpectationsAssertion] = attr.ib()
+    assertions: List[GreatExpectationsAssertion]
 
     @staticmethod
     def _get_schema() -> str:

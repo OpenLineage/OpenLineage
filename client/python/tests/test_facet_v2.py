@@ -2,10 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import copy
 import json
 import os
 from unittest import mock
 
+import pytest
 from attr import asdict, define
 from openlineage.client.client import OpenLineageClient
 from openlineage.client.event_v2 import (
@@ -29,6 +31,7 @@ from openlineage.client.facet_v2 import (
     schema_dataset,
     set_producer,
 )
+from openlineage.client.serde import Serde
 
 
 def test_set_producer():
@@ -102,8 +105,6 @@ def test_custom_facet() -> None:
     assert expected_event == event_sent
 
 
-#
-# def test_full_core_event_serializes_properly(facet_mocker, event_mocker) -> None:
 def test_full_core_event_serializes_properly() -> None:
     session = mock.MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
@@ -247,3 +248,46 @@ def test_with_additional_properties_isinstance_works():
 
     assert isinstance(changed_facet, documentation_job.DocumentationJobFacet)
     assert isinstance(changed_facet, BaseFacet)
+
+
+def test_facet_copy_serialization_base_facet():
+    facet = BaseFacet(producer="producer")
+    facet_copy = copy.deepcopy(facet)
+    assert Serde.to_json(facet) == Serde.to_json(facet_copy)
+
+
+def test_facet_copy_serialization_parent_run_facet():
+    facet = parent_run.ParentRunFacet(
+        run=parent_run.Run(runId="3bb703d1-09c1-4a42-8da5-35a0b3216072"),
+        job=parent_run.Job(namespace="default", name="parent_job_name"),
+        root=parent_run.Root(
+            run=parent_run.RootRun("3bb703d1-09c1-4a42-8da5-35a0b3216071"),
+            job=parent_run.RootJob(namespace="root_job_namespace", name="root_job_name"),
+        ),
+    )
+    facet_copy = copy.deepcopy(facet)
+    assert Serde.to_json(facet) == Serde.to_json(facet_copy)
+
+
+def test_custom_facet_copy_serialization_success():
+    @define
+    class SomeFacet(BaseFacet):
+        version: str
+
+    facet = SomeFacet(version="1")
+    facet_copy = copy.deepcopy(facet)
+    assert Serde.to_json(facet) == Serde.to_json(facet_copy)
+
+
+def test_custom_facet_copy_serialization_fails_when_mixing_attr_classes():
+    """This will fail as BaseFacet class uses attr.define and SomeFacet attr.s"""
+    import attr
+
+    @attr.s
+    class SomeFacet(BaseFacet):
+        version: str = attr.ib()
+
+    facet = SomeFacet(version="1")
+    facet_copy = copy.deepcopy(facet)
+    with pytest.raises(AttributeError, match="'SomeFacet' object has no attribute 'version'"):
+        Serde.to_json(facet_copy)

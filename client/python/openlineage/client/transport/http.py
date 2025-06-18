@@ -76,23 +76,23 @@ def get_session() -> Session:
     return Session()
 
 
-@attr.s
+@attr.define
 class HttpConfig(Config):
-    url: str = attr.ib()
-    endpoint: str = attr.ib(default="api/v1/lineage")
-    timeout: float = attr.ib(default=5.0)
+    url: str
+    endpoint: str = "api/v1/lineage"
+    timeout: float = 5.0
     # check TLS certificates
-    verify: bool = attr.ib(default=True)
-    auth: TokenProvider = attr.ib(factory=lambda: TokenProvider({}))
-    compression: HttpCompression | None = attr.ib(default=None)
+    verify: bool = True
+    auth: TokenProvider = attr.field(factory=lambda: TokenProvider({}))
+    compression: HttpCompression | None = None
     # not set by TransportFactory
-    session: Session | None = attr.ib(default=None)
+    session: Session | None = None
     # not set by TransportFactory
-    adapter: HTTPAdapter | None = attr.ib(default=None)
+    adapter: HTTPAdapter | None = None
     # custom headers support
-    custom_headers: dict[str, str] = attr.ib(factory=dict)
+    custom_headers: dict[str, str] = attr.field(factory=dict)
     # retry settings
-    retry: dict[str, Any] = attr.ib(
+    retry: dict[str, Any] = attr.field(
         default={
             "total": 5,
             "read": 5,
