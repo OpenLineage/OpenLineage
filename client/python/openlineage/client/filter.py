@@ -14,11 +14,11 @@ log = logging.getLogger(__name__)
 RunEventType = typing.Union[RunEvent, RunEvent_v2]
 
 
-@attr.s
+@attr.define
 class FilterConfig:
-    type: str | None = attr.ib(default=None)
-    match: str | None = attr.ib(default=None)
-    regex: str | None = attr.ib(default=None)
+    type: str | None = None
+    match: str | None = None
+    regex: str | None = None
 
 
 class Filter:
