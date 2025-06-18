@@ -123,4 +123,13 @@ export const Producers: Array<Partner> = [
     docs_url: "https://docs.oleander.dev/",
     org_url: "https://oleander.dev/",
   },
+  {
+    image: "debezium_logo.svg",
+    org: "Debezium",
+    full_name: "Debezium",
+    description:
+      "Debezium's OpenLineage integration automatically emits all connector information as OpenLineage metadata",
+    docs_url: "https://debezium.io/documentation/reference/integrations/openlineage.html",
+    org_url: "https://debezium.io/",
+  },
 ];
