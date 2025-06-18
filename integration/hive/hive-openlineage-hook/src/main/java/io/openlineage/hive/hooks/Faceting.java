@@ -292,8 +292,10 @@ public class Faceting {
     return schemaFacet;
   }
 
-  private static OpenLineage.ProcessingEngineRunFacet getProcessingEngineFacet(OpenLineage ol) {
-    return ol.newProcessingEngineRunFacetBuilder()
+  private static OpenLineage.ProcessingEngineRunFacet getProcessingEngineFacet(OpenLineageContext olContext) {
+    return olContext
+        .getOpenLineage()
+        .newProcessingEngineRunFacetBuilder()
         .name("hive")
         .version(HiveVersionInfo.getVersion())
         .openlineageAdapterVersion(Versions.getVersion())
@@ -339,7 +341,7 @@ public class Faceting {
             .runId(emitter.getRunId())
             .facets(
                 ol.newRunFacetsBuilder()
-                    .put("processing_engine", getProcessingEngineFacet(ol))
+                    .processing_engine(getProcessingEngineFacet(olContext))
                     .put("hive_query", getHiveQueryInfoFacet(olContext))
                     .put("hive_session", getHiveSessionInfoFacet(olContext))
                     .put("hive_properties", getHivePropertiesFacet(olContext))
@@ -357,7 +359,11 @@ public class Faceting {
                 .namespace(emitter.getJobNamespace())
                 .name(jobName)
                 // TODO: Add job facets
-                .facets(ol.newJobFacetsBuilder().put("sql", getSQLJobFacet(olContext)).build())
+                .facets(
+                    ol.newJobFacetsBuilder()
+                        .sql(getSQLJobFacet(olContext))
+                        .jobType(getJobTypeFacet(olContext))
+                        .build())
                 .build())
         .inputs(inputDatasets)
         .outputs(outputDatasets)
@@ -369,6 +375,16 @@ public class Faceting {
         .getOpenLineage()
         .newSQLJobFacetBuilder()
         .query(olContext.getHookContext().getQueryPlan().getQueryString())
+        .build();
+  }
+
+  private static OpenLineage.JobTypeJobFacet getJobTypeFacet(OpenLineageContext olContext) {
+    return olContext
+        .getOpenLineage()
+        .newJobTypeJobFacetBuilder()
+        .jobType("QUERY")
+        .processingType("BATCH")
+        .integration("HIVE")
         .build();
   }
 

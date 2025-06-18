@@ -27,6 +27,11 @@
     "namespace": "default",
     "name": "createtable_as_select.test.xxx",
     "facets": {
+      "jobType": {
+        "integration": "HIVE",
+        "jobType": "QUERY",
+        "processingType": "BATCH"
+      },
       "sql": {
         "query": "CREATE TABLE xxx AS \nWITH tmp as (SELECT * FROM t1 where b = '1'),\n     tmp2 as (SELECT * FROM t2 where c = 1),\n     tmp3 as (SELECT tmp.a, b, c from tmp join tmp2 on tmp.a = tmp2.a)\nSELECT tmp3.a as a, b, c, d FROM tmp3 join t3 on tmp3.a = t3.a order by d"
       }

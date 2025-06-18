@@ -27,6 +27,11 @@
     "namespace": "default",
     "name": "createtable_as_select.test.monthly_transaction_summary",
     "facets": {
+      "jobType": {
+        "integration": "HIVE",
+        "jobType": "QUERY",
+        "processingType": "BATCH"
+      },
       "sql": {
         "query": "CREATE TABLE monthly_transaction_summary\nAS\nSELECT\n    TRUNC(sUBMissionDAte, 'MM') AS MOnth,\n    transactionTYPe,\n    SUM(trANSactionamount) AS TotALAmount,\n    COUNT(*) AS transACTionCount\nFROM\n    tranSACTions\nGROUP BY\n    TRUNC(SUBMIssiondate, 'MM'),\n    tRANsacTIontype\nORDER BY\n    monTH,\n    transacTIONtype"
       }
