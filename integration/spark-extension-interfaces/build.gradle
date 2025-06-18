@@ -251,6 +251,10 @@ shadowJar {
     zip64 true
 }
 
+tasks.withType(GenerateModuleMetadata.class).configureEach {
+    enabled = false
+}
+
 tasks.register("createVersionProperties") {
     group = "resources"
     def processResourcesTask = tasks.named(mainSourceSet.processResourcesTaskName, ProcessResources.class)
