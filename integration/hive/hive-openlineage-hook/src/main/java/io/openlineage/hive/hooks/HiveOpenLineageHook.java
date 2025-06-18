@@ -11,24 +11,29 @@ import io.openlineage.hive.api.OpenLineageContext;
 import io.openlineage.hive.client.EventEmitter;
 import io.openlineage.hive.client.HiveOpenLineageConfigParser;
 import io.openlineage.hive.client.Versions;
-import io.openlineage.hive.util.HiveUtils;
+import java.lang.reflect.Field;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.QueryPlan;
 import org.apache.hadoop.hive.ql.hooks.Entity;
 import org.apache.hadoop.hive.ql.hooks.ExecuteWithHookContext;
 import org.apache.hadoop.hive.ql.hooks.HookContext;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
-import org.apache.hadoop.hive.ql.parse.SemanticAnalyzer;
 import org.apache.hadoop.hive.ql.plan.HiveOperation;
 import org.apache.hadoop.hive.ql.session.SessionState;
+import org.apache.hive.service.cli.HiveSQLException;
+import org.apache.hive.service.cli.session.HiveSession;
+import org.apache.hive.service.cli.session.HiveSessionHook;
+import org.apache.hive.service.cli.session.HiveSessionHookContext;
+import org.apache.hive.service.cli.session.HiveSessionHookContextImpl;
 
 @Slf4j
-public class HiveOpenLineageHook implements ExecuteWithHookContext {
+public class HiveOpenLineageHook implements ExecuteWithHookContext, HiveSessionHook {
 
   private static final Set<HiveOperation> SUPPORTED_OPERATIONS = new HashSet<>();
   private static final Set<HookContext.HookType> SUPPORTED_HOOK_TYPES = new HashSet<>();
@@ -64,6 +69,25 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext {
     return validOutputs;
   }
 
+  // This method exists only to record session creation timestamp.
+  // See https://github.com/OpenLineage/OpenLineage/issues/3784
+  @Override
+  public void run(HiveSessionHookContext sessionHookContext) throws HiveSQLException {
+    try {
+      HiveConf conf = sessionHookContext.getSessionConf();
+      if (sessionHookContext instanceof HiveSessionHookContextImpl) {
+        HiveSessionHookContextImpl hiveSessionHookContext =
+            (HiveSessionHookContextImpl) sessionHookContext;
+        Field f = hiveSessionHookContext.getClass().getDeclaredField("hiveSession");
+        f.setAccessible(true);
+        HiveSession hiveSession = (HiveSession) f.get(hiveSessionHookContext);
+        conf.setLong("hive.session.creationTimestamp", hiveSession.getCreationTime());
+      }
+    } catch (Exception e) {
+      log.error("Error occurred while recording session creation timestamp:", e);
+    }
+  }
+
   @Override
   public void run(HookContext hookContext) throws Exception {
     try {
@@ -81,9 +105,6 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext {
           || validOutputs.isEmpty()) {
         return;
       }
-      SemanticAnalyzer semanticAnalyzer =
-          HiveUtils.analyzeQuery(
-              hookContext.getConf(), hookContext.getQueryState(), queryPlan.getQueryString());
       OpenLineage.RunEvent.EventType eventType;
       if (hookContext.getHookType() == HookType.POST_EXEC_HOOK) {
         // It is a successful query
@@ -95,18 +116,13 @@ public class HiveOpenLineageHook implements ExecuteWithHookContext {
       OpenLineageContext olContext =
           OpenLineageContext.builder()
               .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-              .queryId(hookContext.getQueryState().getQueryId())
-              .queryString(hookContext.getQueryPlan().getQueryString())
-              .semanticAnalyzer(semanticAnalyzer)
+              .openLineageConfig(
+                  HiveOpenLineageConfigParser.extractFromHadoopConf(hookContext.getConf()))
+              .hookContext(hookContext)
               .eventTime(ZonedDateTime.now(ZoneOffset.UTC))
               .eventType(eventType)
               .readEntities(validInputs)
               .writeEntities(validOutputs)
-              .hadoopConf(hookContext.getConf())
-              .openlineageHiveIntegrationVersion(Versions.getVersion())
-              .operationName(hookContext.getOperationName())
-              .openLineageConfig(
-                  HiveOpenLineageConfigParser.extractFromHadoopConf(hookContext.getConf()))
               .build();
       try (EventEmitter emitter = new EventEmitter(olContext)) {
         OpenLineage.RunEvent runEvent = Faceting.getRunEvent(emitter, olContext);

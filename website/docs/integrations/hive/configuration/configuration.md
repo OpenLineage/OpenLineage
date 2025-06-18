@@ -26,6 +26,7 @@ SELECT ...
 
 
 #### Using `--hiveconf` options with the CLI
+
 Executing hive query from CLI you can set configuration with `--hiveconf`
 ```bash
 hive \
@@ -44,9 +45,9 @@ In case of using the Hive integration on [Google Cloud Dataproc](https://cloud.g
 ```shell
 gcloud dataproc jobs submit hive \
     --cluster <cluster_name> \
-    --region <region> \
+    --region "<region>" \
     --properties "hive.openlineage.job.name=monthly_transaction_summary_job" \
-    --execute <query_string>
+    --execute "<query_string>"
 ```
 :::
 
@@ -56,6 +57,11 @@ gcloud dataproc jobs submit hive \
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     ...
+    <property>
+        <!-- required only to capture session creation time, can be omitted -->
+        <name>hive.server2.session.hook</name>
+        <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+    </property>
     <property>
         <name>hive.exec.post.hooks</name>
         <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
