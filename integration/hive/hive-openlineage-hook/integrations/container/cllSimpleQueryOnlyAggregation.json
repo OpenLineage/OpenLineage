@@ -15,7 +15,12 @@
   },
   "job": {
     "namespace": "default",
-    "name": "createtable_as_select.test.xxx"
+    "name": "createtable_as_select.test.xxx",
+    "facets": {
+      "sql": {
+        "query": "CREATE TABLE xxx AS SELECT count(a) AS a FROM t1"
+      }
+    }
   },
   "inputs": [
     {

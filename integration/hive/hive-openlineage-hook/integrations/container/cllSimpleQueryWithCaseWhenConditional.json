@@ -15,7 +15,12 @@
   },
   "job": {
     "namespace": "default",
-    "name": "createtable_as_select.test.xxx"
+    "name": "createtable_as_select.test.xxx",
+    "facets": {
+      "sql": {
+        "query": "CREATE TABLE xxx AS SELECT CASE WHEN b > 1 THEN a ELSE a + b END AS cond FROM t1"
+      }
+    }
   },
   "inputs": [
     {
