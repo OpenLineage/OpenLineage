@@ -24,6 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.types.StructField;
@@ -111,8 +112,7 @@ public class JdbcSparkUtils {
               Collections.emptyList()));
     }
 
-    String tableOrQuery = relation.jdbcOptions().tableOrQuery();
-    String query = tableOrQuery.substring(0, tableOrQuery.lastIndexOf(")")).replaceFirst("\\(", "");
+    String query = queryStringFromJdbcOptions(relation.jdbcOptions());
 
     String dialect = extractDialectFromJdbcUrl(relation.jdbcOptions().url());
     Optional<SqlMeta> sqlMeta = OpenLineageSql.parse(Collections.singletonList(query), dialect);
@@ -134,6 +134,11 @@ public class JdbcSparkUtils {
       return Optional.empty();
     }
     return sqlMeta;
+  }
+
+  public static String queryStringFromJdbcOptions(JDBCOptions options) {
+    String tableOrQuery = options.tableOrQuery();
+    return tableOrQuery.substring(0, tableOrQuery.lastIndexOf(")")).replaceFirst("\\(", "");
   }
 
   private static String extractDialectFromJdbcUrl(String jdbcUrl) {
