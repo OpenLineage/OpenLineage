@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 import json
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from openlineage.client.client import OpenLineageClient
@@ -29,7 +29,7 @@ from openlineage.client.facet import (
 from openlineage.client.run import SCHEMA_URL, Dataset, Job, Run, RunEvent, RunState
 
 
-@pytest.fixture()
+@pytest.fixture
 def event() -> dict[str, Any]:
     return {
         "eventType": "START",
@@ -56,7 +56,16 @@ def event() -> dict[str, Any]:
     }
 
 
-def test_symlink_dataset_facet(event: dict[str, Any]) -> None:
+@patch("httpx.Client")
+def test_symlink_dataset_facet(mock_client_class, event: dict[str, Any]) -> None:
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -101,7 +110,10 @@ def test_symlink_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["content"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -110,7 +122,16 @@ def test_symlink_dataset_facet(event: dict[str, Any]) -> None:
     assert expected_event == event_sent
 
 
-def test_storage_dataset_facet(event: dict[str, Any]) -> None:
+@patch("httpx.Client")
+def test_storage_dataset_facet(mock_client_class, event: dict[str, Any]) -> None:
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -145,7 +166,10 @@ def test_storage_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["content"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -154,7 +178,16 @@ def test_storage_dataset_facet(event: dict[str, Any]) -> None:
     assert expected_event == event_sent
 
 
-def test_ownership_job_facet(event: dict[str, Any]) -> None:
+@patch("httpx.Client")
+def test_ownership_job_facet(mock_client_class, event: dict[str, Any]) -> None:
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -197,7 +230,10 @@ def test_ownership_job_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["content"])
 
     expected_event = copy.deepcopy(event)
     expected_event["job"]["facets"] = {}
@@ -206,7 +242,16 @@ def test_ownership_job_facet(event: dict[str, Any]) -> None:
     assert expected_event == event_sent
 
 
-def test_dataset_version_dataset_facet(event: dict[str, Any]) -> None:
+@patch("httpx.Client")
+def test_dataset_version_dataset_facet(mock_client_class, event: dict[str, Any]) -> None:
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -242,7 +287,10 @@ def test_dataset_version_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["content"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -251,7 +299,16 @@ def test_dataset_version_dataset_facet(event: dict[str, Any]) -> None:
     assert expected_event == event_sent
 
 
-def test_lifecycle_state_change_dataset_facet(event: dict[str, Any]) -> None:
+@patch("httpx.Client")
+def test_lifecycle_state_change_dataset_facet(mock_client_class, event: dict[str, Any]) -> None:
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -295,7 +352,10 @@ def test_lifecycle_state_change_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["content"])
 
     dataset_facets = {}
     dataset_facets["lifecycleStateChange"] = lifecycle_state_change_dataset_facet
@@ -305,7 +365,16 @@ def test_lifecycle_state_change_dataset_facet(event: dict[str, Any]) -> None:
     assert expected_event == event_sent
 
 
-def test_ownership_dataset_facet(event: dict[str, Any]) -> None:
+@patch("httpx.Client")
+def test_ownership_dataset_facet(mock_client_class, event: dict[str, Any]) -> None:
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -351,7 +420,10 @@ def test_ownership_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["content"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -360,7 +432,16 @@ def test_ownership_dataset_facet(event: dict[str, Any]) -> None:
     assert expected_event == event_sent
 
 
-def test_column_lineage_dataset_facet(event: dict[str, Any]) -> None:
+@patch("httpx.Client")
+def test_column_lineage_dataset_facet(mock_client_class, event: dict[str, Any]) -> None:
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -420,7 +501,10 @@ def test_column_lineage_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["content"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -429,7 +513,16 @@ def test_column_lineage_dataset_facet(event: dict[str, Any]) -> None:
     assert expected_event == event_sent
 
 
-def test_job_type_job_facet(event: dict[str, Any]) -> None:
+@patch("httpx.Client")
+def test_job_type_job_facet(mock_client_class, event: dict[str, Any]) -> None:
+    # Mock the context manager and post method
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_client.post.return_value = mock_response
+    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__exit__.return_value = None
+
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -457,7 +550,10 @@ def test_job_type_job_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["content"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"] = []
