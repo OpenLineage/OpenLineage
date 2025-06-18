@@ -41,8 +41,8 @@ To build the openapi docs using `redoc-cli`, run:
 
 ## Local development
 
-[!IMPORTANT]
-Requires Node >=18.0.
+> [!IMPORTANT]
+> Requires Node >=18.0.
 
 First, clone the repo and change into the website directory:
 
