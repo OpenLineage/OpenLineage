@@ -15,7 +15,12 @@
   },
   "job": {
     "namespace": "default",
-    "name": "query.test.t1"
+    "name": "query.test.t1",
+    "facets": {
+      "sql": {
+        "query": "INSERT INTO t1 SELECT a, concat(b, 'x') FROM t2"
+      }
+    }
   },
   "inputs": [
     {

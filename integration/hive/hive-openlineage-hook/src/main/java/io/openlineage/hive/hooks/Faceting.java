@@ -309,6 +309,12 @@ public class Faceting {
                 .namespace(emitter.getJobNamespace())
                 .name(jobName)
                 // TODO: Add job facets
+                .facets(
+                    ol.newJobFacetsBuilder()
+                        .put(
+                            "sql",
+                            ol.newSQLJobFacetBuilder().query(olContext.getQueryString()).build())
+                        .build())
                 .build())
         .inputs(inputDatasets)
         .outputs(outputDatasets)
