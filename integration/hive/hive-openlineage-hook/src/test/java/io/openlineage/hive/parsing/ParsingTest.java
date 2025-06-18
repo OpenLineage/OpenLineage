@@ -15,7 +15,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDFLag;
 import org.apache.thrift.TException;
 import org.junit.jupiter.api.Test;
 
-public class ParsingTest extends InMemoryHiveTestBase {
+class ParsingTest extends InMemoryHiveTestBase {
 
   @Test
   void testSelectStar() throws TException {

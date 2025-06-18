@@ -29,7 +29,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDFSha2;
 import org.apache.thrift.TException;
 import org.junit.jupiter.api.Test;
 
-public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
+class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
 
   @Test
   void masking() {
@@ -366,7 +366,7 @@ public class ColumnLineageCollectorTest extends InMemoryHiveTestBase {
   }
 
   @Test
-  public void union() throws TException {
+  void union() throws TException {
     createTable("t1", "a;int", "b;string");
     createTable("t2", "a;int", "c;string");
     String queryString =

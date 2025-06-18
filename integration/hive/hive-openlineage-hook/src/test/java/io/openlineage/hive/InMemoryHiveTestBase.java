@@ -161,6 +161,7 @@ public class InMemoryHiveTestBase {
     }
   }
 
+  @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
   public static List<FieldSchema> getTableColumns(String... fields) {
     List<FieldSchema> cols = new ArrayList<>();
     for (String field : fields) {

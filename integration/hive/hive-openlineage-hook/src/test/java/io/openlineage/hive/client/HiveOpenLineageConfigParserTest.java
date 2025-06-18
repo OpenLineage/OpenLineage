@@ -11,10 +11,10 @@ import io.openlineage.client.transports.ConsoleConfig;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.jupiter.api.Test;
 
-public class HiveOpenLineageConfigParserTest {
+class HiveOpenLineageConfigParserTest {
 
   @Test
-  public void testEmptyConfig() {
+  void testEmptyConfig() {
     Configuration conf = new Configuration();
     HiveOpenLineageConfig config = extractFromHadoopConf(conf);
     assertThat(config.getTransportConfig()).isNull();
@@ -26,7 +26,7 @@ public class HiveOpenLineageConfigParserTest {
   }
 
   @Test
-  public void testSimpleTransportConfig() {
+  void testSimpleTransportConfig() {
     Configuration conf = new Configuration();
     conf.set("hive.openlineage.transport.type", "console");
     HiveOpenLineageConfig config = extractFromHadoopConf(conf);
