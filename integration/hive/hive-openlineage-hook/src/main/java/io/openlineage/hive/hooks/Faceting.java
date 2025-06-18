@@ -27,7 +27,9 @@ import io.openlineage.hive.api.OpenLineageContext;
 import io.openlineage.hive.client.EventEmitter;
 import io.openlineage.hive.client.HiveOpenLineageConfigParser;
 import io.openlineage.hive.client.Versions;
+import io.openlineage.hive.facets.HivePropertiesFacet;
 import io.openlineage.hive.facets.HivePropertiesFacetBuilder;
+import io.openlineage.hive.facets.HiveQueryInfoFacet;
 import io.openlineage.hive.parsing.ColumnLineageCollector;
 import io.openlineage.hive.parsing.Parsing;
 import io.openlineage.hive.parsing.QueryExpr;
@@ -280,6 +282,27 @@ public class Faceting {
     return schemaFacet;
   }
 
+  private static OpenLineage.ProcessingEngineRunFacet getProcessingEngineFacet(
+      OpenLineageContext olContext) {
+    return olContext
+        .getOpenLineage()
+        .newProcessingEngineRunFacetBuilder()
+        .name("hive")
+        .version(HiveVersionInfo.getVersion())
+        .openlineageAdapterVersion(olContext.getOpenlineageHiveIntegrationVersion())
+        .build();
+  }
+
+  private static HivePropertiesFacet getHivePropertiesFacet(OpenLineageContext olContext) {
+    return new HivePropertiesFacetBuilder(olContext.getHadoopConf()).build();
+  }
+
+  private static HiveQueryInfoFacet getHiveQueryInfoFacet(OpenLineageContext olContext) {
+    return new HiveQueryInfoFacet()
+        .setQueryId(olContext.getQueryId())
+        .setOperationName(olContext.getOperationName());
+  }
+
   public static RunEvent getRunEvent(EventEmitter emitter, OpenLineageContext olContext) {
     OpenLineage ol = olContext.getOpenLineage();
     RunBuilder runBuilder =
@@ -287,16 +310,11 @@ public class Faceting {
             .runId(emitter.getRunId())
             .facets(
                 ol.newRunFacetsBuilder()
-                    .put(
-                        "processing_engine",
-                        ol.newProcessingEngineRunFacetBuilder()
-                            .name("hive")
-                            .version(HiveVersionInfo.getVersion())
-                            .openlineageAdapterVersion(
-                                olContext.getOpenlineageHiveIntegrationVersion())
-                            .build())
-                    .put("hive_properties", new HivePropertiesFacetBuilder(olContext).build())
+                    .put("processing_engine", getProcessingEngineFacet(olContext))
+                    .put("hive_query", getHiveQueryInfoFacet(olContext))
+                    .put("hive_properties", getHivePropertiesFacet(olContext))
                     .build());
+
     List<InputDataset> inputDatasets = getInputDatasets(olContext);
     List<OutputDataset> outputDatasets = getOutputDatasets(olContext, inputDatasets);
     String jobName = generateJobName(emitter.getJobName(), inputDatasets, outputDatasets);
