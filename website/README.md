@@ -41,16 +41,16 @@ To build the openapi docs using `redoc-cli`, run:
 
 ## Local development
 
-First, clone the repo.
+[!IMPORTANT]
+Requires Node >=18.0.
 
-Install the [node version manager](https://github.com/nvm-sh/nvm) and use it to create a Node 16 environment:
+First, clone the repo and change into the website directory:
 
 ```
-$ nvm install 16
-$ nvm use 16
+$ git clone git@github.com:OpenLineage/OpenLineage.git && cd website
 ```
 
-Run Yarn to install all of the Node dependencies for the project:
+Next, install the Node dependencies for the project using Yarn:
 
 ```
 $ yarn
