@@ -12,11 +12,11 @@ plugins {
 
 ext {
     assertjVersion = '3.27.3'
-    junit5Version = '5.11.4'
+    junit5Version = '5.13.1'
     snowflakeVersion = '2.13.0'
     mockitoVersion = '4.11.0'
     lombokVersion = '1.18.30'
-    micrometerVersion = '1.14.4'
+    micrometerVersion = '1.15.1'
 
     snowflakeLookup = [
             '2.4.8': '2.9.3',

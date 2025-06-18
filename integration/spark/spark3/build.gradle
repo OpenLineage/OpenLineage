@@ -27,15 +27,15 @@ idea {
 
 ext {
     assertjVersion = "3.27.3"
-    bigqueryVersion = "0.42.0"
+    bigqueryVersion = "0.42.3"
     databricksVersion = "0.1.4"
     deltaVersion = "1.1.0"
     icebergVersion = "1.4.3"
     jacksonVersion = "2.15.3"
-    junit5Version = "5.11.4"
+    junit5Version = "5.13.1"
     lombokVersion = "1.18.30"
     mockitoVersion = "4.11.0"
-    micrometerVersion = "1.14.4"
+    micrometerVersion = "1.15.1"
 
     sparkVersion = project.findProperty("spark3.spark.version")
     scalaBinaryVersion = project.findProperty("scala.binary.version")
@@ -75,7 +75,7 @@ dependencies {
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
     testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
     testFixturesApi("io.micrometer:micrometer-core:${micrometerVersion}")
-    testFixturesApi('org.xerial:sqlite-jdbc:3.49.1.0')
+    testFixturesApi('org.xerial:sqlite-jdbc:3.50.1.0')
 
     // Scala 2.12
     scala212Implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
@@ -103,7 +103,7 @@ dependencies {
     testScala212Implementation("io.delta:delta-core_2.12:${deltaVersion}")
     testScala212Implementation("org.apache.iceberg:iceberg-spark-runtime-3.2_2.12:${icebergVersion}")
     testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
-    testScala212Implementation('org.xerial:sqlite-jdbc:3.49.1.0')
+    testScala212Implementation('org.xerial:sqlite-jdbc:3.50.1.0')
 
     testScala212Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala212Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
@@ -138,7 +138,7 @@ dependencies {
     testScala213Implementation("io.delta:delta-core_2.13:${deltaVersion}")
     testScala213Implementation("org.apache.iceberg:iceberg-spark-runtime-3.2_2.13:${icebergVersion}")
     testScala213Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
-    testScala213Implementation('org.xerial:sqlite-jdbc:3.49.1.0')
+    testScala213Implementation('org.xerial:sqlite-jdbc:3.50.1.0')
 
     testScala213Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala213Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
