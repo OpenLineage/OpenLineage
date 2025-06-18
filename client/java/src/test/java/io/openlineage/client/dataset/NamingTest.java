@@ -6,6 +6,7 @@
 package io.openlineage.client.dataset;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import org.junit.jupiter.api.Test;
 
@@ -319,5 +320,12 @@ class NamingTest {
             .build();
     assertEquals("wasbs://container@service.dfs.core.windows.net", naming.getNamespace());
     assertEquals("object-key", naming.getName());
+  }
+
+  @Test
+  void shouldFailIfNotAllArgumentsProvided() {
+    assertThrowsExactly(
+        IllegalArgumentException.class,
+        () -> Naming.Athena.builder().catalog("some-catalog").build());
   }
 }
