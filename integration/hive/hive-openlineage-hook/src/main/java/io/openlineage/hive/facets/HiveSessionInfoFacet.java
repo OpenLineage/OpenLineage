@@ -7,6 +7,7 @@ package io.openlineage.hive.facets;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.hive.client.Versions;
+import java.time.ZonedDateTime;
 import lombok.Getter;
 
 /**
@@ -24,6 +25,9 @@ public class HiveSessionInfoFacet extends OpenLineage.DefaultRunFacet {
   @JsonProperty("sessionId")
   private String sessionId;
 
+  @JsonProperty("creationTime")
+  private ZonedDateTime creationTime;
+
   public HiveSessionInfoFacet() {
     super(Versions.OPEN_LINEAGE_PRODUCER_URI);
   }
@@ -40,6 +44,11 @@ public class HiveSessionInfoFacet extends OpenLineage.DefaultRunFacet {
 
   public HiveSessionInfoFacet setSessionId(String sessionId) {
     this.sessionId = sessionId;
+    return this;
+  }
+
+  public HiveSessionInfoFacet setCreationTime(ZonedDateTime creationTime) {
+    this.creationTime = creationTime;
     return this;
   }
 }

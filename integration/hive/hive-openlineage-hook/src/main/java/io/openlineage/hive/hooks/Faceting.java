@@ -36,6 +36,9 @@ import io.openlineage.hive.parsing.Parsing;
 import io.openlineage.hive.parsing.QueryExpr;
 import io.openlineage.hive.util.HiveUtils;
 import io.openlineage.hive.util.NetworkUtils;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -310,13 +313,23 @@ public class Faceting {
 
   private static HiveSessionInfoFacet getHiveSessionInfoFacet(OpenLineageContext olContext) {
     HookContext hookContext = olContext.getHookContext();
-    return new HiveSessionInfoFacet()
-        .setUsername(
-            Optional.ofNullable(hookContext.getUserName()) // for HiveServer2
-                .filter(userName -> !userName.isEmpty() && !userName.equals("anonymous"))
-                .orElse(hookContext.getUgi().getShortUserName())) // for HiveCli
-        .setClientIp(hookContext.getIpAddress())
-        .setSessionId(hookContext.getSessionId());
+    HiveSessionInfoFacet result =
+        new HiveSessionInfoFacet()
+            .setUsername(
+                Optional.ofNullable(hookContext.getUserName()) // for HiveServer2
+                    .filter(userName -> !userName.isEmpty() && !userName.equals("anonymous"))
+                    .orElse(hookContext.getUgi().getShortUserName())) // for HiveCli
+            .setClientIp(hookContext.getIpAddress())
+            .setSessionId(hookContext.getSessionId());
+
+    // populated by hive.server2.session.hook, as HookContext dones't have such information
+    long creationTimestamp = hookContext.getConf().getLong("hive.session.creationTimestamp", 0);
+    if (creationTimestamp > 0) {
+      result.setCreationTime(
+          ZonedDateTime.ofInstant(Instant.ofEpochMilli(creationTimestamp), ZoneOffset.UTC));
+    }
+
+    return result;
   }
 
   public static RunEvent getRunEvent(EventEmitter emitter, OpenLineageContext olContext) {
