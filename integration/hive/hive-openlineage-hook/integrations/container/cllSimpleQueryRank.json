@@ -27,6 +27,11 @@
     "namespace": "default",
     "name": "createtable_as_select.test.xxx",
     "facets": {
+      "jobType": {
+        "integration": "HIVE",
+        "jobType": "QUERY",
+        "processingType": "BATCH"
+      },
       "sql": {
         "query": "CREATE TABLE xxx AS\nSELECT a, RANK() OVER (PARTITION BY b ORDER BY c) as rank FROM t1"
       }
