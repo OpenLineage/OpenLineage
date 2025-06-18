@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-        <property>
-            <name>hive.compactor.worker.threads</name>
-            <value>1</value>
-        </property>
+    <property>
+        <name>hive.compactor.worker.threads</name>
+        <value>1</value>
+    </property>
     <property>
         <name>hive.server2.enable.doAs</name>
         <value>false</value>
@@ -49,7 +49,16 @@
         <value>false</value>
     </property>
     <property>
+        <!-- required only to capture session creation time, can be omitted -->
+        <name>hive.server2.session.hook</name>
+        <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+    </property>
+    <property>
         <name>hive.exec.post.hooks</name>
+        <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+    </property>
+    <property>
+        <name>hive.exec.failure.hooks</name>
         <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
     </property>
 <!--    <property>-->

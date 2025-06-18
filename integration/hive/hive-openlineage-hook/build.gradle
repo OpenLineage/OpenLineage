@@ -47,6 +47,8 @@ dependencies {
         exclude group: 'org.apache.avro', module: 'avro'
     }
 
+    compileOnly("org.apache.hive:hive-service:${hiveVersion}");
+
     compileOnly("org.apache.hive:hive-exec:${hiveVersion}") {
         exclude group: 'org.pentaho', module: '*'
         exclude group: 'org.apache.hadoop', module: '*'
