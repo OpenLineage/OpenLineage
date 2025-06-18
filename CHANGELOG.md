@@ -28,9 +28,9 @@
   *Adds initial support for ClickHouse in dbt integration*
 * **dbt: Add processing_engine facet** [`#3725`](https://github.com/OpenLineage/OpenLineage/pull/3725) [@dolfinus](https://github.com/dolfinus)  
   *Adds processing_engine facet for dbt integration*
-* **Flink: Add facet with Flink jobId** [`#3744`](https://github.com/OpenLineage/OpenLineage/pull/3744) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+* **Flink: Add facet with Flink jobId** [`#3744`](https://github.com/OpenLineage/OpenLineage/pull/3744) [@dolfinus](https://github.com/dolfinus)  
   *Adds facet containing Flink job ID information*
-* **Flink: Add processing_engine facet** [`#3726`](https://github.com/OpenLineage/OpenLineage/pull/3726) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+* **Flink: Add processing_engine facet** [`#3726`](https://github.com/OpenLineage/OpenLineage/pull/3726) [@dolfinus](https://github.com/dolfinus)  
   *Adds processing_engine facet for Flink integration*
 * **JDBC: Column level lineage for jdbc queries load** [`#3763`](https://github.com/OpenLineage/OpenLineage/pull/3763) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Adds column-level lineage support for JDBC queries for Spark with single input table*
@@ -64,11 +64,11 @@
 
 * **Spark: Fix missing table path in InsertIntoHadoopFsRelationCommand** [`#3773`](https://github.com/OpenLineage/OpenLineage/pull/3773) [@dolfinus](https://github.com/dolfinus)  
   *Fixes issue where table path was missing in InsertIntoHadoopFsRelationCommand*
-* **BigQuery: Filter temp inner jobs for bigquery indirect mode** [`#3722`](https://github.com/OpenLineage/OpenLineage/pull/3722) [@dolfinus](https://github.com/dolfinus)  
+* **BigQuery: Filter temp inner jobs for bigquery indirect mode** [`#3722`](https://github.com/OpenLineage/OpenLineage/pull/3722) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Filters out temporary inner jobs in BigQuery indirect mode*
 * **dbt: dbt-ol should not error on job complete if there is no start event** [`#3749`](https://github.com/OpenLineage/OpenLineage/pull/3749) [@mobuchowski](https://github.com/mobuchowski)  
   *Prevents errors when job completion occurs without corresponding start event*
-* **Flink: Do not hide OpenLineage config parsing errors** [`#3724`](https://github.com/OpenLineage/OpenLineage/pull/3724) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+* **Flink: Do not hide OpenLineage config parsing errors** [`#3724`](https://github.com/OpenLineage/OpenLineage/pull/3724) [@dolfinus](https://github.com/dolfinus)  
   *Improves error visibility for OpenLineage configuration parsing in Flink*
 * **Java: Prevent original events from being mutated in TransformTransport** [`#3728`](https://github.com/OpenLineage/OpenLineage/pull/3728) [@JDarDagran](https://github.com/JDarDagran)  
   *Ensures original events remain immutable during transport transformations*
