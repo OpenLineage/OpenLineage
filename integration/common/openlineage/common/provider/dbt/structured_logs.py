@@ -177,7 +177,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         dbt_event_name = dbt_event["info"]["name"]
         if dbt_event_name == "MainReportVersion":
             self._dbt_version = dbt_event["data"]["version"][1:]
-            self._dbt_invocation_id = dbt_event["info"]["invocation_id"]
+            self._dbt_invocation_id = dbt_event["info"].get("invocation_id")
             start_event = self._parse_dbt_start_command_event(dbt_event)
             self._setup_dbt_run_metadata(start_event)
             return start_event
@@ -207,9 +207,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         event_time = get_event_timestamp(event["info"]["ts"])
         run_facets = {
             **self.dbt_version_facet(),
-            "dbt_run": self.dbt_run_run_facet(),
-            "processing_engine": self.processing_engine_facet(),
+            **self.processing_engine_facet(),
+            **self.dbt_run_run_facet(),
         }
+
         if self.parent_run_metadata:
             run_facets["parent"] = self.parent_run_metadata.to_openlineage()
 
@@ -238,9 +239,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     def _get_dbt_command_abort_event(self):
         run_facets = {
             **self.dbt_version_facet(),
-            "dbt_run": self.dbt_run_run_facet(),
-            "processing_engine": self.processing_engine_facet(),
+            **self.processing_engine_facet(),
+            **self.dbt_run_run_facet(),
         }
+
         parent_run_metadata = get_parent_run_metadata()
         if parent_run_metadata:
             run_facets["parent"] = parent_run_metadata.to_openlineage()
@@ -272,9 +274,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         run_facets = {
             **self.dbt_version_facet(),
-            "dbt_run": self.dbt_run_run_facet(),
+            **self.processing_engine_facet(),
+            **self.dbt_run_run_facet(),
             "parent": self.dbt_run_metadata.to_openlineage(),
-            "processing_engine": self.processing_engine_facet(),
         }
 
         job_name = self._get_job_name(event)
@@ -316,13 +318,12 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         run_facets = {
             **self.dbt_version_facet(),
-            "dbt_run": self.dbt_run_run_facet(),
+            **self.processing_engine_facet(),
+            **self.dbt_run_run_facet(),
             "parent": self.dbt_run_metadata.to_openlineage(),
-            "processing_engine": self.processing_engine_facet(),
         }
 
         job_name = self._get_job_name(event)
-
         job_facets = {
             "jobType": job_type_job.JobTypeJobFacet(
                 jobType=get_job_type(event),
@@ -423,9 +424,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         run_facets = {
             **self.dbt_version_facet(),
-            "dbt_run": self.dbt_run_run_facet(),
+            **self.processing_engine_facet(),
+            **self.dbt_run_run_facet(),
             "parent": parent_run.to_openlineage(),
-            "processing_engine": self.processing_engine_facet(),
         }
 
         job_facets = {
@@ -490,8 +491,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         event_time = get_event_timestamp(event["data"]["completed_at"])
         run_facets = {
             **self.dbt_version_facet(),
-            "dbt_run": self.dbt_run_run_facet(),
-            "processing_engine": self.processing_engine_facet(),
+            **self.processing_engine_facet(),
+            **self.dbt_run_run_facet(),
         }
 
         parent_run_metadata = get_parent_run_metadata()
@@ -555,21 +556,29 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     # TODO: remove after deprecation period
     def dbt_version_facet(self) -> Dict[str, DbtVersionRunFacet]:
+        if not self.dbt_version:
+            return {}
         self.logger.debug(
             "dbt_version facet is deprecated, and will be removed in future versions. "
             "Use processing_engine facet instead."
         )
         return {"dbt_version": DbtVersionRunFacet(version=self.dbt_version)}
 
-    def dbt_run_run_facet(self) -> DbtRunRunFacet:
-        return DbtRunRunFacet(invocation_id=self.invocation_id)
+    def dbt_run_run_facet(self) -> Dict[str, DbtRunRunFacet]:
+        if not self.invocation_id:
+            return {}
+        return {"dbt_run": DbtRunRunFacet(invocation_id=self.invocation_id)}
 
-    def processing_engine_facet(self) -> processing_engine_run.ProcessingEngineRunFacet:
-        return processing_engine_run.ProcessingEngineRunFacet(
-            name="dbt",
-            version=self.dbt_version,  # type: ignore[arg-type]
-            openlineageAdapterVersion=openlineage_version,
-        )
+    def processing_engine_facet(self) -> Dict[str, processing_engine_run.ProcessingEngineRunFacet]:
+        if not self.dbt_version:
+            return {}
+        return {
+            "processing_engine": processing_engine_run.ProcessingEngineRunFacet(
+                name="dbt",
+                version=self.dbt_version,
+                openlineageAdapterVersion=openlineage_version,
+            )
+        }
 
     def _get_sql_query_id(self, timestamp: str, node_id: str) -> int:
         """
