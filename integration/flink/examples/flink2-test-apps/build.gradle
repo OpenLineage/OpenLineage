@@ -37,10 +37,8 @@ dependencies {
     testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.20'
     testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
     implementation 'org.awaitility:awaitility:4.3.0'
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.4.1'
     implementation "com.typesafe:config:1.4.3"
 
-    implementation "io.openlineage:openlineage-flink:$project.version"
     implementation "org.apache.flink:flink-connector-kafka:4.0.0-2.0"
     implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     implementation "org.apache.flink:flink-avro:$flinkVersion"
