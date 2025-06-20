@@ -1,0 +1,11 @@
+services:
+  hive:
+    image: quay.io/openlineage/hive:${HIVE_VERSION:-3.1.3}
+    ports:
+      - 10000:10000
+      - 10002:10002
+    volumes:
+      - ./conf/:/opt/hive/conf/:ro
+      - ../hive/build/libs:/opt/hive/lib/openlineage/:ro
+    environment:
+      - SERVICE_NAME=hiveserver2
