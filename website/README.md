@@ -28,15 +28,15 @@ If you are familiar with the GitHub pull request process, proposing a new blog p
 3. Add a record to the appropriate file and array in `static/ecosystem`, using the filename of the logo for the image value, like so:
 
 ```tsx
-{
-	image: "select_star_logo.png",
-	org: "Select Star",
-	full_name: "Select Star",
-	description:
-	  "Select Star uses OpenLineage events to extract and generate column-level lineage, enabling precise metadata tracking, impact analysis, and comprehensive documentation of data pipelines.",
-	docs_url: "https://docs.selectstar.com/",
-	org_url: "https://www.selectstar.com/",
-},
+  {
+    image: "select_star_logo.png",
+    org: "Select Star",
+    full_name: "Select Star",
+    description:
+      "Select Star uses OpenLineage events to extract and generate column-level lineage, enabling precise metadata tracking, impact analysis, and comprehensive documentation of data pipelines.",
+    docs_url: "https://docs.selectstar.com/",
+    org_url: "https://www.selectstar.com/",
+  },
 ```
 
 4. Run the site locally to test it (strongly recommended).
@@ -48,11 +48,11 @@ If you are familiar with the GitHub pull request process, proposing a new blog p
 2. Add an array to `static/meetups/meetupStrings.tsx` like so:
 
 ```tsx
-{
-	image: "toronto_screen.png",
-	city: "Toronto",
-	link: "https://www.meetup.com/openlineage/",
-},
+  {
+    image: "toronto_screen.png",
+    city: "Toronto",
+    link: "https://www.meetup.com/openlineage/",
+  },
 ```
 
 3. Run the site locally to test it (recommended).
