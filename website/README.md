@@ -1,4 +1,4 @@
-# OpenLineage Website
+# [OpenLineage Website](https://openlineage.io/)
 
 [![Covered by Argos Visual Testing](https://argos-ci.com/badge.svg)](https://app.argos-ci.com/pawel-big-lebowski/docs/reference?utm_source=OpenLineage&utm_campaign=oss)
 
