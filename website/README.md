@@ -119,4 +119,4 @@ $ yarn start --port 3001
 
 ## Deployment
 
-Merges to `main` trigger a new version of the site to be published at [openlineage.io](https://openlineage.io) via the [`openlineage-site`](https://github.com/OpenLineage/openlineage-site) repo using the `Build and Publish To openlineage-site repo` GitHub Actions Workflow in this repo's `.github/workflows`. Additional content is published by the [`compatibility-tests`](https://github.com/OpenLineage/compatibility-tests) repo.
+Each merged change to code in this directory triggers a GitHub Workflow that publishes a new version of the site via the [`openlineage-site`](https://github.com/OpenLineage/openlineage-site) worker repo, which enables automated versioning of the docs. Unless changes to current or older docs versions are desired, all changes to the site should be made here. Additional content is published by the [`compatibility-tests`](https://github.com/OpenLineage/compatibility-tests) repo.
