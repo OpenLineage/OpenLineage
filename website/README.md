@@ -119,6 +119,4 @@ $ yarn start --port 3001
 
 ## Deployment
 
-Once the site has been launched, merges to `main` will cause a new version of the site to be published.
-
-The site is deployed using the `Build and Publish To openlineage-site repo` GitHub Actions Workflow in `.github/workflows` whenever a change is merged to `main`. 
+Merges to `main` trigger a new version of the site to be published using the `Build and Publish To openlineage-site repo` GitHub Actions Workflow in `.github/workflows`. 
