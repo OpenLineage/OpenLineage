@@ -119,4 +119,4 @@ $ yarn start --port 3001
 
 ## Deployment
 
-Merges to `main` trigger a new version of the site to be published using the `Build and Publish To openlineage-site repo` GitHub Actions Workflow in `.github/workflows`. 
+Merges to `main` trigger a new version of the site to be published at [openlineage.io](https://openlineage.io) via the [`openlineage-site`](https://github.com/OpenLineage/openlineage-site) repo using the `Build and Publish To openlineage-site repo` GitHub Actions Workflow in this repo's `.github/workflows`. Additional content is published by the [`compatibility-tests`](https://github.com/OpenLineage/compatibility-tests) repo.
