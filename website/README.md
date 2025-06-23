@@ -1,94 +1,122 @@
-# OpenLineage Docs
+# [OpenLineage Website](https://openlineage.io/)
 
 [![Covered by Argos Visual Testing](https://argos-ci.com/badge.svg)](https://app.argos-ci.com/pawel-big-lebowski/docs/reference?utm_source=OpenLineage&utm_campaign=oss)
 
-This is a Docusaurus site, and all content can be found in `docs/`. Contributions are welcome in the form of issues or pull requests. Pages that require attention have been marked with Docusaurus Admonitions.
+All content for this Docusaurus site can be found in `website/`. Contributions are welcome in the form of issues or pull requests.
 
 ### New posts
 
-We love new blog posts, and welcome content about OpenLineage! Topics include:
+We love new blog posts and welcome content about OpenLineage! Good topics include:
+
 * experiences from users of all kinds
 * supporting products and technologies
-* proposals for discussion
+* proposals for discussion.
 
-If you are familiar with the GitHub pull request process, it is easy to propose a new blog post:
+If you are familiar with the GitHub pull request process, proposing a new blog post is easy:
 
 1. Fork this project.
-2. Make a new directory in `/blog`. The name of the directory will become part of the posts's URL, so choose something descriptive and unique.
-3. Create an `index.mdx` file in the new directory containing your blog content. Use one of the other posts as a template. The `title`, `date`, `authors`, and `description` front matter fields are all required.
-4. Add your author information -- name, title, url (optional), and image_url (optional) -- to `blog/authors.yml`. 
-5. Build the site locally if you want to see it in a browser and build confidence in your formatting choices.
-6. Commit your changes and submit a pull request.
+2. Make a new directory in `website/blog`.
+3. Add your author information -- name, title, url (optional), image_url (optional) -- to `blog/authors.yml`. 
+4. Create an `index.mdx` file in the new directory containing your blog. The `title`, `date`, `authors`, and `description` front matter fields are required. For the authors field, put the author name you added to `authors.yml` in an array (`[Doe]`). Please add any images to the new directory. Recommended: use one of the other posts as a template. 
+5. Run the site locally to test it (recommended).
+6. Commit your changes and open a pull request.
 
 ### New ecosystem partners for the Ecosystem page
 
-- Add a rectangular logo in SVG format with the dimensions 300px x 150px to static/img.
-- Add a record to the appropriate file and array in static/ecosystem, using the filename of the logo for the image value.
+1. Fork this project.
+2. Add a rectangular logo in SVG format with the dimensions 300px x 150px to `static/img`.
+3. Add a record to the appropriate file and array in `static/ecosystem`, using the filename of the logo for the image value, like so:
 
-### Changes to basepages
-
-If you want to make a change to a basepage - e.g. to add a new member to the Ecosystem page - the best way is to submit a pull request.
-
-These basepages can be found in `src/pages`, and are formatted in markdown.
-
-### Building openapi docs
-
-To build the openapi docs using `redoc-cli`, run:
-
+```tsx
+  {
+    image: "select_star_logo.png",
+    org: "Select Star",
+    full_name: "Select Star",
+    description:
+      "Select Star uses OpenLineage events to extract and generate column-level lineage, enabling precise metadata tracking, impact analysis, and comprehensive documentation of data pipelines.",
+    docs_url: "https://docs.selectstar.com/",
+    org_url: "https://www.selectstar.com/",
+  },
 ```
+
+4. Run the site locally to test it (strongly recommended).
+5. Commit your changes and open a pull request.
+
+### New meetups
+
+1. Fork this project.
+2. Add an array to `static/meetups/meetupStrings.tsx` like so:
+
+```tsx
+  {
+    image: "toronto_screen.png",
+    city: "Toronto",
+    link: "https://www.meetup.com/openlineage/",
+  },
+```
+
+3. Run the site locally to test it (recommended).
+4. Commit your changes and open a pull request.
+
+### Changes to other landing pages
+
+If you want to make a change to one of the other landing pages -- e.g., to add a resource to the Resources page -- the best way is to submit a pull request.
+
+These Markdown pages can be found in `src/pages`.
+
+### Building OpenAPI docs
+
+To build the OpenAPI docs using `redoc-cli`, run:
+
+```shell
 % yarn run build:docs
 ```
 
-## Local development
+## Local testing
 
 > [!IMPORTANT]
-> Requires Node >=18.0.
+> Requires Node (>=18.0) and Yarn.
 
-First, clone the repo and change into the website directory:
+First, clone the repo and change into the `website` directory:
 
-```
+```shell
 $ git clone git@github.com:OpenLineage/OpenLineage.git && cd website
 ```
 
 Next, install the Node dependencies for the project using Yarn:
 
-```
+```shell
 $ yarn
 ```
 
-## Local site build
+## Local site build (optional)
 
-You need to first build the documentation contents. This is necessary before starting the docusaurus server.
+If desired, build the docs locally:
 
-```
+```shell
 $ yarn build
 ```
 
-This command generates static content into the `build` directory. If you want to look at it, try `cd build && python3 -m http.server`.
+This command generates static content into the `build` directory. If you want to look at it, run:
+
+```shell
+$ cd build && python3 -m http.server
+```
 
 ## Local server start
 
 Tell Yarn to start a development server:
 
-```
+```shell
 $ yarn start
 ```
 
-This command provides a URL where the doc site can be viewed. Most changes are reflected live without having to restart the server.
+The server uses port 3000 by default. If the port is already allocated, you can specify a different one:
 
-By default, the server port will be set to 3000. In case the port is already being used, you can specify the port number when starting the server:
-
-```
+```shell
 $ yarn start --port 3001
 ```
 
 ## Deployment
 
-Once the site has been launched, pull requests to `main` will cause a new doc site to be shipped via GitHub Pages.
-
-The site is deployed using the [Gatsby Publish GitHub action](https://github.com/OpenLineage/docs/blob/main/.github/workflows/deploy.yml) whenever a change is merged into `main`. 
-
-This GitHub Action will:
-* Execute `scripts/build-docs.sh`, which performs a build of the OpenAPI docs based on the latest version of the spec that has been published into `static/spec` by the [OpenLineage release script](https://github.com/OpenLineage/OpenLineage/blob/main/spec/release.sh). The resulting docs are placed into `static/apidocs/openapi`.
-* Execute `yarn run build`, which performs a build of the Gatsby landing pages and places them into `public/`. The `static/` directory, containing the OpenAPI and Java client documentation, is copied into `public/` during this step.
-* Replace the contents of the `gh-pages` branch of the [org domain repo](https://github.com/OpenLineage/OpenLineage.github.io) with the contents of `public/`. This will cause that repo's GitHub Action to deploy the new content.
+Each merged change to code in this directory triggers a GitHub Workflow that publishes a new version of the site via the [`openlineage-site`](https://github.com/OpenLineage/openlineage-site) worker repo, which enables automated versioning of the docs. Unless changes to older docs versions are desired, all changes to the site and docs should be made here. Additional content is published by the [`compatibility-tests`](https://github.com/OpenLineage/compatibility-tests) repo.
