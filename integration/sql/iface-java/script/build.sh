@@ -53,6 +53,10 @@ if [[ -n "${GPG_SIGNING_KEY}" ]]; then
     export RELEASE_USERNAME="$OSSRH_TOKEN_USERNAME"
 fi
 
+printf "\n------ Running gradle tests ------\n"
+"$ROOT"/gradlew test
+printf "\n------ Gradle tests passed ------\n"
+
 # Install to maven
 "$ROOT"/gradlew -x javadoc publishToMavenLocal
 
@@ -70,3 +74,4 @@ else
     printf "Expected %s\n Got %s" "$EXPECTED" "$OUTPUT"
     exit 1
 fi
+
