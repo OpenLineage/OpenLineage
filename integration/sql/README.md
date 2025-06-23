@@ -85,19 +85,6 @@ Works on Java 17
 
 `./gradlew build` fails on Java 21
 
-#### Unit tests failing
-
-The build script doesn't execute unit tests.
-When running `./gradlew build`, two tests are failing: `returnedError()` and `returnedMultipleErrors()`.
-
-`./iface-java/scripts/build.sh` doesn't execute tests - it should, but since tests are failing, I'll wait for a decision
-on how to proceed.
-
-Changing 
-`"$ROOT"/gradlew -x javadoc publishToMavenLocal` 
-to 
-`"$ROOT"/gradlew test -x javadoc publishToMavenLocal` should fix the issue, but cannot be done until tests are fixed.
-
 #### Todo:
 * Support a larger part of the SQL language 
 * Python as a Cargo feature
