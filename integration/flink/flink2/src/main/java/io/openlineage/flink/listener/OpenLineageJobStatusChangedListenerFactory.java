@@ -17,13 +17,18 @@ import io.openlineage.flink.visitor.identifier.KafkaTopicListDatasetIdentifierVi
 import io.openlineage.flink.visitor.identifier.KafkaTopicPatternDatasetIdentifierVisitor;
 import java.util.Arrays;
 import java.util.Collection;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.core.execution.JobStatusChangedListener;
 import org.apache.flink.core.execution.JobStatusChangedListenerFactory;
 
+@Slf4j
 public class OpenLineageJobStatusChangedListenerFactory implements JobStatusChangedListenerFactory {
 
   @Override
   public JobStatusChangedListener createListener(Context context) {
+    log.info(
+        "Creating OpenLineageJobStatusChangedListener with Flink configuration: {}",
+        context.getConfiguration());
     return new OpenLineageJobStatusChangedListener(context, loadVisitorFactory());
   }
 
