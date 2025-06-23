@@ -45,7 +45,7 @@ If you are familiar with the GitHub pull request process, proposing a new blog p
 ### New talks for the Community page
 
 1. Fork this project.
-2. Add a talk photo or screenshot with the dimensions 1920 x 1080 px to `static/img`.
+2. Add a talk photo or screenshot in PNG format with the dimensions 1920 x 1080 px to `static/img`.
 3. Add an array to `static/talks/talkStrings.tsx`, using the filename of the photo for the image value. Note that the `video_url` is optional:
 
 ```tsx
@@ -68,7 +68,7 @@ If you are familiar with the GitHub pull request process, proposing a new blog p
 ### New meetup groups for the Community page
 
 1. Fork this project.
-2. Add a meetup photo or screenshot with the dimensions 1920 x 1080 px to `static/img`.
+2. Add a meetup photo or screenshot in PNG format with the dimensions 1920 x 1080 px to `static/img`.
 3. Add an array to `static/meetups/meetupStrings.tsx`, using the filename of the photo for the image value, like so:
 
 ```tsx
