@@ -42,10 +42,34 @@ If you are familiar with the GitHub pull request process, proposing a new blog p
 4. Run the site locally to test it (strongly recommended).
 5. Commit your changes and open a pull request.
 
-### New meetups
+### New talks for the Community page
 
 1. Fork this project.
-2. Add an array to `static/meetups/meetupStrings.tsx` like so:
+2. Add a talk photo or screenshot with the dimensions 1920 x 1080 px to `static/img`.
+3. Add an array to `static/talks/talkStrings.tsx`, using the filename of the photo for the image value. Note that the `video_url` is optional:
+
+```tsx
+  {
+    conf: "Iceberg Summit 2025",
+    date: "2025-04-09",
+    image: "iceberg_summit_2025.png",
+    title: "Operationalizing Iceberg Metrics with OpenLineage",
+    speakers: ["Paweł Leszczyński"],
+    description:
+      "Recent efforts by the OpenLineage community have enriched lineage metadata with Iceberg’s scan and commit reports, which provides beneficial insights on data read and written. This knowledge can be applied for optimizing costs, as it enables the identification of jobs with the highest cost reduction potential. In this talk, we introduce OpenLineage to the Iceberg community and present the community's efforts to include Iceberg’s scan and commit reports within the lineage metadata collected.",
+    video_url: "https://www.youtube.com/watch?v=7mXbe_XCFdA",
+    conf_url: "https://www.icebergsummit2025.com",
+  },
+```
+
+4. Run the site locally to test it (recommended).
+5. Commit your changes and open a pull request.
+
+### New meetup groups for the Community page
+
+1. Fork this project.
+2. Add a meetup photo or screenshot with the dimensions 1920 x 1080 px to `static/img`.
+3. Add an array to `static/meetups/meetupStrings.tsx`, using the filename of the photo for the image value, like so:
 
 ```tsx
   {
@@ -55,8 +79,8 @@ If you are familiar with the GitHub pull request process, proposing a new blog p
   },
 ```
 
-3. Run the site locally to test it (recommended).
-4. Commit your changes and open a pull request.
+4. Run the site locally to test it (recommended).
+5. Commit your changes and open a pull request.
 
 ### Changes to other landing pages
 
