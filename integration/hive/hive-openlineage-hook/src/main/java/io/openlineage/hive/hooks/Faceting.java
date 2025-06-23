@@ -292,7 +292,8 @@ public class Faceting {
     return schemaFacet;
   }
 
-  private static OpenLineage.ProcessingEngineRunFacet getProcessingEngineFacet(OpenLineageContext olContext) {
+  private static OpenLineage.ProcessingEngineRunFacet getProcessingEngineFacet(
+      OpenLineageContext olContext) {
     return olContext
         .getOpenLineage()
         .newProcessingEngineRunFacetBuilder()

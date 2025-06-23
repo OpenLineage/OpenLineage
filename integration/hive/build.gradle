@@ -181,7 +181,9 @@ signing {
     required { isReleaseVersion }
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
-    useInMemoryPgpKeys(signingKey, signingPassword)
+    if (signingKey && signingPassword) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+    }
     sign publishing.publications.mavenJava
 }
 
