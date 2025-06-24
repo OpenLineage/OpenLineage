@@ -16,7 +16,7 @@ PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integ
 # for which command structured logs consumption is implemented
 HANDLED_COMMANDS = ["run", "seed", "snapshot", "test", "build"]
 CONSUME_STRUCTURED_LOGS_COMMAND_OPTION = "--consume-structured-logs"
-DBT_LOG_FILE_MAX_BYTES = str(100 * 1024 * 1024)
+DBT_LOG_FILE_MAX_BYTES = str(1024 * 1024 * 1024)
 
 log = logging.getLogger(__name__)
 
@@ -96,11 +96,11 @@ def get_dbt_log_path(command: List[str]) -> str:
     If the user doesn't specify the log path, we generate a random name for the logs directory
     """
     project_dir: str = parse_single_arg(command, ["--project-dir"], default="./")
-    default_log_dirname = generate_random_log_file_name()
+    default_log_dirname = os.path.expanduser(os.path.join(project_dir, generate_random_log_file_name()))
     from_command = parse_single_arg(command, ["--log-path"], default=None)
     from_env_var = os.getenv("DBT_LOG_PATH")
     log_dirname = from_command or from_env_var or default_log_dirname
-    return os.path.expanduser(os.path.join(project_dir, log_dirname, "dbt.log"))
+    return os.path.join(log_dirname, "dbt.log")
 
 
 def generate_random_log_file_name() -> str:

@@ -738,6 +738,7 @@ def test_run_dbt_command(dbt_process_return_code, expected_processor_return_code
         "openlineage.common.provider.dbt.structured_logs.DbtStructuredLogsProcessor._open_dbt_log_file",
         mock.Mock(),
     )
+    monkeypatch.setattr("os.stat", mock.Mock())
     popen_mock.return_value = process_mock
     process_mock.returncode = dbt_process_return_code
     process_mock.poll.return_value = 1
@@ -785,7 +786,7 @@ def test_run_dbt_command(dbt_process_return_code, expected_processor_return_code
                 "--log-level-file",
                 "debug",
                 "--log-path",
-                DUMMY_RANDOM_LOG_FILE,
+                "./" + DUMMY_RANDOM_LOG_FILE,
                 "--log-file-max-bytes",
                 DBT_LOG_FILE_MAX_BYTES,
                 "--write-json",
@@ -838,6 +839,7 @@ def test_executed_dbt_command_line(input_dbt_command_line, expected_dbt_command_
     monkeypatch.setattr(
         "openlineage.common.provider.dbt.utils.generate_random_log_file_name", lambda: DUMMY_RANDOM_LOG_FILE
     )
+    monkeypatch.setattr("os.stat", mock.Mock())
 
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -873,14 +875,18 @@ def test_executed_dbt_command_line(input_dbt_command_line, expected_dbt_command_
                 "--log-path",
                 "dbt-logs-1234",
             ],
-            "my-dbt-project/dbt-logs-1234/dbt.log",
+            "dbt-logs-1234/dbt.log",
         ),
         (
             ["dbt", "run", "--select", "orders", "--log-path", "dbt-logs-1234"],
-            "./dbt-logs-1234/dbt.log",
+            "dbt-logs-1234/dbt.log",
+        ),
+        (
+            ["dbt", "run", "--select", "orders", "--log-path", "/tmp/dbt/dbt-logs-1234"],
+            "/tmp/dbt/dbt-logs-1234/dbt.log",
         ),
     ],
-    ids=["with_no_log_path", "with_log_path", "without_project_dir"],
+    ids=["with_no_log_path", "with_log_path", "without_project_dir", "fully_qualified_path"],
 )
 def test_logfile_path(input_dbt_command_line, expected_dbt_log_file_path, monkeypatch):
     monkeypatch.setattr(

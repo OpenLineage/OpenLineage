@@ -178,6 +178,7 @@ def test_incremental_file_reader(incremental_reads, expected_lines):
 
         def __init__(self):
             self.incremental_reads = incremental_reads
+            self.name = "dummy"
             self.i = 0
 
         def read(self, *args, **kwargs):
@@ -191,7 +192,7 @@ def test_incremental_file_reader(incremental_reads, expected_lines):
     dummy_text_file = DummyTextFile()
     incremental_reader = IncrementalFileReader(dummy_text_file)
     actual_lines_read = []
-    for line in incremental_reader.read_lines():
+    for line in incremental_reader.read_lines(4096):
         actual_lines_read.append(line)
 
     assert expected_lines == actual_lines_read
