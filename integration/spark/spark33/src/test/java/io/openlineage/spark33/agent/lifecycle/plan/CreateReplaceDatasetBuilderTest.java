@@ -87,6 +87,7 @@ class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableName()).thenReturn(tableName);
     when(logicalPlan.tableSpec()).thenReturn(tableSpec);
     when(logicalPlan.tableSchema()).thenReturn(schema);
+    when(logicalPlan.writeOptions()).thenReturn(new HashMap<>());
     verifyApply(
         (LogicalPlan) logicalPlan,
         commandProperties,
@@ -113,6 +114,7 @@ class CreateReplaceDatasetBuilderTest {
     when(logicalPlan.tableName()).thenReturn(tableName);
     when(logicalPlan.tableSpec()).thenReturn(tableSpec);
     when(logicalPlan.tableSchema()).thenReturn(schema);
+    when(logicalPlan.writeOptions()).thenReturn(new HashMap<>());
     verifyApply(
         (LogicalPlan) logicalPlan,
         commandProperties,
@@ -233,6 +235,7 @@ class CreateReplaceDatasetBuilderTest {
       when(logicalPlan.tableName()).thenReturn(tableName);
       when(logicalPlan.tableSpec()).thenReturn(tableSpec);
       when(logicalPlan.tableSchema()).thenReturn(schema);
+      when(logicalPlan.writeOptions()).thenReturn(new HashMap<>());
 
       when(PlanUtils3.getDatasetIdentifier(
               openLineageContext,
