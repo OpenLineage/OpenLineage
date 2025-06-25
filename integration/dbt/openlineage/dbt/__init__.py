@@ -219,6 +219,9 @@ def consume_structured_logs(
                     e,
                     exc_info=True,
                 )
+        # Will wait for async events to be sent if async config is enabled\
+        logger.debug("Waiting for events to be sent.")
+        client.shutdown(timeout=30.0)
     except UnsupportedDbtCommand as e:
         logger.error(e)
         dbt_integration_return_code = 1

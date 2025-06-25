@@ -83,10 +83,18 @@ class CompositeTransport(Transport):
             try:
                 log.debug("Emitting event using transport %s", transport)
                 transport.emit(event)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 if self.config.continue_on_failure:
                     log.warning("Transport %s failed to emit event with error: %s", transport, e)
                     log.debug("OpenLineage emission failure details:", exc_info=True)
                 else:
                     msg = f"Transport {transport} failed to emit event"
                     raise RuntimeError(msg) from e
+
+    def wait_for_completion(self, timeout: float = -1.0) -> bool:
+        # This can wait longer than timeout if multiple transports are slow, but acceptable
+        return all(transport.wait_for_completion(timeout) for transport in self.transports)
+
+    def close(self) -> None:
+        for transport in self.transports:
+            transport.close()

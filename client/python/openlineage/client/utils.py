@@ -15,8 +15,8 @@ def import_from_string(path: str) -> type[Any]:
     try:
         module_path, target = path.rsplit(".", 1)
         module = importlib.import_module(module_path)
-        return cast(type[Any], getattr(module, target))
-    except Exception as e:  # noqa: BLE001
+        return cast("type[Any]", getattr(module, target))
+    except Exception as e:
         log.warning(e)
         msg = f"Failed to import {path}"
         raise ImportError(msg) from e

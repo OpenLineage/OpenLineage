@@ -23,7 +23,7 @@ class BaseEvent(RedactMixin):
     eventTime: str = attr.field()  # noqa: N815
     """the time the event occurred at"""
 
-    producer: str = attr.field(default="", kw_only=True)
+    producer: str = attr.field(default="", kw_only=True)  # noqa: N815
     schemaURL: str = attr.field(  # noqa: N815
         default="https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/BaseEvent", init=False
     )
@@ -70,7 +70,7 @@ class BaseEvent(RedactMixin):
 class BaseFacet(RedactMixin):
     """all fields of the base facet are prefixed with _ to avoid name conflicts in facets"""
 
-    _producer: str = attr.field(default="", kw_only=True)
+    _producer: str = attr.field(default="", kw_only=True)  # noqa: N815
     _schemaURL: str = attr.field(  # noqa: N815
         default="https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/BaseFacet", init=False
     )
@@ -86,7 +86,7 @@ class BaseFacet(RedactMixin):
     def skip_redact(self) -> list[str]:
         return self._base_skip_redact + self._additional_skip_redact
 
-    def with_additional_properties(self, **kwargs: dict[str, Any]) -> BaseFacet:
+    def with_additional_properties(self, **kwargs: dict[str, Any]) -> "BaseFacet":
         """Add additional properties to updated class instance."""
         current_attrs = [a.name for a in attr.fields(self.__class__)]
 
