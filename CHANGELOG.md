@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.34.0...HEAD)
 
+### Added
+
+* **Python: Asynchronous HTTP transport implementation** [@mobuchowski](https://github.com/mobuchowski)  
+  *Adds high-performance asynchronous HTTP transport with event ordering guarantees, configurable concurrency, and comprehensive error handling. Features START-before-completion event ordering, bounded queues, and real-time statistics.*
+
 ### Changed
 
 * **Spark: Support latest databricks runtime.** [`#3811`](https://github.com/OpenLineage/OpenLineage/pull/3811) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  

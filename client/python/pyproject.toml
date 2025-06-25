@@ -28,7 +28,8 @@ dependencies = [
   "attrs>=20.0",
   "python-dateutil>=2.8.2",
   "pyyaml>=5.4",
-  "requests>=2.32.3",
+  "requests>=2.32.4",
+  "httpx>=0.27.0",
   "packaging>=21.0",
 ]
 optional-dependencies.kafka = [
@@ -47,6 +48,8 @@ optional-dependencies.test = [
   "pytest-cov>=4.1",
   "pytest-mock>=3.10",
   "pyyaml>=5.4",
+  "uvicorn>=0.20.0",
+  "fastapi>=0.100.0",
 ]
 
 optional-dependencies.docs = [
@@ -69,9 +72,15 @@ targets.wheel = {packages = ["openlineage"]}
 [tool.coverage]
 html.show_contexts = true
 html.skip_covered = false
-report.fail_under = 91
+report.fail_under = 90
 run.parallel = true
 run.plugins = ["covdefaults"]
+run.omit = [
+    "tests/*",
+    "*/tests/*",
+    "test_*.py",
+    "*_test.py"
+]
 
 [tool.mypy]
 disable_error_code = "no-redef"
@@ -86,3 +95,32 @@ pretty = true
 
 [project.scripts]
 ol-generate-code = "openlineage.client.generator.cli:main"
+
+[tool.ruff]
+line-length = 110
+lint.select = [
+    "F",
+    "E",
+    "W",
+    "I001"
+]
+target-version = "py39"
+lint.ignore-init-module-imports = true
+src = ["openlineage", "tests"]
+namespace-packages = ["openlineage/client"]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: Integration tests requiring test server",
+    "unit: Unit tests"
+]
+testpaths = ["tests"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning"
+]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra"
+]

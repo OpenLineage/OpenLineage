@@ -12,7 +12,7 @@ class CatalogDatasetFacet(DatasetFacet):
     framework: str
     """The storage framework for which the catalog is configured"""
 
-    type: str
+    type: str  # noqa: A003
     """Type of the catalog."""
 
     name: str

@@ -1,0 +1,7 @@
+transport:
+  type: http
+  url: http://127.0.0.1:50069
+  endpoint: api/v1/lineage
+  custom_headers:
+    X-Custom-Tenant-Id: "<TenantIdValue>"
+    Header2: "<Header2Value>"

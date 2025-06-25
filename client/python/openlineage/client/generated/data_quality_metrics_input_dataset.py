@@ -16,14 +16,14 @@ class ColumnMetrics(RedactMixin):
     distinctCount: int | None = attr.field(default=None)  # noqa: N815
     """The number of distinct values in this column for the rows evaluated"""
 
-    sum: float | None = attr.field(default=None)
+    sum: float | None = attr.field(default=None)  # noqa: A003
     """The total sum of values in this column for the rows evaluated"""
 
     count: float | None = attr.field(default=None)
     """The number of values in this column"""
 
-    min: float | None = attr.field(default=None)
-    max: float | None = attr.field(default=None)
+    min: float | None = attr.field(default=None)  # noqa: A003
+    max: float | None = attr.field(default=None)  # noqa: A003
     quantiles: dict[str, float] | None = attr.field(factory=dict)
     """The property key is the quantile. Examples: 0.1 0.25 0.5 0.75 1"""
 
@@ -36,7 +36,7 @@ class DataQualityMetricsInputDatasetFacet(InputDatasetFacet):
     rowCount: int | None = attr.field(default=None)  # noqa: N815
     """The number of rows evaluated"""
 
-    bytes: int | None = attr.field(default=None)
+    bytes: int | None = attr.field(default=None)  # noqa: A003
     """The size in bytes"""
 
     fileCount: int | None = attr.field(default=None)  # noqa: N815

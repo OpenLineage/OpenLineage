@@ -36,7 +36,7 @@ class ParentRunFacet(RunFacet):
         return "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet"
 
     @classmethod
-    def create(cls, runId: str, namespace: str, name: str) -> ParentRunFacet:  # noqa: N803
+    def create(cls, runId: str, namespace: str, name: str) -> "ParentRunFacet":  # noqa: N803
         import warnings
 
         warnings.warn(
