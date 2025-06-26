@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
@@ -10,19 +11,9 @@ from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 import attr
 import yaml
-from openlineage.client.filter import Filter, FilterConfig, create_filter
-from openlineage.client.serde import Serde
-from openlineage.client.tags import TagsConfig
-from openlineage.client.utils import deep_merge_dicts
-
-if TYPE_CHECKING:
-    from requests import Session
-    from requests.adapters import HTTPAdapter
-
-import contextlib
-
 from openlineage.client import event_v2
 from openlineage.client.facets import FacetsConfig
+from openlineage.client.filter import Filter, FilterConfig, create_filter
 from openlineage.client.generated.environment_variables_run import (
     EnvironmentVariable,
     EnvironmentVariablesRunFacet,
@@ -30,6 +21,8 @@ from openlineage.client.generated.environment_variables_run import (
 from openlineage.client.generated.tags_job import TagsJobFacet, TagsJobFacetFields
 from openlineage.client.generated.tags_run import TagsRunFacet, TagsRunFacetFields
 from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
+from openlineage.client.serde import Serde
+from openlineage.client.tags import TagsConfig
 from openlineage.client.transport import (
     Transport,
     TransportFactory,
@@ -37,26 +30,32 @@ from openlineage.client.transport import (
 )
 from openlineage.client.transport.http import HttpConfig, HttpTransport, create_token_provider
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
+from openlineage.client.utils import deep_merge_dicts
+
+if TYPE_CHECKING:
+    from requests import Session
+    from requests.adapters import HTTPAdapter
+
 
 Event_v1 = Union[RunEvent, DatasetEvent, JobEvent]
 Event_v2 = Union[event_v2.RunEvent, event_v2.DatasetEvent, event_v2.JobEvent]
 Event = Union[Event_v1, Event_v2]
 
 
-@attr.s
+@attr.define
 class OpenLineageClientOptions:
-    timeout: float = attr.ib(default=5.0)
-    verify: bool = attr.ib(default=True)
-    api_key: str = attr.ib(default=None)
-    adapter: HTTPAdapter = attr.ib(default=None)
+    timeout: float = 5.0
+    verify: bool = True
+    api_key: str | None = None
+    adapter: HTTPAdapter | None = None
 
 
-@attr.s
+@attr.define
 class OpenLineageConfig:
-    transport: dict[str, Any] | None = attr.ib(factory=dict)
-    facets: FacetsConfig = attr.ib(factory=FacetsConfig)
-    filters: list[FilterConfig] = attr.ib(factory=list)
-    tags: TagsConfig = attr.ib(factory=TagsConfig)
+    transport: dict[str, Any] | None = attr.field(factory=dict)
+    facets: FacetsConfig = attr.field(factory=FacetsConfig)
+    filters: list[FilterConfig] = attr.field(factory=list)
+    tags: TagsConfig = attr.field(factory=TagsConfig)
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> OpenLineageConfig:

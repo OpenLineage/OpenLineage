@@ -10,6 +10,7 @@ from unittest.mock import MagicMock
 import pytest
 from openlineage.client.client import OpenLineageClient
 from openlineage.client.facet import (
+    BaseFacet,
     ColumnLineageDatasetFacet,
     ColumnLineageDatasetFacetFieldsAdditional,
     ColumnLineageDatasetFacetFieldsAdditionalInputFields,
@@ -27,6 +28,7 @@ from openlineage.client.facet import (
     SymlinksDatasetFacetIdentifiers,
 )
 from openlineage.client.run import SCHEMA_URL, Dataset, Job, Run, RunEvent, RunState
+from openlineage.client.serde import Serde
 
 
 @pytest.fixture()
@@ -465,3 +467,19 @@ def test_job_type_job_facet(event: dict[str, Any]) -> None:
     expected_event["job"]["facets"]["jobType"] = job_type_facet
 
     assert expected_event == event_sent
+
+
+def test_facet_copy_serialization_base_facet():
+    facet = BaseFacet()
+    facet_copy = copy.deepcopy(facet)
+    assert Serde.to_json(facet) == Serde.to_json(facet_copy)
+
+
+def test_facet_copy_serialization_parent_run_facet():
+    facet = OwnershipJobFacet(
+        owners=[
+            OwnershipJobFacetOwners("some-owner", "some-owner-type"),
+        ],
+    )
+    facet_copy = copy.deepcopy(facet)
+    assert Serde.to_json(facet) == Serde.to_json(facet_copy)

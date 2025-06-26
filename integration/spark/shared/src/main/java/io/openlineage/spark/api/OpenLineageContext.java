@@ -303,6 +303,12 @@ public class OpenLineageContext {
    */
   @Getter final SparkOpenLineageExtensionVisitorWrapper sparkExtensionVisitorWrapper;
 
+  /**
+   * Status of the OpenLineage run, which can be used to indicate whether inputs or outputs were
+   * detected
+   */
+  @Builder.Default @Getter final OpenLineageRunStatus lineageRunStatus = new OpenLineageRunStatus();
+
   @Override
   public String toString() {
     return new StringJoiner(", ", OpenLineageContext.class.getSimpleName() + "[", "]")

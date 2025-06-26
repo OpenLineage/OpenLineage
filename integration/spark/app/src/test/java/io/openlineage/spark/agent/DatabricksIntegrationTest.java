@@ -21,6 +21,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -37,39 +38,46 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class DatabricksIntegrationTest {
 
-  private static final DatabricksEnvironment databricks =
-      new DatabricksEnvironment(
-          DatabricksEnvironment.DatabricksEnvironmentProperties.builder()
-              .workspace(
-                  DatabricksEnvironment.DatabricksEnvironmentProperties.Workspace.builder()
-                      .host(DatabricksDynamicParameter.Host.resolve())
-                      .token(DatabricksDynamicParameter.Token.resolve())
-                      .build())
-              .cluster(
-                  DatabricksEnvironment.DatabricksEnvironmentProperties.Cluster.builder()
-                      .sparkVersion(DatabricksDynamicParameter.SparkVersion.resolve())
-                      .build())
-              .development(
-                  DatabricksEnvironment.DatabricksEnvironmentProperties.Development.builder()
-                      .existingClusterId(DatabricksDynamicParameter.ClusterId.resolve())
-                      .preventClusterTermination(
-                          Boolean.parseBoolean(
-                              DatabricksDynamicParameter.PreventClusterTermination.resolve()))
-                      .fetchLog4jLogs(
-                          Boolean.parseBoolean(DatabricksDynamicParameter.FetchLog4jLogs.resolve()))
-                      .log4jLogsLocation(DatabricksDynamicParameter.Log4jLogsLocation.resolve())
-                      .fetchStdout(
-                          Boolean.parseBoolean(DatabricksDynamicParameter.FetchStdout.resolve()))
-                      .stdoutLocation(DatabricksDynamicParameter.StdoutLocation.resolve())
-                      .fetchStderr(
-                          Boolean.parseBoolean(DatabricksDynamicParameter.FetchStderr.resolve()))
-                      .stderrLocation(DatabricksDynamicParameter.StderrLocation.resolve())
-                      .fetchEvents(
-                          Boolean.parseBoolean(DatabricksDynamicParameter.FetchEvents.resolve()))
-                      .eventsFileLocation(DatabricksDynamicParameter.EventsFileLocation.resolve())
-                      .build())
-              .build());
-  private final String platformVersion = databricks.getPlatformVersion();
+  private static DatabricksEnvironment databricks;
+  private static String platformVersion;
+
+  @BeforeAll
+  static void beforeAll() {
+    databricks =
+        new DatabricksEnvironment(
+            DatabricksEnvironment.DatabricksEnvironmentProperties.builder()
+                .workspace(
+                    DatabricksEnvironment.DatabricksEnvironmentProperties.Workspace.builder()
+                        .host(DatabricksDynamicParameter.Host.resolve())
+                        .token(DatabricksDynamicParameter.Token.resolve())
+                        .build())
+                .cluster(
+                    DatabricksEnvironment.DatabricksEnvironmentProperties.Cluster.builder()
+                        .sparkVersion(DatabricksDynamicParameter.SparkVersion.resolve())
+                        .build())
+                .development(
+                    DatabricksEnvironment.DatabricksEnvironmentProperties.Development.builder()
+                        .existingClusterId(DatabricksDynamicParameter.ClusterId.resolve())
+                        .preventClusterTermination(
+                            Boolean.parseBoolean(
+                                DatabricksDynamicParameter.PreventClusterTermination.resolve()))
+                        .fetchLog4jLogs(
+                            Boolean.parseBoolean(
+                                DatabricksDynamicParameter.FetchLog4jLogs.resolve()))
+                        .log4jLogsLocation(DatabricksDynamicParameter.Log4jLogsLocation.resolve())
+                        .fetchStdout(
+                            Boolean.parseBoolean(DatabricksDynamicParameter.FetchStdout.resolve()))
+                        .stdoutLocation(DatabricksDynamicParameter.StdoutLocation.resolve())
+                        .fetchStderr(
+                            Boolean.parseBoolean(DatabricksDynamicParameter.FetchStderr.resolve()))
+                        .stderrLocation(DatabricksDynamicParameter.StderrLocation.resolve())
+                        .fetchEvents(
+                            Boolean.parseBoolean(DatabricksDynamicParameter.FetchEvents.resolve()))
+                        .eventsFileLocation(DatabricksDynamicParameter.EventsFileLocation.resolve())
+                        .build())
+                .build());
+    platformVersion = databricks.getPlatformVersion();
+  }
 
   @BeforeEach
   public void beforeEach() {

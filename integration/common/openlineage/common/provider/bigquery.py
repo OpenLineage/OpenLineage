@@ -33,7 +33,7 @@ def get_bq_client():
     return Client
 
 
-@attr.s
+@attr.define
 class BigQueryErrorRunFacet(BaseFacet):
     """
     Represents errors that can happen during execution of BigqueryExtractor
@@ -41,15 +41,15 @@ class BigQueryErrorRunFacet(BaseFacet):
     :param parserError: represents errors that happened during parsing SQL provided to bigquery
     """
 
-    clientError: str = attr.ib(default=None)
-    parserError: str = attr.ib(default=None)
+    clientError: Optional[str] = None
+    parserError: Optional[str] = None
 
     @staticmethod
     def _get_schema() -> str:
         return GITHUB_LOCATION + "bq-error-run-facet.json"
 
 
-@attr.s
+@attr.define
 class BigQueryJobRunFacet(BaseFacet):
     """
     Facet that represents relevant statistics of bigquery run.
@@ -59,16 +59,16 @@ class BigQueryJobRunFacet(BaseFacet):
     :param properties: full property tree of bigquery run.
     """
 
-    cached: bool = attr.ib()
-    billedBytes: Optional[int] = attr.ib(default=None)
-    properties: Optional[str] = attr.ib(default=None)
+    cached: bool
+    billedBytes: Optional[int] = None
+    properties: Optional[str] = None
 
     @staticmethod
     def _get_schema() -> str:
         return GITHUB_LOCATION + "bq-statistics-run-facet.json"
 
 
-@attr.s
+@attr.define
 class BigQueryStatisticsDatasetFacet(BaseFacet):
     """
     Facet that represents statistics of output dataset resulting from bigquery run.
@@ -76,8 +76,8 @@ class BigQueryStatisticsDatasetFacet(BaseFacet):
     :param size: size of output dataset in bytes.
     """
 
-    rowCount: int = attr.ib()
-    size: int = attr.ib()
+    rowCount: int
+    size: int
 
     def to_openlineage(self) -> output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet:
         return output_statistics_output_dataset.OutputStatisticsOutputDatasetFacet(
@@ -89,12 +89,12 @@ class BigQueryStatisticsDatasetFacet(BaseFacet):
         return GITHUB_LOCATION + "bq-statistics-dataset-facet.json"
 
 
-@attr.s
+@attr.define
 class BigQueryFacets:
-    run_facets: Dict[str, BaseFacet] = attr.ib()
-    inputs: List[Dataset] = attr.ib()
-    outputs: List[Dataset] = attr.ib()
-    _output: Optional[Dataset] = attr.ib(default=None)
+    run_facets: Dict[str, BaseFacet]
+    inputs: List[Dataset]
+    outputs: List[Dataset]
+    _output: Optional[Dataset] = None
 
     @property
     def output(self) -> Optional[Dataset]:

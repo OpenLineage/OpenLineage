@@ -18,6 +18,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 /**
  * Configuration for {@link OpenLineageClient}.
@@ -29,6 +30,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class OpenLineageConfig<T extends OpenLineageConfig> implements MergeConfig<T> {
   @JsonProperty("transport")
   protected TransportConfig transportConfig;

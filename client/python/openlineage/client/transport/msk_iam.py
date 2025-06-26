@@ -32,15 +32,15 @@ def _detect_running_region() -> None | str:
     return None
 
 
-@attr.s
+@attr.define
 class MSKIAMConfig(KafkaConfig):
     # MSK producer config
     # https://github.com/aws/aws-msk-iam-sasl-signer-python
 
-    region: str = attr.ib(default=None)
-    aws_profile: None | str = attr.ib(default=None)
-    role_arn: None | str = attr.ib(default=None)
-    aws_debug_creds: bool = attr.ib(default=False)
+    region: str | None = None
+    aws_profile: None | str = None
+    role_arn: None | str = None
+    aws_debug_creds: bool = False
 
 
 def _oauth_cb(config: MSKIAMConfig, *_: Any) -> tuple[str, float]:

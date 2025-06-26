@@ -46,7 +46,7 @@ class EventTransformer:
         return f"<{self.__class__.__name__}({self.properties})>"
 
 
-@attr.s
+@attr.define
 class TransformConfig(Config):
     """Configuration class for transform transport.
 
@@ -54,9 +54,9 @@ class TransformConfig(Config):
     transformer class to use, and optional transformer-specific properties.
     """
 
-    transport: dict[str, Any] = attr.ib()
-    transformer_class: str = attr.ib()
-    transformer_properties: dict[str, Any] = attr.ib(default={})
+    transport: dict[str, Any]
+    transformer_class: str
+    transformer_properties: dict[str, Any] | None = None
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> TransformConfig:
@@ -113,7 +113,7 @@ class TransformTransport(Transport):
         if not inspect.isclass(transformer_class) or not issubclass(transformer_class, EventTransformer):
             msg = f"Transformer `{transformer_class}` has to be class, and subclass of EventTransformer"
             raise TypeError(msg)
-        self.transformer = transformer_class(properties=config.transformer_properties)
+        self.transformer = transformer_class(properties=config.transformer_properties or {})
         self.transport = get_default_factory().create(config.transport)
 
     def emit(self, event: Event) -> Any:
@@ -128,14 +128,17 @@ class TransformTransport(Transport):
         Returns:
             The result of the inner transport's emit call, or None if the event is dropped.
         """
-        log.debug("Event before transformation: %s", Serde.to_json(event))
-        event = copy.deepcopy(event)  # Copy to make sure the transformer does not modify original event
-
+        log.debug("Event before copy: %s", Serde.to_json(event))
+        try:
+            event = copy.deepcopy(event)  # Copy to make sure the transformer does not modify original event
+            log.debug("Event after copy, before transformation: %s", Serde.to_json(event))
+        except AttributeError as e:
+            msg = "Error serializing copy of event."
+            raise ValueError(msg) from e
         log.debug("Transforming OpenLineage event with %s", self.transformer)
         transformed = self.transformer.transform(event)
         if transformed is None:
             log.info("Transformed OpenLineage event is None. Skipping emission.")
             return None
-
         log.debug("Event after transformation: %s", Serde.to_json(transformed))
         return self.transport.emit(transformed)

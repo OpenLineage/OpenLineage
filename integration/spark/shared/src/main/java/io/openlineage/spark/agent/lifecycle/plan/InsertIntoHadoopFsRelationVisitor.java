@@ -66,7 +66,7 @@ public class InsertIntoHadoopFsRelationVisitor
     if (command.catalogTable().isDefined()) {
       return Optional.of(
           PathUtils.fromCatalogTable(
-              command.catalogTable().get(), context.getSparkSession().get()));
+              command.catalogTable().get(), context.getSparkSession().get(), command.outputPath()));
     }
     return Optional.of(PathUtils.fromPath(command.outputPath()));
   }

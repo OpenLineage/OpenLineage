@@ -11,12 +11,15 @@ import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.TransportFactory;
 import io.openlineage.client.utils.UUIDUtils;
+import io.openlineage.spark.api.DebugConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,10 +55,21 @@ public class EventEmitter {
                     Arrays.asList(config.getFacetsConfig().getCustomEnvironmentVariables()))
                 : Optional.empty()
             : Optional.empty();
+
+    List<String> disabledFacets =
+        Stream.of(config.getFacetsConfig().getEffectiveDisabledFacets())
+            .collect(Collectors.toList());
+    // make sure DebugFacet is not disabled if smart debug is enabled
+    // debug facet will be only sent when triggered with smart debug. Facet filtering is done
+    // on the Spark side, so we can exclude it here
+    Optional.ofNullable(config.getDebugConfig())
+        .filter(DebugConfig::isSmartEnabled)
+        .ifPresent(e -> disabledFacets.remove("debug"));
+
     this.client =
         OpenLineageClient.builder()
             .transport(new TransportFactory(config.getTransportConfig()).build())
-            .disableFacets(config.getFacetsConfig().getEffectiveDisabledFacets())
+            .disableFacets(disabledFacets.toArray(new String[0]))
             .build();
     this.applicationJobName = applicationJobName;
     this.applicationRunId = UUIDUtils.generateNewUUID();

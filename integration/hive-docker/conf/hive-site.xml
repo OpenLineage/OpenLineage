@@ -64,4 +64,28 @@
         <name>metastore.metastore.event.db.notification.api.auth</name>
         <value>false</value>
     </property>
+    <property>
+        <name>hive.aux.jars.path</name>
+        <value>/opt/hive/lib/openlineage/</value>
+    </property>
+    <property>
+        <name>hive.server2.session.hook</name>
+        <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+    </property>
+    <property>
+        <name>hive.exec.post.hooks</name>
+        <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+    </property>
+    <property>
+        <name>hive.exec.failure.hooks</name>
+        <value>io.openlineage.hive.hooks.HiveOpenLineageHook</value>
+    </property>
+    <property>
+        <name>hive.conf.validation</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>hive.openlineage.transport.type</name>
+        <value>console</value>
+    <property>
 </configuration>

@@ -12,10 +12,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
-import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.ql.hooks.HookContext;
 import org.apache.hadoop.hive.ql.hooks.ReadEntity;
 import org.apache.hadoop.hive.ql.hooks.WriteEntity;
-import org.apache.hadoop.hive.ql.parse.SemanticAnalyzer;
 
 /**
  * Context holder with references to several required objects during construction of an OpenLineage
@@ -35,17 +34,9 @@ public class OpenLineageContext {
    */
   @NonNull OpenLineage openLineage;
 
-  SemanticAnalyzer semanticAnalyzer;
-
   @NonNull @Getter HiveOpenLineageConfig openLineageConfig;
 
-  @NonNull String openlineageHiveIntegrationVersion;
-
-  @NonNull String queryString;
-
-  @NonNull String operationName;
-
-  @NonNull Configuration hadoopConf;
+  @NonNull HookContext hookContext;
 
   @NonNull Set<ReadEntity> readEntities;
 

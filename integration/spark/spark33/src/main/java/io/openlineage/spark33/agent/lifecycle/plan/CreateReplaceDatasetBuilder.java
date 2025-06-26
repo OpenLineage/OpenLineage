@@ -82,13 +82,16 @@ public class CreateReplaceDatasetBuilder
 
   protected List<OpenLineage.OutputDataset> apply(
       SparkListenerEvent event, CreateTableAsSelect plan) {
+    Map<String, String> tableProperties =
+        ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties());
+    tableProperties.putAll(ScalaConversionUtils.<String, String>fromMap(plan.writeOptions()));
     return callCatalogMethod(plan.name())
         .map(
             catalogPlugin ->
                 apply(
                     event,
                     catalogPlugin,
-                    ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties()),
+                    tableProperties,
                     plan.tableName(),
                     plan.tableSchema(),
                     LifecycleStateChange.CREATE))
@@ -111,13 +114,16 @@ public class CreateReplaceDatasetBuilder
 
   protected List<OpenLineage.OutputDataset> apply(
       SparkListenerEvent event, ReplaceTableAsSelect plan) {
+    Map<String, String> tableProperties =
+        ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties());
+    tableProperties.putAll(ScalaConversionUtils.<String, String>fromMap(plan.writeOptions()));
     return callCatalogMethod(plan.name())
         .map(
             catalogPlugin ->
                 apply(
                     event,
                     catalogPlugin,
-                    ScalaConversionUtils.<String, String>fromMap(plan.tableSpec().properties()),
+                    tableProperties,
                     plan.tableName(),
                     plan.tableSchema(),
                     LifecycleStateChange.OVERWRITE))

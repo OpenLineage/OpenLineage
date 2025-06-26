@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 _T = TypeVar("_T", bound="Config")
 
 
-@attr.s
+@attr.define
 class Config:
     @classmethod
     def from_dict(cls: type[_T], params: dict[str, Any]) -> _T:  # noqa: ARG003

@@ -12,21 +12,21 @@ from openlineage.client.event_v2 import Dataset
 from openlineage.client.facet_v2 import BaseFacet
 
 
-@attr.s
+@attr.define
 class OperatorLineage:
-    inputs: List[Dataset] = attr.ib(factory=list)
-    outputs: List[Dataset] = attr.ib(factory=list)
-    run_facets: Dict[str, BaseFacet] = attr.ib(factory=dict)
-    job_facets: Dict[str, BaseFacet] = attr.ib(factory=dict)
+    inputs: List[Dataset] = attr.field(factory=list)
+    outputs: List[Dataset] = attr.field(factory=list)
+    run_facets: Dict[str, BaseFacet] = attr.field(factory=dict)
+    job_facets: Dict[str, BaseFacet] = attr.field(factory=dict)
 
 
-@attr.s
+@attr.define
 class TaskMetadata:
     name: str = attr.ib()  # deprecated
-    inputs: List[Dataset] = attr.ib(factory=list)
-    outputs: List[Dataset] = attr.ib(factory=list)
-    run_facets: Dict[str, BaseFacet] = attr.ib(factory=dict)
-    job_facets: Dict[str, BaseFacet] = attr.ib(factory=dict)
+    inputs: List[Dataset] = attr.field(factory=list)
+    outputs: List[Dataset] = attr.field(factory=list)
+    run_facets: Dict[str, BaseFacet] = attr.field(factory=dict)
+    job_facets: Dict[str, BaseFacet] = attr.field(factory=dict)
 
 
 class BaseExtractor(ABC, LoggingMixin):
