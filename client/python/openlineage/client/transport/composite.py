@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-@attr.s
+@attr.define
 class CompositeConfig(Config):
     """
     CompositeConfig is a configuration class for CompositeTransport.
@@ -36,8 +36,8 @@ class CompositeConfig(Config):
             transport will halt the emission process for subsequent transports.
     """
 
-    transports: list[dict[str, Any]] | dict[str, dict[str, Any]] = attr.ib()
-    continue_on_failure: bool = attr.ib(default=True)
+    transports: list[dict[str, Any]] | dict[str, dict[str, Any]]
+    continue_on_failure: bool = True
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> CompositeConfig:
@@ -86,6 +86,7 @@ class CompositeTransport(Transport):
             except Exception as e:  # noqa: BLE001
                 if self.config.continue_on_failure:
                     log.warning("Transport %s failed to emit event with error: %s", transport, e)
+                    log.debug("OpenLineage emission failure details:", exc_info=True)
                 else:
                     msg = f"Transport {transport} failed to emit event"
                     raise RuntimeError(msg) from e

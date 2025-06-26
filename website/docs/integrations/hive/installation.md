@@ -55,7 +55,9 @@ gcloud dataproc clusters create <cluster_name> \
   --scopes cloud-platform \
   --initialization-actions gs://<your_bucket>/path/to/initialization_script.sh \
   --metadata "jar-urls=gs://<your_bucket>/path/to/openlineage-hive.jar" \
+  --properties "hive:hive.server2.session.hook=io.openlineage.hive.hooks.HiveOpenLineageHook" \
   --properties "hive:hive.exec.post.hooks=io.openlineage.hive.hooks.HiveOpenLineageHook" \
+  --properties "hive:hive.exec.failure.hooks=io.openlineage.hive.hooks.HiveOpenLineageHook" \
   --properties "hive:hive.conf.validation=false" \
   --properties "hive:hive.openlineage.namespace=mynamespace" \
   --properties "hive:hive.openlineage.transport.type=gcplineage" \

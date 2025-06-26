@@ -5,12 +5,37 @@
       "processing_engine": {
         "version": "3.1.3",
         "name": "hive"
+      },
+      "hive_properties": {
+        "properties": {
+          "hive.execution.engine": "mr"
+        }
+      },
+      "hive_query": {
+        "queryId": "${json-unit.any-string}",
+        "operationName": "CREATETABLE_AS_SELECT"
+      },
+      "hive_session": {
+        "sessionId": "${json-unit.any-string}",
+        "username": "hive",
+        "clientIp": "${json-unit.regex}\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}",
+        "creationTime": "${json-unit.any-string}"
       }
     }
   },
   "job": {
     "namespace": "default",
-    "name": "createtable_as_select.test.monthly_transaction_summary"
+    "name": "createtable_as_select.test.monthly_transaction_summary",
+    "facets": {
+      "jobType": {
+        "integration": "HIVE",
+        "jobType": "QUERY",
+        "processingType": "BATCH"
+      },
+      "sql": {
+        "query": "CREATE TABLE monthly_transaction_summary\nAS\nSELECT\n    TRUNC(sUBMissionDAte, 'MM') AS MOnth,\n    transactionTYPe,\n    SUM(trANSactionamount) AS TotALAmount,\n    COUNT(*) AS transACTionCount\nFROM\n    tranSACTions\nGROUP BY\n    TRUNC(SUBMIssiondate, 'MM'),\n    tRANsacTIontype\nORDER BY\n    monTH,\n    transacTIONtype"
+      }
+    }
   },
   "inputs": [
     {

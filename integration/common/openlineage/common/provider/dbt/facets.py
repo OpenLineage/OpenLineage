@@ -11,14 +11,14 @@ from openlineage.client.facet_v2 import (
 from openlineage.common.schema import GITHUB_LOCATION
 
 
-@attr.s
+@attr.define
 class ParentRunMetadata:
-    run_id: str = attr.ib()
-    job_name: str = attr.ib()
-    job_namespace: str = attr.ib()
-    root_parent_job_name: Optional[str] = attr.ib(default=None)
-    root_parent_job_namespace: Optional[str] = attr.ib(default=None)
-    root_parent_run_id: Optional[str] = attr.ib(default=None)
+    run_id: str
+    job_name: str
+    job_namespace: str
+    root_parent_job_name: Optional[str] = None
+    root_parent_job_namespace: Optional[str] = None
+    root_parent_run_id: Optional[str] = None
 
     def to_openlineage(self) -> parent_run.ParentRunFacet:
         root = None
@@ -37,18 +37,18 @@ class ParentRunMetadata:
         )
 
 
-@attr.s
+@attr.define
 class DbtVersionRunFacet(BaseFacet):
-    version: str = attr.ib()
+    version: str
 
     @staticmethod
     def _get_schema() -> str:
         return GITHUB_LOCATION + "dbt-version-run-facet.json"
 
 
-@attr.s
+@attr.define
 class DbtRunRunFacet(BaseFacet):
-    invocation_id: str = attr.ib()
+    invocation_id: str
 
     @staticmethod
     def _get_schema() -> str:

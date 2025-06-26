@@ -48,6 +48,8 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
     this.context =
         OpenLineageContextFactory.fromConfig(FlinkConfigParser.parse(context.getConfiguration()))
             .build();
+    log.info(
+        "Creating OpenLineageJobStatusChangedListener with OpenLineageContext: {}", this.context);
 
     String jobsApiUrl =
         String.format(
@@ -206,7 +208,7 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
             .jobNamespace(jobNamespace)
             .flinkJobId(createdEvent.jobId())
             .build();
-    log.debug("JobIdentifier with jobId: {}", jobId.getFlinkJobId());
+    log.info("JobIdentifier with jobId: {}", jobId.getFlinkJobId());
     context.setJobId(jobId);
   }
 }

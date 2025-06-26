@@ -5,12 +5,9 @@
 package io.openlineage.hive.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockserver.model.HttpRequest.request;
 
-import io.openlineage.client.OpenLineage;
 import io.openlineage.hive.testutils.MockServerTestUtils;
-import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
@@ -86,12 +83,12 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
   void simpleQueryMasking() {
     createManagedHiveTable("t1", "a int, b int");
     runHiveQuery(
-        "CREATE TABLE xxx AS SELECT "
-            + "a as i, "
-            + "a + 1 as t, "
-            + "sha1(string(a + 1)) as mt, "
-            + "sum(b) as a, "
-            + "sha1(string(sum(b))) as ma "
+        "CREATE TABLE xxx AS SELECT \n"
+            + "a as i, \n"
+            + "a + 1 as t, \n"
+            + "sha1(string(a + 1)) as mt, \n"
+            + "sum(b) as a, \n"
+            + "sha1(string(sum(b))) as ma \n"
             + "FROM t1 GROUP BY a");
     verifyEvents("cllSimpleQueryMasking.json");
   }
@@ -132,7 +129,7 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
   void simpleQueryWindowedAggregate() {
     createManagedHiveTable("t1", "a string, b string, c int");
     runHiveQuery(
-        "CREATE TABLE xxx AS\n" + "SELECT sum(a) OVER (PARTITION BY b ORDER BY c) AS s FROM t1");
+        "CREATE TABLE xxx AS\nSELECT sum(a) OVER (PARTITION BY b ORDER BY c) AS s FROM t1");
     verifyEvents("cllSimpleQueryWindowedAggregate.json");
   }
 
@@ -158,70 +155,7 @@ public class ColumnLevelLineageTests extends ContainerHiveTestBase {
             + "     tmp3 as (SELECT tmp.a, b, c from tmp join tmp2 on tmp.a = tmp2.a)\n"
             + "SELECT tmp3.a as a, b, c, d FROM tmp3 join t3 on tmp3.a = t3.a order by d");
 
-    List<OpenLineage.RunEvent> events = getEventsEmitted();
-    OpenLineage.RunEvent completedEvent =
-        events.stream()
-            .filter(e -> OpenLineage.RunEvent.EventType.COMPLETE.equals(e.getEventType()))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("No COMPLETE event found"));
-
-    assertThat(completedEvent.getOutputs())
-        .hasSize(1)
-        .first()
-        .satisfies(
-            output -> {
-              assertThat(output.getNamespace()).isEqualTo("hive://localhost:9083");
-              assertThat(output.getName()).isEqualTo("test.xxx");
-
-              OpenLineage.SchemaDatasetFacet schema = output.getFacets().getSchema();
-              assertThat(schema).isNotNull();
-              assertThat(schema.getFields())
-                  .extracting("name", "type")
-                  .containsExactly(
-                      tuple("a", "int"),
-                      tuple("b", "string"),
-                      tuple("c", "int"),
-                      tuple("d", "int"));
-
-              OpenLineage.ColumnLineageDatasetFacet columnLineage =
-                  output.getFacets().getColumnLineage();
-              assertThat(columnLineage).isNotNull();
-
-              assertThat(
-                      columnLineage.getFields().getAdditionalProperties().get("a").getInputFields())
-                  .hasSize(1)
-                  .first()
-                  .satisfies(
-                      inputField -> {
-                        assertThat(inputField.getNamespace()).isEqualTo("hive://localhost:9083");
-                        assertThat(inputField.getName()).isEqualTo("test.t1");
-                        assertThat(inputField.getField()).isEqualTo("a");
-                      });
-
-              assertThat(
-                      columnLineage.getFields().getAdditionalProperties().get("d").getInputFields())
-                  .hasSize(1)
-                  .first()
-                  .satisfies(
-                      inputField -> {
-                        assertThat(inputField.getNamespace()).isEqualTo("hive://localhost:9083");
-                        assertThat(inputField.getName()).isEqualTo("test.t3");
-                        assertThat(inputField.getField()).isEqualTo("d");
-                      });
-
-              OpenLineage.SymlinksDatasetFacet symlinks = output.getFacets().getSymlinks();
-              assertThat(symlinks).isNotNull();
-              assertThat(symlinks.getIdentifiers())
-                  .hasSize(1)
-                  .first()
-                  .satisfies(
-                      identifier -> {
-                        assertThat(identifier.getNamespace()).isEqualTo("file");
-                        assertThat(identifier.getName())
-                            .isEqualTo("/opt/hive/data/warehouse/test.db/xxx");
-                        assertThat(identifier.getType()).isEqualTo("LOCATION");
-                      });
-            });
+    verifyEvents("cllComplexQueryCTEJoinsComplete.json");
   }
 
   @Test

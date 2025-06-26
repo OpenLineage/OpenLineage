@@ -4,7 +4,6 @@
 */
 package io.openlineage.hive.facets;
 
-import io.openlineage.hive.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,8 +21,8 @@ public class HivePropertiesFacetBuilder {
   private final Configuration conf;
   private final Set<String> allowedProperties;
 
-  public HivePropertiesFacetBuilder(OpenLineageContext olContext) {
-    conf = olContext.getHadoopConf();
+  public HivePropertiesFacetBuilder(Configuration conf) {
+    this.conf = conf;
     allowedProperties =
         conf.get(ALLOWED_PROPERTIES_KEY) != null
             ? Arrays.stream(conf.get(ALLOWED_PROPERTIES_KEY).split(",")).collect(Collectors.toSet())

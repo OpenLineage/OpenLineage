@@ -64,7 +64,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.dbt_command_line: List[str] = dbt_command_line
         self.profiles_dir: str = get_dbt_profiles_dir(command=self.dbt_command_line)
         self.dbt_log_file_path: str = get_dbt_log_path(command=self.dbt_command_line)
-        self.dbt_log_dirname: str = self.dbt_log_file_path.split("/")[-2]
+        self.dbt_log_dirname: str = os.path.dirname(self.dbt_log_file_path)
         self.parent_run_metadata: ParentRunMetadata = get_parent_run_metadata()
 
         self.node_id_to_ol_run_id: Dict[str, str] = defaultdict(lambda: str(generate_new_uuid()))
@@ -166,7 +166,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         2. MainReportVersion/CommandCompleted for dbt command lifecycle events
         3. SQLQuery/SQLQueryStatus/CatchableExceptionOnRun For SQL query lifecycle events
         """
-        dbt_event = None
         try:
             dbt_event = json.loads(line)
         except ValueError:
@@ -177,7 +176,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         dbt_event_name = dbt_event["info"]["name"]
         if dbt_event_name == "MainReportVersion":
             self._dbt_version = dbt_event["data"]["version"][1:]
-            self._dbt_invocation_id = dbt_event["info"]["invocation_id"]
+            self._dbt_invocation_id = dbt_event["info"].get("invocation_id")
             start_event = self._parse_dbt_start_command_event(dbt_event)
             self._setup_dbt_run_metadata(start_event)
             return start_event
@@ -207,9 +206,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         event_time = get_event_timestamp(event["info"]["ts"])
         run_facets = {
             **self.dbt_version_facet(),
-            "dbt_run": self.dbt_run_run_facet(),
-            "processing_engine": self.processing_engine_facet(),
+            **self.processing_engine_facet(),
+            **self.dbt_run_run_facet(),
         }
+
         if self.parent_run_metadata:
             run_facets["parent"] = self.parent_run_metadata.to_openlineage()
 
@@ -238,9 +238,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
     def _get_dbt_command_abort_event(self):
         run_facets = {
             **self.dbt_version_facet(),
-            "dbt_run": self.dbt_run_run_facet(),
-            "processing_engine": self.processing_engine_facet(),
+            **self.processing_engine_facet(),
+            **self.dbt_run_run_facet(),
         }
+
         parent_run_metadata = get_parent_run_metadata()
         if parent_run_metadata:
             run_facets["parent"] = parent_run_metadata.to_openlineage()
@@ -272,9 +273,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         run_facets = {
             **self.dbt_version_facet(),
-            "dbt_run": self.dbt_run_run_facet(),
+            **self.processing_engine_facet(),
+            **self.dbt_run_run_facet(),
             "parent": self.dbt_run_metadata.to_openlineage(),
-            "processing_engine": self.processing_engine_facet(),
         }
 
         job_name = self._get_job_name(event)
@@ -316,13 +317,12 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         run_facets = {
             **self.dbt_version_facet(),
-            "dbt_run": self.dbt_run_run_facet(),
+            **self.processing_engine_facet(),
+            **self.dbt_run_run_facet(),
             "parent": self.dbt_run_metadata.to_openlineage(),
-            "processing_engine": self.processing_engine_facet(),
         }
 
         job_name = self._get_job_name(event)
-
         job_facets = {
             "jobType": job_type_job.JobTypeJobFacet(
                 jobType=get_job_type(event),
@@ -345,7 +345,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         elif node_status in ("success", "pass"):
             event_type = RunState.COMPLETE
         else:
-            self.logger.info(f"node {node_unique_id} has an unknown node status {node_status}")
+            self.logger.info("Node %s has an unknown node status %s", node_unique_id, node_status)
 
         inputs = [
             self.node_to_dataset(node=model_input, has_facets=True)
@@ -423,9 +423,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         run_facets = {
             **self.dbt_version_facet(),
-            "dbt_run": self.dbt_run_run_facet(),
+            **self.processing_engine_facet(),
+            **self.dbt_run_run_facet(),
             "parent": parent_run.to_openlineage(),
-            "processing_engine": self.processing_engine_facet(),
         }
 
         job_facets = {
@@ -490,8 +490,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         event_time = get_event_timestamp(event["data"]["completed_at"])
         run_facets = {
             **self.dbt_version_facet(),
-            "dbt_run": self.dbt_run_run_facet(),
-            "processing_engine": self.processing_engine_facet(),
+            **self.processing_engine_facet(),
+            **self.dbt_run_run_facet(),
         }
 
         parent_run_metadata = get_parent_run_metadata()
@@ -555,21 +555,29 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
     # TODO: remove after deprecation period
     def dbt_version_facet(self) -> Dict[str, DbtVersionRunFacet]:
+        if not self.dbt_version:
+            return {}
         self.logger.debug(
             "dbt_version facet is deprecated, and will be removed in future versions. "
             "Use processing_engine facet instead."
         )
         return {"dbt_version": DbtVersionRunFacet(version=self.dbt_version)}
 
-    def dbt_run_run_facet(self) -> DbtRunRunFacet:
-        return DbtRunRunFacet(invocation_id=self.invocation_id)
+    def dbt_run_run_facet(self) -> Dict[str, DbtRunRunFacet]:
+        if not self.invocation_id:
+            return {}
+        return {"dbt_run": DbtRunRunFacet(invocation_id=self.invocation_id)}
 
-    def processing_engine_facet(self) -> processing_engine_run.ProcessingEngineRunFacet:
-        return processing_engine_run.ProcessingEngineRunFacet(
-            name="dbt",
-            version=self.dbt_version,  # type: ignore[arg-type]
-            openlineageAdapterVersion=openlineage_version,
-        )
+    def processing_engine_facet(self) -> Dict[str, processing_engine_run.ProcessingEngineRunFacet]:
+        if not self.dbt_version:
+            return {}
+        return {
+            "processing_engine": processing_engine_run.ProcessingEngineRunFacet(
+                name="dbt",
+                version=self.dbt_version,
+                openlineageAdapterVersion=openlineage_version,
+            )
+        }
 
     def _get_sql_query_id(self, timestamp: str, node_id: str) -> int:
         """
@@ -618,33 +626,71 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         dbt_command_line = add_or_replace_command_line_option(
             dbt_command_line, option="--write-json", replace_option="--no-write-json"
         )
+
         self._open_dbt_log_file()
+        self.logger.debug("Opened log file %s", self.dbt_log_file_path)
+
         incremental_reader = IncrementalFileReader(self._dbt_log_file)
+        last_size = os.stat(self.dbt_log_file_path).st_size
+
         process = subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr, text=True)
         parse_manifest = True
+        last_log = datetime.datetime.now()
+
         try:
             while process.poll() is None:
+                if (datetime.datetime.now() - last_log) >= datetime.timedelta(seconds=10):
+                    self.logger.debug("dbt process is still running: waiting for logs to appear")
+                    last_log = datetime.datetime.now()
                 if parse_manifest and has_lines(self._dbt_log_file) > 0:
                     # Load the manifest as soon as it exists
                     self.compiled_manifest
                     parse_manifest = False
+                    self.logger.debug("Parsed manifest file")
+
+                current_size = os.stat(self.dbt_log_file_path).st_size
+                if current_size > last_size:
+                    self.logger.debug(
+                        "Current size: %d, last size: %d, to read: %d",
+                        current_size,
+                        last_size,
+                        current_size - last_size,
+                    )
+                    yield from incremental_reader.read_lines(current_size - last_size)
+                    last_size = current_size
 
                 yield from incremental_reader.read_lines()
-                time.sleep(0.1)
+                time.sleep(0.01)
 
+            self.logger.debug("dbt process has exited. Waiting for logs to be flushed")
             max_loops = 10
             i = 0
             while (
                 self._dbt_log_file is not None and not self.received_dbt_command_completed and i < max_loops
             ):
-                yield from incremental_reader.read_lines()
-                time.sleep(0.1)
-                i += 1
+                current_size = os.stat(self.dbt_log_file_path).st_size
+                if current_size > last_size:
+                    self.logger.debug(
+                        "Current size: %d, last size: %d, to read: %d",
+                        current_size,
+                        last_size,
+                        current_size - last_size,
+                    )
+                    yield from incremental_reader.read_lines(current_size - last_size)
+                    last_size = current_size
+            self.logger.debug("Finished waiting for logs to be flushed")
 
         except Exception:
             self.logger.exception("An exception occurred in OL code. dbt is still running.")
+            last_log = datetime.datetime.now()
+
             while process.poll() is None:
-                pass  # wait for the process to finish
+                if (datetime.datetime.now() - last_log) >= datetime.timedelta(seconds=10):
+                    self.logger.debug("dbt process is still running. Further logs won't be processed")
+                    last_log = datetime.datetime.now()
+                time.sleep(0.1)
+                pass
+            self.logger.debug("dbt process has finished")
         finally:
             if self._dbt_log_file is not None:
                 self._dbt_log_file.close()
@@ -712,15 +758,18 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             return self.parent_run_metadata.root_parent_run_id
         if self.dbt_run_metadata is not None:
             return self.dbt_run_metadata.root_parent_run_id
+        return None
 
     def get_root_parent_job_namespace(self):
         if self.parent_run_metadata is not None:
             return self.parent_run_metadata.root_parent_job_namespace
         if self.dbt_run_metadata is not None:
             return self.dbt_run_metadata.root_parent_job_namespace
+        return None
 
     def get_root_parent_job_name(self):
         if self.parent_run_metadata is not None:
             return self.parent_run_metadata.root_parent_job_name
         if self.dbt_run_metadata is not None:
             return self.dbt_run_metadata.root_parent_job_name
+        return None

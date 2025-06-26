@@ -11,12 +11,12 @@ from openlineage.client.utils import RedactMixin
 from airflow.version import version as AIRFLOW_VERSION
 
 
-@attr.s
+@attr.define
 class AirflowVersionRunFacet(BaseFacet):
-    operator: str = attr.ib()
-    taskInfo: Dict[str, object] = attr.ib()
-    airflowVersion: str = attr.ib()
-    openlineageAirflowVersion: str = attr.ib()
+    operator: str
+    taskInfo: Dict[str, object]
+    airflowVersion: str
+    openlineageAirflowVersion: str
 
     _additional_skip_redact: ClassVar[List[str]] = [
         "operator",
@@ -36,17 +36,17 @@ class AirflowVersionRunFacet(BaseFacet):
         )
 
 
-@attr.s
+@attr.define
 class AirflowRunArgsRunFacet(BaseFacet):
-    externalTrigger: bool = attr.ib(default=False)
+    externalTrigger: bool = False
 
     _additional_skip_redact: ClassVar[List[str]] = ["externalTrigger"]
 
 
-@attr.s
+@attr.define
 class AirflowMappedTaskRunFacet(BaseFacet):
-    mapIndex: int = attr.ib()
-    operatorClass: str = attr.ib()
+    mapIndex: int
+    operatorClass: str
 
     _additional_skip_redact: ClassVar[List[str]] = ["operatorClass"]
 
@@ -61,37 +61,37 @@ class AirflowMappedTaskRunFacet(BaseFacet):
         )
 
 
-@attr.s
+@attr.define
 class AirflowRunFacet(BaseFacet):
     """
     Composite Airflow run facet.
     """
 
-    dag: Dict = attr.ib()
-    dagRun: Dict = attr.ib()
-    task: Dict = attr.ib()
-    taskInstance: Dict = attr.ib()
-    taskUuid: str = attr.ib()
+    dag: Dict
+    dagRun: Dict
+    task: Dict
+    taskInstance: Dict
+    taskUuid: str
 
 
-@attr.s
+@attr.define
 class UnknownOperatorInstance(RedactMixin):
     """
     Describes an unknown operator - specifies the (class) name of the operator
     and its properties
     """
 
-    name: str = attr.ib()
-    properties: Dict[str, object] = attr.ib()
-    type: str = attr.ib(default="operator")
+    name: str
+    properties: Dict[str, object]
+    type: str = "operator"
 
     _skip_redact: ClassVar[List[str]] = ["name", "type"]
 
 
-@attr.s
+@attr.define
 class UnknownOperatorAttributeRunFacet(BaseFacet):
     """
     RunFacet that describes unknown operators in an Airflow DAG
     """
 
-    unknownItems: List[UnknownOperatorInstance] = attr.ib()
+    unknownItems: List[UnknownOperatorInstance]

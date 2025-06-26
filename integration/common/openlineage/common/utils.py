@@ -1,7 +1,10 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+import logging
 import os
-from typing import Any, Dict, List, Optional, TextIO
+from typing import Any, Dict, Generator, List, Optional, TextIO
+
+logger = logging.getLogger(__name__)
 
 
 def get_from_nullable_chain(source: Any, chain: List[str]) -> Optional[Any]:
@@ -172,14 +175,18 @@ class IncrementalFileReader:
         self.incomplete_line = ""
         self.chunk_size = 4096
 
-    def read_lines(self):
+    def read_lines(self, max_read_size: int) -> Generator[str, Any, None]:
         """
-        This reads as many complete lines as possible.
-        incomplete line chars are saved in the incomplete_line member
+        This reads the lines with given specified max_read_bytes.
+        Incomplete line chars are saved in the incomplete_line member.
         """
 
-        chunk = self.incomplete_line + self.text_file.read(self.chunk_size)
+        logger.debug(f"Reading {max_read_size} bytes from {self.text_file.name}")
+        to_read = min(max_read_size, self.chunk_size)
+        read = self.text_file.read(to_read)
+        chunk = self.incomplete_line + read
         while chunk and chunk != self.incomplete_line:
+            max_read_size -= len(read)
             line = []
             next_line_start = 0
             for i in range(len(chunk)):
@@ -192,4 +199,8 @@ class IncrementalFileReader:
                     next_line_start = i + 1
 
             self.incomplete_line = chunk[next_line_start:]
-            chunk = self.incomplete_line + self.text_file.read(self.chunk_size)
+            if max_read_size <= 0:
+                break
+            to_read = min(max_read_size, self.chunk_size)
+            read = self.text_file.read(to_read)
+            chunk = self.incomplete_line + read

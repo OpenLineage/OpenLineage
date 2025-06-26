@@ -6,7 +6,7 @@ import datetime
 import logging
 from abc import abstractmethod
 from enum import Enum
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import attr
 from openlineage.client.event_v2 import Dataset, InputDataset, Job, OutputDataset, Run, RunEvent, RunState
@@ -69,36 +69,36 @@ class UnsupportedDbtCommand(Exception):
     pass
 
 
-@attr.s
+@attr.define
 class ModelNode:
-    metadata_node: Dict = attr.ib()
-    catalog_node: Optional[Dict] = attr.ib(default=None)
+    metadata_node: Dict
+    catalog_node: Optional[Dict] = None
 
 
-@attr.s
+@attr.define
 class DbtRun:
-    started_at: str = attr.ib()
-    completed_at: str = attr.ib()
-    status: str = attr.ib()
-    inputs: List[Dataset] = attr.ib()
-    output: Optional[Dataset] = attr.ib()
-    job_name: str = attr.ib()
-    namespace: str = attr.ib()
-    run_id: str = attr.ib(factory=lambda: str(generate_new_uuid()))
+    started_at: str
+    completed_at: str
+    status: str
+    inputs: List[Dataset]
+    output: Optional[Dataset]
+    job_name: str
+    namespace: str
+    run_id: str = attr.field(factory=lambda: str(generate_new_uuid()))
 
 
-@attr.s
+@attr.define
 class DbtRunResult:
-    start: RunEvent = attr.ib()
-    complete: Optional[RunEvent] = attr.ib(default=None)
-    fail: Optional[RunEvent] = attr.ib(default=None)
+    start: RunEvent
+    complete: Optional[RunEvent] = None
+    fail: Optional[RunEvent] = None
 
 
-@attr.s
+@attr.define
 class DbtEvents:
-    starts: List[RunEvent] = attr.ib(factory=list)
-    completes: List[RunEvent] = attr.ib(factory=list)
-    fails: List[RunEvent] = attr.ib(factory=list)
+    starts: List[RunEvent] = attr.field(factory=list)
+    completes: List[RunEvent] = attr.field(factory=list)
+    fails: List[RunEvent] = attr.field(factory=list)
 
     def events(self):
         return self.starts + self.completes + self.fails
@@ -121,11 +121,11 @@ class DbtEvents:
         raise NotImplementedError
 
 
-@attr.s
+@attr.define
 class DbtRunContext:
-    manifest: Dict = attr.ib()
-    run_results: Dict = attr.ib()
-    catalog: Optional[Dict] = attr.ib(default=None)
+    manifest: Dict
+    run_results: Dict
+    catalog: Optional[Dict] = None
 
 
 class DbtArtifactProcessor:
@@ -147,7 +147,7 @@ class DbtArtifactProcessor:
         self.job_namespace = job_namespace
         self.dataset_namespace = ""
         self.skip_errors = skip_errors
-        self.run_metadata = None
+        self.run_metadata: dict[str, Any] = {}
         self.command = None
         self.models = models or []
         self.selector = selector
@@ -681,9 +681,9 @@ class DbtArtifactProcessor:
 
     def get_run(self, run_id: str) -> Run:
         run_facets = {
-            "dbt_version": self.dbt_version_facet(),
-            "dbt_run": self.dbt_run_run_facet(),
-            "processing_engine": self.processing_engine_facet(),
+            **self.dbt_version_facet(),
+            **self.dbt_run_run_facet(),
+            **self.processing_engine_facet(),
         }
         if self._dbt_run_metadata:
             run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
@@ -693,22 +693,35 @@ class DbtArtifactProcessor:
         )
 
     # TODO: remove after deprecation period
-    def dbt_version_facet(self) -> DbtVersionRunFacet:
+    def dbt_version_facet(self) -> dict[str, DbtVersionRunFacet]:
+        dbt_version = self.run_metadata.get("dbt_version")
+        if not dbt_version:
+            return {}
+
         self.logger.debug(
             "dbt_version facet is deprecated, and will be removed in future versions. "
             "Use processing_engine facet instead."
         )
-        return DbtVersionRunFacet(version=self.run_metadata["dbt_version"])  # type: ignore[index]
+        return {"dbt_version": DbtVersionRunFacet(version=dbt_version)}
 
-    def dbt_run_run_facet(self) -> DbtRunRunFacet:
-        return DbtRunRunFacet(invocation_id=self.run_metadata["invocation_id"])  # type: ignore[index]
+    def dbt_run_run_facet(self) -> dict[str, DbtRunRunFacet]:
+        invocation_id = self.run_metadata.get("invocation_id")
+        if not invocation_id:
+            return {}
+        return {"dbt_run": DbtRunRunFacet(invocation_id=invocation_id)}
 
-    def processing_engine_facet(self) -> processing_engine_run.ProcessingEngineRunFacet:
-        return processing_engine_run.ProcessingEngineRunFacet(
-            name="dbt",
-            version=self.run_metadata["dbt_version"],  # type: ignore[index]
-            openlineageAdapterVersion=openlineage_version,
-        )
+    def processing_engine_facet(self) -> dict[str, processing_engine_run.ProcessingEngineRunFacet]:
+        dbt_version = self.run_metadata.get("dbt_version")
+        if not dbt_version:
+            return {}
+        return {
+            "processing_engine": processing_engine_run.ProcessingEngineRunFacet(
+                name="dbt",
+                version=dbt_version,
+                openlineageAdapterVersion=openlineage_version,
+            )
+        }
+        return None
 
     @staticmethod
     def get_timings(timings: List[Dict]) -> Tuple[str, str]:

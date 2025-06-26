@@ -10,12 +10,32 @@
         "properties": {
           "hive.execution.engine": "mr"
         }
+      },
+      "hive_query": {
+        "queryId": "${json-unit.any-string}",
+        "operationName": "CREATETABLE_AS_SELECT"
+      },
+      "hive_session": {
+        "sessionId": "${json-unit.any-string}",
+        "username": "hive",
+        "clientIp": "${json-unit.regex}\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}",
+        "creationTime": "${json-unit.any-string}"
       }
     }
   },
   "job": {
     "namespace": "default",
-    "name": "createtable_as_select.test.xxx"
+    "name": "createtable_as_select.test.xxx",
+    "facets": {
+      "jobType": {
+        "integration": "HIVE",
+        "jobType": "QUERY",
+        "processingType": "BATCH"
+      },
+      "sql": {
+        "query": "CREATE TABLE xxx AS SELECT \na as i, \na + 1 as t, \nsha1(string(a + 1)) as mt, \nsum(b) as a, \nsha1(string(sum(b))) as ma \nFROM t1 GROUP BY a"
+      }
+    }
   },
   "inputs": [
     {

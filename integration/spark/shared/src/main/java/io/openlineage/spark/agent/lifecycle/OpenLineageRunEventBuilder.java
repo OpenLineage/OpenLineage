@@ -19,6 +19,7 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OutputDatasetFacet;
 import io.openlineage.client.OpenLineage.OutputDatasetOutputFacets;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
@@ -199,6 +200,14 @@ class OpenLineageRunEventBuilder {
         buildJobFacets(nodes, jobFacetBuilders, context.getJobFacetsBuilder());
     List<InputDataset> inputDatasets = buildInputDatasets(nodes);
     List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);
+
+    openLineageContext.getLineageRunStatus().capturedInputs(inputDatasets.size());
+    openLineageContext.getLineageRunStatus().capturedOutputs(outputDatasets.size());
+    if (EventType.COMPLETE.equals(context.getEventType())
+        && context.getApplicationParentRunFacet() != null) {
+      FacetUtils.attachSmartDebugFacet(openLineageContext, runFacetsBuilder);
+    }
+
     openLineageContext
         .getQueryExecution()
         .filter(qe -> !FacetUtils.isFacetDisabled(openLineageContext, "spark_unknown"))
@@ -215,6 +224,7 @@ class OpenLineageRunEventBuilder {
     OpenLineage.RunBuilder runBuilder = openLineage.newRunBuilder().runId(runId).facets(runFacets);
     context
         .getRunEventBuilder()
+        .eventType(context.getEventType())
         .run(runBuilder.build())
         .job(context.getJobBuilder().facets(jobFacets).build())
         .inputs(RemovePathPatternUtils.removeInputsPathPattern(openLineageContext, inputDatasets))
