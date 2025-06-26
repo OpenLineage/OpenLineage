@@ -146,7 +146,7 @@ export const Consumers: Array<Partner> = [
     org_url: "https://www.selectstar.com/",
   },
   {
-    image: "Collibra-Logo-RGB.svg",
+    image: "Collibra_logo_RGB.svg",
     org: "Collibra",
     full_name: "Collibra",
     description: 
