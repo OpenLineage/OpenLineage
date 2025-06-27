@@ -439,6 +439,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
       return Optional.empty();
     }
 
-    return Optional.of(olContext.getOpenLineage().newSQLJobFacetBuilder().query(query).build());
+    return Optional.of(
+        olContext.getOpenLineage().newSQLJobFacetBuilder().query(query).dialect("spark").build());
   }
 }

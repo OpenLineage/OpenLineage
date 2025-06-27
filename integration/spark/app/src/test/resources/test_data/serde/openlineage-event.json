@@ -43,7 +43,8 @@
         "branch": "branch"
       },
       "sql": {
-        "query": "SELECT * FROM test"
+        "query": "SELECT * FROM test",
+        "dialect": "spark"
       }
     }
   },

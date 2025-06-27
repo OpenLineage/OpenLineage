@@ -65,7 +65,7 @@ class OpenLineageRunEventTest {
             .url(URI.create("https://github.com/apache/spark"))
             .tag("v1.0.0")
             .build();
-    OpenLineage.SQLJobFacet sqlJobFacet = ol.newSQLJobFacet("SELECT * FROM test");
+    OpenLineage.SQLJobFacet sqlJobFacet = ol.newSQLJobFacet("SELECT * FROM test", "spark");
 
     OpenLineage.JobFacets jobFacets =
         ol.newJobFacetsBuilder()

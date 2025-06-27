@@ -10,7 +10,8 @@ from openlineage.client.generated.base import JobFacet
 @attr.define
 class SQLJobFacet(JobFacet):
     query: str
+    dialect: str | None = attr.field(default=None)
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet"
+        return "https://openlineage.io/spec/facets/1-1-0/SQLJobFacet.json#/$defs/SQLJobFacet"
