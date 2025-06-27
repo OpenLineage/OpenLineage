@@ -67,7 +67,8 @@
       "name": "random-gcp-project.dbt_prod1.dbt_test.test_model",
       "facets": {
         "sql": {
-          "query": "select *\nfrom `random-gcp-project`.`dbt_prod1`.`source_table`\nwhere id = 1"
+          "query": "select *\nfrom `random-gcp-project`.`dbt_prod1`.`source_table`\nwhere id = 1",
+          "dialect": "bigquery"
         }
       }
     },

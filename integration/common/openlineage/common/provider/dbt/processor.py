@@ -1,5 +1,6 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import collections
 import datetime
@@ -152,6 +153,7 @@ class DbtArtifactProcessor:
         self.models = models or []
         self.selector = selector
         self.manifest_version = None
+        self.adapter_type: Adapter | None = None
 
     @property
     def dbt_run_metadata(self):
@@ -274,7 +276,7 @@ class DbtArtifactProcessor:
                 )
             }
             if sql:
-                job_facets["sql"] = sql_job.SQLJobFacet(sql)
+                job_facets["sql"] = sql_job.SQLJobFacet(query=sql, dialect=self.extract_dialect())
 
             output_dataset = self.node_to_output_dataset(
                 ModelNode(
@@ -678,6 +680,11 @@ class DbtArtifactProcessor:
             raise NotImplementedError(
                 f"Only {Adapter.adapters()} adapters are supported right now. Passed {profile['type']}"
             )
+
+    def extract_dialect(self) -> str | None:
+        if not self.adapter_type:
+            return None
+        return self.adapter_type.value.lower()
 
     def get_run(self, run_id: str) -> Run:
         run_facets = {
