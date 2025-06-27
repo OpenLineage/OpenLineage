@@ -204,16 +204,14 @@ fn select_identifier_function() {
 
     for (in_table_id, in_tables) in &test_cases {
         for dialect in &dialects {
-            let sql = format!("SELECT col1 FROM identifier({}) WHERE x = 1;", in_table_id);
+            let sql = format!("SELECT col1 FROM identifier({in_table_id}) WHERE x = 1;");
             assert_eq!(
                 test_sql_dialect(&sql, dialect).unwrap().table_lineage,
                 TableLineage {
                     in_tables: in_tables.clone(),
                     out_tables: vec![],
                 },
-                "Failed for dialect: {} with SQL: {}",
-                dialect,
-                sql
+                "Failed for dialect: {dialect} with SQL: {sql}"
             );
         }
     }
