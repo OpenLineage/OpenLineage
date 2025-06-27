@@ -299,7 +299,9 @@ class CompositeTransportTest {
             .thenReturn(new FakeTransport() {});
 
         ExecutorService threadPool = mock(ExecutorService.class);
-        mockedExecutors.when(() -> Executors.newFixedThreadPool(anyInt())).thenReturn(threadPool);
+        mockedExecutors
+            .when(() -> Executors.newFixedThreadPool(anyInt(), any()))
+            .thenReturn(threadPool);
 
         Map<String, Object> config = new HashMap<>();
         Map<String, Object> fakeTransportConfig = new HashMap<>();
@@ -322,6 +324,40 @@ class CompositeTransportTest {
           verify(threadPool, times(2)).shutdown();
         }
       }
+    }
+  }
+
+  @Test
+  void testThreadNaming() {
+    FakeTransportWithThreadCapture.capturedThreadNames.clear(); // Clear before test
+    AtomicInteger eventsEmitted = new AtomicInteger(0);
+    try (MockedStatic<TransportResolver> mockedStatic =
+        Mockito.mockStatic(TransportResolver.class)) {
+      mockedStatic
+          .when(() -> TransportResolver.resolveTransportConfigByType(any()))
+          .thenReturn((Class<? extends TransportConfig>) FakeTransportConfigA.class);
+
+      mockedStatic
+          .when(() -> TransportResolver.resolveTransportByConfig(any()))
+          .thenReturn(new FakeTransportWithThreadCapture(eventsEmitted));
+
+      Map<String, Object> config = new HashMap<>();
+      Map<String, Object> fakeTransportConfig = new HashMap<>();
+      fakeTransportConfig.put("type", "fakeA");
+      config.put("myFakeA1", fakeTransportConfig);
+      config.put("myFakeA2", fakeTransportConfig);
+
+      compositeConfig =
+          new CompositeConfig(config, true, true); // continueOnFailure=true, withThreadPool=true
+      CompositeTransport compositeTransport = new CompositeTransport(compositeConfig);
+
+      compositeTransport.emit(runEvent());
+
+      assertThat(eventsEmitted.get()).isEqualTo(2); // Both transports should emit
+      assertThat(FakeTransportWithThreadCapture.capturedThreadNames)
+          .hasSize(2)
+          .allMatch(name -> name.startsWith("openlineage-composite-transport-"))
+          .allMatch(name -> name.matches("openlineage-composite-transport-\\d+"));
     }
   }
 
@@ -353,6 +389,35 @@ class CompositeTransportTest {
     @SneakyThrows
     public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
       Thread.sleep(sleepTime);
+      emittedCounter.incrementAndGet();
+    }
+  }
+
+  private static class FakeTransportWithThreadCapture extends FakeTransport {
+    private final AtomicInteger emittedCounter;
+    static final java.util.List<String> capturedThreadNames =
+        new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    public FakeTransportWithThreadCapture(AtomicInteger emittedCounter) {
+      super();
+      this.emittedCounter = emittedCounter;
+    }
+
+    @Override
+    public void emit(@NonNull OpenLineage.RunEvent runEvent) {
+      capturedThreadNames.add(Thread.currentThread().getName());
+      emittedCounter.incrementAndGet();
+    }
+
+    @Override
+    public void emit(@NonNull OpenLineage.DatasetEvent datasetEvent) {
+      capturedThreadNames.add(Thread.currentThread().getName());
+      emittedCounter.incrementAndGet();
+    }
+
+    @Override
+    public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
+      capturedThreadNames.add(Thread.currentThread().getName());
       emittedCounter.incrementAndGet();
     }
   }
