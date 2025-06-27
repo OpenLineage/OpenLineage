@@ -435,7 +435,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                 processingType="BATCH",
                 producer=self.producer,
             ),
-            "sql": sql_job.SQLJobFacet(query=event["data"]["sql"]),
+            "sql": sql_job.SQLJobFacet(query=event["data"]["sql"], dialect=self.extract_dialect()),
         }
 
         sql_event = generate_run_event(

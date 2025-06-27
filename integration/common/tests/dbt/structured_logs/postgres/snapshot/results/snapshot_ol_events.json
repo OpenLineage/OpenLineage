@@ -134,7 +134,8 @@
           "jobType": "SQL"
         },
         "sql": {
-          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\nselect * from (\n        \n    \n\n    select *,\n        md5(coalesce(cast(id as varchar ), '')\n         || '|' || coalesce(cast(order_date as varchar ), '')\n        ) as dbt_scd_id,\n        order_date as dbt_updated_at,\n        order_date as dbt_valid_from,\n        \n  \n  coalesce(nullif(order_date, order_date), null)\n  as dbt_valid_to\n\n    from (\n        \n\n    \n\n     select * from \"postgres\".\"public\".\"raw_orders\"\n\n    ) sbq\n\n\n\n    ) as __dbt_sbq\n    where false\n    limit 0\n"
+          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\nselect * from (\n        \n    \n\n    select *,\n        md5(coalesce(cast(id as varchar ), '')\n         || '|' || coalesce(cast(order_date as varchar ), '')\n        ) as dbt_scd_id,\n        order_date as dbt_updated_at,\n        order_date as dbt_valid_from,\n        \n  \n  coalesce(nullif(order_date, order_date), null)\n  as dbt_valid_to\n\n    from (\n        \n\n    \n\n     select * from \"postgres\".\"public\".\"raw_orders\"\n\n    ) sbq\n\n\n\n    ) as __dbt_sbq\n    where false\n    limit 0\n",
+          "dialect": "postgres"
         }
       }
     },
@@ -179,7 +180,8 @@
           "jobType": "SQL"
         },
         "sql": {
-          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\nselect * from (\n        \n    \n\n    select *,\n        md5(coalesce(cast(id as varchar ), '')\n         || '|' || coalesce(cast(order_date as varchar ), '')\n        ) as dbt_scd_id,\n        order_date as dbt_updated_at,\n        order_date as dbt_valid_from,\n        \n  \n  coalesce(nullif(order_date, order_date), null)\n  as dbt_valid_to\n\n    from (\n        \n\n    \n\n     select * from \"postgres\".\"public\".\"raw_orders\"\n\n    ) sbq\n\n\n\n    ) as __dbt_sbq\n    where false\n    limit 0\n"
+          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\nselect * from (\n        \n    \n\n    select *,\n        md5(coalesce(cast(id as varchar ), '')\n         || '|' || coalesce(cast(order_date as varchar ), '')\n        ) as dbt_scd_id,\n        order_date as dbt_updated_at,\n        order_date as dbt_valid_from,\n        \n  \n  coalesce(nullif(order_date, order_date), null)\n  as dbt_valid_to\n\n    from (\n        \n\n    \n\n     select * from \"postgres\".\"public\".\"raw_orders\"\n\n    ) sbq\n\n\n\n    ) as __dbt_sbq\n    where false\n    limit 0\n",
+          "dialect": "postgres"
         }
       }
     },
@@ -224,7 +226,8 @@
           "jobType": "SQL"
         },
         "sql": {
-          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\nselect * from (\n        select now()::timestamp without time zone as dbt_snapshot_time\n    ) as __dbt_sbq\n    where false\n    limit 0\n"
+          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\nselect * from (\n        select now()::timestamp without time zone as dbt_snapshot_time\n    ) as __dbt_sbq\n    where false\n    limit 0\n",
+          "dialect": "postgres"
         }
       }
     },
@@ -269,7 +272,8 @@
           "jobType": "SQL"
         },
         "sql": {
-          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\nselect * from (\n        select now()::timestamp without time zone as dbt_snapshot_time\n    ) as __dbt_sbq\n    where false\n    limit 0\n"
+          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\nselect * from (\n        select now()::timestamp without time zone as dbt_snapshot_time\n    ) as __dbt_sbq\n    where false\n    limit 0\n",
+          "dialect": "postgres"
         }
       }
     },
@@ -314,7 +318,8 @@
           "jobType": "SQL"
         },
         "sql": {
-          "query": "BEGIN"
+          "query": "BEGIN",
+          "dialect": "postgres"
         }
       }
     },
@@ -359,7 +364,8 @@
           "jobType": "SQL"
         },
         "sql": {
-          "query": "BEGIN"
+          "query": "BEGIN",
+          "dialect": "postgres"
         }
       }
     },
@@ -404,7 +410,8 @@
           "jobType": "SQL"
         },
         "sql": {
-          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\n\n      \n  \n    \n\n  create  table \"postgres\".\"snapshots\".\"orders_snapshot\"\n  \n  \n    as\n  \n  (\n    \n    \n\n    select *,\n        md5(coalesce(cast(id as varchar ), '')\n         || '|' || coalesce(cast(order_date as varchar ), '')\n        ) as dbt_scd_id,\n        order_date as dbt_updated_at,\n        order_date as dbt_valid_from,\n        \n  \n  coalesce(nullif(order_date, order_date), null)\n  as dbt_valid_to\n\n    from (\n        \n\n    \n\n     select * from \"postgres\".\"public\".\"raw_orders\"\n\n    ) sbq\n\n\n\n  );\n  \n  "
+          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\n\n      \n  \n    \n\n  create  table \"postgres\".\"snapshots\".\"orders_snapshot\"\n  \n  \n    as\n  \n  (\n    \n    \n\n    select *,\n        md5(coalesce(cast(id as varchar ), '')\n         || '|' || coalesce(cast(order_date as varchar ), '')\n        ) as dbt_scd_id,\n        order_date as dbt_updated_at,\n        order_date as dbt_valid_from,\n        \n  \n  coalesce(nullif(order_date, order_date), null)\n  as dbt_valid_to\n\n    from (\n        \n\n    \n\n     select * from \"postgres\".\"public\".\"raw_orders\"\n\n    ) sbq\n\n\n\n  );\n  \n  ",
+          "dialect": "postgres"
         }
       }
     },
@@ -449,7 +456,8 @@
           "jobType": "SQL"
         },
         "sql": {
-          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\n\n      \n  \n    \n\n  create  table \"postgres\".\"snapshots\".\"orders_snapshot\"\n  \n  \n    as\n  \n  (\n    \n    \n\n    select *,\n        md5(coalesce(cast(id as varchar ), '')\n         || '|' || coalesce(cast(order_date as varchar ), '')\n        ) as dbt_scd_id,\n        order_date as dbt_updated_at,\n        order_date as dbt_valid_from,\n        \n  \n  coalesce(nullif(order_date, order_date), null)\n  as dbt_valid_to\n\n    from (\n        \n\n    \n\n     select * from \"postgres\".\"public\".\"raw_orders\"\n\n    ) sbq\n\n\n\n  );\n  \n  "
+          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"snapshot.jaffle_shop.orders_snapshot\"} */\n\n      \n  \n    \n\n  create  table \"postgres\".\"snapshots\".\"orders_snapshot\"\n  \n  \n    as\n  \n  (\n    \n    \n\n    select *,\n        md5(coalesce(cast(id as varchar ), '')\n         || '|' || coalesce(cast(order_date as varchar ), '')\n        ) as dbt_scd_id,\n        order_date as dbt_updated_at,\n        order_date as dbt_valid_from,\n        \n  \n  coalesce(nullif(order_date, order_date), null)\n  as dbt_valid_to\n\n    from (\n        \n\n    \n\n     select * from \"postgres\".\"public\".\"raw_orders\"\n\n    ) sbq\n\n\n\n  );\n  \n  ",
+          "dialect": "postgres"
         }
       }
     },

@@ -123,7 +123,8 @@
           "jobType": "SQL"
         },
         "sql": {
-          "query": "BEGIN"
+          "query": "BEGIN",
+          "dialect": "postgres"
         }
       }
     },

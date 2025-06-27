@@ -81,7 +81,8 @@
       "name": "random-gcp-project.dbt_test1.small.my_first_dbt_model.build.run",
       "facets": {
         "sql": {
-          "query": "\n\nwith source_data as (\n\n    select 1 as id\n    union all\n    select null as id\n\n)\n\nselect *\nfrom source_data"
+          "query": "\n\nwith source_data as (\n\n    select 1 as id\n    union all\n    select null as id\n\n)\n\nselect *\nfrom source_data",
+          "dialect": "bigquery"
         }
       }
     },
@@ -134,7 +135,8 @@
       "name": "random-gcp-project.dbt_test1.small.my_second_dbt_model.build.run",
       "facets": {
         "sql": {
-          "query": "select *\nfrom `random-gcp-project`.`dbt_test1`.`my_first_dbt_model`\nwhere id = 1"
+          "query": "select *\nfrom `random-gcp-project`.`dbt_test1`.`my_first_dbt_model`\nwhere id = 1",
+          "dialect": "bigquery"
         }
       }
     },

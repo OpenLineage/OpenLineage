@@ -41,8 +41,9 @@
       "facets": {
         "sql": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_customers\"\n\n),\n\nrenamed as (\n\n    select\n        id as customer_id,\n        first_name,\n        last_name\n\n    from source\n\n)\n\nselect * from renamed"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_customers\"\n\n),\n\nrenamed as (\n\n    select\n        id as customer_id,\n        first_name,\n        last_name\n\n    from source\n\n)\n\nselect * from renamed",
+          "dialect": "postgres"
         }
       }
     },
@@ -115,8 +116,9 @@
       "facets": {
         "sql": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_orders\"\n\n),\n\nrenamed as (\n\n    select\n        id as order_id,\n        user_id as customer_id,\n        order_date,\n        status\n\n    from source\n\n)\n\nselect * from renamed"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_orders\"\n\n),\n\nrenamed as (\n\n    select\n        id as order_id,\n        user_id as customer_id,\n        order_date,\n        status\n\n    from source\n\n)\n\nselect * from renamed",
+          "dialect": "postgres"
         }
       }
     },
@@ -192,8 +194,9 @@
       "facets": {
         "sql": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_payments\"\n\n),\n\nrenamed as (\n\n    select\n        id as payment_id,\n        order_id,\n        payment_method,\n\n        -- `amount` is currently stored in cents, so we convert it to dollars\n        amount / 100 as amount\n\n    from source\n\n)\n\nselect * from renamed"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_payments\"\n\n),\n\nrenamed as (\n\n    select\n        id as payment_id,\n        order_id,\n        payment_method,\n\n        -- `amount` is currently stored in cents, so we convert it to dollars\n        amount / 100 as amount\n\n    from source\n\n)\n\nselect * from renamed",
+          "dialect": "postgres"
         }
       }
     },
@@ -443,8 +446,9 @@
       "facets": {
         "sql": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-          "query": "\n\nwith orders as (\n\n    select * from \"postgres\".\"public\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"postgres\".\"public\".\"stg_payments\"\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "\n\nwith orders as (\n\n    select * from \"postgres\".\"public\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"postgres\".\"public\".\"stg_payments\"\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final",
+          "dialect": "postgres"
         }
       }
     },
@@ -603,8 +607,9 @@
       "facets": {
         "sql": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_customers\"\n\n),\n\nrenamed as (\n\n    select\n        id as customer_id,\n        first_name,\n        last_name\n\n    from source\n\n)\n\nselect * from renamed"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_customers\"\n\n),\n\nrenamed as (\n\n    select\n        id as customer_id,\n        first_name,\n        last_name\n\n    from source\n\n)\n\nselect * from renamed",
+          "dialect": "postgres"
         }
       }
     },
@@ -677,8 +682,9 @@
       "facets": {
         "sql": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_orders\"\n\n),\n\nrenamed as (\n\n    select\n        id as order_id,\n        user_id as customer_id,\n        order_date,\n        status\n\n    from source\n\n)\n\nselect * from renamed"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_orders\"\n\n),\n\nrenamed as (\n\n    select\n        id as order_id,\n        user_id as customer_id,\n        order_date,\n        status\n\n    from source\n\n)\n\nselect * from renamed",
+          "dialect": "postgres"
         }
       }
     },
@@ -754,8 +760,9 @@
       "facets": {
         "sql": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_payments\"\n\n),\n\nrenamed as (\n\n    select\n        id as payment_id,\n        order_id,\n        payment_method,\n\n        -- `amount` is currently stored in cents, so we convert it to dollars\n        amount / 100 as amount\n\n    from source\n\n)\n\nselect * from renamed"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "with source as (\n    select * from \"postgres\".\"public\".\"raw_payments\"\n\n),\n\nrenamed as (\n\n    select\n        id as payment_id,\n        order_id,\n        payment_method,\n\n        -- `amount` is currently stored in cents, so we convert it to dollars\n        amount / 100 as amount\n\n    from source\n\n)\n\nselect * from renamed",
+          "dialect": "postgres"
         }
       }
     },
@@ -1001,7 +1008,7 @@
       "facets": {
         "sql": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/SQLJobFacet.json#/$defs/SQLJobFacet",
           "query": "\n\nwith orders as (\n\n    select * from \"postgres\".\"public\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"postgres\".\"public\".\"stg_payments\"\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final"
         }
       }
