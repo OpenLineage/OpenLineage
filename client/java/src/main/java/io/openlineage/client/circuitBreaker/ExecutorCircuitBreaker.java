@@ -5,6 +5,7 @@
 
 package io.openlineage.client.circuitBreaker;
 
+import io.openlineage.client.utils.ThreadFactory;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -25,13 +26,13 @@ public abstract class ExecutorCircuitBreaker implements CircuitBreaker {
   public ExecutorCircuitBreaker(Integer circuitCheckIntervalInMillis) {
     this.circuitCheckIntervalInMillis = circuitCheckIntervalInMillis;
     this.timeout = Optional.empty();
-    executor = Executors.newCachedThreadPool();
+    executor = Executors.newCachedThreadPool(new ThreadFactory("openlineage-executor"));
   }
 
   public ExecutorCircuitBreaker(Integer circuitCheckIntervalInMillis, Duration timeout) {
     this.circuitCheckIntervalInMillis = circuitCheckIntervalInMillis;
     this.timeout = Optional.of(timeout);
-    executor = Executors.newCachedThreadPool();
+    executor = Executors.newCachedThreadPool(new ThreadFactory("openlineage-executor"));
   }
 
   @Override

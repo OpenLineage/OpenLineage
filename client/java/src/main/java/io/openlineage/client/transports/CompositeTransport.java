@@ -8,6 +8,7 @@ package io.openlineage.client.transports;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.BaseEvent;
 import io.openlineage.client.OpenLineageClientException;
+import io.openlineage.client.utils.ThreadFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +32,10 @@ public class CompositeTransport extends Transport {
     initializeTransports();
 
     if (config.getWithThreadPool()) {
-      executorService = Optional.of(Executors.newFixedThreadPool(transports.size()));
+      executorService =
+          Optional.of(
+              Executors.newFixedThreadPool(
+                  transports.size(), new ThreadFactory("openlineage-composite-transport")));
     } else {
       executorService = Optional.empty();
     }
@@ -77,7 +81,9 @@ public class CompositeTransport extends Transport {
     } else {
       // Emit events in parallel
       ExecutorService threadPool =
-          executorService.orElse(Executors.newFixedThreadPool(transports.size()));
+          executorService.orElse(
+              Executors.newFixedThreadPool(
+                  transports.size(), new ThreadFactory("openlineage-composite-transport")));
 
       try {
         threadPool
