@@ -63,14 +63,13 @@ fn merge_identifier_function() {
         for dialect in &dialects {
             let sql = format!(
                 "MERGE INTO \
-                IDENTIFIER({}) \
+                IDENTIFIER({out_table_id}) \
                 USING \
-                identifier({})\
+                identifier({in_table_id})\
                 ON target.id = source.id \
                 WHEN MATCHED THEN \
                 UPDATE \
-                SET target.description = source.description",
-                out_table_id, in_table_id
+                SET target.description = source.description"
             );
             assert_eq!(
                 test_sql_dialect(&sql, dialect).unwrap().table_lineage,
@@ -78,9 +77,7 @@ fn merge_identifier_function() {
                     in_tables: in_tables.clone(),
                     out_tables: out_tables.clone(),
                 },
-                "Failed for dialect: {} with SQL: {}",
-                dialect,
-                sql
+                "Failed for dialect: {dialect} with SQL: {sql}"
             );
         }
     }
