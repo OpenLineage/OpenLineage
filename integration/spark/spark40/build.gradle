@@ -43,7 +43,9 @@ ext {
 }
 
 dependencies {
+    implementation(project(path: ":shared"))
     implementation(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
+    implementation(project(path: ":spark3"))
     implementation(project(path: ":spark3", configuration: "scala${configurationName}RuntimeElements"))
 
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")

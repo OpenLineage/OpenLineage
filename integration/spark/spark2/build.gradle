@@ -40,6 +40,7 @@ ext {
 }
 
 dependencies {
+    compileOnly(project(path: ":shared"))
     compileOnly(project(path: ":shared", configuration: "scala212RuntimeElements"))
 
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
@@ -47,6 +48,7 @@ dependencies {
 
     // TODO: Replace 'testFixturesApi' with 'testImplementation'
     // TODO: Remove the test dependency on 'shared'
+    testCompileOnly(project(path: ":shared"))
     testFixturesApi(project(path: ":shared", configuration: "scala212RuntimeElements"))
     testFixturesApi("com.fasterxml.jackson.module:jackson-module-scala_${scalaBinaryVersion}:${jacksonVersion}")
     testFixturesApi("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
