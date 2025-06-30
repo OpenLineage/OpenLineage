@@ -23,6 +23,8 @@ public class CircuitBreakerFactory {
       return new StaticCircuitBreaker((StaticCircuitBreakerConfig) circuitBreakerConfig);
     } else if (circuitBreakerConfig instanceof TaskQueueCircuitBreakerConfig) {
       return new TaskQueueCircuitBreaker((TaskQueueCircuitBreakerConfig) circuitBreakerConfig);
+    } else if (circuitBreakerConfig instanceof TimeoutCircuitBreakerConfig) {
+      return new TimeoutCircuitBreaker((TimeoutCircuitBreakerConfig) circuitBreakerConfig);
     }
 
     return new NoOpCircuitBreaker();
