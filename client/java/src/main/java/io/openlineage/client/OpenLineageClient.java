@@ -16,6 +16,7 @@ import io.openlineage.client.transports.Transport;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -164,6 +165,7 @@ public final class OpenLineageClient implements AutoCloseable {
   public void close() throws Exception {
     transport.close();
     meterRegistry.close();
+    OpenLineageClientUtils.getExecutor().ifPresent(ExecutorService::shutdown);
   }
 
   /**

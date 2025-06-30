@@ -7,6 +7,12 @@
 * **Spark: Support latest databricks runtime.** [`#3811`](https://github.com/OpenLineage/OpenLineage/pull/3811) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Run databricks integration test on the latest supported runtime. 
 
+### Added
+
+* **Spark: Fine-grained timeout config .** [`#3779`](https://github.com/OpenLineage/OpenLineage/pull/3779) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Add extra timeout options to emit incomplete OpenLineage events in case of timeout when building facets. See `buildDatasetsTimePercentage` and `facetsBuildingTimePercentage` in docs for more details.
+
+
 ## [1.34.0](https://github.com/OpenLineage/OpenLineage/compare/1.33.0...1.34.0) - 2025-06-18
 
 ### Added

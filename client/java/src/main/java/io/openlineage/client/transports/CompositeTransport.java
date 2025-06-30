@@ -8,6 +8,7 @@ package io.openlineage.client.transports;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.BaseEvent;
 import io.openlineage.client.OpenLineageClientException;
+import io.openlineage.client.OpenLineageClientUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +32,7 @@ public class CompositeTransport extends Transport {
     initializeTransports();
 
     if (config.getWithThreadPool()) {
-      executorService = Optional.of(Executors.newFixedThreadPool(transports.size()));
+      executorService = Optional.of(OpenLineageClientUtils.getOrCreateExecutor());
     } else {
       executorService = Optional.empty();
     }
@@ -133,7 +134,6 @@ public class CompositeTransport extends Transport {
 
   @Override
   public void close() throws Exception {
-    executorService.ifPresent(ExecutorService::shutdown);
     transports.forEach(
         t -> {
           try {

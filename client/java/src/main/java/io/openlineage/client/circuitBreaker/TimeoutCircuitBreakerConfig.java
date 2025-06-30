@@ -2,7 +2,6 @@
 /* Copyright 2018-2025 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
-
 package io.openlineage.client.circuitBreaker;
 
 import static io.openlineage.client.circuitBreaker.CircuitBreaker.CIRCUIT_CHECK_INTERVAL_IN_MILLIS;
@@ -18,29 +17,28 @@ import lombok.Setter;
 import lombok.ToString;
 
 @NoArgsConstructor
+@AllArgsConstructor
 @ToString
 @EqualsAndHashCode
-@AllArgsConstructor
-public final class SimpleMemoryCircuitBreakerConfig
-    implements CircuitBreakerConfig, MergeConfig<SimpleMemoryCircuitBreakerConfig> {
+public class TimeoutCircuitBreakerConfig
+    implements CircuitBreakerConfig, MergeConfig<TimeoutCircuitBreakerConfig> {
 
-  public static final int DEFAULT_MEMORY_THRESHOLD = 20;
-  @Getter @Setter private Integer memoryThreshold = DEFAULT_MEMORY_THRESHOLD;
+  @Getter @Setter private Integer timeoutInSeconds;
   @Getter @Setter private Integer circuitCheckIntervalInMillis = CIRCUIT_CHECK_INTERVAL_IN_MILLIS;
-  @Getter @Setter private Integer timeoutInSeconds = null;
 
-  public SimpleMemoryCircuitBreakerConfig(int memoryThreshold) {
-    this(memoryThreshold, CIRCUIT_CHECK_INTERVAL_IN_MILLIS, null);
+  public TimeoutCircuitBreakerConfig(int timeoutInSeconds) {
+    this(timeoutInSeconds, CIRCUIT_CHECK_INTERVAL_IN_MILLIS);
   }
 
-  public SimpleMemoryCircuitBreakerConfig(int memoryThreshold, int circuitCheckIntervalInMillis) {
-    this(memoryThreshold, circuitCheckIntervalInMillis, null);
+  public TimeoutCircuitBreakerConfig(int timeoutInSeconds, int circuitCheckIntervalInMillis) {
+    this.timeoutInSeconds = timeoutInSeconds;
+    this.circuitCheckIntervalInMillis = circuitCheckIntervalInMillis;
   }
 
   @Override
-  public SimpleMemoryCircuitBreakerConfig mergeWithNonNull(SimpleMemoryCircuitBreakerConfig other) {
-    return new SimpleMemoryCircuitBreakerConfig(
-        mergeWithDefaultValue(memoryThreshold, other.memoryThreshold, DEFAULT_MEMORY_THRESHOLD),
+  public TimeoutCircuitBreakerConfig mergeWithNonNull(TimeoutCircuitBreakerConfig other) {
+    return new TimeoutCircuitBreakerConfig(
+        mergePropertyWith(timeoutInSeconds, other.timeoutInSeconds),
         mergeWithDefaultValue(
             circuitCheckIntervalInMillis,
             other.circuitCheckIntervalInMillis,

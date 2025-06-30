@@ -50,7 +50,7 @@ public class DebugRunFacetBuilderDelegate {
   }
 
   public DebugRunFacet buildFacet() {
-    return buildFacet(Collections.emptyList());
+    return buildFacet(new ArrayList<>());
   }
 
   public DebugRunFacet buildFacet(List<String> logs) {
