@@ -28,7 +28,7 @@ from openlineage.client.transport import (
     TransportFactory,
     get_default_factory,
 )
-from openlineage.client.transport.http import HttpConfig, HttpTransport, create_token_provider
+from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
 from openlineage.client.utils import deep_merge_dicts
 
@@ -183,6 +183,12 @@ class OpenLineageClient:
         self.transport.emit(event)
         log.debug("OpenLineage event successfully emitted.")
 
+    def shutdown(self, timeout: float = 30.0) -> bool:
+        return self.transport.shutdown(timeout)
+
+    def close(self) -> None:
+        self.transport.close()
+
     @property
     def config(self) -> OpenLineageConfig:
         """
@@ -238,7 +244,7 @@ class OpenLineageClient:
 
         # 2. Check if transport is provided explicitly
         if kwargs.get("transport"):
-            return cast(Transport, kwargs["transport"])
+            return cast("Transport", kwargs["transport"])
 
         # 3. Check if transport configuration is provided in YAML config file
         if self.config.transport and self.config.transport.get("type"):
@@ -292,28 +298,32 @@ class OpenLineageClient:
                     return path
                 if path and verbose:
                     log.debug("OpenLineage config file is missing or not readable: `%s`.", path)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 # We can get different errors depending on system
                 if verbose:
                     log.exception("Couldn't check if OpenLineage config file is readable: `%s`", path)
         return None
 
-    @staticmethod
-    def _http_transport_from_env_variables() -> HttpTransport:
-        config = HttpConfig(
-            url=os.environ["OPENLINEAGE_URL"],
-            auth=create_token_provider(
-                {
-                    "type": "api_key",
-                    "apiKey": os.environ.get("OPENLINEAGE_API_KEY", ""),
-                },
-            ),
-        )
+    def _http_transport_from_env_variables(self) -> HttpTransport:
+        # Start with basic config from legacy environment variables
+        config_dict = {
+            "url": os.environ["OPENLINEAGE_URL"],
+            "auth": {
+                "type": "api_key",
+                "apiKey": os.environ.get("OPENLINEAGE_API_KEY", ""),
+            },
+        }
+
         endpoint = os.environ.get("OPENLINEAGE_ENDPOINT", None)
         if endpoint is not None:
-            config.endpoint = endpoint
+            config_dict["endpoint"] = endpoint
 
-        return HttpTransport(config)
+        # Merge with any OPENLINEAGE__TRANSPORT__* environment variables
+        env_config = self._load_config_from_env_variables()
+        if env_config and "transport" in env_config:
+            config_dict = deep_merge_dicts(config_dict, env_config["transport"])
+
+        return HttpTransport(HttpConfig.from_dict(config_dict))
 
     @staticmethod
     def _http_transport_from_url(
@@ -343,7 +353,17 @@ class OpenLineageClient:
                     default_transport_name,
                 )
                 return
+
             os.environ[f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}__TYPE"] = "http"
+
+            # Special case - for seamless switch to async transport
+            if transport_type := os.environ.get("OPENLINEAGE__TRANSPORT__TYPE"):
+                if transport_type == "async_http":
+                    os.environ["OPENLINEAGE__TRANSPORT__TYPE"] = "composite"
+                    os.environ[
+                        f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}__TYPE"
+                    ] = "async_http"
+
             os.environ[f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}__URL"] = url
             if api_key := os.environ.get("OPENLINEAGE_API_KEY"):
                 os.environ[

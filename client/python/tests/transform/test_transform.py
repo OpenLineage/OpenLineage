@@ -215,7 +215,7 @@ def test_client_with_transform_transport_emits_modified_event_with_older_facets(
         warnings.simplefilter("ignore", DeprecationWarning)
         from openlineage.client.facet import BaseFacet as OldBaseFacet
 
-        @attr.s
+        @attr.define
         class SomeOldRunFacet(OldBaseFacet):
             version: str = attr.ib()
 

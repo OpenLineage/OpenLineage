@@ -13,7 +13,7 @@ from openlineage.client.transport.transform.transformers.job_namespace_replace_t
 
 __all__ = [
     "EventTransformer",
+    "JobNamespaceReplaceTransformer",
     "TransformConfig",
     "TransformTransport",
-    "JobNamespaceReplaceTransformer",
 ]

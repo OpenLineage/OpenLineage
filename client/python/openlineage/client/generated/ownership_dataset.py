@@ -15,7 +15,7 @@ class Owner(RedactMixin):
     the identifier of the owner of the Dataset. It is recommended to define this as a URN. For example
     application:foo, user:jdoe, team:data
     """
-    type: str | None = attr.field(default=None)
+    type: str | None = attr.field(default=None)  # noqa: A003
     """The type of ownership (optional)"""
 
 

@@ -147,3 +147,62 @@ def test_env_disabled_ignores_config(mocker: MockerFixture, root: Path) -> None:
         clazz="tests.transport.FakeTransport",
     )
     assert isinstance(OpenLineageClient(factory=factory).transport, NoopTransport)
+
+
+def test_factory_create_transport_missing_type() -> None:
+    """Test error when transport type is missing from config."""
+    factory = DefaultTransportFactory()
+    config = {"url": "http://example.com"}  # Missing 'type' key
+
+    with pytest.raises(KeyError):
+        factory._create_transport(config)
+
+
+def test_factory_create_transport_invalid_transport_class() -> None:
+    """Test error when transport class is not a Transport subclass."""
+    factory = DefaultTransportFactory()
+
+    # Register a class that's not a Transport subclass
+    class NotATransport:
+        pass
+
+    factory.register_transport("invalid", NotATransport)
+    config = {"type": "invalid"}
+
+    with pytest.raises(TypeError, match="Transport .* has to be class, and subclass of Transport"):
+        factory._create_transport(config)
+
+
+def test_factory_create_transport_invalid_config_class() -> None:
+    """Test error when config class is not a Config subclass."""
+    from openlineage.client.transport import Transport
+
+    factory = DefaultTransportFactory()
+
+    # Create a transport with invalid config_class
+    class NotAConfig:
+        pass
+
+    class InvalidTransport(Transport):
+        config_class = NotAConfig
+
+        def emit(self, event):
+            pass
+
+    factory.register_transport("invalid_config", InvalidTransport)
+    config = {"type": "invalid_config"}
+
+    with pytest.raises(TypeError, match="Config .* has to be class, and subclass of Config"):
+        factory._create_transport(config)
+
+
+def test_factory_create_transport_with_name() -> None:
+    """Test transport creation with custom name."""
+    factory = DefaultTransportFactory()
+    factory.register_transport("accumulating", AccumulatingTransport)
+
+    config = {"type": "accumulating", "name": "my_transport"}
+    transport = factory._create_transport(config)
+
+    assert isinstance(transport, AccumulatingTransport)
+    assert transport.name == "my_transport"
