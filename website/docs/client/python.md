@@ -464,13 +464,13 @@ The `CompositeTransport` is designed to combine multiple transports, allowing ev
 
 - `type` - string, must be "composite". Required.
 - `transports` - a list or a map of transport configurations. Required.
-- `continue_on_failure` - boolean flag, determines if the process should continue even when one of the transports fails. Default is `false`.
+- `continue_on_failure` - boolean flag, determines if the process should continue even when one of the transports fails. Default is `true`.
 
 #### Behavior
 
 - The configured transports will be initialized and used in sequence to emit OpenLineage events.
 - If `continue_on_failure` is set to `false`, a failure in one transport will stop the event emission process, and an exception will be raised.
-- If `continue_on_failure` is `true`, the failure will be logged, but the remaining transports will still attempt to send the event.
+- If `continue_on_failure` is `true`, the failure will be logged and the process will continue allowing the remaining transports to still send the event.
 
 #### Notes for Multiple Transports
 The composite transport can be used with any OpenLineage transport (e.g. `HttpTransport`, `KafkaTransport`, etc).
@@ -492,7 +492,7 @@ Transport names are not required for basic functionality. Their primary purpose 
 ```yaml
 transport:
   type: composite
-  continueOnFailure: true
+  continue_on_failure: true
   transports:
     - type: http
       url: http://example.com/api
@@ -508,7 +508,7 @@ transport:
 ```yaml
 transport:
   type: composite
-  continueOnFailure: true
+  continue_on_failure: true
   transports:
     my_http:
       type: http
@@ -529,6 +529,7 @@ from openlineage.client.transport.composite import CompositeTransport, Composite
 config = CompositeConfig.from_dict(
         {
             "type": "composite",
+            "continue_on_failure": True,
             "transports": [
                 {
                     "type": "kafka",
