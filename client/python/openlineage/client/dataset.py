@@ -28,16 +28,8 @@ def _check_not_empty(instance: object, attribute: attr.Attribute[str], value: st
     return value
 
 
-def _check_not_none(instance: object, attribute: attr.Attribute[object], value: object) -> object:  # noqa: ARG001
-    """Validator to check if a value is not None."""
-    if value is None:
-        msg = f"{attribute.name} cannot be None"
-        raise ValueError(msg)
-    return value
-
-
-def _check_enum_not_none(  # noqa: ARG001
-    instance: object, attribute: attr.Attribute[PubSubResourceType], value: PubSubResourceType
+def _check_enum_not_none(
+    _: object, attribute: attr.Attribute[PubSubResourceType], value: PubSubResourceType
 ) -> PubSubResourceType:
     """Validator to check if an enum value is not None."""
     if value is None:
