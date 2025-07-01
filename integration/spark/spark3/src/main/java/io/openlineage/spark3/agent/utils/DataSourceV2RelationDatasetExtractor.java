@@ -55,14 +55,8 @@ public class DataSourceV2RelationDatasetExtractor {
                 TableCatalog tableCatalog = (TableCatalog) relation.catalog().get();
 
                 Map<String, String> tableProperties = relation.table().properties();
-                CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, tableProperties)
-                    .ifPresent(
-                        storageDatasetFacet ->
-                            datasetFacetsBuilder.getFacets().storage(storageDatasetFacet));
-                CatalogUtils3.getCatalogDatasetFacet(context, tableCatalog, tableProperties)
-                    .ifPresent(
-                        catalogDatasetFacet ->
-                            datasetFacetsBuilder.getFacets().catalog(catalogDatasetFacet));
+                CatalogUtils3.addStorageAndCatalogFacets(
+                    context, tableCatalog, tableProperties, datasetFacetsBuilder);
               }
               datasetFacetsBuilder
                   .getFacets()

@@ -178,8 +178,7 @@ public class CreateReplaceOutputDatasetBuilder
           version -> DatasetVersionUtils.buildVersionOutputFacets(context, builder, version));
     }
 
-    CatalogUtils3.getStorageDatasetFacet(context, catalog, tableProperties)
-        .map(storageDatasetFacet -> builder.getFacets().storage(storageDatasetFacet));
+    CatalogUtils3.addStorageAndCatalogFacets(context, catalog, tableProperties, builder);
     return Collections.singletonList(outputDataset().getDataset(di.get(), builder));
   }
 

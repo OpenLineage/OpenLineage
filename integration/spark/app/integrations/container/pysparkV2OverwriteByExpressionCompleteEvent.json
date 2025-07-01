@@ -25,6 +25,13 @@
             }
           ]
         },
+        "catalog": {
+          "framework": "iceberg",
+          "type": "hadoop",
+          "name": "spark_catalog",
+          "warehouseUri": "/tmp/iceberg",
+          "source": "spark"
+        },
         "symlinks": {
           "identifiers": [
             {
