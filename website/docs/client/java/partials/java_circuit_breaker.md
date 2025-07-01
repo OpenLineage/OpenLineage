@@ -8,6 +8,39 @@ This feature is available in OpenLineage versions >= 1.9.0.
 To prevent from over-instrumentation OpenLineage integration provides a circuit breaker mechanism
 that stops OpenLineage from creating, serializing and sending OpenLineage events.
 
+### Timeout only Circuit Breaker
+
+Circuit breaker which closes after a given timeout. It is useful to control the time spent on OpenLineage.
+Please note that other circuit breakers support timeout as well, but this one is the simplest to fit the
+scenarios when only timeout is needed.
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+circuitBreaker:
+  type: timeout
+  timeoutInSeconds: 90
+```
+</TabItem>
+<TabItem value="spark" label="Spark Config">
+
+| Parameter                                         | Definition                        | Example |
+----------------------------------------------------|-----------------------------------|---------
+| spark.openlineage.circuitBreaker.type             | Circuit breaker type selected     | timeout |
+| spark.openlineage.circuitBreaker.timeoutInSeconds | Timeout for OpenLineage execution | 90      |
+
+</TabItem>
+<TabItem value="flink" label="Flink Config">
+
+| Parameter                                   | Definition                          | Example  |
+----------------------------------------------|-------------------------------------|-----------
+| openlineage.circuitBreaker.type             | Circuit breaker type selected       | timeout  |
+| openlineage.circuitBreaker.timeoutInSeconds | Timeout for OpenLineage execution   | 90       |
+
+</TabItem>
+</Tabs>
+
 ### Simple Memory Circuit Breaker
 
 This circuit breaker provides a straightforward protective mechanism by monitoring

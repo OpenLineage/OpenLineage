@@ -35,6 +35,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +54,12 @@ public final class OpenLineageClientUtils {
 
   private static final ObjectMapper YML = newObjectMapper(new YAMLFactory());
   private static final ObjectMapper JSON = newObjectMapper();
+
+  /**
+   * An {@link ExecutorService} that can be used for asynchronous operations. It is initialized to
+   * null and can be set up when needed.
+   */
+  private static ExecutorService EXECUTOR;
 
   @JsonFilter("disabledFacets")
   public class DisabledFacetsMixin {}
@@ -337,5 +346,16 @@ public final class OpenLineageClientUtils {
       ObjectMapper deserializer, InputStream inputStream, TypeReference<T> valueTypeRef)
       throws IOException {
     return deserializer.readValue(inputStream, valueTypeRef);
+  }
+
+  public static ExecutorService getOrCreateExecutor() {
+    if (EXECUTOR == null) {
+      EXECUTOR = Executors.newCachedThreadPool();
+    }
+    return EXECUTOR;
+  }
+
+  public static Optional<ExecutorService> getExecutor() {
+    return Optional.ofNullable(EXECUTOR);
   }
 }
