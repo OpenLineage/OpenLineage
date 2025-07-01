@@ -622,13 +622,11 @@ def test_composite_transport_with_aliased_url_and_overriden_alias() -> None:
 @patch.dict(
     os.environ,
     {
-        "OPENLINEAGE_URL": "http://example.com",
         "OPENLINEAGE__TRANSPORT": '{"type": "async_http", "url": "https://data-obs-intake.datadoghq.com", '
-        '"auth": {"type": "apiKey", "apiKey": "YOUR_API_KEY"}, '
-        '"async_config": {"enabled": true}}',
+        '"auth": {"type": "apiKey", "apiKey": "YOUR_API_KEY"}}',
     },
 )
-def test_async_transport_with_enabled_async_flag() -> None:
+def test_configures_async_transport() -> None:
     from openlineage.client.transport.async_http import AsyncHttpTransport
 
     client = OpenLineageClient()
@@ -650,7 +648,7 @@ def test_async_transport_with_enabled_async_flag() -> None:
         "OPENLINEAGE__TRANSPORT__TYPE": "async_http",
     },
 )
-def test_async_transport_with_overwritten_enabled_async_flag() -> None:
+def test_async_transport_with_overwritten_transport_type() -> None:
     from openlineage.client.transport.async_http import AsyncHttpTransport
 
     client = OpenLineageClient()
@@ -659,6 +657,23 @@ def test_async_transport_with_overwritten_enabled_async_flag() -> None:
     assert transport.url == "http://example.com"
     assert transport.endpoint == "api/v2/lineage"
     assert transport.config.auth.api_key == "YOUR_API_KEY"
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__TYPE": "async_http",
+        "OPENLINEAGE__TRANSPORT__URL": "http://this.should.have.priority.com",
+    },
+)
+def test_async_transport_with_priority_overwrite() -> None:
+    from openlineage.client.transport.async_http import AsyncHttpTransport
+
+    client = OpenLineageClient()
+    transport: AsyncHttpTransport = client.transport
+    assert transport.kind == "async_http"
+    assert transport.url == "http://this.should.have.priority.com"
 
 
 @patch.dict(

@@ -305,9 +305,9 @@ The Async HTTP transport provides high-performance, non-blocking event emission 
 - `auth` - dictionary specifying authentication options. Optional, by default no authorization is used. If set, requires the `type` property.
   - `type` - string specifying the "api_key" or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
   - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
-- `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`. Added in v1.13.0.
+- `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`.
 - `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
-- `max_queue_size` - integer specifying maximum events in processing queue. Optional, default: `1000000`.
+- `max_queue_size` - integer specifying maximum events in processing queue. Optional, default: `10000`.
 - `max_concurrent_requests` - integer specifying maximum parallel HTTP requests. Optional, default: `100`.
 - `retry` - dictionary of additional configuration options for HTTP retries. Added in v1.33.0. Defaults are below; those are non-exhaustive options, but the ones that are set by default.
   - `total` - total number of retries to be attempted. Default is `5`.
@@ -329,7 +329,7 @@ Events are processed asynchronously with the following features:
 
 #### Event Flow
 
-1. Events are queued for processing (START events immediately, completion events wait if their START is pending)
+1. Events are queued for processing (START events immediately, other events wait until corresponding START event is send)
 2. Worker thread processes events using configurable parallelism
 3. Successful START events trigger release of pending completion events
 4. Event statistics are tracked and available via `get_stats()`
@@ -393,14 +393,12 @@ client.emit(start_event)      # Non-blocking
 client.emit(complete_event)   # Waits for START success, then sent
 
 # Wait for all events to complete
-client.transport.wait_for_completion(timeout=30)
-
-# Get processing statistics  
+client.wait_for_completion()
+# Get processing statistics
 stats = client.transport.get_stats()
 print(f"Pending: {stats['pending']}, Success: {stats['success']}, Failed: {stats['failed']}")
-
 # Graceful shutdown
-client.transport.shutdown(timeout=30)
+client.shutdown()
 ```
 </TabItem>
 

@@ -512,9 +512,9 @@ class AsyncHttpTransport(Transport):
     def wait_for_completion(self, timeout: float = -1.0) -> bool:
         # Block until all events are processed or timeout is reached.
         # Special -1 value indicates that wait_for_completion will wait till all events are processed.
-        log.debug("Waiting for events to be sent in wait_for_completion.")
+        log.debug("Waiting for events completion for %.3f seconds", timeout)
         start_time = time.time()
-        while time.time() - start_time < timeout or timeout == -1:
+        while timeout < 0 or time.time() - start_time < timeout:
             if self._all_processed():
                 log.debug("All events were processed.")
                 return True
