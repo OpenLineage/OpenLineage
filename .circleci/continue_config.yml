@@ -36,8 +36,8 @@ commands:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+          export RELEASE_PASSWORD=$(echo $MAVEN_CENTRAL_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $MAVEN_CENTRAL_TOKEN_USERNAME)
 
           ./gradlew --console=plain publishToMavenLocal --info
   publish_shadow_jar:
@@ -47,8 +47,8 @@ commands:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+          export RELEASE_PASSWORD=$(echo $MAVEN_CENTRAL_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $MAVEN_CENTRAL_TOKEN_USERNAME)
 
           ./gradlew --console=plain publishToSonatype closeAndReleaseSonatypeStagingRepository --info
   set_java_version:
@@ -587,8 +587,8 @@ jobs:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+          export RELEASE_PASSWORD=$(echo $MAVEN_CENTRAL_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $MAVEN_CENTRAL_TOKEN_USERNAME)
 
           # Publish *.jar
           ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository --info -Pscala.binary.version=2.12 -Pjava.compile.home=${JAVA17_HOME}
@@ -624,8 +624,8 @@ jobs:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+          export RELEASE_PASSWORD=$(echo $MAVEN_CENTRAL_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $MAVEN_CENTRAL_TOKEN_USERNAME)
                   
           ./gradlew --console=plain javadoc sourceJar shadowJar -Pscala.binary.version=<< parameters.scala >> -Pjava.compile.home=/usr/lib/jvm/java-17-openjdk-amd64
           ./gradlew --console=plain publishToMavenLocal -Pscala.binary.version=<< parameters.scala >> -Pjava.compile.home=/usr/lib/jvm/java-17-openjdk-amd64
@@ -759,8 +759,8 @@ jobs:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+          export RELEASE_PASSWORD=$(echo $MAVEN_CENTRAL_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $MAVEN_CENTRAL_TOKEN_USERNAME)
 
           ./gradlew --console=plain publishToMavenLocal --info
       - persist_to_workspace:
@@ -840,8 +840,8 @@ jobs:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+          export RELEASE_PASSWORD=$(echo $MAVEN_CENTRAL_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $MAVEN_CENTRAL_TOKEN_USERNAME)
 
           ./gradlew --console=plain publishToSonatype closeAndReleaseSonatypeStagingRepository --info
       - store_artifacts:
@@ -980,8 +980,8 @@ jobs:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+          export RELEASE_PASSWORD=$(echo $MAVEN_CENTRAL_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $MAVEN_CENTRAL_TOKEN_USERNAME)
 
           # Publish *.jar
           ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository
@@ -1016,8 +1016,8 @@ jobs:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+          export RELEASE_PASSWORD=$(echo $MAVEN_CENTRAL_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $MAVEN_CENTRAL_TOKEN_USERNAME)
                   
           ./gradlew --console=plain javadoc sourceJar shadowJar 
           ./gradlew --console=plain publishToMavenLocal
@@ -1163,8 +1163,8 @@ jobs:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $OSSRH_TOKEN_PASSWORD)
-          export RELEASE_USERNAME=$(echo $OSSRH_TOKEN_USERNAME)
+          export RELEASE_PASSWORD=$(echo $MAVEN_CENTRAL_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $MAVEN_CENTRAL_TOKEN_USERNAME)
           
           ./gradlew --no-daemon --console=plain integrationTest --i -Pflink.version=<< parameters.flink-version >>
       - run:
