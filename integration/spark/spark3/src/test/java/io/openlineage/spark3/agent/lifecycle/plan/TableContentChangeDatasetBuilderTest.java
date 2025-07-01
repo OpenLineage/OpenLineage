@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoStatement;
@@ -165,19 +164,14 @@ class TableContentChangeDatasetBuilderTest {
             .thenReturn(datasetVersionDatasetFacet);
 
         when(DataSourceV2RelationDatasetExtractor.extract(
-                any(), eq(openLineageContext), eq(dataSourceV2Relation), any()))
+                any(), eq(openLineageContext), eq(dataSourceV2Relation), any(), any(Boolean.class)))
             .thenReturn(Collections.singletonList(dataset));
-        when(CatalogUtils3.getDatasetVersion(any(), any(), any(), any()))
-            .thenReturn(Optional.of("v2"));
-        when(datasetFacetsBuilder.version(eq(datasetVersionDatasetFacet)))
-            .thenReturn(datasetFacetsBuilder);
 
         List<OpenLineage.OutputDataset> datasetList =
             builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
 
         assertEquals(1, datasetList.size());
         assertEquals(dataset, datasetList.get(0));
-        Mockito.verify(datasetFacetsBuilder).version(eq(datasetVersionDatasetFacet));
 
         if (lifecycleStateChange != null) {
           Mockito.verify(datasetFacetsBuilder)

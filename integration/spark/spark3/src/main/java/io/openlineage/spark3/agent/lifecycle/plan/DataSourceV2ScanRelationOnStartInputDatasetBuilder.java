@@ -6,13 +6,10 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage.InputDataset;
-import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
-import io.openlineage.spark.agent.util.DatasetVersionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanInputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
-import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
@@ -51,12 +48,8 @@ public final class DataSourceV2ScanRelationOnStartInputDatasetBuilder
     }
 
     DataSourceV2Relation relation = plan.relation();
-    DatasetCompositeFacetsBuilder datasetFacetsBuilder = factory.createCompositeFacetBuilder();
-
-    DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(context, relation)
-        .ifPresent(s -> DatasetVersionUtils.buildVersionFacets(context, datasetFacetsBuilder, s));
-    return DataSourceV2RelationDatasetExtractor.extract(
-        factory, context, relation, datasetFacetsBuilder);
+    return DataSourceV2RelationDatasetExtractor.extractIncludingVersionFacet(
+        factory, context, relation);
   }
 
   @Override
