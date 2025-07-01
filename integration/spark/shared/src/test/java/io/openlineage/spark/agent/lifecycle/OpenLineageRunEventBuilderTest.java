@@ -78,7 +78,8 @@ class OpenLineageRunEventBuilderTest {
             .openLineageConfig(config)
             .build();
     when(runEventContext.getJobFacetsBuilder())
-        .thenReturn(new JobFacetsBuilder().sql(openLineage.newSQLJobFacet("SELECT * FROM table")));
+        .thenReturn(
+            new JobFacetsBuilder().sql(openLineage.newSQLJobFacet("SELECT * FROM table", "spark")));
     when(runEventContext.getRunFacetsBuilder()).thenReturn(new RunFacetsBuilder());
     when(runEventContext.getRunEventBuilder()).thenReturn(openLineage.newRunEventBuilder());
     when(runEventContext.getJobBuilder()).thenReturn(openLineage.newJobBuilder());
