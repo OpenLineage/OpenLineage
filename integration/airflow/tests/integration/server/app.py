@@ -92,6 +92,7 @@ def lineage():
         logger.info(f"job_name: {job_name}")
         logger.info(json.dumps(request.json, sort_keys=True))
         conn.commit()
+        time.sleep(0.1)
         dump(request.data)
         return "", 200
     elif request.method == "GET":

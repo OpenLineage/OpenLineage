@@ -23,7 +23,7 @@ class SchemaDatasetFacetFields(RedactMixin):
     name: str
     """The name of the field."""
 
-    type: str | None = attr.field(default=None)
+    type: str | None = attr.field(default=None)  # noqa: A003
     """The type of the field."""
 
     description: str | None = attr.field(default=None)

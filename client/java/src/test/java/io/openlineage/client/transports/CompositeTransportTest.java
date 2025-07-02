@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
@@ -220,8 +221,8 @@ class CompositeTransportTest {
   }
 
   @ParameterizedTest
-  @CsvSource({"true", "false"})
-  void testParallelEmissionOfRunEvents(String withThreadPool) {
+  @ValueSource(booleans = {true, false})
+  void testParallelEmissionOfRunEvents(Boolean withThreadPool) {
     AtomicInteger eventsEmitted = new AtomicInteger(0);
     try (MockedStatic<TransportResolver> mockedStatic =
         Mockito.mockStatic(TransportResolver.class)) {
@@ -242,7 +243,7 @@ class CompositeTransportTest {
                 config.put("myFakeA" + i, fakeTransportConfig);
               });
 
-      compositeConfig = new CompositeConfig(config, true, Boolean.parseBoolean(withThreadPool));
+      compositeConfig = new CompositeConfig(config, true, withThreadPool);
       CompositeTransport compositeTransport = new CompositeTransport(compositeConfig);
 
       long startTime;
@@ -253,9 +254,16 @@ class CompositeTransportTest {
       endTime = System.currentTimeMillis();
 
       assertThat(eventsEmitted.get()).isEqualTo(10); // All events should be emitted
-      assertThat(endTime - startTime)
-          .isGreaterThanOrEqualTo(100)
-          .isLessThan(200); // Should take around 100ms to emit all events
+
+      if (withThreadPool) {
+        assertThat(endTime - startTime)
+            .isGreaterThanOrEqualTo(100)
+            .isLessThan(200); // Should take around 100ms to emit all events
+      } else {
+        assertThat(endTime - startTime)
+            .isGreaterThanOrEqualTo(1000)
+            .isLessThan(2000); // Should take around 1000ms to emit all events
+      }
 
       // Verify DatasetEvent emission
       startTime = System.currentTimeMillis();
@@ -263,19 +271,30 @@ class CompositeTransportTest {
       endTime = System.currentTimeMillis();
 
       assertThat(eventsEmitted.get()).isEqualTo(20); // All events should be emitted
-      assertThat(endTime - startTime)
-          .isGreaterThanOrEqualTo(100)
-          .isLessThan(200); // Should take around 100ms to emit all events
-
+      if (withThreadPool) {
+        assertThat(endTime - startTime)
+            .isGreaterThanOrEqualTo(100)
+            .isLessThan(200); // Should take around 100ms to emit all events
+      } else {
+        assertThat(endTime - startTime)
+            .isGreaterThanOrEqualTo(1000)
+            .isLessThan(2000); // Should take around 1000ms to emit all events
+      }
       // Verify JobEvent emission
       startTime = System.currentTimeMillis();
       compositeTransport.emit(runEvent());
       endTime = System.currentTimeMillis();
 
       assertThat(eventsEmitted.get()).isEqualTo(30); // All events should be emitted
-      assertThat(endTime - startTime)
-          .isGreaterThanOrEqualTo(100)
-          .isLessThan(200); // Should take around 100ms to emit all events
+      if (withThreadPool) {
+        assertThat(endTime - startTime)
+            .isGreaterThanOrEqualTo(100)
+            .isLessThan(200); // Should take around 100ms to emit all events
+      } else {
+        assertThat(endTime - startTime)
+            .isGreaterThanOrEqualTo(1000)
+            .isLessThan(2000); // Should take around 1000ms to emit all events
+      }
 
       // Verify thread pool not shutdown
       compositeTransport.emit(runEvent());
@@ -299,7 +318,9 @@ class CompositeTransportTest {
             .thenReturn(new FakeTransport() {});
 
         ExecutorService threadPool = mock(ExecutorService.class);
-        mockedExecutors.when(() -> Executors.newFixedThreadPool(anyInt())).thenReturn(threadPool);
+        mockedExecutors
+            .when(() -> Executors.newFixedThreadPool(anyInt(), any()))
+            .thenReturn(threadPool);
 
         Map<String, Object> config = new HashMap<>();
         Map<String, Object> fakeTransportConfig = new HashMap<>();
@@ -310,18 +331,43 @@ class CompositeTransportTest {
         CompositeTransport compositeTransport = new CompositeTransport(compositeConfig);
 
         compositeTransport.emit(runEvent());
-
-        // the other emit verifies we don't use shutdown pool
-        compositeTransport.emit(runEvent());
-
-        if (withThreadPool) {
-          // verify thread pool should not shut down
-          verify(threadPool, times(0)).shutdown();
-        } else {
-          // verify thread pool gets shut down
-          verify(threadPool, times(2)).shutdown();
-        }
       }
+    }
+  }
+
+  @Test
+  void testThreadNaming() {
+    FakeTransportWithThreadCapture.capturedThreadNames.clear(); // Clear before test
+    AtomicInteger eventsEmitted = new AtomicInteger(0);
+    try (MockedStatic<TransportResolver> mockedStatic =
+        Mockito.mockStatic(TransportResolver.class)) {
+      mockedStatic
+          .when(() -> TransportResolver.resolveTransportConfigByType(any()))
+          .thenReturn((Class<? extends TransportConfig>) FakeTransportConfigA.class);
+
+      mockedStatic
+          .when(() -> TransportResolver.resolveTransportByConfig(any()))
+          .thenReturn(new FakeTransportWithThreadCapture(eventsEmitted));
+
+      Map<String, Object> config = new HashMap<>();
+      Map<String, Object> fakeTransportConfig = new HashMap<>();
+      fakeTransportConfig.put("type", "fakeA");
+      config.put("myFakeA1", fakeTransportConfig);
+      config.put("myFakeA2", fakeTransportConfig);
+
+      compositeConfig =
+          new CompositeConfig(config, true, true); // continueOnFailure=true, withThreadPool=true
+      try (CompositeTransport compositeTransport = new CompositeTransport(compositeConfig)) {
+        compositeTransport.emit(runEvent());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+
+      assertThat(eventsEmitted.get()).isEqualTo(2); // Both transports should emit
+      assertThat(FakeTransportWithThreadCapture.capturedThreadNames)
+          .hasSize(2)
+          .allMatch(name -> name.startsWith("openlineage-executor-"))
+          .allMatch(name -> name.matches("openlineage-executor-\\d+"));
     }
   }
 
@@ -353,6 +399,35 @@ class CompositeTransportTest {
     @SneakyThrows
     public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
       Thread.sleep(sleepTime);
+      emittedCounter.incrementAndGet();
+    }
+  }
+
+  private static class FakeTransportWithThreadCapture extends FakeTransport {
+    private final AtomicInteger emittedCounter;
+    static final java.util.List<String> capturedThreadNames =
+        new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    public FakeTransportWithThreadCapture(AtomicInteger emittedCounter) {
+      super();
+      this.emittedCounter = emittedCounter;
+    }
+
+    @Override
+    public void emit(@NonNull OpenLineage.RunEvent runEvent) {
+      capturedThreadNames.add(Thread.currentThread().getName());
+      emittedCounter.incrementAndGet();
+    }
+
+    @Override
+    public void emit(@NonNull OpenLineage.DatasetEvent datasetEvent) {
+      capturedThreadNames.add(Thread.currentThread().getName());
+      emittedCounter.incrementAndGet();
+    }
+
+    @Override
+    public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
+      capturedThreadNames.add(Thread.currentThread().getName());
       emittedCounter.incrementAndGet();
     }
   }

@@ -23,12 +23,12 @@ if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
 
-@pytest.fixture()
+@pytest.fixture
 def domain_id() -> str:
     return "dzd_a1b2c3d4e5f6g7"
 
 
-@pytest.fixture()
+@pytest.fixture
 def run_event() -> RunEvent:
     return RunEvent(
         eventType=RunState.START,
@@ -40,7 +40,7 @@ def run_event() -> RunEvent:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def dataset_event() -> DatasetEvent:
     return DatasetEvent(
         eventTime="2024-08-20T11:08:01.123456",
@@ -50,7 +50,7 @@ def dataset_event() -> DatasetEvent:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def job_event() -> JobEvent:
     return JobEvent(
         eventTime="2024-08-20T11:08:01.123456",

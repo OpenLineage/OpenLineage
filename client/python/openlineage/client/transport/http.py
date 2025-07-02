@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import gzip
+import http.client as http_client
 import inspect
 import logging
 import warnings
@@ -12,18 +13,16 @@ from urllib.parse import urljoin
 
 import attr
 import urllib3.util
-
-if TYPE_CHECKING:
-    from openlineage.client.client import Event, OpenLineageClientOptions
-    from requests import Response
-
-import http.client as http_client
-
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields, try_import_from_string
 from requests import Session
 from requests.adapters import HTTPAdapter
+
+if TYPE_CHECKING:
+    from openlineage.client.client import Event, OpenLineageClientOptions
+    from requests import Response
+
 
 log = logging.getLogger(__name__)
 

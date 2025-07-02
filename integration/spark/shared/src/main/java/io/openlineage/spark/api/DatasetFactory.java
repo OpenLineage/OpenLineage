@@ -17,6 +17,7 @@ import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombined
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeOutputVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
+import io.openlineage.spark.agent.util.DatasetVersionUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.net.URI;
@@ -57,6 +58,9 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   abstract OpenLineage.Builder<D> datasetBuilder(
       String name, String namespace, DatasetFacets facets);
 
+  public abstract void buildVersionFacets(
+      DatasetCompositeFacetsBuilder facetsBuilder, String version);
+
   /**
    * Create a {@link DatasetFactory} that constructs only {@link OpenLineage.InputDataset}s.
    *
@@ -86,6 +90,11 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
             .namespace(namespaceResolver.resolve(namespace))
             .name(name)
             .facets(facets);
+      }
+
+      @Override
+      public void buildVersionFacets(DatasetCompositeFacetsBuilder facetsBuilder, String version) {
+        DatasetVersionUtils.buildVersionFacets(context, facetsBuilder, version);
       }
     };
   }
@@ -119,6 +128,11 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
             .namespace(namespaceResolver.resolve(namespace))
             .name(name)
             .facets(facets);
+      }
+
+      @Override
+      public void buildVersionFacets(DatasetCompositeFacetsBuilder facetsBuilder, String version) {
+        DatasetVersionUtils.buildVersionOutputFacets(context, facetsBuilder, version);
       }
     };
   }

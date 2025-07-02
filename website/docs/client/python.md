@@ -216,9 +216,9 @@ environment variables:
 
 ## Built-in Transport Types
 
-### HTTP
+### HTTP Transport
 
-Allows sending events to HTTP endpoint, using [requests](https://requests.readthedocs.io/).
+The HTTP transport provides synchronous, blocking event emission. This is the default transport implementation suitable for most use cases where immediate event delivery and error handling are preferred.
 
 #### Configuration
 
@@ -232,7 +232,7 @@ Allows sending events to HTTP endpoint, using [requests](https://requests.readth
   - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`. Added in v1.13.0.
 - `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
-- `retry` - dictionary of additional configuration options passed to [`urllib3.util.Retry`](https://urllib3.readthedocs.io/en/1.26.20/reference/urllib3.util.html) object. Added in v1.33.0. Defaults are below; those are non-exhaustive options, but the ones that are set by default. Look at  [`urllib3.util.Retry`](https://urllib3.readthedocs.io/en/1.26.20/reference/urllib3.util.html) options for full reference.
+- `retry` - dictionary of additional configuration options for HTTP retries. Added in v1.33.0. Defaults are below; those are non-exhaustive options, but the ones that are set by default.
   - `total` - total number of retries to be attempted. Default is `5`.
   - `read` - number of retries to be attempted on read errors. Default is `5`.
   - `connect` - number of retries to be attempted on connection errors. Default is `5`.
@@ -242,7 +242,7 @@ Allows sending events to HTTP endpoint, using [requests](https://requests.readth
 
 #### Behavior
 
-Events are serialized to JSON, and then are send as HTTP POST request with `Content-Type: application/json`.
+Events are serialized to JSON, and then are sent as HTTP POST request with `Content-Type: application/json`. Events are sent immediately and the call blocks until completion. Uses httpx with built-in retry support and raises exceptions on failure.
 
 #### Examples
 
@@ -286,6 +286,120 @@ http_config = HttpConfig(
 )
 
 client = OpenLineageClient(transport=HttpTransport(http_config))
+```
+</TabItem>
+
+</Tabs>
+
+### Async HTTP Transport
+
+The Async HTTP transport provides high-performance, non-blocking event emission with advanced queuing and ordering guarantees. Use this transport when you need high throughput or want to avoid blocking your application on lineage event delivery.
+
+Async transport API is experimental, and can change over the next few releases.
+
+#### Configuration
+
+- `type` - string, must be `"async_http"` or use direct instantiation. Required.
+- `url` - string, base url for HTTP requests. Required.
+- `endpoint` - string specifying the endpoint to which events are sent, appended to `url`. Optional, default: `api/v1/lineage`.
+- `timeout` - float specifying timeout (in seconds) value used while connecting to server. Optional, default: `5`.
+- `verify` - boolean specifying whether the client should verify TLS certificates from the backend. Optional, default: `true`.
+- `auth` - dictionary specifying authentication options. Optional, by default no authorization is used. If set, requires the `type` property.
+  - `type` - string specifying the "api_key" or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
+  - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
+- `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`.
+- `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
+- `max_queue_size` - integer specifying maximum events in processing queue. Optional, default: `10000`.
+- `max_concurrent_requests` - integer specifying maximum parallel HTTP requests. Optional, default: `100`.
+- `retry` - dictionary of additional configuration options for HTTP retries. Added in v1.33.0. Defaults are below; those are non-exhaustive options, but the ones that are set by default.
+  - `total` - total number of retries to be attempted. Default is `5`.
+  - `read` - number of retries to be attempted on read errors. Default is `5`.
+  - `connect` - number of retries to be attempted on connection errors. Default is `5`.
+  - `backoff_factor` - a backoff factor to apply between attempts after the second try, default is `0.3`.
+  - `status_forcelist` - a set of integer HTTP status codes that we should force a retry on, default is `[500, 502, 503, 504]`.
+  - `allowed_methods` - a set of HTTP methods that we should retry on, default is `["HEAD", "POST"]`.
+
+#### Behavior
+
+Events are processed asynchronously with the following features:
+
+- **Event Ordering Guarantees**: START events are sent before their corresponding COMPLETE, FAIL, or ABORT events
+- **High Throughput**: Non-blocking event emission with configurable concurrent processing
+- **Queue Management**: Bounded queue prevents memory exhaustion with configurable size
+- **Advanced Error Handling**: Retry logic with exponential backoff for network and server errors
+- **Event Tracking**: Real-time statistics on pending, successful, and failed events
+
+#### Event Flow
+
+1. Events are queued for processing (START events immediately, other events wait until corresponding START event is send)
+2. Worker thread processes events using configurable parallelism
+3. Successful START events trigger release of pending completion events
+4. Event statistics are tracked and available via `get_stats()`
+
+#### Additional Methods
+
+- `wait_for_completion(timeout: float)` - Wait for all events to be processed with timeout. If the value passed is negative, wait until all events get processed.
+- `get_stats()` - Get processing statistics (`{"pending": 0, "success": 10, "failed": 0}`)
+- `close(timeout: float)` - Shutdown with timeout. Skip pending events if they are still processing after timeout. If the value passed is negative, wait until all events get processed.
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: openlineage.client.transport.async_http.AsyncHttpTransport
+  url: https://backend:5000
+  endpoint: api/v1/lineage
+  timeout: 5
+  verify: false
+  auth:
+    type: api_key
+    apiKey: f048521b-dfe8-47cd-9c65-0cb07d57591e
+  compression: gzip
+  max_queue_size: 1000000
+  max_concurrent_requests: 100
+  retry:
+    total: 5
+    read: 5
+    connect: 5
+    backoff_factor: 0.3
+    status_forcelist: [500, 502, 503, 504]
+    allowed_methods: ["HEAD", "POST"]
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.async_http import ApiKeyTokenProvider, AsyncHttpConfig, HttpCompression, AsyncHttpTransport
+
+async_config = AsyncHttpConfig(
+  url="https://backend:5000",
+  endpoint="api/v1/lineage",
+  timeout=5,
+  verify=False,
+  auth=ApiKeyTokenProvider({"apiKey": "f048521b-dfe8-47cd-9c65-0cb07d57591e"}),
+  compression=HttpCompression.GZIP,
+  max_queue_size=1000000,
+  max_concurrent_requests=100
+)
+
+client = OpenLineageClient(transport=AsyncHttpTransport(async_config))
+
+# Emit events asynchronously
+client.emit(start_event)      # Non-blocking
+client.emit(complete_event)   # Waits for START success, then sent
+
+# Wait for all events to complete
+client.wait_for_completion()
+# Get processing statistics
+stats = client.transport.get_stats()
+print(f"Pending: {stats['pending']}, Success: {stats['success']}, Failed: {stats['failed']}")
+# Graceful shutdown
+client.close(timeout=5)
 ```
 </TabItem>
 

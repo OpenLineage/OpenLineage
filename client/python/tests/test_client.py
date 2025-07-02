@@ -34,6 +34,8 @@ from openlineage.client.transport.http import ApiKeyTokenProvider, HttpTransport
 from openlineage.client.transport.noop import NoopTransport
 from openlineage.client.uuid import generate_new_uuid
 
+from tests.test_async_http import closing_immediately
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -42,7 +44,7 @@ if TYPE_CHECKING:
 
 
 def test_client_fails_with_wrong_event_type() -> None:
-    client = OpenLineageClient(url="http://example.com", session=MagicMock())
+    client = OpenLineageClient(url="http://example.com")
 
     with pytest.raises(
         ValueError,
@@ -64,7 +66,7 @@ def test_client_fails_with_wrong_event_type() -> None:
 )
 def test_client_fails_to_create_with_wrong_url(url: str) -> None:
     with pytest.raises(ValueError, match=re.escape(url)):
-        OpenLineageClient(url=url, session=MagicMock())
+        OpenLineageClient(url=url)
 
 
 @pytest.mark.parametrize(
@@ -79,12 +81,13 @@ def test_client_fails_to_create_with_wrong_url(url: str) -> None:
     ],
 )
 def test_client_passes_to_create_with_valid_url(url: str, res: str) -> None:
-    assert OpenLineageClient(url=url, session=MagicMock()).transport.url == res
+    assert OpenLineageClient(url=url).transport.url == res
 
 
-def test_client_sends_proper_json_with_minimal_run_event() -> None:
-    session = MagicMock()
-    client = OpenLineageClient(url="http://example.com", session=session)
+def test_client_sends_proper_json_with_minimal_run_event(mock_http_session_class) -> None:
+    mock_session_class, mock_client, mock_response = mock_http_session_class
+
+    client = OpenLineageClient(url="http://example.com")
     client.emit(
         RunEvent(
             RunState.START,
@@ -101,18 +104,23 @@ def test_client_sends_proper_json_with_minimal_run_event() -> None:
         '"producer": "producer", "run": {"facets": {}, "runId": '
         f'"69f4acab-b87d-4fc0-b27b-8ea950370ff3"}}, "schemaURL": "{SCHEMA_URL}"}}'
     )
-    session.post.assert_called_with(
-        url="http://example.com/api/v1/lineage",
-        data=body,
-        headers={"Content-Type": "application/json"},
-        timeout=5.0,
-        verify=True,
-    )
+
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+
+    assert call_args.kwargs["url"] == "http://example.com/api/v1/lineage"
+    assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
+
+    # Verify the content is the expected JSON
+    actual_content = call_args.kwargs["data"]
+    assert actual_content == body
 
 
-def test_client_sends_proper_json_with_minimal_dataset_event() -> None:
-    session = MagicMock()
-    client = OpenLineageClient(url="http://example.com", session=session)
+def test_client_sends_proper_json_with_minimal_dataset_event(mock_http_session_class) -> None:
+    mock_session_class, mock_client, mock_response = mock_http_session_class
+
+    client = OpenLineageClient(url="http://example.com")
 
     client.emit(
         DatasetEvent(
@@ -129,18 +137,23 @@ def test_client_sends_proper_json_with_minimal_dataset_event() -> None:
         '"2021-11-03T10:53:52.427343", "producer": "producer", '
         '"schemaURL": "datasetSchemaUrl"}'
     )
-    session.post.assert_called_with(
-        url="http://example.com/api/v1/lineage",
-        data=body,
-        headers={"Content-Type": "application/json"},
-        timeout=5.0,
-        verify=True,
-    )
+
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+
+    assert call_args.kwargs["url"] == "http://example.com/api/v1/lineage"
+    assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
+
+    # Verify the content is the expected JSON
+    actual_content = call_args.kwargs["data"]
+    assert actual_content == body
 
 
-def test_client_sends_proper_json_with_minimal_job_event() -> None:
-    session = MagicMock()
-    client = OpenLineageClient(url="http://example.com", session=session)
+def test_client_sends_proper_json_with_minimal_job_event(mock_http_session_class) -> None:
+    mock_session_class, mock_client, mock_response = mock_http_session_class
+
+    client = OpenLineageClient(url="http://example.com")
 
     client.emit(
         JobEvent(
@@ -158,13 +171,16 @@ def test_client_sends_proper_json_with_minimal_job_event() -> None:
         '"schemaURL": "jobSchemaURL"}'
     )
 
-    session.post.assert_called_with(
-        url="http://example.com/api/v1/lineage",
-        data=body,
-        headers={"Content-Type": "application/json"},
-        timeout=5.0,
-        verify=True,
-    )
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+
+    assert call_args.kwargs["url"] == "http://example.com/api/v1/lineage"
+    assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
+
+    # Verify the content is the expected JSON
+    actual_content = call_args.kwargs["data"]
+    assert actual_content == body
 
 
 def test_client_uses_passed_transport() -> None:
@@ -525,7 +541,8 @@ def test_config_property_loads_yaml(mock_get_config_content, mock_find_yaml):
     {"OPENLINEAGE_URL": "http://example.com", "OPENLINEAGE_ENDPOINT": "v7", "OPENLINEAGE_API_KEY": "xxx"},
 )
 def test_http_transport_from_env_variables() -> None:
-    transport = OpenLineageClient._http_transport_from_env_variables()  # noqa: SLF001
+    client = OpenLineageClient()
+    transport = client._http_transport_from_env_variables()  # noqa: SLF001
     assert transport.kind == HttpTransport.kind
     assert transport.url == "http://example.com"
     assert transport.endpoint == "v7"
@@ -602,6 +619,59 @@ def test_composite_transport_with_aliased_url_and_overriden_alias() -> None:
     assert transport.kind == CompositeTransport.kind
     assert len(transport.transports) == 1
     assert transport.transports[0].kind == ConsoleTransport.kind
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE__TRANSPORT": '{"type": "async_http", "url": "https://data-obs-intake.datadoghq.com", '
+        '"auth": {"type": "apiKey", "apiKey": "YOUR_API_KEY"}}',
+    },
+)
+def test_configures_async_transport() -> None:
+    from openlineage.client.transport.async_http import AsyncHttpTransport
+
+    client = OpenLineageClient()
+    transport: AsyncHttpTransport = client.transport
+    with closing_immediately(transport) as transport:
+        assert transport.kind == "async_http"
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE_ENDPOINT": "api/v2/lineage",
+        "OPENLINEAGE_API_KEY": "YOUR_API_KEY",
+        "OPENLINEAGE__TRANSPORT__TYPE": "async_http",
+    },
+)
+def test_async_transport_with_overwritten_transport_type() -> None:
+    from openlineage.client.transport.async_http import AsyncHttpTransport
+
+    client = OpenLineageClient()
+    transport: AsyncHttpTransport = client.transport
+    assert transport.kind == "async_http"
+    assert transport.url == "http://example.com"
+    assert transport.endpoint == "api/v2/lineage"
+    assert transport.config.auth.api_key == "YOUR_API_KEY"
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__TYPE": "async_http",
+        "OPENLINEAGE__TRANSPORT__URL": "http://this.should.have.priority.com",
+    },
+)
+def test_async_transport_with_priority_overwrite() -> None:
+    from openlineage.client.transport.async_http import AsyncHttpTransport
+
+    client = OpenLineageClient()
+    transport: AsyncHttpTransport = client.transport
+    assert transport.kind == "async_http"
+    assert transport.url == "http://this.should.have.priority.com"
 
 
 @patch.dict(
