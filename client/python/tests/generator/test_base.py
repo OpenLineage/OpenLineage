@@ -63,7 +63,7 @@ def test_parse_additional_data() -> None:
     assert BASE_IDS["TestFacet.json"] == "https://openlineage.io/spec/facets/1-0-0/TestFacet.json"
 
 
-@pytest.fixture()
+@pytest.fixture
 def sample_specs():
     with tempfile.TemporaryDirectory() as tmp_dir, tempfile.TemporaryDirectory() as facet_tmp_dir:
         base_spec = pathlib.Path(tmp_dir) / "OpenLineage.json"

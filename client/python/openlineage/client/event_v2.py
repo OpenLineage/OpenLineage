@@ -20,16 +20,16 @@ from openlineage.client.generated.base import (
 )
 
 __all__ = [
+    "PRODUCER",
     "BaseEvent",
-    "RunEvent",
-    "JobEvent",
-    "DatasetEvent",
-    "RunState",
     "Dataset",
+    "DatasetEvent",
     "InputDataset",
+    "Job",
+    "JobEvent",
     "OutputDataset",
     "Run",
-    "Job",
-    "PRODUCER",
+    "RunEvent",
+    "RunState",
     "set_producer",
 ]

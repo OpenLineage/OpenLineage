@@ -11,7 +11,7 @@ from openlineage.client.generated.base import JobFacet
 
 @attr.define
 class SourceCodeLocationJobFacet(JobFacet):
-    type: str
+    type: str  # noqa: A003
     """the source control system"""
 
     url: str = attr.field()
