@@ -7,6 +7,7 @@ package io.openlineage.client.circuitBreaker;
 
 import io.micrometer.common.lang.NonNull;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.metrics.MicrometerProvider;
 import java.util.List;
 import java.util.Optional;
@@ -48,7 +49,12 @@ public class TaskQueueCircuitBreaker implements CircuitBreaker {
     eventQueue = new ArrayBlockingQueue<>(config.getQueueSize());
     eventProcessingExecutor =
         new ThreadPoolExecutor(
-            config.getThreadCount(), config.getThreadCount(), 60L, TimeUnit.SECONDS, eventQueue);
+            config.getThreadCount(),
+            config.getThreadCount(),
+            60L,
+            TimeUnit.SECONDS,
+            eventQueue,
+            new OpenLineageClientUtils.ExecutorThreadFactory("openlineage-taskqueue"));
   }
 
   @Override
@@ -77,7 +83,7 @@ public class TaskQueueCircuitBreaker implements CircuitBreaker {
           .ifPresent(
               m ->
                   log.info(
-                      "Openlineage async stats: dropped={}, timeout={}, queueDepth={}, failed={}",
+                      "OpenLineage async stats: dropped={}, timeout={}, queueDepth={}, failed={}",
                       m.counter(DROPPED_METRIC).count(),
                       m.counter(TIMED_OUT_METRIC).count(),
                       getPendingTasks(),
