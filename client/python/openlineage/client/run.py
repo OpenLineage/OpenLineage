@@ -7,8 +7,12 @@ from typing import Any, ClassVar, Optional
 
 import attr
 from dateutil import parser
-from openlineage.client.facet import NominalTimeRunFacet, ParentRunFacet
 from openlineage.client.utils import RedactMixin
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    from openlineage.client.facet import NominalTimeRunFacet, ParentRunFacet
+
 
 warnings.warn(
     "This module is deprecated. Please use `openlineage.client.event_v2`.", DeprecationWarning, stacklevel=2

@@ -41,6 +41,7 @@ class Config:
 class Transport:
     kind: str | None = None
     name: str | None = None
+    priority: int = 0
     config_class: type[Config] = Config
 
     def emit(self, event: Event) -> Any:
@@ -74,7 +75,7 @@ class Transport:
         return True
 
     def __str__(self) -> str:
-        return f"<{self.__class__.__name__}(name={self.name}, kind={self.kind})>"
+        return f"<{self.__class__.__name__}(name={self.name}, kind={self.kind}, priority={self.priority})>"
 
 
 class TransportFactory:
