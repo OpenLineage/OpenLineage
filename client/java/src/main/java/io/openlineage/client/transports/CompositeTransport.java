@@ -31,7 +31,7 @@ public class CompositeTransport extends Transport {
     this.config = config;
     initializeTransports();
 
-    if (config.getWithThreadPool()) {
+    if (config.getWithThreadPool() && config.getContinueOnFailure()) {
       executorService = Optional.of(OpenLineageClientUtils.getOrCreateExecutor());
     } else {
       executorService = Optional.empty();
@@ -134,14 +134,18 @@ public class CompositeTransport extends Transport {
 
   @Override
   public void close() throws Exception {
-    transports.forEach(
-        t -> {
-          try {
-            t.close();
-          } catch (Exception e) {
-            log.error("Failed to close {} transport", t.getClass().getSimpleName(), e);
-            throw new OpenLineageClientException(e);
-          }
-        });
+    // do not close executor service as it is shared
+    Exception latestException = null;
+    for (Transport transport : transports) {
+      try {
+        transport.close();
+      } catch (Exception e) {
+        log.error("Failed to close {} transport", transport.getClass().getSimpleName(), e);
+        latestException = e;
+      }
+    }
+    if (latestException != null) {
+      throw new OpenLineageClientException(latestException);
+    }
   }
 }

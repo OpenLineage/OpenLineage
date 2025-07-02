@@ -5,6 +5,8 @@
 
 package io.openlineage.client.transports;
 
+import static io.openlineage.client.Events.datasetEvent;
+import static io.openlineage.client.Events.jobEvent;
 import static io.openlineage.client.Events.runEvent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -12,6 +14,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineageClientException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,9 +34,14 @@ import org.mockito.Mockito;
 // Fake transport base class for testing
 abstract class FakeTransport extends Transport {
   private boolean emitted;
+  private boolean closed;
 
   public boolean isEmitted() {
     return emitted;
+  }
+
+  public boolean isClosed() {
+    return closed;
   }
 
   @Override
@@ -49,6 +57,11 @@ abstract class FakeTransport extends Transport {
   @Override
   public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
     emitted = true; // Set to true when emit is called
+  }
+
+  @Override
+  public void close() {
+    closed = true; // Set to true when close is called
   }
 }
 
@@ -113,16 +126,32 @@ class CompositeTransportTest {
 
   @Test
   void testEmitSuccessful() {
-    OpenLineage.RunEvent event = runEvent();
-
     try (MockedStatic<TransportResolver> mockedStatic = mockTransportResolver()) {
       CompositeTransport compositeTransport = new CompositeTransport(compositeConfig);
-      compositeTransport.emit(event);
+
+      OpenLineage.RunEvent runEvent = runEvent();
+      compositeTransport.emit(runEvent);
 
       assertTrue(fakeTransportA.isEmitted());
       assertTrue(fakeTransportB.isEmitted());
-      verify(fakeTransportA, times(1)).emit(event);
-      verify(fakeTransportB, times(1)).emit(event);
+      verify(fakeTransportA, times(1)).emit(runEvent);
+      verify(fakeTransportB, times(1)).emit(runEvent);
+
+      OpenLineage.DatasetEvent datasetEvent = datasetEvent();
+      compositeTransport.emit(datasetEvent);
+
+      assertTrue(fakeTransportA.isEmitted());
+      assertTrue(fakeTransportB.isEmitted());
+      verify(fakeTransportA, times(1)).emit(datasetEvent);
+      verify(fakeTransportB, times(1)).emit(datasetEvent);
+
+      OpenLineage.JobEvent jobEvent = jobEvent();
+      compositeTransport.emit(jobEvent);
+
+      assertTrue(fakeTransportA.isEmitted());
+      assertTrue(fakeTransportB.isEmitted());
+      verify(fakeTransportA, times(1)).emit(jobEvent);
+      verify(fakeTransportB, times(1)).emit(jobEvent);
     }
   }
 
@@ -182,6 +211,40 @@ class CompositeTransportTest {
 
       verify(fakeTransportA, times(1)).emit(event);
       verify(fakeTransportB, times(1)).emit(event);
+    }
+  }
+
+  @SneakyThrows
+  @Test
+  void testClose() {
+    try (MockedStatic<TransportResolver> mockedStatic = mockTransportResolver()) {
+      CompositeTransport compositeTransport = new CompositeTransport(compositeConfig);
+
+      compositeTransport.close();
+      assertTrue(fakeTransportA.isClosed());
+      assertTrue(fakeTransportB.isClosed());
+
+      verify(fakeTransportA, times(1)).close();
+      verify(fakeTransportB, times(1)).close();
+    }
+  }
+
+  @SneakyThrows
+  @Test
+  void testCloseFails() {
+    try (MockedStatic<TransportResolver> mockedStatic = mockTransportResolver()) {
+      CompositeTransport compositeTransport = new CompositeTransport(compositeConfig);
+      RuntimeException nestedException = new RuntimeException("FakeTransportA failed");
+      doThrow(nestedException).when(fakeTransportA).close();
+
+      OpenLineageClientException exception =
+          assertThrows(OpenLineageClientException.class, () -> compositeTransport.close());
+      assertThat(exception.getCause()).isEqualTo(nestedException);
+
+      assertTrue(fakeTransportB.isClosed()); // close both transports even if one fails
+
+      verify(fakeTransportA, times(1)).close();
+      verify(fakeTransportB, times(1)).close();
     }
   }
 
@@ -259,7 +322,7 @@ class CompositeTransportTest {
 
       // Verify DatasetEvent emission
       startTime = System.currentTimeMillis();
-      compositeTransport.emit(runEvent());
+      compositeTransport.emit(datasetEvent());
       endTime = System.currentTimeMillis();
 
       assertThat(eventsEmitted.get()).isEqualTo(20); // All events should be emitted
@@ -269,7 +332,7 @@ class CompositeTransportTest {
 
       // Verify JobEvent emission
       startTime = System.currentTimeMillis();
-      compositeTransport.emit(runEvent());
+      compositeTransport.emit(jobEvent());
       endTime = System.currentTimeMillis();
 
       assertThat(eventsEmitted.get()).isEqualTo(30); // All events should be emitted
