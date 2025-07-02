@@ -8,7 +8,7 @@ Two of them: [openlineage-integration-common](https://pypi.org/project/openlinea
 
 Typically, you first need to build `openlineage-sql` locally (see [README](https://github.com/OpenLineage/OpenLineage/blob/main/integration/sql/README.md)). After each release you have to repeat this step in order to bump local version of the package.
 
-To install Openlineage Common, Python Client & Dagster integration you need to run pip install command with a link to local directory:
+To install Openlineage Common & Python Client integration you need to run pip install command with a link to local directory:
 
 ```bash
 $ python -m pip install -e .[dev]
