@@ -8,7 +8,7 @@ import sys
 import time
 from collections import defaultdict
 from functools import cached_property, wraps
-from typing import Any, Dict, Generator, List, Optional, TextIO
+from typing import Dict, Generator, List, NamedTuple, Optional, TextIO
 
 from openlineage.client.event_v2 import Dataset, RunEvent, RunState
 from openlineage.client.facet_v2 import (
@@ -39,6 +39,7 @@ from openlineage.common.provider.dbt.utils import (
     get_job_type,
     get_node_unique_id,
     get_parent_run_metadata,
+    is_random_logfile,
 )
 from openlineage.common.provider.dbt.utils import (
     __version__ as openlineage_version,
@@ -50,6 +51,28 @@ from openlineage.common.utils import (
     get_from_nullable_chain,
     has_lines,
 )
+
+
+class ManifestIntegrityResult(NamedTuple):
+    """Result of manifest integrity validation.
+
+    Attributes:
+        is_valid: bool indicating if manifest is valid
+        missing_nodes: list of node IDs that are missing
+        missing_parents: list of parent node IDs that are missing
+        missing_children: list of child node IDs that are missing
+        total_missing: total count of missing nodes
+        parent_map_size: total number of entries in parent_map
+        available_nodes: total number of available nodes (nodes + sources)
+    """
+
+    is_valid: bool
+    missing_nodes: List[str]
+    missing_parents: List[str]
+    missing_children: List[str]
+    total_missing: int
+    parent_map_size: int
+    available_nodes: int
 
 
 def handle_keyerror(func):
@@ -86,6 +109,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.dbt_command_line: List[str] = dbt_command_line
         self.profiles_dir: str = get_dbt_profiles_dir(command=self.dbt_command_line)
         self.dbt_log_file_path: str = get_dbt_log_path(command=self.dbt_command_line)
+        self.is_random_logfile: bool = is_random_logfile(command=self.dbt_command_line)
         self.dbt_log_dirname: str = os.path.dirname(self.dbt_log_file_path)
         self.parent_run_metadata: ParentRunMetadata = get_parent_run_metadata()
 
@@ -149,7 +173,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             return self._compiled_manifest
         elif os.path.isfile(self.manifest_path):
             self._compiled_manifest = self.load_metadata(self.manifest_path, list(range(2, 13)), self.logger)
-            self._validate_manifest_integrity()
+            manifest_data = self._validate_manifest_integrity()
+            self.logger.debug(manifest_data)
             return self._compiled_manifest
         else:
             return {}
@@ -685,8 +710,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                     )
                     yield from incremental_reader.read_lines(current_size - last_size)
                     last_size = current_size
-
-                yield from incremental_reader.read_lines()
                 time.sleep(0.01)
 
             self.logger.debug("dbt process has exited. Waiting for logs to be flushed")
@@ -708,7 +731,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             self.logger.debug("Finished waiting for logs to be flushed")
 
         except Exception:
-            self.logger.exception("An exception occurred in OL code. dbt is still running.")
+            self.logger.exception(
+                "An exception occurred in OpenLineage dbt wrapper. "
+                "It should not affect underlying dbt execution that is still running."
+            )
             last_log = datetime.datetime.now()
 
             while process.poll() is None:
@@ -721,6 +747,15 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         finally:
             if self._dbt_log_file is not None:
                 self._dbt_log_file.close()
+                if self.is_random_logfile:
+                    try:
+                        self.logger.debug("Removing log file: %s", self.dbt_log_file_path)
+                        os.remove(self.dbt_log_file_path)
+                    except Exception:
+                        self.logger.warning(
+                            "Failed to remove log file: %s. Leftover logs can consume disk space.",
+                            self.dbt_log_file_path,
+                        )
             self.dbt_command_return_code = process.returncode
 
     def _open_dbt_log_file(self):
@@ -772,7 +807,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             )
         return []
 
-    def _validate_manifest_integrity(self) -> dict[str, Any]:
+    def _validate_manifest_integrity(self) -> ManifestIntegrityResult:
         """
         Performs metadata integrity checks on the compiled manifest.
 
@@ -780,25 +815,18 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         node definitions (either in 'nodes' or 'sources' sections).
 
         Returns:
-            dict: Validation results containing:
-                - 'is_valid': bool indicating if manifest is valid
-                - 'missing_nodes': list of node IDs that are missing
-                - 'missing_parents': list of parent node IDs that are missing
-                - 'missing_children': list of child node IDs that are missing
-                - 'total_missing': total count of missing nodes
-                - 'parent_map_size': total number of entries in parent_map
-                - 'available_nodes': total number of available nodes (nodes + sources)
+            ManifestIntegrityResult: Validation results with integrity check information.
         """
         if not self._compiled_manifest:
-            return {
-                "is_valid": True,
-                "missing_nodes": [],
-                "missing_parents": [],
-                "missing_children": [],
-                "total_missing": 0,
-                "parent_map_size": 0,
-                "available_nodes": 0,
-            }
+            return ManifestIntegrityResult(
+                is_valid=True,
+                missing_nodes=[],
+                missing_parents=[],
+                missing_children=[],
+                total_missing=0,
+                parent_map_size=0,
+                available_nodes=0,
+            )
 
         parent_map = self._compiled_manifest.get("parent_map", {})
         all_nodes = {**self._compiled_manifest.get("nodes", {}), **self._compiled_manifest.get("sources", {})}
@@ -827,20 +855,21 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         if missing_nodes:
             self.logger.warning(
                 "Manifest integrity check failed: Found %d nodes in parent_map that don't exist "
-                "in manifest node definitions: %s",
+                "in manifest node definitions, printing first %d of them: %s",
                 len(missing_nodes),
-                missing_nodes[:10],  # Log first 10 to avoid overwhelming logs
+                min(10, len(missing_nodes)),
+                missing_nodes[: min(10, len(missing_nodes))],  # Log first 10 to avoid overwhelming logs
             )
 
-        return {
-            "is_valid": len(missing_nodes) == 0,
-            "missing_nodes": missing_nodes,
-            "missing_parents": missing_parents,
-            "missing_children": missing_children,
-            "total_missing": len(missing_nodes),
-            "parent_map_size": len(parent_map),
-            "available_nodes": len(all_nodes),
-        }
+        return ManifestIntegrityResult(
+            is_valid=len(missing_nodes) == 0,
+            missing_nodes=missing_nodes,
+            missing_parents=missing_parents,
+            missing_children=missing_children,
+            total_missing=len(missing_nodes),
+            parent_map_size=len(parent_map),
+            available_nodes=len(all_nodes),
+        )
 
     def get_dbt_metadata(
         self,

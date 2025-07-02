@@ -10,7 +10,10 @@ import attr
 import pytest
 import yaml
 from openlineage.common.provider.dbt.processor import Adapter
-from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
+from openlineage.common.provider.dbt.structured_logs import (
+    DbtStructuredLogsProcessor,
+    ManifestIntegrityResult,
+)
 from openlineage.common.provider.dbt.utils import DBT_LOG_FILE_MAX_BYTES
 from openlineage.common.test import match
 from openlineage.common.utils import get_from_nullable_chain
@@ -1339,40 +1342,28 @@ def test_manifest_integrity_return_values(manifest_data, expected_result):
 
     result = processor._validate_manifest_integrity()
 
-    # Verify all fields are present
-    assert isinstance(result, dict)
-    expected_keys = {
-        "is_valid",
-        "missing_nodes",
-        "missing_parents",
-        "missing_children",
-        "total_missing",
-        "parent_map_size",
-        "available_nodes",
-    }
-    assert set(result.keys()) == expected_keys
+    # Verify result is ManifestIntegrityResult
+    assert isinstance(result, ManifestIntegrityResult)
 
     # Dense verification of each field
-    assert result["is_valid"] == expected_result["is_valid"], "is_valid mismatch"
-    assert result["missing_nodes"] == expected_result["missing_nodes"], "missing_nodes mismatch"
-    assert result["missing_parents"] == expected_result["missing_parents"], "missing_parents mismatch"
-    assert result["missing_children"] == expected_result["missing_children"], "missing_children mismatch"
-    assert result["total_missing"] == expected_result["total_missing"], "total_missing mismatch"
-    assert result["parent_map_size"] == expected_result["parent_map_size"], "parent_map_size mismatch"
-    assert result["available_nodes"] == expected_result["available_nodes"], "available_nodes mismatch"
+    assert result.is_valid == expected_result["is_valid"], "is_valid mismatch"
+    assert result.missing_nodes == expected_result["missing_nodes"], "missing_nodes mismatch"
+    assert result.missing_parents == expected_result["missing_parents"], "missing_parents mismatch"
+    assert result.missing_children == expected_result["missing_children"], "missing_children mismatch"
+    assert result.total_missing == expected_result["total_missing"], "total_missing mismatch"
+    assert result.parent_map_size == expected_result["parent_map_size"], "parent_map_size mismatch"
+    assert result.available_nodes == expected_result["available_nodes"], "available_nodes mismatch"
 
     # Consistency checks
-    assert result["total_missing"] == len(
-        result["missing_nodes"]
+    assert result.total_missing == len(
+        result.missing_nodes
     ), "total_missing should equal length of missing_nodes"
-    assert result["is_valid"] == (
-        result["total_missing"] == 0
-    ), "is_valid should be True iff total_missing is 0"
+    assert result.is_valid == (result.total_missing == 0), "is_valid should be True iff total_missing is 0"
     assert (
-        len(set(result["missing_parents"]) & set(result["missing_children"])) == 0
+        len(set(result.missing_parents) & set(result.missing_children)) == 0
     ), "A node shouldn't be both missing parent and missing child"
-    assert set(result["missing_parents"] + result["missing_children"]) <= set(
-        result["missing_nodes"]
+    assert set(result.missing_parents + result.missing_children) <= set(
+        result.missing_nodes
     ), "All missing parents/children should be in missing_nodes"
 
 
@@ -1389,15 +1380,15 @@ def test_manifest_integrity_edge_cases():
     # Test empty manifest
     processor._compiled_manifest = {}
     result = processor._validate_manifest_integrity()
-    expected_empty = {
-        "is_valid": True,
-        "missing_nodes": [],
-        "missing_parents": [],
-        "missing_children": [],
-        "total_missing": 0,
-        "parent_map_size": 0,
-        "available_nodes": 0,
-    }
+    expected_empty = ManifestIntegrityResult(
+        is_valid=True,
+        missing_nodes=[],
+        missing_parents=[],
+        missing_children=[],
+        total_missing=0,
+        parent_map_size=0,
+        available_nodes=0,
+    )
     assert result == expected_empty
 
     # Test None manifest
@@ -1437,11 +1428,11 @@ def test_manifest_integrity_deduplication():
     result = processor._validate_manifest_integrity()
 
     # Should have deduplicated missing nodes but preserved order of first occurrence
-    assert result["missing_nodes"] == ["model.test.missing1", "model.test.missing_dup", "model.test.missing2"]
-    assert result["missing_parents"] == ["model.test.missing1", "model.test.missing2"]
-    assert result["missing_children"] == ["model.test.missing_dup"]
-    assert result["total_missing"] == 3
-    assert not result["is_valid"]
+    assert result.missing_nodes == ["model.test.missing1", "model.test.missing_dup", "model.test.missing2"]
+    assert result.missing_parents == ["model.test.missing1", "model.test.missing2"]
+    assert result.missing_children == ["model.test.missing_dup"]
+    assert result.total_missing == 3
+    assert not result.is_valid
 
 
 def test_manifest_integrity_large_scale():
@@ -1475,13 +1466,13 @@ def test_manifest_integrity_large_scale():
     result = processor._validate_manifest_integrity()
 
     # Verify large scale handling
-    assert result["parent_map_size"] == num_valid_nodes // 2 + num_missing_nodes
-    assert result["available_nodes"] == num_valid_nodes + 20  # nodes + sources
-    assert result["total_missing"] == num_missing_nodes * 2  # parent + child for each missing
-    assert not result["is_valid"]
-    assert len(result["missing_nodes"]) == num_missing_nodes * 2
-    assert len(result["missing_parents"]) == num_missing_nodes
-    assert len(result["missing_children"]) == num_missing_nodes
+    assert result.parent_map_size == num_valid_nodes // 2 + num_missing_nodes
+    assert result.available_nodes == num_valid_nodes + 20  # nodes + sources
+    assert result.total_missing == num_missing_nodes * 2  # parent + child for each missing
+    assert not result.is_valid
+    assert len(result.missing_nodes) == num_missing_nodes * 2
+    assert len(result.missing_parents) == num_missing_nodes
+    assert len(result.missing_children) == num_missing_nodes
 
 
 def test_manifest_integrity_types_validation():
@@ -1503,20 +1494,20 @@ def test_manifest_integrity_types_validation():
     result = processor._validate_manifest_integrity()
 
     # Type validation
-    assert isinstance(result, dict)
-    assert isinstance(result["is_valid"], bool)
-    assert isinstance(result["missing_nodes"], list)
-    assert isinstance(result["missing_parents"], list)
-    assert isinstance(result["missing_children"], list)
-    assert isinstance(result["total_missing"], int)
-    assert isinstance(result["parent_map_size"], int)
-    assert isinstance(result["available_nodes"], int)
+    assert isinstance(result, ManifestIntegrityResult)
+    assert isinstance(result.is_valid, bool)
+    assert isinstance(result.missing_nodes, list)
+    assert isinstance(result.missing_parents, list)
+    assert isinstance(result.missing_children, list)
+    assert isinstance(result.total_missing, int)
+    assert isinstance(result.parent_map_size, int)
+    assert isinstance(result.available_nodes, int)
 
     # All list elements should be strings
-    for node in result["missing_nodes"] + result["missing_parents"] + result["missing_children"]:
+    for node in result.missing_nodes + result.missing_parents + result.missing_children:
         assert isinstance(node, str)
 
     # All counts should be non-negative
-    assert result["total_missing"] >= 0
-    assert result["parent_map_size"] >= 0
-    assert result["available_nodes"] >= 0
+    assert result.total_missing >= 0
+    assert result.parent_map_size >= 0
+    assert result.available_nodes >= 0
