@@ -54,7 +54,7 @@ public class DataSourceV2RelationInputOnEndDatasetBuilder
     DatasetCompositeFacetsBuilder datasetFacetsBuilder = factory.createCompositeFacetBuilder();
 
     // don't get dataset version on job end for inputs
-    return DataSourceV2RelationDatasetExtractor.extract(
+    return DataSourceV2RelationDatasetExtractor.extractIncludingVersionFacet(
         factory, context, relation, datasetFacetsBuilder);
   }
 }

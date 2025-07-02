@@ -32,15 +32,38 @@ import org.jetbrains.annotations.NotNull;
 public class DataSourceV2RelationDatasetExtractor {
 
   public static <D extends OpenLineage.Dataset> List<D> extract(
+      DatasetFactory<D> datasetFactory,
+      OpenLineageContext context,
+      DataSourceV2Relation relation,
+      boolean includeVersionFacet) {
+    return extract(
+        datasetFactory,
+        context,
+        relation,
+        datasetFactory.createCompositeFacetBuilder(),
+        includeVersionFacet);
+  }
+
+  public static <D extends OpenLineage.Dataset> List<D> extractIncludingVersionFacet(
       DatasetFactory<D> datasetFactory, OpenLineageContext context, DataSourceV2Relation relation) {
-    return extract(datasetFactory, context, relation, datasetFactory.createCompositeFacetBuilder());
+    return extract(
+        datasetFactory, context, relation, datasetFactory.createCompositeFacetBuilder(), true);
+  }
+
+  public static <D extends OpenLineage.Dataset> List<D> extractIncludingVersionFacet(
+      DatasetFactory<D> datasetFactory,
+      OpenLineageContext context,
+      DataSourceV2Relation relation,
+      DatasetCompositeFacetsBuilder datasetFacetsBuilder) {
+    return extract(datasetFactory, context, relation, datasetFacetsBuilder, true);
   }
 
   public static <D extends OpenLineage.Dataset> List<D> extract(
       DatasetFactory<D> datasetFactory,
       OpenLineageContext context,
       DataSourceV2Relation relation,
-      DatasetCompositeFacetsBuilder datasetFacetsBuilder) {
+      DatasetCompositeFacetsBuilder datasetFacetsBuilder,
+      boolean includeVersionFacet) {
     OpenLineage openLineage = context.getOpenLineage();
     if (ExtensionDataSourceV2Utils.hasQueryExtensionLineage(relation)) {
       return getQueryDatasets(datasetFactory, relation);
@@ -53,6 +76,12 @@ public class DataSourceV2RelationDatasetExtractor {
                 ExtensionDataSourceV2Utils.loadBuilder(openLineage, datasetFacetsBuilder, relation);
               } else {
                 TableCatalog tableCatalog = (TableCatalog) relation.catalog().get();
+
+                if (includeVersionFacet && relation.identifier().isDefined()) {
+                  DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+                          context, relation)
+                      .ifPresent(s -> datasetFactory.buildVersionFacets(datasetFacetsBuilder, s));
+                }
 
                 Map<String, String> tableProperties = relation.table().properties();
                 CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, tableProperties)

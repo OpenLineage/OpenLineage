@@ -8,12 +8,10 @@ package io.openlineage.spark33.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
-import io.openlineage.spark.agent.util.DatasetVersionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
-import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -70,14 +68,8 @@ public class ReplaceIcebergDataDatasetBuilder
                     OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE,
                     null));
 
-    if (includeDatasetVersion(event)) {
-      DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(context, table)
-          .ifPresent(
-              s -> DatasetVersionUtils.buildVersionOutputFacets(context, datasetFacetsBuilder, s));
-    }
-
     return DataSourceV2RelationDatasetExtractor.extract(
-        datasetFactory, context, table, datasetFacetsBuilder);
+        datasetFactory, context, table, datasetFacetsBuilder, includeDatasetVersion(event));
   }
 
   @Override

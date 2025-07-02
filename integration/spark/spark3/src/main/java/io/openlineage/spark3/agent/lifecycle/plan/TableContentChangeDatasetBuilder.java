@@ -8,13 +8,11 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
-import io.openlineage.spark.agent.util.DatasetVersionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
-import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
@@ -89,14 +87,8 @@ public class TableContentChangeDatasetBuilder
         (table instanceof DataSourceV2ScanRelation)
             ? castToDataSourceV2Relation(x, table)
             : (DataSourceV2Relation) table;
-    if (includeDatasetVersion(event)) {
-      DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(context, returnTable)
-          .ifPresent(
-              s -> DatasetVersionUtils.buildVersionOutputFacets(context, datasetFacetsBuilder, s));
-    }
-
     return DataSourceV2RelationDatasetExtractor.extract(
-        outputDataset(), context, returnTable, datasetFacetsBuilder);
+        outputDataset(), context, returnTable, datasetFacetsBuilder, includeDatasetVersion(event));
   }
 
   private NamedRelation getNamedRelation(LogicalPlan x) {
