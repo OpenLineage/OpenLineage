@@ -349,7 +349,7 @@ public final class OpenLineageClientUtils {
   }
 
   public static ExecutorService getOrCreateExecutor() {
-    if (EXECUTOR == null) {
+    if (EXECUTOR == null || EXECUTOR.isShutdown()) {
       EXECUTOR = Executors.newCachedThreadPool();
     }
     return EXECUTOR;
