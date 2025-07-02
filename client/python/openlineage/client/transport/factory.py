@@ -51,6 +51,12 @@ class DefaultTransportFactory(TransportFactory):
             raise TypeError(msg) from None
 
         transport_name = config.pop("name", None)
+        transport_priority = config.pop("priority", 0)
+        try:
+            transport_priority = int(transport_priority)
+        except ValueError as e:
+            msg = f"Error casting priority `{transport_priority}` to int for transport `{transport_type}`"
+            raise ValueError(msg) from e
 
         transport_class_type_or_str = self.transports.get(transport_type, transport_type)
 
@@ -73,4 +79,6 @@ class DefaultTransportFactory(TransportFactory):
         transport: Transport = transport_class(config_class.from_dict(config))  # type: ignore[call-arg]
         if transport_name and not transport.name:
             transport.name = transport_name
+        if transport_priority and transport.priority == 0:
+            transport.priority = transport_priority
         return transport

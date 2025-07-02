@@ -32,6 +32,7 @@ def test_client_uses_default_http_factory() -> None:
     assert isinstance(client.transport, HttpTransport)
     assert client.transport.url == "http://mock-url:5000"
     assert client.transport.endpoint == "endpoint"
+    assert client.transport.priority == 0
 
 
 def test_factory_registers_new_transports(mocker: MockerFixture, root: Path) -> None:
@@ -95,11 +96,14 @@ def test_factory_registers_from_dict(mocker: MockerFixture, root: Path) -> None:
         "accumulating",
         clazz="tests.transport.AccumulatingTransport",
     )
+    priority = 2
     config = {
         "type": "accumulating",
+        "priority": f"{priority}",
     }
     transport = factory.create(config=config)
     assert isinstance(transport, AccumulatingTransport)
+    assert transport.priority == priority
 
 
 def test_automatically_registers_http_kafka() -> None:
@@ -147,6 +151,36 @@ def test_env_disabled_ignores_config(mocker: MockerFixture, root: Path) -> None:
         clazz="tests.transport.FakeTransport",
     )
     assert isinstance(OpenLineageClient(factory=factory).transport, NoopTransport)
+
+
+def test_wrong_priority_raises_error() -> None:
+    factory = DefaultTransportFactory()
+    with pytest.raises(
+        ValueError, match="Error casting priority `non_int` to int for transport `doesnt_matter`"
+    ):
+        factory.create(
+            {
+                "type": "doesnt_matter",
+                "priority": "non_int",
+            }
+        )
+
+
+def test_priority_is_correctly_assigned() -> None:
+    factory = DefaultTransportFactory()
+    factory.register_transport(
+        "fake",
+        clazz="tests.transport.FakeTransport",
+    )
+    priority = 3
+    transport = factory.create(
+        {
+            "type": "fake",
+            "priority": f"{3}",
+        }
+    )
+    assert transport.kind == "fake"
+    assert transport.priority == priority
 
 
 def test_factory_create_transport_missing_type() -> None:

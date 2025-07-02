@@ -579,12 +579,22 @@ The `CompositeTransport` is designed to combine multiple transports, allowing ev
 - `type` - string, must be "composite". Required.
 - `transports` - a list or a map of transport configurations. Required.
 - `continue_on_failure` - boolean flag, determines if the process should continue even when one of the transports fails. Default is `true`.
+- `continue_on_success` - boolean flag, determines if the process should continue when one of the transports succeeds. Default is `true`.
+- `sort_transports` - boolean flag, determines if transports should be sorted by `priority` before emission. Default is `false`.
 
 #### Behavior
 
 - The configured transports will be initialized and used in sequence to emit OpenLineage events.
 - If `continue_on_failure` is set to `false`, a failure in one transport will stop the event emission process, and an exception will be raised.
 - If `continue_on_failure` is `true`, the failure will be logged and the process will continue allowing the remaining transports to still send the event.
+- If `continue_on_success` is set to `false`, a success of one transport will stop the event emission process. This is useful if you want to deliver events to at most one backend, and only fallback to other backends in case of failure.
+- If `continue_on_success` is set to `true`, the success will be logged and the process will continue allowing the remaining transports to send the event.
+
+#### Transport Priority
+Each transport in the `transports` configuration can include an optional `priority` field (integer). 
+When `sort_transports` is `true`, transports are sorted by priority in descending order (higher priority values are processed first). 
+Transports without a priority field default to priority 0.
+
 
 #### Notes for Multiple Transports
 The composite transport can be used with any OpenLineage transport (e.g. `HttpTransport`, `KafkaTransport`, etc).
@@ -607,6 +617,8 @@ Transport names are not required for basic functionality. Their primary purpose 
 transport:
   type: composite
   continue_on_failure: true
+  continue_on_success: true
+  sort_transports: false
   transports:
     - type: http
       url: http://example.com/api
@@ -623,6 +635,8 @@ transport:
 transport:
   type: composite
   continue_on_failure: true
+  continue_on_success: true
+  sort_transports: true
   transports:
     my_http:
       type: http
@@ -631,6 +645,7 @@ transport:
       type: http
       url: http://localhost:5000
       endpoint: /api/v1/lineage
+      priority: 10
 ```
 
 </TabItem>
@@ -644,6 +659,8 @@ config = CompositeConfig.from_dict(
         {
             "type": "composite",
             "continue_on_failure": True,
+            "continue_on_success": True,
+            "sort_transports": True,
             "transports": [
                 {
                     "type": "kafka",
@@ -652,7 +669,7 @@ config = CompositeConfig.from_dict(
                     "messageKey": "key",
                     "flush": False,
                 },
-                {"type": "console"},
+                {"type": "console", "priority": 1},
             ],
         },
     )
@@ -667,9 +684,12 @@ from openlineage.client import OpenLineageClient
 
 os.environ["OPENLINEAGE__TRANSPORT__TYPE"] = "composite"
 os.environ["OPENLINEAGE__TRANSPORT__CONTINUE_ON_FAILURE"] = "true"
+os.environ["OPENLINEAGE__TRANSPORT__CONTINUE_ON_SUCCESS"] = "true"
+os.environ["OPENLINEAGE__TRANSPORT__SORT_TRANSPORTS"] = "true"
 
 # First transport - transform with http
 os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TYPE"] = "transform"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__PRIORITY"] = "1"
 os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSFORMER_CLASS"] = "openlineage.client.transport.transform.JobNamespaceReplaceTransformer"
 os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSFORMER_PROPERTIES"] = '{"new_job_namespace": "new_namespace_value"}'
 os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSPORT__TYPE"] = "http"
@@ -680,6 +700,7 @@ os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSPO
 
 # Second transport - http 
 os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TYPE"] = "http"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__PRIORITY"] = "0"
 os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__URL"] = "http://another-backend:5000"
 os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__ENDPOINT"] = "another/endpoint/v2"
 os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__AUTH__TYPE"] = "api_key"

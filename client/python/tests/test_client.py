@@ -679,6 +679,30 @@ def test_async_transport_with_priority_overwrite() -> None:
     {
         "OPENLINEAGE_URL": "http://example.com",
         "OPENLINEAGE__TRANSPORT__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__SORT_TRANSPORTS": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__ANOTHER__TYPE": "console",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__ANOTHER__PRIORITY": "4",
+    },
+)
+def test_composite_transport_with_sorted_by_priority() -> None:
+    transport: CompositeTransport = OpenLineageClient().transport
+    expected_priority = 4
+    assert transport.kind == CompositeTransport.kind
+    assert transport.config.sort_transports is True
+    assert len(transport.transports) == 2  # noqa: PLR2004
+    assert transport.transports[0].kind == ConsoleTransport.kind
+    assert transport.transports[0].priority == expected_priority
+    assert transport.transports[0].name == "another"
+    assert transport.transports[1].kind == HttpTransport.kind
+    assert transport.transports[1].name == "default_http"
+    assert transport.transports[1].priority == 0
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__TYPE": "composite",
         "OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP__TYPE": "console",
         "OPENLINEAGE__TRANSPORT__TRANSPORTS__ANOTHER__TYPE": "console",
     },

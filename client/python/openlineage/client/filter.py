@@ -5,10 +5,14 @@ from __future__ import annotations
 import logging
 import re
 import typing
+import warnings
 
 import attr
 from openlineage.client.event_v2 import RunEvent as RunEvent_v2
-from openlineage.client.run import RunEvent
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    from openlineage.client.run import RunEvent
 
 log = logging.getLogger(__name__)
 RunEventType = typing.Union[RunEvent, RunEvent_v2]
