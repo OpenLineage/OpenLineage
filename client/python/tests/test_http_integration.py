@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import closing
 
 import pytest
 from openlineage.client.transport.async_http import AsyncHttpConfig, AsyncHttpTransport
@@ -159,7 +160,7 @@ class TestAsyncEventOrdering:
         """Test multiple completion events for same run."""
         transport = async_transport_custom(max_concurrent_requests=2)
 
-        try:
+        with closing(transport):
             run_events = create_run_lifecycle_events()
             start_event = run_events["start"]
             complete_event = run_events["complete"]
@@ -186,15 +187,12 @@ class TestAsyncEventOrdering:
             assert sequence["total_events"] == 3
             assert sequence["has_start_event"] is True
 
-        finally:
-            transport.shutdown(timeout=5.0)
-
     @pytest.mark.parametrize("num_runs", [2, 3, 5])
     def test_concurrent_runs_ordering(self, async_transport_custom, server_helper, num_runs):
         """Test event ordering across multiple concurrent runs."""
         transport = async_transport_custom(max_concurrent_requests=5)
 
-        try:
+        with closing(transport):
             multiple_runs = create_multiple_runs(num_runs=num_runs)
 
             # Emit all events in mixed order
@@ -229,9 +227,6 @@ class TestAsyncEventOrdering:
                 event_types = [event["event_type"] for event in events]
                 assert "START" in event_types
                 assert "COMPLETE" in event_types
-
-        finally:
-            transport.shutdown(timeout=5.0)
 
 
 @pytest.mark.integration
@@ -293,17 +288,18 @@ class TestErrorHandling:
         # Create transport with short timeout
         transport = async_transport_custom(timeout=0.5, backoff_factor=0.1, retry_count=3)
 
-        # Configure server with long delay that will cause timeout
-        logging.getLogger("openlineage.client").debug(
-            server_helper.simulate_error_sequence([0], enabled=True, delay_ms=2000)
-        )  # 0 = timeout
+        with closing(transport):
+            # Configure server with long delay that will cause timeout
+            logging.getLogger("openlineage.client").debug(
+                server_helper.simulate_error_sequence([0], enabled=True, delay_ms=2000)
+            )  # 0 = timeout
 
-        event = BASIC_RUN_EVENTS["start"]
+            event = BASIC_RUN_EVENTS["start"]
 
-        transport.emit(event)
+            transport.emit(event)
 
-        assert transport.wait_for_completion(timeout=5.0)
-        assert transport.get_stats()["failed"] > 0
+            assert transport.wait_for_completion(timeout=5.0)
+            assert transport.get_stats()["failed"] > 0
 
 
 @pytest.mark.integration
@@ -325,7 +321,7 @@ class TestPerformanceAndLoad:
             max_concurrent_requests=max_concurrent,
         )
 
-        try:
+        with closing(transport):
             # Create many events
             multiple_runs = create_multiple_runs(num_runs=num_runs)
 
@@ -348,16 +344,13 @@ class TestPerformanceAndLoad:
             assert transport_stats["success"] == expected_events
             assert transport_stats["failed"] == 0
 
-        finally:
-            transport.shutdown(timeout=10.0)
-
     @pytest.mark.parametrize("num_clients", [3, 5, 8])
     def test_concurrent_clients(self, async_transport_custom, server_helper, num_clients):
         """Test multiple concurrent clients."""
 
         def emit_events(client_id: int):
             transport = async_transport_custom(max_concurrent_requests=3)
-            try:
+            with closing(transport):
                 run_events = create_run_lifecycle_events(job_name=f"client-{client_id}-job")
 
                 transport.emit(run_events["start"])
@@ -367,9 +360,6 @@ class TestPerformanceAndLoad:
 
                 stats = transport.get_stats()
                 return stats["success"]
-
-            finally:
-                transport.shutdown(timeout=5.0)
 
         # Run concurrent clients
         with ThreadPoolExecutor(max_workers=num_clients) as executor:
@@ -404,28 +394,28 @@ class TestPerformanceAndLoad:
             retry_count=3,
             backoff_factor=0.1,
         )
+        with closing(transport):
+            # Emit more events than queue can handle
+            num_events = queue_size + 1
 
-        # Emit more events than queue can handle
-        num_events = queue_size + 1
+            # Configure server with delay to slow processing and return 500 errors
+            server_helper.simulate_error_sequence([500], enabled=True, delay_ms=100)
+            runs = create_multiple_runs(num_runs=num_events)
+            for run_events in runs:
+                transport.emit(run_events["start"])
 
-        # Configure server with delay to slow processing and return 500 errors
-        server_helper.simulate_error_sequence([500], enabled=True, delay_ms=100)
-        runs = create_multiple_runs(num_runs=num_events)
-        for run_events in runs:
-            transport.emit(run_events["start"])
+            # Wait for processing
+            transport.wait_for_completion(timeout=15.0)
 
-        # Wait for processing
-        transport.wait_for_completion(timeout=15.0)
+            # Some events may have been dropped due to queue saturation
+            transport_stats = transport.get_stats()
+            print(
+                f"Queue {queue_size}: Success: {transport_stats['success']}, "
+                f"Failed: {transport_stats['failed']}"
+            )
 
-        # Some events may have been dropped due to queue saturation
-        transport_stats = transport.get_stats()
-        print(
-            f"Queue {queue_size}: Success: {transport_stats['success']}, "
-            f"Failed: {transport_stats['failed']}"
-        )
-
-        # At least some events should have been processed
-        assert transport_stats["success"] + transport_stats["failed"] > 0
+            # At least some events should have been processed
+            assert transport_stats["success"] + transport_stats["failed"] > 0
 
 
 @pytest.mark.integration
@@ -442,16 +432,13 @@ class TestConfiguration:
         )
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing(transport):
             event = BASIC_RUN_EVENTS["start"]
             transport.emit(event)
             assert transport.wait_for_completion(timeout=5.0)
 
             # Verify event received
             assert server_helper.wait_for_events(1, timeout=5.0)
-
-        finally:
-            transport.shutdown(timeout=5.0)
 
     @pytest.mark.parametrize(
         "custom_headers",
@@ -466,7 +453,7 @@ class TestConfiguration:
         config = AsyncHttpConfig(url=test_server_url, custom_headers=custom_headers)
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing(transport):
             event = BASIC_RUN_EVENTS["start"]
             transport.emit(event)
             assert transport.wait_for_completion(timeout=5.0)
@@ -483,9 +470,6 @@ class TestConfiguration:
                 header_name_lower = header_name.lower()
                 assert header_name_lower in headers
                 assert headers[header_name_lower] == header_value
-
-        finally:
-            transport.shutdown(timeout=5.0)
 
     @pytest.mark.parametrize(
         "max_queue_size,max_concurrent_requests",
@@ -506,7 +490,7 @@ class TestConfiguration:
         )
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing(transport):
             # Emit a test event
             event = create_run_lifecycle_events(
                 job_name=f"config-test-{max_queue_size}-{max_concurrent_requests}"
@@ -517,6 +501,3 @@ class TestConfiguration:
             # Verify it was processed
             stats = transport.get_stats()
             assert stats["success"] >= 1
-
-        finally:
-            transport.shutdown(timeout=5.0)

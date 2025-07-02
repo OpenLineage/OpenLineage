@@ -183,37 +183,25 @@ class OpenLineageClient:
         self.transport.emit(event)
         log.debug("OpenLineage event successfully emitted.")
 
-    def shutdown(self, timeout: float = -1) -> bool:
+    def close(self, timeout: float = -1.0) -> bool:
         """
-        Shutdown the transport, waiting for all events to complete or until the timeout is reached.
-
+        Closes down the transport until all events are processed or timeout is reached.
         Params:
-            timeout: Timeout in seconds. `-1` means to block until last event is processed.
+          timeout: Timeout in seconds. `-1` means to block until last event is processed, 0 means no timeout.
 
-        Returns:
-            bool: True if all events were processed before transport was closed,
-                False if some events were not processed.
         """
-        result = self.wait_for_completion(timeout)
-        self.close()
-        return result
+        return self.transport.close(timeout)
 
-    def close(self) -> None:
-        """
-        Closes down the transport immediately, without waiting for the transport to process remaining events.
-        """
-        pass
-
-    def wait_for_completion(self, timeout: float = -1) -> bool:
+    def wait_for_completion(self, timeout: float = -1.0) -> bool:
         """
         Block until all events are processed or timeout is reached.
         If the transport is fully synchronous, this method should be a no-op and return True.
         Params:
-          timeout: Timeout in seconds. `-1` means to block until last event is processed.
+          timeout: Timeout in seconds. `-1` means to block until last event is processed, 0 means no timeout.
         Returns:
             bool: True if all events were processed, False if some events were not processed.
         """
-        return True
+        return self.transport.wait_for_completion(timeout)
 
     @property
     def config(self) -> OpenLineageConfig:

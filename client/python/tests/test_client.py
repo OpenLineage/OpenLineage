@@ -34,6 +34,8 @@ from openlineage.client.transport.http import ApiKeyTokenProvider, HttpTransport
 from openlineage.client.transport.noop import NoopTransport
 from openlineage.client.uuid import generate_new_uuid
 
+from tests.test_async_http import closing_immediately
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -631,12 +633,8 @@ def test_configures_async_transport() -> None:
 
     client = OpenLineageClient()
     transport: AsyncHttpTransport = client.transport
-    try:
+    with closing_immediately(transport) as transport:
         assert transport.kind == "async_http"
-    finally:
-        # Fast shutdown without waiting
-        transport.should_exit.set()
-        transport.worker_thread.join(timeout=0.1)
 
 
 @patch.dict(

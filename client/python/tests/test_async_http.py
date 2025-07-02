@@ -8,6 +8,7 @@ import hashlib
 import os
 import threading
 import time
+from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -21,6 +22,14 @@ from openlineage.client.transport.async_http import (
     Request,
 )
 from openlineage.client.uuid import generate_new_uuid
+
+
+@contextmanager
+def closing_immediately(resource):
+    try:
+        yield resource
+    finally:
+        resource.close(timeout=0)
 
 
 class TestAsyncHttpConfig:
@@ -65,7 +74,7 @@ class TestAsyncHttpTransport:
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             assert transport.kind == "async_http"
             assert transport.url == "http://example.com"
             assert transport.endpoint == "api/v1/lineage"
@@ -74,10 +83,6 @@ class TestAsyncHttpTransport:
             assert transport.worker_thread.is_alive()
             assert len(transport.events) == 0
             assert len(transport.pending_completion_events) == 0
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_http_transport_invalid_url(self):
         with pytest.raises(ValueError, match="Need valid url"):
@@ -94,7 +99,7 @@ class TestAsyncHttpTransport:
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             run_id = str(generate_new_uuid())
             event = RunEvent(
                 eventType=RunState.START,
@@ -115,16 +120,12 @@ class TestAsyncHttpTransport:
                 assert request.event_id == f"{run_id}-START"
                 assert request.run_id == run_id
                 assert request.event_type == "START"
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_http_transport_event_id_generation_non_run_event(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Create a mock event that's not a RunEvent
             mock_event = MagicMock()
             event_json = '{"test": "event"}'
@@ -141,16 +142,12 @@ class TestAsyncHttpTransport:
                     assert request.event_id == expected_id
                     assert request.run_id is None
                     assert request.event_type is None
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_http_transport_completion_event_ordering(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Create START and COMPLETE events
             run_id = str(generate_new_uuid())
             start_event = RunEvent(
@@ -189,17 +186,13 @@ class TestAsyncHttpTransport:
                 # Check pending events
                 assert run_id in transport.pending_completion_events
                 assert len(transport.pending_completion_events[run_id]) == 1
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_http_transport_completion_without_start_scheduled(self):
         """Test that COMPLETE events without a scheduled START are processed immediately."""
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Create COMPLETE event
             run_id = str(generate_new_uuid())
             complete_event = RunEvent(
@@ -222,16 +215,12 @@ class TestAsyncHttpTransport:
 
                 # Should not be in pending events
                 assert run_id not in transport.pending_completion_events
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_http_transport_wait_for_completion(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Test with events not completed - mock _all_processed to return False
             with patch.object(transport, "_all_processed", return_value=False):
                 result = transport.wait_for_completion(timeout=0.1)
@@ -241,16 +230,12 @@ class TestAsyncHttpTransport:
             with patch.object(transport, "_all_processed", return_value=True):
                 result = transport.wait_for_completion(timeout=1.0)
                 assert result  # Should succeed immediately
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_http_transport_get_stats(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             stats = transport.get_stats()
             assert stats["pending"] == 0
             assert stats["success"] == 0
@@ -275,29 +260,20 @@ class TestAsyncHttpTransport:
             assert stats["pending"] == 0
             assert stats["success"] == 1
             assert stats["failed"] == 1
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
-    def test_async_http_transport_shutdown(self):
+    def test_async_http_transport_close(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
-            # Transport should be running
-            assert transport.worker_thread.is_alive()
+        # Transport should be running
+        assert transport.worker_thread.is_alive()
 
-            # Mock wait_for_completion to return immediately
-            with patch.object(transport, "wait_for_completion", return_value=True) as mock_wait:
-                result = transport.shutdown(timeout=1.0)
+        # Mock wait_for_completion to return immediately
+        with patch.object(transport, "wait_for_completion", return_value=True) as mock_wait:
+            result = transport.close(timeout=1.0)
 
-                assert result
-                mock_wait.assert_called_once_with(1.0)
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
+            assert result
+            mock_wait.assert_called_once_with(1.0)
 
     @patch("httpx.AsyncClient")
     def test_async_http_transport_with_gzip_compression(self, mock_client_class):
@@ -305,7 +281,7 @@ class TestAsyncHttpTransport:
         config = AsyncHttpConfig(url="http://example.com", compression=HttpCompression.GZIP)
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             event = RunEvent(
                 eventType=RunState.START,
                 eventTime="2024-01-01T00:00:00Z",
@@ -326,10 +302,6 @@ class TestAsyncHttpTransport:
             # Verify compression worked
             decompressed = gzip.decompress(body).decode("utf-8")
             assert decompressed == event_str
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_http_transport_thread_safety(self):
         """Test that AsyncHttpTransport event tracking operations are thread-safe"""
@@ -337,7 +309,7 @@ class TestAsyncHttpTransport:
         transport = AsyncHttpTransport(config)
         errors = []
 
-        try:
+        with closing_immediately(transport) as transport:
 
             def worker(thread_id):
                 try:
@@ -363,46 +335,34 @@ class TestAsyncHttpTransport:
             assert transport.event_stats["success"] == 26  # 2 threads * 13 success each
             assert transport.event_stats["failed"] == 24  # 2 threads * 12 failed each
             assert transport._all_processed()
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_transport_event_tracking_initialization(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             assert len(transport.events) == 0
             assert len(transport.pending_completion_events) == 0
             assert transport.event_stats["pending"] == 0
             assert transport.event_stats["success"] == 0
             assert transport.event_stats["failed"] == 0
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_transport_add_event(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             request = Request("event-1", "", {})
             transport._add_event(request)
 
             assert transport.events["event-1"] == "pending"
             assert transport.event_stats["pending"] == 1
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_transport_mark_success_regular_event(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             request = Request("event-1", "", {})
             transport._add_event(request)
 
@@ -414,16 +374,12 @@ class TestAsyncHttpTransport:
             assert len(pending_events) == 0
             assert transport.event_stats["success"] == 1
             assert transport.event_stats["pending"] == 0
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_transport_mark_success_start_event_releases_pending(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             request = Request(
                 event_id="run-123-COMPLETE",
                 run_id="run-123",
@@ -448,16 +404,12 @@ class TestAsyncHttpTransport:
             assert len(pending_events) == 1
             assert pending_events[0] == request
             assert "run-123" not in transport.pending_completion_events
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_transport_mark_failed(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             request = Request("event-1", "", {})
             transport._add_event(request)
 
@@ -468,16 +420,12 @@ class TestAsyncHttpTransport:
             assert transport.events.get(request.event_id) is None
             assert transport.event_stats["failed"] == 1
             assert transport.event_stats["pending"] == 0
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_transport_add_pending_completion_event(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             request = Request(
                 event_id="run-123-COMPLETE",
                 event_type="COMPLETE",
@@ -491,16 +439,12 @@ class TestAsyncHttpTransport:
             assert "run-123" in transport.pending_completion_events.keys()
             assert len(transport.pending_completion_events["run-123"]) == 1
             assert transport.pending_completion_events["run-123"][0] == request
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_transport_all_processed(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             assert transport._all_processed()  # No events
             request = Request("event-1", "", {})
 
@@ -509,10 +453,6 @@ class TestAsyncHttpTransport:
 
             transport._mark_success(request)
             assert transport._all_processed()  # All processed
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
 
 @pytest.mark.unit
@@ -531,7 +471,7 @@ class TestAsyncHttpTransportIntegration:
         )
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             client = OpenLineageClient(transport=transport)
             event = RunEvent(
                 eventType=RunState.START,
@@ -550,10 +490,6 @@ class TestAsyncHttpTransportIntegration:
 
             # Allow some time for async processing
             time.sleep(0.1)
-        finally:
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_async_http_config_from_env_vars(self):
         """Test AsyncHttpConfig creation from environment variables"""
@@ -568,14 +504,10 @@ class TestAsyncHttpTransportIntegration:
         ):
             client = OpenLineageClient()
             transport = client.transport
-
-            assert transport.kind == "async_http"
-            assert isinstance(transport, AsyncHttpTransport)
-            assert transport.url == "http://example.com"
-
-            # Fast shutdown without waiting
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
+            with closing_immediately(transport) as transport:
+                assert transport.kind == "async_http"
+                assert isinstance(transport, AsyncHttpTransport)
+                assert transport.url == "http://example.com"
 
 
 class TestAsyncHttpTransportErrorHandling:
@@ -591,7 +523,7 @@ class TestAsyncHttpTransportErrorHandling:
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Mock token provider to return None/empty bearer
             mock_provider = MagicMock()
             mock_provider.get_bearer.return_value = None
@@ -603,16 +535,13 @@ class TestAsyncHttpTransportErrorHandling:
             mock_provider.get_bearer.return_value = ""
             headers = transport._auth_headers(mock_provider)
             assert headers == {}
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_fast_error_scenarios(self):
         """Test error scenarios without slow async processing"""
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Test various utility methods that don't require async processing
 
             # Test auth headers with empty bearer
@@ -635,16 +564,12 @@ class TestAsyncHttpTransportErrorHandling:
             transport._mark_success(request)
             assert transport._all_processed()
 
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
-
     def test_response_body_reading_failure(self):
         """Test response body reading failure handling"""
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Test auth headers and request preparation (no async needed)
             mock_provider = MagicMock()
             mock_provider.get_bearer.return_value = "Bearer token"
@@ -657,37 +582,26 @@ class TestAsyncHttpTransportErrorHandling:
             assert body == event_str
             assert headers["Content-Type"] == "application/json"
 
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
-
-    def test_specific_uncovered_lines(self):
-        """Test specific uncovered lines with minimal overhead"""
+    def test_pendition_events_counted(self):
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
-            # Test lines 458-460: Multiple pending completion events initialization
+        with closing_immediately(transport) as transport:
             run_id = "test-run-456"
             request1 = Request("event1", "", {}, run_id=run_id, event_type="COMPLETE")
             request2 = Request("event2", "", {}, run_id=run_id, event_type="FAIL")
 
-            # This should exercise lines 458-460 by creating new pending list
             transport._add_pending_completion_event(request1)
             transport._add_pending_completion_event(request2)
 
             assert len(transport.pending_completion_events[run_id]) == 2
-
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_handle_failure_no_response_no_exception(self):
         """Test handle_failure call with no response and no exception (line 368)"""
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Test by directly calling the internal methods to hit specific lines
             request = Request("test-no-response-no-exception", "test", {})
             transport._add_event(request)
@@ -699,16 +613,12 @@ class TestAsyncHttpTransportErrorHandling:
             assert request.event_id not in transport.events
             assert transport.event_stats["failed"] >= 1
 
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
-
     def test_queue_empty_exception_path(self):
-        """Test queue.Empty exception handling (lines 293-294)"""
+        """Test queue.Empty exception handling"""
         config = AsyncHttpConfig(url="http://example.com", max_concurrent_requests=1)
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Add one event and let the queue empty naturally to trigger the Empty exception path
             request = Request("test-queue-empty", "test", {})
             transport._add_event(request)
@@ -717,10 +627,6 @@ class TestAsyncHttpTransportErrorHandling:
             # Very brief wait for processing, then stop
             time.sleep(0.02)
 
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
-
     def test_final_retry_attempt_failure(self):
         """Test final retry attempt that ends in failure"""
         config = AsyncHttpConfig(url="http://example.com")
@@ -728,7 +634,7 @@ class TestAsyncHttpTransportErrorHandling:
         config.retry = {"total": 2, "backoff_factor": 0.1, "status_forcelist": [503]}
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             import asyncio
 
             async def test_final_failure():
@@ -753,31 +659,24 @@ class TestAsyncHttpTransportErrorHandling:
 
             asyncio.run(test_final_failure())
 
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
-
     def test_add_pending_completion_event_without_run_id(self):
         """Test _add_pending_completion_event with request without run_id"""
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             request = Request(event_id="test", body="", headers={}, run_id=None)
             transport._add_pending_completion_event(request)
 
             # Should not add anything to pending events
             assert len(transport.pending_completion_events) == 0
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_event_loop_worker_queue_empty_exception(self):
         """Test handling of queue.Empty exception in event loop worker"""
         config = AsyncHttpConfig(url="http://example.com", max_concurrent_requests=1)
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Add a real event first, then let the queue become empty naturally
             request = Request("test", "", {})
             transport._add_event(request)
@@ -790,17 +689,13 @@ class TestAsyncHttpTransportErrorHandling:
 
             # The worker should have handled the queue.Empty gracefully after processing the event
             assert not transport.worker_thread.is_alive()
-        finally:
-            transport.should_exit.set()
-            if transport.worker_thread.is_alive():
-                transport.worker_thread.join(timeout=0.1)
 
     def test_response_body_reading_error_simulation(self):
         """Test that the log path for response body reading errors is covered"""
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Test the _prepare_request method with different inputs
             event_str = '{"test": "event"}'
             body, headers = transport._prepare_request(event_str)
@@ -814,9 +709,6 @@ class TestAsyncHttpTransportErrorHandling:
 
             headers = transport._auth_headers(mock_provider)
             assert headers == {"Authorization": "Bearer test-token"}
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_close_with_thread_already_dead(self):
         """Test close() when worker thread is already dead"""
@@ -837,7 +729,7 @@ class TestAsyncHttpTransportErrorHandling:
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             run_id = "test-run-123"
 
             # Initially no START is in progress
@@ -857,16 +749,13 @@ class TestAsyncHttpTransportErrorHandling:
 
             # Should no longer be in progress
             assert not transport._is_start_in_progress(run_id)
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_wait_for_completion_with_infinite_timeout(self):
         """Test wait_for_completion with timeout=-1 (infinite wait)"""
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Mock _all_processed to return True after a short delay
             call_count = 0
 
@@ -879,16 +768,13 @@ class TestAsyncHttpTransportErrorHandling:
                 result = transport.wait_for_completion(timeout=-1)
                 assert result
                 assert call_count > 2
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_wait_for_completion_with_default_timeout(self):
         """Test wait_for_completion with default timeout -1 (infinite wait)"""
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Mock _all_processed to return True after a short delay
             call_count = 0
 
@@ -901,16 +787,13 @@ class TestAsyncHttpTransportErrorHandling:
                 result = transport.wait_for_completion()
                 assert result
                 assert call_count > 2
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_task_exception_handling_in_event_loop(self, mock_async_http_client_class):
         """Test exception handling when tasks raise exceptions in event loop"""
         config = AsyncHttpConfig(url="http://example.com", max_concurrent_requests=1)
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             mock_client_class, mock_client, mock_response = mock_async_http_client_class
             # Mock client to raise an exception
             mock_client.post.side_effect = Exception("Network error")
@@ -925,16 +808,13 @@ class TestAsyncHttpTransportErrorHandling:
 
             # Should handle exception gracefully and continue running
             assert transport.worker_thread.is_alive()
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
 
     def test_queue_capacity_management(self):
         """Test queue capacity management and waiting for space"""
         config = AsyncHttpConfig(url="http://example.com", max_queue_size=2)
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Fill up the configured portion of the queue
             event1 = RunEvent(
                 eventType=RunState.START,
@@ -991,16 +871,12 @@ class TestAsyncHttpTransportErrorHandling:
                 assert mock_sleep.call_count >= 1
                 mock_sleep.assert_called_with(0.01)
 
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
-
     def test_simple_coverage_cases(self):
         """Test simple coverage cases without complex async mocking"""
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Just test basic functionality that exercises the code paths
             # we need coverage for
 
@@ -1068,16 +944,12 @@ class TestAsyncHttpTransportErrorHandling:
             # Should have 2 pending completion events for run_id2
             assert len(transport.pending_completion_events.get(run_id2, [])) == 2
 
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)
-
     def test_queue_task_done_coverage(self):
         """Test queue and event management without slow async"""
         config = AsyncHttpConfig(url="http://example.com")
         transport = AsyncHttpTransport(config)
 
-        try:
+        with closing_immediately(transport) as transport:
             # Test queue size and configuration
             assert transport.configured_queue_size == 10000
             assert transport.event_queue.maxsize == 20000  # 2x configured
@@ -1097,7 +969,3 @@ class TestAsyncHttpTransportErrorHandling:
             final_stats = transport.get_stats()
             assert final_stats["success"] == 1
             assert final_stats["pending"] == 0
-
-        finally:
-            transport.should_exit.set()
-            transport.worker_thread.join(timeout=0.1)

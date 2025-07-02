@@ -221,10 +221,11 @@ def consume_structured_logs(
                 )
         # Will wait for async events to be sent if async config is enabled\
         logger.debug("Waiting for events to be sent.")
-        client.shutdown(timeout=30.0)
     except UnsupportedDbtCommand as e:
         logger.error(e)
         dbt_integration_return_code = 1
+    finally:
+        client.close(timeout=30.0)
 
     logger.info("Emitted %d OpenLineage events", emitted_events)
     logger.info("Underlying dbt execution returned %d", processor.dbt_command_return_code)
@@ -352,6 +353,7 @@ def consume_local_artifacts(
                 e,
                 exc_info=True,
             )
+    client.close(timeout=30.0)
     logger.info("Emitted %d OpenLineage events", emitted_events)
     logger.info("Underlying dbt execution returned %d", return_code)
     return return_code

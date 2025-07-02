@@ -295,6 +295,8 @@ client = OpenLineageClient(transport=HttpTransport(http_config))
 
 The Async HTTP transport provides high-performance, non-blocking event emission with advanced queuing and ordering guarantees. Use this transport when you need high throughput or want to avoid blocking your application on lineage event delivery.
 
+Async transport API is experimental, and can change over the next few releases.
+
 #### Configuration
 
 - `type` - string, must be `"async_http"` or use direct instantiation. Required.
@@ -336,10 +338,9 @@ Events are processed asynchronously with the following features:
 
 #### Additional Methods
 
-- `wait_for_completion(timeout)` - Wait for all events to be processed
+- `wait_for_completion(timeout: float)` - Wait for all events to be processed with timeout. If the value passed is negative, wait until all events get processed.
 - `get_stats()` - Get processing statistics (`{"pending": 0, "success": 10, "failed": 0}`)
-- `shutdown(timeout: float)` - Graceful shutdown, wait until pending events are send
-- `close()` - Shutdown immediately and skip pending events
+- `close(timeout: float)` - Shutdown with timeout. Skip pending events if they are still processing after timeout. If the value passed is negative, wait until all events get processed.
 
 #### Examples
 
@@ -398,7 +399,7 @@ client.wait_for_completion()
 stats = client.transport.get_stats()
 print(f"Pending: {stats['pending']}, Success: {stats['success']}, Failed: {stats['failed']}")
 # Graceful shutdown
-client.shutdown()
+client.close(timeout=5)
 ```
 </TabItem>
 

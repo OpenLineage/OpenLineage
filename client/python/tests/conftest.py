@@ -213,7 +213,7 @@ def async_transport(test_server: str) -> Generator[AsyncHttpTransport]:
     yield transport
 
     # Cleanup
-    transport.shutdown(timeout=10.0)
+    transport.close(timeout=10.0)
 
 
 @pytest.fixture

@@ -68,11 +68,6 @@ The AsyncHttpTransport provides:
 - **Error categorization**: Distinguishes between retryable (5xx) and permanent failures (4xx)
 - **Graceful degradation**: Continues processing other events even if some fail
 
-### 5. Task Management (Race-Condition-Free)
-- **Immediate task removal**: `active_tasks -= done` after `asyncio.wait()`
-- **No async callbacks**: Removed `task.add_done_callback()` to prevent race conditions
-- **Clean shutdown**: Simplified shutdown without complex task cleanup
-
 ## Event Flow
 
 1. **Event Submission**: Events are submitted via `emit(event)` method
@@ -130,7 +125,7 @@ transport.wait_for_completion(timeout=30)
 stats = transport.get_stats()    # {"pending": 0, "success": 10, "failed": 0}
 
 # Graceful shutdown
-transport.shutdown(timeout=30)
+transport.close(timeout=30)
 ```
 """
 
@@ -524,13 +519,16 @@ class AsyncHttpTransport(Transport):
 
         return self._all_processed()
 
-    def get_stats(self) -> dict[str, int]:
-        return self.event_stats
-
-    def close(self) -> None:
+    def close(self, timeout: float = -1.0) -> bool:
+        result = self.wait_for_completion(timeout)
         self.should_exit.set()
+        self.events = {}
         if self.worker_thread.is_alive():
             self.worker_thread.join()
+        return result
+
+    def get_stats(self) -> dict[str, int]:
+        return self.event_stats
 
     def _prepare_request(self, event: str) -> tuple[bytes | str, dict[str, str]]:
         headers = {

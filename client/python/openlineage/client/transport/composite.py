@@ -95,6 +95,16 @@ class CompositeTransport(Transport):
         # This can wait longer than timeout if multiple transports are slow, but acceptable
         return all(transport.wait_for_completion(timeout) for transport in self.transports)
 
-    def close(self) -> None:
+    def close(self, timeout: float = -1.0) -> bool:
+        result = True
+        last_exception: Exception | None = None
         for transport in self.transports:
-            transport.close()
+            try:
+                result = transport.close(timeout) and result
+            except Exception as e:
+                log.exception("Error while closing transport %s", transport)
+                last_exception = e
+
+        if last_exception:
+            raise last_exception
+        return result
