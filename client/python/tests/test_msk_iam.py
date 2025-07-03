@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
-from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
 from openlineage.client.transport.msk_iam import (
     MSKIAMConfig,
     MSKIAMTransport,
@@ -29,7 +29,6 @@ def event() -> RunEvent:
         run=Run(runId=str(generate_new_uuid())),
         job=Job(namespace="kafka", name="test"),
         producer="prod",
-        schemaURL="schema",
     )
 
 

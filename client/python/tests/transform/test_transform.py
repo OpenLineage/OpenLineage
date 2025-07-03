@@ -4,15 +4,12 @@ from __future__ import annotations
 
 import datetime
 import os
-import warnings
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
-import attr
 import pytest
 from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import BaseEvent, Job, Run, RunEvent, RunState
-from openlineage.client.facet_v2 import external_query_run
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transform import EventTransformer, TransformConfig, TransformTransport
 from openlineage.client.uuid import generate_new_uuid
@@ -208,90 +205,6 @@ def test_client_with_transform_transport_emits_modified_event(mocker: MockerFixt
     )
 
 
-def test_client_with_transform_transport_emits_modified_event_with_older_facets(
-    mocker: MockerFixture,
-) -> None:
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", DeprecationWarning)
-        from openlineage.client.facet import BaseFacet as OldBaseFacet
-
-        @attr.define
-        class SomeOldRunFacet(OldBaseFacet):
-            version: str = attr.ib()
-
-    session = mocker.patch("requests.Session")
-    config = TransformConfig.from_dict(
-        {
-            "transport": {
-                "type": "http",
-                "url": "http://backend:5000",
-                "session": session,
-            },
-            "transformer_class": "tests.transform.test_transform.SampleEventTransformer",
-        }
-    )
-    transport = TransformTransport(config)
-    client = OpenLineageClient(transport=transport)
-    now = datetime.datetime.now().isoformat()
-    run_id = str(generate_new_uuid())
-    event = RunEvent(
-        eventType=RunState.START,
-        eventTime=now,
-        run=Run(
-            runId=run_id,
-            facets={
-                "externalQuery": external_query_run.ExternalQueryRunFacet(
-                    externalQueryId="queryid", source="source"
-                ),
-                "old_facet": SomeOldRunFacet(version="2"),
-            },
-        ),
-        job=Job(namespace="http", name="test"),
-        producer="prod",
-    )
-    modified_event = RunEvent(
-        eventType=RunState.START,
-        eventTime=now,
-        run=Run(
-            runId=run_id,
-            facets={
-                "externalQuery": external_query_run.ExternalQueryRunFacet(
-                    externalQueryId="queryid", source="source"
-                ),
-                "old_facet": SomeOldRunFacet(version="2"),
-            },
-        ),
-        job=Job(namespace="new_value", name="test"),
-        producer="prod",
-    )
-
-    client.emit(event)
-    transport.transport.session.post.assert_called_once_with(
-        url="http://backend:5000/api/v1/lineage",
-        data=Serde.to_json(modified_event),
-        headers={"Content-Type": "application/json"},
-        timeout=5.0,
-        verify=True,
-    )
-
-    # Assert the original event is unchanged
-    assert event == RunEvent(
-        eventType=RunState.START,
-        eventTime=now,
-        run=Run(
-            runId=run_id,
-            facets={
-                "externalQuery": external_query_run.ExternalQueryRunFacet(
-                    externalQueryId="queryid", source="source"
-                ),
-                "old_facet": SomeOldRunFacet(version="2"),
-            },
-        ),
-        job=Job(namespace="http", name="test"),
-        producer="prod",
-    )
-
-
 def test_client_with_transform_transport_skips_emission_when_transformed_event_is_none(
     mocker: MockerFixture,
 ) -> None:
@@ -320,59 +233,6 @@ def test_client_with_transform_transport_skips_emission_when_transformed_event_i
     client.emit(event)
 
     transport.transport.session.post.assert_not_called()
-
-
-def test_client_with_transform_transport_emits_modified_deprecated_event(mocker: MockerFixture) -> None:
-    from openlineage.client.run import Job, Run, RunEvent, RunState
-
-    session = mocker.patch("requests.Session")
-    config = TransformConfig.from_dict(
-        {
-            "transport": {
-                "type": "http",
-                "url": "http://backend:5000",
-                "session": session,
-            },
-            "transformer_class": "tests.transform.test_transform.SampleEventTransformer",
-        }
-    )
-    transport = TransformTransport(config)
-
-    client = OpenLineageClient(transport=transport)
-    now = datetime.datetime.now().isoformat()
-    run_id = str(generate_new_uuid())
-    event = RunEvent(
-        eventType=RunState.START,
-        eventTime=now,
-        run=Run(runId=run_id),
-        job=Job(namespace="http", name="test"),
-        producer="prod",
-    )
-    modified_event = RunEvent(
-        eventType=RunState.START,
-        eventTime=now,
-        run=Run(runId=run_id),
-        job=Job(namespace="new_value", name="test"),
-        producer="prod",
-    )
-
-    client.emit(event)
-    transport.transport.session.post.assert_called_once_with(
-        url="http://backend:5000/api/v1/lineage",
-        data=Serde.to_json(modified_event),
-        headers={"Content-Type": "application/json"},
-        timeout=5.0,
-        verify=True,
-    )
-
-    # Assert the original event is unchanged
-    assert event == RunEvent(
-        eventType=RunState.START,
-        eventTime=now,
-        run=Run(runId=run_id),
-        job=Job(namespace="http", name="test"),
-        producer="prod",
-    )
 
 
 @patch("requests.Session.post")

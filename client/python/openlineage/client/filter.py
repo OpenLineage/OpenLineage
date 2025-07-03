@@ -4,18 +4,14 @@ from __future__ import annotations
 
 import logging
 import re
-import typing
-import warnings
+from typing import TYPE_CHECKING
 
 import attr
-from openlineage.client.event_v2 import RunEvent as RunEvent_v2
 
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore", DeprecationWarning)
-    from openlineage.client.run import RunEvent
+if TYPE_CHECKING:
+    from openlineage.client.event_v2 import RunEvent
 
 log = logging.getLogger(__name__)
-RunEventType = typing.Union[RunEvent, RunEvent_v2]
 
 
 @attr.define
@@ -26,7 +22,7 @@ class FilterConfig:
 
 
 class Filter:
-    def filter_event(self, event: RunEventType) -> RunEventType | None:
+    def filter_event(self, event: RunEvent) -> RunEvent | None:
         ...
 
 
@@ -34,7 +30,7 @@ class ExactMatchFilter(Filter):
     def __init__(self, match: str) -> None:
         self.match = match
 
-    def filter_event(self, event: RunEventType) -> RunEventType | None:
+    def filter_event(self, event: RunEvent) -> RunEvent | None:
         if self.match == event.job.name:
             log.debug("Job name `%s` matches exactly `%s`.", event.job.name, self.match)
             return None
@@ -45,7 +41,7 @@ class RegexFilter(Filter):
     def __init__(self, regex: str) -> None:
         self.pattern = re.compile(regex)
 
-    def filter_event(self, event: RunEventType) -> RunEventType | None:
+    def filter_event(self, event: RunEvent) -> RunEvent | None:
         if self.pattern.match(event.job.name):
             log.debug("Job name `%s` matches regex `%s`.", event.job.name, self.pattern.pattern)
             return None

@@ -115,7 +115,7 @@ Let's look at this sample OpenLineage client code written in python, that define
 
 ```python
 #!/usr/bin/env python3
-from openlineage.client.run import (
+from openlineage.client.event_v2 import (
     RunEvent,
     RunState,
     Run,
@@ -125,13 +125,12 @@ from openlineage.client.run import (
     InputDataset,
 )
 from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions
-from openlineage.client.facet import (
+from openlineage.client.facet_v2 import (
     BaseFacet,
-    SqlJobFacet,
-    SchemaDatasetFacet,
-    SchemaField,
-    SourceCodeLocationJobFacet,
-    NominalTimeRunFacet,
+    sql_job,
+    schema_dataset,
+    source_code_location_job,
+    nominal_time_run,
 )
 from openlineage.client.uuid import generate_new_uuid
 from datetime import datetime, timezone, timedelta
@@ -157,11 +156,11 @@ client = OpenLineageClient(
 # generates job facet
 def job(job_name, sql, location):
     facets = {
-        "sql": SqlJobFacet(sql)
+        "sql": sql_job.SQLJobFacet(sql)
     }
     if location != None:
         facets.update(
-            {"sourceCodeLocation": SourceCodeLocationJobFacet("git", location)}
+            {"sourceCodeLocation": source_code_location_job.SourceCodeLocationJobFacet("git", location)}
         )
     return Job(namespace=namespace, name=job_name, facets=facets)
 
@@ -182,7 +181,7 @@ def run(run_id, hour, name, age, email):
     return Run(
         runId=run_id,
         facets={
-            "nominalTime": NominalTimeRunFacet(
+            "nominalTime": nominal_time_run.NominalTimeRunFacet(
                 nominalStartTime=f"2022-04-14T{twoDigits(hour)}:12:00Z"
             ),
             "my_facet": MyFacet(name, age, email)
@@ -274,43 +273,13 @@ for i in range(0, 5):
     user_counts = dataset("tmp_demo.user_counts")
     user_history = dataset(
         "temp_demo.user_history",
-        SchemaDatasetFacet(
+        schema_dataset.SchemaDatasetFacet(
             fields=[
-                SchemaField(name="id", type="BIGINT", description="the user id"),
-                SchemaField(
+                schema_dataset.SchemaDatasetFacetFields(name="id", type="BIGINT", description="the user id"),
+                schema_dataset.SchemaDatasetFacetFields(
                     name="email_domain", type="VARCHAR", description="the user id"
                 ),
-                SchemaField(name="status", type="BIGINT", description="the user id"),
-                SchemaField(
-                    name="created_at",
-                    type="DATETIME",
-                    description="date and time of creation of the user",
-                ),
-                SchemaField(
-                    name="updated_at",
-                    type="DATETIME",
-                    description="the last time this row was updated",
-                ),
-                SchemaField(
-                    name="fetch_time_utc",
-                    type="DATETIME",
-                    description="the time the data was fetched",
-                ),
-                SchemaField(
-                    name="load_filename",
-                    type="VARCHAR",
-                    description="the original file this data was ingested from",
-                ),
-                SchemaField(
-                    name="load_filerow",
-                    type="INT",
-                    description="the row number in the original file",
-                ),
-                SchemaField(
-                    name="load_timestamp",
-                    type="DATETIME",
-                    description="the time the data was ingested",
-                ),
+                schema_dataset.SchemaDatasetFacetFields(name="status", type="BIGINT", description="the user id"),
             ]
         ),
         "snowflake://",
@@ -369,7 +338,7 @@ def run(run_id, hour, name, age, email):
     return Run(
         runId=run_id,
         facets={
-            "nominalTime": NominalTimeRunFacet(
+            "nominalTime": nominal_time_run.NominalTimeRunFacet(
                 nominalStartTime=f"2022-04-14T{twoDigits(hour)}:12:00Z"
             ),
             "my_facet": MyFacet(name, age, email)

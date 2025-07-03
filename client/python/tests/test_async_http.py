@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from openlineage.client import OpenLineageClient
-from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
 from openlineage.client.serde import Serde
 from openlineage.client.transport.async_http import (
     AsyncHttpConfig,
@@ -107,7 +107,6 @@ class TestAsyncHttpTransport:
                 run=Run(runId=run_id),
                 job=Job(namespace="test", name="job"),
                 producer="test",
-                schemaURL="test",
             )
 
             # Mock the queue to capture event details without blocking
@@ -156,7 +155,6 @@ class TestAsyncHttpTransport:
                 run=Run(runId=run_id),
                 job=Job(namespace="test", name="job"),
                 producer="test",
-                schemaURL="test",
             )
 
             complete_event = RunEvent(
@@ -165,7 +163,6 @@ class TestAsyncHttpTransport:
                 run=Run(runId=run_id),
                 job=Job(namespace="test", name="job"),
                 producer="test",
-                schemaURL="test",
             )
 
             # First, emit START event to schedule it
@@ -201,7 +198,6 @@ class TestAsyncHttpTransport:
                 run=Run(runId=run_id),
                 job=Job(namespace="test", name="job"),
                 producer="test",
-                schemaURL="test",
             )
 
             # Emit COMPLETE event without scheduling START first
@@ -288,7 +284,6 @@ class TestAsyncHttpTransport:
                 run=Run(runId=str(generate_new_uuid())),
                 job=Job(namespace="test", name="job"),
                 producer="test",
-                schemaURL="test",
             )
 
             # Get the prepared request to verify compression
@@ -479,7 +474,6 @@ class TestAsyncHttpTransportIntegration:
                 run=Run(runId=str(generate_new_uuid())),
                 job=Job(namespace="async_http", name="test"),
                 producer="prod",
-                schemaURL="schema",
             )
 
             # Emit event - this should queue it for async processing
@@ -822,7 +816,6 @@ class TestAsyncHttpTransportErrorHandling:
                 run=Run(runId=str(generate_new_uuid())),
                 job=Job(namespace="test", name="job1"),
                 producer="test",
-                schemaURL="test",
             )
             event2 = RunEvent(
                 eventType=RunState.START,
@@ -830,7 +823,6 @@ class TestAsyncHttpTransportErrorHandling:
                 run=Run(runId=str(generate_new_uuid())),
                 job=Job(namespace="test", name="job2"),
                 producer="test",
-                schemaURL="test",
             )
 
             # These should succeed
@@ -863,7 +855,6 @@ class TestAsyncHttpTransportErrorHandling:
                     run=Run(runId=str(generate_new_uuid())),
                     job=Job(namespace="test", name="job3"),
                     producer="test",
-                    schemaURL="test",
                 )
                 transport.emit(event3)
 
@@ -888,7 +879,6 @@ class TestAsyncHttpTransportErrorHandling:
                 run=Run(runId=run_id),
                 job=Job(namespace="test", name="job"),
                 producer="test",
-                schemaURL="test",
             )
 
             # Emit FAIL event without START (should process immediately)
@@ -901,7 +891,6 @@ class TestAsyncHttpTransportErrorHandling:
                 run=Run(runId=run_id),
                 job=Job(namespace="test", name="job"),
                 producer="test",
-                schemaURL="test",
             )
 
             transport.emit(abort_event)
@@ -916,7 +905,6 @@ class TestAsyncHttpTransportErrorHandling:
                 run=Run(runId=run_id2),
                 job=Job(namespace="test", name="job"),
                 producer="test",
-                schemaURL="test",
             )
             transport.emit(start_event)
 
@@ -927,7 +915,6 @@ class TestAsyncHttpTransportErrorHandling:
                 run=Run(runId=run_id2),
                 job=Job(namespace="test", name="job"),
                 producer="test",
-                schemaURL="test",
             )
             fail_event2 = RunEvent(
                 eventType=RunState.FAIL,
@@ -935,7 +922,6 @@ class TestAsyncHttpTransportErrorHandling:
                 run=Run(runId=run_id2),
                 job=Job(namespace="test", name="job"),
                 producer="test",
-                schemaURL="test",
             )
 
             transport.emit(complete_event)

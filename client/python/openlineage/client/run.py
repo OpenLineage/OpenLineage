@@ -15,7 +15,9 @@ with warnings.catch_warnings():
 
 
 warnings.warn(
-    "This module is deprecated. Please use `openlineage.client.event_v2`.", DeprecationWarning, stacklevel=2
+    "This module is deprecated and not supported. Please use `openlineage.client.event_v2`.",
+    DeprecationWarning,
+    stacklevel=2,
 )
 
 SCHEMA_URL = "https://openlineage.io/spec/1-0-5/OpenLineage.json#/definitions/RunEvent"
