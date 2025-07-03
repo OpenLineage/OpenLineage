@@ -71,7 +71,7 @@ public class IcebergHandler implements CatalogHandler {
   }
 
   @Override
-  public Optional<OpenLineage.CatalogDatasetFacet> getCatalogDatasetFacet(
+  public Optional<CatalogWithAdditionalFacets> getCatalogDatasetFacet(
       TableCatalog tableCatalog, Map<String, String> properties) {
     Optional<Map<String, String>> catalogConf =
         context
@@ -106,7 +106,7 @@ public class IcebergHandler implements CatalogHandler {
       builder.metadataUri(catalogUri);
     }
 
-    return Optional.of(builder.build());
+    return Optional.of(CatalogWithAdditionalFacets.of(builder.build()));
   }
 
   @Override
