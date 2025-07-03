@@ -243,7 +243,11 @@ def on_starting(component):
 
 @hookimpl
 def before_stopping(component):
-    executor.shutdown(wait=False)
+    if executor:
+        # stom accepting new events
+        executor.shutdown(wait=False)
+    # block until all pending events are processed
+    adapter.close()
 
 
 @hookimpl

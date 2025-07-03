@@ -201,7 +201,7 @@ def consume_structured_logs(
         models=models,
         selector=model_selector,
     )
-    logger.info(f"dbt-ol will read logs from {processor.dbt_log_file_path}")
+    logger.info("dbt-ol will read logs from %s", processor.dbt_log_file_path)
     client = OpenLineageClient()
     emitted_events = 0
     try:
@@ -210,7 +210,7 @@ def consume_structured_logs(
                 client.emit(event)
                 emitted_events += 1
                 if emitted_events % 50 == 0:
-                    logger.debug(f"Processed {emitted_events} events")
+                    logger.debug("Processed %d events", emitted_events)
             except Exception as e:
                 logger.warning(
                     "OpenLineage client failed to emit event %s runId %s. Exception: %s",
@@ -219,13 +219,13 @@ def consume_structured_logs(
                     e,
                     exc_info=True,
                 )
-        # Will wait for async events to be sent if async config is enabled\
-        logger.debug("Waiting for events to be sent.")
     except UnsupportedDbtCommand as e:
         logger.error(e)
         dbt_integration_return_code = 1
     finally:
-        client.close(timeout=30.0)
+        # Will wait for async events to be sent if async config is enabled
+        logger.debug("Waiting for events to be sent.")
+        client.close()
 
     logger.info("Emitted %d OpenLineage events", emitted_events)
     logger.info("Underlying dbt execution returned %d", processor.dbt_command_return_code)
