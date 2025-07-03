@@ -79,13 +79,15 @@ class SparkSQLExecutionContextTest {
     when(olContext.getRunUuid())
         .thenReturn(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b"));
 
-    when(eventEmitter.getOverriddenAppName()).thenReturn(Optional.of("test-rdd"));
     when(queryExecution.executedPlan().nodeName()).thenReturn("some-node-name");
 
     when(eventEmitter.getJobNamespace()).thenReturn("ns_name");
+    when(eventEmitter.getApplicationJobName()).thenReturn("app-name");
+    when(olContext.getApplicationName()).thenReturn("app-name");
     when(eventEmitter.getApplicationRunId())
         .thenReturn(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
-    when(eventEmitter.getApplicationJobName()).thenReturn("app-name");
+    when(olContext.getApplicationUuid())
+        .thenReturn(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
   }
 
   @Test
@@ -256,7 +258,7 @@ class SparkSQLExecutionContextTest {
     for (RunEvent runEvent : lineageEvent.getAllValues()) {
       OpenLineage.Run run = runEvent.getRun();
       OpenLineage.Job job = runEvent.getJob();
-      assertThat(job.getName()).isEqualTo("test_rdd.some_node_name");
+      assertThat(job.getName()).isEqualTo("app-name.some_node_name");
       assertThat(job.getNamespace()).isEqualTo("ns_name");
       assertThat(run.getRunId()).isEqualTo(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b"));
     }

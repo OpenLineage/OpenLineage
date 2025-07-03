@@ -52,6 +52,8 @@ class SparkApplicationDetailsFacetBuilderTest {
         new SparkApplicationDetailsFacetBuilder(
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
+                .applicationName("someapp")
+                .applicationUuid(UUID.fromString("app-123-456"))
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .meterRegistry(new SimpleMeterRegistry())
                 .openLineageConfig(new SparkOpenLineageConfig())

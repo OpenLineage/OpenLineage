@@ -5,9 +5,6 @@
 
 package io.openlineage.spark.api.naming;
 
-import static io.openlineage.spark.agent.util.DatabricksUtils.prettifyDatabricksJobName;
-
-import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.api.JobNameSuffixProvider;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -16,8 +13,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.SparkConf;
-import org.apache.spark.SparkContext;
 import org.apache.spark.sql.execution.SparkPlan;
 import org.apache.spark.sql.execution.WholeStageCodegenExec;
 
@@ -33,7 +28,6 @@ public class JobNameBuilder {
       return context.getJobName();
     }
 
-    Optional<SparkConf> sparkConf = context.getSparkContext().map(SparkContext::getConf);
     StringBuilder jobNameBuilder =
         new StringBuilder(applicationJobNameResolver.getJobName(context));
 
@@ -60,9 +54,6 @@ public class JobNameBuilder {
               .orElse(""));
 
       jobName = jobNameBuilder.toString();
-      if (sparkConf.isPresent() && DatabricksUtils.isRunOnDatabricksPlatform(sparkConf.get())) {
-        jobName = prettifyDatabricksJobName(sparkConf.get(), jobName);
-      }
     }
 
     context.setJobName(jobName);

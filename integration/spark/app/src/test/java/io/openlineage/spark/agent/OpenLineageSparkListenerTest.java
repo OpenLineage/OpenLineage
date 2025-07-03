@@ -69,25 +69,26 @@ class OpenLineageSparkListenerTest {
   @BeforeEach
   void setup() {
     when(sparkSession.sparkContext()).thenReturn(sparkContext);
-    when(sparkContext.appName()).thenReturn("appName");
     when(sparkContext.getConf()).thenReturn(new SparkConf());
     when(plan.sparkContext()).thenReturn(sparkContext);
     when(plan.nodeName()).thenReturn("execute");
 
     when(emitter.getJobNamespace()).thenReturn("ns_name");
+    when(emitter.getApplicationJobName()).thenReturn("app-name");
     when(emitter.getParentJobName()).thenReturn(Optional.of("parent_name"));
     when(emitter.getParentJobNamespace()).thenReturn(Optional.of("parent_namespace"));
     when(emitter.getParentRunId())
         .thenReturn(Optional.of(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b")));
     when(emitter.getApplicationRunId())
         .thenReturn(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
-    when(emitter.getApplicationJobName()).thenReturn("test_rdd");
 
     SparkOpenLineageConfig openLineageConfig = new SparkOpenLineageConfig();
     olContext =
         OpenLineageContext.builder()
             .sparkSession(sparkSession)
             .sparkContext(sparkSession.sparkContext())
+            .applicationName("app-name")
+            .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(qe)
             .meterRegistry(new SimpleMeterRegistry())
@@ -176,9 +177,6 @@ class OpenLineageSparkListenerTest {
   void testSparkSQLEndGetsQueryExecutionFromEvent() {
     LogicalPlan query = UnresolvedRelation$.MODULE$.apply(TableIdentifier.apply("tableName"));
 
-    when(sparkSession.sparkContext()).thenReturn(sparkContext);
-    when(sparkContext.appName()).thenReturn("appName");
-    when(sparkContext.getConf()).thenReturn(new SparkConf());
     when(qe.optimizedPlan())
         .thenReturn(
             new InsertIntoHadoopFsRelationCommand(

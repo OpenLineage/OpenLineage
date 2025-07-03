@@ -23,6 +23,7 @@ import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import lombok.SneakyThrows;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -92,6 +93,8 @@ class ColumnLevelLineageDeltaTest {
         OpenLineageContext.builder()
             .sparkSession(spark)
             .sparkContext(spark.sparkContext())
+            .applicationName("DeltaIntegrationTest")
+            .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(queryExecution)
             .meterRegistry(new SimpleMeterRegistry())
