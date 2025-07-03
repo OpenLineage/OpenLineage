@@ -5,7 +5,10 @@
 
 package io.openlineage.client;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -19,6 +22,7 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.circuitBreaker.CircuitBreaker;
 import io.openlineage.client.circuitBreaker.CircuitBreakerState;
 import io.openlineage.client.transports.Transport;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
 class OpenLineageClientTest {
@@ -29,7 +33,46 @@ class OpenLineageClientTest {
   OpenLineageClient client = new OpenLineageClient(transport, circuitBreaker, meterRegistry);
 
   @Test
-  void testCircuitBreakerFroEmitRunEvent() {
+  void testEmit() {
+    when(circuitBreaker.currentState()).thenReturn(new CircuitBreakerState(false));
+
+    OpenLineage.RunEvent runEvent = mock(RunEvent.class);
+    client.emit(runEvent);
+    verify(transport, times(1)).emit(runEvent);
+
+    OpenLineage.DatasetEvent datasetEvent = mock(DatasetEvent.class);
+    client.emit(datasetEvent);
+    verify(transport, times(1)).emit(datasetEvent);
+
+    OpenLineage.JobEvent jobEvent = mock(JobEvent.class);
+    client.emit(jobEvent);
+    verify(transport, times(1)).emit(jobEvent);
+  }
+
+  @SneakyThrows
+  @Test
+  void testClose() {
+    client.close();
+    verify(transport, times(1)).close();
+    verify(circuitBreaker, times(1)).close();
+  }
+
+  @SneakyThrows
+  @Test
+  void testCloseFails() {
+    RuntimeException nestedException = new RuntimeException("Transport failed");
+    doThrow(nestedException).when(transport).close();
+
+    OpenLineageClientException exception =
+        assertThrows(OpenLineageClientException.class, () -> client.close());
+    assertThat(exception.getCause()).isEqualTo(nestedException);
+
+    verify(transport, times(1)).close();
+    verify(circuitBreaker, times(1)).close(); // called even if transport fails
+  }
+
+  @Test
+  void testCircuitBreakerForEmitRunEvent() {
     when(circuitBreaker.currentState()).thenReturn(new CircuitBreakerState(true));
     client.emit(mock(RunEvent.class));
     verify(transport, times(0)).emit(any(RunEvent.class));
@@ -40,7 +83,7 @@ class OpenLineageClientTest {
   }
 
   @Test
-  void testCircuitBreakerFroEmitJobEvent() {
+  void testCircuitBreakerForEmitJobEvent() {
     when(circuitBreaker.currentState()).thenReturn(new CircuitBreakerState(true));
     client.emit(mock(JobEvent.class));
     verify(transport, times(0)).emit(any(JobEvent.class));
@@ -51,7 +94,7 @@ class OpenLineageClientTest {
   }
 
   @Test
-  void testCircuitBreakerFroEmitDatasetEvent() {
+  void testCircuitBreakerForEmitDatasetEvent() {
     when(circuitBreaker.currentState()).thenReturn(new CircuitBreakerState(true));
     client.emit(mock(DatasetEvent.class));
     verify(transport, times(0)).emit(any(DatasetEvent.class));
