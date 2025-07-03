@@ -89,8 +89,6 @@ public class SparkTestUtils {
     Path sparkSqlWarehouse =
         userDirPath.resolve("tmp").resolve("spark-sql-warehouse").resolve(testUuid.toString());
 
-    OpenLineageSparkListener.close();
-
     return SparkSession.builder()
         .appName(appName)
         .master("local[*]")
