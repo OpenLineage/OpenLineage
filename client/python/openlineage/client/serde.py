@@ -47,7 +47,7 @@ class Serde:
     def to_dict(cls, obj: Any) -> dict[Any, Any]:
         if not isinstance(obj, dict):
             obj = attr.asdict(obj)
-        return cast(dict[Any, Any], cls.remove_nulls_and_enums(obj))
+        return cast("dict[Any, Any]", cls.remove_nulls_and_enums(obj))
 
     @classmethod
     def to_json(cls, obj: Any) -> str:

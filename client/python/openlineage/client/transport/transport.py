@@ -1,19 +1,21 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-"""
-To implement custom Transport implement Config and Transport classes.
+"""Transport interface for OpenLineage events.
 
-Transport needs to
- * specify class variable `config` that will point to Config class that Transport requires
- * __init__ that will accept specified Config class instance
- * implement `emit` method that will accept RunEvent
+To implement a custom Transport, implement both Config and Transport classes.
 
-Config file is read and parameters there are passed to `from_dict` classmethod.
-The config class can have more complex attributes, but needs to be able to
-instantiate them in `from_dict` method.
+Transport implementation requirements:
+ * Specify class variable `config_class` that points to the Config class that Transport requires
+ * Implement `__init__` that accepts the specified Config class instance
+ * Implement `emit` method that accepts OpenLineage events
 
-DefaultTransportFactory instantiates custom transports by looking at `type` field in
-class config.
+Config implementation requirements:
+ * Implement `from_dict` classmethod to create config from dictionary parameters
+ * The config class can have complex attributes, but must be able to instantiate them in `from_dict`
+
+Transport instantiation:
+ * TransportFactory instantiates custom transports by looking at the `type` field in the config
+ * The factory uses this type to determine which transport class to instantiate
 """
 
 from __future__ import annotations
@@ -39,13 +41,41 @@ class Config:
 class Transport:
     kind: str | None = None
     name: str | None = None
+    priority: int = 0
     config_class: type[Config] = Config
 
     def emit(self, event: Event) -> Any:
         raise NotImplementedError
 
+    def close(self, timeout: float = -1) -> bool:
+        """
+        Closes the transport, waiting for all events to complete until the timeout is reached.
+
+        Params:
+            timeout: Timeout in seconds. Negative value will block until last event
+            is processed, while 0 means it completes immediately.
+
+        Returns:
+            bool: True if all events were processed before transport was closed,
+                False if some events were not processed.
+        """
+        return self.wait_for_completion(timeout)
+
+    def wait_for_completion(self, timeout: float = -1) -> bool:
+        """
+        Block until all events are processed or timeout is reached.
+
+        Params:
+            timeout: Timeout in seconds. Negative value will block until last event is processed,
+            while 0 means it completes immediately.
+
+        Returns:
+            bool: True if all events were processed, False if some events were not processed.
+        """
+        return True
+
     def __str__(self) -> str:
-        return f"<{self.__class__.__name__}(name={self.name}, kind={self.kind})>"
+        return f"<{self.__class__.__name__}(name={self.name}, kind={self.kind}, priority={self.priority})>"
 
 
 class TransportFactory:

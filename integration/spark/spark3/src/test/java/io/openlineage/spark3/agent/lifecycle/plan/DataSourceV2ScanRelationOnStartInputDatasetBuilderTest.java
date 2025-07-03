@@ -5,24 +5,16 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
-import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
-import io.openlineage.spark.agent.util.DatasetVersionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
-import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.List;
-import java.util.Optional;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
@@ -37,7 +29,6 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
@@ -48,13 +39,6 @@ class DataSourceV2ScanRelationOnStartInputDatasetBuilderTest {
   private final DatasetFactory<OpenLineage.InputDataset> factory = mock(DatasetFactory.class);
   private final DataSourceV2ScanRelationOnStartInputDatasetBuilder builder =
       new DataSourceV2ScanRelationOnStartInputDatasetBuilder(context, factory);
-  private final DatasetCompositeFacetsBuilder datasetFacetsBuilder =
-      new DatasetCompositeFacetsBuilder(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
-
-  @BeforeEach
-  public void setup() {
-    when(factory.createCompositeFacetBuilder()).thenReturn(datasetFacetsBuilder);
-  }
 
   @Test
   void testIsDefinedAt() {
@@ -91,26 +75,11 @@ class DataSourceV2ScanRelationOnStartInputDatasetBuilderTest {
 
     try (MockedStatic<DataSourceV2RelationDatasetExtractor> ignored =
         mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
-      try (MockedStatic<DatasetVersionDatasetFacetUtils> facetUtilsMockedStatic =
-          mockStatic(DatasetVersionDatasetFacetUtils.class)) {
-        try (MockedStatic<DatasetVersionUtils> versionUtils =
-            mockStatic(DatasetVersionUtils.class)) {
-          when(DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
-                  context, relation))
-              .thenReturn(Optional.of("v2"));
-          when(DataSourceV2RelationDatasetExtractor.extract(
-                  factory, context, relation, datasetFacetsBuilder))
-              .thenReturn(datasets);
+      when(DataSourceV2RelationDatasetExtractor.extractIncludingVersionFacet(
+              factory, context, relation))
+          .thenReturn(datasets);
 
-          Assertions.assertThat(builder.apply(scanRelation)).isEqualTo(datasets);
-
-          versionUtils.verify(
-              () ->
-                  DatasetVersionUtils.buildVersionFacets(
-                      eq(context), eq(datasetFacetsBuilder), any()),
-              times(1));
-        }
-      }
+      Assertions.assertThat(builder.apply(scanRelation)).isEqualTo(datasets);
     }
   }
 }

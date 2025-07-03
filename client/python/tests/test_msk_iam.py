@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
 
-@pytest.fixture()
+@pytest.fixture
 def event() -> RunEvent:
     return RunEvent(
         eventType=RunState.START,
@@ -65,7 +65,14 @@ def test_msk_detect_running_region() -> None:
 
 
 def test_msk_detect_running_region_empty(mocker: MockerFixture) -> None:
-    mocker.patch("requests.get", side_effect=Exception())
+    # Clear environment variables that could provide region
+    mocker.patch.dict(os.environ, {}, clear=True)
+    # Mock boto3 components to return None
+    mock_session = mocker.MagicMock()
+    mock_session.region_name = None
+    mocker.patch("boto3.Session", return_value=mock_session)
+    mocker.patch("boto3.DEFAULT_SESSION", None)
+
     region = _detect_running_region()
     assert region is None
 

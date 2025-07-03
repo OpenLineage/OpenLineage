@@ -12,9 +12,11 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -44,7 +46,7 @@ import scala.Option;
 class DataSourceV2RelationDatasetExtractorTest {
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   SparkSession sparkSession = mock(SparkSession.class);
-  DatasetFactory<OpenLineage.Dataset> datasetFactory = mock(DatasetFactory.class);
+  DatasetFactory<Dataset> datasetFactory = mock(DatasetFactory.class);
   DataSourceV2Relation dataSourceV2Relation = mock(DataSourceV2Relation.class);
   DatasetCompositeFacetsBuilder datasetFacetsBuilder = mock(DatasetCompositeFacetsBuilder.class);
   TableCatalog tableCatalog = mock(TableCatalog.class);
@@ -99,7 +101,7 @@ class DataSourceV2RelationDatasetExtractorTest {
 
         assertEquals(
             Collections.singletonList(dataset),
-            DataSourceV2RelationDatasetExtractor.extract(
+            DataSourceV2RelationDatasetExtractor.extractIncludingVersionFacet(
                 datasetFactory, openLineageContext, dataSourceV2Relation));
       }
     }
@@ -118,7 +120,7 @@ class DataSourceV2RelationDatasetExtractorTest {
 
       assertEquals(
           Collections.emptyList(),
-          DataSourceV2RelationDatasetExtractor.extract(
+          DataSourceV2RelationDatasetExtractor.extractIncludingVersionFacet(
               datasetFactory, openLineageContext, dataSourceV2Relation));
     }
   }
@@ -127,7 +129,7 @@ class DataSourceV2RelationDatasetExtractorTest {
   void testExtractFromDataSourceV2RelationWhenIdentifierEmpty() {
     when(dataSourceV2Relation.identifier()).thenReturn(Option.empty());
     final List<OpenLineage.Dataset> result =
-        DataSourceV2RelationDatasetExtractor.extract(
+        DataSourceV2RelationDatasetExtractor.extractIncludingVersionFacet(
             datasetFactory, openLineageContext, dataSourceV2Relation);
     assertEquals(0, result.size());
   }
@@ -137,7 +139,7 @@ class DataSourceV2RelationDatasetExtractorTest {
     when(dataSourceV2Relation.identifier()).thenReturn(Option.apply(mock(Identifier.class)));
     when(dataSourceV2Relation.catalog()).thenReturn(Option.empty());
     final List<OpenLineage.Dataset> result =
-        DataSourceV2RelationDatasetExtractor.extract(
+        DataSourceV2RelationDatasetExtractor.extractIncludingVersionFacet(
             datasetFactory, openLineageContext, dataSourceV2Relation);
     assertEquals(0, result.size());
   }
@@ -206,7 +208,7 @@ class DataSourceV2RelationDatasetExtractorTest {
         DatasetFactory.output(openLineageContext);
 
     final List<OpenLineage.OutputDataset> result =
-        DataSourceV2RelationDatasetExtractor.extract(
+        DataSourceV2RelationDatasetExtractor.extractIncludingVersionFacet(
             datasetFactory, openLineageContext, dataSourceV2Relation);
 
     assertEquals(1, result.size());
@@ -252,12 +254,55 @@ class DataSourceV2RelationDatasetExtractorTest {
         DatasetFactory.output(openLineageContext);
 
     final List<OpenLineage.OutputDataset> result =
-        DataSourceV2RelationDatasetExtractor.extract(
+        DataSourceV2RelationDatasetExtractor.extractIncludingVersionFacet(
             datasetFactory, openLineageContext, dataSourceV2Relation);
 
     assertEquals(1, result.size());
     assertThat(result.get(0))
         .hasFieldOrPropertyWithValue("name", "bigquery-public-data.samples.shakespeare")
         .hasFieldOrPropertyWithValue("namespace", "bigquery");
+  }
+
+  @Test
+  void testExtractFromDataSourceV2RelationContainsVersionFacet() {
+    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
+      try (MockedStatic<PlanUtils> mockedPlanUtils = mockStatic(PlanUtils.class)) {
+        try (MockedStatic<DatasetVersionDatasetFacetUtils> versionUtils =
+            mockStatic(DatasetVersionDatasetFacetUtils.class)) {
+          DatasetFactory<OpenLineage.OutputDataset> datasetFactory =
+              DatasetFactory.output(openLineageContext);
+          DatasetIdentifier di = mock(DatasetIdentifier.class);
+          when(di.getNamespace()).thenReturn("file://tmp");
+          when(di.getName()).thenReturn("dataset-name");
+          when(openLineageContext.getOpenLineage())
+              .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+
+          when(CatalogUtils3.getDatasetIdentifier(
+                  openLineageContext, tableCatalog, identifier, tableProperties))
+              .thenReturn(di);
+          when(DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+                  openLineageContext, dataSourceV2Relation))
+              .thenReturn(Optional.of("1.0.0"));
+          when(dataSourceV2Relation.schema()).thenReturn(new StructType());
+
+          assertThat(
+                  DataSourceV2RelationDatasetExtractor.extract(
+                          datasetFactory, openLineageContext, dataSourceV2Relation, false)
+                      .get(0)
+                      .getFacets()
+                      .getVersion())
+              .isNull();
+
+          assertThat(
+                  DataSourceV2RelationDatasetExtractor.extract(
+                          datasetFactory, openLineageContext, dataSourceV2Relation, true)
+                      .get(0)
+                      .getFacets()
+                      .getVersion()
+                      .getDatasetVersion())
+              .isEqualTo("1.0.0");
+        }
+      }
+    }
   }
 }

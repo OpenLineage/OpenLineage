@@ -99,7 +99,7 @@ fn parse_copy_into_with_snowflake_internal_stages() {
     for stage_name in stage_names {
         assert_eq!(
             parse_sql(
-                format!("COPY INTO a.b FROM {}", stage_name).as_str(),
+                format!("COPY INTO a.b FROM {stage_name}").as_str(),
                 &SnowflakeDialect {},
                 None,
             )

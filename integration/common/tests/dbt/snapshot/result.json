@@ -25,8 +25,9 @@
       "facets": {
         "sql": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-          "query": "\n\n\n\nselect * from \"postgres\".\"postgres\".\"my_second_dbt_model\"\n"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "\n\n\n\nselect * from \"postgres\".\"postgres\".\"my_second_dbt_model\"\n",
+          "dialect": "postgres"
         }
       },
       "name": "postgres.postgres.snapshot_test.orders_snapshot.snapshot",
@@ -108,8 +109,9 @@
       "facets": {
         "sql": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-          "query": "\n\n\n\nselect * from \"postgres\".\"postgres\".\"my_second_dbt_model\"\n"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "\n\n\n\nselect * from \"postgres\".\"postgres\".\"my_second_dbt_model\"\n",
+          "dialect": "postgres"
         },
         "jobType": {
           "jobType": "SNAPSHOT",

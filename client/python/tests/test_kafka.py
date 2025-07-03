@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
 
-@pytest.fixture()
+@pytest.fixture
 def run_event() -> RunEvent:
     return RunEvent(
         eventType=RunState.START,
@@ -37,7 +37,7 @@ def run_event() -> RunEvent:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def run_event_v2() -> RunEvent:
     return event_v2.RunEvent(
         eventType=event_v2.RunState.START,
@@ -48,7 +48,7 @@ def run_event_v2() -> RunEvent:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def run_event_with_parent() -> RunEvent:
     parent_run_facet = ParentRunFacet.create(
         runId="d9cb8e0b-a410-435e-a619-da5e87ba8508",
@@ -66,7 +66,7 @@ def run_event_with_parent() -> RunEvent:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def run_event_with_parent_v2() -> RunEvent:
     parent_run_facet = parent_run.ParentRunFacet(
         job=parent_run.Job(namespace="parent-namespace", name="parent-job"),
@@ -82,7 +82,7 @@ def run_event_with_parent_v2() -> RunEvent:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def run_event_with_root_parent_v2() -> RunEvent:
     root_run = parent_run.Root(
         job=parent_run.RootJob(namespace="root-namespace", name="root-job"),
@@ -104,7 +104,7 @@ def run_event_with_root_parent_v2() -> RunEvent:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def dataset_event() -> DatasetEvent:
     return DatasetEvent(
         eventTime="2024-04-10T15:08:01.333999",
@@ -114,7 +114,7 @@ def dataset_event() -> DatasetEvent:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def dataset_event_v2() -> DatasetEvent:
     return event_v2.DatasetEvent(
         eventTime="2024-04-10T15:08:01.333999",
@@ -123,7 +123,7 @@ def dataset_event_v2() -> DatasetEvent:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def job_event() -> JobEvent:
     return JobEvent(
         eventTime="2024-04-10T15:08:01.333999",
@@ -133,7 +133,7 @@ def job_event() -> JobEvent:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def job_event_v2() -> JobEvent:
     return event_v2.JobEvent(
         eventTime="2024-04-10T15:08:01.333999",

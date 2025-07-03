@@ -57,7 +57,7 @@ class AmazonDataZoneTransport(Transport):
             log.info(
                 "Successfully posted a LineageEvent: %s in Domain: %s", response["id"], response["domainId"]
             )
-        except Exception as error:  # noqa: BLE001
+        except Exception as error:
             msg = f"Failed to send lineage event to DataZone Domain {self.config.domain_id}: {event}"
             raise RuntimeError(msg) from error
 
