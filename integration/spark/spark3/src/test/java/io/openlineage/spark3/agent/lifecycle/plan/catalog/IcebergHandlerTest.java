@@ -438,11 +438,11 @@ class IcebergHandlerTest {
                 "spark.sql.catalog.test.warehouse",
                 "hdfs://namenode:9000/path/to/warehouse"));
 
-    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacet =
+    Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
         icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
     assertTrue(catalogDatasetFacet.isPresent());
 
-    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get();
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get().getCatalogDatasetFacet();
 
     assertEquals("test", facet.getName());
     assertEquals("hadoop", facet.getType());
@@ -460,11 +460,11 @@ class IcebergHandlerTest {
     when(sparkCatalog.name()).thenReturn("test");
     when(runtimeConfig.getAll()).thenReturn(new Map.Map1("spark.sql.catalog.test.type", "hadoop"));
 
-    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacet =
+    Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
         icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
     assertTrue(catalogDatasetFacet.isPresent());
 
-    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get();
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get().getCatalogDatasetFacet();
 
     assertEquals("test", facet.getName());
     assertEquals("hadoop", facet.getType());
@@ -488,11 +488,11 @@ class IcebergHandlerTest {
                 "spark.sql.catalog.test.warehouse",
                 "s3://bucket/path/to/iceberg/warehouse"));
 
-    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacet =
+    Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
         icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
     assertTrue(catalogDatasetFacet.isPresent());
 
-    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get();
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get().getCatalogDatasetFacet();
 
     assertEquals("test", facet.getName());
     assertEquals("jdbc", facet.getType());
@@ -518,11 +518,11 @@ class IcebergHandlerTest {
                 "spark.sql.catalog.bq_metastore_catalog.warehouse",
                 "gcs://bucket/path/to/iceberg/warehouse"));
 
-    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacet =
+    Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
         icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
     assertTrue(catalogDatasetFacet.isPresent());
 
-    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get();
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get().getCatalogDatasetFacet();
 
     assertEquals("bq_metastore_catalog", facet.getName());
     assertEquals("bigquerymetastore", facet.getType());

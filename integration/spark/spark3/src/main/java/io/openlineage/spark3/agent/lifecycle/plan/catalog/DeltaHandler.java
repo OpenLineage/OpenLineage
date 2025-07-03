@@ -82,7 +82,7 @@ public class DeltaHandler implements CatalogHandler {
   }
 
   @Override
-  public Optional<OpenLineage.CatalogDatasetFacet> getCatalogDatasetFacet(
+  public Optional<CatalogWithAdditionalFacets> getCatalogDatasetFacet(
       TableCatalog tableCatalog, Map<String, String> properties) {
     String name = tableCatalog.name();
     if (name == null || name.isEmpty()) {
@@ -97,7 +97,7 @@ public class DeltaHandler implements CatalogHandler {
             .type(DELTA)
             .source("spark");
 
-    return Optional.of(builder.build());
+    return Optional.of(CatalogWithAdditionalFacets.of(builder.build()));
   }
 
   @Override
