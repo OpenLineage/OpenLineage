@@ -7,8 +7,8 @@ from typing import Dict, Optional
 
 from openlineage.client import OpenLineageClient, set_producer
 from openlineage.client.constants import DEFAULT_NAMESPACE_NAME
-from openlineage.client.facet import ParentRunFacet
-from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
+from openlineage.client.facet_v2 import parent_run
 from openlineage.dagster import __version__ as OPENLINEAGE_DAGSTER_VERSION
 from openlineage.dagster.utils import make_step_job_name, to_utc_iso_8601
 
@@ -249,7 +249,14 @@ class OpenLineageAdapter:
     ) -> Run:
         facets: Dict = {}
         if parent_run_id is not None and parent_job_name is not None:
-            facets.update({"parent": ParentRunFacet.create(parent_run_id, namespace, parent_job_name)})
+            facets.update(
+                {
+                    "parent": parent_run.ParentRunFacet(
+                        run=parent_run.Run(runId=parent_run_id),
+                        job=parent_run.Job(namespace=namespace, name=parent_job_name),
+                    )
+                }
+            )
         return Run(run_id, facets)
 
     @staticmethod

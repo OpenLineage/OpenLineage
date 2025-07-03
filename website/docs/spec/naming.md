@@ -66,7 +66,7 @@ Runs are named using client-generated UUIDs. The OpenLineage client is responsib
 them throughout the duration of the runcycle.
 
 ```python
-from openlineage.client.run import Run
+from openlineage.client.event_v2 import Run
 from openlineage.client.uuid import generate_new_uuid
 
 run = Run(str(generate_new_uuid()))

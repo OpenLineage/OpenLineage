@@ -46,12 +46,12 @@ from openlineage.client.generated.base import (
 )
 
 __all__ = [
-    "PRODUCER",
     "BaseFacet",
     "DatasetFacet",
     "InputDatasetFacet",
     "JobFacet",
     "OutputDatasetFacet",
+    "PRODUCER",
     "RunFacet",
     "set_producer",
     "catalog_dataset",

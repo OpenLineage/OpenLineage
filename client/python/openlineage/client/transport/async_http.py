@@ -14,8 +14,7 @@ from urllib.parse import urljoin
 
 import attr
 import httpx
-from openlineage.client.event_v2 import RunEvent as RunEventV2
-from openlineage.client.run import RunEvent
+from openlineage.client.event_v2 import RunEvent
 from openlineage.client.serde import Serde
 from openlineage.client.transport.http import HttpCompression, TokenProvider, create_token_provider
 from openlineage.client.transport.transport import Config, Transport
@@ -466,7 +465,7 @@ class AsyncHttpTransport(Transport):
         run_id = None
         event_type = None
 
-        if isinstance(event, (RunEvent, RunEventV2)):
+        if isinstance(event, RunEvent):
             event_type = str(event.eventType.value)  # type: ignore[union-attr]
             event_id = event.run.runId + "-" + event_type
             run_id = event.run.runId

@@ -79,7 +79,9 @@ run.omit = [
     "tests/*",
     "*/tests/*",
     "test_*.py",
-    "*_test.py"
+    "*_test.py",
+    "openlineage/client/run.py",
+    "openlineage/client/facet.py",
 ]
 
 [tool.mypy]

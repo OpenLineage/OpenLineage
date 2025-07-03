@@ -65,6 +65,8 @@ from airflow.models import BaseOperator
 from airflow.utils.dates import days_ago
 from airflow import DAG
 
+from typing import Any
+
 
 default_args = {
     'depends_on_past': False,
@@ -92,7 +94,7 @@ In the same folder we create `custom_extractor.py`:
 ```python
 from typing import Union, Optional, List
 
-from openlineage.client.run import Dataset
+from openlineage.client.event_v2 import Dataset
 from openlineage.airflow.extractors import TaskMetadata
 from openlineage.airflow.extractors.base import BaseExtractor
 

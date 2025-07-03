@@ -9,7 +9,9 @@ from openlineage.client.constants import DEFAULT_PRODUCER
 from openlineage.client.utils import RedactMixin
 
 warnings.warn(
-    "This module is deprecated. Please use `openlineage.client.facet_v2`.", DeprecationWarning, stacklevel=2
+    "This module is deprecated and not supported. Please use `openlineage.client.facet_v2`.",
+    DeprecationWarning,
+    stacklevel=2,
 )
 
 SCHEMA_URI = "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json"

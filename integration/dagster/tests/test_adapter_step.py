@@ -5,8 +5,8 @@ import time
 from unittest.mock import patch
 
 from openlineage.client.constants import DEFAULT_NAMESPACE_NAME
-from openlineage.client.facet import ParentRunFacet
-from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
+from openlineage.client.facet_v2 import parent_run
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.dagster.adapter import OpenLineageAdapter
 
@@ -36,12 +36,9 @@ def test_start_pipeline(mock_client, mock_to_utc_iso_8601):
             run=Run(
                 runId=step_run_id,
                 facets={
-                    "parent": ParentRunFacet(
-                        run={"runId": pipeline_run_id},
-                        job={
-                            "namespace": DEFAULT_NAMESPACE_NAME,
-                            "name": pipeline_name,
-                        },
+                    "parent": parent_run.ParentRunFacet(
+                        run=parent_run.Run(pipeline_run_id),
+                        job=parent_run.Job(namespace=DEFAULT_NAMESPACE_NAME, name=pipeline_name),
                     )
                 },
             ),
@@ -80,12 +77,9 @@ def test_complete_step(mock_client, mock_to_utc_iso_8601):
             run=Run(
                 runId=step_run_id,
                 facets={
-                    "parent": ParentRunFacet(
-                        run={"runId": pipeline_run_id},
-                        job={
-                            "namespace": DEFAULT_NAMESPACE_NAME,
-                            "name": pipeline_name,
-                        },
+                    "parent": parent_run.ParentRunFacet(
+                        run=parent_run.Run(pipeline_run_id),
+                        job=parent_run.Job(namespace=DEFAULT_NAMESPACE_NAME, name=pipeline_name),
                     )
                 },
             ),
@@ -124,12 +118,9 @@ def test_fail_step(mock_client, mock_to_utc_iso_8601):
             run=Run(
                 runId=step_run_id,
                 facets={
-                    "parent": ParentRunFacet(
-                        run={"runId": pipeline_run_id},
-                        job={
-                            "namespace": DEFAULT_NAMESPACE_NAME,
-                            "name": pipeline_name,
-                        },
+                    "parent": parent_run.ParentRunFacet(
+                        run=parent_run.Run(pipeline_run_id),
+                        job=parent_run.Job(namespace=DEFAULT_NAMESPACE_NAME, name=pipeline_name),
                     )
                 },
             ),

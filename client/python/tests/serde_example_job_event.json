@@ -12,15 +12,17 @@
 			"facets": {
 				"schema": {
 					"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
-					"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
+					"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 					"fields": [
 						{
 							"name": "a",
-							"type": "string"
+							"type": "string",
+							"fields": []
 						}
 					]
 				}
-			}
+			},
+			"inputFacets": {}
 		}
 	],
 	"outputs": [
@@ -30,17 +32,19 @@
 			"facets": {
 				"schema": {
 					"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
-					"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
+					"_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
 					"fields": [
 						{
 							"name": "a",
-							"type": "string"
+							"type": "string",
+							"fields": []
 						}
 					]
 				}
-			}
+			},
+			"outputFacets": {}
 		}
 	],
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
-	"schemaURL": "https://openlineage.io/spec/2-0-0/OpenLineage.json#/$defs/JobEvent"
+	"schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/JobEvent"
 }

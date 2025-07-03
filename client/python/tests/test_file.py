@@ -12,7 +12,7 @@ from unittest import mock
 
 import pytest
 from openlineage.client import OpenLineageClient
-from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
 from openlineage.client.transport.file import FileConfig, FileTransport
 from openlineage.client.uuid import generate_new_uuid
 

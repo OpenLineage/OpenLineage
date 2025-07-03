@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 from typing import Dict, List
 
-from openlineage.client.run import Dataset, Job, Run, RunEvent, RunState
+from openlineage.client.event_v2 import Dataset, Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_new_uuid
 
 
@@ -39,7 +39,6 @@ def create_run_event(
         inputs=inputs,
         outputs=outputs,
         producer="test-producer",
-        schemaURL="https://openlineage.io/spec/0.0.1/OpenLineage.json",
     )
 
 
