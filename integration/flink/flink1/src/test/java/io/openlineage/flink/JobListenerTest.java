@@ -25,11 +25,9 @@ import io.openlineage.flink.utils.JobTypeUtils;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContextFactory;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.dag.Transformation;
@@ -125,6 +123,7 @@ class JobListenerTest {
         transformations,
         true);
 
+    doNothing().when(context).onJobSubmitted();
     doNothing().when(tracker).startTracking(openLineageContext, context::onJobCheckpoint);
 
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
@@ -143,7 +142,6 @@ class JobListenerTest {
       when(OpenLineageContinousJobTrackerFactory.getTracker(
               configuration, OPENLINEAGE_LISTENER_CONFIG_DURATION.defaultValue()))
           .thenReturn(tracker);
-      doNothing().when(context).onJobSubmitted();
 
       listener =
           OpenLineageFlinkJobListener.builder()
@@ -158,35 +156,89 @@ class JobListenerTest {
   @SuppressWarnings("PMD")
   @Test
   @SneakyThrows
-  void testOnJobExecuted() {
-    StreamExecutionEnvironment streamExecutionEnvironment = mock(StreamExecutionEnvironment.class);
-    ExecutionConfig.GlobalJobParameters globalJobParameters =
-        mock(ExecutionConfig.GlobalJobParameters.class);
-    ExecutionConfig executionConfig = mock(ExecutionConfig.class);
-    when(streamExecutionEnvironment.getConfiguration()).thenReturn(readableConfig);
-    when(streamExecutionEnvironment.getConfig()).thenReturn(executionConfig);
-    when(executionConfig.getGlobalJobParameters()).thenReturn(globalJobParameters);
-    when(globalJobParameters.toMap()).thenReturn(new HashMap<>());
+  void testOnJobExecutedSuccessfully() {
+    StreamExecutionEnvironment streamExecutionEnvironment =
+        new StreamExecutionEnvironment(readableConfig);
+    FieldUtils.writeField(
+        FieldUtils.getField(StreamExecutionEnvironment.class, "transformations", true),
+        streamExecutionEnvironment,
+        transformations,
+        true);
 
     JobExecutionResult jobExecutionResult = mock(JobExecutionResult.class);
     when(jobExecutionResult.getJobID()).thenReturn(jobId.getFlinkJobId());
     doNothing().when(context).onJobSubmitted();
+    doNothing().when(context).onJobCompleted(jobExecutionResult);
+    doNothing().when(context).close();
+
     doNothing().when(tracker).startTracking(openLineageContext, context::onJobCheckpoint);
+
+    listener =
+        OpenLineageFlinkJobListener.builder()
+            .executionEnvironment(streamExecutionEnvironment)
+            .jobTracker(tracker)
+            .jobNamespace(jobId.getJobNamespace())
+            .jobName(jobId.getJobName())
+            .build();
 
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
       when(FlinkExecutionContextFactory.getContext(
               eq(readableConfig), eq(jobId), eq(JobTypeUtils.STREAMING), eq(transformations)))
           .thenReturn(context);
-      doNothing().when(context).onJobSubmitted();
 
-      listener =
-          OpenLineageFlinkJobListener.builder()
-              .executionEnvironment(streamExecutionEnvironment)
-              .jobTracker(tracker)
-              .build();
       listener.onJobSubmitted(jobClient, null);
       listener.onJobExecuted(jobExecutionResult, null);
+
+      verify(tracker, times(1)).stopTracking();
+      verify(context, times(1)).onJobCompleted(jobExecutionResult);
+      // explicitly close context to send all pending events
+      verify(context, times(1)).close();
+    }
+  }
+
+  @SuppressWarnings("PMD")
+  @Test
+  @SneakyThrows
+  void testOnJobExecutedFailure() {
+    StreamExecutionEnvironment streamExecutionEnvironment =
+        new StreamExecutionEnvironment(readableConfig);
+    FieldUtils.writeField(
+        FieldUtils.getField(StreamExecutionEnvironment.class, "transformations", true),
+        streamExecutionEnvironment,
+        transformations,
+        true);
+
+    JobExecutionResult jobExecutionResult = mock(JobExecutionResult.class);
+    Throwable error = new Exception();
+    when(jobExecutionResult.getJobID()).thenReturn(jobId.getFlinkJobId());
+    doNothing().when(context).onJobSubmitted();
+    doNothing().when(context).onJobFailed(error);
+    doNothing().when(context).close();
+
+    doNothing().when(tracker).startTracking(openLineageContext, context::onJobCheckpoint);
+
+    listener =
+        OpenLineageFlinkJobListener.builder()
+            .executionEnvironment(streamExecutionEnvironment)
+            .jobTracker(tracker)
+            .jobNamespace(jobId.getJobNamespace())
+            .jobName(jobId.getJobName())
+            .build();
+
+    try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
+        mockStatic(FlinkExecutionContextFactory.class)) {
+      when(FlinkExecutionContextFactory.getContext(
+              eq(readableConfig), eq(jobId), eq(JobTypeUtils.STREAMING), eq(transformations)))
+          .thenReturn(context);
+
+      listener.onJobSubmitted(jobClient, null);
+      listener.onJobExecuted(null, error);
+
+      verify(tracker, times(1)).stopTracking();
+      verify(context, times(1)).onJobFailed(error);
+      // explicitly close context to send all pending events
+      verify(context, times(1)).close();
     }
   }
 

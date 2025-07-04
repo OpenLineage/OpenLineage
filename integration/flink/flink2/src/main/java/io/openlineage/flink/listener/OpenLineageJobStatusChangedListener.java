@@ -129,6 +129,8 @@ public class OpenLineageJobStatusChangedListener implements JobStatusChangedList
 
   private void onDefaultJobExecutionStatusEvent(DefaultJobExecutionStatusEvent event) {
     if (context.getJobId() == null) {
+      // If jobId wasn't recorded, then there was no START event emitted.
+      // This means that current event is CANCELLED, so we should not emit anything.
       log.warn("JobId is not set, skipping event: {}", event);
       return;
     }

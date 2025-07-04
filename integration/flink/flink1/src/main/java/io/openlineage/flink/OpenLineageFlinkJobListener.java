@@ -207,23 +207,37 @@ public class OpenLineageFlinkJobListener implements JobListener {
   }
 
   void finish(@Nullable JobExecutionResult jobExecutionResult, @Nullable Throwable throwable) {
+    FlinkExecutionContext context;
     if (jobExecutionResult instanceof DetachedJobExecutionResult) {
-      jobContexts.remove(jobExecutionResult.getJobID());
       log.warn(
           "Job running in detached mode. Set execution.attached to true if you want to emit completed events.");
+      context = jobContexts.remove(jobExecutionResult.getJobID());
+      if (context != null) {
+        context.close();
+      }
       return;
     }
 
     if (jobExecutionResult != null) {
-      jobContexts.remove(jobExecutionResult.getJobID()).onJobCompleted(jobExecutionResult);
-    } else {
-      // We don't have jobId when failed, so we need to assume that only existing context is that
-      // job
-      if (jobContexts.size() == 1) { // NOPMD
-        Map.Entry<JobID, FlinkExecutionContext> entry =
-            jobContexts.entrySet().stream().findFirst().get();
-        jobContexts.remove(entry.getKey()).onJobFailed(throwable);
+      context = jobContexts.remove(jobExecutionResult.getJobID());
+      if (context == null) {
+        return;
       }
+      context.onJobCompleted(jobExecutionResult);
+      context.close();
+      return;
+    }
+
+    // We don't have jobId when failed, so we need to assume that only existing context is that job
+    if (jobContexts.size() == 1) { // NOPMD
+      Map.Entry<JobID, FlinkExecutionContext> entry =
+          jobContexts.entrySet().stream().findFirst().get();
+      context = jobContexts.remove(entry.getKey());
+      if (context == null) {
+        return;
+      }
+      context.onJobFailed(throwable);
+      context.close();
     }
   }
 
