@@ -376,6 +376,7 @@ public class Faceting {
         .getOpenLineage()
         .newSQLJobFacetBuilder()
         .query(olContext.getHookContext().getQueryPlan().getQueryString())
+        .dialect("hive")
         .build();
   }
 

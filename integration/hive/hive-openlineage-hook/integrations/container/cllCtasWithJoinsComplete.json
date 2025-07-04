@@ -33,6 +33,7 @@
         "processingType": "BATCH"
       },
       "sql": {
+        "dialect": "hive",
         "query": "CREATE TABLE xxx AS\nWITH c AS (\n  SELECT b.name, a.id\n  FROM t1 a\n  JOIN t2 b\n    ON a.id = b.number\n)\nSELECT id * 10 as id, name FROM c"
       }
     }

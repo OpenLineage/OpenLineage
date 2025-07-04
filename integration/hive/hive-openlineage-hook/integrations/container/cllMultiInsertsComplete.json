@@ -33,6 +33,7 @@
         "processingType": "BATCH"
       },
       "sql": {
+        "dialect": "hive",
         "query": "WITH c AS (\n  SELECT a.id, b.name \n  FROM t3 a \n  JOIN t4 b \n    ON a.id = b.id\n)\nFROM c\nINSERT OVERWRITE TABLE t1\n  SELECT id * 10, name\nINSERT INTO TABLE t2\n  SELECT SUM(id), name\n  GROUP BY name"
       }
     }
