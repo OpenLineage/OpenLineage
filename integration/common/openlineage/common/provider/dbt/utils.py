@@ -103,6 +103,14 @@ def get_dbt_log_path(command: List[str]) -> str:
     return os.path.join(log_dirname, "dbt.log")
 
 
+def is_random_logfile(command: List[str]) -> bool:
+    from_command = parse_single_arg(command, ["--log-path"], default=None)
+    from_env_var = os.getenv("DBT_LOG_PATH")
+    if from_env_var or from_command:
+        return False
+    return True
+
+
 def generate_random_log_file_name() -> str:
     random_uuid = str(uuid.uuid4())
     log_directory_name = f"dbt-logs-{random_uuid}"

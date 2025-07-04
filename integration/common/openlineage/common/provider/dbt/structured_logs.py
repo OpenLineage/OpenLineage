@@ -7,12 +7,14 @@ import subprocess
 import sys
 import time
 from collections import defaultdict
-from functools import cached_property
-from typing import Dict, Generator, List, Optional, TextIO
+from functools import cached_property, wraps
+from typing import Dict, Generator, List, NamedTuple, Optional, TextIO
 
 from openlineage.client.event_v2 import Dataset, RunEvent, RunState
 from openlineage.client.facet_v2 import (
-    data_quality_assertions_dataset,
+    data_quality_assertions_dataset as dq,
+)
+from openlineage.client.facet_v2 import (
     error_message_run,
     job_type_job,
     processing_engine_run,
@@ -37,6 +39,7 @@ from openlineage.common.provider.dbt.utils import (
     get_job_type,
     get_node_unique_id,
     get_parent_run_metadata,
+    is_random_logfile,
 )
 from openlineage.common.provider.dbt.utils import (
     __version__ as openlineage_version,
@@ -48,6 +51,48 @@ from openlineage.common.utils import (
     get_from_nullable_chain,
     has_lines,
 )
+
+
+class ManifestIntegrityResult(NamedTuple):
+    """Result of manifest integrity validation.
+
+    Attributes:
+        is_valid: bool indicating if manifest is valid
+        missing_nodes: list of node IDs that are missing
+        missing_parents: list of parent node IDs that are missing
+        missing_children: list of child node IDs that are missing
+        total_missing: total count of missing nodes
+        parent_map_size: total number of entries in parent_map
+        available_nodes: total number of available nodes (nodes + sources)
+    """
+
+    is_valid: bool
+    missing_nodes: List[str]
+    missing_parents: List[str]
+    missing_children: List[str]
+    total_missing: int
+    parent_map_size: int
+    available_nodes: int
+
+
+def handle_keyerror(func):
+    """
+    Handle KeyError exceptions when node_id was not found in the dbt manifest.
+    """
+
+    @wraps(func)
+    def wrapper(self, node_id: str, *args, **kwargs):
+        try:
+            return func(self, node_id, *args, **kwargs)
+        except KeyError:
+            self.logger.warning(
+                "Did not find node_id %s in the dbt manifest - did "
+                "the manifest change while the job was executing?",
+                node_id,
+            )
+            return None
+
+    return wrapper
 
 
 class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
@@ -64,6 +109,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self.dbt_command_line: List[str] = dbt_command_line
         self.profiles_dir: str = get_dbt_profiles_dir(command=self.dbt_command_line)
         self.dbt_log_file_path: str = get_dbt_log_path(command=self.dbt_command_line)
+        self.is_random_logfile: bool = is_random_logfile(command=self.dbt_command_line)
         self.dbt_log_dirname: str = os.path.dirname(self.dbt_log_file_path)
         self.parent_run_metadata: ParentRunMetadata = get_parent_run_metadata()
 
@@ -127,6 +173,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             return self._compiled_manifest
         elif os.path.isfile(self.manifest_path):
             self._compiled_manifest = self.load_metadata(self.manifest_path, list(range(2, 13)), self.logger)
+            manifest_data = self._validate_manifest_integrity()
+            self.logger.debug(manifest_data)
             return self._compiled_manifest
         else:
             return {}
@@ -292,7 +340,9 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             self.node_to_dataset(node=model_input, has_facets=True)
             for model_input in self._get_model_inputs(node_unique_id)
         ]
-        outputs = [self.node_to_output_dataset(node=self._get_model_node(node_unique_id), has_facets=True)]
+        outputs = []
+        if node := self._get_model_node(node_unique_id):
+            outputs = [self.node_to_output_dataset(node=node, has_facets=True)]
 
         return generate_run_event(
             event_type=RunState.START,
@@ -351,25 +401,25 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             self.node_to_dataset(node=model_input, has_facets=True)
             for model_input in self._get_model_inputs(node_unique_id)
         ]
-        outputs = [self.node_to_output_dataset(node=self._get_model_node(node_unique_id), has_facets=True)]
+        outputs = []
+        if node := self._get_model_node(node_unique_id):
+            outputs = [self.node_to_output_dataset(node=node, has_facets=True)]
+
         if resource_type == "test":
             success = node_status == "pass"
-            assertion = self._get_assertion(node_unique_id, success)
-            assertion_facet = data_quality_assertions_dataset.DataQualityAssertionsDatasetFacet(
-                assertions=[assertion]
-            )
-            attached_dataset = self._get_attached_dataset(node_unique_id)
-            inputs = []
-            if attached_dataset:
-                dataset_facets = attached_dataset.facets
-                dataset_facets["dataQualityAssertions"] = assertion_facet
-                inputs = [
-                    Dataset(
-                        name=attached_dataset.name,
-                        namespace=attached_dataset.namespace,
-                        facets=dataset_facets,
-                    )
-                ]
+            if assertion := self._get_assertion(node_unique_id, success):
+                assertion_facet = dq.DataQualityAssertionsDatasetFacet(assertions=[assertion])
+                inputs = []
+                if attached_dataset := self._get_attached_dataset(node_unique_id):
+                    dataset_facets = attached_dataset.facets
+                    dataset_facets["dataQualityAssertions"] = assertion_facet
+                    inputs = [
+                        Dataset(
+                            name=attached_dataset.name,
+                            namespace=attached_dataset.namespace,
+                            facets=dataset_facets,
+                        )
+                    ]
 
         return generate_run_event(
             event_type=event_type,
@@ -383,6 +433,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             outputs=outputs,
         )
 
+    @handle_keyerror
     def _get_attached_dataset(self, test_node_id: str) -> Optional[InputDataset]:
         """
         gets the input the data test is attached to.
@@ -397,10 +448,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             input_dataset = self.node_to_dataset(node=attached_model_node, has_facets=True)
         return input_dataset
 
-    def _get_assertion(self, node_id: str, success: bool) -> data_quality_assertions_dataset.Assertion:
+    @handle_keyerror
+    def _get_assertion(self, node_id: str, success: bool) -> Optional[dq.Assertion]:
         manifest_test_node = self.compiled_manifest["nodes"][node_id]
         name = manifest_test_node["test_metadata"]["name"]
-        return data_quality_assertions_dataset.Assertion(
+        return dq.Assertion(
             assertion=name,
             success=success,
             column=get_from_nullable_chain(manifest_test_node["test_metadata"], ["kwargs", "column_name"]),
@@ -658,8 +710,6 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
                     )
                     yield from incremental_reader.read_lines(current_size - last_size)
                     last_size = current_size
-
-                yield from incremental_reader.read_lines()
                 time.sleep(0.01)
 
             self.logger.debug("dbt process has exited. Waiting for logs to be flushed")
@@ -681,7 +731,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             self.logger.debug("Finished waiting for logs to be flushed")
 
         except Exception:
-            self.logger.exception("An exception occurred in OL code. dbt is still running.")
+            self.logger.exception(
+                "An exception occurred in OpenLineage dbt wrapper. "
+                "It should not affect underlying dbt execution that is still running."
+            )
             last_log = datetime.datetime.now()
 
             while process.poll() is None:
@@ -694,6 +747,15 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         finally:
             if self._dbt_log_file is not None:
                 self._dbt_log_file.close()
+                if self.is_random_logfile:
+                    try:
+                        self.logger.debug("Removing log file: %s", self.dbt_log_file_path)
+                        os.remove(self.dbt_log_file_path)
+                    except Exception:
+                        self.logger.warning(
+                            "Failed to remove log file: %s. Leftover logs can consume disk space.",
+                            self.dbt_log_file_path,
+                        )
             self.dbt_command_return_code = process.returncode
 
     def _open_dbt_log_file(self):
@@ -715,7 +777,8 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         while self._dbt_log_file.readlines():
             pass
 
-    def _get_model_node(self, node_id) -> ModelNode:
+    @handle_keyerror
+    def _get_model_node(self, node_id) -> Optional[ModelNode]:
         """
         Builds a ModelNode of a given node_id
         """
@@ -731,19 +794,82 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         if node_id in self.node_id_to_inputs:
             return self.node_id_to_inputs[node_id]
 
-        input_node_ids = self.compiled_manifest["parent_map"][node_id]
-        inputs = [self._get_model_node(input_node_id) for input_node_id in input_node_ids]
-        self.node_id_to_inputs[node_id] = inputs
+        try:
+            input_node_ids = self.compiled_manifest["parent_map"][node_id]
+            inputs = [node for n in input_node_ids if (node := self._get_model_node(n)) is not None]
+            self.node_id_to_inputs[node_id] = inputs
+            return inputs
+        except KeyError:
+            self.logger.warning(
+                "Did not find node_id %s in the dbt manifest - did "
+                "the manifest change while the job was executing?",
+                node_id,
+            )
+        return []
 
-        return inputs
+    def _validate_manifest_integrity(self) -> ManifestIntegrityResult:
+        """
+        Performs metadata integrity checks on the compiled manifest.
 
-    def _get_model_output(self, node_id) -> ModelNode:
-        if node_id in self.node_id_to_output:
-            return self.node_id_to_output[node_id]
-        model_node = self._get_model_node(node_id)
-        self.node_id_to_output[node_id] = model_node
+        Validates that all nodes referenced in parent_map exist in the manifest's
+        node definitions (either in 'nodes' or 'sources' sections).
 
-        return model_node
+        Returns:
+            ManifestIntegrityResult: Validation results with integrity check information.
+        """
+        if not self._compiled_manifest:
+            return ManifestIntegrityResult(
+                is_valid=True,
+                missing_nodes=[],
+                missing_parents=[],
+                missing_children=[],
+                total_missing=0,
+                parent_map_size=0,
+                available_nodes=0,
+            )
+
+        parent_map = self._compiled_manifest.get("parent_map", {})
+        all_nodes = {**self._compiled_manifest.get("nodes", {}), **self._compiled_manifest.get("sources", {})}
+
+        missing_nodes = []
+        missing_parents = []
+        missing_children = []
+
+        for parent_node_id, child_node_ids in parent_map.items():
+            # Check that the parent node exists
+            if parent_node_id not in all_nodes:
+                missing_nodes.append(parent_node_id)
+                missing_parents.append(parent_node_id)
+
+            # Check that all child nodes exist
+            for child_node_id in child_node_ids:
+                if child_node_id not in all_nodes:
+                    missing_nodes.append(child_node_id)
+                    missing_children.append(child_node_id)
+
+        # Remove duplicates while preserving order
+        missing_nodes = list(dict.fromkeys(missing_nodes))
+        missing_parents = list(dict.fromkeys(missing_parents))
+        missing_children = list(dict.fromkeys(missing_children))
+
+        if missing_nodes:
+            self.logger.warning(
+                "Manifest integrity check failed: Found %d nodes in parent_map that don't exist "
+                "in manifest node definitions, printing first %d of them: %s",
+                len(missing_nodes),
+                min(10, len(missing_nodes)),
+                missing_nodes[: min(10, len(missing_nodes))],  # Log first 10 to avoid overwhelming logs
+            )
+
+        return ManifestIntegrityResult(
+            is_valid=len(missing_nodes) == 0,
+            missing_nodes=missing_nodes,
+            missing_parents=missing_parents,
+            missing_children=missing_children,
+            total_missing=len(missing_nodes),
+            parent_map_size=len(parent_map),
+            available_nodes=len(all_nodes),
+        )
 
     def get_dbt_metadata(
         self,
