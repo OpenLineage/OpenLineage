@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -17,6 +18,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.facets.BigQueryMetastoreCatalogDatasetFacet;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.util.Collections;
@@ -512,11 +514,15 @@ class IcebergHandlerTest {
     when(sparkCatalog.name()).thenReturn("bq_metastore_catalog");
     when(runtimeConfig.getAll())
         .thenReturn(
-            new Map.Map2(
+            new Map.Map4<>(
                 "spark.sql.catalog.bq_metastore_catalog.catalog-impl",
                 "org.apache.iceberg.gcp.bigquery.BigQueryMetastoreCatalog",
                 "spark.sql.catalog.bq_metastore_catalog.warehouse",
-                "gcs://bucket/path/to/iceberg/warehouse"));
+                "gcs://bucket/path/to/iceberg/warehouse",
+                "spark.sql.catalog.bq_metastore_catalog.gcp.bigquery.project-id",
+                "my-gcp-project",
+                "spark.sql.catalog.bq_metastore_catalog.gcp.bigquery.location",
+                "eu"));
 
     Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
         icebergHandler.getCatalogDatasetFacet(sparkCatalog, new HashMap<>());
@@ -528,5 +534,18 @@ class IcebergHandlerTest {
     assertEquals("bigquerymetastore", facet.getType());
     assertEquals("gcs://bucket/path/to/iceberg/warehouse", facet.getWarehouseUri());
     assertEquals("iceberg", facet.getFramework());
+
+    BigQueryMetastoreCatalogDatasetFacet bqFacet =
+        (BigQueryMetastoreCatalogDatasetFacet)
+            catalogDatasetFacet.get().getAdditionalFacets().get("big_query_metastore_catalog");
+
+    assertNotNull(bqFacet);
+    assertEquals("iceberg", bqFacet.getFramework());
+    assertEquals("bigquerymetastore", bqFacet.getType());
+    assertEquals("bq_metastore_catalog", bqFacet.getName());
+    assertEquals("gcs://bucket/path/to/iceberg/warehouse", bqFacet.getWarehouseUri());
+    assertEquals("spark", bqFacet.getSource());
+    assertEquals("my-gcp-project", bqFacet.getProjectId());
+    assertEquals("eu", bqFacet.getLocation());
   }
 }
