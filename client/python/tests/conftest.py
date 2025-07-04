@@ -349,8 +349,7 @@ def mock_http_session_class(mock_http_session):
 
     with patch("openlineage.client.transport.http.Session") as mock_session_class:
         # Configure the context manager
-        mock_session_class.return_value.__enter__.return_value = mock_client
-        mock_session_class.return_value.__exit__.return_value = None
+        mock_session_class.return_value = mock_client
         yield mock_session_class, mock_client, mock_response
 
 
@@ -361,6 +360,5 @@ def mock_async_http_client_class(mock_http_session):
 
     with patch("httpx.AsyncClient") as mock_client_class:
         # Configure the async context manager
-        mock_client_class.return_value.__aenter__.return_value = mock_client
-        mock_client_class.return_value.__aexit__.return_value = None
+        mock_client_class.return_value = mock_client
         yield mock_client_class, mock_client, mock_response

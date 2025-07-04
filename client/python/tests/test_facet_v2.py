@@ -49,15 +49,8 @@ def test_optional_attributed_not_validated():
     nominal_time_run.NominalTimeRunFacet(nominalStartTime="2020-12-17T03:00:00.001Z")
 
 
-@mock.patch("openlineage.client.transport.http.Session")
-def test_custom_facet(mock_client_class, test_producer) -> None:
-    # Mock the context manager and post method
-    mock_client = mock.MagicMock()
-    mock_response = mock.MagicMock()
-    mock_response.status_code = 200
-    mock_client.post.return_value = mock_response
-    mock_client_class.return_value.__enter__.return_value = mock_client
-    mock_client_class.return_value.__exit__.return_value = None
+def test_custom_facet(mock_http_session_class, test_producer) -> None:
+    mock_session_class, mock_client, mock_response = mock_http_session_class
 
     client = OpenLineageClient(url="http://example.com")
 
@@ -114,15 +107,8 @@ def test_custom_facet(mock_client_class, test_producer) -> None:
     assert expected_event == event_sent
 
 
-@mock.patch("openlineage.client.transport.http.Session")
-def test_full_core_event_serializes_properly(mock_client_class) -> None:
-    # Mock the context manager and post method
-    mock_client = mock.MagicMock()
-    mock_response = mock.MagicMock()
-    mock_response.status_code = 200
-    mock_client.post.return_value = mock_response
-    mock_client_class.return_value.__enter__.return_value = mock_client
-    mock_client_class.return_value.__exit__.return_value = None
+def test_full_core_event_serializes_properly(mock_http_session_class) -> None:
+    mock_session_class, mock_client, mock_response = mock_http_session_class
 
     client = OpenLineageClient(url="http://example.com")
 
