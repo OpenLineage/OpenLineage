@@ -33,6 +33,7 @@
         "processingType": "BATCH"
       },
       "sql": {
+        "dialect": "hive",
         "query": "CREATE TABLE xxx AS SELECT a FROM t1"
       }
     }

@@ -33,6 +33,7 @@
         "processingType": "BATCH"
       },
       "sql": {
+        "dialect": "hive",
         "query": "INSERT INTO t1 SELECT a, concat(b, 'x') FROM t2"
       }
     }

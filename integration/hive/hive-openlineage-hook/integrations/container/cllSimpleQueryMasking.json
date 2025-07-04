@@ -33,6 +33,7 @@
         "processingType": "BATCH"
       },
       "sql": {
+        "dialect": "hive",
         "query": "CREATE TABLE xxx AS SELECT \na as i, \na + 1 as t, \nsha1(string(a + 1)) as mt, \nsum(b) as a, \nsha1(string(sum(b))) as ma \nFROM t1 GROUP BY a"
       }
     }
