@@ -80,7 +80,7 @@ class OpenLineageAdapter:
     @property
     def client(self) -> OpenLineageClient:
         if not self._client:
-            self._client = OpenLineageAdapter.get_or_create_openlineage_client()
+            self._client = self.get_or_create_openlineage_client()
         return self._client
 
     @staticmethod
@@ -115,6 +115,11 @@ class OpenLineageAdapter:
             Stats.incr("ol.emit.failed")
             log.exception(f"Failed to emit OpenLineage event of id {event.run.runId}")
             log.debug(e)
+
+    def close(self, timeout: float = -1) -> bool:
+        if self._client:
+            return self._client.close(timeout)
+        return True
 
     def start_task(
         self,
