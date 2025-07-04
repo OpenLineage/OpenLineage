@@ -61,7 +61,7 @@ class LibraryTest {
         .thenReturn(Optional.of(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b")));
     when(EVENT_EMITTER.getApplicationRunId())
         .thenReturn(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
-    when(EVENT_EMITTER.getApplicationJobName()).thenReturn("test_rdd");
+    when(EVENT_EMITTER.getApplicationJobName()).thenReturn("app-name");
     Mockito.doAnswer(
             (arg) -> {
               LoggerFactory.getLogger(getClass())
@@ -102,7 +102,7 @@ class LibraryTest {
 
     assertThat(applicationStart.getJob())
         .hasFieldOrPropertyWithValue("namespace", "ns_name")
-        .hasFieldOrPropertyWithValue("name", "test_rdd");
+        .hasFieldOrPropertyWithValue("name", "app-name");
 
     assertThat(applicationStart.getRun().getFacets().getParent().getJob())
         .hasFieldOrPropertyWithValue("namespace", "parent_namespace")
@@ -116,11 +116,11 @@ class LibraryTest {
     assertThat(first.getJob())
         .hasFieldOrPropertyWithValue("namespace", "ns_name")
         .hasFieldOrPropertyWithValue(
-            "name", "test_rdd.map_partitions_shuffled_map_partitions_hadoop");
+            "name", "app-name.map_partitions_shuffled_map_partitions_hadoop");
 
     assertThat(first.getRun().getFacets().getParent().getJob())
         .hasFieldOrPropertyWithValue("namespace", "ns_name")
-        .hasFieldOrPropertyWithValue("name", "test_rdd");
+        .hasFieldOrPropertyWithValue("name", "app-name");
 
     assertThat(first.getInputs())
         .hasSize(1)
@@ -141,11 +141,11 @@ class LibraryTest {
     assertThat(second.getJob())
         .hasFieldOrPropertyWithValue("namespace", "ns_name")
         .hasFieldOrPropertyWithValue(
-            "name", "test_rdd.map_partitions_shuffled_map_partitions_hadoop");
+            "name", "app-name.map_partitions_shuffled_map_partitions_hadoop");
 
     assertThat(second.getRun().getFacets().getParent().getJob())
         .hasFieldOrPropertyWithValue("namespace", "ns_name")
-        .hasFieldOrPropertyWithValue("name", "test_rdd");
+        .hasFieldOrPropertyWithValue("name", "app-name");
 
     assertThat(
             second
@@ -168,7 +168,7 @@ class LibraryTest {
 
     assertThat(applicationComplete.getJob())
         .hasFieldOrPropertyWithValue("namespace", "ns_name")
-        .hasFieldOrPropertyWithValue("name", "test_rdd");
+        .hasFieldOrPropertyWithValue("name", "app-name");
 
     assertThat(applicationComplete.getRun().getFacets().getParent().getJob())
         .hasFieldOrPropertyWithValue("namespace", "parent_namespace")

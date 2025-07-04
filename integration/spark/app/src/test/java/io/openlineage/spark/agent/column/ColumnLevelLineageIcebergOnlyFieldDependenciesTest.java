@@ -21,6 +21,7 @@ import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
+import java.util.UUID;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.FileSystem;
@@ -116,6 +117,8 @@ class ColumnLevelLineageIcebergOnlyFieldDependenciesTest {
         OpenLineageContext.builder()
             .sparkSession(spark)
             .sparkContext(spark.sparkContext())
+            .applicationName("ColumnLevelLineage")
+            .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(queryExecution)
             .meterRegistry(new SimpleMeterRegistry())

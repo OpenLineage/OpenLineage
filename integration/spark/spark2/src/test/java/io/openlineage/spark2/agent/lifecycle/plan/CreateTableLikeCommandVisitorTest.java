@@ -83,6 +83,8 @@ class CreateTableLikeCommandVisitorTest {
             OpenLineageContext.builder()
                 .sparkSession(session)
                 .sparkContext(session.sparkContext())
+                .applicationName("app-name")
+                .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .meterRegistry(new SimpleMeterRegistry())
                 .openLineageConfig(new SparkOpenLineageConfig())

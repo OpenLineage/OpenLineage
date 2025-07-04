@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.JobSucceeded$;
@@ -90,6 +91,8 @@ class LogicalPlanRunFacetBuilderTest {
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
+                .applicationName("ColumnLevelLineage")
+                .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .queryExecution(queryExecution)
                 .openLineageConfig(openLineageConfig)
@@ -116,6 +119,8 @@ class LogicalPlanRunFacetBuilderTest {
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
+                .applicationName("ColumnLevelLineage")
+                .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .queryExecution(queryExecution)
                 .openLineageConfig(config)
@@ -135,6 +140,8 @@ class LogicalPlanRunFacetBuilderTest {
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
+                .applicationName("ColumnLevelLineage")
+                .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .meterRegistry(new SimpleMeterRegistry())
                 .openLineageConfig(new SparkOpenLineageConfig())
@@ -159,6 +166,8 @@ class LogicalPlanRunFacetBuilderTest {
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()
                 .sparkContext(sparkContext)
+                .applicationName("ColumnLevelLineage")
+                .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                 .queryExecution(queryExecution)
                 .meterRegistry(new SimpleMeterRegistry())

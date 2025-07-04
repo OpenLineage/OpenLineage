@@ -71,14 +71,15 @@ class SparkApplicationExecutionContextTest {
     when(olContext.getLineageRunStatus()).thenReturn(new OpenLineageRunStatus());
     when(olContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
     when(olContext.getVisitedNodes()).thenReturn(new VisitedNodes());
+
+    when(eventEmitter.getJobNamespace()).thenReturn("ns_name");
+    when(eventEmitter.getApplicationJobName()).thenReturn("app-name");
+    when(olContext.getApplicationName()).thenReturn("app-name");
+    when(eventEmitter.getApplicationRunId())
+        .thenReturn(UUID.fromString("993426b3-1ca7-44af-8473-8e58c757ebd1"));
     when(olContext.getApplicationUuid())
         .thenReturn(UUID.fromString("993426b3-1ca7-44af-8473-8e58c757ebd1"));
 
-    when(eventEmitter.getOverriddenAppName()).thenReturn(Optional.of("app-name"));
-    when(eventEmitter.getApplicationRunId())
-        .thenReturn(UUID.fromString("993426b3-1ca7-44af-8473-8e58c757ebd1"));
-
-    when(eventEmitter.getJobNamespace()).thenReturn("ns_name");
     when(eventEmitter.getParentJobName()).thenReturn(Optional.of("parent_name"));
     when(eventEmitter.getParentJobNamespace()).thenReturn(Optional.of("parent_namespace"));
     when(eventEmitter.getParentRunId())
@@ -127,7 +128,7 @@ class SparkApplicationExecutionContextTest {
     for (RunEvent runEvent : lineageEvent.getAllValues()) {
       OpenLineage.Run run = runEvent.getRun();
       OpenLineage.Job job = runEvent.getJob();
-      assertThat(job.getName()).isEqualTo("setup"); // spark agent extension caller
+      assertThat(job.getName()).isEqualTo("app_name"); // spark agent extension caller
       assertThat(job.getNamespace()).isEqualTo("ns_name");
       assertThat(run.getRunId()).isEqualTo(UUID.fromString("993426b3-1ca7-44af-8473-8e58c757ebd1"));
     }

@@ -103,6 +103,8 @@ class RefreshTableCommandVisitorTest {
           OpenLineageContext.builder()
               .sparkSession(session)
               .sparkContext(session.sparkContext())
+              .applicationName("app-name")
+              .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
               .openLineage(openLineage)
               .meterRegistry(new SimpleMeterRegistry())
               .openLineageConfig(config)

@@ -37,6 +37,8 @@ class OutputStatisticsOutputDatasetFacetBuilderTest {
         new OutputStatisticsOutputDatasetFacetBuilder(
             OpenLineageContext.builder()
                 .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .applicationName("app-name")
+                .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
                 .sparkContext(sparkContext)
                 .meterRegistry(new SimpleMeterRegistry())
                 .openLineageConfig(new SparkOpenLineageConfig())
@@ -51,6 +53,8 @@ class OutputStatisticsOutputDatasetFacetBuilderTest {
     OpenLineageContext context =
         OpenLineageContext.builder()
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .applicationName("app-name")
+            .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
             .sparkContext(sparkContext)
             .meterRegistry(new SimpleMeterRegistry())
             .openLineageConfig(new SparkOpenLineageConfig())

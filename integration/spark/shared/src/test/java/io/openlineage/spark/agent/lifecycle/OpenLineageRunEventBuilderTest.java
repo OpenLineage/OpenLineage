@@ -74,6 +74,8 @@ class OpenLineageRunEventBuilderTest {
             .sparkSession(session)
             .sparkContext(sparkContext)
             .openLineage(openLineage)
+            .applicationName("app-name")
+            .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
             .meterRegistry(new SimpleMeterRegistry())
             .openLineageConfig(config)
             .build();

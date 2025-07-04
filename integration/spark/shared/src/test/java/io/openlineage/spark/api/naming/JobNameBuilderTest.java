@@ -6,10 +6,8 @@
 package io.openlineage.spark.api.naming;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,7 +15,6 @@ import static org.mockito.Mockito.withSettings;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
-import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.api.JobNameSuffixProvider;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -28,7 +25,6 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 import scala.PartialFunction;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
@@ -52,24 +48,9 @@ class JobNameBuilderTest {
     when(context.getOpenLineageConfig()).thenReturn(config);
     when(sparkContext.getConf()).thenReturn(sparkConf);
 
-    config.getJobName().setAppendDatasetName(true);
+    when(context.getApplicationName()).thenReturn("spark_app");
 
-    when(context
-            .getQueryExecution()
-            .get()
-            .sparkSession()
-            .sparkContext()
-            .getConf()
-            .contains(DatabricksUtils.SPARK_DATABRICKS_WORKSPACE_URL))
-        .thenReturn(true);
-    when(context
-            .getQueryExecution()
-            .get()
-            .sparkSession()
-            .sparkContext()
-            .getConf()
-            .get(DatabricksUtils.SPARK_DATABRICKS_WORKSPACE_URL))
-        .thenReturn("https://dbc-954f5d5f-34dd.cloud.databricks.com/");
+    config.getJobName().setAppendDatasetName(true);
     when(context.getJobName()).thenReturn(jobName);
   }
 
@@ -95,14 +76,12 @@ class JobNameBuilderTest {
   void testSparkNodeNameIsAddedToJobName() {
     when(context.getQueryExecution().get().executedPlan().nodeName())
         .thenReturn("execute_CreateTable");
-    when(sparkContext.appName()).thenReturn("spark_app");
     assertThat(JobNameBuilder.build(context)).isEqualTo("spark_app.execute_create_table");
   }
 
   @Test
   void testBuildIsNotRunWhenContextHasJobNameSet() {
     when(context.getQueryExecution().get().executedPlan().nodeName()).thenReturn("some_node");
-    when(sparkContext.appName()).thenReturn("spark_app");
     assertThat(JobNameBuilder.build(context)).isEqualTo("spark_app.some_node");
 
     verify(context, times(1)).setJobName("spark_app.some_node");
@@ -119,10 +98,9 @@ class JobNameBuilderTest {
 
     when(context.getQueryExecution().get().executedPlan().nodeName())
         .thenReturn("append_data_exec_v1");
-    when(sparkContext.appName()).thenReturn("databricks_shell");
     when(context.getOutputDatasetBuilders()).thenReturn(Collections.singletonList(datasetBuilder));
     assertThat(JobNameBuilder.build(context))
-        .isEqualTo("databricks_shell.append_data_exec_v1.air_companies_db_air_companies");
+        .isEqualTo("spark_app.append_data_exec_v1.air_companies_db_air_companies");
   }
 
   @Test
@@ -133,9 +111,8 @@ class JobNameBuilderTest {
 
     when(context.getQueryExecution().get().executedPlan().nodeName())
         .thenReturn("append_data_exec_v1");
-    when(sparkContext.appName()).thenReturn("databricks_shell");
     when(context.getOutputDatasetBuilders()).thenReturn(Collections.singletonList(datasetBuilder));
-    assertThat(JobNameBuilder.build(context)).isEqualTo("databricks_shell.append_data_exec_v1");
+    assertThat(JobNameBuilder.build(context)).isEqualTo("spark_app.append_data_exec_v1");
   }
 
   @Test
@@ -146,20 +123,8 @@ class JobNameBuilderTest {
 
     when(context.getQueryExecution().get().executedPlan().nodeName())
         .thenReturn("append_data.exec_v1");
-    when(sparkContext.appName()).thenReturn("databricks_shell");
     when(context.getOutputDatasetBuilders()).thenReturn(Collections.singletonList(datasetBuilder));
     assertThat(JobNameBuilder.build(context))
-        .isEqualTo("databricks_shell.append_data_exec_v1.air_companies_db_air_companies");
-  }
-
-  @Test
-  void testBuildPrettifiesDatabricksJobName() {
-    try (MockedStatic mocked = mockStatic(DatabricksUtils.class)) {
-      when(DatabricksUtils.isRunOnDatabricksPlatform(any(SparkConf.class))).thenReturn(true);
-      when(DatabricksUtils.prettifyDatabricksJobName(any(SparkConf.class), any(String.class)))
-          .thenReturn("dbc-954f5d5f-34dd.append_data.exec_v1");
-
-      assertThat(JobNameBuilder.build(context)).isEqualTo("dbc-954f5d5f-34dd.append_data.exec_v1");
-    }
+        .isEqualTo("spark_app.append_data_exec_v1.air_companies_db_air_companies");
   }
 }

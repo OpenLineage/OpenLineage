@@ -44,6 +44,8 @@ class CreateReplaceInputDatasetBuilderTest {
       OpenLineageContext.builder()
           .sparkSession(mock(SparkSession.class))
           .sparkContext(mock(SparkContext.class))
+          .applicationName("app-name")
+          .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
           .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
           .meterRegistry(new SimpleMeterRegistry())
           .openLineageConfig(new SparkOpenLineageConfig())

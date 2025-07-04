@@ -48,6 +48,7 @@ class ApplicationJobNameResolver {
     return ImmutableList.of(
         new OpenLineageAppNameApplicationJobNameProvider(),
         new AwsGlueApplicationJobNameProvider(),
+        new DatabricksApplicationJobNameProvider(),
         new SparkApplicationNameApplicationJobNameProvider());
   }
 

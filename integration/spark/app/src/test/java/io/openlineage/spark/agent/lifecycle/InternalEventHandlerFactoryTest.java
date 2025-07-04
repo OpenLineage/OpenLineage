@@ -16,6 +16,7 @@ import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Collection;
+import java.util.UUID;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.junit.jupiter.api.AfterAll;
@@ -36,6 +37,8 @@ class InternalEventHandlerFactoryTest {
     context =
         OpenLineageContext.builder()
             .sparkContext(sparkContext)
+            .applicationName("InternalEventHandlerFactoryTest")
+            .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .meterRegistry(new SimpleMeterRegistry())
             .openLineageConfig(config)

@@ -82,7 +82,7 @@ class AwsGlueApplicationJobNameProviderTest {
   }
 
   static OpenLineageContext buildOpenLineageContextWithGlueVariables(
-      String runId, String jobName, String sparkAppNameProperty) {
+      String runId, String jobName, String appName) {
     OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
     SparkContext sparkContext = mock(SparkContext.class);
     SparkConf conf = new SparkConf();
@@ -90,7 +90,7 @@ class AwsGlueApplicationJobNameProviderTest {
     conf.set("spark.glue.JOB_NAME", jobName);
     conf.set("spark.glue.JOB_RUN_ID", runId);
     when(sparkContext.getConf()).thenReturn(conf);
-    when(sparkContext.appName()).thenReturn(sparkAppNameProperty);
+    when(openLineageContext.getApplicationName()).thenReturn(appName);
     when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
     return openLineageContext;
   }

@@ -51,8 +51,8 @@ class AwsGlueApplicationJobNameProvider implements ApplicationJobNameProvider {
 
   @Override
   public String getJobName(OpenLineageContext openLineageContext) {
+    String appName = openLineageContext.getApplicationName();
     SparkContext sparkContext = openLineageContext.getSparkContext().get();
-    String appName = sparkContext.appName();
     SparkConf sparkConf = sparkContext.getConf();
     String jobName = sparkConf.get(JOB_NAME_PROPERTY);
     if (appName != null) {

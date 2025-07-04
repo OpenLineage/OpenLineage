@@ -85,7 +85,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
     when(olContext.getOpenLineage())
         .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
     SparkOpenLineageConfig olConfig = new SparkOpenLineageConfig();
-    olConfig.setOverriddenAppName("test_rdd");
+    olConfig.setOverriddenAppName("custom-app-name");
     when(olContext.getOpenLineageConfig()).thenReturn(olConfig);
     when(olContext.getLineageRunStatus()).thenReturn(new OpenLineageRunStatus());
     OpenLineageRunEventBuilder runEventBuilder =
@@ -125,6 +125,8 @@ public class StaticExecutionContextFactory extends ContextFactory {
                   OpenLineageContext.builder()
                       .sparkSession(session)
                       .sparkContext(sparkContext)
+                      .applicationName(this.openLineageEventEmitter.getApplicationJobName())
+                      .applicationUuid(this.openLineageEventEmitter.getApplicationRunId())
                       .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                       .customEnvironmentVariables(Arrays.asList("TEST_VAR"))
                       .queryExecution(qe)

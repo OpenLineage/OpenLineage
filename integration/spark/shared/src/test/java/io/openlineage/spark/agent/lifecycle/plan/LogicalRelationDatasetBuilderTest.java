@@ -123,6 +123,8 @@ class LogicalRelationDatasetBuilderTest {
         OpenLineageContext.builder()
             .sparkContext(mock(SparkContext.class))
             .openLineage(openLineage)
+            .applicationName("app-name")
+            .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
             .queryExecution(qe)
             .meterRegistry(new SimpleMeterRegistry())
             .openLineageConfig(config)

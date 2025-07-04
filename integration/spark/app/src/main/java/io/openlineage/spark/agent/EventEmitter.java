@@ -26,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EventEmitter {
   @Getter private OpenLineageClient client;
-  @Getter private Optional<String> overriddenAppName;
   @Getter private String jobNamespace;
   @Getter private Optional<String> parentJobName;
   @Getter private Optional<String> parentJobNamespace;
@@ -47,7 +46,6 @@ public class EventEmitter {
     this.rootParentJobName = Optional.ofNullable(config.getRootParentJobName());
     this.rootParentJobNamespace = Optional.ofNullable(config.getRootParentJobNamespace());
     this.rootParentRunId = convertToUUID(config.getRootParentRunId());
-    this.overriddenAppName = Optional.ofNullable(config.getOverriddenAppName());
     this.customEnvironmentVariables =
         config.getFacetsConfig() != null
             ? config.getFacetsConfig().getCustomEnvironmentVariables() != null

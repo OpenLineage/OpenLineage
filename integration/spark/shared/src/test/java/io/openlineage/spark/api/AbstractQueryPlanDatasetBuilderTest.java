@@ -194,6 +194,8 @@ class AbstractQueryPlanDatasetBuilderTest {
     return OpenLineageContext.builder()
         .sparkContext(SparkContext.getOrCreate(new SparkConf().setAppName("test").setMaster(LOCAL)))
         .openLineage(openLineage)
+        .applicationName("app-name")
+        .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
         .queryExecution(queryExecution)
         .meterRegistry(new SimpleMeterRegistry())
         .openLineageConfig(new SparkOpenLineageConfig())
