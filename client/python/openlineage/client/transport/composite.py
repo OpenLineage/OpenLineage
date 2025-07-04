@@ -32,8 +32,9 @@ class CompositeConfig(Config):
         continue_on_failure:
             If set to True, the CompositeTransport will attempt to emit the event using
             all configured transports, regardless of whether any previous transport
-            in the list failed to emit the event. If set to False, an error in one
-            transport will halt the emission process for subsequent transports.
+            in the list failed to emit the event. If none of the transports successfully emit
+            the event, an error will still be raised at the end to indicate that no events were emitted.
+            If set to False, an error in transport will halt the emission process for subsequent transports.
 
         continue_on_success:
             If True, the CompositeTransport will continue emitting events to all transports
@@ -91,7 +92,7 @@ class CompositeTransport(Transport):
             raise ValueError(msg)
         log.debug(
             "Constructing OpenLineage composite transport with the following transports: %s",
-            [str(x) for x in self.transports],
+            self.transports,
         )
 
     @cached_property
@@ -138,6 +139,10 @@ class CompositeTransport(Transport):
                         transport,
                     )
                     return
+
+        if _success_count == 0:
+            msg = f"None of the transports successfully emitted the event: {self.transports}"
+            raise RuntimeError(msg)
 
         log.info(
             "CompositeTransport: finished emitting OpenLineage events;"
