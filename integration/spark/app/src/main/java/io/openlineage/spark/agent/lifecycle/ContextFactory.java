@@ -144,6 +144,10 @@ public class ContextFactory {
             });
   }
 
+  public void close() {
+    openLineageEventEmitter.close();
+  }
+
   public static Optional<QueryExecution> executionFromCompleteEvent(
       SparkListenerSQLExecutionEnd event) {
     try {
