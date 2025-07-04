@@ -138,7 +138,7 @@ def test_emit_success(mock_factory):
 
 
 @mock.patch("openlineage.client.transport.get_default_factory")
-def test_emit_failure_no_continue_on_failure(mock_factory):
+def test_emit_failure_no_continue_on_failure_with_error(mock_factory):
     mock_transport1 = MagicMock(spec=Transport)
     mock_transport2 = MagicMock(spec=Transport)
     mock_transport2.emit.side_effect = Exception("Error")
@@ -156,7 +156,7 @@ def test_emit_failure_no_continue_on_failure(mock_factory):
 
 
 @mock.patch("openlineage.client.transport.get_default_factory")
-def test_emit_failure_continue_on_failure(mock_factory):
+def test_emit_failure_no_continue_on_failure_without_error(mock_factory):
     mock_transport1 = MagicMock(spec=Transport)
     mock_transport2 = MagicMock(spec=Transport)
     mock_factory.return_value.create.side_effect = [mock_transport1, mock_transport2]
@@ -226,6 +226,22 @@ def test_emit_continue_combinations(
             mock_emit.assert_called_once_with(event)
         else:
             mock_emit.assert_not_called()
+
+
+@mock.patch("openlineage.client.transport.get_default_factory")
+def test_emit_raises_error_when_all_failed(mock_factory):
+    mock_transport1 = MagicMock(spec=Transport)
+    mock_transport1.emit.side_effect = Exception("Error")
+    mock_transport2 = MagicMock(spec=Transport)
+    mock_transport2.emit.side_effect = Exception("Error")
+    mock_factory.return_value.create.side_effect = [mock_transport1, mock_transport2]
+
+    config = CompositeConfig(transports=[{}, {}], continue_on_failure=True)
+    transport = CompositeTransport(config)
+    event = MagicMock()
+
+    with pytest.raises(RuntimeError, match="None of the transports successfully emitted the event"):
+        transport.emit(event)
 
 
 @mock.patch("openlineage.client.transport.get_default_factory")

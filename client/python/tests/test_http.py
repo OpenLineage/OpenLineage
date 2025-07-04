@@ -136,14 +136,8 @@ class TestHttpTransportSync:
         assert transport.timeout == 5.0
         assert transport.verify is True
 
-    @patch("openlineage.client.transport.http.Session")
-    def test_http_transport_emit_success(self, mock_session_class):
-        mock_session = MagicMock()
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value.__enter__.return_value = mock_session
-        mock_session_class.return_value.__exit__.return_value = None
+    def test_http_transport_emit_success(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
 
         config = HttpConfig(url="http://example.com")
         transport = HttpTransport(config)
@@ -159,20 +153,14 @@ class TestHttpTransportSync:
 
         transport.emit(event)
 
-        mock_session.post.assert_called_once()
-        call_args = mock_session.post.call_args
+        mock_client.post.assert_called_once()
+        call_args = mock_client.post.call_args
 
         assert call_args.kwargs["url"] == "http://example.com/api/v1/lineage"
         assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
 
-    @patch("openlineage.client.transport.http.Session")
-    def test_http_transport_with_gzip_compression(self, mock_session_class):
-        mock_session = MagicMock()
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value.__enter__.return_value = mock_session
-        mock_session_class.return_value.__exit__.return_value = None
+    def test_http_transport_with_gzip_compression(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
 
         config = HttpConfig(url="http://example.com", compression=HttpCompression.GZIP)
         transport = HttpTransport(config)
@@ -188,7 +176,7 @@ class TestHttpTransportSync:
 
         transport.emit(event)
 
-        call_args = mock_session.post.call_args
+        call_args = mock_client.post.call_args
 
         assert call_args.kwargs["headers"]["Content-Encoding"] == "gzip"
         # Content should be compressed
@@ -205,24 +193,44 @@ class TestHttpTransportSync:
         with pytest.raises(ValueError, match="Need valid url"):
             HttpTransport(HttpConfig(url=""))
 
-    def test_http_transport_emit_basic(self):
+    def test_http_transport_emit_basic(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
+
         config = HttpConfig(url="http://example.com")
         transport = HttpTransport(config)
 
         mock_event = MagicMock()
+        with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
+            transport.emit(mock_event)
 
-        with patch("openlineage.client.transport.http.Session") as mock_session_class:
-            mock_session = MagicMock()
-            mock_response = MagicMock()
-            mock_response.status_code = 200
-            mock_session.post.return_value = mock_response
-            mock_session_class.return_value.__enter__.return_value = mock_session
-            mock_session_class.return_value.__exit__.return_value = None
+        mock_client.post.assert_called_once()
 
-            with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
-                transport.emit(mock_event)
+    def test_http_transport_session_reused(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
 
-            mock_session.post.assert_called_once()
+        config = HttpConfig(url="http://example.com")
+        transport = HttpTransport(config)
+
+        mock_event = MagicMock()
+        with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
+            transport.emit(mock_event)
+
+        mock_session_class.assert_called_once()
+        mock_client.post.assert_called_once()
+        mock_client.close.assert_not_called()
+
+    def test_http_transport_close(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
+
+        config = HttpConfig(url="http://example.com")
+        transport = HttpTransport(config)
+
+        mock_event = MagicMock()
+        with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
+            transport.emit(mock_event)
+
+        transport.close()
+        mock_client.close.assert_called_once()
 
 
 class TestHttpRequestPreparation:
@@ -281,15 +289,8 @@ class TestHttpRequestPreparation:
 class TestHttpMock:
     """Tests that test the complete HTTP transport flow"""
 
-    @patch("openlineage.client.transport.http.Session")
-    def test_client_with_http_transport_emits(self, mock_session_class):
-        # Mock the context manager and post method
-        mock_session = MagicMock()
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value.__enter__.return_value = mock_session
-        mock_session_class.return_value.__exit__.return_value = None
+    def test_client_with_http_transport_emits(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
 
         config = HttpConfig.from_dict(
             {
@@ -312,8 +313,8 @@ class TestHttpMock:
         client.emit(event)
 
         # Verify the post was called with correct parameters
-        mock_session.post.assert_called_once()
-        call_args = mock_session.post.call_args
+        mock_client.post.assert_called_once()
+        call_args = mock_client.post.call_args
 
         assert call_args.kwargs["url"] == "http://backend:5000/api/v1/lineage"
         assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
@@ -323,15 +324,8 @@ class TestHttpMock:
         expected_content = Serde.to_json(event)
         assert actual_content == expected_content
 
-    @patch("openlineage.client.transport.http.Session")
-    def test_client_with_http_transport_emits_custom_endpoint(self, mock_session_class):
-        # Mock the context manager and post method
-        mock_session = MagicMock()
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value.__enter__.return_value = mock_session
-        mock_session_class.return_value.__exit__.return_value = None
+    def test_client_with_http_transport_emits_custom_endpoint(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
 
         config = HttpConfig.from_dict(
             {
@@ -355,19 +349,12 @@ class TestHttpMock:
         client.emit(event)
 
         # Verify the post was called with correct custom endpoint
-        mock_session.post.assert_called_once()
-        call_args = mock_session.post.call_args
+        mock_client.post.assert_called_once()
+        call_args = mock_client.post.call_args
         assert call_args.kwargs["url"] == "http://backend:5000/custom/lineage"
 
-    @patch("openlineage.client.transport.http.Session")
-    def test_client_with_http_transport_emits_with_gzip_compression(self, mock_session_class):
-        # Mock the context manager and post method
-        mock_session = MagicMock()
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value.__enter__.return_value = mock_session
-        mock_session_class.return_value.__exit__.return_value = None
+    def test_client_with_http_transport_emits_with_gzip_compression(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
 
         config = HttpConfig.from_dict(
             {
@@ -391,8 +378,8 @@ class TestHttpMock:
         client.emit(event)
 
         # Verify compression was applied
-        mock_session.post.assert_called_once()
-        call_args = mock_session.post.call_args
+        mock_client.post.assert_called_once()
+        call_args = mock_client.post.call_args
 
         headers = call_args.kwargs["headers"]
         assert headers["Content-Encoding"] == "gzip"
@@ -410,15 +397,8 @@ class TestHttpMock:
         )
         assert decompressed == expected_json
 
-    @patch("openlineage.client.transport.http.Session")
-    def test_http_transport_custom_headers_applied(self, mock_session_class):
-        # Mock the context manager and post method
-        mock_session = MagicMock()
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value.__enter__.return_value = mock_session
-        mock_session_class.return_value.__exit__.return_value = None
+    def test_http_transport_custom_headers_applied(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
 
         custom_headers = {"X-Custom-Header": "CustomValue", "X-Another-Header": "AnotherValue"}
         config = HttpConfig(url="http://example.com", custom_headers=custom_headers)
@@ -428,22 +408,15 @@ class TestHttpMock:
         with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
             transport.emit(mock_event)
 
-        mock_session.post.assert_called_once()
-        call_args = mock_session.post.call_args
+        mock_client.post.assert_called_once()
+        call_args = mock_client.post.call_args
         headers = call_args.kwargs["headers"]
 
         assert headers["X-Custom-Header"] == "CustomValue"
         assert headers["X-Another-Header"] == "AnotherValue"
 
-    @patch("openlineage.client.transport.http.Session")
-    def test_http_transport_auth_and_custom_headers_applied(self, mock_session_class):
-        # Mock the context manager and post method
-        mock_session = MagicMock()
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value.__enter__.return_value = mock_session
-        mock_session_class.return_value.__exit__.return_value = None
+    def test_http_transport_auth_and_custom_headers_applied(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
 
         custom_headers = {"X-Custom-Header": "CustomValue"}
         auth_token = "Bearer test_token"  # noqa: S105
@@ -461,22 +434,15 @@ class TestHttpMock:
         with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
             transport.emit(mock_event)
 
-        mock_session.post.assert_called_once()
-        call_args = mock_session.post.call_args
+        mock_client.post.assert_called_once()
+        call_args = mock_client.post.call_args
         headers = call_args.kwargs["headers"]
 
         assert headers["Authorization"] == auth_token
         assert headers["X-Custom-Header"] == "CustomValue"
 
-    @patch("openlineage.client.transport.http.Session")
-    def test_http_transport_no_custom_headers(self, mock_session_class):
-        # Mock the context manager and post method
-        mock_session = MagicMock()
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value.__enter__.return_value = mock_session
-        mock_session_class.return_value.__exit__.return_value = None
+    def test_http_transport_no_custom_headers(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
 
         config = HttpConfig(url="http://example.com")
         transport = HttpTransport(config)
@@ -485,23 +451,16 @@ class TestHttpMock:
         with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
             transport.emit(mock_event)
 
-        mock_session.post.assert_called_once()
-        call_args = mock_session.post.call_args
+        mock_client.post.assert_called_once()
+        call_args = mock_client.post.call_args
         headers = call_args.kwargs["headers"]
 
         # Only the Content-Type header should be set if no custom headers
         assert headers["Content-Type"] == "application/json"
         assert "X-Custom-Header" not in headers
 
-    @patch("openlineage.client.transport.http.Session")
-    def test_http_transport_compression_with_custom_headers(self, mock_session_class):
-        # Mock the context manager and post method
-        mock_session = MagicMock()
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value.__enter__.return_value = mock_session
-        mock_session_class.return_value.__exit__.return_value = None
+    def test_http_transport_compression_with_custom_headers(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
 
         custom_headers = {"X-Custom-Header": "CustomValue"}
 
@@ -516,8 +475,8 @@ class TestHttpMock:
         ):
             transport.emit(mock_event)
 
-        mock_session.post.assert_called_once()
-        call_args = mock_session.post.call_args
+        mock_client.post.assert_called_once()
+        call_args = mock_client.post.call_args
         headers = call_args.kwargs["headers"]
         content = call_args.kwargs["data"]
 
@@ -525,7 +484,6 @@ class TestHttpMock:
         assert headers["Content-Encoding"] == "gzip"
         assert content == b"compressed_data"
 
-    @patch("openlineage.client.transport.http.Session")
     @patch.dict(
         os.environ,
         {
@@ -535,14 +493,8 @@ class TestHttpMock:
             "OPENLINEAGE__TRANSPORT__CUSTOM_HEADERS__ANOTHER_HEADER": "second",
         },
     )
-    def test_http_transport_with_custom_headers_from_env_vars(self, mock_session_class):
-        # Mock the context manager and post method
-        mock_session = MagicMock()
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value.__enter__.return_value = mock_session
-        mock_session_class.return_value.__exit__.return_value = None
+    def test_http_transport_with_custom_headers_from_env_vars(self, mock_http_session_class):
+        mock_session_class, mock_client, mock_response = mock_http_session_class
 
         transport = OpenLineageClient().transport
         mock_event = MagicMock()
@@ -550,8 +502,8 @@ class TestHttpMock:
         with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'):
             transport.emit(mock_event)
 
-        mock_session.post.assert_called_once()
-        call_args = mock_session.post.call_args
+        mock_client.post.assert_called_once()
+        call_args = mock_client.post.call_args
         headers = call_args.kwargs["headers"]
 
         assert headers["custom_header"] == "FIRST"

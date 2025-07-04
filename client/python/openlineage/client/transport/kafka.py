@@ -15,7 +15,7 @@ from openlineage.client.utils import get_only_specified_fields
 from packaging.version import Version
 
 if TYPE_CHECKING:
-    from confluent_kafka import KafkaError, Message
+    from confluent_kafka import KafkaError, Message, Producer
     from openlineage.client.client import Event
     from openlineage.client.facet import ParentRunFacet
 
@@ -71,7 +71,7 @@ class KafkaTransport(Transport):
         self.message_key = config.messageKey
         self.kafka_config = config
         self._is_airflow_sqlalchemy = _check_if_airflow_sqlalchemy_context()
-        self.producer = None
+        self.producer: Producer | None = None
         if not self._is_airflow_sqlalchemy:
             self._setup_producer(self.kafka_config.config)
         log.debug("Constructing OpenLineage transport that will send events to kafka topic `%s`", self.topic)
@@ -149,22 +149,33 @@ class KafkaTransport(Transport):
         return parent_job_namespace, parent_job_name
 
     def emit(self, event: Event) -> None:
-        if self._is_airflow_sqlalchemy:
+        if self.producer is None:
             self._setup_producer(self.kafka_config.config)
 
         key = self.message_key or self._get_message_key(event)
 
-        self.producer.produce(  # type: ignore[attr-defined]
+        self.producer.produce(  # type: ignore[union-attr]
             topic=self.topic,
             key=key,
             value=Serde.to_json(event).encode("utf-8"),
             on_delivery=on_delivery,
         )
         if self.flush:
-            rest = self.producer.flush(timeout=10)  # type: ignore[attr-defined]
-            log.debug("Amount of messages left in Kafka buffers after flush %d", rest)
+            self.wait_for_completion()
         if self._is_airflow_sqlalchemy:
-            self.producer = None
+            self.close()
+
+    def wait_for_completion(self, timeout: float = -1) -> bool:
+        if self.producer is None:
+            return True
+        messages_left: int = self.producer.flush(timeout=timeout)
+        log.debug("Amount of messages left in Kafka buffers after flush %d", messages_left)
+        return not messages_left
+
+    def close(self, timeout: float = -1.0) -> bool:
+        all_processed = self.wait_for_completion(timeout)
+        self.producer = None
+        return all_processed
 
     def _setup_producer(self, config: dict) -> None:  # type: ignore[type-arg]
         try:

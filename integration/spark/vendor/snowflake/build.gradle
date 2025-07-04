@@ -40,6 +40,7 @@ ext {
 }
 
 dependencies {
+    implementation(project(path: ":shared"))
     implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
     implementation("io.openlineage:openlineage-sql-java:${project.version}")
 

@@ -43,6 +43,7 @@ ext {
 }
 
 dependencies {
+    implementation(project(path: ":shared"))
     implementation(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
 
     compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
