@@ -469,3 +469,21 @@ def test_client_with_transform_transport_fails_when_transform_fails(mocker: Mock
         client.emit(event)
 
     transport.transport.session.post.assert_not_called()
+
+
+def test_client_with_transform_transport_close(mocker: MockerFixture) -> None:
+    session = mocker.patch("requests.Session")
+    config = TransformConfig.from_dict(
+        {
+            "transport": {
+                "type": "http",
+                "url": "http://backend:5000",
+                "session": session,
+            },
+            "transformer_class": "tests.transform.test_transform.NoopEventTransformer",
+        }
+    )
+    transport = TransformTransport(config)
+
+    transport.close()
+    session.close.assert_called_once()
