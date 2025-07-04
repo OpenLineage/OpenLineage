@@ -53,7 +53,9 @@ public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.Ou
     if (di.isPresent()) {
       DatasetCompositeFacetsBuilder builder = outputDataset().createCompositeFacetBuilder();
       CatalogUtils3.getCatalogDatasetFacet(context, tableCatalog, tableProperties)
-          .ifPresent(catalogDatasetFacet -> builder.getFacets().catalog(catalogDatasetFacet));
+          .ifPresent(
+              catalogDatasetFacet ->
+                  builder.getFacets().catalog(catalogDatasetFacet.getCatalogDatasetFacet()));
       builder
           .getFacets()
           .schema(PlanUtils.schemaFacet(context.getOpenLineage(), resolvedTable.schema()));

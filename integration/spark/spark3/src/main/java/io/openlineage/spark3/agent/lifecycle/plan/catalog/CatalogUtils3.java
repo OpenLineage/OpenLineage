@@ -101,7 +101,13 @@ public class CatalogUtils3 {
     CatalogUtils3.getStorageDatasetFacet(context, catalog, properties)
         .map(storageDatasetFacet -> builder.getFacets().storage(storageDatasetFacet));
     CatalogUtils3.getCatalogDatasetFacet(context, catalog, properties)
-        .ifPresent(catalogDatasetFacet -> builder.getFacets().catalog(catalogDatasetFacet));
+        .ifPresent(
+            catalogDatasetFacet -> {
+              builder.getFacets().catalog(catalogDatasetFacet.getCatalogDatasetFacet());
+              catalogDatasetFacet
+                  .getAdditionalFacets()
+                  .forEach((k, v) -> builder.getFacets().put(k, v));
+            });
   }
 
   public static Optional<OpenLineage.StorageDatasetFacet> getStorageDatasetFacet(
@@ -112,7 +118,7 @@ public class CatalogUtils3 {
         : Optional.empty();
   }
 
-  public static Optional<OpenLineage.CatalogDatasetFacet> getCatalogDatasetFacet(
+  public static Optional<CatalogHandler.CatalogWithAdditionalFacets> getCatalogDatasetFacet(
       OpenLineageContext context, TableCatalog catalog, Map<String, String> properties) {
     Optional<CatalogHandler> catalogHandler = getCatalogHandler(context, catalog);
     return catalogHandler.isPresent()
