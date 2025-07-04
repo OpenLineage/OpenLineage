@@ -17,7 +17,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.Transport;
 import java.nio.ByteBuffer;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,7 @@ public class KinesisTransport extends Transport {
 
   private final KinesisProducer producer;
 
-  private final Executor listeningExecutor;
+  private final ExecutorService listeningExecutor;
 
   public KinesisTransport(
       @NonNull final KinesisProducer kinesisProducer, @NonNull final KinesisConfig kinesisConfig) {
@@ -143,5 +143,11 @@ public class KinesisTransport extends Transport {
         };
 
     Futures.addCallback(future, callback, this.listeningExecutor);
+  }
+
+  @Override
+  public void close() throws Exception {
+    this.producer.flushSync();
+    this.listeningExecutor.shutdown();
   }
 }
