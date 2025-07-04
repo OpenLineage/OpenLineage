@@ -222,11 +222,11 @@ class DeltaHandlerTest {
     when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
     when(deltaCatalog.name()).thenReturn("name");
 
-    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacet =
+    Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
         deltaHandler.getCatalogDatasetFacet(deltaCatalog, Collections.emptyMap());
     assertThat(catalogDatasetFacet.isPresent()).isTrue();
 
-    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get();
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get().getCatalogDatasetFacet();
     assertThat(facet.getName()).isEqualTo("name");
     assertThat(facet.getFramework()).isEqualTo("delta");
     assertThat(facet.getType()).isEqualTo("delta");
