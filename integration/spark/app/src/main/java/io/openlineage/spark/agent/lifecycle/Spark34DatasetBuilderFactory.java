@@ -28,11 +28,13 @@ import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandEdgeInputDatas
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandEdgeOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandOutputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.ReplaceDataDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SparkExtensionV1InputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SparkExtensionV1OutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.WriteDeltaDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import io.openlineage.spark33.agent.lifecycle.plan.ReplaceIcebergDataDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.CreateReplaceInputDatasetBuilder;
@@ -84,6 +86,8 @@ public class Spark34DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new LogicalRelationDatasetBuilder(context, datasetFactory, false))
             .add(new SaveIntoDataSourceCommandVisitor(context))
             .add(new AppendDataDatasetBuilder(context, datasetFactory))
+            .add(new WriteDeltaDatasetBuilder(context, datasetFactory))
+            .add(new ReplaceDataDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context, datasetFactory))
             .add(getCreateReplaceDatasetBuilder(context))
