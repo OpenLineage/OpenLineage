@@ -180,14 +180,10 @@ class SparkGenericIntegrationTest {
               return event.getJob().getFacets().getJobType() != null;
             });
 
-    // Only Spark application START events have spark_applicationDetails facet
+    // Only START events have spark_applicationDetails facet
     assertThat(
             events.stream()
-                .filter(
-                    event ->
-                        event.getEventType() == RunEvent.EventType.START
-                            && event.getJob().getFacets().getJobType().getJobType()
-                                == "APPLICATION")
+                .filter(event -> event.getEventType() == RunEvent.EventType.START)
                 .collect(Collectors.toList()))
         .allMatch(
             event -> {

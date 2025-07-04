@@ -21,6 +21,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
+import org.apache.spark.scheduler.SparkListenerJobStart;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.Option;
@@ -59,8 +61,10 @@ class SparkApplicationDetailsFacetBuilderTest {
   }
 
   @Test
-  void testIsDefinedForSparkListenerApplicationStartEvent() {
+  void testIsDefinedForSparkListenerEvent() {
     assertThat(builder.isDefinedAt(mock(SparkListenerApplicationStart.class))).isTrue();
+    assertThat(builder.isDefinedAt(mock(SparkListenerSQLExecutionStart.class))).isTrue();
+    assertThat(builder.isDefinedAt(mock(SparkListenerJobStart.class))).isTrue();
   }
 
   @Test
