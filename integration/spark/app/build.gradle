@@ -574,15 +574,21 @@ List<Dependency> deltaDependencies(String spark, String scala) {
             "3.2.4": "1.1.0",
             "3.3.4": "2.1.0",
             "3.4.3": "2.4.0",
+            "3.5.4": "3.3.2"
     ]
 
     def delta = registry.get(spark)
     if (delta == null) {
         return []
+    } else if (delta.startsWith("1.") || delta.startsWith("2.")) {
+        return [
+                dependencies.create("io.delta:delta-core_${scala}:$delta")
+        ]
+    } else if (delta.startsWith("3.")) {
+        return [
+                dependencies.create("io.delta:delta-spark_${scala}:$delta")
+        ]
     }
-    return [
-            dependencies.create("io.delta:delta-core_${scala}:$delta")
-    ]
 }
 
 List<Dependency> gcsDependencies(String spark, String scala) {
