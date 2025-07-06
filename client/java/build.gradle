@@ -15,9 +15,9 @@ plugins {
     id "com.adarshr.test-logger" version "3.2.0"
     id 'com.diffplug.spotless' version '7.0.2'
     id "org.openapi.generator" version "6.6.0"
-    id "com.gradleup.shadow" version "8.3.6"
+    id "com.gradleup.shadow" version "8.3.8"
     id "pmd"
-    id "io.freefair.lombok" version "8.13.1"
+    id "io.freefair.lombok" version "8.14"
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
 
@@ -55,10 +55,10 @@ repositories {
 ext {
     assertjVersion = '3.27.3'
     jacksonVersion = "2.15.3"
-    junit5Version = '5.11.4'
+    junit5Version = '5.13.3'
     lombokVersion = '1.18.38'
     mockitoVersion = '5.18.0'
-    micrometerVersion = '1.15.0'
+    micrometerVersion = '1.15.1'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
     guavaVersion = '33.4.8-jre'
 }
