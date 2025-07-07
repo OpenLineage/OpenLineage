@@ -174,27 +174,6 @@ class Cassandra(DatasetNaming):
 
 
 @attr.define
-class Glue(DatasetNaming):
-    """
-    Naming implementation for AWS Glue.
-
-    Namespace follows: arn:aws:glue:{region}:{account_id}.
-    Name follows: table/{database_name}/{table_name}.
-    """
-
-    region: str = attr.field(validator=_check_not_empty)
-    account_id: str = attr.field(validator=_check_not_empty)
-    database_name: str = attr.field(validator=_check_not_empty)
-    table_name: str = attr.field(validator=_check_not_empty)
-
-    def get_namespace(self) -> str:
-        return f"arn:aws:glue:{self.region}:{self.account_id}"
-
-    def get_name(self) -> str:
-        return f"table/{self.database_name}/{self.table_name}"
-
-
-@attr.define
 class MySQL(DatasetNaming):
     """Naming implementation for MySQL."""
 
@@ -480,12 +459,12 @@ class S3(DatasetNaming):
 class WASBS(DatasetNaming):
     """Naming implementation for WASBS."""
 
-    container_name: str = attr.field(validator=_check_not_empty)
+    container: str = attr.field(validator=_check_not_empty)
     service_name: str = attr.field(validator=_check_not_empty)
     object_key: str = attr.field(validator=_check_not_empty)
 
     def get_namespace(self) -> str:
-        return f"wasbs://{self.container_name}@{self.service_name}.dfs.core.windows.net"
+        return f"wasbs://{self.container}@{self.service_name}.dfs.core.windows.net"
 
     def get_name(self) -> str:
         return self.object_key

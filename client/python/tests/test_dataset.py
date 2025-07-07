@@ -20,7 +20,6 @@ from openlineage.client.dataset import (
     BigQuery,
     Cassandra,
     CrateDB,
-    Glue,
     Kafka,
     LocalFileSystem,
     MySQL,
@@ -100,13 +99,6 @@ class TestCassandra:
         cassandra = Cassandra("localhost", "9042", "my-keyspace", "my-table")
         assert cassandra.get_namespace() == "cassandra://localhost:9042"
         assert cassandra.get_name() == "my-keyspace.my-table"
-
-
-class TestGlue:
-    def test_glue_naming(self):
-        glue = Glue("us-east-1", "123456789012", "my-database", "my-table")
-        assert glue.get_namespace() == "arn:aws:glue:us-east-1:123456789012"
-        assert glue.get_name() == "table/my-database/my-table"
 
 
 class TestMySQL:
