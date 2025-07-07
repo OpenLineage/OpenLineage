@@ -24,7 +24,6 @@ body:
       multiple: true
       options:
         - Airflow integration
-        - Dagster integration
         - DBT integration
         - Flink integration
         - Spark integration
