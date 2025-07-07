@@ -33,6 +33,7 @@
         "processingType": "BATCH"
       },
       "sql": {
+        "dialect": "hive",
         "query": "CREATE TABLE xxx AS SELECT a, c FROM t1 WHERE b > 1 GROUP BY a, c ORDER BY c"
       }
     }
