@@ -267,7 +267,7 @@ jobs:
       py_env:
         type: string
     machine:
-      image: ubuntu-2204:current
+      image: ubuntu-2404:current
     steps:
       - *checkout_project_root
       - run:
@@ -317,6 +317,23 @@ jobs:
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
           path: test-results
+
+  integration-test-integration-dbt:
+    working_directory: ~/openlineage/integration/dbt
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - *checkout_project_root
+      - run: ../../.circleci/get-docker-compose.sh
+      - run:
+          name: Install uv and Python 3.9
+          command: |
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            source $HOME/.local/bin/env
+            uv python install 3.9
+      - attach_workspace:
+          at: .
+      - run: uv venv && source .venv/bin/activate && ls -halt dist/ && echo "=========" && ls -halt target/wheels/ && uv sync --all-extras --active --inexact --find-links target/wheels/ --find-links dist/ && pytest tests/
 
   build-integration-dbt:
     working_directory: ~/openlineage/integration/dbt

@@ -1,11 +1,10 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
-from unittest.mock import Mock
+from unittest import mock
 
 import pytest
 from openlineage.common.provider.dbt.utils import CONSUME_STRUCTURED_LOGS_COMMAND_OPTION, PRODUCER
-from openlineage.dbt import consume_structured_logs, logger, main
+from openlineage.dbt import consume_structured_logs, main
 
 
 @pytest.mark.parametrize(
@@ -22,8 +21,8 @@ from openlineage.dbt import consume_structured_logs, logger, main
     ],
 )
 def test_structured_logs(command_line: str, number_of_calls: int, monkeypatch):
-    mock_consume_structured_logs = Mock()
-    mock_consume_local_artifacts = Mock()
+    mock_consume_structured_logs = mock.MagicMock()
+    mock_consume_local_artifacts = mock.MagicMock()
     monkeypatch.setattr("openlineage.dbt.consume_structured_logs", mock_consume_structured_logs)
     monkeypatch.setattr("openlineage.dbt.consume_local_artifacts", mock_consume_local_artifacts)
     monkeypatch.setattr("sys.argv", command_line)
@@ -68,12 +67,12 @@ def test_structured_logs(command_line: str, number_of_calls: int, monkeypatch):
     ids=["with_canonical_kwargs_for_consume_structured_logs"],
 )
 def test_consume_structured_logs(command_line, os_envs, function_kwargs, monkeypatch):
-    mock_consume_structured_logs = Mock()
-    mockOpenLineageClient = Mock()
+    mock_consume_structured_logs = mock.MagicMock()
+    mockOpenLineageClient = mock.MagicMock()
 
-    mock_dbt_structured_logs_processor = Mock()
-    mock_dbt_structured_logs_processor.parse = Mock(return_value=[])
-    mockDbtStructuredLogsProcessor = Mock(
+    mock_dbt_structured_logs_processor = mock.MagicMock()
+    mock_dbt_structured_logs_processor.parse = mock.MagicMock(return_value=[])
+    mockDbtStructuredLogsProcessor = mock.MagicMock(
         return_value=mock_dbt_structured_logs_processor
     )  # instance returned
     mock_dbt_structured_logs_processor.dbt_command_return_code = 0
@@ -110,7 +109,7 @@ def test_consume_structured_logs(command_line, os_envs, function_kwargs, monkeyp
         target=function_kwargs["target"],
         job_namespace=os_envs["OPENLINEAGE_NAMESPACE"],
         profile_name=function_kwargs["profile_name"],
-        logger=logger,
+        logger=mock.ANY,
         models=function_kwargs["models"],
         selector=function_kwargs["model_selector"],
     )

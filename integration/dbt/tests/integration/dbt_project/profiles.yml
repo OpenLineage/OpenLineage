@@ -1,0 +1,8 @@
+openlineage_test:
+  outputs:
+    dev:
+      type: duckdb
+      path: /opt/dbt/data/test.duckdb
+      schema: main
+      threads: 4
+  target: dev
