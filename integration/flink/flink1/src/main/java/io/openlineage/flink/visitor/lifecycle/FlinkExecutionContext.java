@@ -333,4 +333,8 @@ public class FlinkExecutionContext implements ExecutionContext {
         .flatMap(List::stream)
         .collect(Collectors.toList());
   }
+
+  public void close() {
+    olContext.getEventEmitter().close();
+  }
 }

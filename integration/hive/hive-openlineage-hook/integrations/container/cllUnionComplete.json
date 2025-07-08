@@ -33,6 +33,7 @@
         "processingType": "BATCH"
       },
       "sql": {
+        "dialect": "hive",
         "query": "CREATE TABLE xxx AS\nSELECT a, b, 'table1' as source\nFROM t1\nUNION ALL\nSELECT a, c, 'table2' as source\nFROM t2"
       }
     }

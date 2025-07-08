@@ -58,6 +58,7 @@ config. The job name is unique within its namespace.
 | Airflow task | `{dag_id}.{task_id}`          | `orders_etl.count_orders`                                    |
 | Spark job    | `{appName}.{command}.{table}` | `my_awesome_app.execute_insert_into_hive_table.mydb_mytable` |
 | SQL          | `{schema}.{table}`            | `gx.validate_datasets`                                       |
+| Debezium     | `{topic.prefix}.{taskId}`     | `inventory.0`                                                |
 
 ## Run Naming
 

@@ -8,6 +8,8 @@ package io.openlineage.client.circuitBreaker;
 import static io.openlineage.client.circuitBreaker.CircuitBreaker.CIRCUIT_CHECK_INTERVAL_IN_MILLIS;
 
 import io.openlineage.client.MergeConfig;
+import java.time.Duration;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -43,5 +45,10 @@ public final class SimpleMemoryCircuitBreakerConfig
             circuitCheckIntervalInMillis,
             other.circuitCheckIntervalInMillis,
             CIRCUIT_CHECK_INTERVAL_IN_MILLIS));
+  }
+
+  @Override
+  public Optional<Duration> getTimeout() {
+    return Optional.of(Duration.ofSeconds(timeoutInSeconds));
   }
 }

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from openlineage.client.transport.amazon_datazone import AmazonDataZoneConfig, AmazonDataZoneTransport
+from openlineage.client.transport.async_http import AsyncHttpConfig, AsyncHttpTransport
 from openlineage.client.transport.composite import CompositeTransport
 from openlineage.client.transport.console import ConsoleTransport
 from openlineage.client.transport.factory import DefaultTransportFactory
@@ -20,6 +21,7 @@ from openlineage.client.transport.transport import Config, Transport, TransportF
 _factory = DefaultTransportFactory()
 _factory.register_transport(CompositeTransport.kind, CompositeTransport)
 _factory.register_transport(HttpTransport.kind, HttpTransport)
+_factory.register_transport(AsyncHttpTransport.kind, AsyncHttpTransport)
 _factory.register_transport(KafkaTransport.kind, KafkaTransport)
 _factory.register_transport(MSKIAMTransport.kind, MSKIAMTransport)
 _factory.register_transport(ConsoleTransport.kind, ConsoleTransport)
@@ -41,14 +43,12 @@ def register_transport(clazz: type[Transport]) -> type[Transport]:
 
 
 __all__ = [
-    "register_transport",
-    "get_default_factory",
-    "Config",
-    "Transport",
-    "TransportFactory",
     "AmazonDataZoneConfig",
     "AmazonDataZoneTransport",
+    "AsyncHttpConfig",
+    "AsyncHttpTransport",
     "CompositeTransport",
+    "Config",
     "ConsoleTransport",
     "FileTransport",
     "HttpConfig",
@@ -60,4 +60,8 @@ __all__ = [
     "NoopTransport",
     "TransformConfig",
     "TransformTransport",
+    "Transport",
+    "TransportFactory",
+    "get_default_factory",
+    "register_transport",
 ]

@@ -25,8 +25,11 @@ export CARGO_INCREMENTAL=0
 
 # Run test if indicated to do so.
 if [[ $RUN_TESTS = true ]]; then
+  echo "Running tests"
   cargo test --no-default-features
+  echo "Running cargo clippy with all features"
   cargo clippy --all-targets --all-features -- -D warnings
+  echo "Running cargo fmt with --check"
   cargo fmt -- --check
 fi
 

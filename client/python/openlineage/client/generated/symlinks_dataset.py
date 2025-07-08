@@ -16,7 +16,7 @@ class Identifier(RedactMixin):
     name: str
     """The dataset name"""
 
-    type: str
+    type: str  # noqa: A003
     """Identifier type"""
 
 

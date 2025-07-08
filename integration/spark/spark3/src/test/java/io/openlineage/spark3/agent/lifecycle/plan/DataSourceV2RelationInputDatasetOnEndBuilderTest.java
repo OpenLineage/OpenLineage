@@ -73,7 +73,7 @@ class DataSourceV2RelationInputDatasetOnEndBuilderTest {
       try (MockedStatic facetUtilsMockedStatic =
           mockStatic(DatasetVersionDatasetFacetUtils.class)) {
         try (MockedStatic versionUtilsMockedStatic = mockStatic(DatasetVersionUtils.class)) {
-          when(DataSourceV2RelationDatasetExtractor.extract(
+          when(DataSourceV2RelationDatasetExtractor.extractIncludingVersionFacet(
                   factory, context, relation, datasetFacetsBuilder))
               .thenReturn(datasets);
 

@@ -183,11 +183,11 @@ impl DbTableMeta {
             "{}{}{}",
             self.database
                 .as_ref()
-                .map(|x| format!("{}.", x))
+                .map(|x| format!("{x}."))
                 .unwrap_or_default(),
             self.schema
                 .as_ref()
-                .map(|x| format!("{}.", x))
+                .map(|x| format!("{x}."))
                 .unwrap_or_default(),
             self.name
         )

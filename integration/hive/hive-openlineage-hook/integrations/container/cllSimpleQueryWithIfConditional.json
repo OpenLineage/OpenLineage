@@ -33,6 +33,7 @@
         "processingType": "BATCH"
       },
       "sql": {
+        "dialect": "hive",
         "query": "CREATE TABLE xxx AS SELECT IF(b > 1, a, a + b) AS cond FROM t1"
       }
     }

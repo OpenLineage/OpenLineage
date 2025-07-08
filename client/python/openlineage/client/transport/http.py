@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import gzip
+import http.client as http_client
 import inspect
 import logging
 import warnings
@@ -12,18 +13,16 @@ from urllib.parse import urljoin
 
 import attr
 import urllib3.util
-
-if TYPE_CHECKING:
-    from openlineage.client.client import Event, OpenLineageClientOptions
-    from requests import Response
-
-import http.client as http_client
-
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields, try_import_from_string
 from requests import Session
 from requests.adapters import HTTPAdapter
+
+if TYPE_CHECKING:
+    from openlineage.client.client import Event, OpenLineageClientOptions
+    from requests import Response
+
 
 log = logging.getLogger(__name__)
 
@@ -159,13 +158,11 @@ class HttpTransport(Transport):
                 raise ValueError(msg)
         self.url = url
         self.endpoint = config.endpoint
-        self.session = None
-        if config.session:
-            self.session = config.session
-            self._prepare_session(self.session)
         self.timeout = config.timeout
         self.verify = config.verify
         self.compression = config.compression
+        self._session: Session | None = None
+        self.session = config.session  # type: ignore[assignment]
 
     def emit(self, event: Event) -> Response:
         # If anyone overrides debuglevel manually, we can potentially leak secrets to logs.
@@ -174,28 +171,36 @@ class HttpTransport(Transport):
         http_client.HTTPConnection.debuglevel = 0
         body, headers = self._prepare_request(Serde.to_json(event))
 
-        if self.session:
-            resp = self.session.post(
-                url=urljoin(self.url, self.endpoint),
-                data=body,
-                headers=headers,
-                timeout=self.timeout,
-                verify=self.verify,
-            )
-        else:
-            with Session() as session:
-                self._prepare_session(session)
-                resp = session.post(
-                    url=urljoin(self.url, self.endpoint),
-                    data=body,
-                    headers=headers,
-                    timeout=self.timeout,
-                    verify=self.verify,
-                )
-            resp.close()
+        resp = self.session.post(
+            url=urljoin(self.url, self.endpoint),
+            data=body,
+            headers=headers,
+            timeout=self.timeout,
+            verify=self.verify,
+        )
+        resp.close()
         http_client.HTTPConnection.debuglevel = prev_debuglevel
         resp.raise_for_status()
         return resp
+
+    @property
+    def session(self) -> Session:
+        if not self._session:
+            self._session = Session()
+            self._prepare_session(self._session)
+        return self._session
+
+    @session.setter
+    def session(self, value: Session | None) -> None:
+        if value:
+            self._prepare_session(value)
+        self._session = value
+
+    def close(self, timeout: float = -1) -> bool:
+        if self._session:
+            self._session.close()
+            self._session = None
+        return True
 
     def _auth_headers(self, token_provider: TokenProvider) -> dict:  # type: ignore[type-arg]
         bearer = token_provider.get_bearer()

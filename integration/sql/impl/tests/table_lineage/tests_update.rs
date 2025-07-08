@@ -81,12 +81,11 @@ fn update_identifier_function() {
         for dialect in &dialects {
             let sql = format!(
                 "UPDATE \
-                IDENTIFIER({}) \
+                IDENTIFIER({out_table_id}) \
                 SET v = src.v \
                 FROM \
-                identifier({}) as src \
-                WHERE target.k = src.k;",
-                out_table_id, in_table_id
+                identifier({in_table_id}) as src \
+                WHERE target.k = src.k;"
             );
             assert_eq!(
                 test_sql_dialect(&sql, dialect).unwrap().table_lineage,
@@ -94,9 +93,7 @@ fn update_identifier_function() {
                     in_tables: in_tables.clone(),
                     out_tables: out_tables.clone(),
                 },
-                "Failed for dialect: {} with SQL: {}",
-                dialect,
-                sql
+                "Failed for dialect: {dialect} with SQL: {sql}"
             );
         }
     }
@@ -124,10 +121,9 @@ fn update_identifier_function_databricks() {
     for (out_table_id, in_table_id, in_tables, out_tables) in &test_cases {
         let sql = format!(
             "UPDATE \
-            IDENTIFIER({}) \
+            IDENTIFIER({out_table_id}) \
             SET v = src.v \
-            WHERE EXISTS (SELECT x FROM identifier({}) WHERE t1.oid = oid);",
-            out_table_id, in_table_id
+            WHERE EXISTS (SELECT x FROM identifier({in_table_id}) WHERE t1.oid = oid);"
         );
         assert_eq!(
             test_sql_dialect(&sql, "databricks").unwrap().table_lineage,
@@ -135,8 +131,7 @@ fn update_identifier_function_databricks() {
                 in_tables: in_tables.clone(),
                 out_tables: out_tables.clone(),
             },
-            "Failed for dialect: databricks with SQL: {}",
-            sql
+            "Failed for dialect: databricks with SQL: {sql}",
         );
     }
 }

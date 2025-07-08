@@ -28,7 +28,7 @@ from openlineage.client.transport import (
     TransportFactory,
     get_default_factory,
 )
-from openlineage.client.transport.http import HttpConfig, HttpTransport, create_token_provider
+from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
 from openlineage.client.utils import deep_merge_dicts
 
@@ -183,6 +183,26 @@ class OpenLineageClient:
         self.transport.emit(event)
         log.debug("OpenLineage event successfully emitted.")
 
+    def close(self, timeout: float = -1.0) -> bool:
+        """
+        Closes down the transport until all events are processed or timeout is reached.
+        Params:
+          timeout: Timeout in seconds. `-1` means to block until last event is processed, 0 means no timeout.
+
+        """
+        return self.transport.close(timeout)
+
+    def wait_for_completion(self, timeout: float = -1.0) -> bool:
+        """
+        Block until all events are processed or timeout is reached.
+        If the transport is fully synchronous, this method should be a no-op and return True.
+        Params:
+          timeout: Timeout in seconds. `-1` means to block until last event is processed, 0 means no timeout.
+        Returns:
+            bool: True if all events were processed, False if some events were not processed.
+        """
+        return self.transport.wait_for_completion(timeout)
+
     @property
     def config(self) -> OpenLineageConfig:
         """
@@ -238,7 +258,7 @@ class OpenLineageClient:
 
         # 2. Check if transport is provided explicitly
         if kwargs.get("transport"):
-            return cast(Transport, kwargs["transport"])
+            return cast("Transport", kwargs["transport"])
 
         # 3. Check if transport configuration is provided in YAML config file
         if self.config.transport and self.config.transport.get("type"):
@@ -292,28 +312,26 @@ class OpenLineageClient:
                     return path
                 if path and verbose:
                     log.debug("OpenLineage config file is missing or not readable: `%s`.", path)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 # We can get different errors depending on system
                 if verbose:
                     log.exception("Couldn't check if OpenLineage config file is readable: `%s`", path)
         return None
 
-    @staticmethod
-    def _http_transport_from_env_variables() -> HttpTransport:
-        config = HttpConfig(
-            url=os.environ["OPENLINEAGE_URL"],
-            auth=create_token_provider(
-                {
-                    "type": "api_key",
-                    "apiKey": os.environ.get("OPENLINEAGE_API_KEY", ""),
-                },
-            ),
-        )
-        endpoint = os.environ.get("OPENLINEAGE_ENDPOINT", None)
-        if endpoint is not None:
-            config.endpoint = endpoint
-
-        return HttpTransport(config)
+    def _http_transport_from_env_variables(self) -> HttpTransport:
+        """
+        Create HTTP transport from legacy environment variables
+        """
+        # Start with basic config from legacy environment variables
+        config_dict = {
+            "url": os.environ["OPENLINEAGE_URL"],
+            "auth": {
+                "type": "api_key",
+                "apiKey": os.environ.get("OPENLINEAGE_API_KEY", ""),
+            },
+            "endpoint": os.environ.get("OPENLINEAGE_ENDPOINT", "api/v1/lineage"),
+        }
+        return HttpTransport(HttpConfig.from_dict(config_dict))
 
     @staticmethod
     def _http_transport_from_url(
@@ -343,9 +361,13 @@ class OpenLineageClient:
                     default_transport_name,
                 )
                 return
+
+            api_key = os.environ.get("OPENLINEAGE_API_KEY")
+            endpoint = os.environ.get("OPENLINEAGE_ENDPOINT")
+
             os.environ[f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}__TYPE"] = "http"
             os.environ[f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}__URL"] = url
-            if api_key := os.environ.get("OPENLINEAGE_API_KEY"):
+            if api_key:
                 os.environ[
                     f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}__AUTH"
                 ] = json.dumps(
@@ -354,10 +376,24 @@ class OpenLineageClient:
                         "apiKey": api_key,
                     }
                 )
-            if endpoint := os.environ.get("OPENLINEAGE_ENDPOINT"):
+            if endpoint:
                 os.environ[
                     f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}__ENDPOINT"
                 ] = endpoint
+
+            if os.environ.get("OPENLINEAGE__TRANSPORT__TYPE") == "async_http":
+                # Special case - for seamless switch to async transport
+                if not os.getenv("OPENLINEAGE__TRANSPORT__URL"):
+                    os.environ["OPENLINEAGE__TRANSPORT__URL"] = url
+                if api_key and not os.getenv("OPENLINEAGE__TRANSPORT__AUTH"):
+                    os.environ["OPENLINEAGE__TRANSPORT__AUTH"] = json.dumps(
+                        {
+                            "type": "api_key",
+                            "apiKey": api_key,
+                        }
+                    )
+                if endpoint and not os.getenv("OPENLINEAGE__TRANSPORT__ENDPOINT"):
+                    os.environ["OPENLINEAGE__TRANSPORT__ENDPOINT"] = endpoint
 
     @classmethod
     def _load_config_from_env_variables(cls) -> dict[str, Any] | None:

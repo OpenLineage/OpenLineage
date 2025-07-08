@@ -55,6 +55,7 @@ sourceSets {
 }
 
 dependencies {
+    compileOnly(project(path: ":shared"))
     compileOnly(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
 
     compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")

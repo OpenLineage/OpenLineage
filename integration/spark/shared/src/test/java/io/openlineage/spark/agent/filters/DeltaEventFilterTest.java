@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.filters;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -31,6 +32,8 @@ import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.SerializeFromObject;
 import org.apache.spark.sql.execution.LogicalRDD;
 import org.apache.spark.sql.execution.QueryExecution;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -190,6 +193,32 @@ class DeltaEventFilterTest {
       when(queryExecution.optimizedPlan()).thenReturn(serializeFromObject);
 
       assertTrue(filter.isDisabled(sparkListenerEvent));
+    }
+  }
+
+  @Test
+  void testDisabledForStagedDeltaTable() {
+    try (MockedStatic mocked = mockStatic(SparkSession.class)) {
+      when(SparkSession.active()).thenReturn(sparkSession);
+      when(sparkConf.get("spark.sql.extensions", ""))
+          .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
+      when(queryExecution.optimizedPlan()).thenReturn(null); // Placeholder for actual plan
+
+      // Simulate a staged delta table
+      SparkListenerSQLExecutionStart sparkListenerSQLExecutionStart =
+          mock(SparkListenerSQLExecutionStart.class, RETURNS_DEEP_STUBS);
+      when(sparkListenerSQLExecutionStart.sparkPlanInfo().simpleString())
+          .thenReturn(
+              "AppendDataExecV1 org.apache.spark.sql.delta.catalog.DeltaCatalog$StagedDeltaTableV2...");
+      assertTrue(filter.isDisabled(sparkListenerSQLExecutionStart));
+
+      // Simulate a staged delta table
+      SparkListenerSQLExecutionEnd sparkListenerSQLExecutionEnd =
+          mock(SparkListenerSQLExecutionEnd.class, RETURNS_DEEP_STUBS);
+      when(sparkListenerSQLExecutionEnd.qe().executedPlan().toString())
+          .thenReturn(
+              "AppendDataExecV1 org.apache.spark.sql.delta.catalog.DeltaCatalog$StagedDeltaTableV2...");
+      assertTrue(filter.isDisabled(sparkListenerSQLExecutionStart));
     }
   }
 

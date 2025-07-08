@@ -7,6 +7,7 @@ package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
+import com.google.common.collect.MapMaker;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
@@ -33,7 +34,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.WeakHashMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
@@ -65,7 +65,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       Collections.synchronizedMap(new HashMap<>());
   private static final Map<Integer, ExecutionContext> rddExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
-  private static final WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
+  private static final Map<RDD<?>, Configuration> outputs =
+      new MapMaker().weakKeys().weakValues().makeMap();
   private static ContextFactory contextFactory;
   private static final JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
   private static final Function1<SparkSession, SparkContext> sparkContextFromSession =

@@ -35,6 +35,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +56,12 @@ public final class OpenLineageClientUtils {
 
   private static final ObjectMapper YML = newObjectMapper(new YAMLFactory());
   private static final ObjectMapper JSON = newObjectMapper();
+
+  /**
+   * An {@link ExecutorService} that can be used for asynchronous operations. It is initialized to
+   * null and can be set up when needed.
+   */
+  private static ExecutorService EXECUTOR;
 
   @JsonFilter("disabledFacets")
   public class DisabledFacetsMixin {}
@@ -337,5 +348,48 @@ public final class OpenLineageClientUtils {
       ObjectMapper deserializer, InputStream inputStream, TypeReference<T> valueTypeRef)
       throws IOException {
     return deserializer.readValue(inputStream, valueTypeRef);
+  }
+
+  public static ExecutorService getOrCreateExecutor() {
+    if (EXECUTOR == null || EXECUTOR.isShutdown()) {
+      EXECUTOR = Executors.newCachedThreadPool(new ExecutorThreadFactory("openlineage-executor"));
+    }
+    return EXECUTOR;
+  }
+
+  public static ExecutorService getOrCreateExecutor(ThreadFactory threadFactory) {
+    if (EXECUTOR == null || EXECUTOR.isShutdown()) {
+      EXECUTOR = Executors.newCachedThreadPool(threadFactory);
+    }
+    return EXECUTOR;
+  }
+
+  public static Optional<ExecutorService> getExecutor() {
+    return Optional.ofNullable(EXECUTOR);
+  }
+
+  public static class ExecutorThreadFactory implements java.util.concurrent.ThreadFactory {
+    private final AtomicInteger threadNumber = new AtomicInteger(1);
+    private final String namePrefix;
+    private final ThreadGroup group;
+
+    /**
+     * Creates a ThreadFactory with the specified name prefix and daemon flag. Threads will be named
+     * as "{namePrefix}-{number}".
+     *
+     * @param namePrefix the prefix for thread names
+     */
+    public ExecutorThreadFactory(String namePrefix) {
+      this.group = Thread.currentThread().getThreadGroup();
+      this.namePrefix = namePrefix + "-";
+    }
+
+    @Override
+    public Thread newThread(Runnable r) {
+      Thread t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
+      if (t.isDaemon()) t.setDaemon(false);
+      if (t.getPriority() != Thread.NORM_PRIORITY) t.setPriority(Thread.NORM_PRIORITY);
+      return t;
+    }
   }
 }

@@ -28,7 +28,9 @@ ext {
 }
 
 dependencies {
+    implementation(project(path: ":shared"))
     implementation(project(path: ":shared", configuration: "scala212RuntimeElements"))
+    implementation(project(path: ":spark3"))
     implementation(project(path: ":spark3", configuration: "scala212RuntimeElements"))
 
     compileOnly("org.apache.spark:spark-sql_2.12:${sparkVersion}")

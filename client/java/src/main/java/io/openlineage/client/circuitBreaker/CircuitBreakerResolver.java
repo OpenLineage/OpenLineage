@@ -18,7 +18,8 @@ public class CircuitBreakerResolver {
           new StaticCircuitBreakerBuilder(),
           new SimpleMemoryCircuitBreakerBuilder(),
           new JavaRuntimeCircuitBreakerBuilder(),
-          new TaskQueueCircuitBreakerBuilder());
+          new TaskQueueCircuitBreakerBuilder(),
+          new TimeoutCircuitBreakerBuilder());
 
   public static Class<? extends CircuitBreakerConfig> resolveCircuitBreakerConfigByType(
       String type) {

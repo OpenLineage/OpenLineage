@@ -362,7 +362,8 @@ public class IcebergHandler implements CatalogHandler {
           catalogConf.get(CATALOG_IMPL));
       return "bigquerymetastore";
     } else {
-      return null;
+      // https://github.com/apache/iceberg/blob/apache-iceberg-1.9.1/core/src/main/java/org/apache/iceberg/CatalogUtil.java#L298
+      return "hive";
     }
   }
 }
