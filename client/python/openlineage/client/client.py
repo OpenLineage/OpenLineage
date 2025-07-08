@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import copy
 import json
 import logging
 import os
@@ -57,18 +58,193 @@ class OpenLineageConfig:
     filters: list[FilterConfig] = attr.field(factory=list)
     tags: TagsConfig = attr.field(factory=TagsConfig)
 
+    @staticmethod
+    def _get_default_configs(default_config: dict[str, Any]) -> dict[str, Any]:
+        """
+        Retrieves and validates the default configurations from the provided config.
+
+        Args:
+            default_config: A dictionary containing default configuration values.
+
+        Returns:
+            dict: A dictionary containing validated default configuration values.
+
+        The method processes the provided `default_config` dictionary:
+        - Checks if the use of default configuration is enabled.
+        - Extracts boolean flags, filters, facets, and tags from the configuration.
+        - Validates and includes the transport configuration if present and valid.
+        """
+        defaults = {}
+
+        # Return empty defaults if no default configuration is provided
+        if not default_config:
+            log.debug("No `default` OpenLineage configuration found.")
+            return defaults
+
+        # Check if the default configuration is enabled
+        default_enabled = str(default_config.get("enabled", "")).lower().strip()
+        if default_enabled != "true":
+            log.info(
+                "Default transport configuration is provided but is not enabled. "
+                "It must be explicitly enabled to be taken into consideration. "
+                "Ensure that the 'enabled' flag in default configuration is set to 'true' to activate it, "
+                "(e.g., by setting the `OPENLINEAGE__DEFAULT__ENABLED` environment variable to 'True')."
+            )
+            return defaults
+
+        # Extract boolean configuration keys and set their values
+        for bool_key in ("merge_transports",):
+            defaults[bool_key] = str(default_config.get(bool_key, "")).lower().strip() == "true"
+
+        # Extract filters, facets, and tags from the configuration
+        for key in ("filters", "facets", "tags"):
+            if default_config.get(key):
+                defaults[key] = default_config[key]
+
+        # Validate and process transport configuration if provided
+        if default_config.get("transport"):
+            try:
+                log.debug("Validating the default transport configuration.")
+                # create() raises error if config is invalid or transport type is unknown
+                get_default_factory().create(copy.deepcopy(default_config["transport"]))
+                defaults["transport"] = default_config["transport"]
+                log.debug("Default transport configuration is valid.")
+            except Exception as e:
+                log.info(
+                    "Default transport configuration provided is not valid. "
+                    "It was not applied due to the following error: %s",
+                    e,
+                )
+
+        return defaults
+
+    @staticmethod
+    def _resolve_transport_configs(
+        transport: dict[str, Any] | None, default_transport: dict[str, Any] | None, merge: bool = False
+    ) -> dict[str, Any]:
+        """
+        Resolves final transport configuration from user-provided and default transport configuration.
+
+        Function returns the provided configuration in case only one of two is provided.
+        It returns empty configuration if none are provided.
+        The function always prioritizes the user-provided configuration when both configurations exist.
+        The merge behavior depends on the type of both transport configurations.
+        If the user-provided transport is of type 'composite', the default transport is appended to it
+        (if transport with that name is not already present). If the user-provided transport is NOT of type
+        'composite', new composite transport config is created, where user provided config is first transport
+        and default config is second transport.
+
+        Args:
+            transport: User-provided transport configuration.
+            default_transport: Default transport configuration.
+            merge: If configurations should be merged, if both are provided.
+
+        Returns:
+            The final transport configuration.
+        """
+        transport = transport or {}
+        default_transport = default_transport or {}
+
+        # Early return if only one of the configurations exists
+        if transport and not default_transport:
+            log.debug("No default transport provided; using user-provided transport configuration.")
+            return transport
+        if default_transport and not transport:
+            log.debug("No user-provided transport provided; using default transport configuration.")
+            return default_transport
+        if not transport and not default_transport:
+            log.debug("Both user-provided and default transport configurations are missing.")
+            return {}
+        log.debug("Both user-provided and default transport configurations are present.")
+        if not transport.get("type") and default_transport:
+            # Use default transport if the user-provided transport has no type
+            # It can happen f.e. when using OPENLINEAGE_URL aliased env vars
+            log.debug("User-provided transport has no type; using default transport configuration.")
+            return default_transport
+        if not merge:
+            log.info(
+                "Merging of default transport into user-provided transport is disabled."
+                "User-provided config will be used but a default transport is provided. "
+                "To enable merging, the "
+                "'merge_transports' flag in the default configuration must be "
+                "set to 'true' (e.g., by setting the "
+                "`OPENLINEAGE__DEFAULT__MERGE_TRANSPORTS` environment variable to 'True')"
+            )
+            return transport
+
+        log.debug("Proceeding to merge transport configurations.")
+
+        default_transport_name = default_transport.get("name") or "default"
+        default_transport = {**default_transport, "name": default_transport_name, "priority": -1}
+
+        # If the transport is a composite, merge the default transport into the composite
+        if transport.get("type") == "composite":
+            log.debug("Composite transport detected. Merging default transport into it.")
+
+            if isinstance(transport["transports"], dict):
+                if default_transport_name in transport["transports"]:
+                    log.debug(
+                        "Transport with name `%s` already exists in user config. Skipping merge.",
+                        default_transport_name,
+                    )
+                    return transport
+                transport["transports"][default_transport_name] = default_transport
+            else:
+                if default_transport_name in [t.get("name", "") for t in transport["transports"]]:
+                    log.debug(
+                        "Transport with name `%s` already exists in user config. Skipping merge.",
+                        default_transport_name,
+                    )
+                    return transport
+                transport["transports"].append(default_transport)
+        else:
+            transport_name = transport.get("name") or "user_provided"
+            if transport_name == default_transport_name:
+                log.debug(
+                    "Transport with name `%s` is already provided in the user config. Skipping merge.",
+                    default_transport_name,
+                )
+                return transport
+
+            # Convert to composite transport
+            transport = {
+                "type": "composite",
+                # Order matters here, we want user provided config first
+                "transports": {transport_name: transport, default_transport_name: default_transport},
+            }
+
+        log.debug("Successfully merged transports. New transport type: %s", transport["type"])
+        return transport
+
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> OpenLineageConfig:
         config = cls()
+        defaults = cls._get_default_configs(params.get("default", {}))
+
         if "transport" in params:
-            config.transport = params["transport"]
+            final_transport = cls._resolve_transport_configs(
+                transport=params["transport"],
+                default_transport=defaults.get("transport", {}),
+                merge=defaults.get("merge_transports", False),
+            )
+            config.transport = final_transport
         if "facets" in params:
-            config.facets = FacetsConfig(**params["facets"])
+            env_vars = {  # Order does not matter, set can be used for deduplication
+                *params["facets"].get("environment_variables", []),
+                *defaults.get("facets", {}).get("environment_variables", []),
+            }
+            config.facets = FacetsConfig(environment_variables=list(env_vars))
         if "filters" in params:
-            config.filters = [FilterConfig(**filter_config) for filter_config in params["filters"]]
+            # Order matters, we want user provided filters to take precedence over defaults
+            filters = [
+                *params["filters"],
+                *[f for f in defaults.get("filters", []) if f not in params["filters"]],
+            ]
+            config.filters = [FilterConfig(**filter_config) for filter_config in filters]
         if "tags" in params:
-            job_tags = params["tags"].get("job", {})
-            run_tags = params["tags"].get("run", {})
+            # Order matters, we want user provided tags to take precedence over defaults
+            job_tags = {**defaults.get("tags", {}).get("job", {}), **params["tags"].get("job", {})}
+            run_tags = {**defaults.get("tags", {}).get("run", {}), **params["tags"].get("run", {})}
             config.tags = TagsConfig(
                 job=[TagsJobFacetFields(key, value, "USER") for (key, value) in job_tags.items()],
                 run=[TagsRunFacetFields(key, value, "USER") for (key, value) in run_tags.items()],
@@ -351,6 +527,14 @@ class OpenLineageClient:
 
     def _alias_env_vars(self) -> None:
         default_transport_name = self.DEFAULT_URL_TRANSPORT_NAME.upper()
+
+        if str(os.environ.get("OPENLINEAGE_ALIAS_ENV_VARS", "")).lower().strip() == "false":
+            log.debug(
+                "Aliasing of OPENLINEAGE_ environment variables is skipped because "
+                "'OPENLINEAGE_ALIAS_ENV_VARS' is set to 'false'."
+            )
+            return
+
         if url := os.environ.get("OPENLINEAGE_URL"):
             if any(
                 k.startswith(f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}")
@@ -362,6 +546,7 @@ class OpenLineageClient:
                 )
                 return
 
+            log.debug("Aliasing OPENLINEAGE_ environment variables.")
             api_key = os.environ.get("OPENLINEAGE_API_KEY")
             endpoint = os.environ.get("OPENLINEAGE_ENDPOINT")
 
@@ -399,7 +584,7 @@ class OpenLineageClient:
     def _load_config_from_env_variables(cls) -> dict[str, Any] | None:
         config: dict[str, Any] = {}
 
-        # get os.environ.items only starting with OPENLINEAGE_ prefix and reverse sort
+        # get os.environ.items only starting with OPENLINEAGE__ prefix and reverse sort
         # to make sure that top-level keys have precedence
         env_vars = sorted(
             filter(lambda k: k[0].startswith(cls.DYNAMIC_ENV_VARS_PREFIX), os.environ.items()), reverse=True
