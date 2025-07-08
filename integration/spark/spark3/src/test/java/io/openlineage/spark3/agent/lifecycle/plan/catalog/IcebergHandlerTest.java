@@ -529,4 +529,49 @@ class IcebergHandlerTest {
     assertEquals("gcs://bucket/path/to/iceberg/warehouse", facet.getWarehouseUri());
     assertEquals("iceberg", facet.getFramework());
   }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierMissingBigQueryMetastoreCatalogTable() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog.test",
+                "org.apache.iceberg.spark.SparkSessionCatalog",
+                "spark.sql.catalog.test.catalog-impl",
+                "org.apache.iceberg.gcp.bigquery.BigQueryMetastoreCatalog",
+                "spark.sql.catalog.test.warehouse",
+                "gcs://bucket/path/to/iceberg/warehouse"));
+
+    SparkSessionCatalog sparkCatalog = mock(SparkSessionCatalog.class);
+    when(sparkCatalog.name()).thenReturn("test");
+
+    Catalog icebergCatalog = mock(Catalog.class);
+    when(sparkCatalog.icebergCatalog()).thenReturn(icebergCatalog);
+
+    TableIdentifier tableIdentifier =
+        TableIdentifier.parse(Identifier.of(new String[] {"database"}, "table").toString());
+    when(icebergCatalog.loadTable(tableIdentifier))
+        .thenThrow(
+            new org.apache.iceberg.exceptions.NoSuchTableException(
+                Identifier.of(new String[] {"database"}, "table").toString()));
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession,
+            sparkCatalog,
+            Identifier.of(new String[] {"database"}, "table"),
+            new HashMap<>());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "gcs://bucket")
+        .hasFieldOrPropertyWithValue("name", "/path/to/iceberg/warehouse/database.db/table");
+
+    assertThat(datasetIdentifier.getSymlinks())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("namespace", "gcs://bucket/path/to/iceberg/warehouse")
+        .hasFieldOrPropertyWithValue("name", "database.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
 }
