@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from openlineage.client import OpenLineageClient
-from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
 from openlineage.client.serde import Serde
 from openlineage.client.transport.http import (
     ApiKeyTokenProvider,
@@ -30,7 +30,7 @@ class TestHttpConfig:
                 "verify": False,
                 "auth": {
                     "type": "api_key",
-                    "api_key": "1500100900",
+                    "apiKey": "1500100900",
                 },
                 "compression": "gzip",
                 "retry": {
@@ -148,7 +148,6 @@ class TestHttpTransportSync:
             run=Run(runId=str(generate_new_uuid())),
             job=Job(namespace="test", name="job"),
             producer="test",
-            schemaURL="test",
         )
 
         transport.emit(event)
@@ -171,7 +170,6 @@ class TestHttpTransportSync:
             run=Run(runId=str(generate_new_uuid())),
             job=Job(namespace="test", name="job"),
             producer="test",
-            schemaURL="test",
         )
 
         transport.emit(event)
@@ -274,7 +272,7 @@ class TestHttpRequestPreparation:
     def test_prepare_request_with_auth(self):
         from openlineage.client.transport.http import ApiKeyTokenProvider
 
-        auth = ApiKeyTokenProvider({"api_key": "test-key"})
+        auth = ApiKeyTokenProvider({"apiKey": "test-key"})
         config = HttpConfig(url="http://example.com", auth=auth)
         transport = HttpTransport(config)
 
@@ -307,7 +305,6 @@ class TestHttpMock:
             run=Run(runId=str(generate_new_uuid())),
             job=Job(namespace="http", name="test"),
             producer="prod",
-            schemaURL="schema",
         )
 
         client.emit(event)
@@ -343,7 +340,6 @@ class TestHttpMock:
             run=Run(runId=str(generate_new_uuid())),
             job=Job(namespace="http", name="test"),
             producer="prod",
-            schemaURL="schema",
         )
 
         client.emit(event)
@@ -372,7 +368,6 @@ class TestHttpMock:
             run=Run(runId="75782cf3-8be4-49dc-83e5-d2cf6239c168"),
             job=Job(namespace="http", name="test"),
             producer="prod",
-            schemaURL="schema",
         )
 
         client.emit(event)
@@ -393,7 +388,7 @@ class TestHttpMock:
             b'{"eventTime": "2024-04-12T18:04:58.134314", "eventType": "START", '
             b'"inputs": [], "job": {"facets": {}, "name": "test", "namespace": "http"}, "outputs": [], '
             b'"producer": "prod", "run": {"facets": {}, "runId": "75782cf3-8be4-49dc-83e5-d2cf6239c168"}, '
-            b'"schemaURL": "schema"}'
+            b'"schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent"}'
         )
         assert decompressed == expected_json
 
@@ -424,7 +419,7 @@ class TestHttpMock:
         # Set up config with an ApiKeyTokenProvider
         config = HttpConfig(
             url="http://example.com",
-            auth=ApiKeyTokenProvider({"api_key": "test_token"}),
+            auth=ApiKeyTokenProvider({"apiKey": "test_token"}),
             custom_headers=custom_headers,
         )
 

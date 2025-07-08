@@ -7,14 +7,14 @@ from typing import TYPE_CHECKING
 
 import pytest
 from openlineage.client import OpenLineageClient
-from openlineage.client.run import (
-    Dataset,
+from openlineage.client.event_v2 import (
     DatasetEvent,
     Job,
     JobEvent,
     Run,
     RunEvent,
     RunState,
+    StaticDataset,
 )
 from openlineage.client.serde import Serde
 from openlineage.client.transport.amazon_datazone import AmazonDataZoneConfig, AmazonDataZoneTransport
@@ -36,7 +36,6 @@ def run_event() -> RunEvent:
         run=Run(runId="f8b61441-a9fb-4f65-a156-be466eb29832"),
         job=Job(namespace="test-namespace", name="test-job"),
         producer="prod",
-        schemaURL="schema",
     )
 
 
@@ -44,9 +43,8 @@ def run_event() -> RunEvent:
 def dataset_event() -> DatasetEvent:
     return DatasetEvent(
         eventTime="2024-08-20T11:08:01.123456",
-        dataset=Dataset(namespace="test-namespace", name="test-dataset"),
+        dataset=StaticDataset(namespace="test-namespace", name="test-dataset"),
         producer="prod",
-        schemaURL="schema",
     )
 
 
@@ -56,7 +54,6 @@ def job_event() -> JobEvent:
         eventTime="2024-08-20T11:08:01.123456",
         job=Job(namespace="test-namespace", name="test-job"),
         producer="prod",
-        schemaURL="schema",
     )
 
 

@@ -4,7 +4,7 @@
 from typing import Dict, List, Optional, Union
 
 import attr
-from openlineage.client.facet import BaseFacet
+from openlineage.client.facet_v2 import BaseFacet
 from openlineage.common.provider.great_expectations.results import (
     GreatExpectationsAssertion,
 )
