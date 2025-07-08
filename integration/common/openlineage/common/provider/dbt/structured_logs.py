@@ -1,5 +1,7 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
+
 import datetime
 import json
 import os
@@ -8,7 +10,7 @@ import sys
 import time
 from collections import defaultdict
 from functools import cached_property
-from typing import Dict, Generator, List, Optional, TextIO
+from typing import TYPE_CHECKING, Dict, Generator, List, Optional, TextIO
 
 from openlineage.client.event_v2 import Dataset, RunEvent, RunState
 from openlineage.client.facet_v2 import (
@@ -18,7 +20,6 @@ from openlineage.client.facet_v2 import (
     processing_engine_run,
     sql_job,
 )
-from openlineage.client.run import InputDataset
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet, ParentRunMetadata
 from openlineage.common.provider.dbt.local import DbtLocalArtifactProcessor
@@ -48,6 +49,9 @@ from openlineage.common.utils import (
     get_from_nullable_chain,
     has_lines,
 )
+
+if TYPE_CHECKING:
+    from openlineage.client.event_v2 import InputDataset
 
 
 class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
@@ -362,7 +366,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             inputs = []
             if attached_dataset:
                 dataset_facets = attached_dataset.facets
-                dataset_facets["dataQualityAssertions"] = assertion_facet
+                dataset_facets["dataQualityAssertions"] = assertion_facet  # type: ignore[assignment]
                 inputs = [
                     Dataset(
                         name=attached_dataset.name,

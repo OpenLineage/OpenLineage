@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from openlineage.client import event_v2
-from openlineage.client.run import RunEvent
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 
@@ -46,7 +45,7 @@ class AmazonDataZoneTransport(Transport):
         )
 
     def emit(self, event: Event) -> None:
-        if not isinstance(event, (RunEvent, event_v2.RunEvent)):
+        if not isinstance(event, event_v2.RunEvent):
             # DataZone only supports RunEvent
             log.warning("DataZone only supports RunEvent")
             return

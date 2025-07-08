@@ -5,7 +5,7 @@ import time
 from unittest.mock import patch
 
 from openlineage.client.constants import DEFAULT_NAMESPACE_NAME
-from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.event_v2 import Job, Run, RunEvent, RunState
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.dagster.adapter import OpenLineageAdapter
 

@@ -7,8 +7,18 @@ import os
 
 import attr
 import pytest
-from openlineage.client import facet, run
-from openlineage.client.run import RunState
+from openlineage.client.event_v2 import (
+    DatasetEvent,
+    InputDataset,
+    Job,
+    JobEvent,
+    OutputDataset,
+    Run,
+    RunEvent,
+    RunState,
+    StaticDataset,
+)
+from openlineage.client.facet_v2 import nominal_time_run, schema_dataset
 from openlineage.client.serde import Serde
 
 
@@ -20,19 +30,19 @@ def get_sorted_json(file_name: str) -> str:
 
 
 def test_full_core_event_serializes_properly() -> None:
-    run_event = run.RunEvent(
-        eventType=run.RunState.START,
+    run_event = RunEvent(
+        eventType=RunState.START,
         eventTime="2021-11-03T10:53:52.427343",
-        run=run.Run(
+        run=Run(
             runId="69f4acab-b87d-4fc0-b27b-8ea950370ff3",
             facets={
-                "nominalTime": facet.NominalTimeRunFacet(
-                    nominalStartTime="2020-01-01",
-                    nominalEndTime="2020-01-02",
+                "nominalTime": nominal_time_run.NominalTimeRunFacet(
+                    nominalStartTime="2020-01-01T10:53:52.427343",
+                    nominalEndTime="2020-01-02T10:53:52.427343",
                 ),
             },
         ),
-        job=run.Job(
+        job=Job(
             namespace="openlineage",
             name="name",
             facets={},
@@ -40,7 +50,6 @@ def test_full_core_event_serializes_properly() -> None:
         inputs=[],
         outputs=[],
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
-        schemaURL="https://openlineage.io/spec/1-0-5/OpenLineage.json#/definitions/RunEvent",
     )
 
     assert Serde.to_json(run_event) == get_sorted_json("serde_example_run_event.json")
@@ -48,58 +57,50 @@ def test_full_core_event_serializes_properly() -> None:
 
 def test_run_id_uuid_check() -> None:
     # does not throw when passed uuid
-    run.Run(runId="69f4acab-b87d-4fc0-b27b-8ea950370ff3")
+    Run(runId="69f4acab-b87d-4fc0-b27b-8ea950370ff3")
 
     with pytest.raises(ValueError, match="badly formed hexadecimal UUID string"):
-        run.Run(runId="1500100900", facets={})
+        Run(runId="1500100900", facets={})
 
 
 def test_run_event_type_validated() -> None:
-    valid_event = run.RunEvent(
-        RunState.START,
-        "2021-11-03T10:53:52.427343",
-        run.Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3", {}),
-        run.Job("default", "name"),
-        "producer",
-        "schemaURL",
+    valid_event = RunEvent(
+        eventType=RunState.START,
+        eventTime="2021-11-03T10:53:52.427343",
+        run=Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3", {}),
+        job=Job("default", "name"),
+        producer="producer",
     )
-    with pytest.raises(ValueError, match="'eventType' must be in <enum"):
-        run.RunEvent(
-            "asdf",
-            valid_event.eventTime,
-            valid_event.run,
-            valid_event.job,
-            valid_event.producer,
-            valid_event.schemaURL,
-        )
 
     with pytest.raises(ValueError, match="Parsed date-time has to contain time: 2021-11-03"):
-        run.RunEvent(
-            valid_event.eventType,
-            "2021-11-03",
-            valid_event.run,
-            valid_event.job,
-            valid_event.producer,
-            valid_event.schemaURL,
+        RunEvent(
+            eventType=valid_event.eventType,
+            eventTime="2021-11-03",
+            run=valid_event.run,
+            job=valid_event.job,
+            producer=valid_event.producer,
         )
 
 
 def test_nominal_time_facet_does_not_require_end_time() -> None:
     assert Serde.to_json(
-        facet.NominalTimeRunFacet(
-            nominalStartTime="2020-01-01",
+        nominal_time_run.NominalTimeRunFacet(
+            nominalStartTime="2020-01-01T10:53:52.427343",
         ),
     ) == get_sorted_json("nominal_time_without_end.json")
 
 
 def test_schema_field_default() -> None:
-    assert Serde.to_json(facet.SchemaField(name="asdf", type="int4")) == '{"name": "asdf", "type": "int4"}'
+    assert (
+        Serde.to_json(schema_dataset.SchemaDatasetFacetFields(name="asdf", type="int4"))
+        == '{"fields": [], "name": "asdf", "type": "int4"}'
+    )
 
     assert (
         Serde.to_json(
-            facet.SchemaField(name="asdf", type="int4", description="primary key"),
+            schema_dataset.SchemaDatasetFacetFields(name="asdf", type="int4", description="primary key"),
         )
-        == '{"description": "primary key", "name": "asdf", "type": "int4"}'
+        == '{"description": "primary key", "fields": [], "name": "asdf", "type": "int4"}'
     )
 
 
@@ -199,63 +200,61 @@ def test_serde_nested_nulls() -> None:
 
 
 def test_dataset_event() -> None:
-    dataset_event = run.DatasetEvent(
+    dataset_event = DatasetEvent(
         eventTime="2021-11-03T10:53:52.427343",
-        dataset=run.Dataset(
+        dataset=StaticDataset(
             namespace="openlineage",
             name="name",
             facets={
-                "schema": facet.SchemaDatasetFacet(
+                "schema": schema_dataset.SchemaDatasetFacet(
                     fields=[
-                        facet.SchemaField(name="a", type="string"),
-                        facet.SchemaField(name="b", type="string"),
+                        schema_dataset.SchemaDatasetFacetFields(name="a", type="string"),
+                        schema_dataset.SchemaDatasetFacetFields(name="b", type="string"),
                     ],
                 ),
             },
         ),
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
-        schemaURL="https://openlineage.io/spec/2-0-0/OpenLineage.json#/$defs/DatasetEvent",
     )
 
     assert Serde.to_json(dataset_event) == get_sorted_json("serde_example_dataset_event.json")
 
 
 def test_job_event() -> None:
-    job_event = run.JobEvent(
+    job_event = JobEvent(
         eventTime="2021-11-03T10:53:52.427343",
-        job=run.Job(
+        job=Job(
             namespace="openlineage",
             name="name",
             facets={},
         ),
         inputs=[
-            run.Dataset(
+            InputDataset(
                 namespace="openlineage",
                 name="dataset_a",
                 facets={
-                    "schema": facet.SchemaDatasetFacet(
+                    "schema": schema_dataset.SchemaDatasetFacet(
                         fields=[
-                            facet.SchemaField(name="a", type="string"),
+                            schema_dataset.SchemaDatasetFacetFields(name="a", type="string"),
                         ],
                     ),
                 },
             ),
         ],
         outputs=[
-            run.Dataset(
+            OutputDataset(
                 namespace="openlineage",
                 name="dataset_b",
                 facets={
-                    "schema": facet.SchemaDatasetFacet(
+                    "schema": schema_dataset.SchemaDatasetFacet(
                         fields=[
-                            facet.SchemaField(name="a", type="string"),
+                            schema_dataset.SchemaDatasetFacetFields(name="a", type="string"),
                         ],
                     ),
                 },
             ),
         ],
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
-        schemaURL="https://openlineage.io/spec/2-0-0/OpenLineage.json#/$defs/JobEvent",
     )
 
     assert Serde.to_json(job_event) == get_sorted_json("serde_example_job_event.json")

@@ -13,14 +13,12 @@ from openlineage.client.generated.base import (
     OutputDataset,
     Run,
     RunEvent,
+    StaticDataset,
     set_producer,
 )
-from openlineage.client.generated.base import (
-    EventType as RunState,
-)
+from openlineage.client.generated.base import EventType as RunState
 
 __all__ = [
-    "PRODUCER",
     "BaseEvent",
     "Dataset",
     "DatasetEvent",
@@ -28,8 +26,10 @@ __all__ = [
     "Job",
     "JobEvent",
     "OutputDataset",
+    "PRODUCER",
     "Run",
     "RunEvent",
     "RunState",
+    "StaticDataset",
     "set_producer",
 ]

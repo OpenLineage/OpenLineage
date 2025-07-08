@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from openlineage.client.transport import Config, Transport, register_transport
 
 if TYPE_CHECKING:
-    from openlineage.client.run import RunEvent
+    from openlineage.client.event_v2 import RunEvent
 
 
 class AccumulatingTransport(Transport):

@@ -9,7 +9,7 @@ Consider the following sample python script that emits OpenLineage events:
 
 ```python
 #!/usr/bin/env python3
-from openlineage.client.run import (
+from openlineage.client.event_v2 import (
     RunEvent,
     RunState,
     Run,
@@ -19,19 +19,14 @@ from openlineage.client.run import (
     InputDataset,
 )
 from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions
-from openlineage.client.facet import (
-    SqlJobFacet,
-    SchemaDatasetFacet,
-    SchemaField,
-    OutputStatisticsOutputDatasetFacet,
-    SourceCodeLocationJobFacet,
-    NominalTimeRunFacet,
-    DataQualityMetricsInputDatasetFacet,
-    ColumnMetric,
+from openlineage.client.facet_v2 import (
+    sql_job,
+    schema_dataset,
+    source_code_location_job,
+    nominal_time_run,
 )
 from openlineage.client.uuid import generate_new_uuid
 from datetime import datetime, timezone, timedelta
-import time
 from random import random
 
 PRODUCER = f"https://github.com/openlineage-user"
@@ -48,10 +43,10 @@ client = OpenLineageClient(
 
 # generates job facet
 def job(job_name, sql, location):
-    facets = {"sql": SqlJobFacet(sql)}
-    if location != None:
+    facets = {"sql": sql_job.SQLJobFacet(sql)}
+    if location:
         facets.update(
-            {"sourceCodeLocation": SourceCodeLocationJobFacet("git", location)}
+            {"sourceCodeLocation": source_code_location_job.SourceCodeLocationJobFacet(type="git", path=location)}
         )
     return Job(namespace=namespace, name=job_name, facets=facets)
 
@@ -61,7 +56,7 @@ def run(run_id, hour):
     return Run(
         runId=run_id,
         facets={
-            "nominalTime": NominalTimeRunFacet(
+            "nominalTime": nominal_time_run.NominalTimeRunFacet(
                 nominalStartTime=f"2022-04-14T{twoDigits(hour)}:12:00Z"
             )
         },
@@ -74,13 +69,13 @@ def dataset(name, schema=None, ns=namespace):
         facets = {}
     else:
         facets = {"schema": schema}
-    return Dataset(namespace, name, facets)
+    return Dataset(namespace, name, facets=facets)
 
 
 # generates output dataset
 def outputDataset(dataset, stats):
     output_facets = {"stats": stats, "outputStatistics": stats}
-    return OutputDataset(dataset.namespace, dataset.name, dataset.facets, output_facets)
+    return OutputDataset(dataset.namespace, dataset.name, facets=dataset.facets, outputFacets=output_facets)
 
 
 # generates input dataset
@@ -88,7 +83,7 @@ def inputDataset(dataset, dq):
     input_facets = {
         "dataQuality": dq,
     }
-    return InputDataset(dataset.namespace, dataset.name, dataset.facets, input_facets)
+    return InputDataset(dataset.namespace, dataset.name, facets=dataset.facets, inputFacets=input_facets)
 
 
 def twoDigits(n):
@@ -152,43 +147,13 @@ for i in range(0, 5):
     user_counts = dataset("tmp_demo.user_counts")
     user_history = dataset(
         "temp_demo.user_history",
-        SchemaDatasetFacet(
+        schema_dataset.SchemaDatasetFacet(
             fields=[
-                SchemaField(name="id", type="BIGINT", description="the user id"),
-                SchemaField(
+                schema_dataset.SchemaDatasetFacetFields(name="id", type="BIGINT", description="the user id"),
+                schema_dataset.SchemaDatasetFacetFields(
                     name="email_domain", type="VARCHAR", description="the user id"
                 ),
-                SchemaField(name="status", type="BIGINT", description="the user id"),
-                SchemaField(
-                    name="created_at",
-                    type="DATETIME",
-                    description="date and time of creation of the user",
-                ),
-                SchemaField(
-                    name="updated_at",
-                    type="DATETIME",
-                    description="the last time this row was updated",
-                ),
-                SchemaField(
-                    name="fetch_time_utc",
-                    type="DATETIME",
-                    description="the time the data was fetched",
-                ),
-                SchemaField(
-                    name="load_filename",
-                    type="VARCHAR",
-                    description="the original file this data was ingested from",
-                ),
-                SchemaField(
-                    name="load_filerow",
-                    type="INT",
-                    description="the row number in the original file",
-                ),
-                SchemaField(
-                    name="load_timestamp",
-                    type="DATETIME",
-                    description="the time the data was ingested",
-                ),
+                schema_dataset.SchemaDatasetFacetFields(name="status", type="BIGINT", description="the user id"),
             ]
         ),
         "snowflake://",
@@ -217,12 +182,11 @@ for i in range(0, 5):
 
 
 for event in events:
-    from openlineage.client.serde import Serde
     client.emit(event)
 
 ```
 
-When you use OpenLineage backend such as Marquez on your local environment, the script would emit OpenLienage events to it.
+When you use OpenLineage backend such as Marquez on your local environment, the script would emit OpenLineage events to it.
 
 ```bash
 python oltest.py
@@ -278,6 +242,7 @@ ConnectionRefusedError: [Errno 61] Connection refused
 
 If you wish to output loggigng message to a file, you can modify the basic configuration as following:
 ```python
+import logging
 ...
 logging.basicConfig(filename='debug.log', encoding='utf-8', level=logging.DEBUG)
 ...

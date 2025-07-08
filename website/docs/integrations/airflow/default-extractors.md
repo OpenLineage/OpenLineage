@@ -21,18 +21,17 @@ In the rest of this doc, you will see how to write these methods within an opera
 
 ```python
 from openlineage.airflow.extractors.base import OperatorLineage
-from openlineage.client.facet import (
-    DataSourceDatasetFacet,
-    DocumentationJobFacet,
-    OwnershipJobFacet,
-    OwnershipJobFacetOwners,
-    SchemaDatasetFacet,
-    SchemaField,
+from openlineage.client.facet_v2 import (
+    datasource_dataset,
+    documentation_job,
+    ownership_job,
+    schema_dataset,
+    error_message_run,
 )
-from openlineage.client.run import Dataset
+from openlineage.client.event_v2 import Dataset
 
 
-class DfToGcsOperator():
+class DfToGcsOperator:
     def __init__(
         self,
         task_id,
@@ -105,11 +104,10 @@ class DfToGcsOperator():
             print("Empty dataframe, no artifact saved to GCS.")
 
     def extract_df_fields(df):
-        from openlineage.common.dataset import SchemaField
         """Extract a list of SchemaFields from a DataFrame."""
         fields = []
         for (col, dtype) in zip(df.columns, df.dtypes):
-            fields.append(SchemaField(name=col, type=str(dtype)))
+            fields.append(schema_dataset.SchemaDatasetFacetFields(name=col, type=str(dtype)))
         return fields
 
     def get_openlineage_facets_on_start(self):
@@ -120,16 +118,16 @@ class DfToGcsOperator():
             ol_bucket = self.bucket
 
         input_uri = "://".join([self.data_source, self.table])
-        input_source = DataSourceDatasetFacet(
+        input_source = datasource_dataset.DatasourceDatasetFacet(
             name=self.table,
             uri=input_uri,
         )
 
         input_facet = {
             "datasource": input_source,
-            "schema": SchemaDatasetFacet(
+            "schema": schema_dataset.SchemaDatasetFacet(
                 fields=[
-                    SchemaField(name=col_name, type=col_type)
+                    schema_dataset.SchemaDatasetFacetFields(name=col_name, type=col_type)
                     for col_name, col_type in self.col_types.items()
                 ]
             ),
@@ -146,16 +144,16 @@ class DfToGcsOperator():
             ]
         )
 
-        output_source = DataSourceDatasetFacet(
+        output_source = datasource_dataset.DatasourceDatasetFacet(
             name=output_name,
             uri=output_uri,
         )
 
         output_facet = {
             "datasource": output_source,
-            "schema": SchemaDatasetFacet(
+            "schema": schema_dataset.SchemaDatasetFacet(
                 fields=[
-                    SchemaField(name=col_name, type=col_type)
+                    schema_dataset.SchemaDatasetFacetFields(name=col_name, type=col_type)
                     for col_name, col_type in self.col_types.items()
                 ]
             ),
@@ -172,14 +170,14 @@ class DfToGcsOperator():
             outputs=[output],
             run_facets={},
             job_facets={
-                "documentation": DocumentationJobFacet(
+                "documentation": documentation_job.DocumentationJobFacet(
                     description=f"""
                     Takes data from the data source {input_uri}
                     and puts it in GCS at the path: {output_uri}
                     """
                 ),
-                "ownership": OwnershipJobFacet(
-                    owners=[OwnershipJobFacetOwners(name=self.owner, type=self.email)]
+                "ownership": ownership_job.OwnershipJobFacet(
+                    owners=[ownership_job.Owner(name=self.owner, type=self.email)]
                 ),
             }
         )
@@ -192,7 +190,7 @@ class DfToGcsOperator():
                 i.facets["SchemaDatasetFacet"].fields = task_instance.task.df_meta
         else:
             starting_facets.run_facets = {
-                "errorMessage": ErrorMessageRunFacet(
+                "errorMessage": error_message_run.ErrorMessageRunFacet(
                     message="Empty dataframe, no artifact saved to GCS.",
                     programmingLanguage="python"
                 )
@@ -208,17 +206,17 @@ Both the methods return an `OperatorLineage` object, which itself is a collectio
 
 ```python
 from openlineage.airflow.extractors.base import OperatorLineage
-from openlineage.client.facet import (
-    DataSourceDatasetFacet,
-    SchemaDatasetFacet,
-    SchemaField,
+
+from openlineage.client.facet_v2 import (
+    datasource_dataset,
+    schema_dataset,
 )
-from openlineage.client.run import Dataset
+from openlineage.client.event_v2 import Dataset
 ```
 
 Now, we’ll start building the facets for the `OperatorLineage` object in the `get_openlineage_facets_on_start()` method.
 
-### 1. `DataSourceDatasetFacet`
+### 1. `datasource_dataset.DatasourceDatasetFacet`
 
 The `DataSourceDatasestFacet` is a simple object, containing two fields, `name` and `uri`, which should be populated with the unique name of the data source and the URI. We’ll make two of these objects, an `input_source` to specify where the data came from and an `output_source` to specify where the data is going.
 
@@ -227,7 +225,7 @@ A quick note about the philosophy behind the `name` and `uri` in the OpenLineage
 In our case, the input `name` will be the table we are pulling data from, `self.table`, and the `namespace` will be our `self.data_source`.
 
 ```python
-input_source = DataSourceDatasetFacet(
+input_source = datasource_dataset.DatasourceDatasetFacet(
     name=self.table,
     uri="://".join([self.data_source, self.table]),
 )
@@ -250,7 +248,7 @@ output_uri = "/".join(
     ]
 )
 
-output_source = DataSourceDatasetFacet(
+output_source = datasource_dataset.DatasourceDatasetFacet(
     name=output_name,
     uri=output_uri,
 )
@@ -267,9 +265,9 @@ The `inputs` parameter to `OperatorLineage` is a list of `Dataset` objects, so w
 ```python
 input_facet = {
     "datasource": input_source,
-    "schema": SchemaDatasetFacet(
+    "schema": schema_dataset.SchemaDatasetFacet(
         fields=[
-            SchemaField(name=col_name, type=col_type)
+            schema_dataset.SchemaDatasetFacetFields(name=col_name, type=col_type)
             for col_name, col_type in self.col_types.items()
         ]
     ),
@@ -285,9 +283,9 @@ Our output facet will closely resemble the input facet, except it will use the `
 ```python
 output_facet = {
     "datasource": output_source,
-    "schema": SchemaDatasetFacet(
+    "schema": schema_dataset.SchemaDatasetFacet(
         fields=[
-            SchemaField(name=col_name, type=col_type)
+            schema_dataset.SchemaDatasetFacetFields(name=col_name, type=col_type)
             for col_name, col_type in self.col_types.items()
         ]
     ),
@@ -306,14 +304,14 @@ A Job in OpenLineage is a process definition that consumes and produces datasets
 
 ```python
 job_facets = {
-    "documentation": DocumentationJobFacet(
+    "documentation": documentation_job.DocumentationJobFacet(
         description=f"""
             Takes data from the data source {input_uri}
             and puts it in GCS at the path: {output_uri}
             """
     ),
-    "ownership": OwnershipJobFacet(
-        owners=[OwnershipJobFacetOwners(name=self.owner, type=self.email)]
+    "ownership": ownership_job.OwnershipJobFacet(
+        owners=[ownership_job.Owner(name=self.owner, type=self.email)]
     )
 }
 ```
@@ -326,7 +324,7 @@ In this example, we will output an error message when there is an empty datafram
 
 ```python
 starting_facets.run_facets = {
-    "errorMessage": ErrorMessageRunFacet(
+    "errorMessage": error_message_run.ErrorMessageRunFacet(
         message="Empty dataframe, no artifact saved to GCS.",
         programmingLanguage="python"
     )
@@ -350,7 +348,7 @@ def get_openlineage_facets_on_complete(self, task_instance):
             i.facets["SchemaDatasetFacet"].fields = task_instance.task.df_meta
     else:
         starting_facets.run_facets = {
-            "errorMessage": ErrorMessageRunFacet(
+            "errorMessage": error_message_run.ErrorMessageRunFacet(
                 message="Empty dataframe, no artifact saved to GCS.",
                 programmingLanguage="python"
             )

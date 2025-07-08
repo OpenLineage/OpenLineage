@@ -11,7 +11,6 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 from openlineage.client import event_v2, set_producer
-from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 from openlineage.client.transport.async_http import AsyncHttpTransport
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.transport import Config, Transport
@@ -34,9 +33,7 @@ def _setup_producer(test_producer) -> None:
 
 # For testing events emitted by the client
 
-Event_v1 = Union[RunEvent, DatasetEvent, JobEvent]
-Event_v2 = Union[event_v2.RunEvent, event_v2.DatasetEvent, event_v2.JobEvent]
-Event = Union[Event_v1, Event_v2]
+Event = Union[event_v2.RunEvent, event_v2.DatasetEvent, event_v2.JobEvent]
 
 
 class NoOutputConfig(Config):

@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 
 import attr
 import cattr
-from openlineage.client.run import InputDataset, OutputDataset
+from openlineage.client.event_v2 import InputDataset, OutputDataset
 
 
 @attr.define
