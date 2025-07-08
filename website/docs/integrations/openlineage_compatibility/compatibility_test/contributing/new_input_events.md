@@ -11,8 +11,8 @@ The easiest contribution to make. Follow these steps to add new input events:
 Navigate to the consumer scenarios directory and create your new scenario:
 
 ```bash
-mkdir -p ./consumer/scenarios/my_scenario
-cd ./consumer/scenarios/my_scenario
+mkdir -p ./consumer/scenarios/my_scenario_name
+cd ./consumer/scenarios/my_scenario_name
 ```
 
 ## Step 2: Configure OpenLineage Version
@@ -34,8 +34,8 @@ Create a maintainers file listing yourself as the author:
 [
   {
     "type": "author",
-    "github-name": "your_github_user",
-    "email": "your.email@example.com",
+    "github-name": "your-github-username",
+    "email": "your-email@example.com",
     "link": ""
   }
 ]

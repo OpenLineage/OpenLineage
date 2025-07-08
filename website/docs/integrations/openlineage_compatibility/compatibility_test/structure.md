@@ -7,7 +7,7 @@ title: Structure
 
 ## Producer
 
-Contains files and directories related to this specific producer. Each producer should contain:
+Contains files and directories related to a specific producer. Each producer should contain:
 - `runner` directory containing files necessary to run tests
 - `scenarios` directory containing scenario directories
 - `maintainers.json` file with the list of people to notify in case of component failures
@@ -18,18 +18,18 @@ Contains files and directories related to this specific producer. Each producer 
 <summary>producer catalog structure</summary>
 ```text
 producer
-└── <producer name>
+└── example_producer
     ├── maintainers.json
-    ├── versions.jsons
+    ├── versions.json
     ├── runner
     │   └── ...
     └── scenarios
         ├── ...
-        └── <scenario name>
+        └── example_scenario
             ├── config.json
             ├── events
             │   ├── ...
-            │   └── expected_event_structure1.json
+            │   └── expected_event_structure_1.json
             ├── maintainers.json
             ├── scenario.md
             └── test
@@ -118,11 +118,11 @@ Each config file contains metadata for the tests in the scenario. There are thre
 
 #### Events
 
-Directory contains expected events in form of json files. More on setting up the events for validation in [Event validation](event_validation.md)
+Directory contains expected events in the form of JSON files. More information on setting up the events for validation can be found in [Event validation](reusable_actions_and_common_scripts.md#event-comparison).
 
 ## Consumer
 
-Consumer directory contains two subdirectories for 
+Consumer directory contains two subdirectories for:
 
 - `consumers` - with list of consumers and their test scenarios
 - `scenarios` - scenario input events that are used in test, the directory is in separate location from the consumer definitions so the events can be used by multiple consumers for testing
@@ -184,12 +184,12 @@ consumer
 Contains any scripts or resources necessary to run the consumer tests. 
 
 ### Scenarios
-Scenarios directory contains input events defined for use by any consumer to run tests. Each of the scenarios contains:
+The scenarios directory contains input events defined for use by any consumer to run tests. Each of the scenarios contains:
 
 - directory with event files
 - `maintainers.json` file with the list of people responsible for the scenario
-- `scenario.md` file with the scenario description containing information about the events that would be useful for the
-  consumer scenarios creator to know e.g. which producer created them, what are they representing etc.
+- `scenario.md` file with the scenario description containing information about the events that would be useful for the consumer scenario creators to know (e.g., which producer created them, what they represent, etc.)
+
 #### Config
 
 <details>
@@ -229,12 +229,17 @@ Each config file contains metadata of the tests for the scenario, unlike produce
 
 #### Validation
 
-Directory contains expected json files. More on setting up the events for validation in [Event Comparison](event_validation.md#event-comparison)
+Directory contains json files representing the expected consumer state after sending OpenLineage events. 
+The events can be either exact expected state or use methods defined in [Event Comparison](reusable_actions_and_common_scripts.md#event-comparison).
 
 
 #### Mapping
 
-Mapping file contains the mapping between OpenLineage events and consumer API entities.
+Mapping file contains the mapping between OpenLineage events and consumer API entities. It has two functions, first is
+documentation, for anyone to know how much information is extracted form OpenLineage events by this consumer. Second is
+defining basic expectations for tests i.e. if the tests claim support of particular facet then we can check which entities we should expect in this test.
+
+If possible, the file should contain the list of mapped entities as well as list of facets that are not mapped.
 
 <details>
 <summary><strong>Example mapping structure</strong></summary>
@@ -278,13 +283,81 @@ Contains files that are automatically generated or updated by the workflows.
 So each time the failures in tests are compared with failures that are already in the report. If failure is already in the report, we don't notify about it.
 2. input for compatibility tables - the report file is used to generate compatibility tables as the most complete source of truth we have.
 
+```json
+{
+  "name": "component name",
+  "component_type": "[producer|consumer]",
+  "component_version": "1.2.3",
+  "openlineage_version": "1.2.3",
+  "scenarios": [
+    {
+      "name": "hive",
+      "status": "[SUCCESS|FAILURE]",
+      "tests": [
+        {
+          "name": "test_name",
+          "status": "[SUCCESS|FAILURE]",
+          "validation_type": "[syntax|semantics]",
+          "entity_type": "[openlineage|consumer_entity_type]",
+          "details": [],
+          "tags": {}
+        }
+      ]
+    }
+  ]
+}
+```
+
+
 ### Releases and Spec versions
 
 To check for changes in spec or new releases we need to store information about latest versions we already checked.
 The `releases.json` stores information about which release of OpenLineage or Components we last checked for.
+
+<details>
+<summary><strong>Example release entries</strong></summary>
+
+```json
+[
+  {
+    "name": "openlineage",
+    "latest_version": "1.2.3" // latest checked release
+  },
+  {
+    "name": "versioned component",
+    "latest_version": "1.2.3" // latest checked release
+  },
+  {
+    "name": "non-versioned component",
+    "latest_version": "" // no release meaning we check on each run of the workflow
+  }
+]
+```
+
+</details>
+
+
 The `spec_versions.json` stores information about which are the latest checked versions of spec and facets.
 
+<details>
+<summary><strong>Example spec version entries</strong></summary>
 
+```json
+{
+  "OpenLineage": {
+    "major": "1",
+    "minor": "2",
+    "patch": "3"
+  },
+  "ExampleFacet": {
+    "major": "1",
+    "minor": "2",
+    "patch": "3"
+  }
+}
+```
+
+</details>
 
 
 

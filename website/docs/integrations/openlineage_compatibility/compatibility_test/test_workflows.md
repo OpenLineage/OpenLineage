@@ -10,7 +10,11 @@ The test suite contains three workflows for different use cases. Most of the ste
 - Runs the tests to produce test reports  
 - Collects the tests and checks for new failures
 
-However, each workflow has a different purpose and scope:
+However, each workflow has a different purpose and scope. The table below compares the three workflow types:
+
+- **New Release**: Triggered when new versions of OpenLineage or components are released
+- **Spec Update**: Triggered when the OpenLineage specification is updated
+- **Test Suite PR**: Triggered when changes are made to the test suite itself
 
 |                             | **New Release**                                                                 | **Spec Update**                                                            | **Test Suite PR**                                       |
 |:----------------------------|:--------------------------------------------------------------------------------|:---------------------------------------------------------------------------|:--------------------------------------------------------|

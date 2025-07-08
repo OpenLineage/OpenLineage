@@ -165,9 +165,9 @@ jobs:
 
 ### Available Reusable Actions
 
-The test suite provides these custom GitHub actions for reuse :
-- [run_event_validation](../event_validation.md#run-event-validation) - Generic OpenLineage event validation action
-- [get_openlineage_artifacts](../event_validation.md#get-openlineage-artifacts) - Download OpenLineage jars: integrations, clients etc.
+For more information about custom actions used here go to:
+- [run_event_validation](../reusable_actions_and_common_scripts.md#run-event-validation)
+- [get_openlineage_artifacts](../reusable_actions_and_common_scripts.md#get-openlineage-artifacts)
 
 ## Step 7: Update main workflow files
 Next step is adding your workflow to main workflows. Producers take part in each one of three main workflows.
@@ -250,10 +250,10 @@ jobs:
            
   spark-dataproc:
     needs: initialize_workflow
-    if: ${{ needs.initialize_workflow.outputs.run_<produce_name> == 'true' }}
-    uses: ./.github/workflows/producer_<produce_name>.yml
+    if: ${{ needs.initialize_workflow.outputs.run_example_producer == 'true' }}
+    uses: ./.github/workflows/producer_example_producer.yml
     strategy:
-      matrix: ${{ fromJson(needs.initialize_workflow.outputs.<produce_name>_matrix) }}
+      matrix: ${{ fromJson(needs.initialize_workflow.outputs.example_producer_matrix) }}
     secrets:
       secret1: ${{ secrets.SECRET1 }}
     with:
@@ -264,7 +264,7 @@ jobs:
   collect-and-compare-reports:
     needs:
       # ... other producers
-      - <produce_name>
+      - example_producer
 ```
 </details>
 

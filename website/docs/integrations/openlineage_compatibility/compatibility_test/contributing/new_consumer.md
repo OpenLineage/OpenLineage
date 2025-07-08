@@ -170,12 +170,12 @@ jobs:
           # ...
           echo "example_consumer_matrix=$(get_matrix example_consumer)" >> $GITHUB_OUTPUT
            
-  spark-dataproc:
+  example_consumer:
     needs: initialize_workflow
     if: ${{ needs.initialize_workflow.outputs.run_example_consumer == 'true' }}
     uses: ./.github/workflows/consumer_example_consumer.yml
     strategy:
-      matrix: ${{ fromJson(needs.initialize_workflow.outputs.<produce_name>_matrix) }}
+      matrix: ${{ fromJson(needs.initialize_workflow.outputs.example_consumer_matrix) }}
     secrets:
       secret1: ${{ secrets.SECRET1 }}
     with:
@@ -185,7 +185,7 @@ jobs:
   collect-and-compare-reports:
     needs:
       # ... other consumers
-      - <produce_name>
+      - example_consumer
 ```
 </details>
 

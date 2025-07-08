@@ -5,7 +5,7 @@ title: Compatibility Tests
 
 ## Compatibility Tests
 
-The [Compatibility Tests](https://github.com/OpenLineage/compatibility-tests/) is a comprehensive test suite created to improve visibility and standardize the validation of OpenLineage compatibility with different components.
+The [Compatibility Tests](https://github.com/OpenLineage/compatibility-tests/) are a comprehensive test suite created to improve visibility and standardize the validation of OpenLineage compatibility with different components.
 
 It consists of a GitHub repository with GitHub Actions workflows that continuously check compatibility between different versions of OpenLineage and various versions of producers or consumers. The results are interpreted and visualized as compatibility tables, which are presented in the [OpenLineage Compatibility](..) documentation.
 
@@ -15,9 +15,9 @@ The checks are performed by running syntactic and semantic validations on produc
 
 ## Motivations
 
-The OpenLineage community lacked a formalized way of determining whether components are compliant with the standard. Community members had to look up support information on vendor sites or documentation, often finding inconsistent or outdated information.
+The OpenLineage community lacks a formalized way of determining whether components are compliant with the standard. Community members had to look up support information on vendor sites or documentation, often finding inconsistent or outdated information.
 
-We wanted to create a centralized source of compliance information with standardized validation methods. Additionally, we aimed to provide an easy way for community members to verify their components' compatibility with OpenLineage standards.
+We want to create a centralized source of compliance information with standardized validation methods. Additionally, we aim to provide an easy way for community members to verify their components' compatibility with OpenLineage standards.
 
 ## Assumptions
 
@@ -25,7 +25,7 @@ While creating the test suite, we focused on its usefulness to the community in 
 
 1. **Simple representation**: Test results should be presented in a clear, understandable format
 2. **Easy contributions**: Making contributions should be as straightforward as possible
-   - Each component with its test scenarios should have analogous structure and output
+   - Each component with its test scenarios should have consistent structure and output
    - Each component should be independent of other components
    - Validation mechanisms should be generic and reusable
 3. **Local execution**: Validation mechanisms should be runnable outside our workflows - the workflow should execute separately defined modules that can be run locally

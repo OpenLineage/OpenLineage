@@ -10,11 +10,11 @@ title: Reusable actions and common scripts
 
 The `run_event_validation` action is a custom GitHub action that handles validation logic for OpenLineage events. Because OpenLineage events have a standardized structure, we provide a generic action that validates events against OpenLineage specifications.
 
-The action 
-- retrieves the OpenLineage specification for all releases defined in `release_tags`
-- runs syntax validation
-- runs validation with a use of [Event Comparison](#event-comparison)
-- creates a comprehensive report with use of [Report](#report) 
+The action:
+- Retrieves the OpenLineage specification for all releases defined in `release_tags`
+- Runs syntax validation (checks if events conform to the OpenLineage JSON schema)
+- Runs semantic validation (compares actual event content with expected values using [Event Comparison](#event-comparison))
+- Creates a comprehensive report using [Report](#report) 
 
 **Inputs:**
 
@@ -34,7 +34,7 @@ The action
 |:--------------|:-------------------------|
 | `report_path` | Path to generated report |
 
-#### Structuree
+#### Structure
 
 The action requires a specific directory structure for validation to work properly:
 
@@ -158,6 +158,8 @@ key functions
 #### Event structure
 
 Example structure of expected json
+<details>
+<summary> <strong>Structure of example json </strong> </summary>
 
 ```json
 {
@@ -212,6 +214,16 @@ Example structure of expected json
 }
 ```
 
+</details>
+
 ### Report
 
-The `scripts/report.py` provides a structured representation of test results using Python classes
+The `scripts/report.py` provides a structured representation of test report using Python classes:
+
+The classes provide an api to:
+- add components, scenarios and tests to the report
+- serialize/deserialize the report to json
+- create summaries for both producer and consumer
+- update the report with values from new report
+- create new failures report by searching for sa asd asd asd asd as  failures in new report but absent in old report
+

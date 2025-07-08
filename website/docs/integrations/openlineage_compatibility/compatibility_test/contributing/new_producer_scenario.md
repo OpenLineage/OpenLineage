@@ -5,7 +5,7 @@ title: New Producer Scenario
 
 # New Producer Scenario
 
-Producer scenarios test specific use cases and validate OpenLineage event generation. The process is analogical to [New Input Events for Consumer Tests](new_input_events.md), but with a more complex configuration structure that includes component version constraints and test specifications.
+Producer scenarios test specific use cases and validate OpenLineage event generation. The process is analogical to re, but with a more complex configuration structure that includes component version constraints and test specifications.
 
 Each producer scenario should include:
 
@@ -110,7 +110,7 @@ cp /path/to/your/expected/events/basic_lineage_test.json events/
 cp /path/to/your/expected/events/advanced_facets_test.json events/
 ```
 
-The expected events shouldn't be real OpenLineage events. They should be done according to [Event comparison](../event_validation.md#event-comparison)
+The expected events shouldn't be real OpenLineage events. They should be done according to [Event comparison](../reusable_actions_and_common_scripts.md#event-comparison)
 
 ## Step 5: Document the Scenario
 Create comprehensive documentation for your scenario:
