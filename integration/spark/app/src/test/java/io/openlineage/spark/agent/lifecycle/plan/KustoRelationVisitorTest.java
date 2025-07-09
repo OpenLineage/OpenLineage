@@ -32,6 +32,7 @@ import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -102,6 +103,8 @@ class TestKustoRelationVisitor extends KustoRelationVisitor {
   }
 }
 
+// This test is disabled for Spark 4.x versions, as the LogicalPlan constructor has changed
+@DisabledIfSystemProperty(named = "spark.version", matches = "([4].*)")
 class KustoRelationVisitorTest {
   private static final String FIELD_NAME = "name";
   SparkSession session = mock(SparkSession.class);

@@ -37,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -388,7 +389,7 @@ class SparkReadWriteIntegTest {
         .first()
         .hasFieldOrPropertyWithValue(NAME, testFile.getParent().toString())
         .hasFieldOrPropertyWithValue(NAMESPACE, FILE);
-    String warehouseDir = spark.sqlContext().conf().getConfString("spark.sql.warehouse.dir");
+    String warehouseDir = spark.sqlContext().getConf("spark.sql.warehouse.dir");
     assertThat(event.getOutputs())
         .first()
         .hasFieldOrPropertyWithValue(
@@ -482,14 +483,17 @@ class SparkReadWriteIntegTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(5)).emit(lineageEvent.capture());
-    OpenLineage.RunEvent event = lineageEvent.getAllValues().get(4);
-    assertThat(event).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
+    List<RunEvent> reversed = lineageEvent.getAllValues();
+    Collections.reverse(reversed);
+    Optional<RunEvent> event =
+        reversed.stream().filter(e -> e.getEventType().equals(EventType.COMPLETE)).findFirst();
+    assertThat(event).get().hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     String kafkaNamespace =
         "kafka://"
             + kafkaContainer.getHost()
             + ":"
             + kafkaContainer.getMappedPort(KafkaContainer.KAFKA_PORT);
-    assertThat(event.getInputs())
+    assertThat(event.get().getInputs())
         .hasSize(2)
         .satisfiesExactlyInAnyOrder(
             dataset ->

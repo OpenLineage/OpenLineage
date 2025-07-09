@@ -22,9 +22,6 @@ plugins {
 
 ext {
     spark = project.findProperty('spark.version').toString()
-    if (spark.startsWith("4")) {
-        spark = spark + "-preview1"
-    }
     scala = project.findProperty('scala.binary.version').toString()
     activeRuntimeElementsConfiguration = "scala" + scala.replace(".", "") + "RuntimeElements"
 
@@ -117,8 +114,9 @@ dependencies {
     compileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     testImplementation("org.apache.spark:spark-core_${scala}:${spark}")
-    testImplementation("org.apache.spark:spark-sql_${scala}:${spark}")
-    testImplementation("org.apache.spark:spark-hive_${scala}:${spark}")
+    // TODO: remove preview from testImplementation for Spark 4.0.0 -> this makes test compile without Spark 4.0.0 discrepancies
+    testImplementation("org.apache.spark:spark-sql_${scala}:${spark.startsWith("4") ? spark + "-preview2" : spark}")
+    testImplementation("org.apache.spark:spark-hive_${scala}:${spark.startsWith("4") ? spark + "-preview2" : spark}")
     testImplementation("org.apache.spark:spark-sql-kafka-0-10_${scala}:${spark}")
     testImplementation(platform("org.junit:junit-bom:${junit5Version}"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -574,7 +572,8 @@ List<Dependency> deltaDependencies(String spark, String scala) {
             "3.2.4": "1.1.0",
             "3.3.4": "2.1.0",
             "3.4.3": "2.4.0",
-            "3.5.4": "3.3.2"
+            "3.5.4": "3.3.2",
+            "4.0.0": "4.0.0"
     ]
 
     def delta = registry.get(spark)
@@ -584,7 +583,7 @@ List<Dependency> deltaDependencies(String spark, String scala) {
         return [
                 dependencies.create("io.delta:delta-core_${scala}:$delta")
         ]
-    } else if (delta.startsWith("3.")) {
+    } else if (delta.startsWith("3.") || delta.startsWith("4.")) {
         return [
                 dependencies.create("io.delta:delta-spark_${scala}:$delta")
         ]

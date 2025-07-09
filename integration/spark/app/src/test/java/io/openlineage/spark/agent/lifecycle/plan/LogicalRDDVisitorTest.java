@@ -10,6 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.Spark4CompatUtils;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.DatasetFactory;
@@ -24,7 +25,6 @@ import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow;
 import org.apache.spark.sql.execution.LogicalRDD;
@@ -53,7 +53,7 @@ class LogicalRDDVisitorTest {
 
   @AfterEach
   public void tearDown() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
   }
 
   @Test
