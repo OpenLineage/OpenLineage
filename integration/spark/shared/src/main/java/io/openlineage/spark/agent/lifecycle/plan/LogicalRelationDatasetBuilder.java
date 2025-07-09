@@ -36,6 +36,7 @@ import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
+import org.apache.spark.sql.sources.BaseRelation;
 
 /**
  * {@link LogicalPlan} visitor that attempts to extract a {@link OpenLineage.Dataset} from a {@link
@@ -153,6 +154,15 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
               }
               datasetFacetsBuilder.getInputFacets().inputStatistics(statsBuilder.build());
             });
+    if (catalogTable.stats() == null || catalogTable.stats().isEmpty()) {
+      Optional.ofNullable(logRel.relation())
+          .map(BaseRelation::sizeInBytes)
+          .ifPresent(
+              size -> {
+                statsBuilder.size(size);
+                datasetFacetsBuilder.getInputFacets().inputStatistics(statsBuilder.build());
+              });
+    }
 
     getDatasetVersion(logRel)
         .ifPresent(

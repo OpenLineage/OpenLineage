@@ -51,6 +51,7 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -174,6 +175,9 @@ class OpenLineageSparkListenerTest {
     }
   }
 
+  // Disabled bcz of no such method in Spark 4.x:
+  // org.apache.spark.sql.SparkSession org.apache.spark.sql.execution.QueryExecution.sparkSession()
+  @DisabledIfSystemProperty(named = "spark.version", matches = "([4].*)")
   @Test
   void testSparkSQLEndGetsQueryExecutionFromEvent() {
     LogicalPlan query = UnresolvedRelation$.MODULE$.apply(TableIdentifier.apply("tableName"));

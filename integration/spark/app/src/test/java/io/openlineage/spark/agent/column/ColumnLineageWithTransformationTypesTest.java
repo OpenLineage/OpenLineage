@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.Spark4CompatUtils;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
@@ -35,7 +36,6 @@ import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
@@ -71,27 +71,26 @@ class ColumnLineageWithTransformationTypesTest {
   @SneakyThrows
   public static void beforeAll() {
     DerbyUtils.loadSystemProperty(ColumnLineageWithTransformationTypesTest.class.getName());
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
     DerbyUtils.clearDerbyProperty();
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
   }
 
   @BeforeEach
   @SneakyThrows
   public void beforeEach() {
     spark =
-        SparkSession.builder()
+        Spark4CompatUtils.builderWithHiveSupport()
             .master("local[*]")
             .appName("ColumnLevelLineage")
             .config("spark.extraListeners", LastQueryExecutionSparkEventListener.class.getName())
             .config("spark.driver.host", LOCAL_IP)
             .config("spark.driver.bindAddress", LOCAL_IP)
-            .enableHiveSupport()
             .getOrCreate();
 
     SparkOpenLineageConfig config = new SparkOpenLineageConfig();
