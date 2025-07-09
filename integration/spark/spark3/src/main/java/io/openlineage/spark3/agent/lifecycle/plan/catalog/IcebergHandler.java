@@ -49,6 +49,7 @@ public class IcebergHandler implements CatalogHandler {
 
   private static final String TYPE = "type";
   private static final String CATALOG_IMPL = "catalog-impl";
+  private static final String BIG_QUERY_METASTORE_CATALOG = "bigquerymetastore";
 
   public IcebergHandler(OpenLineageContext context) {
     this.context = context;
@@ -171,7 +172,7 @@ public class IcebergHandler implements CatalogHandler {
 
     Path tableLocation =
         maybeTableLocation.orElseGet(
-            () -> reconstructDefaultLocation(new Path(warehouseLocation), identifier));
+            () -> reconstructDefaultLocation(new Path(warehouseLocation), identifier, catalogType));
     DatasetIdentifier di = PathUtils.fromPath(tableLocation);
     maybeSymlink.ifPresent(
         symlink -> di.withSymlink(symlink.getName(), symlink.getNamespace(), SymlinkType.TABLE));
@@ -322,9 +323,15 @@ public class IcebergHandler implements CatalogHandler {
     }
   }
 
-  private Path reconstructDefaultLocation(Path warehouseLocation, Identifier identifier) {
+  private Path reconstructDefaultLocation(
+      Path warehouseLocation, Identifier identifier, String catalogType) {
     // namespace1.namespace2.table -> /warehouseLocation/namespace1/namespace2/table
     String[] namespace = identifier.namespace();
+    if (namespace.length > 0
+        && BIG_QUERY_METASTORE_CATALOG.equals(catalogType)
+        && !namespace[namespace.length - 1].endsWith(".db")) {
+      namespace[namespace.length - 1] = namespace[namespace.length - 1] + ".db";
+    }
     ArrayList<String> pathComponents = new ArrayList<>(namespace.length + 1);
     pathComponents.addAll(Arrays.asList(namespace));
     pathComponents.add(identifier.name());
@@ -360,7 +367,7 @@ public class IcebergHandler implements CatalogHandler {
       log.debug(
           "Default the catalog type to 'bigquerymetastore' because the catalog impl is {}",
           catalogConf.get(CATALOG_IMPL));
-      return "bigquerymetastore";
+      return BIG_QUERY_METASTORE_CATALOG;
     } else {
       // https://github.com/apache/iceberg/blob/apache-iceberg-1.9.1/core/src/main/java/org/apache/iceberg/CatalogUtil.java#L298
       return "hive";
