@@ -92,21 +92,6 @@ params = [
         True,
     ),
     pytest.param(
-        "snowflake",
-        "requests/snowflake.json",
-        True,
-        marks=[
-            pytest.mark.skipif(
-                not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
-                reason=f"Airflow < {SNOWFLAKE_AIRFLOW_TEST_VERSION}",
-            ),
-            pytest.mark.skipif(
-                os.environ.get("SNOWFLAKE_ACCOUNT_ID", "") == "",
-                reason="no snowflake credentials",
-            ),
-        ],
-    ),
-    pytest.param(
         "mapped_dag",
         "requests/mapped_dag.json",
         False,

@@ -41,7 +41,7 @@ def docker_compose_project():
             "bash",
             "-c",
             f"cd {client_python_dir} && rm -rf dist/* && "
-            f"uv venv && "
+            f"uv venv --python 3.10 && "
             f"source .venv/bin/activate && "
             f"uv sync && "
             f"uv run python -m build --wheel && "
@@ -116,8 +116,8 @@ def docker_compose_project():
         [
             "bash",
             "-c",
-            f"cd {integration_common_dir} && rm -rf dist/* && "
-            f"uv venv && "
+            f"cd {integration_common_dir} && rm -rf dist/* && pwd && "
+            f"uv venv --python 3.10 && "
             f"source .venv/bin/activate && "
             f"uv pip install setuptools && "
             f"python setup.py bdist_wheel && "
@@ -136,7 +136,7 @@ def docker_compose_project():
             "-c",
             f"cd {integration_dbt_dir} && "
             f"rm -rf dist/* && "
-            f"uv venv && "
+            f"uv venv --python 3.10 && "
             f"source .venv/bin/activate && "
             f"uv pip install setuptools && "
             f"python setup.py bdist_wheel && "
@@ -203,30 +203,15 @@ def dbt_runner(dbt_container, test_server_url):
             self.server_url = server_url
 
         def run_dbt_command(self, args: List[str], expect_failure=False) -> Dict[str, Any]:
-            """Run dbt command in container and return result."""
-            cmd = ["dbt"] + args
-
-            internal_server_url = "http://test-server:8080"
-
-            result = self.container.exec_run(
-                cmd,
-                environment={
-                    "OPENLINEAGE_URL": internal_server_url,
-                    "OPENLINEAGE_NAMESPACE": "dbt_integration_test",
-                },
-            )
-
-            success = result.exit_code == 0
-            output = result.output.decode()
-
-            if not expect_failure and not success:
-                raise RuntimeError(f"dbt command failed: {output}")
-
-            return {"exit_code": result.exit_code, "output": output, "success": success}
+            """Run dbt-ol command in container."""
+            return self._run_command("dbt", args, expect_failure)
 
         def run_dbt_ol_command(self, args: List[str], expect_failure=False) -> Dict[str, Any]:
             """Run dbt-ol command in container."""
-            cmd = ["dbt-ol"] + args
+            return self._run_command("dbt-ol", args, expect_failure)
+
+        def _run_command(self, cmd: str, args: List[str], expect_failure=False) -> Dict[str, Any]:
+            cmd = [cmd] + args
 
             internal_server_url = "http://test-server:8080"
 
@@ -250,27 +235,20 @@ def dbt_runner(dbt_container, test_server_url):
             """Get events from test server."""
             response = requests.get(f"{self.server_url}/events")
             response.raise_for_status()
-            events_data = response.json()
-
-            if isinstance(events_data, list):
-                if events_data and isinstance(events_data[0], dict):
-                    if "payload" in events_data[0]:
-                        return [event["payload"] for event in events_data]
-                    else:
-                        return events_data
-            return []
+            return self._process_events(response.json())
 
         def get_events_for_job(self, job_name: str) -> List[Dict[str, Any]]:
             response = requests.get(f"{self.server_url}/events", params={"job_name": job_name})
             response.raise_for_status()
-            events_data = response.json()
+            return self._process_events(response.json())
 
-            if isinstance(events_data, list):
-                if events_data and isinstance(events_data[0], dict):
-                    if "payload" in events_data[0]:
-                        return [event["payload"] for event in events_data]
+        def _process_events(self, data: Any) -> List[Dict[str, Any]]:
+            if isinstance(data, list):
+                if data and isinstance(data[0], dict):
+                    if "payload" in data[0]:
+                        return [event["payload"] for event in data]
                     else:
-                        return events_data
+                        return data
             return []
 
         def get_validation_summary(self) -> Dict[str, Any]:

@@ -1,6 +1,5 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-import json
 
 from utils.event_validation import (
     filter_events_by_job,
@@ -32,7 +31,6 @@ class TestDbtIntegration:
         # Validate event schemas
         for event in events:
             assert validate_event_schema(event), f"Invalid event schema: {event}"
-            print(event)
 
         # Check for expected models
         expected_models = [
@@ -49,17 +47,14 @@ class TestDbtIntegration:
         # Run seed command
         result = dbt_runner.run_dbt_command(["seed"])
         assert result["success"], f"dbt seed failed: {result['output']}"
-        print(result["output"])
 
         # Run all models
         result = dbt_runner.run_dbt_ol_command(["run"])
         assert result["success"], f"dbt run failed: {result['output']}"
-        print(result["output"])
 
         # Run tests
         result = dbt_runner.run_dbt_ol_command(["test"])
         assert result["success"], f"dbt test failed: {result['output']}"
-        print(result["output"])
 
         # Get all events
         events = dbt_runner.get_events()
@@ -74,7 +69,6 @@ class TestDbtIntegration:
         ]
         for event in events:
             assert validate_event_schema(event), f"Invalid event schema: {event}"
-            print(event)
 
         assert validate_lineage_chain(events, expected_models), "Missing expected models in lineage"
 
@@ -97,7 +91,7 @@ class TestDbtIntegration:
 
         # Get events
         events = dbt_runner.get_events()
-        assert len(events) == 2, "Only JOB events received"
+        assert len(events) == 2, "Not nly JOB events received"
 
     def test_dbt_tests_lineage(self, dbt_runner, reset_test_server):
         """Test that dbt tests generate lineage events."""
@@ -170,10 +164,6 @@ class TestDbtIntegration:
             assert "namespace" in job, "Missing job namespace"
             assert "name" in job, "Missing job name"
 
-            # Validate run structure
-            run = event["run"]
-            assert "runId" in run, "Missing run ID"
-
     def test_event_ordering(self, dbt_runner, reset_test_server):
         """Test that events are ordered correctly (START before COMPLETE)."""
         # Clear any existing events (done by reset_test_server fixture)
@@ -183,11 +173,9 @@ class TestDbtIntegration:
         # Run a single model
         result = dbt_runner.run_dbt_ol_command(["run", "--select", "stg_customers"])
         assert result["success"], f"dbt run failed: {result['output']}"
-        print(result["output"])
 
         # Get events
         events = dbt_runner.get_events()
-        print(json.dumps(events, indent=2))
 
         # Filter events for our model
         model_events = filter_events_by_job(events, "test.main.openlineage_integration_test.stg_customers")

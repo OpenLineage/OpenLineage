@@ -1,7 +1,7 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from utils.event_validation import validate_event_schema
+from utils.event_validation import get_events_by_type, validate_event_schema
 
 
 class TestStructuredLogs:
@@ -18,7 +18,6 @@ class TestStructuredLogs:
             ["--consume-structured-logs", "run", "--select", "stg_customers"]
         )
         assert result["success"], f"dbt-ol run with structured logs failed: {result['output']}"
-        print(result["output"])
 
         # Get events
         events = dbt_runner.get_events()
@@ -56,15 +55,16 @@ class TestStructuredLogs:
 
         # Should have exactly 2 job-level events (START and COMPLETE)
         assert len(job_events) == 2, f"Expected 2 job events, got {len(job_events)}"
-        job_start_events = [e for e in job_events if e["eventType"] == "START"]
-        job_complete_events = [e for e in job_events if e["eventType"] == "COMPLETE"]
+        job_start_events = get_events_by_type(job_events, "START")
+        job_complete_events = get_events_by_type(job_events, "COMPLETE")
+
         assert len(job_start_events) == 1, f"Expected 1 job START event, got {len(job_start_events)}"
         assert len(job_complete_events) == 1, f"Expected 1 job COMPLETE event, got {len(job_complete_events)}"
 
         # Should have exactly 2 model-level events (START and COMPLETE)
         assert len(model_events) == 2, f"Expected 2 model events, got {len(model_events)}"
-        model_start_events = [e for e in model_events if e["eventType"] == "START"]
-        model_complete_events = [e for e in model_events if e["eventType"] == "COMPLETE"]
+        model_start_events = get_events_by_type(model_events, "START")
+        model_complete_events = get_events_by_type(model_events, "COMPLETE")
         assert len(model_start_events) == 1, f"Expected 1 model START event, got {len(model_start_events)}"
         assert (
             len(model_complete_events) == 1
@@ -72,8 +72,9 @@ class TestStructuredLogs:
 
         # Rest should be SQL events (at least 2, likely more for START/COMPLETE pairs)
         assert len(sql_events) >= 2, f"Expected at least 2 SQL events, got {len(sql_events)}"
-        sql_start_events = [e for e in sql_events if e["eventType"] == "START"]
-        sql_complete_events = [e for e in sql_events if e["eventType"] == "COMPLETE"]
+        sql_start_events = get_events_by_type(sql_events, "START")
+        sql_complete_events = get_events_by_type(sql_events, "COMPLETE")
+
         assert len(sql_start_events) >= 1, f"Expected at least 1 SQL START event, got {len(sql_start_events)}"
         assert (
             len(sql_complete_events) >= 1
@@ -109,8 +110,8 @@ class TestStructuredLogs:
 
         # Validate event ordering (START before COMPLETE for each level)
         for level_events, level_name in [(job_events, "job"), (model_events, "model"), (sql_events, "sql")]:
-            start_events = [e for e in level_events if e["eventType"] == "START"]
-            complete_events = [e for e in level_events if e["eventType"] == "COMPLETE"]
+            start_events = get_events_by_type(level_events, "START")
+            complete_events = get_events_by_type(level_events, "COMPLETE")
 
             if start_events and complete_events:
                 start_time = start_events[0]["eventTime"]

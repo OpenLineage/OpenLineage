@@ -34,6 +34,7 @@ extras_require = {
         "google-cloud-core>=1.6.0",
         "google-crc32c>=1.1.2",
     ],
+    "dbt": [],  # left for backcompat
     "great_expectations": [
         "great_expectations>=0.13.26,<0.15.35",
         "sqlalchemy>=1.3.24,<2.0.0",

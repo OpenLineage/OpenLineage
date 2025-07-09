@@ -31,8 +31,8 @@ fi
 rustup target add aarch64-apple-darwin
 rustup target add x86_64-apple-darwin
 
-echo "Installing Python 3.8"
-uv python install 3.8
+echo "Installing Python 3.9"
+uv python install 3.9
 
 # Maturin is build tool that we're using. It can build python wheels based on standard Rust Cargo.toml.
 echo "Installing Maturin"

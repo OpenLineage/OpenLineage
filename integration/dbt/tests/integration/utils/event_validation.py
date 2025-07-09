@@ -1,6 +1,6 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Literal
 
 
 def validate_event_schema(event: Dict[str, Any]) -> bool:
@@ -42,8 +42,6 @@ def validate_lineage_chain(events: List[Dict[str, Any]], expected_models: List[s
 
     for model in expected_models:
         if model not in job_names:
-            print(model)
-            print(job_names)
             return False
 
     return True
@@ -55,7 +53,9 @@ def extract_dataset_names(event: Dict[str, Any], io_type: str) -> List[str]:
     return [dataset.get("name", "") for dataset in datasets]
 
 
-def validate_dataset_facets(event: Dict[str, Any], io_type: str, expected_facets: List[str]) -> bool:
+def validate_dataset_facets(
+    event: Dict[str, Any], io_type: Literal["inputs", "outputs"], expected_facets: List[str]
+) -> bool:
     """Validate that expected facets are present in dataset inputs/outputs."""
     datasets = event.get(io_type, [])
 
