@@ -36,7 +36,7 @@ public class DatabricksDeltaHandler extends AbstractDatabricksHandler {
   }
 
   @Override
-  public Optional<OpenLineage.CatalogDatasetFacet> getCatalogDatasetFacet(
+  public Optional<CatalogWithAdditionalFacets> getCatalogDatasetFacet(
       TableCatalog tableCatalog, Map<String, String> properties) {
     OpenLineage.CatalogDatasetFacetBuilder builder =
         context
@@ -47,7 +47,7 @@ public class DatabricksDeltaHandler extends AbstractDatabricksHandler {
             .type(DELTA)
             .source("spark");
 
-    return Optional.of(builder.build());
+    return Optional.of(CatalogWithAdditionalFacets.of(builder.build()));
   }
 
   @Override
