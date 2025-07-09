@@ -68,7 +68,7 @@ public class JdbcHandler implements CatalogHandler {
   }
 
   @Override
-  public Optional<OpenLineage.CatalogDatasetFacet> getCatalogDatasetFacet(
+  public Optional<CatalogWithAdditionalFacets> getCatalogDatasetFacet(
       TableCatalog tableCatalog, Map<String, String> properties) {
     Optional<JDBCOptions> options = getJdbcOptions(tableCatalog);
 
@@ -83,7 +83,7 @@ public class JdbcHandler implements CatalogHandler {
 
     options.ifPresent(jdbcOptions -> builder.metadataUri(options.get().url()));
 
-    return Optional.of(builder.build());
+    return Optional.of(CatalogWithAdditionalFacets.of(builder.build()));
   }
 
   private Optional<JDBCOptions> getJdbcOptions(TableCatalog tableCatalog) {

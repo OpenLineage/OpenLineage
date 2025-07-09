@@ -11,6 +11,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
+import io.openlineage.spark.agent.facets.BigQueryMetastoreCatalogDatasetFacet;
 import io.openlineage.spark.agent.util.AwsUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -72,7 +73,7 @@ public class IcebergHandler implements CatalogHandler {
   }
 
   @Override
-  public Optional<OpenLineage.CatalogDatasetFacet> getCatalogDatasetFacet(
+  public Optional<CatalogWithAdditionalFacets> getCatalogDatasetFacet(
       TableCatalog tableCatalog, Map<String, String> properties) {
     Optional<Map<String, String>> catalogConf =
         context
@@ -107,7 +108,15 @@ public class IcebergHandler implements CatalogHandler {
       builder.metadataUri(catalogUri);
     }
 
-    return Optional.of(builder.build());
+    CatalogWithAdditionalFacets catalogWithAdditionalFacets =
+        CatalogWithAdditionalFacets.of(builder.build());
+    if (BIG_QUERY_METASTORE_CATALOG.equals(catalogType)) {
+      BigQueryMetastoreCatalogDatasetFacet bqFacet =
+          getBigQueryMetastoreCatalogDatasetFacet(
+              tableCatalog, catalogUri, warehouseLocation, conf);
+      catalogWithAdditionalFacets.addFacet("big_query_metastore_catalog", bqFacet);
+    }
+    return Optional.of(catalogWithAdditionalFacets);
   }
 
   @Override
@@ -372,5 +381,23 @@ public class IcebergHandler implements CatalogHandler {
       // https://github.com/apache/iceberg/blob/apache-iceberg-1.9.1/core/src/main/java/org/apache/iceberg/CatalogUtil.java#L298
       return "hive";
     }
+  }
+
+  private static BigQueryMetastoreCatalogDatasetFacet getBigQueryMetastoreCatalogDatasetFacet(
+      TableCatalog tableCatalog,
+      String catalogUri,
+      String warehouseLocation,
+      Map<String, String> conf) {
+    BigQueryMetastoreCatalogDatasetFacet bqFacet =
+        new BigQueryMetastoreCatalogDatasetFacet(
+            "iceberg",
+            BIG_QUERY_METASTORE_CATALOG,
+            tableCatalog.name(),
+            catalogUri,
+            warehouseLocation,
+            "spark",
+            conf.get("gcp.bigquery.project-id"),
+            conf.getOrDefault("gcp.bigquery.location", "us"));
+    return bqFacet;
   }
 }
