@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.SubqueryAlias;
 import scala.PartialFunction;
 
@@ -46,11 +47,18 @@ public class SubqueryAliasInputDatasetBuilder
 
   @Override
   protected List<InputDataset> apply(SparkListenerEvent event, SubqueryAlias x) {
+    if (x.child() instanceof Project) {
+      return delegate(event, ((Project) x.child()).child());
+    }
+
     // this should not run query visitors again
+    return delegate(event, x.child());
+  }
+
+  private List<InputDataset> delegate(SparkListenerEvent event, LogicalPlan node) {
     return delegate(Collections.emptyList(), inputDatasetBuilders, event)
         .applyOrElse(
-            x.child(),
-            ScalaConversionUtils.toScalaFn((lp) -> Collections.<InputDataset>emptyList()))
+            node, ScalaConversionUtils.toScalaFn((lp) -> Collections.<InputDataset>emptyList()))
         .stream()
         .collect(Collectors.toList());
   }

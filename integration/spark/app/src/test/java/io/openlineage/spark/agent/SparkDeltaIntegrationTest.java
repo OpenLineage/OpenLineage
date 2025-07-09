@@ -15,10 +15,15 @@ import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
 
 import com.google.common.collect.ImmutableList;
+import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineage.RunEvent;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +35,7 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
+import org.apache.spark.sql.functions;
 import org.apache.spark.sql.types.ArrayType;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.LongType$;
@@ -37,6 +43,7 @@ import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -505,6 +512,70 @@ class SparkDeltaIntegrationTest {
         mockServer,
         "deltaMergeCommandVerificationStart.json",
         "deltaMergeCommandVerificationComplete.json");
+  }
+
+  @Test
+  @SneakyThrows
+  void testWithColumnOnMerge() {
+    StructType schema =
+        new StructType(
+            new StructField[] {
+              new StructField("id", IntegerType$.MODULE$, false, Metadata.empty()),
+              new StructField("value", StringType$.MODULE$, false, Metadata.empty()),
+            });
+
+    Dataset<Row> source =
+        spark
+            .createDataFrame(
+                ImmutableList.of(
+                    RowFactory.create(1, "A"),
+                    RowFactory.create(2, "B"),
+                    RowFactory.create(3, "C")),
+                schema)
+            .withColumn("__load_ts", functions.lit("2022-01-01 00:02:00").cast("timestamp"))
+            .repartition(1);
+
+    Dataset<Row> target =
+        spark
+            .createDataFrame(
+                ImmutableList.of(
+                    RowFactory.create(1, "A_old"),
+                    RowFactory.create(2, "B_old"),
+                    RowFactory.create(3, "C_old")),
+                schema)
+            .withColumn("__load_ts", functions.lit("2022-01-01 00:02:00").cast("timestamp"))
+            .repartition(1);
+
+    source.write().format("delta").mode("overwrite").saveAsTable("source_table");
+    target.write().format("delta").mode("overwrite").saveAsTable("target_table");
+
+    spark.sql(
+        "WITH source as (SELECT *, __load_ts as load_ts FROM source_table) "
+            + " MERGE INTO target_table target USING source "
+            + " ON target.id = source.id"
+            + " WHEN MATCHED THEN UPDATE SET *"
+            + " WHEN NOT MATCHED THEN INSERT *");
+
+    List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
+    Optional<RunEvent> mergeEvent =
+        events.stream()
+            .filter(f -> "COMPLETE".equals(f.getEventType().name()))
+            .filter(f -> f.getJob().getName().contains("merge_into_command"))
+            .findFirst();
+
+    assertThat(mergeEvent).isPresent();
+    assertThat(mergeEvent)
+        .get()
+        .extracting(RunEvent::getOutputs)
+        .asInstanceOf(InstanceOfAssertFactories.list(OutputDataset.class))
+        .extracting(OutputDataset::getName)
+        .containsExactlyInAnyOrder("/tmp/delta/target_table");
+    assertThat(mergeEvent)
+        .get()
+        .extracting(RunEvent::getInputs)
+        .asInstanceOf(InstanceOfAssertFactories.list(InputDataset.class))
+        .extracting(InputDataset::getName)
+        .containsExactlyInAnyOrder("/tmp/delta/target_table", "/tmp/delta/source_table");
   }
 
   /**
