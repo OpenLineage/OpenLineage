@@ -11,8 +11,8 @@ and provides methods to construct valid dataset names and namespaces.
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from enum import Enum
+from typing import Protocol
 
 import attr
 
@@ -38,10 +38,9 @@ def _check_enum_not_none(
     return value
 
 
-class DatasetNaming(ABC):
+class DatasetNaming(Protocol):
     """Interface representing dataset naming logic for a specific platform."""
 
-    @abstractmethod
     def get_namespace(self) -> str:
         """
         Returns the dataset namespace (e.g., URI or ARN identifying the data source).
@@ -50,7 +49,6 @@ class DatasetNaming(ABC):
             The namespace string
         """
 
-    @abstractmethod
     def get_name(self) -> str:
         """
         Returns the dataset name specific to the platform format.
