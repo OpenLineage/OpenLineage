@@ -394,12 +394,12 @@ client.emit(start_event)      # Non-blocking
 client.emit(complete_event)   # Waits for START success, then sent
 
 # Wait for all events to complete
-client.wait_for_completion()
+client.transport.wait_for_completion()
 # Get processing statistics
 stats = client.transport.get_stats()
 print(f"Pending: {stats['pending']}, Success: {stats['success']}, Failed: {stats['failed']}")
 # Graceful shutdown
-client.close(timeout=5)
+client.close()
 ```
 </TabItem>
 
