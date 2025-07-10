@@ -70,6 +70,7 @@ class OpenLineageSparkListenerTest {
   void setup() {
     when(sparkSession.sparkContext()).thenReturn(sparkContext);
     when(sparkContext.appName()).thenReturn("appName");
+    when(sparkContext.applicationId()).thenReturn("application_123_234");
     when(sparkContext.getConf()).thenReturn(new SparkConf());
     when(plan.sparkContext()).thenReturn(sparkContext);
     when(plan.nodeName()).thenReturn("execute");
@@ -176,9 +177,6 @@ class OpenLineageSparkListenerTest {
   void testSparkSQLEndGetsQueryExecutionFromEvent() {
     LogicalPlan query = UnresolvedRelation$.MODULE$.apply(TableIdentifier.apply("tableName"));
 
-    when(sparkSession.sparkContext()).thenReturn(sparkContext);
-    when(sparkContext.appName()).thenReturn("appName");
-    when(sparkContext.getConf()).thenReturn(new SparkConf());
     when(qe.optimizedPlan())
         .thenReturn(
             new InsertIntoHadoopFsRelationCommand(
