@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -272,5 +273,20 @@ class OpenLineageSparkListenerTest {
 
     assertThat(meterRegistry.counter("openlineage.spark.event.app.start").count()).isEqualTo(1.0);
     assertThat(meterRegistry.counter("openlineage.spark.event.app.end").count()).isEqualTo(1.0);
+  }
+
+  @Test
+  void testDisableOpenLineageBySparkConf() {
+    SparkConf sparkConf = new SparkConf();
+    sparkConf.set("spark.openlineage.disabled", "true");
+    OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
+    OpenLineageSparkListener.init(
+        new StaticExecutionContextFactory(
+            emitter, new SimpleMeterRegistry(), new SparkOpenLineageConfig()));
+
+    SparkListenerApplicationStart event = mock(SparkListenerApplicationStart.class);
+    listener.onApplicationStart(event);
+
+    verify(emitter, never()).emit(any());
   }
 }

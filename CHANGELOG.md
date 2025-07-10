@@ -6,6 +6,8 @@
 
 * **Python: Asynchronous HTTP transport implementation** [@mobuchowski](https://github.com/mobuchowski)  
   *Adds high-performance asynchronous HTTP transport with event ordering guarantees, configurable concurrency, and comprehensive error handling. Features START-before-completion event ordering, bounded queues, and real-time statistics.*
+* **Spark: disable connector by Spark config parameter.** [`#3880`](https://github.com/OpenLineage/OpenLineage/pull/3880) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Add `spark.openlineage.disabled` entry to disable OpenLineage integration through Spark config parameters.
 
 ### Changed
 

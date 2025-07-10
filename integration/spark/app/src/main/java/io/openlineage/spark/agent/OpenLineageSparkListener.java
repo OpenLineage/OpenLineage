@@ -80,7 +80,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   private static final String sparkVersion = package$.MODULE$.SPARK_VERSION();
 
-  private final boolean isDisabled = checkIfDisabled();
+  private final boolean isDisabled;
 
   /**
    * Id of the last active job. Has to be stored within the listener, as some jobs use both
@@ -95,6 +95,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   public OpenLineageSparkListener(SparkConf conf) {
     super();
     this.conf = Objects.requireNonNull(conf).clone();
+    isDisabled = checkIfDisabled();
   }
 
   /**
@@ -422,8 +423,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
                             Tag.of("openlineage.spark.disabled.facets", disabledFacets))));
   }
 
-  private static boolean checkIfDisabled() {
+  private boolean checkIfDisabled() {
     String isDisabled = Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED");
-    return Boolean.parseBoolean(isDisabled);
+    boolean isDisabledFromConf =
+        conf != null && conf.getBoolean("spark.openlineage.disabled", false);
+    return Boolean.parseBoolean(isDisabled) || isDisabledFromConf;
   }
 }
