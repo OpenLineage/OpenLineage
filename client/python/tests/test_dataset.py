@@ -4,7 +4,7 @@
 """Tests for the dataset naming utilities."""
 
 import pytest
-from openlineage.client.dataset import (
+from openlineage.client.naming.dataset import (
     ABFSS,
     DB2,
     DBFS,
