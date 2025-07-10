@@ -50,8 +50,9 @@ import scala.PartialFunction;
  */
 @Builder
 public class OpenLineageContext {
-  // filled up only for SparkListenerApplication{Start,End} events
+  // filled up in SparkListenerApplicationStart events
   @Setter @Getter UUID applicationUuid;
+  @Setter @Getter String applicationName;
 
   // filled up for SparkListener non-application events
   @Default @NonNull @Getter final UUID runUuid = UUIDUtils.generateNewUUID();

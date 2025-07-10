@@ -104,6 +104,8 @@ class RepairTableCommandVisitorTest {
               .sparkSession(session)
               .sparkContext(session.sparkContext())
               .openLineage(openLineage)
+              .applicationName("app-name")
+              .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
               .meterRegistry(new SimpleMeterRegistry())
               .openLineageConfig(config)
               .build();

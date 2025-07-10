@@ -45,17 +45,4 @@ public class DatabricksUtils {
   public static Optional<String> getWorkspaceUrl(SparkConf conf) {
     return Optional.ofNullable(conf.get(SPARK_DATABRICKS_WORKSPACE_URL));
   }
-
-  public static String prettifyDatabricksJobName(SparkConf conf, String jobName) {
-    // replace default job name with workspace id when no app name specified;
-    return jobName.replace(
-        "databricks_shell.", // default name
-        extractWorkspaceId(DatabricksUtils.getWorkspaceUrl(conf).get() + "."));
-  }
-
-  private static String extractWorkspaceId(String workspaceUrl) {
-    return workspaceUrl
-        .replace(".cloud.databricks.com/", "") // extract workspace id from workspaceUrl
-        .replace("https://", "");
-  }
 }

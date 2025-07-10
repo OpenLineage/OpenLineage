@@ -58,7 +58,7 @@ public class SparkAgentTestExtension
         .thenReturn(Optional.of(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b")));
     when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationRunId())
         .thenReturn(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
-    when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationJobName()).thenReturn("test_rdd");
+    when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationJobName()).thenReturn("app-name");
 
     OpenLineageSparkListener.init(
         new StaticExecutionContextFactory(
@@ -78,7 +78,7 @@ public class SparkAgentTestExtension
         .thenReturn(Optional.of(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b")));
     when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationRunId())
         .thenReturn(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
-    when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationJobName()).thenReturn("test_rdd");
+    when(SparkAgentTestExtension.EVENT_EMITTER.getApplicationJobName()).thenReturn("app-name");
     Mockito.doAnswer(
             (arg) -> {
               LoggerFactory.getLogger(getClass())
@@ -167,6 +167,8 @@ public class SparkAgentTestExtension
     return OpenLineageContext.builder()
         .sparkSession(sparkSession)
         .sparkContext(sparkSession.sparkContext())
+        .applicationName("app-name")
+        .applicationUuid(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"))
         .openLineage(openLineage)
         .customEnvironmentVariables(Arrays.asList("TEST_VAR"))
         .meterRegistry(new SimpleMeterRegistry())

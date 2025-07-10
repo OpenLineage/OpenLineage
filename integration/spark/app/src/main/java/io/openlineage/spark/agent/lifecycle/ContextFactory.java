@@ -48,6 +48,7 @@ public class ContextFactory {
     OpenLineageContext olContext =
         OpenLineageContext.builder()
             .sparkContext(sparkContext)
+            .applicationName(this.openLineageEventEmitter.getApplicationJobName())
             .applicationUuid(this.openLineageEventEmitter.getApplicationRunId())
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .customEnvironmentVariables(
@@ -69,6 +70,8 @@ public class ContextFactory {
     OpenLineageContext olContext =
         OpenLineageContext.builder()
             .sparkContext(SparkContext$.MODULE$.getActive().getOrElse(() -> null))
+            .applicationName(this.openLineageEventEmitter.getApplicationJobName())
+            .applicationUuid(this.openLineageEventEmitter.getApplicationRunId())
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .customEnvironmentVariables(
                 this.openLineageEventEmitter
@@ -97,6 +100,8 @@ public class ContextFactory {
         OpenLineageContext.builder()
             .sparkSession(sparkSession)
             .sparkContext(sparkSession.sparkContext())
+            .applicationName(this.openLineageEventEmitter.getApplicationJobName())
+            .applicationUuid(this.openLineageEventEmitter.getApplicationRunId())
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(queryExecution)
             .customEnvironmentVariables(
@@ -125,6 +130,8 @@ public class ContextFactory {
                   OpenLineageContext.builder()
                       .sparkSession(sparkSession)
                       .sparkContext(sparkSession.sparkContext())
+                      .applicationName(this.openLineageEventEmitter.getApplicationJobName())
+                      .applicationUuid(this.openLineageEventEmitter.getApplicationRunId())
                       .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                       .queryExecution(queryExecution)
                       .customEnvironmentVariables(

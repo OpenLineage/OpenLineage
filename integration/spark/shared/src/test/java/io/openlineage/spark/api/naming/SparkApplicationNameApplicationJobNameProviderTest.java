@@ -9,65 +9,35 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.spark.api.OpenLineageContext;
-import java.util.Optional;
-import javax.annotation.Nullable;
-import org.apache.spark.SparkContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class SparkApplicationNameApplicationJobNameProviderTest {
 
-  private OpenLineageContext noSparkContextOlContext;
-  private OpenLineageContext noSparkAppNameProperty;
-  private OpenLineageContext blankSparkAppNameProperty;
-  private OpenLineageContext specifiedSparkAppNameProperty1;
-  private OpenLineageContext specifiedSparkAppNameProperty2;
+  private OpenLineageContext withAppName;
   private SparkApplicationNameApplicationJobNameProvider provider;
 
   @BeforeEach
   void setUp() {
     provider = new SparkApplicationNameApplicationJobNameProvider();
 
-    // Case 1: OpenLineage has no SparkContext set
-    noSparkContextOlContext = mock(OpenLineageContext.class);
-    when(noSparkContextOlContext.getSparkContext()).thenReturn(Optional.empty());
-
     // Case 2: SparkContext has no "spark.app.name" property set
-    noSparkAppNameProperty = buildOpenLineageContextWithAppName(null);
-
-    // Case 3: SparkContext has the property "spark.app.name" blank
-    blankSparkAppNameProperty = buildOpenLineageContextWithAppName("   ");
-
-    // Case 4: SparkContext has the property "spark.app.name" specified
-    specifiedSparkAppNameProperty1 = buildOpenLineageContextWithAppName("Some Spark app");
-    specifiedSparkAppNameProperty2 =
-        buildOpenLineageContextWithAppName("Some Spark app cross-check");
+    withAppName = buildOpenLineageContextWithAppName();
   }
 
   @Test
   void testIsDefinedAt() {
-    assertThat(provider.isDefinedAt(noSparkContextOlContext)).isTrue();
-    assertThat(provider.isDefinedAt(noSparkAppNameProperty)).isTrue();
-    assertThat(provider.isDefinedAt(blankSparkAppNameProperty)).isTrue();
-    assertThat(provider.isDefinedAt(specifiedSparkAppNameProperty1)).isTrue();
-    assertThat(provider.isDefinedAt(specifiedSparkAppNameProperty2)).isTrue();
+    assertThat(provider.isDefinedAt(withAppName)).isTrue();
   }
 
   @Test
   void testGetJobName() {
-    assertThat(provider.getJobName(noSparkContextOlContext)).isEqualTo("unknown");
-    assertThat(provider.getJobName(noSparkAppNameProperty)).isEqualTo("unknown");
-    assertThat(provider.getJobName(blankSparkAppNameProperty)).isEqualTo("unknown");
-    assertThat(provider.getJobName(specifiedSparkAppNameProperty1)).isEqualTo("Some Spark app");
-    assertThat(provider.getJobName(specifiedSparkAppNameProperty2))
-        .isEqualTo("Some Spark app cross-check");
+    assertThat(provider.getJobName(withAppName)).isEqualTo("appNameFromStartEvent");
   }
 
-  static OpenLineageContext buildOpenLineageContextWithAppName(@Nullable String appName) {
+  static OpenLineageContext buildOpenLineageContextWithAppName() {
     OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
-    SparkContext sparkContext = mock(SparkContext.class);
-    when(sparkContext.appName()).thenReturn(appName);
-    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(openLineageContext.getApplicationName()).thenReturn("appNameFromStartEvent");
     return openLineageContext;
   }
 }
