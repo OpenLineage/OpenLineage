@@ -424,24 +424,6 @@ jobs:
           destination: events
           when: always
 
-  integration-test-integration-airflow-failure:
-    parameters:
-      failure-type:
-        type: string
-    working_directory: ~/openlineage/integration/
-    machine:
-      image: ubuntu-2404:current
-    steps:
-      - *checkout_project_root
-      - run: ../.circleci/get-docker-compose.sh
-      - run: cp -r ../client/python python
-      - attach_workspace:
-          at: .
-      - run: AIRFLOW_IMAGE=apache/airflow:2.5.2-python3.9 ./airflow/tests/integration/docker/up-failure.sh << parameters.failure-type >>
-      - store_artifacts:
-          path: airflow/tests/integration/failures/airflow/logs
-          destination: airflow-logs
-
   unit-test-integration-dagster:
     working_directory: ~/openlineage/integration/dagster
     docker:

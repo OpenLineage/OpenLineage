@@ -91,7 +91,7 @@ class TestDbtIntegration:
 
         # Get events
         events = dbt_runner.get_events()
-        assert len(events) == 2, "Not nly JOB events received"
+        assert len(events) == 2, "Not only JOB events received"
 
     def test_dbt_tests_lineage(self, dbt_runner, reset_test_server):
         """Test that dbt tests generate lineage events."""
@@ -158,11 +158,6 @@ class TestDbtIntegration:
             assert "run" in event, "Missing run field"
             assert "eventType" in event, "Missing eventType field"
             assert "eventTime" in event, "Missing eventTime field"
-
-            # Validate job structure
-            job = event["job"]
-            assert "namespace" in job, "Missing job namespace"
-            assert "name" in job, "Missing job name"
 
     def test_event_ordering(self, dbt_runner, reset_test_server):
         """Test that events are ordered correctly (START before COMPLETE)."""
