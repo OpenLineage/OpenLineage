@@ -550,3 +550,11 @@ def test_kafka_transport_close(mocker: MockerFixture) -> None:
 
     mock_producer.flush.assert_called_once_with(timeout=-1)
     assert transport.producer is None
+
+    mock_producer.reset_mock()
+
+    transport = KafkaTransport(config)
+    transport.close(10)
+
+    mock_producer.flush.assert_called_once_with(timeout=10)
+    assert transport.producer is None
