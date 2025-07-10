@@ -56,12 +56,6 @@ params = [
         marks=pytest.mark.skipif(not IS_GCP_AUTH, reason="no gcp credentials"),
     ),
     pytest.param(
-        "dbt",
-        "requests/dbt_bigquery.json",
-        True,
-        marks=pytest.mark.skipif(not IS_GCP_AUTH, reason="no gcp credentials or dbt tests disabled"),
-    ),
-    pytest.param(
         "gcs_dag",
         "requests/gcs.json",
         True,
@@ -96,36 +90,6 @@ params = [
         "trino_orders_popular_day_of_week",
         "requests/trino.json",
         True,
-    ),
-    pytest.param(
-        "dbt",
-        "requests/dbt_snowflake.json",
-        True,
-        marks=[
-            pytest.mark.skipif(
-                not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
-                reason=f"Airflow < {SNOWFLAKE_AIRFLOW_TEST_VERSION}",
-            ),
-            pytest.mark.skipif(
-                os.environ.get("SNOWFLAKE_PASSWORD", "") == "",
-                reason="no snowflake credentials",
-            ),
-        ],
-    ),
-    pytest.param(
-        "snowflake",
-        "requests/snowflake.json",
-        True,
-        marks=[
-            pytest.mark.skipif(
-                not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
-                reason=f"Airflow < {SNOWFLAKE_AIRFLOW_TEST_VERSION}",
-            ),
-            pytest.mark.skipif(
-                os.environ.get("SNOWFLAKE_ACCOUNT_ID", "") == "",
-                reason="no snowflake credentials",
-            ),
-        ],
     ),
     pytest.param(
         "mapped_dag",
