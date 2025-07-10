@@ -35,7 +35,7 @@ def _check_enum_not_none(
     if value is None:
         msg = f"{attribute.name} cannot be None"
         raise ValueError(msg)
-    return value
+    return PubSubResourceType(value)
 
 
 class DatasetNaming(Protocol):
@@ -509,5 +509,4 @@ class PubSubNaming(DatasetNaming):
         return "pubsub"
 
     def get_name(self) -> str:
-        prefix = "topic" if self.resource_type == PubSubResourceType.TOPIC else "subscription"
-        return f"{prefix}:{self.project_id}:{self.resource_id}"
+        return f"{self.resource_type.value}:{self.project_id}:{self.resource_id}"
