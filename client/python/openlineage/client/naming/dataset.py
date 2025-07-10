@@ -398,6 +398,22 @@ class HDFS(DatasetNaming):
 
 
 @attr.define
+class Hive(DatasetNaming):
+    """Naming implementation for Hive."""
+
+    host: str = attr.field(validator=_check_not_empty)
+    port: str = attr.field(validator=_check_not_empty)
+    database: str = attr.field(validator=_check_not_empty)
+    table: str = attr.field(validator=_check_not_empty)
+
+    def get_namespace(self) -> str:
+        return f"hive://{self.host}:{self.port}"
+
+    def get_name(self) -> str:
+        return f"{self.database}.{self.table}"
+
+
+@attr.define
 class Kafka(DatasetNaming):
     """Naming implementation for Kafka."""
 

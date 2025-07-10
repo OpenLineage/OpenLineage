@@ -20,6 +20,7 @@ from openlineage.client.naming.dataset import (
     BigQuery,
     Cassandra,
     CrateDB,
+    Hive,
     Kafka,
     LocalFileSystem,
     MySQL,
@@ -197,6 +198,13 @@ class TestHDFS:
         hdfs = HDFS("namenode", "9000", "/path/to/file")
         assert hdfs.get_namespace() == "hdfs://namenode:9000"
         assert hdfs.get_name() == "/path/to/file"
+
+
+class TestHive:
+    def test_hive_naming(self):
+        hive = Hive("localhost", "8080", "my-database", "my-table")
+        assert hive.get_namespace() == "hive://localhost:8080"
+        assert hive.get_name() == "my-database.my-table"
 
 
 class TestKafka:
