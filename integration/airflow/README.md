@@ -287,12 +287,16 @@ However, all facets inheriting from `BaseFacet` should use the `_additional_skip
 
 ## Development
 
-To install all dependencies for _local_ development:
+For detailed development setup instructions, see the [Python development setup guide](https://openlineage.io/docs/development/developing/python/setup).
 
-The Airflow integration depends on `openlineage.sql`, `openlineage.common` and `openlineage.client.python`. You should install them first independently or try to install them with following command:
-
+Quick start:
 ```bash
-$ pip install -r dev-requirements.txt
+# From the repository root
+$ make setup-airflow
+
+# Or manually
+$ cd integration/airflow
+$ uv sync --extra dev --extra airflow
 ```
 
 There is also a bash script that can run an arbitrary Airflow image with an OpenLineage integration built from the current branch. Additionally, it mounts OpenLineage Python packages as Docker volumes. This enables you to change your code without the need to constantly rebuild Docker images to run tests.

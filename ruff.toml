@@ -47,9 +47,7 @@ select = [
 
 isort = { known-first-party = ["publication_set", "tests"] }
 ignore = [
-    "ANN101", # Missing type annotation for `self` in method
     "S101", # Use of `assert` detected
-    "ANN102", # Missing type annotation for `cls` in classmethod
     "T201",
     "COM812",
     "ISC001",

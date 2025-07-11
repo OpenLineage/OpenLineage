@@ -10,6 +10,12 @@ from json import JSONEncoder
 import attr
 import pendulum
 import pytest
+from airflow.models import DAG as AIRFLOW_DAG
+from airflow.models import DagModel
+from airflow.operators.dummy import DummyOperator
+from airflow.utils.dates import days_ago
+from airflow.utils.state import State
+from airflow.version import version as AIRFLOW_VERSION
 from openlineage.airflow.utils import (
     DagUtils,
     InfoJsonEncodable,
@@ -24,13 +30,6 @@ from openlineage.airflow.utils import (
 )
 from openlineage.client.utils import RedactMixin
 from packaging.version import Version
-
-from airflow.models import DAG as AIRFLOW_DAG
-from airflow.models import DagModel
-from airflow.operators.dummy import DummyOperator
-from airflow.utils.dates import days_ago
-from airflow.utils.state import State
-from airflow.version import version as AIRFLOW_VERSION
 
 AIRFLOW_CONN_ID = "test_db"
 AIRFLOW_CONN_URI = "postgres://localhost:5432/testdb"
@@ -77,7 +76,7 @@ def test_pendulum_to_iso_8601():
 
 
 @pytest.mark.skipif(Version(AIRFLOW_VERSION) < Version("2.4.0"), reason="Airflow < 2.4.0")
-def test_get_dagrun_start_end():
+def test_get_dagrun_start_end(dagbag):
     dag = AIRFLOW_DAG("test", start_date=days_ago(1), schedule_interval="@once")
     AIRFLOW_DAG.bulk_write_to_db([dag])
     dag_model = DagModel.get_dagmodel(dag.dag_id)

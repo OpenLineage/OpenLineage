@@ -48,7 +48,6 @@ t0 = AthenaOperator(
     query=f"CREATE DATABASE IF NOT EXISTS {DATABASE};",
     database=DATABASE,
     output_location=OUTPUT_LOCATION,
-    max_tries=4,
     dag=dag,
 )
 
@@ -65,7 +64,6 @@ t1 = AthenaOperator(
     """,
     database=DATABASE,
     output_location=OUTPUT_LOCATION,
-    max_tries=4,
     dag=dag,
 )
 
@@ -80,7 +78,6 @@ t2 = AthenaOperator(
     """,
     database=DATABASE,
     output_location=OUTPUT_LOCATION,
-    max_tries=4,
     dag=dag,
 )
 
@@ -90,7 +87,6 @@ t3 = AthenaOperator(
     query=f"SELECT * FROM {DATABASE}.test_orders;",
     database="default",
     output_location=OUTPUT_LOCATION,
-    max_tries=4,
     dag=dag,
 )
 
@@ -100,7 +96,6 @@ t4 = AthenaOperator(
     query="DROP TABLE test_orders;",
     database=DATABASE,
     output_location=OUTPUT_LOCATION,
-    max_tries=4,
     dag=dag,
 )
 
