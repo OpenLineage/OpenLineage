@@ -90,6 +90,7 @@ dependencies {
 
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     testImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}") {
         exclude(group: 'org.junit.jupiter')
