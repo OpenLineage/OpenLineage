@@ -356,7 +356,7 @@ def consume_local_artifacts(
                 e,
                 exc_info=True,
             )
-    client.close(timeout=30.0)
+    client.close()
     logger.info("Emitted %d OpenLineage events", emitted_events)
     logger.info("Underlying dbt execution returned %d", return_code)
     return return_code

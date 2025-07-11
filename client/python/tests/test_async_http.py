@@ -25,11 +25,11 @@ from openlineage.client.uuid import generate_new_uuid
 
 
 @contextmanager
-def closing_immediately(resource):
+def closing_immediately(transport: AsyncHttpTransport):
     try:
-        yield resource
+        yield transport
     finally:
-        resource.close(timeout=0)
+        transport.close(timeout=0)
 
 
 class TestAsyncHttpConfig:
