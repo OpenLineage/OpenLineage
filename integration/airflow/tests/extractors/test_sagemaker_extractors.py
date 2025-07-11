@@ -8,12 +8,6 @@ from datetime import datetime
 from unittest import TestCase, mock
 
 import pytz
-from openlineage.airflow.extractors.sagemaker_extractors import (
-    SageMakerProcessingExtractor,
-    SageMakerTrainingExtractor,
-    SageMakerTransformExtractor,
-)
-
 from airflow.models import DAG, TaskInstance
 from airflow.providers.amazon.aws.operators.sagemaker import (
     SageMakerProcessingOperator,
@@ -22,6 +16,11 @@ from airflow.providers.amazon.aws.operators.sagemaker import (
 )
 from airflow.utils import timezone
 from airflow.utils.state import State
+from openlineage.airflow.extractors.sagemaker_extractors import (
+    SageMakerProcessingExtractor,
+    SageMakerTrainingExtractor,
+    SageMakerTransformExtractor,
+)
 
 log = logging.getLogger(__name__)
 

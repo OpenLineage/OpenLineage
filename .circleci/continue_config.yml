@@ -135,6 +135,24 @@ commands:
             - run: pip install target/wheels/*manylinux_2_17_x86_64*.whl
       - run: (cd ~/openlineage/integration/common && pip install . --user)
 
+  install_uv_python:
+    description: "Install Python and UV"
+    parameters:
+      py_env:
+        type: string
+        description: "Python env version"
+        default: "3.9"
+    steps:
+      - run:
+          name: Install uv and Python << parameters.py_env >>
+          command: |
+            apt install libmysqlclient-dev
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            source $HOME/.local/bin/env
+            uv python install << parameters.py_env >>
+            uv sync --all-extras --verbose
+
+
 jobs:
   # SQL
   build-integration-sql-python:
@@ -260,7 +278,7 @@ jobs:
 
   # PYTHON
   unit-test-client-python:
-    working_directory: ~/openlineage/client/python
+    working_directory: ~/openlineage
     parameters:
       tox_env:
         type: string
@@ -270,16 +288,12 @@ jobs:
       image: ubuntu-2404:current
     steps:
       - *checkout_project_root
+      - install_uv_python:
+          py_env: << parameters.py_env >>
       - run:
-          name: Install uv and Python << parameters.py_env >>
+          name: Run tox tests
           command: |
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            source $HOME/.local/bin/env
-            uv python install << parameters.py_env >>
-      - run:
-          name: Install tox and run tests with uv
-          command: |
-            source $HOME/.local/bin/env
+            cd client/python
             uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --notest
             uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
 
@@ -367,16 +381,13 @@ jobs:
         type: boolean
       airflow-version:
         type: string
-    working_directory: ~/openlineage/integration/airflow
+    working_directory: ~/openlineage/
     docker:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
-      - *install_python_client
-      - install_integration_common:
-          install_parser: << parameters.install_parser >>
-      - run: pip install tox==3.27.1 mypy==0.971
-      - run: python -m mypy --install-types --non-interactive --ignore-missing-imports openlineage
+      - install_uv_python
+      - run: uv run mypy --install-types --non-interactive --ignore-missing-imports integration/airflow/src
       - run: tox -e py3-<< parameters.airflow-version >>
       - store_test_results:
           path: test-results
@@ -388,9 +399,8 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
-      - *install_python_client
-      - install_integration_common:
-          install_parser: true
+      - install_uv_python:
+          py_env: "3.9"
       - run: python setup.py sdist bdist_wheel
       - persist_to_workspace:
           root: .
@@ -432,7 +442,7 @@ jobs:
       - *checkout_project_root
       - *install_python_client
       - run: pip install -e .[dev]
-      - run: python -m mypy --ignore-missing-imports --no-namespace-packages openlineage
+      - run: python -m mypy --ignore-missing-imports --no-namespace-packages src
       - run: pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)
 
@@ -1280,56 +1290,11 @@ jobs:
       image: ubuntu-2404:current
     steps:
       - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: .circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
-      - restore_cache:
-          name: Restore pre-commit cache
-          keys:
-            - v1.4-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
-      - restore_cache:
-          name: Restore pmd cache
-          keys:
-            - v1.0-pmd-{{ checksum ".pre_commit/run-pmd.sh" }}
-            - v1.0-pmd-
-      - restore_cache:
-          name: Restore Gradle cache
-          keys:
-            - v1.1-gradle-pre-commit-{{ checksum "/tmp/checksum.txt" }}
-            - v1.1-gradle-pre-commit-
-
-      - run:
-          name: Install Python3.9 Dependencies
-          command: |
-            python -m venv venv
-            . venv/bin/activate
-            pip3 install pre-commit
-            # Install the hooks now so that they'll be cached
-            pre-commit install-hooks
-
-      - save_cache:
-          paths:
-            - ~/.cache/pre-commit
-          key: v1.4-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
-          name: Save pre-commit cache
-
+      - install_uv_python
       - run:
           name: Run pre-commit
           command: |
-            . venv/bin/activate
             pre-commit run --show-diff-on-failure --all-files
-
-      - save_cache:
-          paths:
-            - ./.pmd_cache
-          key: v1.0-pmd-{{ checksum ".pre_commit/run-pmd.sh" }}
-          name: Save pmd cache
-      - save_cache:
-          key: v1.1-gradle-pre-commit-{{ checksum "/tmp/checksum.txt" }}
-          paths:
-            - ~/.gradle
-            - client/java/.gradle
-            - integration/spark/.gradle
 
   build-website:
     # Build Openlineage website to make sure npm packages match

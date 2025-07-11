@@ -6,29 +6,18 @@ import time
 from unittest import mock
 from unittest.mock import call, patch
 
-from openlineage.client.uuid import generate_new_uuid
-from openlineage.dagster.sensor import openlineage_sensor
-
 from dagster import (
     DagsterEventType,
     build_sensor_context,
     execute_job,
-    job,
-    op,
     reconstructable,
 )
 from dagster.core.test_utils import instance_for_test
+from openlineage.client.uuid import generate_new_uuid
+from openlineage.dagster.sensor import openlineage_sensor
 
 from .conftest import make_test_event_log_record
-
-
-@job
-def a_job():
-    @op
-    def an_op():
-        pass
-
-    an_op()
+from .sample_job import test_job as sample_test_job
 
 
 @patch("openlineage.dagster.sensor.get_repository_name")
@@ -49,13 +38,15 @@ def test_sensor_with_complete_job_run_and_repository(
             },
         ) as instance:
             repository_name = "a_repository"
-            pipeline_name = "a_job"
-            step_key = "an_op"
+            pipeline_name = "test_job"
+            step_key = "test_op"
             step_run_id = str(generate_new_uuid())
             mock_step_run_id.return_value = step_run_id
             mock_get_repository_name.return_value = repository_name
 
-            result = execute_job(job=reconstructable(a_job), instance=instance, raise_on_error=False)
+            result = execute_job(
+                job=reconstructable(sample_test_job), instance=instance, raise_on_error=False
+            )
             pipeline_run_id = result.run_id
 
             context = build_sensor_context(instance=instance)

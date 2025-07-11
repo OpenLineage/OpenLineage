@@ -19,7 +19,7 @@ def check_matches(expected_events, actual_events) -> bool:
                     return False
                 break
         if not is_compared:
-            print(f"not found event comparable to {expected['eventType']} " f"- {expected_job_name}")
+            print(f"not found event comparable to {expected['eventType']} - {expected_job_name}")
             return False
     return True
 

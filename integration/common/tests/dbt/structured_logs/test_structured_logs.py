@@ -3,6 +3,7 @@
 import datetime
 import json
 from enum import Enum
+from pathlib import Path
 from typing import Dict
 from unittest import mock
 
@@ -23,6 +24,7 @@ from openlineage.common.utils import get_from_nullable_chain
 ###########
 DUMMY_UUID_4 = "e2c4a0ab-d119-4828-b9c4-96ffd4c79d4f"
 DUMMY_RANDOM_LOG_FILE = "dbt-logs-e2c4a0ab-d119-4828-b9c4-96ffd4c79d4f"
+CURRENT_DIR = str(Path(__file__).absolute().parent)
 
 
 def ol_event_to_dict(event) -> Dict:
@@ -44,7 +46,7 @@ def serialize(inst, field, value):
 def patch_get_dbt_profiles_dir(monkeypatch):
     monkeypatch.setattr(
         "openlineage.common.provider.dbt.structured_logs.get_dbt_profiles_dir",
-        lambda *args, **kwargs: "./tests/dbt/structured_logs",
+        lambda *args, **kwargs: CURRENT_DIR,
     )
 
 
@@ -60,89 +62,89 @@ def patch_get_dbt_profiles_dir(monkeypatch):
         (
             "postgres",
             ["dbt", "run", "..."],
-            "./tests/dbt/structured_logs/postgres/run/logs/successful_run_logs.jsonl",
-            "./tests/dbt/structured_logs/postgres/run/results/successful_run_ol_events.json",
-            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
+            CURRENT_DIR + "/postgres/run/logs/successful_run_logs.jsonl",
+            CURRENT_DIR + "/postgres/run/results/successful_run_ol_events.json",
+            CURRENT_DIR + "/postgres/run/target/manifest.json",
         ),
         # failed postgres run. Model has SQL error in it
         (
             "postgres",
             ["dbt", "run", "..."],
-            "./tests/dbt/structured_logs/postgres/run/logs/failed_run_logs.jsonl",
-            "./tests/dbt/structured_logs/postgres/run/results/failed_run_ol_events.json",
-            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
+            CURRENT_DIR + "/postgres/run/logs/failed_run_logs.jsonl",
+            CURRENT_DIR + "/postgres/run/results/failed_run_ol_events.json",
+            CURRENT_DIR + "/postgres/run/target/manifest.json",
         ),
         # successful snowflake run
         (
             "snowflake",
             ["dbt", "run", "..."],
-            "./tests/dbt/structured_logs/snowflake/run/logs/successful_run_logs.jsonl",
-            "./tests/dbt/structured_logs/snowflake/run/results/successful_run_ol_events.json",
-            "./tests/dbt/structured_logs/snowflake/run/target/manifest.json",
+            CURRENT_DIR + "/snowflake/run/logs/successful_run_logs.jsonl",
+            CURRENT_DIR + "/snowflake/run/results/successful_run_ol_events.json",
+            CURRENT_DIR + "/snowflake/run/target/manifest.json",
         ),
         # failed snowflake run
         (
             "snowflake",
             ["dbt", "run", "..."],
-            "./tests/dbt/structured_logs/snowflake/run/logs/failed_run_logs.jsonl",
-            "./tests/dbt/structured_logs/snowflake/run/results/failed_run_ol_events.json",
-            "./tests/dbt/structured_logs/snowflake/run/target/manifest.json",
+            CURRENT_DIR + "/snowflake/run/logs/failed_run_logs.jsonl",
+            CURRENT_DIR + "/snowflake/run/results/failed_run_ol_events.json",
+            CURRENT_DIR + "/snowflake/run/target/manifest.json",
         ),
         # postgres seed
         (
             "postgres",
             ["dbt", "seed", "..."],
-            "./tests/dbt/structured_logs/postgres/seed/logs/seed_logs.jsonl",
-            "./tests/dbt/structured_logs/postgres/seed/results/seed_ol_events.json",
-            "./tests/dbt/structured_logs/postgres/seed/target/manifest.json",
+            CURRENT_DIR + "/postgres/seed/logs/seed_logs.jsonl",
+            CURRENT_DIR + "/postgres/seed/results/seed_ol_events.json",
+            CURRENT_DIR + "/postgres/seed/target/manifest.json",
         ),
         # snowflake seed
         (
             "snowflake",
             ["dbt", "seed", "..."],
-            "./tests/dbt/structured_logs/snowflake/seed/logs/seed_logs.jsonl",
-            "./tests/dbt/structured_logs/snowflake/seed/results/seed_ol_events.json",
-            "./tests/dbt/structured_logs/snowflake/seed/target/manifest.json",
+            CURRENT_DIR + "/snowflake/seed/logs/seed_logs.jsonl",
+            CURRENT_DIR + "/snowflake/seed/results/seed_ol_events.json",
+            CURRENT_DIR + "/snowflake/seed/target/manifest.json",
         ),
         # postgres snapshot
         (
             "postgres",
             ["dbt", "snapshot", "..."],
-            "./tests/dbt/structured_logs/postgres/snapshot/logs/snapshot_logs.jsonl",
-            "./tests/dbt/structured_logs/postgres/snapshot/results/snapshot_ol_events.json",
-            "./tests/dbt/structured_logs/postgres/snapshot/target/manifest.json",
+            CURRENT_DIR + "/postgres/snapshot/logs/snapshot_logs.jsonl",
+            CURRENT_DIR + "/postgres/snapshot/results/snapshot_ol_events.json",
+            CURRENT_DIR + "/postgres/snapshot/target/manifest.json",
         ),
         # snowflake snapshot
         (
             "snowflake",
             ["dbt", "snapshot", "..."],
-            "./tests/dbt/structured_logs/snowflake/snapshot/logs/snapshot_logs.jsonl",
-            "./tests/dbt/structured_logs/snowflake/snapshot/results/snapshot_ol_events.json",
-            "./tests/dbt/structured_logs/snowflake/snapshot/target/manifest.json",
+            CURRENT_DIR + "/snowflake/snapshot/logs/snapshot_logs.jsonl",
+            CURRENT_DIR + "/snowflake/snapshot/results/snapshot_ol_events.json",
+            CURRENT_DIR + "/snowflake/snapshot/target/manifest.json",
         ),
         # postgres test
         (
             "postgres",
             ["dbt", "test", "..."],
-            "./tests/dbt/structured_logs/postgres/test/logs/test_logs.jsonl",
-            "./tests/dbt/structured_logs/postgres/test/results/test_ol_events.json",
-            "./tests/dbt/structured_logs/postgres/test/target/manifest.json",
+            CURRENT_DIR + "/postgres/test/logs/test_logs.jsonl",
+            CURRENT_DIR + "/postgres/test/results/test_ol_events.json",
+            CURRENT_DIR + "/postgres/test/target/manifest.json",
         ),
         # postgres dbt tests on sources
         (
             "postgres",
             ["dbt", "test", "..."],
-            "./tests/dbt/structured_logs/postgres/test_source/logs/test_source_logs.jsonl",
-            "./tests/dbt/structured_logs/postgres/test_source/results/test_source_ol_events.json",
-            "./tests/dbt/structured_logs/postgres/test_source/target/manifest.json",
+            CURRENT_DIR + "/postgres/test_source/logs/test_source_logs.jsonl",
+            CURRENT_DIR + "/postgres/test_source/results/test_source_ol_events.json",
+            CURRENT_DIR + "/postgres/test_source/target/manifest.json",
         ),
         # postgres build
         (
             "postgres",
             ["dbt", "build", "..."],
-            "./tests/dbt/structured_logs/postgres/build_command/logs/build_logs.jsonl",
-            "./tests/dbt/structured_logs/postgres/build_command/results/build_ol_events.json",
-            "./tests/dbt/structured_logs/postgres/build_command/target/manifest.json",
+            CURRENT_DIR + "/postgres/build_command/logs/build_logs.jsonl",
+            CURRENT_DIR + "/postgres/build_command/results/build_ol_events.json",
+            CURRENT_DIR + "/postgres/build_command/target/manifest.json",
         ),
     ],
     ids=[
@@ -175,7 +177,7 @@ def test_parse(mock_dbt_run_command, target, command_line, logs_path, expected_o
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target=target,
         dbt_command_line=command_line,
     )
@@ -201,7 +203,7 @@ def test_adapter_type(mock_dbt_run_command, target, expected_adapter_type):
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target=target,
         dbt_command_line=["dbt", "run", "..."],
     )
@@ -239,7 +241,7 @@ def test_dataset_namespace(mock_run_dbt_command, target, expected_dataset_namesp
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target=target,
         dbt_command_line=["dbt", "run", "..."],
     )
@@ -256,76 +258,76 @@ def test_dataset_namespace(mock_run_dbt_command, target, expected_dataset_namesp
     "dbt_log_events, expected_ol_events, dbt_event_type, manifest_path",
     [
         (
-            "./tests/dbt/structured_logs/postgres/events/logs/MainReportVersion.yaml",
-            "./tests/dbt/structured_logs/postgres/events/results/MainReportVersion_OL.yaml",
+            CURRENT_DIR + "/postgres/events/logs/MainReportVersion.yaml",
+            CURRENT_DIR + "/postgres/events/results/MainReportVersion_OL.yaml",
             "MainReportVersion",
-            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
+            CURRENT_DIR + "/postgres/run/target/manifest.json",
         ),
         (
-            "./tests/dbt/structured_logs/postgres/events/logs/successful_CommandCompleted.yaml",
-            "./tests/dbt/structured_logs/postgres/events/results/successful_CommandCompleted_OL.yaml",
+            CURRENT_DIR + "/postgres/events/logs/successful_CommandCompleted.yaml",
+            CURRENT_DIR + "/postgres/events/results/successful_CommandCompleted_OL.yaml",
             "CommandCompleted",
-            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
+            CURRENT_DIR + "/postgres/run/target/manifest.json",
         ),
         (
-            "./tests/dbt/structured_logs/postgres/events/logs/failed_CommandCompleted.yaml",
-            "./tests/dbt/structured_logs/postgres/events/results/failed_CommandCompleted_OL.yaml",
+            CURRENT_DIR + "/postgres/events/logs/failed_CommandCompleted.yaml",
+            CURRENT_DIR + "/postgres/events/results/failed_CommandCompleted_OL.yaml",
             "CommandCompleted",
-            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
+            CURRENT_DIR + "/postgres/run/target/manifest.json",
         ),
         (
-            "./tests/dbt/structured_logs/postgres/events/logs/NodeStart.yaml",
-            "./tests/dbt/structured_logs/postgres/events/results/NodeStart_OL.yaml",
+            CURRENT_DIR + "/postgres/events/logs/NodeStart.yaml",
+            CURRENT_DIR + "/postgres/events/results/NodeStart_OL.yaml",
             "NodeStart",
-            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
+            CURRENT_DIR + "/postgres/run/target/manifest.json",
         ),
         (
-            "./tests/dbt/structured_logs/postgres/events/logs/successful_NodeFinished.yaml",
-            "./tests/dbt/structured_logs/postgres/events/results/successful_NodeFinished_OL.yaml",
+            CURRENT_DIR + "/postgres/events/logs/successful_NodeFinished.yaml",
+            CURRENT_DIR + "/postgres/events/results/successful_NodeFinished_OL.yaml",
             "NodeFinished",
-            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
+            CURRENT_DIR + "/postgres/run/target/manifest.json",
         ),
         (
-            "./tests/dbt/structured_logs/postgres/events/logs/failed_NodeFinished.yaml",
-            "./tests/dbt/structured_logs/postgres/events/results/failed_NodeFinished_OL.yaml",
+            CURRENT_DIR + "/postgres/events/logs/failed_NodeFinished.yaml",
+            CURRENT_DIR + "/postgres/events/results/failed_NodeFinished_OL.yaml",
             "NodeFinished",
-            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
+            CURRENT_DIR + "/postgres/run/target/manifest.json",
         ),
         (
-            "./tests/dbt/structured_logs/postgres/events/logs/SQLQuery.yaml",
-            "./tests/dbt/structured_logs/postgres/events/results/SQLQuery_OL.yaml",
+            CURRENT_DIR + "/postgres/events/logs/SQLQuery.yaml",
+            CURRENT_DIR + "/postgres/events/results/SQLQuery_OL.yaml",
             "SQLQuery",
-            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
+            CURRENT_DIR + "/postgres/run/target/manifest.json",
         ),
         (
-            "./tests/dbt/structured_logs/postgres/events/logs/successful_SQLQueryStatus.yaml",
-            "./tests/dbt/structured_logs/postgres/events/results/successful_SQLQueryStatus_OL.yaml",
+            CURRENT_DIR + "/postgres/events/logs/successful_SQLQueryStatus.yaml",
+            CURRENT_DIR + "/postgres/events/results/successful_SQLQueryStatus_OL.yaml",
             "SQLQueryStatus",
-            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
+            CURRENT_DIR + "/postgres/run/target/manifest.json",
         ),
         (
-            "./tests/dbt/structured_logs/postgres/events/logs/failed_SQLQueryStatus.yaml",
-            "./tests/dbt/structured_logs/postgres/events/results/failed_SQLQueryStatus_OL.yaml",
+            CURRENT_DIR + "/postgres/events/logs/failed_SQLQueryStatus.yaml",
+            CURRENT_DIR + "/postgres/events/results/failed_SQLQueryStatus_OL.yaml",
             "SQLQueryStatus",
-            "./tests/dbt/structured_logs/postgres/run/target/manifest.json",
+            CURRENT_DIR + "/postgres/run/target/manifest.json",
         ),
         (
-            "./tests/dbt/structured_logs/postgres/events/logs/failed_test_NodeFinished.yaml",
-            "./tests/dbt/structured_logs/postgres/events/results/failed_test_NodeFinished_OL.yaml",
+            CURRENT_DIR + "/postgres/events/logs/failed_test_NodeFinished.yaml",
+            CURRENT_DIR + "/postgres/events/results/failed_test_NodeFinished_OL.yaml",
             "NodeFinished",
-            "./tests/dbt/structured_logs/postgres/test/target/manifest.json",
+            CURRENT_DIR + "/postgres/test/target/manifest.json",
         ),
         (
-            "./tests/dbt/structured_logs/postgres/events/logs/successful_test_NodeFinished.yaml",
-            "./tests/dbt/structured_logs/postgres/events/results/successful_test_NodeFinished_OL.yaml",
+            CURRENT_DIR + "/postgres/events/logs/successful_test_NodeFinished.yaml",
+            CURRENT_DIR + "/postgres/events/results/successful_test_NodeFinished_OL.yaml",
             "NodeFinished",
-            "./tests/dbt/structured_logs/postgres/test/target/manifest.json",
+            CURRENT_DIR + "/postgres/test/target/manifest.json",
         ),
         (
-            "./tests/dbt/structured_logs/postgres/events/logs/skipped_test_NodeFinished.yaml",
-            "./tests/dbt/structured_logs/postgres/events/results/skipped_test_NodeFinished_OL.yaml",
+            CURRENT_DIR + "/postgres/events/logs/skipped_test_NodeFinished.yaml",
+            CURRENT_DIR + "/postgres/events/results/skipped_test_NodeFinished_OL.yaml",
             "NodeFinished",
-            "./tests/dbt/structured_logs/postgres/test/target/manifest.json",
+            CURRENT_DIR + "/postgres/test/target/manifest.json",
         ),
     ],
     ids=[
@@ -362,7 +364,7 @@ def test_parse_dbt_events(
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run", "..."],
     )
@@ -548,7 +550,7 @@ def test_node_job_name(dbt_event, expected_job_name, dbt_command):
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run", "..."],
     )
@@ -653,7 +655,7 @@ def test_sql_job_name(dbt_events, expected_sql_job_names):
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run", "..."],
     )
@@ -667,13 +669,13 @@ def test_sql_job_name(dbt_events, expected_sql_job_names):
     "dbt_log_events, expected_ol_events, parent_id_env_var",
     [
         (
-            "./tests/dbt/structured_logs/postgres/events/logs/successful_CommandCompleted.yaml",
-            "./tests/dbt/structured_logs/postgres/events/results/successful_CommandCompleted_OL.yaml",
+            CURRENT_DIR + "/postgres/events/logs/successful_CommandCompleted.yaml",
+            CURRENT_DIR + "/postgres/events/results/successful_CommandCompleted_OL.yaml",
             f"my_parent_namespace/my_parent_job_name/{DUMMY_UUID_4}",
         ),
         (
-            "./tests/dbt/structured_logs/postgres/events/logs/successful_CommandCompleted.yaml",
-            "./tests/dbt/structured_logs/postgres/events/results/successful_CommandCompleted_OL.yaml",
+            CURRENT_DIR + "/postgres/events/logs/successful_CommandCompleted.yaml",
+            CURRENT_DIR + "/postgres/events/results/successful_CommandCompleted_OL.yaml",
             "",
         ),
     ],
@@ -689,11 +691,11 @@ def test_parent_run_metadata(dbt_log_events, expected_ol_events, parent_id_env_v
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run", "..."],
     )
-    processor.manifest_path = "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
+    processor.manifest_path = CURRENT_DIR + "/postgres/run/target/manifest.json"
     actual_ol_events = list(ol_event_to_dict(event) for event in processor.parse())
     expected_ol_events = yaml.safe_load(open(expected_ol_events))
 
@@ -702,11 +704,9 @@ def test_parent_run_metadata(dbt_log_events, expected_ol_events, parent_id_env_v
 
 @mock.patch("datetime.datetime", wraps=datetime.datetime)
 def test_missing_command_completed(mock_dt, monkeypatch):
-    missing_command_completed = (
-        "./tests/dbt/structured_logs/postgres/events/logs/missing_command_completed.yaml"
-    )
+    missing_command_completed = CURRENT_DIR + "/postgres/events/logs/missing_command_completed.yaml"
     missing_command_completed_ol_events = (
-        "./tests/dbt/structured_logs/postgres/events/results/missing_command_completed_OL.yaml"
+        CURRENT_DIR + "/postgres/events/results/missing_command_completed_OL.yaml"
     )
     mock_dt.now.return_value = datetime.datetime(2024, 1, 1, 0, 0, 0, 1)
     monkeypatch.setattr(
@@ -717,11 +717,11 @@ def test_missing_command_completed(mock_dt, monkeypatch):
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run", "..."],
     )
-    processor.manifest_path = "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
+    processor.manifest_path = CURRENT_DIR + "/postgres/run/target/manifest.json"
     actual_ol_events = list(ol_event_to_dict(event) for event in processor.parse())
     expected_ol_events = yaml.safe_load(open(missing_command_completed_ol_events))
     assert match(expected=expected_ol_events, result=actual_ol_events, ordered_list=True)
@@ -749,11 +749,11 @@ def test_run_dbt_command(dbt_process_return_code, expected_processor_return_code
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run", "..."],
     )
-    processor.manifest_path = "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
+    processor.manifest_path = CURRENT_DIR + "/postgres/run/target/manifest.json"
     processor.received_dbt_command_completed = True
 
     list(processor._run_dbt_command())
@@ -847,11 +847,11 @@ def test_executed_dbt_command_line(input_dbt_command_line, expected_dbt_command_
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=input_dbt_command_line,
     )
-    processor.manifest_path = "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
+    processor.manifest_path = CURRENT_DIR + "/postgres/run/target/manifest.json"
     processor.received_dbt_command_completed = True
 
     list(processor._run_dbt_command())
@@ -899,11 +899,11 @@ def test_logfile_path(input_dbt_command_line, expected_dbt_log_file_path, monkey
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=input_dbt_command_line,
     )
-    processor.manifest_path = "./tests/dbt/structured_logs/postgres/run/target/manifest.json"
+    processor.manifest_path = CURRENT_DIR + "/postgres/run/target/manifest.json"
 
     assert processor.dbt_log_file_path == expected_dbt_log_file_path
 
@@ -991,7 +991,7 @@ def test_validate_manifest_integrity(manifest_data, expected_missing_nodes, capl
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run"],
     )
@@ -1025,7 +1025,7 @@ def test_validate_manifest_integrity_empty_manifest(caplog):
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run"],
     )
@@ -1048,7 +1048,7 @@ def test_validate_manifest_integrity_missing_sections(caplog):
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run"],
     )
@@ -1075,7 +1075,7 @@ def test_validate_manifest_integrity_large_number_missing_nodes(caplog):
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run"],
     )
@@ -1107,7 +1107,7 @@ def test_manifest_integrity_called_during_loading(monkeypatch):
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run"],
     )
@@ -1141,7 +1141,7 @@ def test_validate_manifest_integrity_no_parent_map(caplog):
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run"],
     )
@@ -1333,7 +1333,7 @@ def test_manifest_integrity_return_values(manifest_data, expected_result):
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run"],
     )
@@ -1355,16 +1355,16 @@ def test_manifest_integrity_return_values(manifest_data, expected_result):
     assert result.available_nodes == expected_result["available_nodes"], "available_nodes mismatch"
 
     # Consistency checks
-    assert result.total_missing == len(
-        result.missing_nodes
-    ), "total_missing should equal length of missing_nodes"
+    assert result.total_missing == len(result.missing_nodes), (
+        "total_missing should equal length of missing_nodes"
+    )
     assert result.is_valid == (result.total_missing == 0), "is_valid should be True iff total_missing is 0"
-    assert (
-        len(set(result.missing_parents) & set(result.missing_children)) == 0
-    ), "A node shouldn't be both missing parent and missing child"
-    assert set(result.missing_parents + result.missing_children) <= set(
-        result.missing_nodes
-    ), "All missing parents/children should be in missing_nodes"
+    assert len(set(result.missing_parents) & set(result.missing_children)) == 0, (
+        "A node shouldn't be both missing parent and missing child"
+    )
+    assert set(result.missing_parents + result.missing_children) <= set(result.missing_nodes), (
+        "All missing parents/children should be in missing_nodes"
+    )
 
 
 def test_manifest_integrity_edge_cases():
@@ -1372,7 +1372,7 @@ def test_manifest_integrity_edge_cases():
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run"],
     )
@@ -1407,7 +1407,7 @@ def test_manifest_integrity_deduplication():
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run"],
     )
@@ -1440,7 +1440,7 @@ def test_manifest_integrity_large_scale():
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run"],
     )
@@ -1455,7 +1455,9 @@ def test_manifest_integrity_large_scale():
     parent_map = {}
     # Add some valid dependencies
     for i in range(num_valid_nodes // 2):
-        parent_map[f"model.test.valid_{i}"] = [f"model.test.valid_{i+50}"] if i + 50 < num_valid_nodes else []
+        parent_map[f"model.test.valid_{i}"] = (
+            [f"model.test.valid_{i + 50}"] if i + 50 < num_valid_nodes else []
+        )
 
     # Add missing dependencies
     for i in range(num_missing_nodes):
@@ -1480,7 +1482,7 @@ def test_manifest_integrity_types_validation():
     processor = DbtStructuredLogsProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="dbt-test-namespace",
-        project_dir="tests/dbt/structured_logs",
+        project_dir=CURRENT_DIR,
         target="postgres",
         dbt_command_line=["dbt", "run"],
     )

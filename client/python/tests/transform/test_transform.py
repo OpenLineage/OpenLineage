@@ -12,7 +12,7 @@ import attr
 import pytest
 from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import BaseEvent, Job, Run, RunEvent, RunState
-from openlineage.client.facet_v2 import external_query_run
+from openlineage.client.generated import external_query_run
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transform import EventTransformer, TransformConfig, TransformTransport
 from openlineage.client.uuid import generate_new_uuid
@@ -391,8 +391,9 @@ def test_transform_transport_from_env_vars_emits(mock_post):
     transport = OpenLineageClient().transport
     mock_event = MagicMock()
 
-    with patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'), patch(
-        "gzip.compress", return_value=b"compressed_data"
+    with (
+        patch("openlineage.client.serde.Serde.to_json", return_value='{"mock": "event"}'),
+        patch("gzip.compress", return_value=b"compressed_data"),
     ):
         transport.emit(mock_event)
 

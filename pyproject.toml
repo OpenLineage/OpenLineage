@@ -1,0 +1,111 @@
+[tool.uv.workspace]
+members = [
+    "client/python",
+    "integration/common",
+    "integration/dbt", 
+    "integration/airflow",
+    "integration/dagster",
+    "integration/sql/iface-py"
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.1",
+    "pytest-mock>=3.10",
+    "ruff>=0.1.0",
+    "mypy>=0.960",
+    "types-PyYAML",
+    "types-python-dateutil",
+    "types-requests",
+    "tox-uv>=1.26.1",
+    "bump-my-version>=1.2.0",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py39"
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    ".pytest_cache",
+    "build",
+    "dist",
+    "*.egg-info",
+    "target",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "UP", # pyupgrade
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "PIE", # flake8-pie
+    "SIM", # flake8-simplify
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "E501",  # line too long (handled by line-length)
+    "B904",  # raise from None
+    "RUF012", # mutable class attributes
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"*/tests/*" = ["SIM117"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = [
+    "client/python/tests",
+    "integration/common/tests",
+    "integration/dbt/tests",
+    "integration/dagster/tests",
+    "integration/sql/iface-py/tests",
+]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--cov-fail-under=91",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "airflow.*",
+    "dagster.*",
+    "dbt.*",
+    "great_expectations.*",
+    "google.*",
+    "pyspark.*",
+    "flink.*",
+]
+ignore_missing_imports = true

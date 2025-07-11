@@ -5,6 +5,8 @@ from typing import Any
 from unittest import mock
 
 import attr
+from airflow.models import BaseOperator
+from airflow.operators.python import PythonOperator
 from openlineage.airflow.extractors import Extractors
 from openlineage.airflow.extractors.base import (
     DefaultExtractor,
@@ -14,9 +16,6 @@ from openlineage.airflow.extractors.base import (
 from openlineage.airflow.extractors.python_extractor import PythonExtractor
 from openlineage.client.event_v2 import Dataset
 from openlineage.client.facet_v2 import BaseFacet, parent_run, sql_job
-
-from airflow.models import BaseOperator
-from airflow.operators.python import PythonOperator
 
 INPUTS = [Dataset(namespace="database://host:port", name="inputtable")]
 OUTPUTS = [Dataset(namespace="database://host:port", name="inputtable")]

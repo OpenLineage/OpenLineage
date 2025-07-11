@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+from pathlib import Path
 from unittest.mock import MagicMock
 
 from openlineage.common.dataset import Dataset, Field, Source
@@ -34,6 +35,7 @@ DB_TABLE_COLUMNS = [
 DB_TABLE_SCHEMA = DbTableSchema(
     schema_name=DB_SCHEMA_NAME, table_name=DB_TABLE_NAME, columns=DB_TABLE_COLUMNS
 )
+CURRENT_DIR = str(Path(__file__).absolute().parent)
 
 
 def read_file_json(file):
@@ -43,8 +45,8 @@ def read_file_json(file):
 
 def test_redshift_get_facets():
     client = MagicMock()
-    client.describe_statement.return_value = read_file_json("tests/redshift_data/statement_details.json")
-    client.describe_table.return_value = read_file_json("tests/redshift_data/table_details.json")
+    client.describe_statement.return_value = read_file_json(CURRENT_DIR + "/statement_details.json")
+    client.describe_table.return_value = read_file_json(CURRENT_DIR + "/table_details.json")
     inputs = [DbTableMeta(f"{DB_NAME}.{DB_SCHEMA_NAME}.{DB_TABLE_NAME.name}")]
     connection_details = dict(
         database=REDSHIFT_DATABASE,
