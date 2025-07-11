@@ -78,13 +78,13 @@ class Athena(DatasetNaming):
 class AWSGlue(DatasetNaming):
     """Naming implementation for AWS Glue."""
 
-    region: str = attr.field(validator=_check_not_empty)
+    region_name: str = attr.field(validator=_check_not_empty)
     account_id: str = attr.field(validator=_check_not_empty)
     database_name: str = attr.field(validator=_check_not_empty)
     table_name: str = attr.field(validator=_check_not_empty)
 
     def get_namespace(self) -> str:
-        return f"arn:aws:glue:{self.region}:{self.account_id}"
+        return f"arn:aws:glue:{self.region_name}:{self.account_id}"
 
     def get_name(self) -> str:
         return f"table/{self.database_name}/{self.table_name}"
