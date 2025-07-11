@@ -16,6 +16,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Optional;
 import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.SerializeFromObject;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.WholeStageCodegenExec;
@@ -31,17 +32,15 @@ class DatabricksEventFilterTest {
   WholeStageCodegenExec node = mock(WholeStageCodegenExec.class);
   SerializeFromObject serializedObjectNode = mock(SerializeFromObject.class);
   SparkListenerEvent sparkListenerEvent = mock(SparkListenerEvent.class);
+  SparkSession sparkSession = mock(SparkSession.class, RETURNS_DEEP_STUBS);
 
   @BeforeEach
   void setup() {
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
-    when(queryExecution
-            .sparkSession()
-            .sparkContext()
-            .getConf()
-            .contains(SPARK_DATABRICKS_WORKSPACE_URL))
+    when(context.getSparkSession()).thenReturn(Optional.of(sparkSession));
+    when(sparkSession.sparkContext().getConf().contains(SPARK_DATABRICKS_WORKSPACE_URL))
         .thenReturn(true);
-    when(queryExecution.sparkSession().sparkContext().getConf().get(SPARK_DATABRICKS_WORKSPACE_URL))
+    when(sparkSession.sparkContext().getConf().get(SPARK_DATABRICKS_WORKSPACE_URL))
         .thenReturn("some-url");
     when(queryExecution.executedPlan()).thenReturn(node);
     when((node).child()).thenReturn(node);
@@ -76,11 +75,7 @@ class DatabricksEventFilterTest {
 
   @Test
   void testOtherEventIsNotFiltered() {
-    when(queryExecution
-            .sparkSession()
-            .sparkContext()
-            .getConf()
-            .contains("spark.databricks.workspaceUrl"))
+    when(sparkSession.sparkContext().getConf().contains("spark.databricks.workspaceUrl"))
         .thenReturn(false);
     when(node.nodeName()).thenReturn("collect_Limit");
     assertThat(filter.isDisabled(event)).isFalse();
@@ -88,11 +83,7 @@ class DatabricksEventFilterTest {
 
   @Test
   void testSerializedFromObjectEventIsNotFiltered() {
-    when(queryExecution
-            .sparkSession()
-            .sparkContext()
-            .getConf()
-            .contains("spark.databricks.workspaceUrl"))
+    when(sparkSession.sparkContext().getConf().contains("spark.databricks.workspaceUrl"))
         .thenReturn(false);
 
     when(queryExecution.optimizedPlan()).thenReturn(serializedObjectNode);

@@ -35,10 +35,13 @@ import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.postgresql.Driver;
 import scala.Option;
 import scala.collection.immutable.HashMap;
 
+// This test is disabled for Spark 4.x versions, as the LogicalPlan constructor has changed
+@DisabledIfSystemProperty(named = "spark.version", matches = "([4].*)")
 class LogicalPlanSerializerTest {
   private static final String TEST_DATA = "test_data";
   private static final String NAME = "name";

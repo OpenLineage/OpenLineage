@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.execution.QueryExecution;
 
 /** Utils method to help exctact values from Databricks environmemt */
 @Slf4j
@@ -34,8 +33,7 @@ public class DatabricksUtils {
 
   public static Optional<String> getWorkspaceUrl(OpenLineageContext context) {
     return context
-        .getQueryExecution()
-        .map(QueryExecution::sparkSession)
+        .getSparkSession()
         .map(SparkSession::sparkContext)
         .map(SparkContext::getConf)
         .filter(DatabricksUtils::isRunOnDatabricksPlatform)

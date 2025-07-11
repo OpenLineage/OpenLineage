@@ -27,7 +27,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalog.Table;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -117,7 +116,7 @@ public class SparkAgentTestExtension
       // ignore
     }
     System.clearProperty("derby.system.home");
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
   }
 
   @Override
@@ -131,7 +130,7 @@ public class SparkAgentTestExtension
   public Object resolveParameter(
       ParameterContext parameterContext, ExtensionContext extensionContext)
       throws ParameterResolutionException {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
     String testName = parameterContext.getDeclaringExecutable().getName();
     String warehouseDir =
         Paths.get(System.getProperty("spark.sql.warehouse.dir"))
