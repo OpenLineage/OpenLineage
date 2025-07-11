@@ -1,8 +1,6 @@
 [build-system]
-build-backend = "hatchling.build"
-requires = [
-  "hatchling>=1.17",
-]
+requires = ["uv_build>=0.7.20,<0.8.0"]
+build-backend = "uv_build"
 
 [project]
 name = "openlineage-python"
@@ -66,10 +64,6 @@ optional-dependencies.generator = [
   "datamodel-code-generator==0.25.4"
 ]
 
-[tool.hatch.build]
-exclude = [".idea", ".ruff_cache", ".gitignore", "setup.cfg"]
-targets.wheel = {packages = ["openlineage"]}
-
 [tool.coverage]
 html.show_contexts = true
 html.skip_covered = false
@@ -96,6 +90,9 @@ pretty = true
 
 [project.scripts]
 ol-generate-code = "openlineage.client.generator.cli:main"
+
+[tool.uv.build-backend]
+module-name = "openlineage.client"
 
 [tool.ruff]
 line-length = 110

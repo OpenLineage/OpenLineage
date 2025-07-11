@@ -18,11 +18,11 @@ from openlineage.client.facet_v2 import (
     error_message_run,
     job_type_job,
     nominal_time_run,
-    ownership_job,
     parent_run,
     processing_engine_run,
     source_code_location_job,
 )
+from openlineage.client.generated import ownership_job
 from openlineage.client.uuid import generate_static_uuid
 
 from airflow.stats import Stats

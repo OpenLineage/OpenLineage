@@ -108,8 +108,8 @@ repos:
         exclude: |
           (?x)^(
             .*tests.* |
-            client/python/openlineage/client/facet\.py |
-            client/python/openlineage/client/run\.py
+            client/python/src/openlineage/client/facet\.py |
+            client/python/src/openlineage/client/run\.py
           )$
       - id: prettier
         name: prettier

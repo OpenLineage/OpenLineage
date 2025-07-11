@@ -7,7 +7,8 @@ from urllib.parse import urlparse
 from openlineage.airflow.extractors import TaskMetadata
 from openlineage.airflow.extractors.dbapi_utils import execute_query_on_hook
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
-from openlineage.client.facet_v2 import BaseFacet, external_query_run
+from openlineage.client.facet_v2 import BaseFacet
+from openlineage.client.generated import external_query_run
 from openlineage.common.provider.snowflake import fix_snowflake_sqlalchemy_uri
 
 

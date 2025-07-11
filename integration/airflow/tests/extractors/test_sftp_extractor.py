@@ -6,17 +6,16 @@ from unittest import mock
 
 import paramiko
 import pytest
-from openlineage.airflow.extractors.sftp_extractor import SFTPExtractor
-from openlineage.airflow.utils import try_import_from_string
-from openlineage.common.dataset import Dataset, Source
-from packaging.version import Version
-
 from airflow.models import DAG, Connection
 from airflow.providers.sftp.hooks.sftp import SFTPHook
 from airflow.providers.sftp.operators.sftp import SFTPOperation
 from airflow.providers.ssh.hooks.ssh import SSHHook
 from airflow.providers_manager import ProvidersManager
 from airflow.utils import timezone
+from openlineage.airflow.extractors.sftp_extractor import SFTPExtractor
+from openlineage.airflow.utils import try_import_from_string
+from openlineage.common.dataset import Dataset, Source
+from packaging.version import Version
 
 SFTP_PROVIDER_VERSION = Version(ProvidersManager().providers["apache-airflow-providers-sftp"].version)
 
@@ -25,7 +24,7 @@ SFTPOperator = try_import_from_string("airflow.providers.sftp.operators.sftp.SFT
 SCHEME = "file"
 
 LOCAL_FILEPATH = "/path/to/local"
-LOCAL_HOST = socket.gethostbyname(socket.gethostname())
+LOCAL_HOST = socket.gethostbyname("localhost")
 LOCAL_AUTHORITY = f"{LOCAL_HOST}:{paramiko.config.SSH_PORT}"
 LOCAL_SOURCE = Source(
     scheme=SCHEME,

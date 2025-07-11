@@ -12,7 +12,7 @@ import attr
 import pytest
 from openlineage.client import OpenLineageClient
 from openlineage.client.event_v2 import BaseEvent, Job, Run, RunEvent, RunState
-from openlineage.client.facet_v2 import external_query_run
+from openlineage.client.generated import external_query_run
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transform import EventTransformer, TransformConfig, TransformTransport
 from openlineage.client.uuid import generate_new_uuid

@@ -11,9 +11,9 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 import attr
 from openlineage.client.facet_v2 import (
     BaseFacet,
-    external_query_run,
     output_statistics_output_dataset,
 )
+from openlineage.client.generated import external_query_run
 from openlineage.common.dataset import Dataset, Source
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.schema import GITHUB_LOCATION

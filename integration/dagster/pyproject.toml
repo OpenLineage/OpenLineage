@@ -1,3 +1,63 @@
+[build-system]
+requires = ["uv_build>=0.7.20,<0.8.0"]
+build-backend = "uv_build"
+
+[project]
+name = "openlineage-dagster"
+version = "1.36.0"
+description = "OpenLineage integration with Dagster"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+authors = [{name = "OpenLineage"}]
+keywords = ["openlineage"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "attrs>=19.3",
+    "cattrs",
+    "protobuf<=3.20.0",
+    "dagster>=1.0.0,<=1.6.9",
+    "openlineage-python==1.36.0",
+]
+
+[project.optional-dependencies]
+tests = [
+    "pytest",
+    "pytest-cov",
+    "mypy>=0.9.6",
+    # The relevant compat layer of pydantic v2 is shipped with Dagster `1.5.5`.
+    # https://github.com/dagster-io/dagster/issues/15162
+    "pydantic<2.0.0",
+    "sqlalchemy<2.0.0",
+]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "mypy>=0.9.6",
+    "pydantic<2.0.0",
+    "sqlalchemy<2.0.0",
+]
+
+[project.urls]
+Homepage = "https://openlineage.io/"
+Source = "https://github.com/OpenLineage/OpenLineage/tree/main/integration/dagster"
+
+[tool.uv.sources]
+openlineage-python = {workspace = true}
+
+[tool.uv.build-backend]
+module-name = "openlineage.dagster"
+
 [tool.ruff]
 line-length = 110
 select = [
@@ -7,6 +67,6 @@ select = [
     "I001"
 ]
 target-version = "py39"
-ignore-init-module-imports = true
+lint.ignore-init-module-imports = true
 src = ["openlineage", "tests"]
 namespace-packages = ["openlineage/dagster"]

@@ -5,12 +5,11 @@ import socket
 from unittest import mock
 
 import pytest
+from airflow.models import DAG, Connection
+from airflow.utils import timezone
 from openlineage.airflow.extractors.ftp_extractor import FTPExtractor
 from openlineage.airflow.utils import try_import_from_string
 from openlineage.common.dataset import Dataset, Source
-
-from airflow.models import DAG, Connection
-from airflow.utils import timezone
 
 FTPOperator = try_import_from_string("airflow.providers.ftp.operators.ftp.FTPFileTransmitOperator")
 FTPOperation = try_import_from_string("airflow.providers.ftp.operators.ftp.FTPOperation")
@@ -18,7 +17,7 @@ FTPOperation = try_import_from_string("airflow.providers.ftp.operators.ftp.FTPOp
 SCHEME = "file"
 
 LOCAL_FILEPATH = "/path/to/local"
-LOCAL_HOST = socket.gethostbyname(socket.gethostname())
+LOCAL_HOST = socket.gethostbyname("localhost")
 LOCAL_PORT = 21
 LOCAL_AUTHORITY = f"{LOCAL_HOST}:{LOCAL_PORT}"
 LOCAL_SOURCE = Source(

@@ -1,3 +1,112 @@
+[build-system]
+requires = ["uv_build>=0.7.20,<0.8.0"]
+build-backend = "uv_build"
+
+[project]
+name = "openlineage-integration-common"
+version = "1.36.0"
+description = "OpenLineage common python library for integrations"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+authors = [{name = "OpenLineage"}]
+keywords = ["openlineage"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "attrs>=19.3.0",
+    "openlineage-python",
+    "openlineage_sql",
+    "pyyaml>=5.3.1",
+]
+
+[project.optional-dependencies]
+bigquery = [
+    "google-api-core>=1.26.3",
+    "google-auth>=1.30.0",
+    "google-cloud-bigquery>=2.15.0,<4.0.0",
+    "google-cloud-core>=1.6.0",
+    "google-crc32c>=1.1.2",
+]
+dbt = []  # left for backcompat
+great_expectations = [
+    "great_expectations>=0.13.26,<0.15.35",
+    "sqlalchemy>=1.3.24,<2.0.0",
+]
+redshift = ["boto3>=1.15.0"]
+tests = [
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "mock",
+    "pandas",
+    "jinja2",
+    "python-dateutil",
+    "mypy>=0.960",
+    "types-python-dateutil",
+    "types-PyYAML",
+]
+dev = [
+    "google-api-core>=1.26.3",
+    "google-auth>=1.30.0",
+    "google-cloud-bigquery>=2.15.0,<4.0.0",
+    "google-cloud-core>=1.6.0",
+    "google-crc32c>=1.1.2",
+    "great_expectations>=0.13.26,<0.15.35",
+    "sqlalchemy>=1.3.24,<2.0.0",
+    "boto3>=1.15.0",
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "mock",
+    "pandas",
+    "jinja2",
+    "python-dateutil",
+    "mypy>=0.960",
+    "types-python-dateutil",
+    "types-PyYAML",
+]
+dev_no_parser = [
+    "google-api-core>=1.26.3",
+    "google-auth>=1.30.0",
+    "google-cloud-bigquery>=2.15.0,<4.0.0",
+    "google-cloud-core>=1.6.0",
+    "google-crc32c>=1.1.2",
+    "great_expectations>=0.13.26,<0.15.35",
+    "sqlalchemy>=1.3.24,<2.0.0",
+    "boto3>=1.15.0",
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "mock",
+    "pandas",
+    "jinja2",
+    "python-dateutil",
+    "mypy>=0.960",
+    "types-python-dateutil",
+    "types-PyYAML",
+]
+
+[project.urls]
+Homepage = "https://openlineage.io/"
+Source = "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common"
+
+[tool.uv.sources]
+openlineage-python = {workspace = true}
+openlineage_sql = {workspace = true}
+
+[tool.uv.build-backend]
+module-name = "openlineage.common"
+
 [tool.ruff]
 line-length = 110
 lint.select = [
@@ -14,7 +123,3 @@ namespace-packages = ["openlineage/common"]
 [tool.pytest.ini_options]
 # suspending GreatExpectations from tests
 addopts = "-p no:warnings --ignore=tests/great_expectations"
-
-[tool.hatch.build]
-exclude = [".idea", ".ruff_cache", ".gitignore", "setup.cfg"]
-targets.wheel = {packages = ["openlineage"]}

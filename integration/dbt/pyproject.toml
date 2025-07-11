@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.7.20,<0.8.0"]
+build-backend = "uv_build"
 
 [project]
 name = "openlineage-dbt"
-version = "1.35.0"
+version = "1.36.0"
 description = "OpenLineage integration with dbt"
 readme = "README.md"
 authors = [{name = "OpenLineage"}]
@@ -12,7 +12,7 @@ requires-python = ">=3.9"
 keywords = ["openlineage"]
 dependencies = [
     "tqdm>=4.62.0",
-    "openlineage-integration-common==1.35.0",
+    "openlineage-integration-common[dbt]==1.36.0",
     "dbt-core>=1.0.0",
 ]
 
@@ -33,11 +33,11 @@ dev = ["openlineage-dbt[tests]"]
 [project.scripts]
 dbt-ol = "openlineage.dbt:main"
 
-[tool.setuptools.packages.find]
-include = ["openlineage.*"]
+[tool.uv.sources]
+openlineage-integration-common = {workspace = true}
 
-[tool.setuptools.package-data]
-"*" = ["*"]
+[tool.uv.build-backend]
+module-name = "openlineage.dbt"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
