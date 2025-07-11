@@ -152,11 +152,7 @@ class CompositeTransport(Transport):
         )
         return
 
-    def wait_for_completion(self, timeout: float = -1.0) -> bool:
-        # This can wait longer than timeout if multiple transports are slow, but acceptable
-        return all(transport.wait_for_completion(timeout) for transport in self.transports)
-
-    def close(self, timeout: float = -1.0) -> bool:
+    def close(self, timeout: float = -1) -> bool:
         result = True
         last_exception: Exception | None = None
         for transport in self.transports:

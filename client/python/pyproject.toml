@@ -31,6 +31,7 @@ dependencies = [
   "requests>=2.32.4",
   "httpx>=0.27.0",
   "packaging>=21.0",
+  "build>=1.2.2"
 ]
 optional-dependencies.kafka = [
   "confluent-kafka>=2.1.1",

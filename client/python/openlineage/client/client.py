@@ -192,17 +192,6 @@ class OpenLineageClient:
         """
         return self.transport.close(timeout)
 
-    def wait_for_completion(self, timeout: float = -1.0) -> bool:
-        """
-        Block until all events are processed or timeout is reached.
-        If the transport is fully synchronous, this method should be a no-op and return True.
-        Params:
-          timeout: Timeout in seconds. `-1` means to block until last event is processed, 0 means no timeout.
-        Returns:
-            bool: True if all events were processed, False if some events were not processed.
-        """
-        return self.transport.wait_for_completion(timeout)
-
     @property
     def config(self) -> OpenLineageConfig:
         """

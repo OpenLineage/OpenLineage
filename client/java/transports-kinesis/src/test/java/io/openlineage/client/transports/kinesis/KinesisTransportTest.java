@@ -19,8 +19,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 class KinesisTransportTest {
@@ -269,5 +272,30 @@ class KinesisTransportTest {
     String data = new String(captor.getValue().getData().array(), "UTF-8");
     String serialized = OpenLineageClientUtils.toJson(event);
     assertThat(data).isEqualTo(serialized);
+  }
+
+  @Test
+  void clientClose() throws Exception {
+    KinesisProducer producer = Mockito.mock(KinesisProducer.class);
+    KinesisConfig config = new KinesisConfig();
+
+    Properties properties = new Properties();
+    properties.setProperty("MinConnections", "1");
+
+    config.setRegion("us-west-2");
+    config.setRoleArn("test-role");
+    config.setStreamName("test-stream");
+    config.setProperties(properties);
+
+    try (MockedStatic<Executors> factory = mockStatic(Executors.class)) {
+      ExecutorService executor = mock(ExecutorService.class);
+      when(Executors.newSingleThreadExecutor()).thenReturn(executor);
+
+      KinesisTransport transport = new KinesisTransport(producer, config);
+      transport.close();
+
+      verify(producer, times(1)).flushSync();
+      verify(executor, times(1)).shutdown();
+    }
   }
 }

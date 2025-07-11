@@ -504,9 +504,16 @@ class AsyncHttpTransport(Transport):
         self.event_queue.put(request)
         log.debug("Queued event with event_id %s for async emission to %s", event_id, self.config.url)
 
-    def wait_for_completion(self, timeout: float = -1.0) -> bool:
-        # Block until all events are processed or timeout is reached.
-        # Special -1 value indicates that wait_for_completion will wait till all events are processed.
+    def wait_for_completion(self, timeout: float = -1) -> bool:
+        """
+        Block until all events are processed or timeout is reached.
+
+        Params:
+          timeout: Timeout in seconds. `-1` means to block until last event is processed, 0 means no timeout.
+
+        Returns:
+            bool: True if all events were processed, False if some events were not processed.
+        """
         log.debug("Waiting for events completion for %.3f seconds", timeout)
         start_time = time.time()
         while timeout < 0 or time.time() - start_time < timeout:
