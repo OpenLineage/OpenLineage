@@ -222,7 +222,11 @@ class DbtArtifactProcessor:
         events = DbtEvents()
         for run in context.run_results["results"]:
             name = run["unique_id"]
-            query_id: str = run["adapter_response"].get("query_id") if "adapter_response" in run else None
+
+            # Pull the available query_id from the run_results
+            query_id: str | None = (
+                run["adapter_response"].get("query_id") if "adapter_response" in run else None
+            )
 
             if not any(name.startswith(prefix) for prefix in ("model.", "source.", "snapshot.")):
                 continue
@@ -689,7 +693,7 @@ class DbtArtifactProcessor:
             return None
         return self.adapter_type.value.lower()
 
-    def get_run(self, run_id: str, query_id: str = None) -> Run:
+    def get_run(self, run_id: str, query_id: str | None = None) -> Run:
         run_facets = {
             **self.dbt_version_facet(),
             **self.dbt_run_run_facet(),
@@ -698,8 +702,12 @@ class DbtArtifactProcessor:
         if self._dbt_run_metadata:
             run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
 
+        # If the query_id exists, go ahead and create an externalQuery key-value pair.
+        # This matches what is done  with the SQLExecuteQueryOperator and SnowflakeHook.
         if query_id:
-            run_facets["externalQuery"] = ExternalQueryRunFacet(externalQueryId=query_id, source=self.job_namespace)
+            run_facets["externalQuery"] = ExternalQueryRunFacet(
+                externalQueryId=query_id, source=self.job_namespace
+            )
 
         return Run(
             runId=run_id,
