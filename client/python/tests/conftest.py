@@ -39,8 +39,7 @@ Event_v2 = Union[event_v2.RunEvent, event_v2.DatasetEvent, event_v2.JobEvent]
 Event = Union[Event_v1, Event_v2]
 
 
-class NoOutputConfig(Config):
-    ...
+class NoOutputConfig(Config): ...
 
 
 class NoOutputTransport(Transport):
@@ -69,9 +68,9 @@ def transport():
 
 
 @pytest.fixture(scope="session")
-def docker_compose_file():
+def docker_compose_file(root):
     """Path to docker-compose file for integration tests."""
-    return "tests/integration/docker-compose.yml"
+    return root / "integration/docker-compose.yml"
 
 
 @pytest.fixture(scope="session")

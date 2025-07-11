@@ -66,9 +66,9 @@ class TestStructuredLogs:
         model_start_events = get_events_by_type(model_events, "START")
         model_complete_events = get_events_by_type(model_events, "COMPLETE")
         assert len(model_start_events) == 1, f"Expected 1 model START event, got {len(model_start_events)}"
-        assert (
-            len(model_complete_events) == 1
-        ), f"Expected 1 model COMPLETE event, got {len(model_complete_events)}"
+        assert len(model_complete_events) == 1, (
+            f"Expected 1 model COMPLETE event, got {len(model_complete_events)}"
+        )
 
         # Rest should be SQL events (at least 2, likely more for START/COMPLETE pairs)
         assert len(sql_events) >= 2, f"Expected at least 2 SQL events, got {len(sql_events)}"
@@ -76,9 +76,9 @@ class TestStructuredLogs:
         sql_complete_events = get_events_by_type(sql_events, "COMPLETE")
 
         assert len(sql_start_events) >= 1, f"Expected at least 1 SQL START event, got {len(sql_start_events)}"
-        assert (
-            len(sql_complete_events) >= 1
-        ), f"Expected at least 1 SQL COMPLETE event, got {len(sql_complete_events)}"
+        assert len(sql_complete_events) >= 1, (
+            f"Expected at least 1 SQL COMPLETE event, got {len(sql_complete_events)}"
+        )
 
         # Get job run ID for parent validation
         job_run_id = job_events[0]["run"]["runId"]
@@ -90,9 +90,9 @@ class TestStructuredLogs:
 
             assert parent_run_facet, f"Model event missing ParentRunFacet: {model_event}"
             parent_run_id = parent_run_facet.get("run", {}).get("runId")
-            assert (
-                parent_run_id == job_run_id
-            ), f"Model event parent run ID {parent_run_id} doesn't match job run ID {job_run_id}"
+            assert parent_run_id == job_run_id, (
+                f"Model event parent run ID {parent_run_id} doesn't match job run ID {job_run_id}"
+            )
 
         # Get model run ID for SQL parent validation
         model_run_id = model_events[0]["run"]["runId"]
@@ -104,9 +104,9 @@ class TestStructuredLogs:
 
             assert parent_run_facet, f"SQL event missing ParentRunFacet: {sql_event}"
             parent_run_id = parent_run_facet.get("run", {}).get("runId")
-            assert (
-                parent_run_id == model_run_id
-            ), f"SQL event parent run ID {parent_run_id} doesn't match model run ID {model_run_id}"
+            assert parent_run_id == model_run_id, (
+                f"SQL event parent run ID {parent_run_id} doesn't match model run ID {model_run_id}"
+            )
 
         # Validate event ordering (START before COMPLETE for each level)
         for level_events, level_name in [(job_events, "job"), (model_events, "model"), (sql_events, "sql")]:
@@ -116,9 +116,9 @@ class TestStructuredLogs:
             if start_events and complete_events:
                 start_time = start_events[0]["eventTime"]
                 complete_time = complete_events[0]["eventTime"]
-                assert (
-                    start_time < complete_time
-                ), f"{level_name} START event should come before COMPLETE event"
+                assert start_time < complete_time, (
+                    f"{level_name} START event should come before COMPLETE event"
+                )
 
         print("✅ All event hierarchy validations passed!")
 

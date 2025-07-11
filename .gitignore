@@ -172,3 +172,8 @@ changes.txt
 
 # pre-commit pmd hook cache
 .pmd_cache
+
+# Cursor
+.cursor/
+
+CLAUDE.md

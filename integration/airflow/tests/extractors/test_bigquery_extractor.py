@@ -9,6 +9,9 @@ from datetime import datetime
 from unittest import mock
 
 import pytz
+from airflow.models import DAG, TaskInstance
+from airflow.utils import timezone
+from airflow.utils.state import State
 from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
 from openlineage.airflow.utils import try_import_from_string
 from openlineage.client.facet_v2 import external_query_run, output_statistics_output_dataset
@@ -19,10 +22,6 @@ from openlineage.common.provider.bigquery import (
     BigQueryStatisticsDatasetFacet,
 )
 from openlineage.common.utils import get_from_nullable_chain
-
-from airflow.models import DAG, TaskInstance
-from airflow.utils import timezone
-from airflow.utils.state import State
 
 log = logging.getLogger(__name__)
 
