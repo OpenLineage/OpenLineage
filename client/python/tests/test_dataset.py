@@ -57,7 +57,7 @@ class TestAWSGlue:
         assert glue.get_name() == "table/my-database/my-table"
 
     def test_aws_glue_validation(self):
-        with pytest.raises(ValueError, match="region cannot be None"):
+        with pytest.raises(ValueError, match="region_name cannot be None"):
             AWSGlue(None, "123456789012", "database", "table")
 
 
