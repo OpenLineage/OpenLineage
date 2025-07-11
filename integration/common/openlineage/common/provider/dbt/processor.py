@@ -26,6 +26,7 @@ from openlineage.client.facet_v2 import (
     schema_dataset,
     sql_job,
 )
+from openlineage.client.generated.external_query_run import ExternalQueryRunFacet
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet, ParentRunMetadata
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
@@ -221,6 +222,8 @@ class DbtArtifactProcessor:
         events = DbtEvents()
         for run in context.run_results["results"]:
             name = run["unique_id"]
+            query_id: str = run["adapter_response"].get("query_id") if "adapter_response" in run else None
+
             if not any(name.startswith(prefix) for prefix in ("model.", "source.", "snapshot.")):
                 continue
             if run["status"] == "skipped":
@@ -298,7 +301,7 @@ class DbtArtifactProcessor:
                     run["status"],
                     started_at,
                     completed_at,
-                    self.get_run(run_id),
+                    self.get_run(run_id=run_id, query_id=query_id),
                     Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
                     [self.node_to_dataset(node, has_facets=True) for node in inputs],
                     output_dataset,
@@ -686,7 +689,7 @@ class DbtArtifactProcessor:
             return None
         return self.adapter_type.value.lower()
 
-    def get_run(self, run_id: str) -> Run:
+    def get_run(self, run_id: str, query_id: str = None) -> Run:
         run_facets = {
             **self.dbt_version_facet(),
             **self.dbt_run_run_facet(),
@@ -694,6 +697,10 @@ class DbtArtifactProcessor:
         }
         if self._dbt_run_metadata:
             run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
+
+        if query_id:
+            run_facets["externalQuery"] = ExternalQueryRunFacet(externalQueryId=query_id, source=self.job_namespace)
+
         return Run(
             runId=run_id,
             facets=run_facets,
