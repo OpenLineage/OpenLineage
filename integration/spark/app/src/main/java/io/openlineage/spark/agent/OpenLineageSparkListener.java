@@ -7,7 +7,6 @@ package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
-import com.google.common.collect.MapMaker;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
@@ -36,14 +35,12 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.SparkContext$;
 import org.apache.spark.SparkEnv;
 import org.apache.spark.SparkEnv$;
 import org.apache.spark.package$;
-import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
@@ -60,25 +57,27 @@ import scala.Option;
 
 @Slf4j
 public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkListener {
+  // These are used only in integration tests to override default factory,
+  // before SparkSession creates new listener object
+  private static ContextFactory defaultContextFactory;
+  private ContextFactory contextFactory = defaultContextFactory;
 
-  private static final Map<Long, ExecutionContext> sparkSqlExecutionRegistry =
+  private static MeterRegistry defaultMeterRegistry;
+  private MeterRegistry meterRegistry = defaultMeterRegistry;
+
+  private CircuitBreaker circuitBreaker = new NoOpCircuitBreaker();
+
+  private final Map<Long, ExecutionContext> sparkSqlExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
-  private static final Map<Integer, ExecutionContext> rddExecutionRegistry =
+  private final Map<Integer, ExecutionContext> rddExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
-  private static final Map<RDD<?>, Configuration> outputs =
-      new MapMaker().weakKeys().weakValues().makeMap();
-  private static ContextFactory contextFactory;
-  private static final JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
-  private static final Function1<SparkSession, SparkContext> sparkContextFromSession =
+  private final JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
+  private final Function1<SparkSession, SparkContext> sparkContextFromSession =
       ScalaConversionUtils.toScalaFn(SparkSession::sparkContext);
-  private static final Function0<Option<SparkContext>> activeSparkContext =
+  private final Function0<Option<SparkContext>> activeSparkContext =
       ScalaConversionUtils.toScalaFn(SparkContext$.MODULE$::getActive);
 
-  private static CircuitBreaker circuitBreaker = new NoOpCircuitBreaker();
-
-  private static MeterRegistry meterRegistry;
-
-  private static final String sparkVersion = package$.MODULE$.SPARK_VERSION();
+  private final String sparkVersion = package$.MODULE$.SPARK_VERSION();
 
   private final boolean isDisabled;
 
@@ -98,15 +97,23 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     isDisabled = checkIfDisabled();
   }
 
-  /**
-   * called by the tests
-   *
-   * @param contextFactory context factory
-   */
-  public static void init(ContextFactory contextFactory) {
-    OpenLineageSparkListener.contextFactory = contextFactory;
-    meterRegistry = contextFactory.getMeterRegistry();
-    clear();
+  // called in tests before SparkSession is created,
+  // to pass alternative EventEmitter and MeterRegistry
+  public static void overrideDefaultFactoryForTests(ContextFactory contextFactory) {
+    defaultContextFactory = contextFactory;
+    defaultMeterRegistry = contextFactory.getMeterRegistry();
+  }
+
+  @SuppressWarnings("PMD.NullAssignment")
+  public static void resetDefaultFactoryForTests() {
+    defaultContextFactory = null;
+    defaultMeterRegistry = null;
+  }
+
+  // called in unit test
+  public void skipInitializationForTests(ContextFactory contextFactory) {
+    this.contextFactory = contextFactory;
+    this.meterRegistry = contextFactory.getMeterRegistry();
   }
 
   @Override
@@ -258,7 +265,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     jobMetrics.addMetrics(taskEnd.stageId(), taskEnd.taskMetrics());
   }
 
-  private static ExecutionContext getSparkApplicationExecutionContext() {
+  private ExecutionContext getSparkApplicationExecutionContext() {
     Optional<SparkContext> sparkContext =
         asJavaOptional(
             SparkSession.getDefaultSession()
@@ -267,33 +274,28 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     return contextFactory.createSparkApplicationExecutionContext(sparkContext.orElse(null));
   }
 
-  private static Optional<ExecutionContext> getSparkSQLExecutionContext(long executionId) {
+  private Optional<ExecutionContext> getSparkSQLExecutionContext(long executionId) {
     return Optional.ofNullable(
         sparkSqlExecutionRegistry.computeIfAbsent(
             executionId,
             (e) -> contextFactory.createSparkSQLExecutionContext(executionId).orElse(null)));
   }
 
-  private static Optional<ExecutionContext> getExecutionContext(int jobId) {
+  private Optional<ExecutionContext> getExecutionContext(int jobId) {
     return Optional.ofNullable(
         rddExecutionRegistry.computeIfAbsent(
             jobId, (e) -> contextFactory.createRddExecutionContext(jobId)));
   }
 
-  private static Optional<ExecutionContext> getExecutionContext(int jobId, long executionId) {
+  private Optional<ExecutionContext> getExecutionContext(int jobId, long executionId) {
     Optional<ExecutionContext> executionContext = getSparkSQLExecutionContext(executionId);
     executionContext.ifPresent(context -> rddExecutionRegistry.put(jobId, context));
     return executionContext;
   }
 
-  public static Configuration getConfigForRDD(RDD<?> rdd) {
-    return outputs.get(rdd);
-  }
-
-  private static void clear() {
+  private void clear() {
     sparkSqlExecutionRegistry.clear();
     rddExecutionRegistry.clear();
-    outputs.clear();
   }
 
   @Override
@@ -317,9 +319,12 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   /** To close the underlying resources. */
-  public static void close() {
+  public void close() {
     circuitBreaker.close();
     clear();
+    if (contextFactory != null) {
+      contextFactory.close();
+    }
   }
 
   @Override
@@ -381,7 +386,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     }
   }
 
-  private static void initializeMetrics(OpenLineageConfig<?> openLineageConfig) {
+  private void initializeMetrics(OpenLineageConfig<?> openLineageConfig) {
     meterRegistry =
         MicrometerProvider.addMeterRegistryFromConfig(openLineageConfig.getMetricsConfig());
 

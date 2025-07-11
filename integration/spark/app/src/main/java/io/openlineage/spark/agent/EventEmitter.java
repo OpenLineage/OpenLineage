@@ -92,6 +92,14 @@ public class EventEmitter {
     }
   }
 
+  public void close() {
+    try {
+      client.close();
+    } catch (Exception e) {
+      log.error("Failed to close OpenLineage client", e);
+    }
+  }
+
   private static Optional<UUID> convertToUUID(String uuid) {
     try {
       return Optional.ofNullable(uuid).map(UUID::fromString);
