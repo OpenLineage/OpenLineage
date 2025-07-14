@@ -15,9 +15,29 @@ The checks are performed by running syntactic and semantic validations on produc
 
 ## Motivations
 
-The OpenLineage community lacks a formalized way of determining whether components are compliant with the standard. Community members had to look up support information on vendor sites or documentation, often finding inconsistent or outdated information.
+The OpenLineage community lacks a formalized way of determining whether components are compliant with the standard. 
+Community members had to look up support information on vendor sites or documentation, often finding inconsistent or outdated information.
 
-We want to create a centralized source of compliance information with standardized validation methods. Additionally, we aim to provide an easy way for community members to verify their components' compatibility with OpenLineage standards.
+## Goals
+
+There are three main groups in OpenLineage community, people who contribute to OpenLineage,
+people who contribute to components compatible with OpenLineage and people who use OpenLineage with said software.
+We wanted our test suite to provide information those people may want about OpenLineage.
+
+For component contributors:
+- continuously test if their components are compatible with multiple versions of OpenLineage on the level of:
+  - integration - are there any issues when component is run with OpenLineage integration (producers)
+  - syntax - do emitted events comply with OpenLineage standard (producer) or can be consumed without error (consumer)
+  - semantics - do emitted events reflect the logic correctly (producer) or are they mapped into consumer entities in correct way (consumer)
+- provide a way to validate their events by themselves
+
+For OpenLineage contributors:
+- continuously test if new or updated facets are backwards compatible
+- have an early warning for issues in new releases of components integrations
+
+For OpenLineage users:
+- generate up to date and easily accessible information about how well OpenLineage is supported by various components.
+- have examples of OpenLineage events produced by different components
 
 ## Assumptions
 
