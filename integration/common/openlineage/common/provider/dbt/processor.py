@@ -211,6 +211,24 @@ class DbtArtifactProcessor:
         str_schema_version = get_from_nullable_chain(metadata, ["metadata", "dbt_schema_version"])
         return cls.get_version_number(str_schema_version)
 
+    def get_query_id(self, run_result) -> str | None:
+        # Validate that there is an adapter_response in the run_result
+        if "adapter_response" not in run_result:
+            return None
+
+        query_id_key: str | None
+
+        # Use the adapter type to make sure the correct key is used
+        if self.adapter_type == Adapter.SNOWFLAKE:
+            query_id_key = "query_id"
+        elif self.adapter_type == Adapter.BIGQUERY:
+            query_id_key = "job_id"
+        else:
+            # TODO: Check with Glue
+            query_id_key = None
+
+        return run_result["adapter_response"].get(query_id_key)
+
     @staticmethod
     def get_version_number(version: str) -> int:
         # "https://schemas.getdbt.com/dbt/manifest/v2.json" -> "v2.json"
@@ -224,9 +242,7 @@ class DbtArtifactProcessor:
             name = run["unique_id"]
 
             # Pull the available query_id from the run_results
-            query_id: str | None = (
-                run["adapter_response"].get("query_id") if "adapter_response" in run else None
-            )
+            query_id: str | None = self.get_query_id(run)
 
             if not any(name.startswith(prefix) for prefix in ("model.", "source.", "snapshot.")):
                 continue
@@ -743,7 +759,6 @@ class DbtArtifactProcessor:
                 openlineageAdapterVersion=openlineage_version,
             )
         }
-        return None
 
     @staticmethod
     def get_timings(timings: List[Dict]) -> Tuple[str, str]:
