@@ -62,11 +62,11 @@ class SqlExtractor(BaseExtractor):
         run_facets: Dict = {}
 
         # (1) Parse sql statement to obtain input / output tables.
-        self.log.debug(f"Sending SQL to parser: {self.operator.sql}")
+        self.log.debug("Sending SQL to parser: %s", self.operator.sql)
         sql_meta: Optional[SqlMeta] = parse(
             self.operator.sql, dialect=self.dialect, default_schema=self.default_schema
         )
-        self.log.debug(f"Got meta {sql_meta}")
+        self.log.debug("Got meta: %s", sql_meta)
 
         if not sql_meta:
             return TaskMetadata(

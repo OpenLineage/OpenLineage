@@ -238,7 +238,7 @@ class OpenLineageAdapter:
 
     def _emit(self, event: RunEvent):
         self._client.emit(event)
-        log.debug(f"Successfully emitted OpenLineage run event: {event}")
+        log.debug("Successfully emitted OpenLineage run event: %s", event)
 
     @staticmethod
     def _build_run(
