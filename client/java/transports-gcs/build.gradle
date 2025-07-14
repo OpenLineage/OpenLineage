@@ -12,9 +12,9 @@ plugins {
     id 'signing'
     id "com.adarshr.test-logger" version "3.2.0"
     id 'com.diffplug.spotless' version '7.0.2'
-    id "com.gradleup.shadow" version "8.3.6"
+    id "com.gradleup.shadow" version "8.3.8"
     id "pmd"
-    id "io.freefair.lombok" version "8.13.1"
+    id "io.freefair.lombok" version "8.14"
 }
 
 ext {
@@ -22,9 +22,9 @@ ext {
 }
 
 dependencies {
-    implementation('com.google.cloud:google-cloud-storage:2.52.3')
+    implementation('com.google.cloud:google-cloud-storage:2.53.3')
 
-    testImplementation('com.google.cloud:google-cloud-nio:0.127.36')
+    testImplementation('com.google.cloud:google-cloud-nio:0.127.38')
 }
 
 shadowJar {

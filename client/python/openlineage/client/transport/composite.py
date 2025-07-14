@@ -92,7 +92,7 @@ class CompositeTransport(Transport):
             raise ValueError(msg)
         log.debug(
             "Constructing OpenLineage composite transport with the following transports: %s",
-            self.transports,
+            [str(x) for x in self.transports],  # to use str and not repr
         )
 
     @cached_property
@@ -141,7 +141,10 @@ class CompositeTransport(Transport):
                     return
 
         if _success_count == 0:
-            msg = f"None of the transports successfully emitted the event: {self.transports}"
+            msg = (
+                f"None of the transports successfully emitted the event: "
+                f"{[str(x) for x in self.transports]}"  # to use str and not repr
+            )
             raise RuntimeError(msg)
 
         log.info(
