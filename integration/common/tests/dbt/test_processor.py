@@ -18,6 +18,7 @@ RUN_ID = str(generate_new_uuid())
 
 @pytest.fixture()
 def run_result():
+    # This is an "individual" element of the "results" array in the run_results.json file
     return {
         "status": "pass",
         "timing": [],  # Would include the time of compilation and execution
