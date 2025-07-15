@@ -132,5 +132,5 @@ class AthenaExtractor(BaseExtractor):
             )
 
         except Exception as e:
-            self.log.error(f"Cannot retrieve table metadata from Athena.Client. {e}", exc_info=True)
+            self.log.error("Cannot retrieve table metadata from Athena.Client: %s", e, exc_info=True)
             return None

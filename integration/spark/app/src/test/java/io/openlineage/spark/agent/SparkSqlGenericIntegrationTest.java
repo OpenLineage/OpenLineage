@@ -30,7 +30,6 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
@@ -61,14 +60,14 @@ class SparkSqlGenericIntegrationTest {
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
     mockServer = MockServerUtils.createAndConfigureMockServer(MOCK_SERVER_PORT);
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
     MockServerUtils.stopMockServer(mockServer);
   }
 
@@ -77,7 +76,7 @@ class SparkSqlGenericIntegrationTest {
   public void beforeEach() {
     MockServerUtils.clearRequests(mockServer);
     spark =
-        SparkSession.builder()
+        Spark4CompatUtils.builderWithHiveSupport()
             .master("local[*]")
             .appName("GenericSqlIntegrationTest")
             .config("spark.driver.host", LOCAL_IP)
@@ -91,7 +90,6 @@ class SparkSqlGenericIntegrationTest {
             .config("spark.openlineage.namespace", "generic-namespace")
             .config("spark.openlineage.parentJobNamespace", "parent-namespace")
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
-            .enableHiveSupport()
             .getOrCreate();
   }
 
@@ -102,6 +100,7 @@ class SparkSqlGenericIntegrationTest {
     String warehouseDir = spark.sparkContext().conf().get("spark.sql.warehouse.dir");
     FileUtils.deleteDirectory(new File(warehouseDir, "test_input1"));
     FileUtils.deleteDirectory(new File(warehouseDir, "test_input2"));
+    FileUtils.deleteDirectory(new File(warehouseDir, "test_output"));
 
     // write 100 rows to test_input1
     createTempDataset(100).write().mode("overwrite").saveAsTable("test_input1");
@@ -146,7 +145,6 @@ class SparkSqlGenericIntegrationTest {
     assertThat(inputStatistics1).isPresent();
     // Row count is not working for non V2 relations
     assertThat(inputStatistics1.get().getSize()).isGreaterThan(0);
-    assertThat(inputStatistics1.get().getFileCount()).isEqualTo(1);
 
     // verify input2 statistics facet
     Optional<InputStatisticsInputDatasetFacet> inputStatistics2 =
@@ -162,7 +160,12 @@ class SparkSqlGenericIntegrationTest {
     assertThat(inputStatistics2).isPresent();
     // Row count is not working for non V2 relations
     assertThat(inputStatistics2.get().getSize()).isGreaterThan(500);
-    assertThat(inputStatistics2.get().getFileCount()).isEqualTo(1);
+
+    if (!System.getProperty("spark.version").startsWith("4")) {
+      // ffile count is not available in Spark 4.x
+      assertThat(inputStatistics1.get().getFileCount()).isEqualTo(1);
+      assertThat(inputStatistics2.get().getFileCount()).isEqualTo(1);
+    }
   }
 
   private Dataset<Row> createTempDataset(int rows) {

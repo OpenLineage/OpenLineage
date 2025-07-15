@@ -34,7 +34,6 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.functions;
 import org.apache.spark.sql.types.ArrayType;
 import org.apache.spark.sql.types.IntegerType$;
@@ -69,7 +68,7 @@ class SparkDeltaIntegrationTest {
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
     mockServer = MockServerUtils.createAndConfigureMockServer(MOCK_SERVER_PORT);
     FileUtils.deleteDirectory(new File("/tmp/delta/"));
   }
@@ -77,7 +76,7 @@ class SparkDeltaIntegrationTest {
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
     MockServerUtils.stopMockServer(mockServer);
   }
 
@@ -556,6 +555,18 @@ class SparkDeltaIntegrationTest {
             + " WHEN MATCHED THEN UPDATE SET *"
             + " WHEN NOT MATCHED THEN INSERT *");
 
+    await()
+        .pollInterval(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(10))
+        .until(
+            () -> {
+              // wait for the merge command to complete
+              List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
+              RunEvent lastEvent = events.get(events.size() - 1);
+              return "COMPLETE".equals(lastEvent.getEventType().toString())
+                  && lastEvent.getJob().getName().contains("merge_into_command");
+            });
+
     List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
     Optional<RunEvent> mergeEvent =
         events.stream()
@@ -589,8 +600,10 @@ class SparkDeltaIntegrationTest {
   }
 
   private void clearTables(String... tables) {
-    Arrays.asList(tables).stream()
-        .filter(t -> spark.catalog().tableExists(t))
-        .forEach(t -> spark.sql("DROP TABLE IF EXISTS " + t));
+    try {
+      Arrays.stream(tables).forEach(t -> spark.sql("DROP TABLE IF EXISTS " + t));
+    } catch (Exception e) {
+      // Ignore exceptions during table drop, as they may not exist
+    }
   }
 }

@@ -32,7 +32,6 @@ import io.openlineage.spark3.agent.lifecycle.plan.SparkExtensionV1OutputDatasetB
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
-import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import io.openlineage.spark33.agent.lifecycle.plan.ReplaceIcebergDataDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.CreateReplaceInputDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.DropTableDatasetBuilder;
@@ -89,8 +88,10 @@ public class Spark40DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new SparkExtensionV1OutputDatasetBuilder(context))
             .add(new SubqueryAliasOutputDatasetBuilder(context))
             .add(new DropTableDatasetBuilder(context))
-            .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context))
-            .add(new AlterTableCommandDatasetBuilder(context));
+            .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context));
+    // .add(new AlterTableCommandDatasetBuilder(context); one of the classes no longer present for
+    // Spark 4
+    // TODO: https://github.com/OpenLineage/OpenLineage/issues/3884
 
     if (ReplaceIcebergDataDatasetBuilder.hasClasses()) {
       builder.add(new ReplaceIcebergDataDatasetBuilder(context));

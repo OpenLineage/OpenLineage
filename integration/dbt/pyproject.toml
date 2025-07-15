@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openlineage-dbt"
-version = "1.35.0"
+version = "1.36.0"
 description = "OpenLineage integration with dbt"
 readme = "README.md"
 authors = [{name = "OpenLineage"}]
@@ -12,7 +12,7 @@ requires-python = ">=3.9"
 keywords = ["openlineage"]
 dependencies = [
     "tqdm>=4.62.0",
-    "openlineage-integration-common==1.35.0",
+    "openlineage-integration-common==1.36.0",
     "dbt-core>=1.0.0",
 ]
 

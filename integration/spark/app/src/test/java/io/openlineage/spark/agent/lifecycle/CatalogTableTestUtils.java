@@ -64,6 +64,9 @@ public class CatalogTableTestUtils {
     params.add(Option.empty());
     params.add(Option.empty());
     params.add(Option.empty());
+    if (System.getProperty("spark.version").startsWith("4")) {
+      params.add(Option.empty());
+    }
     params.add(Seq$.MODULE$.<String>empty());
     params.add(false);
     params.add(false);
