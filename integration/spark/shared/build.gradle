@@ -37,7 +37,7 @@ ext {
     junit5Version = "5.11.4"
     kafkaClientsVersion = "3.9.0"
     micrometerVersion = '1.14.4'
-    mockitoVersion = "4.11.0"
+    mockitoVersion = "5.18.0"
     mockserverVersion = "5.14.0"
     postgresqlVersion = "42.7.5"
     sqlLiteVersion = "3.49.1.0"
@@ -97,8 +97,6 @@ dependencies {
     testFixturesApi("org.awaitility:awaitility:${awaitilityVersion}")
     testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
-    testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
-    testFixturesApi("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
     testFixturesApi("io.micrometer:micrometer-core:${micrometerVersion}")
 
     testFixturesApi("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
@@ -157,8 +155,6 @@ dependencies {
     testScala212Implementation("org.junit-pioneer:junit-pioneer:1.9.1")
     testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testScala212Implementation("org.mockito:mockito-core:${mockitoVersion}")
-    testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
-    testScala212Implementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
     testScala212Implementation("org.mock-server:mockserver-client-java:${mockserverVersion}") {
         exclude(group: "com.google.guava", module: "guava")
         exclude(group: "com.fasterxml.jackson.core")
@@ -214,8 +210,6 @@ dependencies {
     testScala213Implementation("org.junit-pioneer:junit-pioneer:1.9.1")
     testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testScala213Implementation("org.mockito:mockito-core:${mockitoVersion}")
-    testScala213Implementation("org.mockito:mockito-inline:${mockitoVersion}")
-    testScala213Implementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
     testScala213Implementation("org.mock-server:mockserver-client-java:${mockserverVersion}") {
         exclude(group: "com.google.guava", module: "guava")
         exclude(group: "com.fasterxml.jackson.core")

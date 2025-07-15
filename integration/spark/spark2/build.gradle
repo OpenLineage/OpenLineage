@@ -31,7 +31,7 @@ ext {
     icebergVersion = "0.14.1"
     jacksonVersion = "2.15.3"
     junit5Version = "5.11.4"
-    mockitoVersion = "4.11.0"
+    mockitoVersion = "5.18.0"
     postgresqlVersion = "42.7.5"
     micrometerVersion = '1.14.4'
 
@@ -57,7 +57,6 @@ dependencies {
     testFixturesApi("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
-    testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
     testFixturesApi("org.postgresql:postgresql:${postgresqlVersion}")
     testFixturesApi("io.micrometer:micrometer-core:${micrometerVersion}")
 
@@ -78,7 +77,6 @@ dependencies {
     testScala211Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testScala211Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
     testScala211Implementation("org.mockito:mockito-core:${mockitoVersion}")
-    testScala211Implementation("org.mockito:mockito-inline:${mockitoVersion}")
     testScala211Implementation("org.postgresql:postgresql:${postgresqlVersion}")
     testScala211Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
 
@@ -96,7 +94,6 @@ dependencies {
     testScala212Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testScala212Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
     testScala212Implementation("org.mockito:mockito-core:${mockitoVersion}")
-    testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
     testScala212Implementation("org.postgresql:postgresql:${postgresqlVersion}")
     testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
 }

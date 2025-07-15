@@ -22,7 +22,7 @@ scalaVariants {
 ext {
     assertjVersion = "3.27.3"
     junit5Version = "5.11.4"
-    mockitoVersion = "4.11.0"
+    mockitoVersion = "5.18.0"
     micrometerVersion = "1.14.4"
     sparkVersion = project.findProperty("spark31.spark.version")
 }
@@ -42,7 +42,6 @@ dependencies {
     testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
     testFixturesApi("org.assertj:assertj-core:${assertjVersion}")
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
-    testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
     testFixturesApi("io.micrometer:micrometer-core:${micrometerVersion}")
 
     // Scala 2.12 - we need this, because of convention. Its just duplication from the above for this specific module
@@ -58,6 +57,5 @@ dependencies {
     testScala212Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
     testScala212Implementation("org.assertj:assertj-core:${assertjVersion}")
     testScala212Implementation("org.mockito:mockito-core:${mockitoVersion}")
-    testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
     testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
 }

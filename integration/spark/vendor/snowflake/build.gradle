@@ -14,7 +14,7 @@ ext {
     assertjVersion = '3.27.3'
     junit5Version = '5.11.4'
     snowflakeVersion = '2.13.0'
-    mockitoVersion = '4.11.0'
+    mockitoVersion = '5.18.0'
     lombokVersion = '1.18.30'
     micrometerVersion = '1.14.4'
 
@@ -59,8 +59,6 @@ dependencies {
     testImplementation("io.micrometer:micrometer-core:${micrometerVersion}")
     testImplementation("org.assertj:assertj-core:${assertjVersion}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
-    testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
-    testImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
     testImplementation("org.apache.spark:spark-sql_${scala}:${spark}")
     testImplementation("net.snowflake:spark-snowflake_${scala}:${snowflakeVersion}-spark_${series}") {
         exclude group: "com.google.guava:guava"

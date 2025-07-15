@@ -31,7 +31,7 @@ ext {
     icebergVersion = "0.14.1"
     jacksonVersion = "2.15.3"
     junit5Version = "5.11.4"
-    mockitoVersion = "4.11.0"
+    mockitoVersion = "5.18.0"
     micrometerVersion = "1.14.4"
 
     sparkVersion = project.findProperty("spark32.spark.version")
@@ -59,7 +59,6 @@ dependencies {
     testFixturesApi("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
-    testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
     testFixturesApi("io.micrometer:micrometer-core:${micrometerVersion}")
 
     // Scala 2.12
@@ -79,7 +78,6 @@ dependencies {
     testScala212Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testScala212Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
     testScala212Implementation("org.mockito:mockito-core:${mockitoVersion}")
-    testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
     testScala212Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
 
     // Scala 2.13
@@ -99,6 +97,5 @@ dependencies {
     testScala213Implementation("org.junit.jupiter:junit-jupiter-api:${junit5Version}")
     testScala213Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
     testScala213Implementation("org.mockito:mockito-core:${mockitoVersion}")
-    testScala213Implementation("org.mockito:mockito-inline:${mockitoVersion}")
     testScala213Implementation("io.micrometer:micrometer-core:${micrometerVersion}")
 }

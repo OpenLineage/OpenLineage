@@ -34,7 +34,7 @@ ext {
     jacksonVersion = "2.15.3"
     junit5Version = "5.11.4"
     lombokVersion = "1.18.30"
-    mockitoVersion = "4.11.0"
+    mockitoVersion = "5.18.0"
     micrometerVersion = "1.14.4"
 
     sparkVersion = project.findProperty("spark3.spark.version")
@@ -74,7 +74,6 @@ dependencies {
     testFixturesApi("org.junit.jupiter:junit-jupiter:${junit5Version}")
     testFixturesApi("org.junit-pioneer:junit-pioneer:1.9.1")
     testFixturesApi("org.mockito:mockito-core:${mockitoVersion}")
-    testFixturesApi("org.mockito:mockito-inline:${mockitoVersion}")
     testFixturesApi("io.micrometer:micrometer-core:${micrometerVersion}")
     testFixturesApi('org.xerial:sqlite-jdbc:3.49.1.0')
 
@@ -111,7 +110,6 @@ dependencies {
     testScala212Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
     testScala212Implementation("org.junit-pioneer:junit-pioneer:1.9.1")
     testScala212Implementation("org.mockito:mockito-core:${mockitoVersion}")
-    testScala212Implementation("org.mockito:mockito-inline:${mockitoVersion}")
 
     // Scala 2.13
     scala213Implementation(project(path: ":shared", configuration: "scala213RuntimeElements"))
@@ -146,5 +144,4 @@ dependencies {
     testScala213Implementation("org.junit.jupiter:junit-jupiter:${junit5Version}")
     testScala213Implementation("org.junit-pioneer:junit-pioneer:1.9.1")
     testScala213Implementation("org.mockito:mockito-core:${mockitoVersion}")
-    testScala213Implementation("org.mockito:mockito-inline:${mockitoVersion}")
 }

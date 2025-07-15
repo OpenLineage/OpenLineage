@@ -42,7 +42,5 @@ dependencies {
     testImplementation("org.assertj:assertj-core:${assertjVersion}")
     testImplementation("org.mock-server:mockserver-netty:${mockserverVersion}:shaded")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
-    testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
-    testImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
     testImplementation("org.apache.spark:spark-sql_${scala}:${spark}")
 }
