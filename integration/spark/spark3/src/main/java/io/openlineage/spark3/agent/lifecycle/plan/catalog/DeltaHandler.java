@@ -7,7 +7,9 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.DatasetIdentifier.SymlinkType;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
@@ -25,6 +27,7 @@ import org.apache.spark.sql.connector.catalog.V1Table;
 import org.apache.spark.sql.delta.Snapshot;
 import org.apache.spark.sql.delta.catalog.DeltaCatalog;
 import org.apache.spark.sql.delta.catalog.DeltaTableV2;
+import scala.Option;
 
 @Slf4j
 public class DeltaHandler implements CatalogHandler {
@@ -67,12 +70,23 @@ public class DeltaHandler implements CatalogHandler {
       Path path = new Path(identifier.name());
       return PathUtils.fromPath(path);
     }
+    Map<String, String> sparkRuntimeConfig = ScalaConversionUtils.fromMap(session.conf().getAll());
 
     if (table instanceof DeltaTableV2) {
       DeltaTableV2 deltaTable = (DeltaTableV2) table;
       // catalogTable is Option, but it is empty only for path identifier
-      CatalogTable catalogTable = deltaTable.catalogTable().get();
-      return PathUtils.fromCatalogTable(catalogTable, session);
+      Option<CatalogTable> catalogTable = deltaTable.catalogTable();
+
+      if (catalogTable.isDefined()) {
+        return PathUtils.fromCatalogTable(catalogTable.get(), session);
+      } else {
+        return PathUtils.fromPath(deltaTable.path())
+            .withSymlink(
+                identifier.toString(),
+                Optional.ofNullable(sparkRuntimeConfig.get("spark.sql.warehouse.dir"))
+                    .orElse(tableCatalog.name()),
+                SymlinkType.TABLE);
+      }
     }
 
     // not a Delta table, fallback to SparkCatalog. See:

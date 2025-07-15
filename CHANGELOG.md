@@ -4,6 +4,9 @@
 
 ### Added
 
+* **Spark: support Delta 4.0 and cover it with tests on Spark 4.0.** [`#3877`](https://github.com/OpenLineage/OpenLineage/pull/3877) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Fix failing tests for Spark 4.0. Make delta integration tests pass with Delta 4.0 on Spark 4.*
+
 ### Changed
 
 ### Fixed

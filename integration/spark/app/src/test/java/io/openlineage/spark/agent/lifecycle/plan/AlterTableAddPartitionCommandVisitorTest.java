@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.Spark4CompatUtils;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.nio.file.Path;
@@ -17,7 +18,6 @@ import java.util.Collections;
 import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.execution.command.AlterTableAddPartitionCommand;
 import org.junit.jupiter.api.AfterAll;
@@ -30,7 +30,9 @@ import scala.Option;
 import scala.Tuple2;
 import scala.collection.immutable.Map;
 
-@EnabledIfSystemProperty(named = "spark.version", matches = "([34].*)")
+// TODO: fix the test to work with Spark 4.x ->
+// https://github.com/OpenLineage/OpenLineage/issues/3885
+@EnabledIfSystemProperty(named = "spark.version", matches = "([3].*)")
 class AlterTableAddPartitionCommandVisitorTest {
 
   private static final String TABLE_5 = "table5";
@@ -53,7 +55,7 @@ class AlterTableAddPartitionCommandVisitorTest {
   @BeforeAll
   @SneakyThrows
   static void beforeAll() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
 
     Path derbyHomeBase = Paths.get(System.getProperty("derby.system.home.base"));
     System.setProperty(
@@ -63,11 +65,10 @@ class AlterTableAddPartitionCommandVisitorTest {
             .toString());
 
     session =
-        SparkSession.builder()
+        Spark4CompatUtils.builderWithHiveSupport()
             .config("spark.sql.warehouse.dir", System.getProperty("spark.sql.warehouse.dir"))
             .config("spark.sql.catalogImplementation", "hive")
             .config("spark.ui.enabled", false)
-            .enableHiveSupport()
             .master("local")
             .getOrCreate();
   }

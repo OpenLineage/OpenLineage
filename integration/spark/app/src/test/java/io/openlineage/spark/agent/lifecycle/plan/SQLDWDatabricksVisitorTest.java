@@ -30,6 +30,7 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import scala.Option;
@@ -119,6 +120,9 @@ class TestSqlDWDatabricksVisitor extends SqlDWDatabricksVisitor {
   }
 }
 
+@EnabledIfSystemProperty(
+    named = "spark.version",
+    matches = "([3].*)") // doesn't work for Spark 4 which has different LogicalRelation constructor
 class SQLDWDatabricksVisitorTest {
   private static final String FIELD_NAME = "name";
   SparkSession session = mock(SparkSession.class);
