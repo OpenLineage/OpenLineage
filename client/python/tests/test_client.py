@@ -30,7 +30,12 @@ from openlineage.client.run import (
 )
 from openlineage.client.transport.composite import CompositeTransport
 from openlineage.client.transport.console import ConsoleTransport
-from openlineage.client.transport.http import ApiKeyTokenProvider, HttpTransport, TokenProvider
+from openlineage.client.transport.http import (
+    ApiKeyTokenProvider,
+    HttpCompression,
+    HttpTransport,
+    TokenProvider,
+)
 from openlineage.client.transport.noop import NoopTransport
 from openlineage.client.uuid import generate_new_uuid
 
@@ -1255,3 +1260,271 @@ def test_client_does_not_update_run_tags_for_job_events(transport, job_event_mul
         event_tags = sorted(transport.event.job.facets["tags"].tags, key=lambda x: x.key)
         expected_tags = sorted(tags, key=lambda x: x.key)
         assert event_tags == expected_tags
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP": "{}",
+        "OPENLINEAGE__TRANSPORT__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TYPE": "console",
+    },
+)
+def test_client_transport_from_env_var_precedence_over_url_without_aliasing():
+    user_config = {}
+    transport = OpenLineageClient(config=user_config).transport
+    assert transport.kind == "composite"
+    assert len(transport.transports) == 1
+    assert transport.transports[0].kind == "console"
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TYPE": "console",
+    },
+)
+def test_client_transport_from_env_var_precedence_over_url_with_aliasing():
+    user_config = {}
+    transport = OpenLineageClient(config=user_config).transport
+    assert transport.kind == "composite"
+    assert len(transport.transports) == 2
+    assert transport.transports[0].kind == "console"
+    assert transport.transports[1].kind == "http"
+    assert transport.transports[1].url == "http://example.com"
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP": "{}",
+        "OPENLINEAGE__TRANSPORT__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__NAME": "some_name",
+        "OPENLINEAGE__TRANSPORT__CONTINUE_ON_FAILURE": "false",
+        "OPENLINEAGE__TRANSPORT__CONTINUE_ON_SUCCESS": "false",
+        "OPENLINEAGE__TRANSPORT__SORT_TRANSPORTS": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__CONTINUE_ON_FAILURE": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__CONTINUE_ON_SUCCESS": "false",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__SORT_TRANSPORTS": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__PRIORITY": "-1",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_FIRST__TYPE": "console",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_FIRST__PRIORITY": "2",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__TYPE": "http",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__URL": "http://inner.com",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__COMPRESSION": "gzip",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TYPE": "console",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__PRIORITY": "1",
+    },
+)
+def test_client_transport_from_env_var_precedence_composite_with_priority():
+    user_config = {}
+    transport = OpenLineageClient(config=user_config).transport
+    assert transport.kind == "composite"
+    assert transport.name == "some_name"
+    assert transport.config.continue_on_failure is False
+    assert transport.config.continue_on_success is False
+    assert transport.config.sort_transports is True
+    assert len(transport.transports) == 2
+    assert transport.transports[0].kind == "console"
+    assert transport.transports[0].name == "second"
+    assert transport.transports[0].priority == 1
+
+    composite_transport = transport.transports[1]
+    assert composite_transport.kind == "composite"
+    assert composite_transport.name == "first"
+    assert composite_transport.priority == -1
+    assert composite_transport.config.continue_on_failure is True
+    assert composite_transport.config.continue_on_success is False
+    assert composite_transport.config.sort_transports is True
+    assert len(composite_transport.transports) == 2
+    assert composite_transport.transports[0].kind == "console"
+    assert composite_transport.transports[0].name == "inner_first"
+    assert composite_transport.transports[0].priority == 2
+    assert composite_transport.transports[1].kind == "http"
+    assert composite_transport.transports[1].name == "inner_backup"
+    assert composite_transport.transports[1].priority == 0
+    assert composite_transport.transports[1].url == "http://inner.com"
+    assert composite_transport.transports[1].compression == HttpCompression.GZIP
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP": "{}",
+        "OPENLINEAGE__TRANSPORT__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__NAME": "some_name",
+        "OPENLINEAGE__TRANSPORT__CONTINUE_ON_FAILURE": "false",
+        "OPENLINEAGE__TRANSPORT__CONTINUE_ON_SUCCESS": "false",
+        "OPENLINEAGE__TRANSPORT__SORT_TRANSPORTS": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__CONTINUE_ON_FAILURE": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__CONTINUE_ON_SUCCESS": "false",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__SORT_TRANSPORTS": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__PRIORITY": "-1",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_FIRST__TYPE": "console",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_FIRST__PRIORITY": "2",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__TYPE": "http",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__URL": "http://inner.com",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__COMPRESSION": "gzip",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TYPE": "console",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__PRIORITY": "1",
+    },
+)
+def test_client_transport_from_env_var_precedence_composite_with_priority_and_user_config():
+    user_config = {"transport": {"type": "console", "name": "user_transport"}}
+    transport = OpenLineageClient(config=user_config).transport
+    assert transport.kind == "console"
+    assert transport.name == "user_transport"
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP": "{}",
+        "OPENLINEAGE__TRANSPORT__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__NAME": "some_name",
+        "OPENLINEAGE__TRANSPORT__CONTINUE_ON_FAILURE": "false",
+        "OPENLINEAGE__TRANSPORT__CONTINUE_ON_SUCCESS": "false",
+        "OPENLINEAGE__TRANSPORT__SORT_TRANSPORTS": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__CONTINUE_ON_FAILURE": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__CONTINUE_ON_SUCCESS": "false",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__SORT_TRANSPORTS": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__PRIORITY": "-1",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_FIRST__TYPE": "console",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_FIRST__PRIORITY": "2",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__TYPE": "http",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__URL": "http://inner.com",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__COMPRESSION": "gzip",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TYPE": "console",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__PRIORITY": "1",
+    },
+)
+def test_client_transport_from_env_var_composite_with_user_config_merging():
+    user_config = {"transport": {"type": "composite", "name": "user_transport"}}
+    transport = OpenLineageClient(config=user_config).transport
+    assert transport.kind == "composite"
+    assert transport.name == "user_transport"
+    assert transport.config.continue_on_failure is False
+    assert transport.config.continue_on_success is False
+    assert transport.config.sort_transports is True
+    assert len(transport.transports) == 2
+    assert transport.transports[0].kind == "console"
+    assert transport.transports[0].name == "second"
+    assert transport.transports[0].priority == 1
+
+    composite_transport = transport.transports[1]
+    assert composite_transport.kind == "composite"
+    assert composite_transport.name == "first"
+    assert composite_transport.priority == -1
+    assert composite_transport.config.continue_on_failure is True
+    assert composite_transport.config.continue_on_success is False
+    assert composite_transport.config.sort_transports is True
+    assert len(composite_transport.transports) == 2
+    assert composite_transport.transports[0].kind == "console"
+    assert composite_transport.transports[0].name == "inner_first"
+    assert composite_transport.transports[0].priority == 2
+    assert composite_transport.transports[1].kind == "http"
+    assert composite_transport.transports[1].name == "inner_backup"
+    assert composite_transport.transports[1].priority == 0
+    assert composite_transport.transports[1].url == "http://inner.com"
+    assert composite_transport.transports[1].compression == HttpCompression.GZIP
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP": "{}",
+        "OPENLINEAGE__TRANSPORT__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__NAME": "some_name",
+        "OPENLINEAGE__TRANSPORT__CONTINUE_ON_FAILURE": "false",
+        "OPENLINEAGE__TRANSPORT__CONTINUE_ON_SUCCESS": "false",
+        "OPENLINEAGE__TRANSPORT__SORT_TRANSPORTS": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__CONTINUE_ON_FAILURE": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__CONTINUE_ON_SUCCESS": "false",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__SORT_TRANSPORTS": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__PRIORITY": "-1",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_FIRST__TYPE": "console",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_FIRST__PRIORITY": "2",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__TYPE": "http",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__URL": "http://inner.com",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__COMPRESSION": "gzip",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TYPE": "console",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__PRIORITY": "1",
+    },
+)
+def test_client_transport_from_env_var_composite_with_user_config_overwrite_transports():
+    user_config = {
+        "transport": {
+            "type": "composite",
+            "name": "user_transport",
+            "transports": [
+                {"type": "console", "name": "should_be_second", "priority": "1"},
+                {"type": "console", "name": "should_be_first", "priority": "2"},
+            ],
+        }
+    }
+    transport = OpenLineageClient(config=user_config).transport
+    assert transport.kind == "composite"
+    assert transport.name == "user_transport"
+    assert transport.config.continue_on_failure is False  # This is still coming from env vars
+    assert transport.config.continue_on_success is False  # This is still coming from env vars
+    assert transport.config.sort_transports is True  # This is still coming from env vars
+    assert len(transport.transports) == 2
+    assert transport.transports[0].kind == "console"
+    assert transport.transports[0].name == "should_be_first"
+    assert transport.transports[0].priority == 2
+    assert transport.transports[1].kind == "console"
+    assert transport.transports[1].name == "should_be_second"
+    assert transport.transports[1].priority == 1
+
+
+@patch.dict(
+    os.environ,
+    {
+        "OPENLINEAGE_URL": "http://example.com",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP": "{}",
+        "OPENLINEAGE__TRANSPORT__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__NAME": "some_name",
+        "OPENLINEAGE__TRANSPORT__CONTINUE_ON_FAILURE": "false",
+        "OPENLINEAGE__TRANSPORT__CONTINUE_ON_SUCCESS": "false",
+        "OPENLINEAGE__TRANSPORT__SORT_TRANSPORTS": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TYPE": "composite",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__CONTINUE_ON_FAILURE": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__CONTINUE_ON_SUCCESS": "false",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__SORT_TRANSPORTS": "true",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__PRIORITY": "-1",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_FIRST__TYPE": "console",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_FIRST__PRIORITY": "2",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__TYPE": "http",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__URL": "http://inner.com",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__FIRST__TRANSPORTS__INNER_BACKUP__COMPRESSION": "gzip",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TYPE": "console",
+        "OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__PRIORITY": "1",
+    },
+)
+def test_client_transport_from_env_var_composite_with_user_config_non_composite():
+    user_config = {
+        "transport": {
+            "type": "http",
+            "name": "user_transport",
+            "url": "http://user.com",
+            "compression": "gzip",
+        }
+    }
+    transport = OpenLineageClient(config=user_config).transport
+    assert transport.kind == "http"
+    assert transport.name == "user_transport"
+    assert transport.priority == 0
+    assert transport.url == "http://user.com"
+    assert transport.endpoint == "api/v1/lineage"
+    assert transport.compression == HttpCompression.GZIP
