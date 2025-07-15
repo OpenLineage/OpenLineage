@@ -211,23 +211,25 @@ class DbtArtifactProcessor:
         str_schema_version = get_from_nullable_chain(metadata, ["metadata", "dbt_schema_version"])
         return cls.get_version_number(str_schema_version)
 
-    def get_query_id(self, run_result) -> str | None:
+    def get_query_id(self, run_result: dict[str, Any]) -> Optional[str]:
         # Validate that there is an adapter_response in the run_result
         if "adapter_response" not in run_result:
             return None
 
-        query_id_key: str | None
+        # Default to query_id for all Adapters
+        query_id_key: str = "query_id"
 
         # Use the adapter type to make sure the correct key is used
-        if self.adapter_type == Adapter.SNOWFLAKE:
-            query_id_key = "query_id"
-        elif self.adapter_type == Adapter.BIGQUERY:
+        if self.adapter_type == Adapter.BIGQUERY:
             query_id_key = "job_id"
-        else:
-            # TODO: Check with Glue
-            query_id_key = None
 
-        return run_result["adapter_response"].get(query_id_key)
+        query_id: Optional[str] = run_result["adapter_response"].get(query_id_key)
+
+        if isinstance(query_id, str):
+            # For Databricks, "N/A" could be returned if the query_id is None; catch that
+            return None if query_id.lower() == "n/a" else query_id
+
+        return query_id
 
     @staticmethod
     def get_version_number(version: str) -> int:
@@ -709,7 +711,7 @@ class DbtArtifactProcessor:
             return None
         return self.adapter_type.value.lower()
 
-    def get_run(self, run_id: str, query_id: str | None = None) -> Run:
+    def get_run(self, run_id: str, query_id: Optional[str] = None) -> Run:
         run_facets = {
             **self.dbt_version_facet(),
             **self.dbt_run_run_facet(),
@@ -718,8 +720,6 @@ class DbtArtifactProcessor:
         if self._dbt_run_metadata:
             run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
 
-        # If the query_id exists, go ahead and create an externalQuery key-value pair.
-        # This matches what is done  with the SQLExecuteQueryOperator and SnowflakeHook.
         if query_id:
             run_facets["externalQuery"] = ExternalQueryRunFacet(
                 externalQueryId=query_id, source=self.job_namespace

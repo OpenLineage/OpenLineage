@@ -69,7 +69,8 @@ def test_get_query_id(adapter_key, adapter_type, dbt_artifact_processor, run_res
 
 
 def test_invalid_adapter(dbt_artifact_processor, run_result):
-    dbt_artifact_processor.adapter_type = Adapter.DATABRICKS
+    run_result["adapter_response"]["query_id"] = None
+    dbt_artifact_processor.adapter_type = Adapter.GLUE
     generated_query_id = dbt_artifact_processor.get_query_id(run_result)
     generated_run = dbt_artifact_processor.get_run(run_id=RUN_ID, query_id=generated_query_id)
 
