@@ -26,6 +26,7 @@ from openlineage.client.facet_v2 import (
     schema_dataset,
     sql_job,
 )
+from openlineage.client.generated.external_query_run import ExternalQueryRunFacet
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet, ParentRunMetadata
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
@@ -210,6 +211,26 @@ class DbtArtifactProcessor:
         str_schema_version = get_from_nullable_chain(metadata, ["metadata", "dbt_schema_version"])
         return cls.get_version_number(str_schema_version)
 
+    def get_query_id(self, run_result: dict[str, Any]) -> Optional[str]:
+        # Validate that there is an adapter_response in the run_result
+        if "adapter_response" not in run_result:
+            return None
+
+        # Default to query_id for all Adapters
+        query_id_key: str = "query_id"
+
+        # Use the adapter type to make sure the correct key is used
+        if self.adapter_type == Adapter.BIGQUERY:
+            query_id_key = "job_id"
+
+        query_id: Optional[str] = run_result["adapter_response"].get(query_id_key)
+
+        if isinstance(query_id, str):
+            # For Databricks, "N/A" could be returned if the query_id is None; catch that
+            return None if query_id.lower() == "n/a" else query_id
+
+        return query_id
+
     @staticmethod
     def get_version_number(version: str) -> int:
         # "https://schemas.getdbt.com/dbt/manifest/v2.json" -> "v2.json"
@@ -221,6 +242,10 @@ class DbtArtifactProcessor:
         events = DbtEvents()
         for run in context.run_results["results"]:
             name = run["unique_id"]
+
+            # Pull the available query_id from the run_results
+            query_id: str | None = self.get_query_id(run)
+
             if not any(name.startswith(prefix) for prefix in ("model.", "source.", "snapshot.")):
                 continue
             if run["status"] == "skipped":
@@ -298,7 +323,7 @@ class DbtArtifactProcessor:
                     run["status"],
                     started_at,
                     completed_at,
-                    self.get_run(run_id),
+                    self.get_run(run_id=run_id, query_id=query_id),
                     Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
                     [self.node_to_dataset(node, has_facets=True) for node in inputs],
                     output_dataset,
@@ -686,7 +711,7 @@ class DbtArtifactProcessor:
             return None
         return self.adapter_type.value.lower()
 
-    def get_run(self, run_id: str) -> Run:
+    def get_run(self, run_id: str, query_id: Optional[str] = None) -> Run:
         run_facets = {
             **self.dbt_version_facet(),
             **self.dbt_run_run_facet(),
@@ -694,6 +719,12 @@ class DbtArtifactProcessor:
         }
         if self._dbt_run_metadata:
             run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
+
+        if query_id:
+            run_facets["externalQuery"] = ExternalQueryRunFacet(
+                externalQueryId=query_id, source=self.job_namespace
+            )
+
         return Run(
             runId=run_id,
             facets=run_facets,
@@ -728,7 +759,6 @@ class DbtArtifactProcessor:
                 openlineageAdapterVersion=openlineage_version,
             )
         }
-        return None
 
     @staticmethod
     def get_timings(timings: List[Dict]) -> Tuple[str, str]:
