@@ -83,32 +83,6 @@ class MockSqlDWBaseRelation extends BaseRelation {
   }
 }
 
-class MockSpark2SqlDWBaseRelation extends BaseRelation {
-  private static final String FIELD_NAME = "name";
-
-  @SuppressWarnings("PMD") // used by reflection
-  private final String com$databricks$spark$sqldw$SqlDWRelation$$tableNameOrSubquery;
-
-  @SuppressWarnings("PMD") // used by reflection
-  private final Object params;
-
-  @Override
-  public SQLContext sqlContext() {
-    return null;
-  }
-
-  @Override
-  public StructType schema() {
-    return new StructType(
-        new StructField[] {new StructField(FIELD_NAME, StringType$.MODULE$, false, null)});
-  }
-
-  public MockSpark2SqlDWBaseRelation(String tableNameOrSubquery, String jdbcUrl) {
-    this.com$databricks$spark$sqldw$SqlDWRelation$$tableNameOrSubquery = tableNameOrSubquery;
-    this.params = new SqlDwRelationParams(jdbcUrl);
-  }
-}
-
 class TestSqlDWDatabricksVisitor extends SqlDWDatabricksVisitor {
   public TestSqlDWDatabricksVisitor(OpenLineageContext context, DatasetFactory factory) {
     super(context, factory);
@@ -152,47 +126,6 @@ class SQLDWDatabricksVisitorTest {
     LogicalRelation lr =
         new LogicalRelation(
             new MockSqlDWBaseRelation(inputName, inputJdbcUrl),
-            ScalaConversionUtils.fromList(
-                Collections.singletonList(
-                    new AttributeReference(
-                        FIELD_NAME,
-                        StringType$.MODULE$,
-                        false,
-                        null,
-                        ExprId.apply(1L),
-                        ScalaConversionUtils.asScalaSeqEmpty()))),
-            Option.empty(),
-            false);
-
-    TestSqlDWDatabricksVisitor visitor =
-        new TestSqlDWDatabricksVisitor(
-            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
-    List<OpenLineage.Dataset> datasets = visitor.apply(lr);
-
-    assertEquals(1, datasets.size());
-    OpenLineage.Dataset ds = datasets.get(0);
-    assertEquals(expectedNamespace, ds.getNamespace());
-    assertEquals(expectedName, ds.getName());
-  }
-
-  @ParameterizedTest
-  @CsvSource({
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;database=MYTESTDB,sqlserver://mytestserver.database.windows.net,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;databaseName=MYTESTDB,sqlserver://mytestserver.database.windows.net,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net,sqlserver://mytestserver.database.windows.net,schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB,sqlserver://mytestserver.database.windows.net:1433,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;portNumber=1433;database=MYTESTDB,sqlserver://mytestserver.database.windows.net:1433,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net\\someinstance;database=MYTESTDB,sqlserver://mytestserver.database.windows.net/someinstance,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://MYTESTSERVER.database.windows.net;instanceName=someinstance;database=MYTESTDB,sqlserver://mytestserver.database.windows.net/someinstance,MYTESTDB.schema.table1",
-    "jdbc:sqlserver://;serverName=MYTESTSERVER.database.windows.net,sqlserver://mytestserver.database.windows.net,schema.table1",
-  })
-  void testSpark2SQLDWRelation(String inputJdbcUrl, String expectedNamespace, String expectedName) {
-    String inputName = "\"schema\".\"table1\"";
-
-    // Instantiate a MockSQLDWRelation
-    LogicalRelation lr =
-        new LogicalRelation(
-            new MockSpark2SqlDWBaseRelation(inputName, inputJdbcUrl),
             ScalaConversionUtils.fromList(
                 Collections.singletonList(
                     new AttributeReference(
