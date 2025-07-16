@@ -45,6 +45,10 @@ def IS_AIRFLOW_VERSION_ENOUGH(x):
     return Version(os.environ.get("AIRFLOW_VERSION", "0.0.0")) >= Version(x)
 
 
+class RetryException(Exception):
+    """Exception that triggers retry"""
+
+
 params = [
     ("postgres_orders_popular_day_of_week", "requests/postgres.json", True),
     ("failed_sql_extraction", "requests/failed_sql_extraction.json", True),
@@ -111,7 +115,8 @@ params = [
 @retry(
     wait_exponential_multiplier=1000,
     wait_exponential_max=10000,
-    stop_max_delay=1000 * 10 * 60,
+    stop_max_delay=1000 * 60 * 5,  # 5 minutes
+    retry_on_exception=(RetryException,),
 )
 def wait_for_dag(dag_id, airflow_db_conn, should_fail=False) -> bool:
     log.info("Waiting for DAG '%s'...", dag_id)
@@ -125,6 +130,8 @@ def wait_for_dag(dag_id, airflow_db_conn, should_fail=False) -> bool:
         """
     )
     row = cur.fetchone()
+    if not row:
+        raise TypeError("Query returned empty result. DAG run not found.")
     dag_id, state = row
 
     cur.close()
@@ -135,7 +142,7 @@ def wait_for_dag(dag_id, airflow_db_conn, should_fail=False) -> bool:
     if state == failing_state:
         return False
     elif state != expected_state:
-        raise Exception("Retry!")
+        raise RetryException("Retry!")
     return True
 
 
