@@ -2,13 +2,13 @@
   "eventType": "COMPLETE",
   "job": {
     "namespace": "iceberg-namespace",
-    "name": "iceberg_integration_test.replace_data.spark_catalog_default_tbl_delete"
+    "name": "iceberg_integration_test.replace_data.spark_catalog_default_tbl_update_cow"
   },
   "inputs": [],
   "outputs": [
     {
       "namespace": "file",
-      "name": "/tmp/iceberg/default/tbl_delete",
+      "name": "/tmp/iceberg/default/tbl_update_cow",
       "facets": {
         "dataSource": {
           "name": "file",
@@ -30,7 +30,7 @@
           "identifiers": [
             {
               "namespace": "file:/tmp/iceberg",
-              "name": "default.tbl_delete",
+              "name": "default.tbl_update_cow",
               "type": "TABLE"
             }
           ]
