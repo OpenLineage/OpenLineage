@@ -248,39 +248,77 @@ class SparkIcebergIntegrationTest {
   }
 
   @Test
-  void testDelete() {
-    clearTables("tbl_delete", "temp");
+  void testDeleteCow() {
+    clearTables("tbl_delete_cow", "temp");
     createTempDataset(2).createOrReplaceTempView("temp");
-
-    spark.sql("CREATE TABLE tbl_delete USING iceberg AS SELECT * FROM temp");
-    spark.sql("DELETE FROM tbl_delete WHERE a=1");
-
-    verifyEvents(mockServer, "pysparkV2DeleteStartEvent.json", "pysparkV2DeleteCompleteEvent.json");
-  }
-
-  @Test
-  void testUpdate() {
-    clearTables("tbl_update", "temp");
-    createTempDataset(2).createOrReplaceTempView("temp");
-
-    spark.sql("CREATE TABLE tbl_update USING iceberg AS SELECT * FROM temp");
-    spark.sql("UPDATE tbl_update SET b=5 WHERE a=1");
-
-    verifyEvents(mockServer, "pysparkV2UpdateStartEvent.json", "pysparkV2UpdateCompleteEvent.json");
-  }
-
-  @Test
-  void testMergeInto() {
-    clearTables("events", "updates");
-    spark.sql("CREATE TABLE events (event_id long, last_updated_at long) USING iceberg");
-    spark.sql("CREATE TABLE updates (event_id long, updated_at long) USING iceberg");
-
-    spark.sql("INSERT INTO events VALUES (1, 1641290276);");
-    spark.sql("INSERT INTO updates VALUES (1, 1641290277);");
-    spark.sql("INSERT INTO updates VALUES (2, 1641290277);");
 
     spark.sql(
-        "MERGE INTO events USING updates "
+        "CREATE TABLE tbl_delete_cow USING iceberg TBLPROPERTIES ('write.delete.mode'='copy-on-write') AS SELECT * FROM temp");
+    spark.sql("DELETE FROM tbl_delete_cow WHERE a=1");
+
+    verifyEvents(
+        mockServer, "pysparkV2DeleteCowStartEvent.json", "pysparkV2DeleteCowCompleteEvent.json");
+  }
+
+  @Test
+  void testDeleteMor() {
+    clearTables("tbl_delete_mor", "temp");
+    createTempDataset(2).createOrReplaceTempView("temp");
+
+    spark.sql(
+        "CREATE TABLE tbl_delete_mor USING iceberg TBLPROPERTIES ('write.delete.mode'='merge-on-read') AS SELECT * FROM temp");
+    spark.sql("DELETE FROM tbl_delete_mor WHERE a=1");
+
+    verifyEvents(
+        mockServer, "pysparkV2DeleteMorStartEvent.json", "pysparkV2DeleteMorCompleteEvent.json");
+  }
+
+  @Test
+  void testUpdateCow() {
+    clearTables("tbl_update_cow", "temp");
+    createTempDataset(2).createOrReplaceTempView("temp");
+
+    spark.sql(
+        "CREATE TABLE tbl_update_cow USING iceberg TBLPROPERTIES ('write.update.mode'='copy-on-write') AS SELECT * FROM temp");
+    spark.sql("UPDATE tbl_update_cow SET b=5 WHERE a=1");
+
+    verifyEvents(
+        mockServer, "pysparkV2UpdateCowStartEvent.json", "pysparkV2UpdateCowCompleteEvent.json");
+  }
+
+  @Test
+  void testUpdateMor() {
+    if (System.getProperty(SPARK_VERSION).startsWith("3.4")) {
+      // This test will not work as Iceberg has unfixed bug with Spark 3.4
+      // https://github.com/apache/iceberg/issues/11821
+      assertThat(true).isTrue();
+      return;
+    }
+
+    clearTables("tbl_update_mor", "temp");
+    createTempDataset(2).createOrReplaceTempView("temp");
+
+    spark.sql(
+        "CREATE TABLE tbl_update_mor USING iceberg TBLPROPERTIES ('write.update.mode'='merge-on-read') AS SELECT * FROM temp");
+    spark.sql("UPDATE tbl_update_mor SET b=5 WHERE a=1");
+
+    verifyEvents(
+        mockServer, "pysparkV2UpdateMorStartEvent.json", "pysparkV2UpdateMorCompleteEvent.json");
+  }
+
+  @Test
+  void testMergeIntoCow() {
+    clearTables("events_cow", "updates_cow");
+    spark.sql(
+        "CREATE TABLE events_cow (event_id long, last_updated_at long) USING iceberg TBLPROPERTIES ('write.merge.mode'='copy-on-write')");
+    spark.sql("CREATE TABLE updates_cow (event_id long, updated_at long) USING iceberg");
+
+    spark.sql("INSERT INTO events_cow VALUES (1, 1641290276);");
+    spark.sql("INSERT INTO updates_cow VALUES (1, 1641290277);");
+    spark.sql("INSERT INTO updates_cow VALUES (2, 1641290277);");
+
+    spark.sql(
+        "MERGE INTO events_cow events USING updates_cow updates "
             + " ON events.event_id = updates.event_id"
             + " WHEN MATCHED THEN UPDATE SET events.last_updated_at = updates.updated_at"
             + " WHEN NOT MATCHED THEN INSERT (event_id, last_updated_at) "
@@ -288,8 +326,39 @@ class SparkIcebergIntegrationTest {
 
     verifyEvents(
         mockServer,
-        "pysparkV2MergeIntoTableStartEvent.json",
-        "pysparkV2MergeIntoTableCompleteEvent.json");
+        "pysparkV2MergeIntoTableCowStartEvent.json",
+        "pysparkV2MergeIntoTableCowCompleteEvent.json");
+  }
+
+  @Test
+  void testMergeIntoMor() {
+    if (System.getProperty(SPARK_VERSION).startsWith("3.4")) {
+      // This test will not work as Iceberg has unfixed bug with Spark 3.4
+      // https://github.com/apache/iceberg/issues/11821
+      assertThat(true).isTrue();
+      return;
+    }
+
+    clearTables("events_mor", "updates_mor");
+    spark.sql(
+        "CREATE TABLE events_mor (event_id long, last_updated_at long) USING iceberg TBLPROPERTIES ('write.merge.mode'='merge-on-read')");
+    spark.sql("CREATE TABLE updates_mor (event_id long, updated_at long) USING iceberg");
+
+    spark.sql("INSERT INTO events_mor VALUES (1, 1641290276);");
+    spark.sql("INSERT INTO updates_mor VALUES (1, 1641290277);");
+    spark.sql("INSERT INTO updates_mor VALUES (2, 1641290277);");
+
+    spark.sql(
+        "MERGE INTO events_mor events USING updates_mor updates "
+            + " ON events.event_id = updates.event_id"
+            + " WHEN MATCHED THEN UPDATE SET events.last_updated_at = updates.updated_at"
+            + " WHEN NOT MATCHED THEN INSERT (event_id, last_updated_at) "
+            + "VALUES (event_id, updated_at)");
+
+    verifyEvents(
+        mockServer,
+        "pysparkV2MergeIntoTableMorStartEvent.json",
+        "pysparkV2MergeIntoTableMorCompleteEvent.json");
   }
 
   @Test
