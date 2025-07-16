@@ -80,8 +80,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   private static final String sparkVersion = package$.MODULE$.SPARK_VERSION();
 
-  private final boolean isDisabled;
-
   /**
    * Id of the last active job. Has to be stored within the listener, as some jobs use both
    * RddExecutionContext and SparkSQLExecutionContext. jobId is required for to collect job metrics
@@ -94,8 +92,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   public OpenLineageSparkListener(SparkConf conf) {
     super();
-    this.conf = Objects.requireNonNull(conf).clone();
-    isDisabled = checkIfDisabled();
+    this.conf = Objects.requireNonNull(conf);
   }
 
   /**
@@ -111,7 +108,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onOtherEvent(SparkListenerEvent event) {
-    if (isDisabled) {
+    if (checkIfDisabled()) {
       return;
     }
     if (event instanceof SparkListenerSQLExecutionStart) {
@@ -169,7 +166,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job starts */
   @Override
   public void onJobStart(SparkListenerJobStart jobStart) {
-    if (isDisabled) {
+    if (checkIfDisabled()) {
       return;
     }
     log.debug("onJobStart called [{}].", jobStart);
@@ -231,7 +228,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job ends */
   @Override
   public void onJobEnd(SparkListenerJobEnd jobEnd) {
-    if (isDisabled) {
+    if (checkIfDisabled()) {
       return;
     }
     log.debug("onJobEnd called [{}].", jobEnd);
@@ -251,7 +248,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onTaskEnd(SparkListenerTaskEnd taskEnd) {
-    if (isDisabled || sparkVersion.startsWith("2")) {
+    if (checkIfDisabled() || sparkVersion.startsWith("2")) {
       return;
     }
     log.debug("onTaskEnd called [{}].", taskEnd);
@@ -298,7 +295,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onApplicationEnd(SparkListenerApplicationEnd applicationEnd) {
-    if (isDisabled) {
+    if (checkIfDisabled()) {
       return;
     }
     log.debug("onApplicationEnd called [{}].", applicationEnd);
@@ -324,7 +321,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onApplicationStart(SparkListenerApplicationStart applicationStart) {
-    if (isDisabled) {
+    if (checkIfDisabled()) {
       return;
     }
     log.debug("onApplicationStart called [{}].", applicationStart);
@@ -424,9 +421,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   private boolean checkIfDisabled() {
-    String isDisabled = Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED");
-    boolean isDisabledFromConf =
-        conf != null && conf.getBoolean("spark.openlineage.disabled", false);
-    return Boolean.parseBoolean(isDisabled) || isDisabledFromConf;
+    return Optional.ofNullable(Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED"))
+        .map(Boolean::parseBoolean)
+        .filter(Boolean::booleanValue)
+        .orElse(conf != null && conf.getBoolean("spark.openlineage.disabled", false));
   }
 }

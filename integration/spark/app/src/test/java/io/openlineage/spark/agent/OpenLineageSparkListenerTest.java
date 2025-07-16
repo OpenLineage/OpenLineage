@@ -280,11 +280,13 @@ class OpenLineageSparkListenerTest {
   @Test
   void testDisableOpenLineageBySparkConf() {
     SparkConf sparkConf = new SparkConf();
-    sparkConf.set("spark.openlineage.disabled", "true");
     OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
     OpenLineageSparkListener.init(
         new StaticExecutionContextFactory(
             emitter, new SimpleMeterRegistry(), new SparkOpenLineageConfig()));
+
+    // set spark configuration after listener initialization
+    sparkConf.set("spark.openlineage.disabled", "true");
 
     SparkListenerApplicationStart event = mock(SparkListenerApplicationStart.class);
     listener.onApplicationStart(event);
