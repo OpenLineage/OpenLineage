@@ -11,6 +11,8 @@
 
 ### Fixed
 
+* **Spark: make visitors stateless - avoid memory leak.** [`#3902`](https://github.com/OpenLineage/OpenLineage/pull/3902) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Merge `SqlExecutionRDDVisitor` and `LogicalRDDVisitor` classes to avoid memory leak.*
 
 ## [1.35.0](https://github.com/OpenLineage/OpenLineage/compare/1.34.0...1.35.0) - 2025-07-11
 
