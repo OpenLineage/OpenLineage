@@ -22,7 +22,6 @@ workflows:
           matrix:
             parameters:
               env-variant: [
-                'java:8-spark:2.4.8-scala:2.12',
                 'java:8-spark:3.2.4-scala:2.12-full-tests',
                 'java:8-spark:3.2.4-scala:2.13-full-tests',
                 'java:8-spark:3.3.4-scala:2.12-full-tests',
@@ -114,7 +113,6 @@ workflows:
           matrix:
             parameters:
               env-variant: [
-                'java:8-spark:2.4.8-scala:2.12',
                 'java:8-spark:3.2.4-scala:2.12-full-tests',
                 'java:8-spark:3.2.4-scala:2.13-full-tests',
                 'java:8-spark:3.3.4-scala:2.12-full-tests',

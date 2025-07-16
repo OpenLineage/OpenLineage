@@ -85,8 +85,6 @@ addDependenciesToConfiguration(additionalJarsConfigurationName, spark, scala, th
 dependencies {
     implementation(project(path: ":shared"))
     implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
-    implementation(project(path: ":spark2"))
-    implementation(project(path: ":spark2", configuration: "scala212RuntimeElements"))
     implementation(project(path: ":spark3"))
     implementation(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
 
@@ -253,7 +251,6 @@ tasks.named("shadowJar", ShadowJar.class) {
 
     minimize() {
         exclude(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
-        exclude(project(path: ":spark2", configuration: "scala212RuntimeElements"))
         exclude(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
         exclude(project(path: ":spark31", configuration: "scala212RuntimeElements"))
         exclude(project(path: ":spark32", configuration: activeRuntimeElementsConfiguration))
