@@ -6,6 +6,8 @@
 
 * **Spark: support Delta 4.0 and cover it with tests on Spark 4.0.** [`#3877`](https://github.com/OpenLineage/OpenLineage/pull/3877) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Fix failing tests for Spark 4.0. Make delta integration tests pass with Delta 4.0 on Spark 4.*
+* **Spark: bump minor versions 3.4.3 -> 3.4.4, 3.5.4 -> 3.5.6.** [`#3907`](https://github.com/OpenLineage/OpenLineage/pull/3907) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Bump tested Spark versions.*
 
 ### Changed
 

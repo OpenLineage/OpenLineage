@@ -67,9 +67,9 @@ public class DatabricksEnvironment implements AutoCloseable {
 
   public static final String CLUSTER_NAME = "openlineage-test-cluster";
   public static final Map<String, String> PLATFORM_VERSIONS_NAMES =
-      ImmutableMap.of("3.4.1", "13.3.x-scala2.12", "3.5.4", "16.4.x-scala2.12");
+      ImmutableMap.of("3.4.1", "13.3.x-scala2.12", "3.5.6", "16.4.x-scala2.12");
   public static final Map<String, String> PLATFORM_VERSIONS =
-      ImmutableMap.of("3.4.1", "13.3", "3.5.4", "16.4");
+      ImmutableMap.of("3.4.1", "13.3", "3.5.6", "16.4");
   public static final String NODE_TYPE = "Standard_DS3_v2";
   public static final String INIT_SCRIPT_FILE = "/Shared/open-lineage-init-script.sh";
   public static final String DBFS_CLUSTER_LOGS = "dbfs:/databricks/openlineage/cluster-logs";
