@@ -108,7 +108,7 @@ services:
       - airflow_worker
       - airflow_triggerer
       - backend
-    entrypoint: ["/wait-for-it.sh", "backend:5000", "--", "python", '-m', 'pytest', 'test_integration.py']
+    entrypoint: ["/wait-for-it.sh", "backend:5000", "--", "python", '-m', 'pytest', '-x', 'test_integration.py']
 
   airflow_scheduler:
     <<: *airflow-base
