@@ -383,9 +383,9 @@ class SparkDeltaIntegrationTest {
                     }))
             .repartition(1);
 
-    dataset.write().mode("overwrite").format("delta").saveAsTable("t1");
-    dataset.write().mode("overwrite").format("delta").saveAsTable("t2");
-    dataset.write().mode("overwrite").format("delta").saveAsTable("t3");
+    dataset.write().format("delta").saveAsTable("t1");
+    dataset.write().format("delta").saveAsTable("t2");
+    dataset.write().format("delta").saveAsTable("t3");
 
     // wait until t3 complete event is sent
     await()
@@ -478,7 +478,7 @@ class SparkDeltaIntegrationTest {
                     }))
             .repartition(1);
 
-    dataset.write().mode("overwrite").format("delta").saveAsTable("t1");
+    dataset.write().format("delta").saveAsTable("t1");
     spark.sql("CREATE TABLE t2 USING delta AS SELECT sum(a) AS c, b AS d FROM t1 group by b");
 
     verifyEvents(mockServer, "pysparkDeltaGroupByCompleteEvent.json");
@@ -545,8 +545,8 @@ class SparkDeltaIntegrationTest {
             .withColumn("__load_ts", functions.lit("2022-01-01 00:02:00").cast("timestamp"))
             .repartition(1);
 
-    source.write().format("delta").mode("overwrite").saveAsTable("source_table");
-    target.write().format("delta").mode("overwrite").saveAsTable("target_table");
+    source.write().format("delta").saveAsTable("source_table");
+    target.write().format("delta").saveAsTable("target_table");
 
     spark.sql(
         "WITH source as (SELECT *, __load_ts as load_ts FROM source_table) "

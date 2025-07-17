@@ -519,12 +519,12 @@ List<Dependency> bigqueryDependencies(String spark, String scala) {
                         { transitive = false }
                 )
             ],
-            "3.4.3": [
+            "3.4.4": [
                 dependencies.create("com.google.cloud.spark:spark-3.4-bigquery:${bigqueryVersion}",
                         { transitive = false }
                 )
             ],
-            "3.5.4": [
+            "3.5.6": [
                 dependencies.create("com.google.cloud.spark:spark-3.5-bigquery:${bigqueryVersion}",
                         { transitive = false }
                 )
@@ -550,13 +550,13 @@ List<Dependency> icebergDependencies(String spark, String scala) {
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
                     dependencies.create("org.scala-lang.modules:scala-collection-compat_${scala}:2.11.0"),
             ],
-            "3.4.3": [
+            "3.4.4": [
                     dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.4_${scala}:1.6.0"),
                     dependencies.create("org.scala-lang:scala-library:${scalaVersion}"),
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
                     dependencies.create("org.scala-lang.modules:scala-collection-compat_${scala}:2.11.0"),
             ],
-            "3.5.4": [
+            "3.5.6": [
                     dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.5_${scala}:1.6.0"),
                     dependencies.create("org.scala-lang:scala-library:${scalaVersion}"),
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
@@ -571,8 +571,8 @@ List<Dependency> deltaDependencies(String spark, String scala) {
     final def registry = [
             "3.2.4": "1.1.0",
             "3.3.4": "2.1.0",
-            "3.4.3": "2.4.0",
-            "3.5.4": "3.3.2",
+            "3.4.4": "2.4.0",
+            "3.5.6": "3.3.2",
             "4.0.0": "4.0.0"
     ]
 
@@ -595,8 +595,8 @@ List<Dependency> gcsDependencies(String spark, String scala) {
             "2.4.8": "hadoop2-2.2.9",
             "3.2.4": "hadoop3-2.2.9",
             "3.3.4": "hadoop3-2.2.9",
-            "3.4.3": "hadoop3-2.2.9",
-            "3.5.4": "hadoop3-2.2.9",
+            "3.4.4": "hadoop3-2.2.9",
+            "3.5.6": "hadoop3-2.2.9",
     ]
 
     def gcs = registry.get(spark)
@@ -615,8 +615,8 @@ List<Dependency> hadoopClientDependencies(String spark, String scala) {
             "2.4.8": "2.10.2",
             "3.2.4": "3.3.4",
             "3.3.4": "3.3.2",
-            "3.4.3": "3.3.4",
-            "3.5.4": "3.3.4",
+            "3.4.4": "3.3.4",
+            "3.5.6": "3.3.4",
     ]
 
     def hadoopClient = registry.get(spark)
@@ -670,13 +670,13 @@ List<Dependency> additionalJars(String spark, String scala) {
                     }),
                     dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.3_${scala}:1.6.0")
             ],
-            "3.4.3": [
+            "3.4.4": [
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
                         transitive = false
                     }),
                     dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.4_${scala}:1.6.0")
             ],
-            "3.5.4": [
+            "3.5.6": [
                     dependencies.create("org.slf4j:slf4j-api:2.0.10"),
                     dependencies.create("org.slf4j:slf4j-reload4j:2.0.17"),
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
