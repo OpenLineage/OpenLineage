@@ -14,7 +14,6 @@ import io.openlineage.client.OpenLineage.RunFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.UUIDUtils;
 import io.openlineage.spark.agent.EventEmitter;
-import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.builder.SparkJobDetailsFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilderDelegate;
@@ -43,7 +42,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.JobConf;
@@ -105,7 +103,7 @@ class RddExecutionContext implements ExecutionContext {
     Set<RDD<?>> rdds = Rdds.flattenRDDs(finalRDD, new HashSet<>());
     log.debug("flattenRDDs {}", rdds);
     this.inputs = findInputs(rdds);
-    Configuration jc = new JobConf();
+    JobConf jobConf = new JobConf();
     if (activeJob.finalStage() instanceof ResultStage) {
       ResultStage resultStage = (ResultStage) activeJob.finalStage();
       try {
@@ -117,12 +115,12 @@ class RddExecutionContext implements ExecutionContext {
           Field confField = HadoopMapRedWriteConfigUtil.class.getDeclaredField("conf");
           confField.setAccessible(true);
           SerializableJobConf serializableJobConf = (SerializableJobConf) confField.get(conf);
-          jc = serializableJobConf.value();
+          jobConf = serializableJobConf.value();
         } else if (conf instanceof HadoopMapReduceWriteConfigUtil) {
           Field confField = HadoopMapReduceWriteConfigUtil.class.getDeclaredField("conf");
           confField.setAccessible(true);
           SerializableJobConf serializableJobConf = (SerializableJobConf) confField.get(conf);
-          jc = serializableJobConf.value();
+          jobConf = serializableJobConf.value();
         } else {
           log.info(
               "Config field is not HadoopMapRedWriteConfigUtil or HadoopMapReduceWriteConfigUtil, it's {}",
@@ -131,11 +129,9 @@ class RddExecutionContext implements ExecutionContext {
       } catch (IllegalAccessException | NoSuchFieldException nfe) {
         log.warn("Unable to access job conf from RDD", nfe);
       }
-      log.info("Found job conf from RDD {}", jc);
-    } else {
-      jc = OpenLineageSparkListener.getConfigForRDD(finalRDD);
+      log.info("Found job conf from RDD {}", jobConf);
     }
-    this.outputs = findOutputs(finalRDD, jc);
+    this.outputs = findOutputs(finalRDD, jobConf);
   }
 
   /**
@@ -428,8 +424,8 @@ class RddExecutionContext implements ExecutionContext {
     return inputs.stream().map(this::buildInputDataset).collect(Collectors.toList());
   }
 
-  protected List<URI> findOutputs(RDD<?> rdd, Configuration config) {
-    Path outputPath = getOutputPath(rdd, config);
+  protected List<URI> findOutputs(RDD<?> rdd, JobConf jobConf) {
+    Path outputPath = getOutputPath(rdd, jobConf);
     log.info("Found output path {} from RDD {}", outputPath, rdd);
     if (outputPath != null) {
       return Collections.singletonList(outputPath.toUri());
@@ -452,26 +448,18 @@ class RddExecutionContext implements ExecutionContext {
     }
   }
 
-  protected static Path getOutputPath(RDD<?> rdd, Configuration config) {
-    Path path = null;
-    if (config != null) {
-      // "new" mapred api
-      JobConf jc;
-      if (config instanceof JobConf) {
-        jc = (JobConf) config;
-      } else {
-        jc = new JobConf(config);
-      }
-      log.debug("JobConf {}", jc);
-      path = org.apache.hadoop.mapred.FileOutputFormat.getOutputPath(jc);
-      if (path == null) {
-        try {
-          // old fashioned mapreduce api
-          log.debug("Path is null, trying to use old fashioned mapreduce api");
-          path = org.apache.hadoop.mapreduce.lib.output.FileOutputFormat.getOutputPath(new Job(jc));
-        } catch (IOException exception) {
-          exception.printStackTrace(System.out);
-        }
+  protected static Path getOutputPath(RDD<?> rdd, JobConf jobConf) {
+    Path path;
+    log.debug("JobConf {}", jobConf);
+    path = org.apache.hadoop.mapred.FileOutputFormat.getOutputPath(jobConf);
+    if (path == null) {
+      try {
+        // old fashioned mapreduce api
+        log.debug("Path is null, trying to use old fashioned mapreduce api");
+        path =
+            org.apache.hadoop.mapreduce.lib.output.FileOutputFormat.getOutputPath(new Job(jobConf));
+      } catch (IOException exception) {
+        exception.printStackTrace(System.out);
       }
     }
 
