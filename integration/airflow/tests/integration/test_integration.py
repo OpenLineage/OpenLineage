@@ -131,7 +131,7 @@ def wait_for_dag(dag_id, airflow_db_conn, should_fail=False) -> bool:
     )
     row = cur.fetchone()
     if not row:
-        raise TypeError("Query returned empty result. DAG run not found.")
+        raise RetryException("Query returned empty result. DAG run not found.")
     dag_id, state = row
 
     cur.close()
