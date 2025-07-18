@@ -24,6 +24,8 @@ import org.apache.flink.table.planner.lineage.TableLineageDataset;
 import org.apache.flink.table.planner.lineage.TableLineageDatasetImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class KafkaTableLineageDatasetIdentifierVisitorTest {
   KafkaTableLineageDatasetIdentifierVisitor visitor =
@@ -69,13 +71,14 @@ class KafkaTableLineageDatasetIdentifierVisitorTest {
     assertThat(visitor.isDefinedAt(table)).isTrue();
   }
 
-  @Test
-  void testApply() {
+  @ParameterizedTest
+  @ValueSource(strings = {"kafka", "upsert-kafka"})
+  void testApply(String connectorName) {
     when(catalogBaseTable.getOptions())
         .thenReturn(
             Map.of(
                 "connector",
-                "kafka",
+                connectorName,
                 "properties.bootstrap.servers",
                 "localhost:1000,localhost:2000",
                 "topic",
