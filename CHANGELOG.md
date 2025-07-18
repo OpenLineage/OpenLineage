@@ -8,6 +8,8 @@
   *Fix failing tests for Spark 4.0. Make delta integration tests pass with Delta 4.0 on Spark 4.*
 * **Spark: bump minor versions 3.4.3 -> 3.4.4, 3.5.4 -> 3.5.6.** [`#3907`](https://github.com/OpenLineage/OpenLineage/pull/3907) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Bump tested Spark versions.*
+* **Spark: Add memory info to debug facet.** [`#3914`](https://github.com/OpenLineage/OpenLineage/pull/3914) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Extend DebugFacet with additional information on Spark's driver memory configuration and current memory usage.*
 
 ### Changed
 

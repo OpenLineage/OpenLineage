@@ -20,6 +20,7 @@ when it detects that OpenLineage event is not emitted properly.
 * Information about the system like: Spark deployment mode, Java version, Java vendor, OS name, OS version, timezone.
 * Metrics, which apart from being sent to Metric backend, can be filled within DebugFacet at the same time.
 * Shortened information about the LogicalPlan which contains tree structure as well class names of the nodes.
+* Memory information including Spark's driver memory configuration and memory usage (free and total memory).
 * Logs: logs relating to OpenLineage Spark integration, which can be useful for debugging purposes.
 
 Please refer to `io.openlineage.spark.agent.facets.DebugRunFacet` source code to get more up-to-date information about the fields.
