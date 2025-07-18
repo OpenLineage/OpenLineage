@@ -16,6 +16,7 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.spark.agent.facets.DebugRunFacet.ClasspathDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanDebugFacet;
+import io.openlineage.spark.agent.facets.DebugRunFacet.MemoryDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.MetricsDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.MetricsNode;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -203,5 +204,31 @@ class DebugRunFacetBuilderDelegateTest {
     MetricsDebugFacet facet = delegate.buildFacet().getMetrics();
 
     assertThat(facet).isNull();
+  }
+
+  @Test
+  void testMemoryDebugFacet() {
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(openLineageContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+
+    when(sparkContext.conf())
+        .thenReturn(
+            new SparkConf()
+                .set("spark.driver.memory", "2g")
+                .set("spark.driver.memoryOverhead", "512m")
+                .set("spark.driver.minMemoryOverhead", "256m")
+                .set("spark.driver.memoryOverheadFactor", "0.1"));
+
+    MemoryDebugFacet facet = delegate.buildFacet().getMemory();
+
+    assertThat(facet)
+        .hasFieldOrPropertyWithValue("sparkConfDriverMemory", "2g")
+        .hasFieldOrPropertyWithValue("sparkConfDriverMemoryOverhead", "512m")
+        .hasFieldOrPropertyWithValue("sparkConfDriverMinMemoryOverhead", "256m")
+        .hasFieldOrPropertyWithValue("sparkConfDriverMemoryOverheadFactor", "0.1");
+
+    assertThat(facet.getFreeMemory()).isGreaterThan(0L);
+    assertThat(facet.getTotalMemory()).isGreaterThan(0L);
+    assertThat(facet.getMaxMemory()).isGreaterThan(0L);
   }
 }

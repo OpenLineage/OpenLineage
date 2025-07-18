@@ -150,7 +150,7 @@ public class OpenLineageRunEventTimeoutExecutor {
       debugFacet.getLogs().add(message);
     } else {
       DebugRunFacet debugFacet =
-          new DebugRunFacet(null, null, null, null, null, Arrays.asList(message), 100);
+          new DebugRunFacet(null, null, null, null, null, null, Arrays.asList(message), 100);
       runFacets.getAdditionalProperties().put("debug", debugFacet);
     }
   }
