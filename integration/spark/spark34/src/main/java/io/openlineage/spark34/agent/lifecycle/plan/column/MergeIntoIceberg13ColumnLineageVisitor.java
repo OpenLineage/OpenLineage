@@ -15,10 +15,14 @@ import io.openlineage.spark3.agent.lifecycle.plan.column.OutputFieldsCollector;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;
+import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.MergeRows;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
+import org.apache.spark.sql.catalyst.plans.logical.RebalancePartitions;
 import org.apache.spark.sql.catalyst.plans.logical.ReplaceIcebergData;
+import org.apache.spark.sql.catalyst.plans.logical.WriteIcebergDelta;
 
 @Slf4j
 public class MergeIntoIceberg13ColumnLineageVisitor implements ColumnLevelLineageVisitor {
@@ -30,7 +34,9 @@ public class MergeIntoIceberg13ColumnLineageVisitor implements ColumnLevelLineag
 
   public static boolean hasClasses() {
     return ReflectionUtils.hasClass(
-        "org.apache.spark.sql.catalyst.plans.logical.ReplaceIcebergData");
+        "org.apache.spark.sql.catalyst.plans.logical.ReplaceIcebergData") 
+    && ReflectionUtils.hasClass(
+        "org.apache.spark.sql.catalyst.plans.logical.WriteIcebergDelta");
   }
 
   @Override
@@ -39,12 +45,19 @@ public class MergeIntoIceberg13ColumnLineageVisitor implements ColumnLevelLineag
       InputFieldsCollector.collect(context, ((ReplaceIcebergData) node).child());
       InputFieldsCollector.collect(context, (LogicalPlan) ((ReplaceIcebergData) node).table());
     }
+    if (node instanceof WriteIcebergDelta) {
+      InputFieldsCollector.collect(context, ((WriteIcebergDelta) node).child());
+      InputFieldsCollector.collect(context, (LogicalPlan) ((WriteIcebergDelta) node).table());
+    }
   }
 
   @Override
   public void collectOutputs(ColumnLevelLineageContext context, LogicalPlan node) {
     if (node instanceof ReplaceIcebergData) {
       OutputFieldsCollector.collect(context, (LogicalPlan) ((ReplaceIcebergData) node).table());
+    }
+    if (node instanceof WriteIcebergDelta) {
+      OutputFieldsCollector.collect(context, (LogicalPlan) ((WriteIcebergDelta) node).table());
     }
   }
 
@@ -71,6 +84,29 @@ public class MergeIntoIceberg13ColumnLineageVisitor implements ColumnLevelLineag
               .addDependency(
                   ((LogicalPlan) namedRelation).output().apply(i).exprId(),
                   queryOutputs.get(i).exprId());
+        }
+      }
+    }
+    if (node instanceof WriteIcebergDelta) {
+      WriteIcebergDelta writeIcebergDelta = (WriteIcebergDelta) node;
+      NamedRelation namedRelation = writeIcebergDelta.table();
+
+      LogicalPlan query = writeIcebergDelta.query();
+
+      if (query instanceof MergeRows || 
+          query instanceof RebalancePartitions && ((RebalancePartitions)query).child() instanceof MergeRows) {
+        List<Attribute> inputs =
+            ScalaConversionUtils.fromSeq(query.output());
+        List<Attribute> outputs =
+            ScalaConversionUtils.fromSeq(((LogicalPlan) namedRelation).output());
+
+        for (int i = 0; i < outputs.size(); i++) {
+          log.debug("Adding dependency: {}, {}",outputs.get(i).exprId(), inputs.get(i+1).exprId());
+          context
+              .getBuilder()
+              .addDependency(
+                outputs.get(i).exprId(),
+                inputs.get(i+1).exprId());
         }
       }
     }

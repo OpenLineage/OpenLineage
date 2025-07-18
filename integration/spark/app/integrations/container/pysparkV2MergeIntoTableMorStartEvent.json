@@ -2,12 +2,12 @@
   "eventType": "START",
   "job": {
     "namespace": "iceberg-namespace",
-    "name": "iceberg_integration_test.replace_data.spark_catalog_default_events"
+    "name": "iceberg_integration_test.write_delta.spark_catalog_default_events_mor"
   },
   "inputs": [
     {
       "namespace": "file",
-      "name": "/tmp/iceberg/default/updates",
+      "name": "/tmp/iceberg/default/updates_mor",
       "facets": {
         "dataSource": {
           "name": "file",
@@ -30,7 +30,7 @@
           "identifiers": [
             {
               "namespace": "file:/tmp/iceberg",
-              "name": "default.updates",
+              "name": "default.updates_mor",
               "type": "TABLE"
             }
           ]
