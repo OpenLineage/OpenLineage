@@ -181,12 +181,22 @@ class IncrementalFileReader:
         Incomplete line chars are saved in the incomplete_line member.
         """
 
-        logger.debug(f"Reading {max_read_size} bytes from {self.text_file.name}")
+        logger.debug("Reading %d bytes from %s", max_read_size, self.text_file.name)
+        read_since_start = 0
+        current_read = 0
+
         to_read = min(max_read_size, self.chunk_size)
         read = self.text_file.read(to_read)
         chunk = self.incomplete_line + read
         while chunk and chunk != self.incomplete_line:
             max_read_size -= len(read)
+
+            read_since_start += len(read)
+            current_read += len(read)
+            if current_read >= 100000:
+                logger.debug("Read %d bytes. Left to read %d bytes", read_since_start, max_read_size)
+                current_read = 0
+
             line = []
             next_line_start = 0
             for i in range(len(chunk)):
@@ -204,3 +214,4 @@ class IncrementalFileReader:
             to_read = min(max_read_size, self.chunk_size)
             read = self.text_file.read(to_read)
             chunk = self.incomplete_line + read
+        logger.debug("Finished reading, read %d bytes", read_since_start)
