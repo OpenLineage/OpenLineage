@@ -31,7 +31,6 @@ final def activeRuntimeElementsConfiguration = "scala${scalaFmt}RuntimeElements"
 dependencies {
     implementation(project(path: ":app"))
     implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
-    implementation(project(path: ":spark2"))
     implementation(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
     implementation(project(path: ":spark31"))
     implementation(project(path: ":spark32", configuration: activeRuntimeElementsConfiguration))
@@ -163,7 +162,6 @@ shadowJar {
     minimize() {
         exclude(project(path: ":app"))
         exclude(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
-        exclude(project(path: ":spark2"))
         exclude(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
         exclude(project(path: ":spark31"))
         exclude(project(path: ":spark32", configuration: activeRuntimeElementsConfiguration))

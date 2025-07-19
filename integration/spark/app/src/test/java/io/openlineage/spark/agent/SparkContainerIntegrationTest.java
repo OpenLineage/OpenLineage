@@ -54,9 +54,7 @@ class SparkContainerIntegrationTest {
   private static final MockServerContainer openLineageClientMockContainer =
       SparkContainerUtils.makeMockServerContainer(network);
 
-  private static final String GREATER_THAN_SPARK2 = "([34].*)";
   private static final String PACKAGES = "--packages";
-  private static final String SPARK_VERSION = "spark.version";
 
   private static GenericContainer<?> pyspark;
   private static GenericContainer<?> kafka;
@@ -103,9 +101,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testPysparkWordCountWithCliArgs() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
@@ -120,9 +115,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testPysparkRddToTable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testPysparkRddToTable", "spark_rdd_to_table.py");
@@ -188,9 +180,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testPysparkSQLHiveTest() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testPysparkSQLHiveTest", "spark_hive.py");
@@ -204,9 +193,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testPysparkSQLHadoopFSTest() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
@@ -219,9 +205,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testOverwriteName() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
@@ -239,9 +222,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testPysparkSQLOverwriteDirHiveTest() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
@@ -255,9 +235,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testCreateAsSelectAndLoad() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testCreateAsSelectAndLoad", "spark_ctas_load.py");
@@ -268,16 +245,10 @@ class SparkContainerIntegrationTest {
         "pysparkLoadStart.json",
         "pysparkLoadComplete.json");
 
-    if (System.getProperty(SPARK_VERSION).matches(GREATER_THAN_SPARK2)) {
-      // verify CTAS contains column level lineage
-      verifyEvents(mockServerClient, "pysparkCTASWithColumnLineageEnd.json");
-    }
+    verifyEvents(mockServerClient, "pysparkCTASWithColumnLineageEnd.json");
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testCachedDataset() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "cachedDataset", "spark_cached.py");
@@ -285,9 +256,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testSymlinksFacetForHiveCatalog() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "symlinks", "spark_hive_catalog.py");
@@ -335,7 +303,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = GREATER_THAN_SPARK2)
   void testOptimizedCreateAsSelectAndLoad() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
@@ -346,7 +313,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = GREATER_THAN_SPARK2)
   void testColumnLevelLineage() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testColumnLevelLineage", "spark_cll.py");
