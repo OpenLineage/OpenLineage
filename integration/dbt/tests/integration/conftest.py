@@ -33,22 +33,13 @@ def docker_compose_project():
     # Build wheels for OpenLineage components
     openlineage_root = test_dir.parent.parent.parent.parent
 
-    # Build client/python wheel
+    # Build client/python wheel using uv build
     client_python_dir = openlineage_root / "client" / "python"
     print(f"Building client python wheel from {client_python_dir}")
     subprocess.run(
-        [
-            "bash",
-            "-c",
-            f"cd {client_python_dir} && rm -rf dist/* && "
-            f"uv venv --python 3.10 && "
-            f"source .venv/bin/activate && "
-            f"uv sync && "
-            f"uv run python -m build --wheel && "
-            f"cp dist/* {wheels_dir}/",
-        ],
+        ["uv", "build", "--wheel", "--out-dir", str(wheels_dir)],
         check=True,
-        shell=False,
+        cwd=client_python_dir,
     )
 
     # Build integration/sql/iface-py wheel using Docker (if not already built)
@@ -109,41 +100,22 @@ def docker_compose_project():
             check=True,
         )
 
-    # Build integration/common wheel
+    # Build integration/common wheel using uv build
     integration_common_dir = openlineage_root / "integration" / "common"
     print(f"Building integration common wheel from {integration_common_dir}")
     subprocess.run(
-        [
-            "bash",
-            "-c",
-            f"cd {integration_common_dir} && rm -rf dist/* && pwd && "
-            f"uv venv --python 3.10 && "
-            f"source .venv/bin/activate && "
-            f"uv pip install setuptools && "
-            f"python setup.py bdist_wheel && "
-            f"cp dist/* {wheels_dir}/",
-        ],
+        ["uv", "build", "--wheel", "--out-dir", str(wheels_dir)],
         check=True,
-        shell=False,
+        cwd=integration_common_dir,
     )
 
-    # Build integration/dbt wheel
+    # Build integration/dbt wheel using uv build
     integration_dbt_dir = openlineage_root / "integration" / "dbt"
     print(f"Building integration dbt wheel from {integration_dbt_dir}")
     subprocess.run(
-        [
-            "bash",
-            "-c",
-            f"cd {integration_dbt_dir} && "
-            f"rm -rf dist/* && "
-            f"uv venv --python 3.10 && "
-            f"source .venv/bin/activate && "
-            f"uv pip install setuptools && "
-            f"python setup.py bdist_wheel && "
-            f"cp dist/* {wheels_dir}/",
-        ],
+        ["uv", "build", "--wheel", "--out-dir", str(wheels_dir)],
         check=True,
-        shell=False,
+        cwd=integration_dbt_dir,
     )
 
     print(f"Built wheels: {list(wheels_dir.glob('*.whl'))}")

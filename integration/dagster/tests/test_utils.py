@@ -4,6 +4,8 @@
 import uuid
 from unittest.mock import patch
 
+from dagster import EventRecordsFilter
+from dagster.core.events import PIPELINE_EVENTS, STEP_EVENTS
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.dagster.utils import (
     get_event_log_records,
@@ -12,9 +14,6 @@ from openlineage.dagster.utils import (
     make_step_run_id,
     to_utc_iso_8601,
 )
-
-from dagster import EventRecordsFilter
-from dagster.core.events import PIPELINE_EVENTS, STEP_EVENTS
 
 from .conftest import make_pipeline_run_with_external_pipeline_origin
 

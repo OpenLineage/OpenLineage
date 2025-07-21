@@ -8,7 +8,7 @@ from collections import namedtuple
 import yaml
 
 PARENT_LOCATION = pathlib.Path(__file__).resolve().parent.parent
-MODULES_LOCATION = PARENT_LOCATION / "client" / "python" / "openlineage" / "client" / "generated"
+MODULES_LOCATION = PARENT_LOCATION / "client" / "python" / "src" / "openlineage" / "client" / "generated"
 REDACT_FIELDS_YAML = PARENT_LOCATION / "client" / "python" / "redact_fields.yml"
 REDACT_FIELDS = yaml.safe_load(REDACT_FIELDS_YAML.read_text())
 MissingClass = namedtuple("MissingClass", "module_name class_name")
