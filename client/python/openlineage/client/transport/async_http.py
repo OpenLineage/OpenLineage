@@ -224,7 +224,11 @@ class AsyncHttpTransport(Transport):
             "failed": 0,
         }
 
+        # "Hard" exit. Does not wait for completion for events in flight.
         self.should_exit = threading.Event()
+        # "Soft" exit. Does not exit when there are events in the queue and active tasks
+        self.may_exit = threading.Event()
+
         # Maximum number of concurrent requests
         self.max_concurrent = config.max_concurrent_requests
         self.worker_thread = threading.Thread(target=self._setup_loop, daemon=True)
@@ -262,6 +266,11 @@ class AsyncHttpTransport(Transport):
 
         transport = httpx.AsyncHTTPTransport(limits=limits, retries=self.config.retry["total"])
 
+        def _should_exit() -> bool:
+            return self.should_exit.is_set() or (
+                self.event_queue.empty() and not len(active_tasks) and self.may_exit.is_set()
+            )
+
         async with httpx.AsyncClient(
             timeout=httpx.Timeout(timeout=self.config.timeout),
             verify=self.config.verify,
@@ -269,7 +278,7 @@ class AsyncHttpTransport(Transport):
             transport=transport,
         ) as client:
             last_processed_time = time.time()
-            while not self.should_exit.is_set():
+            while not _should_exit():
                 processed_items = False
                 while not self.event_queue.empty() and len(active_tasks) < self.max_concurrent:
                     try:
@@ -329,16 +338,26 @@ class AsyncHttpTransport(Transport):
                     if current_time - last_processed_time >= 10.0:
                         log.warning(
                             "No new events processed for %.1fs. Queue empty: %s, "
-                            "active tasks: %d, max concurrent: %d",
+                            "active tasks: %d, max concurrent: %d, "
+                            "query stats: pending %d success %d failed %s",
                             current_time - last_processed_time,
                             self.event_queue.empty(),
                             len(active_tasks),
                             self.max_concurrent,
+                            self.event_stats["pending"],
+                            self.event_stats["success"],
+                            self.event_stats["failed"],
                         )
                         last_processed_time = current_time
                     await asyncio.sleep(0.01)
 
-            log.debug("AsyncHttpTransport event loop worker completed")
+            log.debug(
+                "AsyncHttpTransport event loop worker completed. "
+                "Stats: %d pending, %d success, %d failed events",
+                self.event_stats["pending"],
+                self.event_stats["success"],
+                self.event_stats["failed"],
+            )
 
     async def _process_event(
         self,
@@ -555,6 +574,7 @@ class AsyncHttpTransport(Transport):
             bool: True if all events were processed, False if some events were not processed.
         """
         log.debug("Waiting for events completion for %.3f seconds", timeout)
+        self.may_exit.set()
         start_time = time.time()
         while timeout < 0 or time.time() - start_time < timeout:
             if self._all_processed():

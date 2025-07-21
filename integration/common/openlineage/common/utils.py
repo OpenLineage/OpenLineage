@@ -165,53 +165,63 @@ def has_lines(text_file: TextIO):
 
 
 class IncrementalFileReader:
-    """
-    dbt process writes to the log file incrementally. Sometimes lines are written incomplete.
-    This class is responsible of reading complete lines only and returns them via its methods.
-    """
-
     def __init__(self, text_file: TextIO):
+        """
+        dbt process writes to the log file incrementally. Sometimes lines are written incomplete.
+        This class is responsible of reading complete lines only and returns them via its methods.
+        """
         self.text_file = text_file
-        self.incomplete_line = ""
-        self.chunk_size = 4096
+        self.incomplete_chunks: List[str] = []
+        self.chunk_size = 65536
 
     def read_lines(self, max_read_size: int) -> Generator[str, Any, None]:
-        """
-        This reads the lines with given specified max_read_bytes.
-        Incomplete line chars are saved in the incomplete_line member.
-        """
-
         logger.debug("Reading %d bytes from %s", max_read_size, self.text_file.name)
         read_since_start = 0
         current_read = 0
 
-        to_read = min(max_read_size, self.chunk_size)
-        read = self.text_file.read(to_read)
-        chunk = self.incomplete_line + read
-        while chunk and chunk != self.incomplete_line:
-            max_read_size -= len(read)
+        while max_read_size > 0:
+            to_read = min(max_read_size, self.chunk_size)
+            read_data = self.text_file.read(to_read)
 
-            read_since_start += len(read)
-            current_read += len(read)
+            if not read_data:
+                break
+
+            max_read_size -= len(read_data)
+            read_since_start += len(read_data)
+            current_read += len(read_data)
+
             if current_read >= 100000:
                 logger.debug("Read %d bytes. Left to read %d bytes", read_since_start, max_read_size)
                 current_read = 0
 
-            line = []
-            next_line_start = 0
-            for i in range(len(chunk)):
-                char = chunk[i]
-                if char != os.linesep:
-                    line.append(char)
-                else:
-                    yield "".join(line)
-                    line = []
-                    next_line_start = i + 1
+            separators = []
+            pos = 0
+            while True:
+                sep_pos = read_data.find(os.linesep, pos)
+                if sep_pos == -1:
+                    break
+                separators.append(sep_pos)
+                pos = sep_pos + 1
 
-            self.incomplete_line = chunk[next_line_start:]
-            if max_read_size <= 0:
-                break
-            to_read = min(max_read_size, self.chunk_size)
-            read = self.text_file.read(to_read)
-            chunk = self.incomplete_line + read
+            if separators:
+                incomplete_line = "".join(self.incomplete_chunks)
+                full_data = incomplete_line + read_data
+                lines = []
+                start = 0
+
+                for sep_pos in separators:
+                    actual_pos = len(incomplete_line) + sep_pos
+                    lines.append(full_data[start:actual_pos])
+                    start = actual_pos + 1
+
+                yield from lines
+
+                # no sep at the end
+                self.incomplete_chunks = [full_data[start:]]
+            else:
+                # no separators at all - accumulate chunks instead of concatenating strings
+                # it's more efficient to do only one large concat at the end when we
+                # find out where the separator is
+                self.incomplete_chunks.append(read_data)
+
         logger.debug("Finished reading, read %d bytes", read_since_start)
