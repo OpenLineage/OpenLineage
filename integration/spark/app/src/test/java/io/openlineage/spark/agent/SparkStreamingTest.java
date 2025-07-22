@@ -65,7 +65,6 @@ import org.apache.spark.sql.types.StructType;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -73,9 +72,6 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 import org.testcontainers.utility.DockerImageName;
 
 @Slf4j
-// TODO: fix streaming support for Spark 4.x ->
-// https://github.com/OpenLineage/OpenLineage/issues/3883
-@DisabledIfSystemProperty(named = "spark.version", matches = "([4].*)")
 @Tag("integration-test")
 class SparkStreamingTest {
 
@@ -150,7 +146,7 @@ class SparkStreamingTest {
     HttpServer server = createHttpServer(handler);
 
     SparkSession spark =
-        createSparkSession(server.getAddress().getPort(), "testKafkaSourceToKafkaSink");
+            createSparkSession(server.getAddress().getPort(), "testKafkaSourceToKafkaSink");
 
     String userDirProperty = System.getProperty("user.dir");
     Path userDirPath = Paths.get(userDirProperty);

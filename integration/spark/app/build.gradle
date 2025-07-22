@@ -114,9 +114,8 @@ dependencies {
     compileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     testImplementation("org.apache.spark:spark-core_${scala}:${spark}")
-    // TODO: remove preview from testImplementation for Spark 4.0.0 -> this makes test compile without Spark 4.0.0 discrepancies
-    testImplementation("org.apache.spark:spark-sql_${scala}:${spark.startsWith("4") ? spark + "-preview2" : spark}")
-    testImplementation("org.apache.spark:spark-hive_${scala}:${spark.startsWith("4") ? spark + "-preview2" : spark}")
+    testImplementation("org.apache.spark:spark-sql_${scala}:${spark}")
+    testImplementation("org.apache.spark:spark-hive_${scala}:${spark}")
     testImplementation("org.apache.spark:spark-sql-kafka-0-10_${scala}:${spark}")
     testImplementation(platform("org.junit:junit-bom:${junit5Version}"))
     testImplementation("org.junit.jupiter:junit-jupiter")

@@ -8,6 +8,8 @@ package io.openlineage.spark.agent;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage.RunEvent;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -83,7 +85,7 @@ class ColumnLineageIntegrationTest {
   }
 
   @AfterAll
-  public static void tearDown() {
+  public static void tearDown() throws IOException {
     Arrays.asList("v2_source_1", "v2_source_2")
         .forEach(e -> spark.sql("drop table if exists " + e));
     metastoreContainer.stop();

@@ -142,7 +142,7 @@ class KustoRelationVisitorTest {
                         ExprId.apply(1L),
                         ScalaConversionUtils.<String>asScalaSeqEmpty()))),
             Option.empty(),
-            false);
+            false,null);
 
     TestKustoRelationVisitor visitor =
         new TestKustoRelationVisitor(

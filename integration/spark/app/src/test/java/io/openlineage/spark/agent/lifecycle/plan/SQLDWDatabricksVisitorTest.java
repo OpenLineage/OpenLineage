@@ -162,7 +162,7 @@ class SQLDWDatabricksVisitorTest {
                         ExprId.apply(1L),
                         ScalaConversionUtils.asScalaSeqEmpty()))),
             Option.empty(),
-            false);
+            false,null);
 
     TestSqlDWDatabricksVisitor visitor =
         new TestSqlDWDatabricksVisitor(
@@ -203,7 +203,7 @@ class SQLDWDatabricksVisitorTest {
                         ExprId.apply(1L),
                         ScalaConversionUtils.asScalaSeqEmpty()))),
             Option.empty(),
-            false);
+            false,null);
 
     TestSqlDWDatabricksVisitor visitor =
         new TestSqlDWDatabricksVisitor(
@@ -238,7 +238,7 @@ class SQLDWDatabricksVisitorTest {
                         ExprId.apply(1L),
                         ScalaConversionUtils.asScalaSeqEmpty()))),
             Option.empty(),
-            false);
+            false,null);
 
     TestSqlDWDatabricksVisitor visitor =
         new TestSqlDWDatabricksVisitor(
@@ -270,7 +270,7 @@ class SQLDWDatabricksVisitorTest {
                         ExprId.apply(1L),
                         ScalaConversionUtils.asScalaSeqEmpty()))),
             Option.empty(),
-            false);
+            false,null);
 
     TestSqlDWDatabricksVisitor visitor =
         new TestSqlDWDatabricksVisitor(

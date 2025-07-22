@@ -205,7 +205,7 @@ class OpenLineageSparkListenerTest {
                 ScalaConversionUtils.asScalaSeqEmpty()));
 
     when(qe.executedPlan()).thenReturn(plan);
-    when(qe.sparkSession()).thenReturn(sparkSession);
+    when(qe.sparkSession()).thenReturn((org.apache.spark.sql.classic.SparkSession) sparkSession);
     when(plan.sparkContext()).thenReturn(sparkContext);
     when(plan.nodeName()).thenReturn("execute");
 

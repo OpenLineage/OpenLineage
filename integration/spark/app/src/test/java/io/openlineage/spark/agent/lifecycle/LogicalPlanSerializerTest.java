@@ -84,12 +84,12 @@ class LogicalPlanSerializerTest {
                         ExprId.apply(1L),
                         ScalaConversionUtils.asScalaSeqEmpty()))),
             Option.empty(),
-            false);
+            false,null);
     Aggregate aggregate =
         new Aggregate(
             ScalaConversionUtils.asScalaSeqEmpty(),
             ScalaConversionUtils.asScalaSeqEmpty(),
-            logicalRelation);
+            logicalRelation,null);
 
     Map<String, Object> aggregateActualNode =
         objectMapper.readValue(logicalPlanSerializer.serialize(aggregate), mapTypeReference);
@@ -147,7 +147,7 @@ class LogicalPlanSerializerTest {
                         ExprId.apply(1L),
                         ScalaConversionUtils.asScalaSeqEmpty()))),
             Option.empty(),
-            false);
+            false,null);
     InsertIntoHadoopFsRelationCommand command =
         new InsertIntoHadoopFsRelationCommand(
             new org.apache.hadoop.fs.Path("/tmp"),

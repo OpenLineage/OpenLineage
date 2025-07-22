@@ -23,15 +23,11 @@ public class Spark4CompatUtils {
     Method method =
         MethodUtils.getAccessibleMethod(
             SparkSession$.class, "cleanupAnyExistingSession", new Class[] {});
-
-    if (method != null) {
-      SparkSession$.MODULE$.cleanupAnyExistingSession();
-    } else {
       // Spark 4.0 -> use classic spark session
       Class c = Class.forName("org.apache.spark.sql.classic.SparkSession$");
       Field field = c.getField("MODULE$");
       MethodUtils.invokeMethod(field.get(null), "cleanupAnyExistingSession", new Object[] {});
-    }
+
   }
 
   @SneakyThrows
