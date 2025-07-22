@@ -74,6 +74,7 @@ dependencies {
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.module:jackson-module-blackbird:${jacksonVersion}"
     implementation 'org.apache.commons:commons-lang3:3.18.0'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.5'
     implementation 'commons-logging:commons-logging:1.3.5'
