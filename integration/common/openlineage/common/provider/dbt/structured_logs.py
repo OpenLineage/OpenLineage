@@ -20,6 +20,7 @@ from openlineage.client.facet_v2 import (
     processing_engine_run,
     sql_job,
 )
+from openlineage.client.generated import external_query_run
 from openlineage.client.run import InputDataset
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet, ParentRunMetadata
@@ -510,6 +511,10 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         In case of failure a CatchableExceptionOnRun is generated instead
         """
         node_unique_id = get_node_unique_id(event)
+
+        # We are heavily relying here on the fact that sql events for sql executions for
+        # given node are run sequentially, as there is no information in a log
+        # event that would allow us to distinguish different sql events for a single model
         sql_ol_run_event = self.node_id_to_sql_start_event[node_unique_id]
 
         dbt_node_type = event["info"]["name"]
@@ -526,6 +531,11 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             )
         elif dbt_node_type == "SQLQueryStatus":
             run_state = RunState.COMPLETE
+
+            if query_id := get_from_nullable_chain(event, ["data", "query_id"]):
+                run_facets["externalQuery"] = external_query_run.ExternalQueryRunFacet(
+                    externalQueryId=query_id, source="source"
+                )
 
         return generate_run_event(
             event_type=run_state,
