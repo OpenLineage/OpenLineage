@@ -33,11 +33,11 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
-import scala.Option;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import scala.Option;
 
 class AlterTableCommandDatasetBuilderTest {
 
@@ -91,7 +91,8 @@ class AlterTableCommandDatasetBuilderTest {
           .thenReturn(Optional.empty());
 
       List<OpenLineage.OutputDataset> outputDatasets =
-          builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L, Option.<String>empty()), alterTable);
+          builder.apply(
+              new SparkListenerSQLExecutionEnd(1L, 1L, Option.<String>empty()), alterTable);
       assertEquals(0, outputDatasets.size());
     }
   }
@@ -106,7 +107,8 @@ class AlterTableCommandDatasetBuilderTest {
           .thenReturn(Optional.of(di));
 
       List<OpenLineage.OutputDataset> outputDatasets =
-          builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L, Option.<String>empty()), alterTable);
+          builder.apply(
+              new SparkListenerSQLExecutionEnd(1L, 1L, Option.<String>empty()), alterTable);
 
       assertEquals(1, outputDatasets.size());
       assertEquals("table", outputDatasets.get(0).getName());
@@ -129,7 +131,8 @@ class AlterTableCommandDatasetBuilderTest {
             .thenReturn(Optional.of(di));
 
         List<OpenLineage.OutputDataset> outputDatasets =
-            builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L, Option.<String>empty()), alterTable);
+            builder.apply(
+                new SparkListenerSQLExecutionEnd(1L, 1L, Option.<String>empty()), alterTable);
 
         assertEquals(1, outputDatasets.size());
         assertEquals("v2", outputDatasets.get(0).getFacets().getVersion().getDatasetVersion());
