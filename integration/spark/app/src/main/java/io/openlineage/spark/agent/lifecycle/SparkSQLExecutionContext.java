@@ -54,10 +54,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private final EventEmitter eventEmitter;
   private final OpenLineageRunEventBuilder runEventBuilder;
 
-  private boolean emittedOnSqlExecutionStart = false;
-  private boolean emittedOnSqlExecutionEnd = false;
-  private boolean emittedOnJobStart = false;
-  private boolean emittedOnJobEnd = false;
+  private boolean processedSQLExecutionStart = false;
+  private boolean processedSQLExecutionEnd = false;
+  private boolean processedJobStart = false;
+  private boolean processedJobEnd = false;
   private Integer activeJobId;
   private AtomicBoolean finished = new AtomicBoolean(false);
 
@@ -90,8 +90,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     olContext.setActiveJobId(activeJobId);
     // only one START event is expected, in case it was already sent with jobStart, we send running
-    EventType eventType = emittedOnJobStart ? RUNNING : START;
-    emittedOnSqlExecutionStart = true;
+    EventType eventType = processedJobStart ? RUNNING : START;
+    processedSQLExecutionStart = true;
 
     RunEvent event =
         runEventBuilder.buildRun(
@@ -132,13 +132,13 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     // only one COMPLETE event is expected, verify if jobEnd was not emitted
     EventType eventType;
-    if (emittedOnJobStart && !emittedOnJobEnd) {
+    if (processedJobStart && !processedJobEnd) {
       // expecting jobEnd event later on
       eventType = RUNNING;
     } else {
       eventType = COMPLETE;
     }
-    emittedOnSqlExecutionEnd = true;
+    processedSQLExecutionEnd = true;
 
     RunEvent event =
         runEventBuilder.buildRun(
@@ -253,8 +253,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     // only one START event is expected, in case it was already sent with sqlExecutionStart, we send
     // running
-    EventType eventType = emittedOnSqlExecutionStart ? RUNNING : START;
-    emittedOnJobStart = true;
+    EventType eventType = processedSQLExecutionStart ? RUNNING : START;
+    processedJobStart = true;
 
     RunEvent event =
         runEventBuilder.buildRun(
@@ -297,13 +297,17 @@ class SparkSQLExecutionContext implements ExecutionContext {
     EventType eventType;
     if (jobEnd.jobResult() instanceof JobFailed) {
       eventType = FAIL;
-    } else if (emittedOnSqlExecutionStart && !emittedOnSqlExecutionEnd) {
+    } else if (processedSQLExecutionStart && !processedSQLExecutionEnd) {
       // still waiting for sqlExecutionEnd event which will emit COMPLETE event
-      eventType = RUNNING;
+      // Since there's already a SQLExecutionStart received, there will be a
+      // SQLExecutionEnd. Emit runEvent for the pending SQLExecutionEnd instead
+      // of this one.
+      processedJobEnd = true;
+      return;
     } else {
       eventType = COMPLETE;
     }
-    emittedOnJobEnd = true;
+    processedJobEnd = true;
 
     RunEvent event =
         runEventBuilder.buildRun(
