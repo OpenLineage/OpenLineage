@@ -129,6 +129,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         self._dbt_invocation_id: Optional[str] = None
         self._dbt_log_file: Optional[TextIO] = None
         self.received_dbt_command_completed = False
+        self.processed_bytes = 0
 
         self.dbt_command_return_code = 0
 
@@ -202,6 +203,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         if not self.received_dbt_command_completed:
             # We did not receive the CommandCompleted event, so we emit an abort event
+            self.logger.debug("CommandCompleted event was not received. ABORT event will be send.")
             ol_event = self._get_dbt_command_abort_event()
             if ol_event:
                 yield ol_event
@@ -215,14 +217,19 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
         2. MainReportVersion/CommandCompleted for dbt command lifecycle events
         3. SQLQuery/SQLQueryStatus/CatchableExceptionOnRun For SQL query lifecycle events
         """
+        self.processed_bytes += len(line)
+        self.logger.debug(
+            "Received event of size %d. Total processed bytes %d", len(line), self.processed_bytes
+        )
         try:
             dbt_event = json.loads(line)
         except ValueError:
             # log that can't be consumed
-            self.logger.error(f"The following log is not valid JSON:\n{line}")
+            self.logger.error("The following log is not valid JSON:\n%s", line)
             return None
 
         dbt_event_name = dbt_event["info"]["name"]
+        self.logger.debug("Parsing dbt event: %s", dbt_event_name)
         if dbt_event_name == "MainReportVersion":
             self._dbt_version = dbt_event["data"]["version"][1:]
             self._dbt_invocation_id = dbt_event["info"].get("invocation_id")
@@ -694,6 +701,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
 
         incremental_reader = IncrementalFileReader(self._dbt_log_file)
         last_size = os.stat(self.dbt_log_file_path).st_size
+        self.logger.debug("Running dbt command: %s", " ".join(dbt_command_line))
 
         process = subprocess.Popen(dbt_command_line, stdout=sys.stdout, stderr=sys.stderr, text=True)
         parse_manifest = True
@@ -728,6 +736,7 @@ class DbtStructuredLogsProcessor(DbtLocalArtifactProcessor):
             while (
                 self._dbt_log_file is not None and not self.received_dbt_command_completed and i < max_loops
             ):
+                i += 1
                 current_size = os.stat(self.dbt_log_file_path).st_size
                 if current_size > last_size:
                     self.logger.debug(
