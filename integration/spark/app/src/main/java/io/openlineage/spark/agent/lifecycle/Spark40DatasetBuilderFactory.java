@@ -37,6 +37,7 @@ import io.openlineage.spark34.agent.lifecycle.plan.column.CreateReplaceInputData
 import io.openlineage.spark34.agent.lifecycle.plan.column.DropTableDatasetBuilder;
 import io.openlineage.spark35.agent.lifecycle.plan.CreateReplaceOutputDatasetBuilder;
 import io.openlineage.spark35.agent.lifecycle.plan.MergeRowsColumnLineageVisitor;
+import io.openlineage.spark40.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import io.openlineage.spark40.agent.lifecycle.plan.StreamingDataSourceV2ScanRelationDatasetBuilder;
 import java.util.Collection;
 import java.util.List;
@@ -88,10 +89,8 @@ public class Spark40DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new SparkExtensionV1OutputDatasetBuilder(context))
             .add(new SubqueryAliasOutputDatasetBuilder(context))
             .add(new DropTableDatasetBuilder(context))
-            .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context));
-    // .add(new AlterTableCommandDatasetBuilder(context); one of the classes no longer present for
-    // Spark 4
-    // TODO: https://github.com/OpenLineage/OpenLineage/issues/3884
+            .add(new MergeIntoCommandEdgeOutputDatasetBuilder(context))
+            .add(new AlterTableCommandDatasetBuilder(context));
 
     if (ReplaceIcebergDataDatasetBuilder.hasClasses()) {
       builder.add(new ReplaceIcebergDataDatasetBuilder(context));
