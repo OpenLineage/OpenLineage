@@ -55,7 +55,7 @@ public class AlterTableCommandDatasetBuilder
         || x instanceof ReplaceColumns
         || x instanceof DropColumns
         || x instanceof RenameColumn;
-    // Note: AlterColumn removed for Spark 4.0 compatibility
+    // AlterColumn removed for Spark 4.0 compatibility
   }
 
   @Override
