@@ -95,7 +95,6 @@ class LogicalPlanSerializerTest {
     Constructor<?>[] aggregateConstructors = aggregateInstance.getDeclaredConstructors();
     Constructor<?> aggregatConstructor = aggregateConstructors[0];
 
-
     if (System.getProperty("spark.version").startsWith("4")){
       Object[] paramsVersion4 = new Object[]{relation,output,Option.empty(),false,null};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion4);
@@ -161,14 +160,14 @@ class LogicalPlanSerializerTest {
                     NAME,
                     StringType$.MODULE$,
                     false,
-                    null,
+                    Metadata.empty(),
                     ExprId.apply(1L),
                     ScalaConversionUtils.asScalaSeqEmpty())));
 
     Constructor<?>[] constructors = logicalRelation.getDeclaredConstructors();
     Constructor<?> constructor = constructors[0];
 
-    if (!System.getProperty("spark.version").startsWith("4")){
+    if (System.getProperty("spark.version").startsWith("4")){
       Object[] paramsVersion4 = new Object[]{hadoopFsRelation,output,Option.empty(),false,null};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion4);
     }else{

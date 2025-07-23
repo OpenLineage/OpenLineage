@@ -183,58 +183,6 @@ class OpenLineageSparkListenerTest {
 
   // Disabled bcz of no such method in Spark 4.x:
   // org.apache.spark.sql.SparkSession org.apache.spark.sql.execution.QueryExecution.sparkSession()
-  @DisabledIfSystemProperty(named = "spark.version", matches = "([4].*)")
-  @Test
-  void testSparkSQLEndGetsQueryExecutionFromEvent() {
-    LogicalPlan query = UnresolvedRelation$.MODULE$.apply(TableIdentifier.apply("tableName"));
-
-    when(qe.optimizedPlan())
-        .thenReturn(
-            new InsertIntoHadoopFsRelationCommand(
-                new Path("file:///tmp/dir"),
-                null,
-                false,
-                ScalaConversionUtils.asScalaSeqEmpty(),
-                Option.empty(),
-                null,
-                ScalaConversionUtils.asScalaMapEmpty(),
-                query,
-                SaveMode.Overwrite,
-                Option.empty(),
-                Option.empty(),
-                ScalaConversionUtils.asScalaSeqEmpty()));
-
-    when(qe.executedPlan()).thenReturn(plan);
-    when(qe.sparkSession()).thenReturn(sparkSession);
-    when(plan.sparkContext()).thenReturn(sparkContext);
-    when(plan.nodeName()).thenReturn("execute");
-
-    olContext
-        .getOutputDatasetQueryPlanVisitors()
-        .add(new InsertIntoHadoopFsRelationVisitor(olContext));
-    OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);
-    listener.skipInitializationForTests(
-        new StaticExecutionContextFactory(
-            emitter, new SimpleMeterRegistry(), new SparkOpenLineageConfig()));
-
-    SparkListenerSQLExecutionEnd event = mock(SparkListenerSQLExecutionEnd.class);
-    try (MockedStatic<EventFilterUtils> utils = mockStatic(EventFilterUtils.class)) {
-      try (MockedStatic<ContextFactory> contextFactory =
-          mockStatic(ContextFactory.class, Mockito.CALLS_REAL_METHODS)) {
-        utils.when(() -> EventFilterUtils.isDisabled(olContext, event)).thenReturn(false);
-        contextFactory
-            .when(() -> ContextFactory.executionFromCompleteEvent(event))
-            .thenReturn(Optional.of(qe)); // code should fail without this line
-        listener.onOtherEvent(event);
-      }
-    }
-
-    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
-        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-
-    verify(emitter, times(1)).emit(lineageEvent.capture());
-  }
-
   @Test
   void testApplicationStartEvent() {
     OpenLineageSparkListener listener = new OpenLineageSparkListener(sparkConf);

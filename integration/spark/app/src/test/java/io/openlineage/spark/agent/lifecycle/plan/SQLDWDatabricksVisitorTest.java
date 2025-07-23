@@ -168,7 +168,7 @@ class SQLDWDatabricksVisitorTest {
     Constructor<?>[] constructors = logicalRelation.getDeclaredConstructors();
     Constructor<?> constructor = constructors[0];
 
-    if (!System.getProperty("spark.version").startsWith("4")){
+    if (System.getProperty("spark.version").startsWith("4")){
       Object[] paramsVersion4 = new Object[]{mockSqlDWBaseRelation,output,Option.empty(),false,null};
        instance = (LogicalRelation) constructor.newInstance(paramsVersion4);
     }else{
