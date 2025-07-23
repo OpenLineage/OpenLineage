@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.util;
 
+import io.openlineage.client.dataset.Naming;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.filesystem.FilesystemDatasetUtils;
 import java.net.URI;
@@ -71,14 +72,11 @@ public class PathUtils {
     Configuration hadoopConf = sparkContext.hadoopConfiguration();
 
     Optional<URI> metastoreUri = getMetastoreUri(sparkContext);
-    Optional<String> glueArn = AwsUtils.getGlueArn(sparkConf, hadoopConf);
+    Optional<Naming.AWSGlue> glueArn = AwsUtils.getGlueName(sparkConf, hadoopConf, catalogTable);
 
     if (glueArn.isPresent()) {
       // Even if glue catalog is used, it will have a hive metastore URI
-      // Use ARN format 'arn:aws:glue:{region}:{account_id}:table/{database}/{table}'
-      String tableName = nameFromTableIdentifier(catalogTable.identifier(), "/");
-      symlinkDataset =
-          Optional.of(new DatasetIdentifier(GLUE_TABLE_PREFIX + tableName, glueArn.get()));
+      symlinkDataset = glueArn.map(DatasetIdentifier::new);
     } else if (metastoreUri.isPresent()) {
       // dealing with Hive tables
       URI hiveUri = prepareHiveUri(metastoreUri.get());

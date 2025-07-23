@@ -5,12 +5,13 @@
 
 package io.openlineage.spark.agent.util;
 
+import io.openlineage.client.dataset.Naming;
 import java.util.Optional;
-import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
+import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.jetbrains.annotations.NotNull;
 
 @Slf4j
@@ -23,26 +24,48 @@ public class AwsUtils {
       "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory";
   private static final String HIVE_METASTORE_GLUE_CATALOG_ID_KEY = "hive.metastore.glue.catalogid";
 
-  @SneakyThrows
-  public static Optional<String> getGlueArn(SparkConf sparkConf, Configuration hadoopConf) {
-    if (isHiveUsingGlue(sparkConf, hadoopConf)) {
-      return awsRegion()
-          .flatMap(
-              region ->
-                  getGlueCatalogId(sparkConf, hadoopConf)
-                      .map(glueCatalogId -> "arn:aws:glue:" + region + ":" + glueCatalogId));
-    } else {
-      try {
-        return awsRegion()
-            .flatMap(
-                region ->
-                    getGlueCatalogId(sparkConf, hadoopConf)
-                        .map(glueCatalogId -> "arn:aws:glue:" + region + ":" + glueCatalogId));
-      } catch (Exception e) {
-        log.error("Failed to retrieve Glue", e);
+  public static Optional<Naming.AWSGlue> getGlueName(
+      SparkConf sparkConf, Configuration hadoopConf, CatalogTable catalogTable) {
+    try {
+      if (!isHiveUsingGlue(sparkConf, hadoopConf)) {
         return Optional.empty();
       }
+      if (catalogTable.identifier().database().isEmpty()) {
+        throw new IllegalStateException("Database identifier is required");
+      }
+      return createAWSGlueNaming(
+          sparkConf,
+          hadoopConf,
+          catalogTable.identifier().database().get(),
+          catalogTable.identifier().table());
+    } catch (Exception e) {
+      log.error("Failed to retrieve Glue", e);
+      return Optional.empty();
     }
+  }
+
+  public static Optional<Naming.AWSGlue> getGlueName(
+      SparkConf sparkConf, Configuration hadoopConf, String database, String table) {
+    try {
+      if (!isHiveUsingGlue(sparkConf, hadoopConf)) {
+        return Optional.empty();
+      }
+      return createAWSGlueNaming(sparkConf, hadoopConf, database, table);
+    } catch (Exception e) {
+      log.error("Failed to retrieve Glue", e);
+      return Optional.empty();
+    }
+  }
+
+  private static Optional<Naming.AWSGlue> createAWSGlueNaming(
+      SparkConf sparkConf, Configuration hadoopConf, String database, String table) {
+    return awsRegion()
+        .flatMap(
+            region ->
+                getGlueCatalogId(sparkConf, hadoopConf)
+                    .map(
+                        glueCatalogId ->
+                            new Naming.AWSGlue(region, glueCatalogId, database, table)));
   }
 
   /**
