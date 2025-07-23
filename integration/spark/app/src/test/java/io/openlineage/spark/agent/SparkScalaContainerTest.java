@@ -83,6 +83,7 @@ class SparkScalaContainerTest {
   private static MockServerClient mockServerClient;
   private static final String SPARK_3_OR_ABOVE = "^[3-9].*";
   private static final String SPARK_3_ONLY = "^3.*";
+  private static final String SPARK_1_TO_3 = "^[1-3].*";
   private static final String SCALA_2_12 = "^2.12.*";
   private static final String SCALA_VERSION = "scala.binary.version";
 
@@ -178,6 +179,10 @@ class SparkScalaContainerTest {
 
   @Test
   @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
+  @EnabledIfSystemProperty(
+      named = SPARK_VERSION,
+      matches = SPARK_1_TO_3,
+      disabledReason = "Disabled for Spark 4.0 due to SparkSession API changes in preview version")
   void testScalaUnionRddToParquet() {
     spark = createSparkContainer("io.openlineage.spark.test.RddUnion");
     spark.start();
@@ -208,7 +213,10 @@ class SparkScalaContainerTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
+  @EnabledIfSystemProperty(
+      named = SPARK_VERSION,
+      matches = SPARK_3_ONLY,
+      disabledReason = "Disabled for Spark 4.0 due to SparkSession API changes in preview version")
   void testKafka2KafkaStreamingProducesInputAndOutputDatasets() throws IOException {
     final Network network = newNetwork();
     final String className = "io.openlineage.spark.streaming.Kafka2KafkaJob";
