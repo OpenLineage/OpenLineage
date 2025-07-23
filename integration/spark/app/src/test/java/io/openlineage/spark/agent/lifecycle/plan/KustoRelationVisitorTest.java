@@ -15,6 +15,9 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -37,6 +40,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import scala.Option;
+import scala.collection.Seq;
 
 /**
  * This unit test tests the apply method of KustoRelationVisitor. Therefore it only tests Kusto read
@@ -126,29 +130,35 @@ class KustoRelationVisitorTest {
       String database,
       String expectedName,
       String expectedNamespace,
-      int expectedNumOfDatasets) {
+      int expectedNumOfDatasets) throws InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException {
 
-    // Instantiate a MockKustoRelation
-    LogicalRelation lr =
-        new LogicalRelation(
-            new MockKustoRelation(inputQuery, url, database),
-            ScalaConversionUtils.fromList(
-                Collections.singletonList(
-                    new AttributeReference(
-                        FIELD_NAME,
-                        StringType$.MODULE$,
-                        false,
-                        null,
-                        ExprId.apply(1L),
-                        ScalaConversionUtils.<String>asScalaSeqEmpty()))),
-            Option.empty(),
-            false,null);
+    LogicalRelation instance;
+    Class<?> logicalRelation = Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
+    MockKustoRelation mockKustoRelation =   new MockKustoRelation(inputQuery, url, database);
+    Seq<AttributeReference> output = ScalaConversionUtils.fromList( Collections.singletonList(
+            new AttributeReference(
+                    FIELD_NAME,
+                    StringType$.MODULE$,
+                    false,
+                    null,
+                    ExprId.apply(1L),
+                    ScalaConversionUtils.asScalaSeqEmpty())));
 
+    Constructor<?>[] constructors = logicalRelation.getDeclaredConstructors();
+    Constructor<?> constructor = constructors[0];
+
+    if (System.getProperty("spark.version").startsWith("4")){
+      Object[] paramsVersion4 = new Object[]{mockKustoRelation,output,Option.empty(),false,null};
+      instance = (LogicalRelation) constructor.newInstance(paramsVersion4);
+    }else{
+      Object[] paramsVersion3 = new Object[]{mockKustoRelation,output,Option.empty(),false};
+      instance = (LogicalRelation) constructor.newInstance(paramsVersion3);
+    }
     TestKustoRelationVisitor visitor =
         new TestKustoRelationVisitor(
             SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
 
-    List<OpenLineage.Dataset> datasets = visitor.apply(lr);
+    List<OpenLineage.Dataset> datasets = visitor.apply(instance);
 
     assertEquals(expectedNumOfDatasets, datasets.size());
     OpenLineage.Dataset ds = datasets.get(0);
