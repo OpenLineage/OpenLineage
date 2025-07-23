@@ -10,12 +10,14 @@ import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptiona
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.dataset.Naming;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.Spliterator;
@@ -237,9 +239,12 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
                     .orElse(Stream.empty()))
             .collect(Collectors.toList());
 
-    String namespace = KafkaBootstrapServerResolver.resolve(servers);
+    URI namespace = KafkaBootstrapServerResolver.resolve(servers);
     return topics.stream()
-        .map(topic -> datasetFactory.getDataset(topic, namespace, schema))
+        .map(
+            topic ->
+                new Naming.Kafka(namespace.getHost(), Integer.toString(namespace.getPort()), topic))
+        .map(name -> datasetFactory.getDataset(name, schema))
         .collect(Collectors.toList());
   }
 }
