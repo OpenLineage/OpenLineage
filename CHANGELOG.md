@@ -31,9 +31,9 @@
   *Bump tested Spark versions.*
 * **Spark: Close OpenLineageClient in onApplicationEnd.** [`#3851`](https://github.com/OpenLineage/OpenLineage/pull/3851) [@dolfinus](https://github.com/dolfinus)  
   *Ensure proper cleanup of OpenLineageClient when Spark application ends.*
-* **Python: Do not use f-strings with logging module.** [`#3895`](https://github.com/OpenLineage/OpenLineage/pull/3895) [@mobuchowski](https://github.com/mobuchowski)  
+* **Python: Do not use f-strings with logging module.** [`#3895`](https://github.com/OpenLineage/OpenLineage/pull/3895) [@dolfinus](https://github.com/dolfinus)  
   *Replace f-string usage in logging calls with proper logging formatting.*
-* **Python: Update protobuf version to be compatible with newer libraries.** [`#3899`](https://github.com/OpenLineage/OpenLineage/pull/3899) [@mobuchowski](https://github.com/mobuchowski)  
+* **Python: Update protobuf version to be compatible with newer libraries.** [`#3899`](https://github.com/OpenLineage/OpenLineage/pull/3899) [@Shadi](https://github.com/Shadi)  
   *Update protobuf dependency to maintain compatibility with newer library versions.*
 * **Website: Documentation for compatibility tests.** [`#3869`](https://github.com/OpenLineage/OpenLineage/pull/3869) [@mobuchowski](https://github.com/mobuchowski)  
   *Add documentation explaining compatibility testing processes.*
