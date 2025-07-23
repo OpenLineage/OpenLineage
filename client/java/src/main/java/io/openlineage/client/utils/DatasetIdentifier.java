@@ -5,10 +5,9 @@
 
 package io.openlineage.client.utils;
 
+import io.openlineage.client.dataset.Naming;
 import java.util.LinkedList;
 import java.util.List;
-
-import io.openlineage.client.dataset.Naming;
 import lombok.Value;
 
 @Value
@@ -40,7 +39,7 @@ public class DatasetIdentifier {
     this.symlinks = new LinkedList<>();
   }
 
-  public DatasetIdentifier(Naming.DatasetNaming naming, List<Symlink> symlinks){
+  public DatasetIdentifier(Naming.DatasetNaming naming, List<Symlink> symlinks) {
     this.name = naming.getName();
     this.namespace = naming.getNamespace();
     this.symlinks = symlinks;
