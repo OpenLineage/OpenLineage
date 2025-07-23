@@ -49,7 +49,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.ClearType;
@@ -70,8 +69,6 @@ import org.testcontainers.utility.DockerImageName;
  * specify which Spark version should be tested. It also requires `openlineage.spark.jar` system
  * property which is set in `build.gradle`. @See https://hub.docker.com/r/bitnami/spark/
  */
-// TODO: Add support for Spark 4.0 -> https://github.com/OpenLineage/OpenLineage/issues/3882
-@DisabledIfSystemProperty(named = "spark.version", matches = "([4].*)")
 @Tag("integration-test")
 @Testcontainers
 @Slf4j
