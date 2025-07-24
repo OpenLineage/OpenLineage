@@ -12,7 +12,6 @@ import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.util.AwsUtils;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 
@@ -33,8 +32,9 @@ class GlueCatalogTypeHandler extends BaseCatalogTypeHandler {
   DatasetIdentifier getIdentifier(
       SparkSession session, Map<String, String> catalogConf, String table) {
     SparkContext sparkContext = session.sparkContext();
-    String[] splitTable = table.split(Pattern.quote("."), 2);
-    if (splitTable.length != 2) {
+    int expectedParts = 2;
+    String[] splitTable = table.split("\\.", expectedParts);
+    if (splitTable.length != expectedParts) {
       throw new IllegalArgumentException(
           "Invalid table format. Expected 'database.table', got: " + table);
     }
