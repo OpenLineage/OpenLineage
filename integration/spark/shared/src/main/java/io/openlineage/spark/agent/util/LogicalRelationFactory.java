@@ -41,14 +41,11 @@ public class LogicalRelationFactory {
 
     try {
       Constructor<?> constructor = getLogicalRelationConstructor();
-
       if (constructor.getParameterCount() == SPARK_3_PARAM_COUNT) {
-        // Spark 3.x constructor
         return Optional.of(
             (LogicalRelation)
                 constructor.newInstance(relation, attributes, catalogTable, isStreaming));
       } else if (constructor.getParameterCount() == SPARK_4_PARAM_COUNT) {
-        // Spark 4.x constructor with additional stream parameter
         return Optional.of(
             (LogicalRelation)
                 constructor.newInstance(
@@ -76,29 +73,17 @@ public class LogicalRelationFactory {
         return cachedConstructor;
       }
 
-      // Try Spark 4.x constructor first (5 parameters)
-      try {
-        cachedConstructor =
-            LOGICAL_RELATION_CLASS.getConstructor(
-                BaseRelation.class,
-                Seq.class,
-                Option.class,
-                boolean.class,
-                Option.class // stream parameter
-                );
-        log.debug("Using Spark 4.x LogicalRelation constructor (5 parameters)");
-        return cachedConstructor;
-      } catch (NoSuchMethodException ignored) {
-        // Fall back to Spark 3.x constructor
+      // Find constructor by parameter count
+      for (Constructor<?> constructor : LOGICAL_RELATION_CLASS.getConstructors()) {
+        int paramCount = constructor.getParameterCount();
+        if (paramCount == 5 || paramCount == 4) {
+          cachedConstructor = constructor;
+          log.debug("Using {}-parameter LogicalRelation constructor", paramCount);
+          return cachedConstructor;
+        }
       }
 
-      // Try Spark 3.x constructor (4 parameters)
-      cachedConstructor =
-          LOGICAL_RELATION_CLASS.getConstructor(
-              BaseRelation.class, Seq.class, Option.class, boolean.class);
-      log.debug("Using Spark 3.x LogicalRelation constructor (4 parameters)");
-
-      return cachedConstructor;
+      throw new NoSuchMethodException("No compatible LogicalRelation constructor found");
     }
   }
 }
