@@ -59,7 +59,9 @@ class LogicalPlanSerializerTest {
   private final LogicalPlanSerializer logicalPlanSerializer = new LogicalPlanSerializer();
 
   @Test
-  void testSerializeLogicalPlan() throws IOException, ClassNotFoundException, InvocationTargetException, InstantiationException, IllegalAccessException {
+  void testSerializeLogicalPlan()
+      throws IOException, ClassNotFoundException, InvocationTargetException, InstantiationException,
+          IllegalAccessException {
     String jdbcUrl = "jdbc:postgresql://postgreshost:5432/sparkdata";
     String sparkTableName = "my_spark_table";
     scala.collection.immutable.Map<String, String> map =
@@ -77,11 +79,15 @@ class LogicalPlanSerializerTest {
 
     LogicalRelation instance;
     Aggregate instanceAggregate;
-    Class<?> logicalRelation = Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
-    Class<?> aggregateInstance = Class.forName("org.apache.spark.sql.catalyst.plans.logical.Aggregate");
+    Class<?> logicalRelation =
+        Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
+    Class<?> aggregateInstance =
+        Class.forName("org.apache.spark.sql.catalyst.plans.logical.Aggregate");
 
-    Seq<AttributeReference> output = ScalaConversionUtils.fromList( Collections.singletonList(
-            new AttributeReference(
+    Seq<AttributeReference> output =
+        ScalaConversionUtils.fromList(
+            Collections.singletonList(
+                new AttributeReference(
                     NAME,
                     StringType$.MODULE$,
                     false,
@@ -95,22 +101,32 @@ class LogicalPlanSerializerTest {
     Constructor<?>[] aggregateConstructors = aggregateInstance.getDeclaredConstructors();
     Constructor<?> aggregatConstructor = aggregateConstructors[0];
 
-    if (System.getProperty("spark.version").startsWith("4")){
-      Object[] paramsVersion4 = new Object[]{relation,output,Option.empty(),false,null};
+    if (System.getProperty("spark.version").startsWith("4")) {
+      Object[] paramsVersion4 = new Object[] {relation, output, Option.empty(), false, null};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion4);
 
-      Object[] aggregateParams = new Object[]{ ScalaConversionUtils.asScalaSeqEmpty(),ScalaConversionUtils.asScalaSeqEmpty(),instance,null};
+      Object[] aggregateParams =
+          new Object[] {
+            ScalaConversionUtils.asScalaSeqEmpty(),
+            ScalaConversionUtils.asScalaSeqEmpty(),
+            instance,
+            null
+          };
       instanceAggregate = (Aggregate) aggregatConstructor.newInstance(aggregateParams);
-    }else{
-      Object[] paramsVersion3 = new Object[]{relation,output,Option.empty(),false};
+    } else {
+      Object[] paramsVersion3 = new Object[] {relation, output, Option.empty(), false};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion3);
 
-      Object[] aggregateParams = new Object[]{ ScalaConversionUtils.asScalaSeqEmpty(),ScalaConversionUtils.asScalaSeqEmpty(),instance};
+      Object[] aggregateParams =
+          new Object[] {
+            ScalaConversionUtils.asScalaSeqEmpty(), ScalaConversionUtils.asScalaSeqEmpty(), instance
+          };
       instanceAggregate = (Aggregate) aggregatConstructor.newInstance(aggregateParams);
     }
 
     Map<String, Object> aggregateActualNode =
-        objectMapper.readValue(logicalPlanSerializer.serialize(instanceAggregate), mapTypeReference);
+        objectMapper.readValue(
+            logicalPlanSerializer.serialize(instanceAggregate), mapTypeReference);
     Map<String, Object> logicalRelationActualNode =
         objectMapper.readValue(logicalPlanSerializer.serialize(instance), mapTypeReference);
 
@@ -130,7 +146,9 @@ class LogicalPlanSerializerTest {
   }
 
   @Test
-  void testSerializeInsertIntoHadoopPlan() throws IOException, ClassNotFoundException, InvocationTargetException, InstantiationException, IllegalAccessException {
+  void testSerializeInsertIntoHadoopPlan()
+      throws IOException, ClassNotFoundException, InvocationTargetException, InstantiationException,
+          IllegalAccessException {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
 
     HadoopFsRelation hadoopFsRelation =
@@ -154,9 +172,12 @@ class LogicalPlanSerializerTest {
             session);
 
     LogicalRelation instance;
-    Class<?> logicalRelation = Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
-    Seq<AttributeReference> output = ScalaConversionUtils.fromList( Collections.singletonList(
-            new AttributeReference(
+    Class<?> logicalRelation =
+        Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
+    Seq<AttributeReference> output =
+        ScalaConversionUtils.fromList(
+            Collections.singletonList(
+                new AttributeReference(
                     NAME,
                     StringType$.MODULE$,
                     false,
@@ -167,11 +188,12 @@ class LogicalPlanSerializerTest {
     Constructor<?>[] constructors = logicalRelation.getDeclaredConstructors();
     Constructor<?> constructor = constructors[0];
 
-    if (System.getProperty("spark.version").startsWith("4")){
-      Object[] paramsVersion4 = new Object[]{hadoopFsRelation,output,Option.empty(),false,null};
+    if (System.getProperty("spark.version").startsWith("4")) {
+      Object[] paramsVersion4 =
+          new Object[] {hadoopFsRelation, output, Option.empty(), false, null};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion4);
-    }else{
-      Object[] paramsVersion3 = new Object[]{hadoopFsRelation,output,Option.empty(),false};
+    } else {
+      Object[] paramsVersion3 = new Object[] {hadoopFsRelation, output, Option.empty(), false};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion3);
     }
 

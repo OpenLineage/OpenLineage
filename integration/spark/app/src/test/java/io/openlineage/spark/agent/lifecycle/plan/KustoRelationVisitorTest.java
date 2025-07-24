@@ -15,7 +15,6 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
@@ -130,13 +129,18 @@ class KustoRelationVisitorTest {
       String database,
       String expectedName,
       String expectedNamespace,
-      int expectedNumOfDatasets) throws InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+      int expectedNumOfDatasets)
+      throws InvocationTargetException, InstantiationException, IllegalAccessException,
+          ClassNotFoundException {
 
     LogicalRelation instance;
-    Class<?> logicalRelation = Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
-    MockKustoRelation mockKustoRelation =   new MockKustoRelation(inputQuery, url, database);
-    Seq<AttributeReference> output = ScalaConversionUtils.fromList( Collections.singletonList(
-            new AttributeReference(
+    Class<?> logicalRelation =
+        Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
+    MockKustoRelation mockKustoRelation = new MockKustoRelation(inputQuery, url, database);
+    Seq<AttributeReference> output =
+        ScalaConversionUtils.fromList(
+            Collections.singletonList(
+                new AttributeReference(
                     FIELD_NAME,
                     StringType$.MODULE$,
                     false,
@@ -147,11 +151,12 @@ class KustoRelationVisitorTest {
     Constructor<?>[] constructors = logicalRelation.getDeclaredConstructors();
     Constructor<?> constructor = constructors[0];
 
-    if (System.getProperty("spark.version").startsWith("4")){
-      Object[] paramsVersion4 = new Object[]{mockKustoRelation,output,Option.empty(),false,null};
+    if (System.getProperty("spark.version").startsWith("4")) {
+      Object[] paramsVersion4 =
+          new Object[] {mockKustoRelation, output, Option.empty(), false, null};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion4);
-    }else{
-      Object[] paramsVersion3 = new Object[]{mockKustoRelation,output,Option.empty(),false};
+    } else {
+      Object[] paramsVersion3 = new Object[] {mockKustoRelation, output, Option.empty(), false};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion3);
     }
     TestKustoRelationVisitor visitor =

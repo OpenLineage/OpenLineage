@@ -6,11 +6,9 @@
 package io.openlineage.spark.agent;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import lombok.SneakyThrows;
 import org.apache.commons.beanutils.MethodUtils;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.SparkSession.Builder;
 import org.apache.spark.sql.execution.QueryExecution;
 
@@ -30,7 +28,6 @@ public class Spark4CompatUtils {
       Field field = c.getField("MODULE$");
       MethodUtils.invokeMethod(field.get(null), "cleanupAnyExistingSession", new Object[] {});
     }
-
   }
 
   @SneakyThrows

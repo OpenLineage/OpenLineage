@@ -8,7 +8,6 @@ package io.openlineage.spark.agent;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage.RunEvent;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;

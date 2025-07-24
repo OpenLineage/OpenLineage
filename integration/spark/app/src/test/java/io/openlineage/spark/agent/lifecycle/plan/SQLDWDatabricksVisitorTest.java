@@ -15,7 +15,6 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
@@ -149,30 +148,37 @@ class SQLDWDatabricksVisitorTest {
     "jdbc:sqlserver://MYTESTSERVER.database.windows.net;instanceName=someinstance;database=MYTESTDB,sqlserver://mytestserver.database.windows.net/someinstance,MYTESTDB.schema.table1",
     "jdbc:sqlserver://;serverName=MYTESTSERVER.database.windows.net,sqlserver://mytestserver.database.windows.net,schema.table1",
   })
-  void testSQLDWRelation(String inputJdbcUrl, String expectedNamespace, String expectedName) throws InstantiationException, IllegalAccessException, InvocationTargetException, ClassNotFoundException {
+  void testSQLDWRelation(String inputJdbcUrl, String expectedNamespace, String expectedName)
+      throws InstantiationException, IllegalAccessException, InvocationTargetException,
+          ClassNotFoundException {
 
     String inputName = "\"schema\".\"table1\"";
 
     LogicalRelation instance;
-    Class<?> logicalRelation = Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
-    MockSqlDWBaseRelation mockSqlDWBaseRelation =   new MockSqlDWBaseRelation(inputName, inputJdbcUrl);
-    Seq<AttributeReference> output = ScalaConversionUtils.fromList( Collections.singletonList(
-                    new AttributeReference(
-                            FIELD_NAME,
-                            StringType$.MODULE$,
-                            false,
-                            null,
-                            ExprId.apply(1L),
-                            ScalaConversionUtils.asScalaSeqEmpty())));
+    Class<?> logicalRelation =
+        Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
+    MockSqlDWBaseRelation mockSqlDWBaseRelation =
+        new MockSqlDWBaseRelation(inputName, inputJdbcUrl);
+    Seq<AttributeReference> output =
+        ScalaConversionUtils.fromList(
+            Collections.singletonList(
+                new AttributeReference(
+                    FIELD_NAME,
+                    StringType$.MODULE$,
+                    false,
+                    null,
+                    ExprId.apply(1L),
+                    ScalaConversionUtils.asScalaSeqEmpty())));
 
     Constructor<?>[] constructors = logicalRelation.getDeclaredConstructors();
     Constructor<?> constructor = constructors[0];
 
-    if (System.getProperty("spark.version").startsWith("4")){
-      Object[] paramsVersion4 = new Object[]{mockSqlDWBaseRelation,output,Option.empty(),false,null};
-       instance = (LogicalRelation) constructor.newInstance(paramsVersion4);
-    }else{
-      Object[] paramsVersion3 = new Object[]{mockSqlDWBaseRelation,output,Option.empty(),false};
+    if (System.getProperty("spark.version").startsWith("4")) {
+      Object[] paramsVersion4 =
+          new Object[] {mockSqlDWBaseRelation, output, Option.empty(), false, null};
+      instance = (LogicalRelation) constructor.newInstance(paramsVersion4);
+    } else {
+      Object[] paramsVersion3 = new Object[] {mockSqlDWBaseRelation, output, Option.empty(), false};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion3);
     }
 
@@ -198,14 +204,20 @@ class SQLDWDatabricksVisitorTest {
     "jdbc:sqlserver://MYTESTSERVER.database.windows.net;instanceName=someinstance;database=MYTESTDB,sqlserver://mytestserver.database.windows.net/someinstance,MYTESTDB.schema.table1",
     "jdbc:sqlserver://;serverName=MYTESTSERVER.database.windows.net,sqlserver://mytestserver.database.windows.net,schema.table1",
   })
-  void testSpark2SQLDWRelation(String inputJdbcUrl, String expectedNamespace, String expectedName) throws ClassNotFoundException, InvocationTargetException, InstantiationException, IllegalAccessException {
+  void testSpark2SQLDWRelation(String inputJdbcUrl, String expectedNamespace, String expectedName)
+      throws ClassNotFoundException, InvocationTargetException, InstantiationException,
+          IllegalAccessException {
     String inputName = "\"schema\".\"table1\"";
 
     LogicalRelation instance;
-    Class<?> logicalRelation = Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
-    MockSqlDWBaseRelation mockSqlDWBaseRelation =   new MockSqlDWBaseRelation(inputName, inputJdbcUrl);
-    Seq<AttributeReference> output = ScalaConversionUtils.fromList( Collections.singletonList(
-            new AttributeReference(
+    Class<?> logicalRelation =
+        Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
+    MockSqlDWBaseRelation mockSqlDWBaseRelation =
+        new MockSqlDWBaseRelation(inputName, inputJdbcUrl);
+    Seq<AttributeReference> output =
+        ScalaConversionUtils.fromList(
+            Collections.singletonList(
+                new AttributeReference(
                     FIELD_NAME,
                     StringType$.MODULE$,
                     false,
@@ -216,11 +228,12 @@ class SQLDWDatabricksVisitorTest {
     Constructor<?>[] constructors = logicalRelation.getDeclaredConstructors();
     Constructor<?> constructor = constructors[0];
 
-    if (System.getProperty("spark.version").startsWith("4")){
-      Object[] paramsVersion4 = new Object[]{mockSqlDWBaseRelation,output,Option.empty(),false,null};
+    if (System.getProperty("spark.version").startsWith("4")) {
+      Object[] paramsVersion4 =
+          new Object[] {mockSqlDWBaseRelation, output, Option.empty(), false, null};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion4);
-    }else{
-      Object[] paramsVersion3 = new Object[]{mockSqlDWBaseRelation,output,Option.empty(),false};
+    } else {
+      Object[] paramsVersion3 = new Object[] {mockSqlDWBaseRelation, output, Option.empty(), false};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion3);
     }
 
@@ -236,7 +249,9 @@ class SQLDWDatabricksVisitorTest {
   }
 
   @Test
-  void testSQLDWRelationComplexQuery() throws InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+  void testSQLDWRelationComplexQuery()
+      throws InvocationTargetException, InstantiationException, IllegalAccessException,
+          ClassNotFoundException {
     String inputName = "(SELECT * FROM dbo.table1) q";
     String inputJdbcUrl =
         "jdbc:sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB";
@@ -244,10 +259,14 @@ class SQLDWDatabricksVisitorTest {
     String expectedNamespace = "sqlserver://mytestserver.database.windows.net:1433";
 
     LogicalRelation instance;
-    Class<?> logicalRelation = Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
-    MockSqlDWBaseRelation mockSqlDWBaseRelation =   new MockSqlDWBaseRelation(inputName, inputJdbcUrl);
-    Seq<AttributeReference> output = ScalaConversionUtils.fromList( Collections.singletonList(
-            new AttributeReference(
+    Class<?> logicalRelation =
+        Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
+    MockSqlDWBaseRelation mockSqlDWBaseRelation =
+        new MockSqlDWBaseRelation(inputName, inputJdbcUrl);
+    Seq<AttributeReference> output =
+        ScalaConversionUtils.fromList(
+            Collections.singletonList(
+                new AttributeReference(
                     FIELD_NAME,
                     StringType$.MODULE$,
                     false,
@@ -258,11 +277,12 @@ class SQLDWDatabricksVisitorTest {
     Constructor<?>[] constructors = logicalRelation.getDeclaredConstructors();
     Constructor<?> constructor = constructors[0];
 
-    if (System.getProperty("spark.version").startsWith("4")){
-      Object[] paramsVersion4 = new Object[]{mockSqlDWBaseRelation,output,Option.empty(),false,null};
+    if (System.getProperty("spark.version").startsWith("4")) {
+      Object[] paramsVersion4 =
+          new Object[] {mockSqlDWBaseRelation, output, Option.empty(), false, null};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion4);
-    }else{
-      Object[] paramsVersion3 = new Object[]{mockSqlDWBaseRelation,output,Option.empty(),false};
+    } else {
+      Object[] paramsVersion3 = new Object[] {mockSqlDWBaseRelation, output, Option.empty(), false};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion3);
     }
     // Instantiate a MockSQLDWRelation
@@ -279,15 +299,21 @@ class SQLDWDatabricksVisitorTest {
   }
 
   @Test
-  void testSQLDWRelationBadJdbcUrl() throws InvocationTargetException, InstantiationException, IllegalAccessException, ClassNotFoundException {
+  void testSQLDWRelationBadJdbcUrl()
+      throws InvocationTargetException, InstantiationException, IllegalAccessException,
+          ClassNotFoundException {
     String inputName = "dbo.mytable";
     String inputJdbcUrl = "sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB";
 
     LogicalRelation instance;
-    Class<?> logicalRelation = Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
-    MockSqlDWBaseRelation mockSqlDWBaseRelation =   new MockSqlDWBaseRelation(inputName, inputJdbcUrl);
-    Seq<AttributeReference> output = ScalaConversionUtils.fromList( Collections.singletonList(
-            new AttributeReference(
+    Class<?> logicalRelation =
+        Class.forName("org.apache.spark.sql.execution.datasources.LogicalRelation");
+    MockSqlDWBaseRelation mockSqlDWBaseRelation =
+        new MockSqlDWBaseRelation(inputName, inputJdbcUrl);
+    Seq<AttributeReference> output =
+        ScalaConversionUtils.fromList(
+            Collections.singletonList(
+                new AttributeReference(
                     FIELD_NAME,
                     StringType$.MODULE$,
                     false,
@@ -298,11 +324,12 @@ class SQLDWDatabricksVisitorTest {
     Constructor<?>[] constructors = logicalRelation.getDeclaredConstructors();
     Constructor<?> constructor = constructors[0];
 
-    if (System.getProperty("spark.version").startsWith("4")){
-      Object[] paramsVersion4 = new Object[]{mockSqlDWBaseRelation,output,Option.empty(),false,null};
+    if (System.getProperty("spark.version").startsWith("4")) {
+      Object[] paramsVersion4 =
+          new Object[] {mockSqlDWBaseRelation, output, Option.empty(), false, null};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion4);
-    }else{
-      Object[] paramsVersion3 = new Object[]{mockSqlDWBaseRelation,output,Option.empty(),false};
+    } else {
+      Object[] paramsVersion3 = new Object[] {mockSqlDWBaseRelation, output, Option.empty(), false};
       instance = (LogicalRelation) constructor.newInstance(paramsVersion3);
     }
 
