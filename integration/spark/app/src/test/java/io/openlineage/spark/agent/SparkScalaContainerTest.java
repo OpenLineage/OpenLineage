@@ -81,7 +81,6 @@ class SparkScalaContainerTest {
 
   private static GenericContainer<?> spark;
   private static MockServerClient mockServerClient;
-  private static final String SPARK_3_OR_ABOVE = "^[3-9].*";
   private static final String SPARK_3_ONLY = "^3.*";
   private static final String SPARK_1_TO_3 = "^[1-3].*";
   private static final String SCALA_2_12 = "^2.12.*";
