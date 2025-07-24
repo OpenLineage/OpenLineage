@@ -36,15 +36,18 @@ public class LogicalRelationFactory {
       Option<?> catalogTable,
       boolean isStreaming) {
 
+    final int SPARK_3_PARAM_COUNT = 4;
+    final int SPARK_4_PARAM_COUNT = 5;
+
     try {
       Constructor<?> constructor = getLogicalRelationConstructor();
 
-      if (constructor.getParameterCount() == 4) {
+      if (constructor.getParameterCount() == SPARK_3_PARAM_COUNT) {
         // Spark 3.x constructor
         return Optional.of(
             (LogicalRelation)
                 constructor.newInstance(relation, attributes, catalogTable, isStreaming));
-      } else if (constructor.getParameterCount() == 5) {
+      } else if (constructor.getParameterCount() == SPARK_4_PARAM_COUNT) {
         // Spark 4.x constructor with additional stream parameter
         return Optional.of(
             (LogicalRelation)
