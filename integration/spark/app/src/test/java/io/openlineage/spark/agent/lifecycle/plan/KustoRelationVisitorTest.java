@@ -37,6 +37,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import scala.Option;
+
 /**
  * This unit test tests the apply method of KustoRelationVisitor. Therefore it only tests Kusto read
  * operations. It does not cover Kusto writes, as those are routed to the visitor from the
@@ -126,22 +127,22 @@ class KustoRelationVisitorTest {
       int expectedNumOfDatasets) {
 
     LogicalRelation lr =
-              LogicalRelationFactory.create(
-                              new MockKustoRelation(inputQuery, url, database),
-                              ScalaConversionUtils.fromList(
-                                      Collections.singletonList(
-                                              new AttributeReference(
-                                                      FIELD_NAME,
-                                                      StringType$.MODULE$,
-                                                      false,
-                                                      null,
-                                                      ExprId.apply(1L),
-                                                      ScalaConversionUtils.<String>asScalaSeqEmpty()))),
-                              Option.empty(),
-                              false)
-                      .orElseThrow(() -> new RuntimeException("Failed to create LogicalRelation"));
+        LogicalRelationFactory.create(
+                new MockKustoRelation(inputQuery, url, database),
+                ScalaConversionUtils.fromList(
+                    Collections.singletonList(
+                        new AttributeReference(
+                            FIELD_NAME,
+                            StringType$.MODULE$,
+                            false,
+                            null,
+                            ExprId.apply(1L),
+                            ScalaConversionUtils.<String>asScalaSeqEmpty()))),
+                Option.empty(),
+                false)
+            .orElseThrow(() -> new RuntimeException("Failed to create LogicalRelation"));
 
-      TestKustoRelationVisitor visitor =
+    TestKustoRelationVisitor visitor =
         new TestKustoRelationVisitor(
             SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
 
