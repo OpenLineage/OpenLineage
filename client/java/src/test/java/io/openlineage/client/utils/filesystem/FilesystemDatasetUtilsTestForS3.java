@@ -51,17 +51,17 @@ class FilesystemDatasetUtilsTestForS3 {
     assertThat(
             FilesystemDatasetUtils.fromLocationAndName(
                 new URI("s3://bucket/warehouse"), "default.table"))
-        .hasFieldOrPropertyWithValue("namespace", "s3://bucket/warehouse")
+        .hasFieldOrPropertyWithValue("namespace", "s3://bucket")
         .hasFieldOrPropertyWithValue("name", "default.table");
 
     assertThat(
             FilesystemDatasetUtils.fromLocationAndName(
                 new URI("s3://bucket/warehouse/location"), "default.table"))
-        .hasFieldOrPropertyWithValue("namespace", "s3://bucket/warehouse/location")
+        .hasFieldOrPropertyWithValue("namespace", "s3://bucket")
         .hasFieldOrPropertyWithValue("name", "default.table");
 
     assertThat(FilesystemDatasetUtils.fromLocationAndName(new URI("s3://bucket/warehouse"), ""))
-        .hasFieldOrPropertyWithValue("namespace", "s3://bucket/warehouse")
+        .hasFieldOrPropertyWithValue("namespace", "s3://bucket")
         .hasFieldOrPropertyWithValue("name", "/");
   }
 
@@ -71,13 +71,13 @@ class FilesystemDatasetUtilsTestForS3 {
     assertThat(
             FilesystemDatasetUtils.fromLocationAndName(
                 new URI("s3a://bucket/warehouse/location"), "default.table"))
-        .hasFieldOrPropertyWithValue("namespace", "s3://bucket/warehouse/location")
+        .hasFieldOrPropertyWithValue("namespace", "s3://bucket")
         .hasFieldOrPropertyWithValue("name", "default.table");
 
     assertThat(
             FilesystemDatasetUtils.fromLocationAndName(
                 new URI("s3n://bucket/warehouse/location"), "default.table"))
-        .hasFieldOrPropertyWithValue("namespace", "s3://bucket/warehouse/location")
+        .hasFieldOrPropertyWithValue("namespace", "s3://bucket")
         .hasFieldOrPropertyWithValue("name", "default.table");
   }
 

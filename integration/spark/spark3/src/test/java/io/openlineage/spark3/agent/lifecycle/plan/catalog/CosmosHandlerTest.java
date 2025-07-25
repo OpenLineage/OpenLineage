@@ -28,6 +28,6 @@ class CosmosHandlerTest {
     assertEquals(
         di.getNamespace(),
         "azurecosmos://openlineage-test-cosmos.documents.azure.com/dbs/exampledata");
-    assertEquals(di.getName(), "/colls/volcanoes");
+    assertEquals(di.getName(), "colls/volcanoes");
   }
 }

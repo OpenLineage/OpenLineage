@@ -85,7 +85,7 @@ public final class Naming {
 
     @Override
     public String getNamespace() {
-      return "azurecosmos://" + host + "/dbs/" + database;
+      return "azurecosmos://" + host + ".documents.azure.com" + "/dbs/" + database;
     }
 
     @Override
