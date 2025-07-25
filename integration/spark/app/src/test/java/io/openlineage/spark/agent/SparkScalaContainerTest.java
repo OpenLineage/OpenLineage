@@ -49,7 +49,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.ClearType;
@@ -70,8 +69,6 @@ import org.testcontainers.utility.DockerImageName;
  * specify which Spark version should be tested. It also requires `openlineage.spark.jar` system
  * property which is set in `build.gradle`. @See https://hub.docker.com/r/bitnami/spark/
  */
-// TODO: Add support for Spark 4.0 -> https://github.com/OpenLineage/OpenLineage/issues/3882
-@DisabledIfSystemProperty(named = "spark.version", matches = "([4].*)")
 @Tag("integration-test")
 @Testcontainers
 @Slf4j
@@ -84,8 +81,8 @@ class SparkScalaContainerTest {
 
   private static GenericContainer<?> spark;
   private static MockServerClient mockServerClient;
-  private static final String SPARK_3_OR_ABOVE = "^[3-9].*";
   private static final String SPARK_3_ONLY = "^3.*";
+  private static final String SPARK_1_TO_3 = "^[1-3].*";
   private static final String SCALA_2_12 = "^2.12.*";
   private static final String SCALA_VERSION = "scala.binary.version";
 
@@ -181,6 +178,10 @@ class SparkScalaContainerTest {
 
   @Test
   @SuppressWarnings("PMD.JUnitTestsShouldIncludeAssert")
+  @EnabledIfSystemProperty(
+      named = SPARK_VERSION,
+      matches = SPARK_1_TO_3,
+      disabledReason = "Disabled for Spark 4.0 due to SparkSession API changes in preview version")
   void testScalaUnionRddToParquet() {
     spark = createSparkContainer("io.openlineage.spark.test.RddUnion");
     spark.start();
@@ -211,7 +212,10 @@ class SparkScalaContainerTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3_OR_ABOVE)
+  @EnabledIfSystemProperty(
+      named = SPARK_VERSION,
+      matches = SPARK_3_ONLY,
+      disabledReason = "Disabled for Spark 4.0 due to SparkSession API changes in preview version")
   void testKafka2KafkaStreamingProducesInputAndOutputDatasets() throws IOException {
     final Network network = newNetwork();
     final String className = "io.openlineage.spark.streaming.Kafka2KafkaJob";
