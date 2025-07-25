@@ -27,6 +27,7 @@ import org.apache.spark.sql.catalyst.plans.logical.OverwriteByExpression;
 import org.apache.spark.sql.catalyst.plans.logical.OverwritePartitionsDynamic;
 import org.apache.spark.sql.catalyst.plans.logical.ReplaceData;
 import org.apache.spark.sql.catalyst.plans.logical.UpdateTable;
+import org.apache.spark.sql.catalyst.plans.logical.WriteDelta;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 
@@ -48,6 +49,7 @@ public class TableContentChangeDatasetBuilder
         || (x instanceof DeleteFromTable)
         || (x instanceof UpdateTable)
         || (new IcebergHandler(context).hasClasses() && x instanceof ReplaceData)
+        || (new IcebergHandler(context).hasClasses() && x instanceof WriteDelta)
         || (x instanceof MergeIntoTable)
         || (x instanceof InsertIntoStatement);
   }
@@ -98,9 +100,9 @@ public class TableContentChangeDatasetBuilder
     } else if (x instanceof InsertIntoStatement) {
       return (NamedRelation) ((InsertIntoStatement) x).table();
     } else if (new IcebergHandler(context).hasClasses() && x instanceof ReplaceData) {
-      // DELETE FROM on ICEBERG HAS START ELEMENT WITH ReplaceData AND COMPLETE ONE WITH
-      // DeleteFromTable
       return ((ReplaceData) x).table();
+    } else if (new IcebergHandler(context).hasClasses() && x instanceof WriteDelta) {
+      return ((WriteDelta) x).table();
     } else if (x instanceof DeleteFromTable) {
       return (NamedRelation) ((DeleteFromTable) x).table();
     } else if (x instanceof UpdateTable) {
