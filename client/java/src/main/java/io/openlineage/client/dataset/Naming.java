@@ -5,6 +5,7 @@
 
 package io.openlineage.client.dataset;
 
+import javax.annotation.Nullable;
 import lombok.Builder;
 
 /**
@@ -780,6 +781,27 @@ public final class Naming {
     public String getName() {
       String prefix = resourceType == PubSubResourceType.TOPIC ? "topic" : "subscription";
       return String.format("%s:%s:%s", prefix, projectId, resourceId);
+    }
+  }
+
+  public static class WarehouseNaming implements DatasetNaming {
+
+    private final String warehouseLocation;
+    private final String tableName;
+
+    public WarehouseNaming(String warehouseLocation, @Nullable String tableName) {
+      this.warehouseLocation = checkNotNull(warehouseLocation, "warehouseDir");
+      this.tableName = tableName == null || tableName.isEmpty() ? "/" : tableName;
+    }
+
+    @Override
+    public String getNamespace() {
+      return warehouseLocation;
+    }
+
+    @Override
+    public String getName() {
+      return tableName;
     }
   }
 

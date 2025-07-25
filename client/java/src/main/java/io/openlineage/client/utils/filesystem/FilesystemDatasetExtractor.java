@@ -5,13 +5,13 @@
 
 package io.openlineage.client.utils.filesystem;
 
-import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.dataset.Naming;
 import java.net.URI;
 
 public interface FilesystemDatasetExtractor {
-  public abstract boolean isDefinedAt(URI location);
+  boolean isDefinedAt(URI location);
 
-  public abstract DatasetIdentifier extract(URI location);
+  Naming.DatasetNaming extract(URI location);
 
-  public abstract DatasetIdentifier extract(URI location, String rawName);
+  Naming.DatasetNaming extractWarehouseDatasetNaming(URI location, String rawName);
 }
