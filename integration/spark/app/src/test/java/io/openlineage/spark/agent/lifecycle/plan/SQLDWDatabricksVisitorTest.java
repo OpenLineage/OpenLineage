@@ -15,8 +15,6 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.List;
 import org.apache.spark.SparkContext;
@@ -36,7 +34,6 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import scala.Option;
-import scala.collection.Seq;
 
 class SqlDwRelationParams {
 
@@ -82,32 +79,6 @@ class MockSqlDWBaseRelation extends BaseRelation {
 
   public MockSqlDWBaseRelation(String tableNameOrSubquery, String jdbcUrl) {
     this.tableNameOrSubquery = tableNameOrSubquery;
-    this.params = new SqlDwRelationParams(jdbcUrl);
-  }
-}
-
-class MockSpark2SqlDWBaseRelation extends BaseRelation {
-  private static final String FIELD_NAME = "name";
-
-  @SuppressWarnings("PMD") // used by reflection
-  private final String com$databricks$spark$sqldw$SqlDWRelation$$tableNameOrSubquery;
-
-  @SuppressWarnings("PMD") // used by reflection
-  private final Object params;
-
-  @Override
-  public SQLContext sqlContext() {
-    return null;
-  }
-
-  @Override
-  public StructType schema() {
-    return new StructType(
-        new StructField[] {new StructField(FIELD_NAME, StringType$.MODULE$, false, null)});
-  }
-
-  public MockSpark2SqlDWBaseRelation(String tableNameOrSubquery, String jdbcUrl) {
-    this.com$databricks$spark$sqldw$SqlDWRelation$$tableNameOrSubquery = tableNameOrSubquery;
     this.params = new SqlDwRelationParams(jdbcUrl);
   }
 }

@@ -26,17 +26,17 @@ ext {
     activeRuntimeElementsConfiguration = "scala" + scala.replace(".", "") + "RuntimeElements"
 
     assertjVersion = '3.27.3'
-    bigqueryVersion = '0.42.2'
-    junit5Version = '5.11.4'
+    bigqueryVersion = '0.42.4'
+    junit5Version = '5.13.4'
     mockitoVersion = '4.11.0'
-    postgresqlVersion = '42.7.5'
-    testcontainersVersion = '1.20.5'
+    postgresqlVersion = '42.7.7'
+    testcontainersVersion = '1.21.3'
     configurableTestConfig = [
             sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
             testDir      : project.findProperty('test.dir') ?: System.getProperty('test.dir')
     ]
-    micrometerVersion = '1.14.4'
+    micrometerVersion = '1.15.2'
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
@@ -85,8 +85,6 @@ addDependenciesToConfiguration(additionalJarsConfigurationName, spark, scala, th
 dependencies {
     implementation(project(path: ":shared"))
     implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
-    implementation(project(path: ":spark2"))
-    implementation(project(path: ":spark2", configuration: "scala212RuntimeElements"))
     implementation(project(path: ":spark3"))
     implementation(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
 
@@ -105,7 +103,7 @@ dependencies {
     implementation(project(path: ":iceberg"))
     implementation(project(path: ":gcp"))
 
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.2")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.5")
 
     compileOnly("org.apache.spark:spark-core_${scala}:${spark}")
     compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")
@@ -122,13 +120,13 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation("org.postgresql:postgresql:${postgresqlVersion}")
     testImplementation('org.hamcrest:hamcrest-library:3.0')
-    testImplementation('org.xerial:sqlite-jdbc:3.49.1.0')
+    testImplementation('org.xerial:sqlite-jdbc:3.50.3.0')
     testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.testcontainers:mockserver")
     testImplementation("org.testcontainers:kafka")
-    testImplementation("commons-beanutils:commons-beanutils:1.10.1")
+    testImplementation("commons-beanutils:commons-beanutils:1.11.0")
     testImplementation("org.awaitility:awaitility:4.3.0")
     testImplementation("org.assertj:assertj-core:${assertjVersion}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
@@ -139,7 +137,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.module'
     }
 
-    testImplementation(platform("software.amazon.awssdk:bom:2.30.29"))
+    testImplementation(platform("software.amazon.awssdk:bom:2.32.8"))
     testImplementation("software.amazon.awssdk:auth")
     testImplementation("software.amazon.awssdk:emr")
     testImplementation("software.amazon.awssdk:s3")
@@ -157,7 +155,7 @@ dependencies {
     testImplementation('net.javacrumbs.json-unit:json-unit-core:2.38.0')
 
     testRuntimeOnly("org.slf4j:slf4j-api:2.0.16")
-    testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.24.3"))
+    testRuntimeOnly(platform("org.apache.logging.log4j:log4j-bom:2.25.1"))
     testRuntimeOnly("org.apache.logging.log4j:log4j-api")
     testRuntimeOnly("org.apache.logging.log4j:log4j-core")
     testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j-impl")
@@ -252,7 +250,6 @@ tasks.named("shadowJar", ShadowJar.class) {
 
     minimize() {
         exclude(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
-        exclude(project(path: ":spark2", configuration: "scala212RuntimeElements"))
         exclude(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
         exclude(project(path: ":spark31", configuration: "scala212RuntimeElements"))
         exclude(project(path: ":spark32", configuration: activeRuntimeElementsConfiguration))
