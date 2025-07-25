@@ -11,7 +11,7 @@
           },
           "job": {
             "namespace": "dbt",
-            "name": "dbt-job-name"
+            "name": "spark-odbc"
           }
         },
         "dbt_run": {
@@ -65,7 +65,7 @@
           },
           "job": {
             "namespace": "dbt",
-            "name": "dbt-job-name"
+            "name": "spark-odbc"
           }
         },
         "dbt_run": {
@@ -138,7 +138,7 @@
           },
           "job": {
             "namespace": "dbt",
-            "name": "dbt-job-name"
+            "name": "spark-odbc"
           }
         },
         "dbt_run": {
@@ -192,7 +192,7 @@
           },
           "job": {
             "namespace": "dbt",
-            "name": "dbt-job-name"
+            "name": "spark-odbc"
           }
         },
         "dbt_run": {
