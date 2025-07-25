@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.LogicalRelationFactory;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -30,7 +31,6 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import scala.Option;
@@ -120,9 +120,6 @@ class TestSqlDWDatabricksVisitor extends SqlDWDatabricksVisitor {
   }
 }
 
-@EnabledIfSystemProperty(
-    named = "spark.version",
-    matches = "([3].*)") // doesn't work for Spark 4 which has different LogicalRelation constructor
 class SQLDWDatabricksVisitorTest {
   private static final String FIELD_NAME = "name";
   SparkSession session = mock(SparkSession.class);
@@ -150,19 +147,20 @@ class SQLDWDatabricksVisitorTest {
 
     // Instantiate a MockSQLDWRelation
     LogicalRelation lr =
-        new LogicalRelation(
-            new MockSqlDWBaseRelation(inputName, inputJdbcUrl),
-            ScalaConversionUtils.fromList(
-                Collections.singletonList(
-                    new AttributeReference(
-                        FIELD_NAME,
-                        StringType$.MODULE$,
-                        false,
-                        null,
-                        ExprId.apply(1L),
-                        ScalaConversionUtils.asScalaSeqEmpty()))),
-            Option.empty(),
-            false);
+        LogicalRelationFactory.create(
+                new MockSqlDWBaseRelation(inputName, inputJdbcUrl),
+                ScalaConversionUtils.fromList(
+                    Collections.singletonList(
+                        new AttributeReference(
+                            FIELD_NAME,
+                            StringType$.MODULE$,
+                            false,
+                            null,
+                            ExprId.apply(1L),
+                            ScalaConversionUtils.asScalaSeqEmpty()))),
+                Option.empty(),
+                false)
+            .orElseThrow(() -> new RuntimeException("Failed to create LogicalRelation"));
 
     TestSqlDWDatabricksVisitor visitor =
         new TestSqlDWDatabricksVisitor(
@@ -191,19 +189,20 @@ class SQLDWDatabricksVisitorTest {
 
     // Instantiate a MockSQLDWRelation
     LogicalRelation lr =
-        new LogicalRelation(
-            new MockSpark2SqlDWBaseRelation(inputName, inputJdbcUrl),
-            ScalaConversionUtils.fromList(
-                Collections.singletonList(
-                    new AttributeReference(
-                        FIELD_NAME,
-                        StringType$.MODULE$,
-                        false,
-                        null,
-                        ExprId.apply(1L),
-                        ScalaConversionUtils.asScalaSeqEmpty()))),
-            Option.empty(),
-            false);
+        LogicalRelationFactory.create(
+                new MockSpark2SqlDWBaseRelation(inputName, inputJdbcUrl),
+                ScalaConversionUtils.fromList(
+                    Collections.singletonList(
+                        new AttributeReference(
+                            FIELD_NAME,
+                            StringType$.MODULE$,
+                            false,
+                            null,
+                            ExprId.apply(1L),
+                            ScalaConversionUtils.asScalaSeqEmpty()))),
+                Option.empty(),
+                false)
+            .orElseThrow(() -> new RuntimeException("Failed to create LogicalRelation"));
 
     TestSqlDWDatabricksVisitor visitor =
         new TestSqlDWDatabricksVisitor(
@@ -226,19 +225,20 @@ class SQLDWDatabricksVisitorTest {
 
     // Instantiate a MockSQLDWRelation
     LogicalRelation lr =
-        new LogicalRelation(
-            new MockSqlDWBaseRelation(inputName, inputJdbcUrl),
-            ScalaConversionUtils.fromList(
-                Collections.singletonList(
-                    new AttributeReference(
-                        FIELD_NAME,
-                        StringType$.MODULE$,
-                        false,
-                        null,
-                        ExprId.apply(1L),
-                        ScalaConversionUtils.asScalaSeqEmpty()))),
-            Option.empty(),
-            false);
+        LogicalRelationFactory.create(
+                new MockSqlDWBaseRelation(inputName, inputJdbcUrl),
+                ScalaConversionUtils.fromList(
+                    Collections.singletonList(
+                        new AttributeReference(
+                            FIELD_NAME,
+                            StringType$.MODULE$,
+                            false,
+                            null,
+                            ExprId.apply(1L),
+                            ScalaConversionUtils.asScalaSeqEmpty()))),
+                Option.empty(),
+                false)
+            .orElseThrow(() -> new RuntimeException("Failed to create LogicalRelation"));
 
     TestSqlDWDatabricksVisitor visitor =
         new TestSqlDWDatabricksVisitor(
@@ -258,19 +258,20 @@ class SQLDWDatabricksVisitorTest {
 
     // Instantiate a MockSQLDWRelation
     LogicalRelation lr =
-        new LogicalRelation(
-            new MockSqlDWBaseRelation(inputName, inputJdbcUrl),
-            ScalaConversionUtils.fromList(
-                Collections.singletonList(
-                    new AttributeReference(
-                        FIELD_NAME,
-                        StringType$.MODULE$,
-                        false,
-                        null,
-                        ExprId.apply(1L),
-                        ScalaConversionUtils.asScalaSeqEmpty()))),
-            Option.empty(),
-            false);
+        LogicalRelationFactory.create(
+                new MockSqlDWBaseRelation(inputName, inputJdbcUrl),
+                ScalaConversionUtils.fromList(
+                    Collections.singletonList(
+                        new AttributeReference(
+                            FIELD_NAME,
+                            StringType$.MODULE$,
+                            false,
+                            null,
+                            ExprId.apply(1L),
+                            ScalaConversionUtils.asScalaSeqEmpty()))),
+                Option.empty(),
+                false)
+            .orElseThrow(() -> new RuntimeException("Failed to create LogicalRelation"));
 
     TestSqlDWDatabricksVisitor visitor =
         new TestSqlDWDatabricksVisitor(
