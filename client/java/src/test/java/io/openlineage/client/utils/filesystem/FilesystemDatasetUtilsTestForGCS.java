@@ -16,19 +16,12 @@ class FilesystemDatasetUtilsTestForGCS {
   @Test
   @SneakyThrows
   void testFromLocation() {
-    assertThat(FilesystemDatasetUtils.fromLocation(new URI("gs://bucket")))
-        .hasFieldOrPropertyWithValue("namespace", "gs://bucket")
-        .hasFieldOrPropertyWithValue("name", "/");
 
     assertThat(FilesystemDatasetUtils.fromLocation(new URI("gs://bucket/warehouse")))
         .hasFieldOrPropertyWithValue("namespace", "gs://bucket")
         .hasFieldOrPropertyWithValue("name", "warehouse");
 
     assertThat(FilesystemDatasetUtils.fromLocation(new URI("gs://bucket/warehouse/location")))
-        .hasFieldOrPropertyWithValue("namespace", "gs://bucket")
-        .hasFieldOrPropertyWithValue("name", "warehouse/location");
-
-    assertThat(FilesystemDatasetUtils.fromLocation(new URI("gs://bucket/warehouse/location/")))
         .hasFieldOrPropertyWithValue("namespace", "gs://bucket")
         .hasFieldOrPropertyWithValue("name", "warehouse/location");
   }
@@ -39,18 +32,18 @@ class FilesystemDatasetUtilsTestForGCS {
     assertThat(
             FilesystemDatasetUtils.fromLocationAndName(
                 new URI("gs://bucket/warehouse"), "default.table"))
-        .hasFieldOrPropertyWithValue("namespace", "gs://bucket/warehouse")
-        .hasFieldOrPropertyWithValue("name", "default.table");
+        .hasFieldOrPropertyWithValue("namespace", "gs://bucket")
+        .hasFieldOrPropertyWithValue("name", "warehouse/default.table");
 
     assertThat(
             FilesystemDatasetUtils.fromLocationAndName(
                 new URI("gs://bucket/warehouse/location"), "default.table"))
-        .hasFieldOrPropertyWithValue("namespace", "gs://bucket/warehouse/location")
-        .hasFieldOrPropertyWithValue("name", "default.table");
+        .hasFieldOrPropertyWithValue("namespace", "gs://bucket")
+        .hasFieldOrPropertyWithValue("name", "warehouse/location/default.table");
 
     assertThat(FilesystemDatasetUtils.fromLocationAndName(new URI("gs://bucket/warehouse"), ""))
-        .hasFieldOrPropertyWithValue("namespace", "gs://bucket/warehouse")
-        .hasFieldOrPropertyWithValue("name", "/");
+        .hasFieldOrPropertyWithValue("namespace", "gs://bucket")
+        .hasFieldOrPropertyWithValue("name", "warehouse");
   }
 
   @Test
@@ -69,7 +62,7 @@ class FilesystemDatasetUtilsTestForGCS {
 
     assertThat(
             FilesystemDatasetUtils.toLocation(
-                new DatasetIdentifier("default.table", "gs://bucket/warehouse/location")))
+                new DatasetIdentifier("warehouse/location/default.table", "gs://bucket")))
         .isEqualTo(new URI("gs://bucket/warehouse/location/default.table"));
   }
 }

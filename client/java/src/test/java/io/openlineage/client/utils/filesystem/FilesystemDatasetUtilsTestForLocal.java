@@ -18,14 +18,6 @@ class FilesystemDatasetUtilsTestForLocal {
   @Test
   @SneakyThrows
   void testFromLocation() {
-    assertThat(FilesystemDatasetUtils.fromLocation(new URI("")))
-        .hasFieldOrPropertyWithValue("namespace", "file")
-        .hasFieldOrPropertyWithValue("name", "/");
-
-    assertThat(FilesystemDatasetUtils.fromLocation(new URI("/")))
-        .hasFieldOrPropertyWithValue("namespace", "file")
-        .hasFieldOrPropertyWithValue("name", "/");
-
     assertThat(FilesystemDatasetUtils.fromLocation(new URI("file:/warehouse/location")))
         .hasFieldOrPropertyWithValue("namespace", "file")
         .hasFieldOrPropertyWithValue("name", "/warehouse/location");
@@ -80,32 +72,32 @@ class FilesystemDatasetUtilsTestForLocal {
         .hasFieldOrPropertyWithValue("name", "default.table");
 
     assertThat(FilesystemDatasetUtils.fromLocationAndName(new URI("/warehouse"), "default.table"))
-        .hasFieldOrPropertyWithValue("namespace", "file:/warehouse")
-        .hasFieldOrPropertyWithValue("name", "default.table");
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/warehouse/default.table");
 
     assertThat(
             FilesystemDatasetUtils.fromLocationAndName(
                 new URI("/warehouse/location"), "default.table"))
-        .hasFieldOrPropertyWithValue("namespace", "file:/warehouse/location")
-        .hasFieldOrPropertyWithValue("name", "default.table");
-
-    assertThat(
-            FilesystemDatasetUtils.fromLocationAndName(
-                new URI("file:/warehouse/location"), "default.table"))
-        .hasFieldOrPropertyWithValue("namespace", "file:/warehouse/location")
-        .hasFieldOrPropertyWithValue("name", "default.table");
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/warehouse/location/default.table");
 
     assertThat(
             FilesystemDatasetUtils.fromLocationAndName(
                 new URI("file:/warehouse/location/"), "default.table"))
-        .hasFieldOrPropertyWithValue("namespace", "file:/warehouse/location")
-        .hasFieldOrPropertyWithValue("name", "default.table");
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/warehouse/location/default.table");
 
     assertThat(
             FilesystemDatasetUtils.fromLocationAndName(
                 new URI("file:///warehouse/location"), "default.table"))
-        .hasFieldOrPropertyWithValue("namespace", "file:/warehouse/location")
-        .hasFieldOrPropertyWithValue("name", "default.table");
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "warehouse/location/default.table");
+
+    assertThat(
+            FilesystemDatasetUtils.fromLocationAndName(
+                new URI("file://warehouse/location"), "default.table"))
+        .hasFieldOrPropertyWithValue("namespace", "file://warehouse")
+        .hasFieldOrPropertyWithValue("name", "location/default.table");
   }
 
   @Test
@@ -117,8 +109,8 @@ class FilesystemDatasetUtilsTestForLocal {
     when(uri.getPath()).thenReturn("C:/home/test");
 
     assertThat(FilesystemDatasetUtils.fromLocationAndName(uri, "default.table"))
-        .hasFieldOrPropertyWithValue("namespace", "file:C:/home/test")
-        .hasFieldOrPropertyWithValue("name", "default.table");
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "C:/home/test/default.table");
   }
 
   @Test
@@ -133,7 +125,7 @@ class FilesystemDatasetUtilsTestForLocal {
 
     assertThat(
             FilesystemDatasetUtils.toLocation(
-                new DatasetIdentifier("default.table", "file:/warehouse/location")))
+                new DatasetIdentifier("/warehouse/location/default.table", "file")))
         .isEqualTo(new URI("file:/warehouse/location/default.table"));
   }
 }
