@@ -126,7 +126,6 @@ class KustoRelationVisitorTest {
       String expectedNamespace,
       int expectedNumOfDatasets) {
 
-    // Instantiate a MockKustoRelation
     LogicalRelation lr =
         LogicalRelationFactory.create(
                 new MockKustoRelation(inputQuery, url, database),

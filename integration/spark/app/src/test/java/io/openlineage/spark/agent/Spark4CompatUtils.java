@@ -6,11 +6,9 @@
 package io.openlineage.spark.agent;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import lombok.SneakyThrows;
 import org.apache.commons.beanutils.MethodUtils;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.SparkSession.Builder;
 import org.apache.spark.sql.execution.QueryExecution;
 
@@ -19,13 +17,11 @@ public class Spark4CompatUtils {
 
   @SneakyThrows
   public static void cleanupAnyExistingSession() {
-    // check if SparkSession$.MODULE$.cleanupAnyExistingSession(); exists
-    Method method =
-        MethodUtils.getAccessibleMethod(
-            SparkSession$.class, "cleanupAnyExistingSession", new Class[] {});
 
-    if (method != null) {
-      SparkSession$.MODULE$.cleanupAnyExistingSession();
+    if (!System.getProperty("spark.version").startsWith("4")) {
+      Class c = Class.forName("org.apache.spark.sql.SparkSession$");
+      Field field = c.getField("MODULE$");
+      MethodUtils.invokeMethod(field.get(null), "cleanupAnyExistingSession", new Object[] {});
     } else {
       // Spark 4.0 -> use classic spark session
       Class c = Class.forName("org.apache.spark.sql.classic.SparkSession$");
