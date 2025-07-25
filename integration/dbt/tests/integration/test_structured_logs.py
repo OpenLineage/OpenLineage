@@ -15,7 +15,14 @@ class TestStructuredLogs:
 
         # Run with structured logs mode using dbt-ol for a single model
         result = dbt_runner.run_dbt_ol_command(
-            ["--consume-structured-logs", "run", "--select", "stg_customers"]
+            [
+                "--consume-structured-logs",
+                "run",
+                "--select",
+                "stg_customers",
+                "--openlineage-dbt-job-name",
+                "structured-logs",
+            ]
         )
         assert result["success"], f"dbt-ol run with structured logs failed: {result['output']}"
 
@@ -60,6 +67,13 @@ class TestStructuredLogs:
 
         assert len(job_start_events) == 1, f"Expected 1 job START event, got {len(job_start_events)}"
         assert len(job_complete_events) == 1, f"Expected 1 job COMPLETE event, got {len(job_complete_events)}"
+
+        assert (
+            job_start_events[0]["job"]["name"] == "structured-logs"
+        ), "Expected job name to be structured-logs"
+        assert (
+            job_complete_events[0]["job"]["name"] == "structured-logs"
+        ), "Expected job name to be structured-logs"
 
         # Should have exactly 2 model-level events (START and COMPLETE)
         assert len(model_events) == 2, f"Expected 2 model events, got {len(model_events)}"

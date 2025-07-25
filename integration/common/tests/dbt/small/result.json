@@ -6,7 +6,7 @@
       "runId": "{{ any(result) }}",
       "facets": {
         "parent": {
-          "job": { "name": "dbt-job-name", "namespace": "dbt" },
+          "job": { "name": "small-job-name", "namespace": "dbt" },
           "run": { "runId": "{{ any(result) }}" }
         },
         "dbt_version": {
@@ -46,7 +46,7 @@
       "runId": "{{ any(result) }}",
       "facets": {
         "parent": {
-          "job": { "name": "dbt-job-name", "namespace": "dbt" },
+          "job": { "name": "small-job-name", "namespace": "dbt" },
           "run": { "runId": "{{ any(result) }}" }
         },
         "dbt_version": {
