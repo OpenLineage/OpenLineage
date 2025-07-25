@@ -147,13 +147,27 @@ def has_command_line_option(command_line: List[str], command_option: str) -> boo
     return command_option in command_line
 
 
-def remove_command_line_option(command_line: List[str], command_option: str) -> List[str]:
+def remove_command_line_option(
+    command_line: List[str], command_option: str, remove_value: bool = False
+) -> List[str]:
     if not has_command_line_option(command_line, command_option):
         return command_line
 
     command_line = list(command_line)
     command_option_index = command_line.index(command_option)
+
+    # Remove the option itself
     command_line.pop(command_option_index)
+
+    # Optionally remove the value if requested and it exists
+    if (
+        remove_value
+        and command_option_index < len(command_line)
+        and not command_line[command_option_index].startswith("-")
+    ):
+        # Remove the value as well
+        command_line.pop(command_option_index)
+
     return command_line
 
 

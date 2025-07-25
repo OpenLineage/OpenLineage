@@ -51,6 +51,12 @@ Finally, we can optionally specify a namespace where the lineage events will be 
 OPENLINEAGE_NAMESPACE=dev
 ```
 
+You can also override the job name sent by dbt OpenLineage events by providing env variable
+```bash
+OPENLINEAGE_DBT_JOB_NAME=<your-job-name>
+```
+or passing `--openlineage-dbt-job-name <your-job-name>` in the dbt command line.
+
 More configuration parameters can be found in [Python client documentation](../client/python.md#configuration)
 
 ## Running dbt with OpenLineage

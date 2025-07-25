@@ -1,6 +1,6 @@
 # Copyright 2018-2025 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
+from openlineage.common.utils import get_from_nullable_chain
 from utils.event_validation import (
     filter_events_by_job,
     get_events_by_type,
@@ -135,6 +135,31 @@ class TestDbtIntegration:
         # Validate event schemas
         for event in events:
             assert validate_event_schema(event), f"Invalid event schema: {event}"
+
+    def test_job_name_local_artifacts_mode(self, dbt_runner, reset_test_server):
+        """Test local artifacts mode."""
+        # Clear any existing events (done by reset_test_server fixture)
+
+        # Run with local artifacts mode using dbt-ol (without --consume-structured-logs)
+        result = dbt_runner.run_dbt_ol_command(
+            ["run", "--select", "stg_customers", "--openlineage-dbt-job-name", "my-special-dbt-job"]
+        )
+        assert result["success"], f"dbt-ol run with local artifacts failed: {result['output']}"
+
+        # Get events
+        events = dbt_runner.get_events()
+
+        # Should have events
+        assert len(events) > 0, "No events received in local artifacts mode"
+
+        # Validate event schemas
+        for event in events:
+            assert validate_event_schema(event), f"Invalid event schema: {event}"
+
+            assert "job" in event, "Missing job field"
+            assert "name" in event["job"], "Missing name field"
+            if get_from_nullable_chain(event, ["job", "facets", "jobType", "jobType"]) == "JOB":
+                assert event["job"]["name"] == "my-special-dbt-job", "Wrong job field name"
 
     def test_event_schema_validation(self, dbt_runner, reset_test_server):
         """Test that all events conform to OpenLineage schema."""
