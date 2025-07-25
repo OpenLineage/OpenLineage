@@ -24,6 +24,7 @@ from openlineage.common.provider.dbt import (
 from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
 from openlineage.common.provider.dbt.utils import (
     CONSUME_STRUCTURED_LOGS_COMMAND_OPTION,
+    OPENLINEAGE_DBT_JOB_NAME_OPTION,
     PRODUCER,
     __version__,
     get_parent_run_metadata,
@@ -155,31 +156,47 @@ def main():
     project_dir = parse_single_arg(args, ["--project-dir"], default="./")
     profile_name = parse_single_arg(args, ["--profile"])
     model_selector = parse_single_arg(args, ["--selector"])
+    openlineage_job_name = parse_single_arg(args, [OPENLINEAGE_DBT_JOB_NAME_OPTION])
     models = parse_multiple_args(args, ["-m", "-s", "--model", "--models", "--select"])
+
+    if openlineage_job_name:
+        args = remove_command_line_option(args, OPENLINEAGE_DBT_JOB_NAME_OPTION, remove_value=True)
+    else:
+        openlineage_job_name = os.getenv("OPENLINEAGE_DBT_JOB_NAME")
 
     # dbt-ol option and not a dbt option
     consume_structured_logs_option = has_command_line_option(args, CONSUME_STRUCTURED_LOGS_COMMAND_OPTION)
 
     if consume_structured_logs_option:
         return consume_structured_logs(
+            args=args,
             target=target,
             project_dir=project_dir,
             profile_name=profile_name,
             model_selector=model_selector,
             models=models,
+            openlineage_job_name=openlineage_job_name,
         )
     else:
         return consume_local_artifacts(
+            args=args,
             target=target,
             project_dir=project_dir,
             profile_name=profile_name,
             model_selector=model_selector,
             models=models,
+            openlineage_job_name=openlineage_job_name,
         )
 
 
 def consume_structured_logs(
-    target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]
+    args: List[str],
+    target: str,
+    project_dir: str,
+    profile_name: str,
+    model_selector: str,
+    models: List[str],
+    openlineage_job_name: Optional[str] = None,
 ):
     logger = logging.getLogger("openlineage.dbt")
     logger.info(
@@ -187,14 +204,16 @@ def consume_structured_logs(
         "events while the models are executing."
     )
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
-    dbt_command_line = remove_command_line_option(sys.argv, CONSUME_STRUCTURED_LOGS_COMMAND_OPTION)
-    dbt_command_line = ["dbt"] + dbt_command_line[1:]
+    dbt_command_line = remove_command_line_option(args, CONSUME_STRUCTURED_LOGS_COMMAND_OPTION)
+    if not dbt_command_line or dbt_command_line[0] != "dbt":
+        dbt_command_line = ["dbt"] + dbt_command_line
     processor = DbtStructuredLogsProcessor(
         project_dir=project_dir,
         dbt_command_line=dbt_command_line,
         producer=PRODUCER,
         target=target,
         job_namespace=job_namespace,
+        openlineage_job_name=openlineage_job_name,
         profile_name=profile_name,
         logger=logger,
         models=models,
@@ -236,7 +255,13 @@ def consume_structured_logs(
 
 
 def consume_local_artifacts(
-    target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]
+    args: List[str],
+    target: str,
+    project_dir: str,
+    profile_name: str,
+    model_selector: str,
+    models: List[str],
+    openlineage_job_name: Optional[str] = None,
 ):
     logger = logging.getLogger("openlineage.dbt")
     logger.info("This wrapper will send OpenLineage events at the end of dbt execution.")
@@ -258,6 +283,7 @@ def consume_local_artifacts(
         logger=logger,
         models=models,
         selector=model_selector,
+        openlineage_job_name=openlineage_job_name,
     )
 
     # Always emit "wrapping event" around dbt run. This indicates start of dbt execution, since
@@ -279,9 +305,9 @@ def consume_local_artifacts(
     pre_run_time = time.time()
     # Execute dbt in external process
 
-    force_send_events = len(sys.argv) > 1 and sys.argv[1] == "send-events"
+    force_send_events = len(args) > 1 and args[1] == "send-events"
     if not force_send_events:
-        with subprocess.Popen(["dbt"] + sys.argv[1:], stdout=sys.stdout, stderr=sys.stderr) as process:
+        with subprocess.Popen(["dbt"] + args, stdout=sys.stdout, stderr=sys.stderr) as process:
             return_code = process.wait()
     else:
         logger.warning("Sending events for the last run without running the job")
