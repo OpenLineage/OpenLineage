@@ -92,7 +92,7 @@ public class ContextFactory {
       log.error("Query execution is null: can't emit event for executionId {}", executionId);
       return Optional.empty();
     }
-    SparkSession sparkSession = queryExecution.sparkSession();
+    SparkSession sparkSession = Spark4CompatUtils.getSparkSession(queryExecution);
     OpenLineageContext olContext =
         OpenLineageContext.builder()
             .sparkSession(sparkSession)
@@ -120,7 +120,7 @@ public class ContextFactory {
     return executionFromCompleteEvent(event)
         .map(
             queryExecution -> {
-              SparkSession sparkSession = queryExecution.sparkSession();
+              SparkSession sparkSession = Spark4CompatUtils.getSparkSession(queryExecution);
               OpenLineageContext olContext =
                   OpenLineageContext.builder()
                       .sparkSession(sparkSession)
