@@ -998,6 +998,31 @@ jobs:
           path: ./build/libs
           destination: hive-client-artifacts
 
+  release-hive-udf-interfaces:
+    working_directory: ~/openlineage/integration/hive-udf-interfaces
+    machine:
+      image: ubuntu-2404:current
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
+      - attach_workspace:
+          at: ~/
+      - set_java_version
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $MAVEN_CENTRAL_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $MAVEN_CENTRAL_TOKEN_USERNAME)
+
+          # Publish *.jar
+          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository
+          ./gradlew --no-daemon --console=plain clean publishToSonatype closeAndReleaseSonatypeStagingRepository
+      - store_artifacts:
+          path: ./build/libs
+          destination: hive-udf-interfaces-artifacts
+
   build-integration-hive:
     working_directory: ~/openlineage/integration/hive
     parameters:
@@ -1035,6 +1060,51 @@ jobs:
             - .m2/repository/io/openlineage/openlineage-hive
             - openlineage/integration/hive/build-cache
             - openlineage/integration/hive/build/libs
+      - store_artifacts:
+          path: build/libs
+          destination: libs
+      - save_cache:
+          key: v1-integration-hive-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  build-hive-udf-interfaces:
+    working_directory: ~/openlineage/integration/hive-udf-interfaces
+    parameters:
+      release:
+        type: boolean
+        default: false
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
+      - set_java_version:
+          java_version: "8"
+      - restore_cache:
+          keys:
+            - v1-hive-udf-interfaces-{{ checksum "/tmp/checksum.txt" }}
+      - attach_workspace:
+          at: ~/
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $MAVEN_CENTRAL_TOKEN_PASSWORD)
+          export RELEASE_USERNAME=$(echo $MAVEN_CENTRAL_TOKEN_USERNAME)
+                  
+          ./gradlew --console=plain javadoc sourceJar
+          ./gradlew --console=plain publishToMavenLocal
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - .m2/repository/io/openlineage/hive-udf-interfaces
+            - openlineage/integration/hive-udf-interfaces/build-cache
+            - openlineage/integration/hive-udf-interfaces/build/libs
       - store_artifacts:
           path: build/libs
           destination: libs
