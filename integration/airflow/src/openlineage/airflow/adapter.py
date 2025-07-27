@@ -326,7 +326,7 @@ class OpenLineageAdapter:
         job_name: Optional[str] = None,
         nominal_start_time: Optional[str] = None,
         nominal_end_time: Optional[str] = None,
-        run_facets: Dict[str, RunFacet] = None,
+        run_facets: Optional[Dict[str, RunFacet]] = None,
     ) -> Run:
         facets: Dict[str, RunFacet] = {}
         if nominal_start_time:
@@ -356,8 +356,8 @@ class OpenLineageAdapter:
         job_type: job_type_job.JobTypeJobFacet,
         job_description: Optional[str] = None,
         code_location: Optional[str] = None,
-        owners: List[str] = None,
-        job_facets: Dict[str, JobFacet] = None,
+        owners: Optional[List[str]] = None,
+        job_facets: Optional[Dict[str, JobFacet]] = None,
     ):
         facets: Dict[str, JobFacet] = {}
 

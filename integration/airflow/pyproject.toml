@@ -30,16 +30,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-tests = [
-    "aiohttp",  # tox Airflow 2.3.4 does not install it by default
-    "pytest",
-    "pytest-cov",
-    "pytest-mock",
-    "mock",
-    "SQLAlchemy",  # must be set to 1.3.* for airflow tests compatibility
-    "Flask-SQLAlchemy",  # must be set to 2.4.* for airflow tests compatibility
-    "snowflake-connector-python",
-]
 airflow = [
     "apache-airflow>=2.5.2,<2.11",
     "apache-airflow-providers-postgres>=2.0.0,<=5.4.0",
@@ -66,6 +56,13 @@ dev = [
     "SQLAlchemy",
     "Flask-SQLAlchemy",
     "snowflake-connector-python",
+    "mypy",
+    "tox",
+    "tox-uv",
+    "types-PyYAML",
+    "types-paramiko",
+    "types-python-dateutil",
+    "types-requests"
 ]
 
 [project.urls]
@@ -76,12 +73,13 @@ Source = "https://github.com/OpenLineage/OpenLineage/tree/main/integration/airfl
 OpenLineagePlugin = "openlineage.airflow.plugin:OpenLineagePlugin"
 
 [tool.uv.sources]
-openlineage-integration-common = {workspace = true}
-openlineage_sql = {workspace = true}
-openlineage-python = {workspace = true}
+openlineage-integration-common = { path = "../common", editable = true }
+openlineage_sql = { path = "../sql/iface-py", editable = true }
+openlineage-python = { path = "../../client/python", editable = true }
 
 [tool.uv.build-backend]
-module-name = "openlineage.airflow"
+module-name = "openlineage"
+namespace = true
 
 [tool.ruff]
 line-length = 110
@@ -110,12 +108,14 @@ env_list = py3-airflow-2.5.2,py3-airflow-2.6.1
 skip_missing_interpreters = true
 
 [testenv]
+runner = uv-venv-runner
 description = run tests with Airflow version matrix
+skip_install = true
 package = editable
 deps =
     pytest
+    pytest-cov
     pytest-mock
-    mypy>=0.9.6
     airflow-2.5.2: apache-airflow==2.5.2
     airflow-2.6.1: apache-airflow==2.6.1
 set_env =
@@ -125,10 +125,16 @@ set_env =
     AIRFLOW__CORE__LOGGING_CONFIG_CLASS = log_config.LOGGING_CONFIG
     airflow-2.5.2: AIRFLOW_VERSION = 2.5.2
     airflow-2.6.1: AIRFLOW_VERSION = 2.6.1
+    UV_PROJECT_ENVIRONMENT={envdir}
 allowlist_externals = bash
+commands_pre =
+      # First sync the project dependencies (which includes openlineage-integration-common as editable)
+      uv sync --python {env_python} --frozen --inexact --no-install-project
+      # Then install only the specific airflow version
+      uv pip install apache-airflow=={env:AIRFLOW_VERSION}
 commands =
     bash -ec "if [[ ! -f $0/airflow.db ]]; then airflow db reset -y; fi" {envdir}
-    pytest --cov=openlineage --junitxml=test-results/junit.xml
+    uv run pytest --cov=src/openlineage --junitxml=test-results/junit.xml tests/
     coverage xml
 """
 

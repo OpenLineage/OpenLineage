@@ -146,8 +146,32 @@ repos:
       - id: mypy-client-python
         name: mypy type check - Python client
         language: system
-        entry: bash -c 'uv sync --dev && cd client/python && uv run mypy --explicit-package-bases src'
+        entry: bash -c 'cd client/python && uv sync --extra dev && uv run mypy --explicit-package-bases src'
         files: ^client/python/src/.*\.py$
+        pass_filenames: false
+      - id: mypy-integration-common
+        name: mypy type check - Integration common
+        language: system
+        entry: bash -c 'cd integration/common && uv sync --extra dev && uv run mypy --ignore-missing-imports src'
+        files: ^integration/common/src/.*\.py$
+        pass_filenames: false
+      - id: mypy-integration-airflow
+        name: mypy type check - Airflow integration
+        language: system
+        entry: bash -c 'cd integration/airflow && uv sync --extra dev && uv run mypy --ignore-missing-imports src'
+        files: ^integration/airflow/src/.*\.py$|^integration/airflow/openlineage/.*\.py$
+        pass_filenames: false
+      - id: mypy-integration-dagster
+        name: mypy type check - Dagster integration
+        language: system
+        entry: bash -c 'cd integration/dagster && uv sync --extra dev && uv run mypy --ignore-missing-imports src'
+        files: ^integration/dagster/src/.*\.py$|^integration/dagster/openlineage/.*\.py$
+        pass_filenames: false
+      - id: mypy-integration-dbt
+        name: mypy type check - dbt integration
+        language: system
+        entry: bash -c 'cd integration/dbt && uv sync --extra dev && uv run mypy --ignore-missing-imports src'
+        files: ^integration/dbt/src/.*\.py$|^integration/dbt/openlineage/.*\.py$
         pass_filenames: false
       - id: check_facets_redactions
         name: Check if all Facets have redacted fields defined

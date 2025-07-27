@@ -174,7 +174,7 @@ class ValuesQuantileExpectationParser(ColumnExpectationsParser):
         return {str(k): v for k, v in zip(observations["quantiles"], observations["values"])}
 
     @classmethod
-    def parse_expectation_result(cls, expectation_result: dict) -> ExpectationsParserResult:
+    def parse_expectation_result(cls, expectation_result: dict) -> ExpectationsParserResult:  # type: ignore[override]
         observed_values = get_from_nullable_chain(expectation_result, ["result", "observed_value"])
         return ExpectationsParserResult(
             "quantiles",

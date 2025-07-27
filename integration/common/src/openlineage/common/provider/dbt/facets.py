@@ -8,7 +8,7 @@ from openlineage.client.facet_v2 import (
     BaseFacet,
     parent_run,
 )
-from openlineage.common.schema import GITHUB_LOCATION
+from openlineage.common.schema import GITHUB_LOCATION  # type: ignore[attr-defined]
 
 
 @attr.define

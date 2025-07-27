@@ -150,7 +150,6 @@ commands:
             curl -LsSf https://astral.sh/uv/install.sh | sh
             [ -f "$HOME/.local/bin/env" ] && source $HOME/.local/bin/env
             uv python install << parameters.py_env >>
-            CFLAGS='-std=c++17' uv sync
 
 
 jobs:
@@ -278,7 +277,7 @@ jobs:
 
   # PYTHON
   unit-test-client-python:
-    working_directory: ~/openlineage
+    working_directory: ~/openlineage/client/python
     parameters:
       tox_env:
         type: string
@@ -293,7 +292,6 @@ jobs:
       - run:
           name: Run tox tests
           command: |
-            cd client/python
             uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --notest
             uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
 
@@ -310,8 +308,10 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
-      - run: python -m pip install build
-      - run: python -m build .
+      - install_uv_python
+      - run: |
+          uv sync --extra dev 
+          uv build --wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -327,7 +327,11 @@ jobs:
       - attach_workspace:
           at: .
       - install_uv_python
-      - run: tox
+      - run: uv sync --extra dev
+      - run: |
+          uv run --python 3.9 --with tox python -m tox r -e "py3-common-dbt-1.0" --notest
+          uv run --python 3.9 --with tox python -m tox r -e "py3-common-dbt-1.0" --skip-pkg-install
+          uv run --python 3.9 mypy --install-types --non-interactive --ignore-missing-imports src
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
           path: test-results
@@ -339,15 +343,10 @@ jobs:
     steps:
       - *checkout_project_root
       - run: ../../.circleci/get-docker-compose.sh
-      - run:
-          name: Install uv and Python 3.9
-          command: |
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            [ -f "$HOME/.local/bin/env" ] && source $HOME/.local/bin/env
-            uv python install 3.9
+      - install_uv_python
       - attach_workspace:
           at: .
-      - run: uv venv && source .venv/bin/activate && ls -halt dist/ && echo "=========" && ls -halt target/wheels/ && uv sync --all-extras --active --inexact --find-links target/wheels/ --find-links dist/ && pytest tests/
+      - run: uv run pytest tests/
 
   build-integration-dbt:
     working_directory: ~/openlineage/integration/dbt
@@ -355,7 +354,10 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
-      - run: python setup.py sdist bdist_wheel
+      - install_uv_python
+      - run: |
+          uv sync --extra dev 
+          uv build --wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -368,7 +370,10 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
-      - run: python setup.py sdist bdist_wheel
+      - install_uv_python
+      - run: |
+          uv sync --extra dev 
+          uv build --wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -381,14 +386,16 @@ jobs:
         type: boolean
       airflow-version:
         type: string
-    working_directory: ~/openlineage/
+    working_directory: ~/openlineage/integration/airflow
     docker:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
       - install_uv_python
-      - run: uv run mypy --install-types --non-interactive --ignore-missing-imports integration/airflow/src
-      - run: tox -e py3-<< parameters.airflow-version >>
+      - run: |
+          uv sync --extra dev
+          uv run mypy --install-types --non-interactive --ignore-missing-imports src
+          uv run tox -e py3-<< parameters.airflow-version >>
       - store_test_results:
           path: test-results
       - run: bash <(curl -s https://codecov.io/bash)
@@ -401,7 +408,9 @@ jobs:
       - *checkout_project_root
       - install_uv_python:
           py_env: "3.9"
-      - run: python setup.py sdist bdist_wheel
+      - run: |
+          uv sync --extra dev 
+          uv build --wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -440,10 +449,10 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
-      - *install_python_client
-      - run: pip install -e .[dev]
-      - run: python -m mypy --ignore-missing-imports --no-namespace-packages src
-      - run: pytest --cov=openlineage tests/
+      - install_uv_python
+      - run: uv sync --extra dev
+      - run: uv run mypy --ignore-missing-imports --no-namespace-packages src
+      - run: uv run pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)
 
   build-integration-dagster:
@@ -452,8 +461,10 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
-      - *install_python_client
-      - run: python setup.py sdist bdist_wheel
+      - install_uv_python
+      - run: |
+          uv sync --extra dev 
+          uv build --wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -1283,7 +1294,6 @@ jobs:
       - run: bundle exec rake test
 
   run-pre-commit:
-    # this job run pre-commit for Python client only
     # add dependency to other files when pre-commit runs related checks
     working_directory: ~/openlineage
     machine:
@@ -1294,7 +1304,8 @@ jobs:
       - run:
           name: Run pre-commit
           command: |
-            pre-commit run --show-diff-on-failure --all-files
+            uv tool install pre-commit --with pre-commit-uv --force-reinstall
+            uv tool run pre-commit run --show-diff-on-failure --all-files
 
   build-website:
     # Build Openlineage website to make sure npm packages match

@@ -53,10 +53,11 @@ Homepage = "https://openlineage.io/"
 Source = "https://github.com/OpenLineage/OpenLineage/tree/main/integration/dagster"
 
 [tool.uv.sources]
-openlineage-python = {workspace = true}
+openlineage-python = { path = "../../client/python", editable = true }
 
 [tool.uv.build-backend]
-module-name = "openlineage.dagster"
+module-name = "openlineage"
+namespace = true
 
 [tool.ruff]
 line-length = 110

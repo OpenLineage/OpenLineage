@@ -105,7 +105,8 @@ exclude = [
 ol-generate-code = "openlineage.client.generator.cli:main"
 
 [tool.uv.build-backend]
-module-name = "openlineage.client"
+module-name = "openlineage"
+namespace = true
 
 [tool.ruff]
 line-length = 110

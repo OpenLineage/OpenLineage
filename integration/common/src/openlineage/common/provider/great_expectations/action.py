@@ -158,8 +158,8 @@ class OpenLineageValidationAction(ValidationAction):
                 root = parent_run.Root(
                     run=parent_run.RootRun(self.openlineage_root_parent_run_id),
                     job=parent_run.RootJob(
-                        namespace=self.openlineage_root_parent_job_namespace,
-                        name=self.openlineage_root_parent_job_name,
+                        namespace=self.openlineage_root_parent_job_namespace,  # type: ignore [arg-type]
+                        name=self.openlineage_root_parent_job_name,  # type: ignore [arg-type]
                     ),
                 )
             run_facets.update(
@@ -167,8 +167,8 @@ class OpenLineageValidationAction(ValidationAction):
                     "parent": parent_run.ParentRunFacet(
                         run=parent_run.Run(runId=self.openlineage_parent_run_id),
                         job=parent_run.Job(
-                            namespace=self.openlineage_parent_job_namespace,
-                            name=self.openlineage_parent_job_name,
+                            namespace=self.openlineage_parent_job_namespace,  # type: ignore [arg-type]
+                            name=self.openlineage_parent_job_name,  # type: ignore [arg-type]
                         ),
                         root=root,
                     ),
@@ -209,13 +209,13 @@ class OpenLineageValidationAction(ValidationAction):
             eventType=RunState.COMPLETE,
             eventTime=datetime.now().isoformat(),
             run=Run(runId=str(self.openlineage_run_id), facets=run_facets),
-            job=Job(self.openlineage_namespace, job_name, facets=job_facets),
+            job=Job(self.openlineage_namespace, job_name, facets=job_facets),  # type: ignore [arg-type]
             inputs=datasets,
             outputs=[],
             producer="https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/common/openlineage/provider/great_expectations",
         )
         if self.do_publish:
-            self.openlineage_client.emit(run_event)
+            self.openlineage_client.emit(run_event)  # type: ignore [attr-defined]
         # Great expectations tries to append stuff here, so we need to make it a dict
         return Serde.to_dict(run_event)
 
@@ -237,21 +237,21 @@ class OpenLineageValidationAction(ValidationAction):
         :return: List of OpenLineage datasets
         """
         batch = data_asset.active_batch
-        batch_data = batch.data
+        batch_data = batch.data  # type: ignore [union-attr]
 
         # Get the actual DataFrame from batch_data
         if hasattr(batch_data, "dataframe"):
-            df = batch_data.dataframe
+            df = batch_data.dataframe  # type: ignore [union-attr]
         elif hasattr(batch_data, "_dataframe"):
-            df = batch_data._dataframe
+            df = batch_data._dataframe  # type: ignore [union-attr]
         else:
             # Fallback: try to access the data directly
             df = batch_data
 
         # Get path from batch request options
         path = None
-        if hasattr(batch, "batch_request") and hasattr(batch.batch_request, "options"):
-            path = batch.batch_request.options.get("path")
+        if hasattr(batch, "batch_request") and hasattr(batch.batch_request, "options"):  # type: ignore [union-attr]
+            path = batch.batch_request.options.get("path")  # type: ignore [union-attr]
 
         columns = [
             Field(
@@ -301,36 +301,36 @@ class OpenLineageValidationAction(ValidationAction):
         """
         metadata = MetaData()
         batch = data_asset.active_batch
-        batch_data = batch.data  # This is SqlAlchemyBatchData
+        batch_data = batch.data  # type: ignore [union-attr]
 
         # Check for custom SQL query in various locations based on GE v3 API
         custom_sql = None
 
         # For GE v3 query assets, the query is in the data asset directly
-        if hasattr(batch, "data_asset") and hasattr(batch.data_asset, "query"):
-            custom_sql = batch.data_asset.query
-        elif hasattr(batch, "_data_asset") and hasattr(batch._data_asset, "query"):
-            custom_sql = batch._data_asset.query
+        if hasattr(batch, "data_asset") and hasattr(batch.data_asset, "query"):  # type: ignore [union-attr]
+            custom_sql = batch.data_asset.query  # type: ignore [union-attr]
+        elif hasattr(batch, "_data_asset") and hasattr(batch._data_asset, "query"):  # type: ignore [union-attr]
+            custom_sql = batch._data_asset.query  # type: ignore [union-attr]
         # Legacy path - check batch request and batch definition
         elif hasattr(batch, "batch_request"):
-            if hasattr(batch.batch_request, "options") and batch.batch_request.options:
-                custom_sql = batch.batch_request.options.get("query")
+            if hasattr(batch.batch_request, "options") and batch.batch_request.options:  # type: ignore [union-attr]
+                custom_sql = batch.batch_request.options.get("query")  # type: ignore [union-attr]
             elif (
-                hasattr(batch.batch_request, "runtime_parameters") and batch.batch_request.runtime_parameters
+                hasattr(batch.batch_request, "runtime_parameters") and batch.batch_request.runtime_parameters  # type: ignore [union-attr]
             ):
-                custom_sql = batch.batch_request.runtime_parameters.get("query")
+                custom_sql = batch.batch_request.runtime_parameters.get("query")  # type: ignore [union-attr]
 
         # Also check batch_definition for query
         if not custom_sql and hasattr(batch, "batch_definition"):
-            batch_def = batch.batch_definition
+            batch_def = batch.batch_definition  # type: ignore [union-attr]
             if hasattr(batch_def, "data_asset") and hasattr(batch_def.data_asset, "query"):
                 custom_sql = batch_def.data_asset.query
 
         if custom_sql:
             # Parse custom SQL to extract table lineage
-            parsed_sql = parse(custom_sql, dialect=data_asset.execution_engine.dialect_name)
+            parsed_sql = parse(custom_sql, dialect=data_asset.execution_engine.dialect_name)  # type: ignore [attr-defined]
             return [
-                self._get_sql_table(batch_data, metadata, t.schema, t.name, validation_result_suite)
+                self._get_sql_table(batch_data, metadata, t.schema, t.name, validation_result_suite)  # type: ignore [arg-type]
                 for t in parsed_sql.in_tables
             ]
 
@@ -350,7 +350,7 @@ class OpenLineageValidationAction(ValidationAction):
 
         return [
             self._get_sql_table(
-                batch_data,
+                batch_data,  # type: ignore [arg-type]
                 metadata,
                 schema_name,
                 table_name,

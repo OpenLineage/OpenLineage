@@ -328,16 +328,16 @@ def consume_local_artifacts(
         # Pass some run facets from extracted dbt events to wrapping start and stop events
         event = events[0]
         if "dbt_version" in event.run.facets:
-            start_event.run.facets["dbt_version"] = event.run.facets["dbt_version"]
-            terminal_event.run.facets["dbt_version"] = event.run.facets["dbt_version"]
+            start_event.run.facets["dbt_version"] = event.run.facets["dbt_version"]  # type: ignore[index]
+            terminal_event.run.facets["dbt_version"] = event.run.facets["dbt_version"]  # type: ignore[index]
 
         if "processing_engine" in event.run.facets:
-            start_event.run.facets["processing_engine"] = event.run.facets["processing_engine"]
-            terminal_event.run.facets["processing_engine"] = event.run.facets["processing_engine"]
+            start_event.run.facets["processing_engine"] = event.run.facets["processing_engine"]  # type: ignore[index]
+            terminal_event.run.facets["processing_engine"] = event.run.facets["processing_engine"]  # type: ignore[index]
 
         if "dbt_run" in event.run.facets:
-            start_event.run.facets["dbt_run"] = event.run.facets["dbt_run"]
-            terminal_event.run.facets["dbt_run"] = event.run.facets["dbt_run"]
+            start_event.run.facets["dbt_run"] = event.run.facets["dbt_run"]  # type: ignore[index]
+            terminal_event.run.facets["dbt_run"] = event.run.facets["dbt_run"]  # type: ignore[index]
 
     emitted_events = 0
     all_events = [start_event, *events, terminal_event]

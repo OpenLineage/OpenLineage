@@ -16,7 +16,7 @@ from openlineage.client.facet_v2 import (
 from openlineage.client.generated import external_query_run
 from openlineage.common.dataset import Dataset, Source
 from openlineage.common.models import DbColumn, DbTableSchema
-from openlineage.common.schema import GITHUB_LOCATION
+from openlineage.common.schema import GITHUB_LOCATION  # type: ignore[attr-defined]
 from openlineage.common.sql import DbTableMeta
 from openlineage.common.utils import get_from_nullable_chain
 

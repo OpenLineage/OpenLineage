@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-tests = [
+dev = [
     "pytest>=7.0.0",
     "pytest-cov", 
     "pytest-xdist>=2.5.0",
@@ -27,17 +27,18 @@ tests = [
     "python-dateutil",
     "requests>=2.25.0",
     "docker>=6.0.0",
+    "mypy"
 ]
-dev = ["openlineage-dbt[tests]"]
 
 [project.scripts]
 dbt-ol = "openlineage.dbt:main"
 
 [tool.uv.sources]
-openlineage-integration-common = {workspace = true}
+openlineage-integration-common = { path = "../common", editable = true }
 
 [tool.uv.build-backend]
-module-name = "openlineage.dbt"
+module-name = "openlineage"
+namespace = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

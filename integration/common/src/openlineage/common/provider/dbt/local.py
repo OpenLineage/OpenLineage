@@ -262,7 +262,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
             profile = self.load_yaml_with_jinja(os.path.join(profile_dir, "profiles.yml"))[self.profile_name]
         except FileNotFoundError:
             profile = self.load_yaml_with_jinja(
-                os.path.join(self.get_dbt_profiles_dir(self.dbt_command_line), "profiles.yml")
+                os.path.join(self.get_dbt_profiles_dir(self.dbt_command_line), "profiles.yml")  # type: ignore[arg-type]
             )[self.profile_name]
 
         if not self.target:

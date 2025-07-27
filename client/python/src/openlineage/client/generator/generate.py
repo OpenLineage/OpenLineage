@@ -9,7 +9,7 @@ from collections import defaultdict
 from typing import Any
 
 import click
-import jinja2
+import jinja2  # type: ignore[import-not-found]
 import yaml
 from base import (  # type: ignore[import-not-found]
     SCHEMA_URLS,
