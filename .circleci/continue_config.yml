@@ -135,6 +135,23 @@ commands:
             - run: pip install target/wheels/*manylinux_2_17_x86_64*.whl
       - run: (cd ~/openlineage/integration/common && pip install . --user)
 
+  install_uv_python:
+    description: "Install Python and UV"
+    parameters:
+      py_env:
+        type: string
+        description: "Python env version"
+        default: "3.9"
+    steps:
+      - run:
+          name: Install uv and Python << parameters.py_env >>
+          command: |
+            sudo apt update && sudo apt install libmysqlclient-dev libabsl-dev
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            [ -f "$HOME/.local/bin/env" ] && source $HOME/.local/bin/env
+            uv python install << parameters.py_env >>
+
+
 jobs:
   # SQL
   build-integration-sql-python:
@@ -270,16 +287,11 @@ jobs:
       image: ubuntu-2404:current
     steps:
       - *checkout_project_root
+      - install_uv_python:
+          py_env: << parameters.py_env >>
       - run:
-          name: Install uv and Python << parameters.py_env >>
+          name: Run tox tests
           command: |
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            source $HOME/.local/bin/env
-            uv python install << parameters.py_env >>
-      - run:
-          name: Install tox and run tests with uv
-          command: |
-            source $HOME/.local/bin/env
             uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --notest
             uv run --python << parameters.py_env >> --with tox python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
 
@@ -296,8 +308,10 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
-      - run: python -m pip install build
-      - run: python -m build .
+      - install_uv_python
+      - run: |
+          uv sync --extra dev 
+          uv build --wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -312,8 +326,12 @@ jobs:
       - *checkout_project_root
       - attach_workspace:
           at: .
-      - run: pip install uv tox==4.12.1
-      - run: tox
+      - install_uv_python
+      - run: uv sync --extra dev
+      - run: |
+          uv run --python 3.9 --with tox python -m tox r -e "py3-common-dbt-1.0" --notest
+          uv run --python 3.9 --with tox python -m tox r -e "py3-common-dbt-1.0" --skip-pkg-install
+          uv run --python 3.9 mypy --install-types --non-interactive --ignore-missing-imports src
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
           path: test-results
@@ -325,15 +343,10 @@ jobs:
     steps:
       - *checkout_project_root
       - run: ../../.circleci/get-docker-compose.sh
-      - run:
-          name: Install uv and Python 3.9
-          command: |
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            source $HOME/.local/bin/env
-            uv python install 3.9
+      - install_uv_python
       - attach_workspace:
           at: .
-      - run: uv venv && source .venv/bin/activate && ls -halt dist/ && echo "=========" && ls -halt target/wheels/ && uv sync --all-extras --active --inexact --find-links target/wheels/ --find-links dist/ && pytest tests/
+      - run: uv run pytest tests/
 
   build-integration-dbt:
     working_directory: ~/openlineage/integration/dbt
@@ -341,7 +354,10 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
-      - run: python setup.py sdist bdist_wheel
+      - install_uv_python
+      - run: |
+          uv sync --extra dev 
+          uv build --wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -354,7 +370,10 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
-      - run: python setup.py sdist bdist_wheel
+      - install_uv_python
+      - run: |
+          uv sync --extra dev 
+          uv build --wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -372,12 +391,11 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
-      - *install_python_client
-      - install_integration_common:
-          install_parser: << parameters.install_parser >>
-      - run: pip install tox==3.27.1 mypy==0.971
-      - run: python -m mypy --install-types --non-interactive --ignore-missing-imports openlineage
-      - run: tox -e py3-<< parameters.airflow-version >>
+      - install_uv_python
+      - run: |
+          uv sync --extra dev
+          uv run mypy --install-types --non-interactive --ignore-missing-imports src
+          uv run tox -e py3-<< parameters.airflow-version >>
       - store_test_results:
           path: test-results
       - run: bash <(curl -s https://codecov.io/bash)
@@ -388,10 +406,11 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
-      - *install_python_client
-      - install_integration_common:
-          install_parser: true
-      - run: python setup.py sdist bdist_wheel
+      - install_uv_python:
+          py_env: "3.9"
+      - run: |
+          uv sync --extra dev 
+          uv build --wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -430,10 +449,10 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
-      - *install_python_client
-      - run: pip install -e .[dev]
-      - run: python -m mypy --ignore-missing-imports --no-namespace-packages openlineage
-      - run: pytest --cov=openlineage tests/
+      - install_uv_python
+      - run: uv sync --extra dev
+      - run: uv run mypy --ignore-missing-imports --no-namespace-packages src
+      - run: uv run pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)
 
   build-integration-dagster:
@@ -442,8 +461,10 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - *checkout_project_root
-      - *install_python_client
-      - run: python setup.py sdist bdist_wheel
+      - install_uv_python
+      - run: |
+          uv sync --extra dev 
+          uv build --wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -1273,63 +1294,18 @@ jobs:
       - run: bundle exec rake test
 
   run-pre-commit:
-    # this job run pre-commit for Python client only
     # add dependency to other files when pre-commit runs related checks
     working_directory: ~/openlineage
     machine:
       image: ubuntu-2404:current
     steps:
       - *checkout_project_root
-      - run:
-          name: Generate cache key
-          command: .circleci/checksum.sh /tmp/checksum.txt $CIRCLE_BRANCH
-      - restore_cache:
-          name: Restore pre-commit cache
-          keys:
-            - v1.4-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
-      - restore_cache:
-          name: Restore pmd cache
-          keys:
-            - v1.0-pmd-{{ checksum ".pre_commit/run-pmd.sh" }}
-            - v1.0-pmd-
-      - restore_cache:
-          name: Restore Gradle cache
-          keys:
-            - v1.1-gradle-pre-commit-{{ checksum "/tmp/checksum.txt" }}
-            - v1.1-gradle-pre-commit-
-
-      - run:
-          name: Install Python3.9 Dependencies
-          command: |
-            python -m venv venv
-            . venv/bin/activate
-            pip3 install pre-commit
-            # Install the hooks now so that they'll be cached
-            pre-commit install-hooks
-
-      - save_cache:
-          paths:
-            - ~/.cache/pre-commit
-          key: v1.4-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
-          name: Save pre-commit cache
-
+      - install_uv_python
       - run:
           name: Run pre-commit
           command: |
-            . venv/bin/activate
-            pre-commit run --show-diff-on-failure --all-files
-
-      - save_cache:
-          paths:
-            - ./.pmd_cache
-          key: v1.0-pmd-{{ checksum ".pre_commit/run-pmd.sh" }}
-          name: Save pmd cache
-      - save_cache:
-          key: v1.1-gradle-pre-commit-{{ checksum "/tmp/checksum.txt" }}
-          paths:
-            - ~/.gradle
-            - client/java/.gradle
-            - integration/spark/.gradle
+            uv tool install pre-commit --with pre-commit-uv --force-reinstall
+            uv tool run pre-commit run --show-diff-on-failure --all-files
 
   build-website:
     # Build Openlineage website to make sure npm packages match

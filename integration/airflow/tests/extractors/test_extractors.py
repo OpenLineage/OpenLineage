@@ -6,11 +6,10 @@ from typing import List, Optional
 from unittest.mock import patch
 
 import pytest
-from openlineage.airflow.extractors import BaseExtractor, Extractors, TaskMetadata
-from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
-
 from airflow.hooks.base import BaseHook
 from airflow.models.connection import Connection
+from openlineage.airflow.extractors import BaseExtractor, Extractors, TaskMetadata
+from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
 
 
 class FakeExtractor(BaseExtractor):

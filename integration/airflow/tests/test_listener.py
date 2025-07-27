@@ -7,6 +7,10 @@ from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
+from airflow.models import DAG, BaseOperator, DagRun
+from airflow.models.taskinstance import TaskInstance, TaskInstanceState
+from airflow.utils.dates import days_ago
+from airflow.utils.state import State
 from openlineage.airflow.extractors.base import OperatorLineage
 from openlineage.airflow.listener import (
     on_task_instance_failed,
@@ -14,11 +18,6 @@ from openlineage.airflow.listener import (
     on_task_instance_success,
 )
 from openlineage.airflow.utils import is_airflow_version_enough
-
-from airflow.models import DAG, BaseOperator, DagRun
-from airflow.models.taskinstance import TaskInstance, TaskInstanceState
-from airflow.utils.dates import days_ago
-from airflow.utils.state import State
 
 if not is_airflow_version_enough("2.6.0"):
     from airflow.listeners.events import (

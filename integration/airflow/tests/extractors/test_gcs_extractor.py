@@ -4,13 +4,12 @@
 import logging
 from unittest import TestCase
 
-from openlineage.airflow.extractors.base import TaskMetadata
-from openlineage.airflow.extractors.gcs_extractor import GCSToGCSExtractor
-from openlineage.client.event_v2 import Dataset
-
 from airflow.models import DAG
 from airflow.providers.google.cloud.transfers.gcs_to_gcs import GCSToGCSOperator
 from airflow.utils import timezone
+from openlineage.airflow.extractors.base import TaskMetadata
+from openlineage.airflow.extractors.gcs_extractor import GCSToGCSExtractor
+from openlineage.client.event_v2 import Dataset
 
 log = logging.getLogger(__name__)
 

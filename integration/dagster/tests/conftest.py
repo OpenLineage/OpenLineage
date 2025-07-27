@@ -5,10 +5,6 @@ import time
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from openlineage.client.uuid import generate_new_uuid
-from openlineage.dagster import __version__ as OPENLINEAGE_DAGSTER_VERSION
-from packaging.version import Version
-
 from dagster import (
     DagsterEvent,
     DagsterEventType,
@@ -19,9 +15,12 @@ from dagster import (
 from dagster.core.execution.plan.objects import StepFailureData, StepSuccessData
 from dagster.core.types.loadable_target_origin import LoadableTargetOrigin
 from dagster.version import __version__ as DAGSTER_VERSION
+from openlineage.client.uuid import generate_new_uuid
+from openlineage.dagster import __version__ as OPENLINEAGE_DAGSTER_VERSION
+from packaging.version import Version
 
 PRODUCER = (
-    f"https://github.com/OpenLineage/OpenLineage/tree/" f"{OPENLINEAGE_DAGSTER_VERSION}/integration/dagster"
+    f"https://github.com/OpenLineage/OpenLineage/tree/{OPENLINEAGE_DAGSTER_VERSION}/integration/dagster"
 )
 
 

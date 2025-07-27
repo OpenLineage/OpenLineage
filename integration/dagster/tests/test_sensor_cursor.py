@@ -5,11 +5,10 @@ import json
 import os
 from unittest.mock import patch
 
-from openlineage.client.uuid import generate_new_uuid
-from openlineage.dagster.cursor import OpenLineageCursor, RunningPipeline, RunningStep
-
 from dagster import DagsterEventType, SensorDefinition, build_sensor_context
 from dagster.core.test_utils import instance_for_test
+from openlineage.client.uuid import generate_new_uuid
+from openlineage.dagster.cursor import OpenLineageCursor, RunningPipeline, RunningStep
 
 from .conftest import make_test_event_log_record
 

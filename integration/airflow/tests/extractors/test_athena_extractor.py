@@ -4,15 +4,14 @@
 import json
 from unittest import mock
 
+from airflow import DAG
+from airflow.providers.amazon.aws.operators.athena import AthenaOperator
+from airflow.utils.dates import days_ago
 from openlineage.airflow.extractors.athena_extractor import AthenaExtractor
 from openlineage.client.facet_v2 import symlinks_dataset
 from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
-
-from airflow import DAG
-from airflow.providers.amazon.aws.operators.athena import AthenaOperator
-from airflow.utils.dates import days_ago
 
 # Database info
 DB_NAME = "AwsDataCatalog"

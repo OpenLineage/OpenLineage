@@ -1,0 +1,37 @@
+[tool.ruff]
+line-length = 110
+target-version = "py39"
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    ".pytest_cache",
+    "build",
+    "dist",
+    "*.egg-info",
+    "target",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "UP", # pyupgrade
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "PIE", # flake8-pie
+    "SIM", # flake8-simplify
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "E501",  # line too long (handled by line-length)
+    "B904",  # raise from None
+    "RUF012", # mutable class attributes
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"*/tests/*" = ["SIM117"]
+
