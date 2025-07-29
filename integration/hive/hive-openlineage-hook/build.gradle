@@ -59,6 +59,7 @@ dependencies {
     api("io.openlineage:openlineage-java:${openLineageVersion}") {
         exclude group: 'com.fasterxml.jackson.core', module: '*'
     }
+    api("io.openlineage:hive-udf-interfaces:${openLineageVersion}")
     implementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
 
     // Test dependencies ---------------------------------------------------------------------
@@ -77,6 +78,7 @@ dependencies {
     testImplementation("io.openlineage:openlineage-java:${openLineageVersion}") {
         exclude group: 'com.fasterxml.jackson.core', module: '*'
     }
+    testImplementation "io.openlineage:hive-udf-interfaces:${openLineageVersion}"
     testImplementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"
     testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"

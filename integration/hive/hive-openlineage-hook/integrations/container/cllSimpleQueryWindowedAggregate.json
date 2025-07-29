@@ -104,11 +104,11 @@
                 {
                   "namespace": "hive://localhost:9083",
                   "name": "test.t1",
-                  "field": "c",
+                  "field": "a",
                   "transformations": [
                     {
-                      "type": "INDIRECT",
-                      "subtype": "WINDOW",
+                      "type": "DIRECT",
+                      "subtype": "AGGREGATION",
                       "description": "",
                       "masking": false
                     }
@@ -117,11 +117,11 @@
                 {
                   "namespace": "hive://localhost:9083",
                   "name": "test.t1",
-                  "field": "a",
+                  "field": "c",
                   "transformations": [
                     {
-                      "type": "DIRECT",
-                      "subtype": "AGGREGATION",
+                      "type": "INDIRECT",
+                      "subtype": "WINDOW",
                       "description": "",
                       "masking": false
                     }
