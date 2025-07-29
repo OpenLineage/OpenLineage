@@ -20,7 +20,7 @@ plugins {
 
 ext {
     projectDescription = "S3 OpenLineage transport library"
-    s3MockVersion = "4.6.0"
+    s3MockVersion = "4.7.0"
     testcontainersVersion = "1.21.3"
 }
 
@@ -36,7 +36,7 @@ sourceSets {
 
 dependencies {
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
-    implementation(platform("software.amazon.awssdk:bom:2.32.4"))
+    implementation(platform("software.amazon.awssdk:bom:2.32.9"))
     implementation("software.amazon.awssdk:auth")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:url-connection-client")
