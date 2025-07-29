@@ -2,13 +2,13 @@
   "eventType": "COMPLETE",
   "job": {
     "namespace": "iceberg-namespace",
-    "name": "iceberg_integration_test.replace_data.spark_catalog_default_events"
+    "name": "iceberg_integration_test.write_delta.spark_catalog_default_events_mor"
   },
   "inputs": [],
   "outputs": [
     {
       "namespace": "file",
-      "name": "/tmp/iceberg/default/events",
+      "name": "/tmp/iceberg/default/events_mor",
       "facets": {
         "dataSource": {
           "name": "file",
@@ -33,12 +33,12 @@
               "inputFields": [
                 {
                   "namespace": "file",
-                  "name": "/tmp/iceberg/default/events",
+                  "name": "/tmp/iceberg/default/events_mor",
                   "field": "event_id"
                 },
                 {
                   "namespace": "file",
-                  "name": "/tmp/iceberg/default/updates",
+                  "name": "/tmp/iceberg/default/updates_mor",
                   "field": "event_id"
                 }
               ]
@@ -47,7 +47,7 @@
               "inputFields": [
                 {
                   "namespace": "file",
-                  "name": "/tmp/iceberg/default/updates",
+                  "name": "/tmp/iceberg/default/updates_mor",
                   "field": "updated_at"
                 }
               ]
@@ -58,7 +58,7 @@
           "identifiers": [
             {
               "namespace": "file:/tmp/iceberg",
-              "name": "default.events",
+              "name": "default.events_mor",
               "type": "TABLE"
             }
           ]
