@@ -67,11 +67,9 @@ class OpenLineageConfig:
         if "filters" in params:
             config.filters = [FilterConfig(**filter_config) for filter_config in params["filters"]]
         if "tags" in params:
-            job_tags = params["tags"].get("job", {})
-            run_tags = params["tags"].get("run", {})
             config.tags = TagsConfig(
-                job=[TagsJobFacetFields(key, value, "USER") for (key, value) in job_tags.items()],
-                run=[TagsRunFacetFields(key, value, "USER") for (key, value) in run_tags.items()],
+                job=params["tags"].get("job", {}),
+                run=params["tags"].get("run", {}),
             )
         return config
 
@@ -452,14 +450,16 @@ class OpenLineageClient:
         """
         run_event_types = (RunEvent, event_v2.RunEvent)
         run_and_job_event_types = (RunEvent, event_v2.RunEvent, JobEvent, event_v2.JobEvent)
-        tags_job = self.config.tags.job
+        # tags_job = self.config.tags.job
+        tags_job = [TagsJobFacetFields(key, value, "USER") for (key, value) in self.config.tags.job.items()]
         if isinstance(event, run_and_job_event_types) and tags_job:
             # Ensure facets exists
             event.job.facets = {} if not event.job.facets else event.job.facets
             tags_facet = event.job.facets.get("tags", TagsJobFacet())
             event.job.facets["tags"] = self._update_tag_facet(tags_facet, tags_job)  # type: ignore [arg-type, assignment]
 
-        tags_run = self.config.tags.run
+        # tags_run = self.config.tags.run
+        tags_run = [TagsRunFacetFields(key, value, "USER") for (key, value) in self.config.tags.run.items()]
         if isinstance(event, run_event_types) and tags_run:
             # Ensure facets exists
             event.run.facets = {} if not event.run.facets else event.run.facets
