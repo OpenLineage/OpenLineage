@@ -150,6 +150,20 @@ public class ArgumentParser {
       ObjectNode nodePointer = objectNode;
       String keyPath = c._1;
       String value = c._2;
+
+      if (keyPath.startsWith("vendors.")) {
+        ObjectNode vendorsNode;
+        if (objectNode.has("vendors")) {
+          vendorsNode = (ObjectNode) objectNode.get("vendors");
+        } else {
+          vendorsNode = objectMapper.createObjectNode();
+          objectNode.set("vendors", vendorsNode);
+        }
+        String vendorKey = keyPath.substring("vendors.".length());
+        vendorsNode.put(vendorKey, value);
+        continue;
+      }
+
       if (StringUtils.isNotBlank(value)) {
         List<String> pathKeys = getJsonPath(keyPath);
         List<String> nonLeafs = pathKeys.subList(0, pathKeys.size() - 1);
