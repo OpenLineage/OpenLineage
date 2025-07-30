@@ -8,6 +8,7 @@ import re
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
+import attr
 import pytest
 from openlineage.client import event_v2
 from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions, OpenLineageConfig
@@ -415,6 +416,16 @@ def test_ol_config_from_dict():
     # Test with invalid data type
     with pytest.raises(TypeError):
         OpenLineageConfig.from_dict({"facets": "invalid_data"})
+
+
+def test_ol_config_from_the_same_dict():
+    config_dict = {
+        "transport": {"url": "http://localhost:5050"},
+        "facets": {"environment_variables": ["VAR1", "VAR2"]},
+        "filters": [{"type": "exact", "match": "job_name"}],
+    }
+    config = OpenLineageConfig.from_dict(config_dict)
+    assert OpenLineageConfig.from_dict(attr.asdict(config)) == config
 
 
 @patch("yaml.safe_load", return_value=None)
