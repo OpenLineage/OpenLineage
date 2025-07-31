@@ -20,7 +20,6 @@ public class ColumnLineageConfig {
    * represented as field dependencies. WARNING: This flag is temporary. It is going to default to
    * true in future versions and eventually removed.
    */
-  // TODO #3084: For the release 1.26.0 this flag should default to true
   // TODO #3084: Three releases later (1.29.0), this flag should be removed and the behavior should
   // reflect it set to true
   private boolean datasetLineageEnabled;
