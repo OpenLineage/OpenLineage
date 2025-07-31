@@ -6,10 +6,12 @@
 package io.openlineage.spark.agent.lifecycle.plan.column;
 
 import io.openlineage.client.OpenLineage;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 
 /**
  * Stores information about transformation type of the dependency between two expressions. The
@@ -39,23 +41,51 @@ public class TransformationInfo {
     WINDOW
   }
 
-  @Getter @Setter private Types type;
-  @Getter @Setter private Subtypes subType;
-  @Getter @Setter private String description;
-  @Getter @Setter private Boolean masking;
+  @Getter private final Types type;
+  @Getter private final Subtypes subType;
+  @Getter private final String description;
+  @Getter private final Boolean masking;
+
+  private static final TransformationInfo TRANSFORMATION_IDENTITY =
+      new TransformationInfo(Types.DIRECT, Subtypes.IDENTITY, "", false);
+
+  private static final TransformationInfo TRANSFORMATION_MASKING =
+      new TransformationInfo(Types.DIRECT, Subtypes.TRANSFORMATION, "", true);
+  private static final TransformationInfo TRANSFORMATION_NON_MASKING =
+      new TransformationInfo(Types.DIRECT, Subtypes.TRANSFORMATION, "", false);
+
+  private static final TransformationInfo AGGREGATION_MASKING =
+      new TransformationInfo(Types.DIRECT, Subtypes.AGGREGATION, "", true);
+  private static final TransformationInfo AGGREGATION_NON_MASKING =
+      new TransformationInfo(Types.DIRECT, Subtypes.AGGREGATION, "", false);
+
+  private static final Map<Subtypes, TransformationInfo> INDIRECT_MASKING_MAP =
+      Arrays.stream(Subtypes.values())
+          .collect(
+              Collectors.toMap(
+                  subtype -> subtype,
+                  subtype -> new TransformationInfo(Types.INDIRECT, subtype, "", true)));
+
+  private static final Map<Subtypes, TransformationInfo> INDIRECT_NON_MASKING_MAP =
+      Arrays.stream(Subtypes.values())
+          .collect(
+              Collectors.toMap(
+                  subtype -> subtype,
+                  subtype -> new TransformationInfo(Types.INDIRECT, subtype, "", false)));
+
   /**
    * Method that simplifies the creation of an {@link TransformationInfo} object representing {@link
    * Types#DIRECT}, {@link Subtypes#IDENTITY} transformation.
    */
   public static TransformationInfo identity() {
-    return new TransformationInfo(Types.DIRECT, Subtypes.IDENTITY, "", false);
+    return TRANSFORMATION_IDENTITY;
   }
   /**
    * Method that simplifies the creation of an {@link TransformationInfo} object representing
    * non-masking, {@link Types#DIRECT}, {@link Subtypes#TRANSFORMATION} transformation.
    */
   public static TransformationInfo transformation() {
-    return transformation(false);
+    return TRANSFORMATION_NON_MASKING;
   }
   /**
    * Method that simplifies the creation of {@link TransformationInfo} object representing {@link
@@ -65,14 +95,14 @@ public class TransformationInfo {
    *     org.apache.spark.sql.catalyst.expressions.Sha1}
    */
   public static TransformationInfo transformation(Boolean isMasking) {
-    return new TransformationInfo(Types.DIRECT, Subtypes.TRANSFORMATION, "", isMasking);
+    return isMasking ? TRANSFORMATION_MASKING : TRANSFORMATION_NON_MASKING;
   }
   /**
    * Method that simplifies the creation of an {@link TransformationInfo} object representing
    * non-masking, {@link Types#DIRECT}, {@link Subtypes#AGGREGATION} transformation.
    */
   public static TransformationInfo aggregation() {
-    return aggregation(false);
+    return AGGREGATION_NON_MASKING;
   }
   /**
    * Method that simplifies the creation of {@link TransformationInfo} object representing {@link
@@ -82,7 +112,7 @@ public class TransformationInfo {
    *     org.apache.spark.sql.catalyst.expressions.aggregate.Count}
    */
   public static TransformationInfo aggregation(Boolean isMasking) {
-    return new TransformationInfo(Types.DIRECT, Subtypes.AGGREGATION, "", isMasking);
+    return isMasking ? AGGREGATION_MASKING : AGGREGATION_NON_MASKING;
   }
   /**
    * Method that simplifies the creation of {@link TransformationInfo} object representing
@@ -93,7 +123,7 @@ public class TransformationInfo {
    *     Subtypes#JOIN},{@link Subtypes#FILTER},
    */
   public static TransformationInfo indirect(Subtypes subType) {
-    return TransformationInfo.indirect(subType, false);
+    return INDIRECT_NON_MASKING_MAP.get(subType);
   }
   /**
    * Method that simplifies the creation of {@link TransformationInfo} object representing {@link
@@ -106,7 +136,7 @@ public class TransformationInfo {
    *     dependencies can be)
    */
   public static TransformationInfo indirect(Subtypes subType, Boolean isMasking) {
-    return new TransformationInfo(Types.INDIRECT, subType, "", isMasking);
+    return isMasking ? INDIRECT_MASKING_MAP.get(subType) : INDIRECT_NON_MASKING_MAP.get(subType);
   }
 
   @Override
@@ -154,11 +184,11 @@ public class TransformationInfo {
     } else {
       return null;
     }
-    return new TransformationInfo(
-        res.getType(),
-        res.getSubType(),
-        res.getDescription(),
-        this.getMasking() || another.getMasking());
+    if (this.getMasking().equals(another.getMasking())) {
+      // no need to create new object
+      return res;
+    }
+    return new TransformationInfo(res.getType(), res.getSubType(), res.getDescription(), true);
   }
 
   public OpenLineage.InputFieldTransformations toInputFieldsTransformations() {
