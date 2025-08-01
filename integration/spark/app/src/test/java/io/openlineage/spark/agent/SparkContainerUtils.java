@@ -208,6 +208,7 @@ public class SparkContainerUtils {
     addSparkConfig(sparkConf, "spark.jars.ivy=/tmp/.ivy2/");
     addSparkConfig(sparkConf, "spark.openlineage.facets.spark.logicalPlan.disabled=false");
     addSparkConfig(sparkConf, "spark.openlineage.facets.spark_unknown.disabled=false");
+    addSparkConfig(sparkConf, "spark.openlineage.columnLineage.datasetLineageEnabled=false");
     addSparkConfig(
         sparkConf, "spark.openlineage.dataset.namespaceResolvers.kafka-cluster-prod.type=hostList");
     addSparkConfig(
