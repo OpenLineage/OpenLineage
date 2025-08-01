@@ -41,8 +41,6 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
     extends QueryPlanVisitor<LogicalPlan, D> {
 
-  private static final String ICEBERG_REPORTER_DISABLED = "iceberg.metricsReporterDisabled";
-
   public IcebergMetricsReporterInjector(OpenLineageContext context) {
     super(context);
   }
@@ -52,10 +50,10 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
     // if this is called, then Iceberg classes are on the classpath
     if (Optional.ofNullable(context.getOpenLineageConfig())
         .map(SparkOpenLineageConfig::getVendors)
-        .map(VendorsConfig::getAdditionalProperties)
-        .map(p -> p.getOrDefault(ICEBERG_REPORTER_DISABLED, "false"))
-        .orElse("false")
-        .equalsIgnoreCase("true")) {
+        .map(VendorsConfig::getConfig)
+        .flatMap(p -> Optional.ofNullable(p.get("iceberg")))
+        .map(VendorsConfig.VendorConfig::getMetricsReporterDisabled)
+        .orElse(false)) {
       log.debug("Iceberg metrics reporter is disabled");
       return false;
     }
