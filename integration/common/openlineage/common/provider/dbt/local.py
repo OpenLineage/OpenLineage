@@ -134,6 +134,10 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
 
         The construction of the job name adheres to the following rules:
 
+            - If there is user-defined OPENLINEAGE_DBT_JOB_NAME env var
+              or --openlineage-dbt-job-name command line flag, then
+              it uses the value as the job name.
+
             - If OPENLINEAGE_DBT_USE_EXTENDED_JOB_NAME is set to false/0
               (default), then the job name is in the format
               ``dbt-run-{project_name}``.
@@ -147,6 +151,8 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         task. Feel free to open a PR/discussion if you think that this list of
         identifiers should be extended or modified.
         """
+        if self.openlineage_job_name:
+            return self.openlineage_job_name
 
         job_name = f"dbt-run-{self.project_name}"
         if not self._use_extended_job_name:

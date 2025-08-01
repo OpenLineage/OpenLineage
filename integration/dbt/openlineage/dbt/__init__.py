@@ -24,6 +24,7 @@ from openlineage.common.provider.dbt import (
 from openlineage.common.provider.dbt.structured_logs import DbtStructuredLogsProcessor
 from openlineage.common.provider.dbt.utils import (
     CONSUME_STRUCTURED_LOGS_COMMAND_OPTION,
+    OPENLINEAGE_JOB_NAME_OPTION,
     PRODUCER,
     __version__,
     get_parent_run_metadata,
@@ -155,7 +156,11 @@ def main():
     project_dir = parse_single_arg(args, ["--project-dir"], default="./")
     profile_name = parse_single_arg(args, ["--profile"])
     model_selector = parse_single_arg(args, ["--selector"])
+    openlineage_job_name = parse_single_arg(args, [OPENLINEAGE_JOB_NAME_OPTION])
     models = parse_multiple_args(args, ["-m", "-s", "--model", "--models", "--select"])
+
+    if not openlineage_job_name:
+        openlineage_job_name = os.getenv("OPENLINEAGE_DBT_JOB_NAME")
 
     # dbt-ol option and not a dbt option
     consume_structured_logs_option = has_command_line_option(args, CONSUME_STRUCTURED_LOGS_COMMAND_OPTION)
@@ -167,6 +172,7 @@ def main():
             profile_name=profile_name,
             model_selector=model_selector,
             models=models,
+            openlineage_job_name=openlineage_job_name,
         )
     else:
         return consume_local_artifacts(
@@ -175,11 +181,17 @@ def main():
             profile_name=profile_name,
             model_selector=model_selector,
             models=models,
+            openlineage_job_name=openlineage_job_name,
         )
 
 
 def consume_structured_logs(
-    target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]
+    target: str,
+    project_dir: str,
+    profile_name: str,
+    model_selector: str,
+    models: List[str],
+    openlineage_job_name: Optional[str] = None,
 ):
     logger = logging.getLogger("openlineage.dbt")
     logger.info(
@@ -195,6 +207,7 @@ def consume_structured_logs(
         producer=PRODUCER,
         target=target,
         job_namespace=job_namespace,
+        job_name=openlineage_job_name,
         profile_name=profile_name,
         logger=logger,
         models=models,
@@ -236,7 +249,12 @@ def consume_structured_logs(
 
 
 def consume_local_artifacts(
-    target: str, project_dir: str, profile_name: str, model_selector: str, models: List[str]
+    target: str,
+    project_dir: str,
+    profile_name: str,
+    model_selector: str,
+    models: List[str],
+    openlineage_job_name: Optional[str] = None,
 ):
     logger = logging.getLogger("openlineage.dbt")
     logger.info("This wrapper will send OpenLineage events at the end of dbt execution.")
@@ -258,6 +276,7 @@ def consume_local_artifacts(
         logger=logger,
         models=models,
         selector=model_selector,
+        openlineage_job_name=openlineage_job_name,
     )
 
     # Always emit "wrapping event" around dbt run. This indicates start of dbt execution, since
