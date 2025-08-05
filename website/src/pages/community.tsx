@@ -382,7 +382,7 @@ export default function CommunityResources(): JSX.Element {
             <CardActions disableSpacing>
               <Button
                 size="small"
-                href="https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA"
+                href="https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w"
               >
                 Join
               </Button>
