@@ -59,19 +59,6 @@ class Transport:
             bool: True if all events were processed before transport was closed,
                 False if some events were not processed.
         """
-        return self.wait_for_completion(timeout)
-
-    def wait_for_completion(self, timeout: float = -1) -> bool:
-        """
-        Block until all events are processed or timeout is reached.
-
-        Params:
-            timeout: Timeout in seconds. Negative value will block until last event is processed,
-            while 0 means it completes immediately.
-
-        Returns:
-            bool: True if all events were processed, False if some events were not processed.
-        """
         return True
 
     def __str__(self) -> str:

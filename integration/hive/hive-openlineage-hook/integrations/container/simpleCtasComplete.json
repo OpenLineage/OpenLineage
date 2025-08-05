@@ -33,6 +33,7 @@
         "processingType": "BATCH"
       },
       "sql": {
+        "dialect": "hive",
         "query": "create table result_t as\nselect\nteams.type,\nteams.building,\nmanagers.name as manager,\nemployees.name as employee\nfrom teams, managers, employees\nwhere teams.id = managers.team and teams.id = employees.team"
       }
     }

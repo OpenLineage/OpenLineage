@@ -38,8 +38,6 @@ AWS_ATHENA_SUFFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
 export AWS_ATHENA_SUFFIX
 BIGQUERY_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
 export BIGQUERY_PREFIX
-DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
-export DBT_DATASET_PREFIX
 # just a hack to have same docker-compose for dev and CI env
 export PWD='.'
 

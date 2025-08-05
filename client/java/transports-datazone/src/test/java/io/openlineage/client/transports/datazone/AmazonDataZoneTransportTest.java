@@ -26,6 +26,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.transports.TransportFactory;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -146,5 +147,13 @@ class AmazonDataZoneTransportTests {
     openLineageClient.emit(jobEvent);
 
     verify(dataZoneClient, times(0)).postLineageEvent(captor.capture());
+  }
+
+  @SneakyThrows
+  @Test
+  void clientClose() {
+    openLineageClient.close();
+
+    verify(dataZoneClient, times(1)).close();
   }
 }

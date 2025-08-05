@@ -107,6 +107,18 @@ def test_client_with_amazon_datazone_transport_skips_dataset_event(
     transport.datazone.post_lineage_event.assert_not_called()
 
 
+def test_client_with_amazon_datazone_transport_close(
+    dataset_event: DatasetEvent, mocker: MockerFixture
+) -> None:
+    mocker.patch("boto3.client")
+    config = AmazonDataZoneConfig(domain_id=domain_id)
+
+    transport = AmazonDataZoneTransport(config)
+    transport.close()
+
+    transport.datazone.close.assert_called_once()
+
+
 def test_setup_datazone_raises_when_boto3_missing(mocker: MockerFixture) -> None:
     mocker.patch("boto3.client", side_effect=ModuleNotFoundError("No module named 'boto3'"))
     config = AmazonDataZoneConfig(domain_id=domain_id)

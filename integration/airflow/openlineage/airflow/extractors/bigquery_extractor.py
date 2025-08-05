@@ -27,14 +27,14 @@ class BigQueryExtractor(BaseExtractor):
         return None
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-        self.log.debug(f"extract_on_complete({task_instance})")
+        self.log.debug("extract_on_complete(%s)", task_instance)
 
         try:
             bigquery_job_id = self._get_xcom_bigquery_job_id(task_instance)
             if bigquery_job_id is None:
                 raise Exception("Xcom could not resolve BigQuery job id. Job may have failed.")
         except Exception as e:
-            self.log.error(f"Cannot retrieve job details from BigQuery.Client. {e}", exc_info=True)
+            self.log.error("Cannot retrieve job details from BigQuery.Client: %s", e, exc_info=True)
             return TaskMetadata(
                 name=get_job_name(task=self.operator),
                 run_facets={
@@ -92,7 +92,7 @@ class BigQueryExtractor(BaseExtractor):
     def _get_xcom_bigquery_job_id(self, task_instance):
         bigquery_job_id = task_instance.xcom_pull(task_ids=task_instance.task_id, key="job_id")
 
-        self.log.debug(f"bigquery_job_id: {bigquery_job_id}")
+        self.log.debug("bigquery_job_id: %s", bigquery_job_id)
         return bigquery_job_id
 
     def _get_input_facets(self):

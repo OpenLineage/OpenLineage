@@ -19,20 +19,20 @@ class RedshiftDataExtractor(BaseExtractor):
         return None
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-        self.log.debug(f"extract_on_complete({task_instance})")
+        self.log.debug("extract_on_complete(%s)", task_instance)
         job_facets = {"sql": sql_job.SQLJobFacet(self.operator.sql)}
 
-        self.log.debug(f"Sending SQL to parser: {self.operator.sql}")
+        self.log.debug("Sending SQL to parser: %s", self.operator.sql)
         sql_meta: Optional[SqlMeta] = parse(
             self.operator.sql, dialect=self.dialect, default_schema=self.default_schema
         )
-        self.log.debug(f"Got meta {sql_meta}")
+        self.log.debug("Got meta %s", sql_meta)
         try:
             redshift_job_id = self._get_xcom_redshift_job_id(task_instance)
             if redshift_job_id is None:
                 raise Exception("Xcom could not resolve Redshift job id. Job may have failed.")
         except Exception as e:
-            self.log.error(f"Cannot retrieve job details from {e}", exc_info=True)
+            self.log.exception("Cannot retrieve job details from Redshift: %s", e)
             return TaskMetadata(
                 name=get_job_name(task=self.operator),
                 run_facets={},
@@ -77,5 +77,5 @@ class RedshiftDataExtractor(BaseExtractor):
     def _get_xcom_redshift_job_id(self, task_instance):
         redshift_job_id = task_instance.xcom_pull(task_ids=task_instance.task_id)
 
-        self.log.debug(f"redshift job id: {redshift_job_id}")
+        self.log.debug("redshift job id: %s", redshift_job_id)
         return redshift_job_id

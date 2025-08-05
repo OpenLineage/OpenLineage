@@ -90,11 +90,11 @@ class JdbcHandlerTest {
     tableCatalog.initialize(
         "testCatalog", new CaseInsensitiveStringMap(Collections.singletonMap("url", uri)));
 
-    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacet =
+    Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
         handler.getCatalogDatasetFacet(tableCatalog, new HashMap<>());
     assertTrue(catalogDatasetFacet.isPresent());
 
-    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get();
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get().getCatalogDatasetFacet();
 
     assertEquals("testCatalog", facet.getName());
     assertEquals("jdbc", facet.getType());

@@ -75,6 +75,11 @@ public final class AmazonDataZoneTransport extends Transport {
     }
   }
 
+  @Override
+  public void close() throws Exception {
+    this.dataZoneClient.close();
+  }
+
   private void validateDataZoneConfig(@NonNull final AmazonDataZoneConfig dataZoneConfig) {
     if (dataZoneConfig.getDomainId() == null) {
       throw new OpenLineageClientException(

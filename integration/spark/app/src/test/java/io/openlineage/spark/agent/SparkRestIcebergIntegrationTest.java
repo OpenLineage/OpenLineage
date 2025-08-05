@@ -29,7 +29,6 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
@@ -68,7 +67,7 @@ class SparkRestIcebergIntegrationTest {
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
     FileUtils.deleteDirectory(new File("/tmp/iceberg/"));
     mockServer = MockServerUtils.createAndConfigureMockServer(MOCK_SERVER_PORT);
     icebergRestContainer.start();
@@ -77,7 +76,7 @@ class SparkRestIcebergIntegrationTest {
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
     MockServerUtils.stopMockServer(mockServer);
     icebergRestContainer.stop();
   }

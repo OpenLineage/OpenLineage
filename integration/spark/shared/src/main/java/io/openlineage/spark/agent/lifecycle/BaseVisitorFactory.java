@@ -33,7 +33,6 @@ import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SqlDWDatabricksVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.SqlExecutionRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandVisitor;
 import io.openlineage.spark.agent.util.BigQueryUtils;
 import io.openlineage.spark.api.DatasetFactory;
@@ -78,9 +77,6 @@ abstract class BaseVisitorFactory implements VisitorFactory {
       inputVisitors.add(new BigQueryNodeInputVisitor(context, factory));
     }
 
-    if (VisitorFactory.classPresent("org.apache.spark.sql.execution.SQLExecutionRDD")) {
-      inputVisitors.add(new SqlExecutionRDDVisitor(context));
-    }
     inputVisitors.add(new ExternalRDDVisitor(context));
     return inputVisitors;
   }

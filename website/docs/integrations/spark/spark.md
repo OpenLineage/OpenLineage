@@ -4,7 +4,7 @@ title: Apache Spark
 ---
 
 :::info
-This integration is known to work with latest Spark versions as well as Apache Spark 2.4.
+This integration is known to work with latest Spark versions as well as other Apache Spark 3.*.
 Please refer [here](https://github.com/OpenLineage/OpenLineage/tree/main/integration#openlineage-integrations)
 for up-to-date information on versions supported.
 :::

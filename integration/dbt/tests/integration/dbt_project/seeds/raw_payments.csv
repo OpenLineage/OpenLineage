@@ -1,0 +1,7 @@
+payment_id,order_id,payment_method,amount,created_at
+1,1,credit_card,100.00,2023-01-10 15:00:00
+2,2,credit_card,150.00,2023-01-15 16:00:00
+3,4,bank_transfer,200.00,2023-01-14 17:00:00
+4,6,credit_card,300.00,2023-01-20 18:00:00
+5,8,paypal,80.00,2023-01-25 19:00:00
+6,3,credit_card,75.00,2023-01-12 20:00:00

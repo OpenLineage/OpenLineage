@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.blackbird.BlackbirdModule;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.utils.OpenLineageEnvParser;
 import java.io.ByteArrayInputStream;
@@ -85,6 +86,7 @@ public final class OpenLineageClientUtils {
    */
   public static ObjectMapper newObjectMapper(JsonFactory jsonFactory) {
     final ObjectMapper mapper = new ObjectMapper(jsonFactory);
+    mapper.registerModule(new BlackbirdModule());
     mapper.registerModule(new Jdk8Module());
     mapper.registerModule(new JavaTimeModule());
     mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);

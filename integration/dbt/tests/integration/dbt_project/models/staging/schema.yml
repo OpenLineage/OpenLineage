@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: Staging table for customers
+    columns:
+      - name: customer_id
+        description: Unique identifier for customers
+        tests:
+          - not_null
+          - unique
+      - name: email
+        description: Customer email address
+        tests:
+          - not_null
+
+  - name: stg_orders
+    description: Staging table for orders
+    columns:
+      - name: order_id
+        description: Unique identifier for orders
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        description: Foreign key to customers
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+      - name: amount
+        description: Order amount
+        tests:
+          - not_null
+
+  - name: stg_payments
+    description: Staging table for payments
+    columns:
+      - name: payment_id
+        description: Unique identifier for payments
+        tests:
+          - not_null
+          - unique
+      - name: order_id
+        description: Foreign key to orders
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_orders')
+              field: order_id
+      - name: amount
+        description: Payment amount
+        tests:
+          - not_null

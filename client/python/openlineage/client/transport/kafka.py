@@ -166,13 +166,22 @@ class KafkaTransport(Transport):
             self.close()
 
     def wait_for_completion(self, timeout: float = -1) -> bool:
+        """
+        Block until all events are processed or timeout is reached.
+
+        Params:
+          timeout: Timeout in seconds. `-1` means to block until last event is processed, 0 means no timeout.
+
+        Returns:
+            bool: True if all events were processed, False if some events were not processed.
+        """
         if self.producer is None:
             return True
         messages_left: int = self.producer.flush(timeout=timeout)
-        log.debug("Amount of messages left in Kafka buffers after flush %d", messages_left)
+        log.debug("Amount of messages left in Kafka buffers after flush: %d", messages_left)
         return not messages_left
 
-    def close(self, timeout: float = -1.0) -> bool:
+    def close(self, timeout: float = -1) -> bool:
         all_processed = self.wait_for_completion(timeout)
         self.producer = None
         return all_processed

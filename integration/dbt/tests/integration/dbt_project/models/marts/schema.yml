@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: customers
+    description: Customer dimension table with order aggregations
+    columns:
+      - name: customer_id
+        description: Unique identifier for customers
+        tests:
+          - not_null
+          - unique
+      - name: order_count
+        description: Number of orders per customer
+        tests:
+          - not_null
+      - name: total_amount
+        description: Total amount spent by customer
+        tests:
+          - not_null
+
+  - name: orders
+    description: Order fact table with payment information
+    columns:
+      - name: order_id
+        description: Unique identifier for orders
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        description: Foreign key to customers
+        tests:
+          - not_null
+      - name: payment_status
+        description: Payment status of the order
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['paid', 'partial', 'unpaid']

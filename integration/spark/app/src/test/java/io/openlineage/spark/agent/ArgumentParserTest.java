@@ -24,6 +24,7 @@ import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.KafkaConfig;
 import io.openlineage.client.utils.TagField;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark.api.SparkOpenLineageConfig.VendorsConfig.VendorConfig;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -418,5 +419,17 @@ class ArgumentParserTest {
     assertThat(config.getJobConfig().getTags())
         .isEqualTo(Collections.singletonList(new TagField("a")));
     assertThat(config.getRunConfig().getTags()).isEmpty();
+  }
+
+  @Test
+  void testExtractVendorConfig() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.vendors.iceberg.metricsReporterDisabled", "true")
+            .set("spark.openlineage.vendors.delta.metricsReporterDisabled", "false");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+    assertThat(config.getVendors().getConfig()).containsEntry("iceberg", new VendorConfig(true));
+    assertThat(config.getVendors().getConfig()).containsEntry("delta", new VendorConfig(false));
   }
 }

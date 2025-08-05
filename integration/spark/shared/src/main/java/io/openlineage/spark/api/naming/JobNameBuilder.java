@@ -7,6 +7,7 @@ package io.openlineage.spark.api.naming;
 
 import static io.openlineage.spark.agent.util.DatabricksUtils.prettifyDatabricksJobName;
 
+import io.openlineage.client.job.Naming;
 import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.api.JobNameSuffixProvider;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -34,32 +35,27 @@ public class JobNameBuilder {
     }
 
     Optional<SparkConf> sparkConf = context.getSparkContext().map(SparkContext::getConf);
-    StringBuilder jobNameBuilder =
-        new StringBuilder(applicationJobNameResolver.getJobName(context));
+    Naming.Spark.SparkBuilder jobNameBuilder =
+        Naming.Spark.builder().appName(applicationJobNameResolver.getJobName(context));
 
     sparkNodeName(context)
         .ifPresent(
             nodeName ->
-                jobNameBuilder
-                    .append(JOB_NAME_PARTS_SEPARATOR)
-                    .append(replaceDots(context, NameNormalizer.normalize(nodeName))));
+                jobNameBuilder.command(replaceDots(context, NameNormalizer.normalize(nodeName))));
 
     String jobName;
     if (context.getOpenLineageConfig().getJobName() != null
         && !context.getOpenLineageConfig().getJobName().getAppendDatasetName()) {
       // no need to append output dataset name
-      jobName = jobNameBuilder.toString();
+      jobName = jobNameBuilder.build().getName();
     } else {
       // append output dataset as job suffix
-      jobNameBuilder.append(
+      jobNameBuilder.table(
           getJobSuffix(context)
-              .map(
-                  suffix ->
-                      JOB_NAME_PARTS_SEPARATOR
-                          + suffix.replace(JOB_NAME_PARTS_SEPARATOR, INNER_SEPARATOR))
-              .orElse(""));
+              .map(suffix -> suffix.replace(JOB_NAME_PARTS_SEPARATOR, INNER_SEPARATOR))
+              .orElse(null));
 
-      jobName = jobNameBuilder.toString();
+      jobName = jobNameBuilder.build().getName();
       if (sparkConf.isPresent() && DatabricksUtils.isRunOnDatabricksPlatform(sparkConf.get())) {
         jobName = prettifyDatabricksJobName(sparkConf.get(), jobName);
       }

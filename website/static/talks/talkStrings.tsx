@@ -11,6 +11,18 @@ export type Talk = {
 
 export const Talks: Talk[] = [
   {
+    conf: "Current London 2025",
+    date: "2025-04-09",
+    image: "current_london_2025.png",
+    title: "Native Data Lineage Support in Apache Flink with OpenLineage",
+    speakers: ["Paweł Leszczyński"],
+    description:
+      "Flink 2.0 is now available, and this talk highlights the collaborative efforts of the Flink and OpenLineage communities to bring native lineage support to Flink.",
+    video_url:
+      "https://current.confluent.io/post-conference-videos-2025/native-data-lineage-support-in-apache-flink-with-openlineage-lnd25",
+    conf_url: "https://current.confluent.io/london",
+  },
+  {
     conf: "Iceberg Summit 2025",
     date: "2025-04-09",
     image: "iceberg_summit_2025.png",

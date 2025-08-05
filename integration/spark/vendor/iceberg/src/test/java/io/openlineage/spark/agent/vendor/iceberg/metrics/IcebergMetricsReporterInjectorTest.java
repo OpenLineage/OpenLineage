@@ -14,8 +14,10 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark.api.VendorsContext;
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
@@ -63,12 +65,10 @@ public class IcebergMetricsReporterInjectorTest {
 
     when(((UnaryCommand) plan).child()).thenReturn(subPlan);
 
-    when(context
-            .getOpenLineageConfig()
-            .getVendors()
-            .getAdditionalProperties()
-            .getOrDefault("iceberg.metricsReporterDisabled", "false"))
-        .thenReturn("false");
+    when(context.getOpenLineageConfig().getVendors().getConfig())
+        .thenReturn(
+            Collections.singletonMap(
+                "iceberg", new SparkOpenLineageConfig.VendorsConfig.VendorConfig(false)));
     when(context.getVendors().getVendorsContext()).thenReturn(vendorsContext);
 
     cachingCatalog = (CachingCatalog) CachingCatalog.wrap(icebergCatalog);
@@ -108,12 +108,10 @@ public class IcebergMetricsReporterInjectorTest {
   void testIsDefinedWhenMetricsReporterDisabled(CatalogPlugin catalog) {
     setupCatalog(catalog);
 
-    when(context
-            .getOpenLineageConfig()
-            .getVendors()
-            .getAdditionalProperties()
-            .getOrDefault("iceberg.metricsReporterDisabled", "false"))
-        .thenReturn("true");
+    when(context.getOpenLineageConfig().getVendors().getConfig())
+        .thenReturn(
+            Collections.singletonMap(
+                "iceberg", new SparkOpenLineageConfig.VendorsConfig.VendorConfig(true)));
     assertThat(injector.isDefinedAt(plan)).isFalse();
   }
 

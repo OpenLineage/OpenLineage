@@ -37,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -100,7 +101,6 @@ class SparkReadWriteIntegTest {
   private static final String NAME = "name";
   private static final String AGE = "age";
   private static final String FILE_URI_PREFIX = "file://";
-  private static final String GREATER_THAN_SPARK2 = "([34].*)";
   private static final String SPARK_VERSION = "spark.version";
 
   private final KafkaContainer kafkaContainer =
@@ -126,9 +126,6 @@ class SparkReadWriteIntegTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testReadFromFileWriteToJdbc(@TempDir Path writeDir, SparkSession spark)
       throws InterruptedException, TimeoutException, IOException {
     Path testFile = writeTestDataToFile(writeDir);
@@ -355,9 +352,6 @@ class SparkReadWriteIntegTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testCreateDataSourceTableAsSelect(@TempDir Path tmpDir, SparkSession spark)
       throws InterruptedException, TimeoutException, IOException {
     Path testFile = writeTestDataToFile(tmpDir);
@@ -388,7 +382,7 @@ class SparkReadWriteIntegTest {
         .first()
         .hasFieldOrPropertyWithValue(NAME, testFile.getParent().toString())
         .hasFieldOrPropertyWithValue(NAMESPACE, FILE);
-    String warehouseDir = spark.sqlContext().conf().getConfString("spark.sql.warehouse.dir");
+    String warehouseDir = spark.sqlContext().getConf("spark.sql.warehouse.dir");
     assertThat(event.getOutputs())
         .first()
         .hasFieldOrPropertyWithValue(
@@ -482,14 +476,17 @@ class SparkReadWriteIntegTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(5)).emit(lineageEvent.capture());
-    OpenLineage.RunEvent event = lineageEvent.getAllValues().get(4);
-    assertThat(event).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
+    List<RunEvent> reversed = lineageEvent.getAllValues();
+    Collections.reverse(reversed);
+    Optional<RunEvent> event =
+        reversed.stream().filter(e -> e.getEventType().equals(EventType.COMPLETE)).findFirst();
+    assertThat(event).get().hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     String kafkaNamespace =
         "kafka://"
             + kafkaContainer.getHost()
             + ":"
             + kafkaContainer.getMappedPort(KafkaContainer.KAFKA_PORT);
-    assertThat(event.getInputs())
+    assertThat(event.get().getInputs())
         .hasSize(2)
         .satisfiesExactlyInAnyOrder(
             dataset ->
@@ -598,9 +595,6 @@ class SparkReadWriteIntegTest {
 
   @Test
   @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testExternalRDDWithS3Bucket(SparkSession spark)
       throws InterruptedException, TimeoutException, IOException, URISyntaxException {
     spark.conf().set("fs.s3a.secret.key", System.getenv("S3_SECRET_KEY"));

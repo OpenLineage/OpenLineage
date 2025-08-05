@@ -1,0 +1,39 @@
+FROM python:3.10-slim
+
+# Install system dependencies including Rust for building SQL parser
+RUN apt-get update && \
+    apt-get install -y gcc g++ curl git && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:$PATH"
+
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# Install dbt-duckdb first
+RUN uv pip install --system dbt-duckdb==1.7.0
+
+# Copy pre-built wheels
+COPY wheels/ /opt/wheels/
+
+# List available wheels
+RUN ls -la /opt/wheels/
+
+# Install OpenLineage dependencies from wheels
+RUN uv pip install --system /opt/wheels/*.whl
+
+# Create data directory for DuckDB
+RUN mkdir -p /opt/dbt/data
+
+# Set working directory
+WORKDIR /opt/dbt_project
+
+# Set environment variables
+ENV PYTHONPATH=/opt/openlineage
+ENV DBT_PROFILES_DIR=/opt/dbt_project
+
+# Keep container running
+CMD ["tail", "-f", "/dev/null"]

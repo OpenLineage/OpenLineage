@@ -11,7 +11,7 @@ import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergHandler;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
 import java.util.List;
 import java.util.Optional;

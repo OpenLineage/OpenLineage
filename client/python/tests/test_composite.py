@@ -245,60 +245,6 @@ def test_emit_raises_error_when_all_failed(mock_factory):
 
 
 @mock.patch("openlineage.client.transport.get_default_factory")
-def test_wait_for_completion_all_succeed(mock_factory):
-    mock_transport1 = MagicMock(spec=Transport)
-    mock_transport2 = MagicMock(spec=Transport)
-    mock_transport1.wait_for_completion.return_value = True
-    mock_transport2.wait_for_completion.return_value = True
-    mock_factory.return_value.create.side_effect = [mock_transport1, mock_transport2]
-
-    config = CompositeConfig(transports=[{}, {}])
-    transport = CompositeTransport(config)
-
-    result = transport.wait_for_completion(5.0)
-
-    assert result is True
-    mock_transport1.wait_for_completion.assert_called_once_with(5.0)
-    mock_transport2.wait_for_completion.assert_called_once_with(5.0)
-
-
-@mock.patch("openlineage.client.transport.get_default_factory")
-def test_wait_for_completion_one_fails(mock_factory):
-    mock_transport1 = MagicMock(spec=Transport)
-    mock_transport2 = MagicMock(spec=Transport)
-    mock_transport1.wait_for_completion.return_value = True
-    mock_transport2.wait_for_completion.return_value = False
-    mock_factory.return_value.create.side_effect = [mock_transport1, mock_transport2]
-
-    config = CompositeConfig(transports=[{}, {}])
-    transport = CompositeTransport(config)
-
-    result = transport.wait_for_completion(3.0)
-
-    assert result is False
-    mock_transport1.wait_for_completion.assert_called_once_with(3.0)
-    mock_transport2.wait_for_completion.assert_called_once_with(3.0)
-
-
-@mock.patch("openlineage.client.transport.get_default_factory")
-def test_wait_for_completion_default_timeout(mock_factory):
-    mock_transport1 = MagicMock(spec=Transport)
-    mock_transport2 = MagicMock(spec=Transport)
-    mock_transport1.wait_for_completion.return_value = True
-    mock_transport2.wait_for_completion.return_value = True
-    mock_factory.return_value.create.side_effect = [mock_transport1, mock_transport2]
-
-    config = CompositeConfig(transports=[{}, {}])
-    transport = CompositeTransport(config)
-
-    result = transport.wait_for_completion()
-
-    assert result is True
-    mock_transport1.wait_for_completion.assert_called_once_with(-1.0)
-    mock_transport2.wait_for_completion.assert_called_once_with(-1.0)
-
-
-@mock.patch("openlineage.client.transport.get_default_factory")
 def test_close_all_succeed(mock_factory):
     mock_transport1 = MagicMock(spec=Transport)
     mock_transport2 = MagicMock(spec=Transport)

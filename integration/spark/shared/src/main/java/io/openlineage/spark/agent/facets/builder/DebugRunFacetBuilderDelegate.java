@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.facets.builder;
 
+import io.openlineage.client.utils.RuntimeUtils;
 import io.openlineage.spark.agent.facets.DebugRunFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.ClasspathDebugClassDetails;
 import io.openlineage.spark.agent.facets.DebugRunFacet.ClasspathDebugClassDetails.ClasspathDebugClassDetailsBuilder;
@@ -12,6 +13,7 @@ import io.openlineage.spark.agent.facets.DebugRunFacet.ClasspathDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanNode;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanNode.LogicalPlanNodeBuilder;
+import io.openlineage.spark.agent.facets.DebugRunFacet.MemoryDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.MetricsDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.MetricsNode;
 import io.openlineage.spark.agent.facets.DebugRunFacet.SparkConfigDebugFacet;
@@ -64,6 +66,7 @@ public class DebugRunFacetBuilderDelegate {
         buildSystemDebugFacet(),
         buildLogicalPlanDebugFacet(),
         buildMetricsDebugFacet(),
+        buildMemoryDebugFacet(),
         logs,
         payloadSizeLimitInKilobytes);
   }
@@ -241,5 +244,18 @@ public class DebugRunFacetBuilderDelegate {
       builder.isOnClasspath(false);
     }
     return builder.build();
+  }
+
+  private MemoryDebugFacet buildMemoryDebugFacet() {
+    return MemoryDebugFacet.builder()
+        .sparkConfDriverMemory(getSparkConfOrNull("spark.driver.memory"))
+        .sparkConfDriverMemoryOverhead(getSparkConfOrNull("spark.driver.memoryOverhead"))
+        .sparkConfDriverMinMemoryOverhead(getSparkConfOrNull("spark.driver.minMemoryOverhead"))
+        .sparkConfDriverMemoryOverheadFactor(
+            getSparkConfOrNull("spark.driver.memoryOverheadFactor"))
+        .freeMemory(RuntimeUtils.freeMemory() / (1024 * 1024))
+        .maxMemory(RuntimeUtils.maxMemory() / (1024 * 1024))
+        .totalMemory(RuntimeUtils.totalMemory() / (1024 * 1024))
+        .build();
   }
 }

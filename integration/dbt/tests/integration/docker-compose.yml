@@ -1,0 +1,36 @@
+services:
+  # OpenLineage HTTP Test Server
+  test-server:
+    build: ../../../../client/python/tests/integration/test_server
+    ports:
+      - "8089:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 2s
+      timeout: 1s
+      retries: 5
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - dbt-test-network
+
+  # dbt Container for running dbt commands
+  dbt-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.dbt
+    working_dir: /opt/dbt_project
+    volumes:
+      - ./dbt_project:/opt/dbt_project
+      - ./data:/opt/data  # For DuckDB database file
+    environment:
+      - OPENLINEAGE_URL=http://test-server:8080
+      - OPENLINEAGE_NAMESPACE=dbt_integration_test
+    networks:
+      - dbt-test-network
+    stdin_open: true
+    tty: true
+
+networks:
+  dbt-test-network:
+    driver: bridge

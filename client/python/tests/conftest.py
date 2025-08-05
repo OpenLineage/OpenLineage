@@ -92,7 +92,7 @@ def test_server(docker_compose_file: str, test_server_url: str) -> Generator[str
             cwd=".",
             capture_output=True,
             text=True,
-            timeout=20,
+            timeout=40,
         )
         print(f"Docker compose up stdout: {result.stdout}")
         print(f"Docker compose up stderr: {result.stderr}")

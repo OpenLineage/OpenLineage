@@ -11,6 +11,7 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.facets.DebugRunFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.ClasspathDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanDebugFacet;
+import io.openlineage.spark.agent.facets.DebugRunFacet.MemoryDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.MetricsDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.SparkConfigDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.SystemDebugFacet;
@@ -27,6 +28,7 @@ class DebugRunFacetSerializerTest {
           SystemDebugFacet.builder().build(),
           new LogicalPlanDebugFacet(Collections.emptyList()),
           new MetricsDebugFacet(Collections.emptyList()),
+          MemoryDebugFacet.builder().build(),
           Collections.emptyList(),
           10);
 
@@ -55,6 +57,7 @@ class DebugRunFacetSerializerTest {
             SystemDebugFacet.builder().build(),
             new LogicalPlanDebugFacet(Collections.emptyList()),
             new MetricsDebugFacet(Collections.emptyList()),
+            MemoryDebugFacet.builder().build(),
             Collections.emptyList(),
             10);
 

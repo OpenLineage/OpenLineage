@@ -1,0 +1,15 @@
+FROM python:3.9
+
+# This Dockerfile enables easy cross-compilation of SQL artifacts
+# if we need to create, for example, linux rust parser
+# for use in dbt integration tests
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+RUN pip install uv
+WORKDIR /workspace
+COPY . .
+WORKDIR /workspace/iface-py
+RUN uv build --wheel --out-dir /wheels
+CMD ["cp", "/wheels/*", "/output/"]

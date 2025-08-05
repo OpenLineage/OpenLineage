@@ -36,7 +36,8 @@ public class ColumnLevelLineageUtils {
       OpenLineage.SchemaDatasetFacet schemaFacet) {
     if (!olContext.getQueryExecution().isPresent()
         || olContext.getQueryExecution().get().optimizedPlan() == null
-        || schemaFacet == null) {
+        || schemaFacet == null
+        || isSchemaExceedsLimit(olContext, schemaFacet)) {
       return Optional.empty();
     }
 
@@ -77,6 +78,27 @@ public class ColumnLevelLineageUtils {
     } else {
       return Optional.of(facet);
     }
+  }
+
+  /**
+   * Checks if the schema size exceeds the configured limit for column lineage processing. When the
+   * schema is too large, column lineage facet creation is skipped to avoid performance issues.
+   */
+  private static boolean isSchemaExceedsLimit(
+      OpenLineageContext context, OpenLineage.SchemaDatasetFacet schemaFacet) {
+    Integer schemaSizeLimit =
+        context.getOpenLineageConfig().getColumnLineageConfig().getSchemaSizeLimit();
+    boolean exceedsLimit = schemaFacet.getFields().size() > schemaSizeLimit;
+
+    if (exceedsLimit) {
+      log.warn(
+          "Schema size ({} fields) exceeds configured limit ({} fields). "
+              + "Consider increasing spark.openlineage.columnLineage.schemaSizeLimit if column lineage is needed for large schemas.",
+          schemaFacet.getFields().size(),
+          schemaSizeLimit);
+    }
+
+    return exceedsLimit;
   }
 
   private static LogicalPlan getAdjustedPlan(OpenLineageContext context) {

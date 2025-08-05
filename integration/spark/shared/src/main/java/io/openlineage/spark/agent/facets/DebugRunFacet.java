@@ -31,6 +31,7 @@ public class DebugRunFacet extends OpenLineage.DefaultRunFacet {
   private final SparkConfigDebugFacet config;
   private final LogicalPlanDebugFacet logicalPlan;
   private final MetricsDebugFacet metrics;
+  private final MemoryDebugFacet memory;
   private final List<String> logs;
   private final int payloadSizeLimitInKilobytes;
 
@@ -40,6 +41,7 @@ public class DebugRunFacet extends OpenLineage.DefaultRunFacet {
       SystemDebugFacet system,
       LogicalPlanDebugFacet logicalPlan,
       MetricsDebugFacet metricsDebugFacet,
+      MemoryDebugFacet memory,
       List<String> logs,
       int payloadSizeLimitInKilobytes) {
     super(Versions.OPEN_LINEAGE_PRODUCER_URI);
@@ -48,6 +50,7 @@ public class DebugRunFacet extends OpenLineage.DefaultRunFacet {
     this.system = system;
     this.logicalPlan = logicalPlan;
     this.metrics = metricsDebugFacet;
+    this.memory = memory;
     this.logs = logs;
     this.payloadSizeLimitInKilobytes = payloadSizeLimitInKilobytes;
   }
@@ -133,6 +136,18 @@ public class DebugRunFacet extends OpenLineage.DefaultRunFacet {
     String id;
     String desc;
     List<String> children;
+  }
+
+  @Value
+  @Builder
+  public static class MemoryDebugFacet {
+    String sparkConfDriverMemory;
+    String sparkConfDriverMemoryOverhead;
+    String sparkConfDriverMinMemoryOverhead;
+    String sparkConfDriverMemoryOverheadFactor;
+    long freeMemory;
+    long totalMemory;
+    long maxMemory;
   }
 
   /**

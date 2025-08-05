@@ -18,6 +18,7 @@ import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -74,7 +75,7 @@ class LogicalPlanRunFacetBuilderTest {
   }
 
   @AfterAll
-  public static void tearDown() {
+  public static void tearDown() throws IOException {
     sparkSession.close();
     sparkContext.stop();
   }

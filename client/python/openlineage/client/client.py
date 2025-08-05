@@ -67,11 +67,9 @@ class OpenLineageConfig:
         if "filters" in params:
             config.filters = [FilterConfig(**filter_config) for filter_config in params["filters"]]
         if "tags" in params:
-            job_tags = params["tags"].get("job", {})
-            run_tags = params["tags"].get("run", {})
             config.tags = TagsConfig(
-                job=[TagsJobFacetFields(key, value, "USER") for (key, value) in job_tags.items()],
-                run=[TagsRunFacetFields(key, value, "USER") for (key, value) in run_tags.items()],
+                job=params["tags"].get("job", {}),
+                run=params["tags"].get("run", {}),
             )
         return config
 
@@ -192,17 +190,6 @@ class OpenLineageClient:
         """
         return self.transport.close(timeout)
 
-    def wait_for_completion(self, timeout: float = -1.0) -> bool:
-        """
-        Block until all events are processed or timeout is reached.
-        If the transport is fully synchronous, this method should be a no-op and return True.
-        Params:
-          timeout: Timeout in seconds. `-1` means to block until last event is processed, 0 means no timeout.
-        Returns:
-            bool: True if all events were processed, False if some events were not processed.
-        """
-        return self.transport.wait_for_completion(timeout)
-
     @property
     def config(self) -> OpenLineageConfig:
         """
@@ -243,9 +230,9 @@ class OpenLineageClient:
         This method determines the appropriate transport by executing a sequence of checks:
         1. Verifies if OpenLineage is disabled through environment variable.
         2. Looks for a transport object provided in the arguments.
-        3. Attempts to configure the transport from a YAML config file.
+        3. Attempts to configure the transport from user config, config file or env vars.
         4. Tries to initialize HTTP transport with an url argument (deprecated).
-        5. Tries to set up HTTP transport using environment variables.
+        5. Tries to set up HTTP transport using simple environment variables.
         6. If no configuration is found, defaults to a console transport and logs a warning message.
 
         Returns:
@@ -256,11 +243,11 @@ class OpenLineageClient:
             log.info("OpenLineage is disabled. No events will be emitted.")
             return NoopTransport(NoopConfig())
 
-        # 2. Check if transport is provided explicitly
+        # 2. Check if transport is provided explicitly as argument
         if kwargs.get("transport"):
             return cast("Transport", kwargs["transport"])
 
-        # 3. Check if transport configuration is provided in YAML config file
+        # 3. Check if transport configuration is provided as config (explicit, file or env vars)
         if self.config.transport and self.config.transport.get("type"):
             factory = kwargs.get("factory") or get_default_factory()
             return factory.create(self.config.transport)
@@ -271,7 +258,7 @@ class OpenLineageClient:
                 url=kwargs["url"], options=kwargs.get("options"), session=kwargs.get("session")
             )
 
-        # 5. Check HTTP transport initialization with env variables
+        # 5. Check HTTP transport initialization with simple env variables
         if os.environ.get("OPENLINEAGE_URL"):
             return self._http_transport_from_env_variables()
 
@@ -318,7 +305,8 @@ class OpenLineageClient:
                     log.exception("Couldn't check if OpenLineage config file is readable: `%s`", path)
         return None
 
-    def _http_transport_from_env_variables(self) -> HttpTransport:
+    @staticmethod
+    def _http_transport_from_env_variables() -> HttpTransport:
         """
         Create HTTP transport from legacy environment variables
         """
@@ -356,7 +344,7 @@ class OpenLineageClient:
                 k.startswith(f"OPENLINEAGE__TRANSPORT__TRANSPORTS__{default_transport_name}")
                 for k in os.environ
             ):
-                log.warning(
+                log.info(
                     "%s already found in environment variables, skipping aliasing OPENLINEAGE_URL",
                     default_transport_name,
                 )
@@ -399,7 +387,7 @@ class OpenLineageClient:
     def _load_config_from_env_variables(cls) -> dict[str, Any] | None:
         config: dict[str, Any] = {}
 
-        # get os.environ.items only starting with OPENLINEAGE_ prefix and reverse sort
+        # get os.environ.items only starting with OPENLINEAGE__ prefix and reverse sort
         # to make sure that top-level keys have precedence
         env_vars = sorted(
             filter(lambda k: k[0].startswith(cls.DYNAMIC_ENV_VARS_PREFIX), os.environ.items()), reverse=True
@@ -462,14 +450,16 @@ class OpenLineageClient:
         """
         run_event_types = (RunEvent, event_v2.RunEvent)
         run_and_job_event_types = (RunEvent, event_v2.RunEvent, JobEvent, event_v2.JobEvent)
-        tags_job = self.config.tags.job
+        # tags_job = self.config.tags.job
+        tags_job = [TagsJobFacetFields(key, value, "USER") for (key, value) in self.config.tags.job.items()]
         if isinstance(event, run_and_job_event_types) and tags_job:
             # Ensure facets exists
             event.job.facets = {} if not event.job.facets else event.job.facets
             tags_facet = event.job.facets.get("tags", TagsJobFacet())
             event.job.facets["tags"] = self._update_tag_facet(tags_facet, tags_job)  # type: ignore [arg-type, assignment]
 
-        tags_run = self.config.tags.run
+        # tags_run = self.config.tags.run
+        tags_run = [TagsRunFacetFields(key, value, "USER") for (key, value) in self.config.tags.run.items()]
         if isinstance(event, run_event_types) and tags_run:
             # Ensure facets exists
             event.run.facets = {} if not event.run.facets else event.run.facets
@@ -478,8 +468,8 @@ class OpenLineageClient:
 
         return event
 
+    @staticmethod
     def _update_tag_facet(
-        self,
         tags_facet: TagsJobFacet | TagsRunFacet,
         user_tags: list[TagsJobFacetFields | TagsRunFacetFields],
     ) -> TagsJobFacet | TagsRunFacet:

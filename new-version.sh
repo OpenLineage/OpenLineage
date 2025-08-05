@@ -184,7 +184,6 @@ perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/example
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/examples/flink2-test-apps/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/hive/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/hive/hive-openlineage-hook/src/main/resources/io/openlineage/hive/client/version.properties
-echo "version ${NEXT_VERSION}" > integration/spark/spark2/src/test/resources/io/openlineage/spark/agent/version.properties
 echo "version ${NEXT_VERSION}" > integration/spark/spark3/src/test/resources/io/openlineage/spark/agent/version.properties
 echo "version ${NEXT_VERSION}" > integration/spark-extension-interfaces/src/test/resources/io/openlineage/spark/shade/extension/v1/lifecycle/plan/version.properties
 echo "version ${NEXT_VERSION}" > integration/flink/shared/src/test/resources/io/openlineage/flink/client/version.properties

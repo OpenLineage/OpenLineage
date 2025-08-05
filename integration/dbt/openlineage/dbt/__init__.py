@@ -186,7 +186,6 @@ def consume_structured_logs(
         "This wrapper is using --consume-structured-logs: will send OpenLineage "
         "events while the models are executing."
     )
-    dbt_integration_return_code = 0
     job_namespace = os.environ.get("OPENLINEAGE_NAMESPACE", "dbt")
     dbt_command_line = remove_command_line_option(sys.argv, CONSUME_STRUCTURED_LOGS_COMMAND_OPTION)
     dbt_command_line = ["dbt"] + dbt_command_line[1:]
@@ -201,7 +200,7 @@ def consume_structured_logs(
         models=models,
         selector=model_selector,
     )
-    logger.info(f"dbt-ol will read logs from {processor.dbt_log_file_path}")
+    logger.info("dbt-ol will read logs from %s", processor.dbt_log_file_path)
     client = OpenLineageClient()
     emitted_events = 0
     try:
@@ -210,7 +209,7 @@ def consume_structured_logs(
                 client.emit(event)
                 emitted_events += 1
                 if emitted_events % 50 == 0:
-                    logger.debug(f"Processed {emitted_events} events")
+                    logger.debug("Processed %d events", emitted_events)
             except Exception as e:
                 logger.warning(
                     "OpenLineage client failed to emit event %s runId %s. Exception: %s",
@@ -219,17 +218,21 @@ def consume_structured_logs(
                     e,
                     exc_info=True,
                 )
-        # Will wait for async events to be sent if async config is enabled\
-        logger.debug("Waiting for events to be sent.")
     except UnsupportedDbtCommand as e:
         logger.error(e)
-        dbt_integration_return_code = 1
+    except Exception:
+        logger.exception(
+            "OpenLineage failed to process dbt execution. This does not make dbt execution "
+            "fail, however, data might not end up in your configured lineage backend."
+        )
     finally:
-        client.close(timeout=30.0)
+        # Will wait for async events to be sent if async config is enabled
+        logger.debug("Waiting for events to be sent.")
+        client.close(timeout=30)
 
     logger.info("Emitted %d OpenLineage events", emitted_events)
     logger.info("Underlying dbt execution returned %d", processor.dbt_command_return_code)
-    return processor.dbt_command_return_code or dbt_integration_return_code
+    return processor.dbt_command_return_code
 
 
 def consume_local_artifacts(
@@ -353,7 +356,7 @@ def consume_local_artifacts(
                 e,
                 exc_info=True,
             )
-    client.close(timeout=30.0)
+    client.close(timeout=30)
     logger.info("Emitted %d OpenLineage events", emitted_events)
     logger.info("Underlying dbt execution returned %d", return_code)
     return return_code

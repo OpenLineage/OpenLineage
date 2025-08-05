@@ -16,6 +16,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergHandler;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
