@@ -24,4 +24,6 @@ public class ColumnLineageConfig {
   // TODO #3084: Three releases later (1.29.0), this flag should be removed and the behavior should
   // reflect it set to true
   private boolean datasetLineageEnabled;
+
+  private Integer schemaSizeLimit;
 }
