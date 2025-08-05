@@ -49,4 +49,4 @@ If you want to expose lineage as a one off in your workflow, [you can also manua
 
 ## Feedback
 
-You can reach out to us on [slack](https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA) and leave us feedback!  
+You can reach out to us on [slack](https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w) and leave us feedback!  

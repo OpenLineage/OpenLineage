@@ -109,7 +109,7 @@ Or a meeting may be at an organization's offices that are required to maintain a
 
 ## OpenLineage on Slack
 
-OpenLineage uses the [a Slack community](https://join.slack.com/t/openlineage/shared_invite/zt-2u4oiyz5h-TEmqpP4fVM5eCdOGeIbZvA) to provide an ongoing dialogue between members.
+OpenLineage uses the [a Slack community](https://join.slack.com/t/openlineage/shared_invite/zt-3arpql6lg-Nt~hicnDsnDY_GK_LEX06w) to provide an ongoing dialogue between members.
 This creates a recorded discussion of design decisions and discussions that complement the project meetings.
 
 Follow the link above and register with the slack service using your email address.
