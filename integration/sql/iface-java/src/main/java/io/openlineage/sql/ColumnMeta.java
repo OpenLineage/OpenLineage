@@ -8,19 +8,38 @@ package io.openlineage.sql;
 import java.util.Optional;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+/**
+ * Represents metadata for a database column, including its name and optional origin table.
+ */
 public class ColumnMeta {
   private final Optional<DbTableMeta> origin; // nullable
   private final String name;
 
+  /**
+   * Creates a new ColumnMeta instance.
+   *
+   * @param origin the table from which this column originates
+   * @param name the name of the column
+   */
   public ColumnMeta(DbTableMeta origin, String name) {
     this.origin = Optional.ofNullable(origin);
     this.name = name;
   }
 
+  /**
+   * Returns the optional origin table metadata for this column.
+   *
+   * @return the table metadata if known, empty Optional otherwise
+   */
   public Optional<DbTableMeta> origin() {
     return origin;
   }
 
+  /**
+   * Returns the name of the column.
+   *
+   * @return the column name
+   */
   public String name() {
     return name;
   }
