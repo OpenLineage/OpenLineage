@@ -5,13 +5,12 @@
 
 package io.openlineage.spark.agent;
 
+import java.lang.reflect.Field;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession.Builder;
 import org.apache.spark.sql.execution.QueryExecution;
-
-import java.lang.reflect.Field;
 
 /** Utility class for common Spark methods and properties that are compatible with Spark 4.x. */
 public class Spark4CompatUtils {
@@ -33,8 +32,7 @@ public class Spark4CompatUtils {
 
   @SneakyThrows
   public static SparkSession getSparkSession(QueryExecution queryExecution) {
-    return (SparkSession)
-        MethodUtils.invokeMethod(queryExecution, "sparkSession");
+    return (SparkSession) MethodUtils.invokeMethod(queryExecution, "sparkSession");
   }
 
   /**
