@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.lifecycle;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.EventEmitter;
+import io.openlineage.spark.agent.Spark4CompatUtils;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
