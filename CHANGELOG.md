@@ -8,6 +8,9 @@
 
 ### Fixed
 
+* **Spark: Improve performance of column level lineage** [`#3946`](https://github.com/OpenLineage/OpenLineage/pull/3946) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Limit memory consumption, provide limits for the amount of dependencies processed (1M) and input fields returned in the facet (100K). Turns on dataset lineage by default.*
+
 ## [1.36.0](https://github.com/OpenLineage/OpenLineage/compare/1.35.0...1.36.0) - 2025-07-22
 
 ### Added

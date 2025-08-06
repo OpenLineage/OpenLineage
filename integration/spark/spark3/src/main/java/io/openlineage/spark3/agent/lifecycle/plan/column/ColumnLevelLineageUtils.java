@@ -10,7 +10,9 @@ import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombined
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.ColumnLineageConfig;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Map;
 import java.util.Optional;
@@ -57,15 +59,10 @@ public class ColumnLevelLineageUtils {
         olContext.getOpenLineage().newColumnLineageDatasetFacetBuilder();
 
     boolean datasetLineageEnabled =
-        context
-            .getOlContext()
-            .getOpenLineageConfig()
-            .getColumnLineageConfig()
-            .isDatasetLineageEnabled();
-    if (!datasetLineageEnabled) {
-      log.warn(
-          "DEPRECATION WARNING: The columnLineage.datasetLineageEnabled configuration is set to false. This flag will default to true in the future versions. To avoid this warning, explicitly set it to true. This warning will automatically be removed once the default is switched to true.");
-    }
+        Optional.of(context.getOlContext().getOpenLineageConfig())
+            .map(SparkOpenLineageConfig::getColumnLineageConfig)
+            .map(ColumnLineageConfig::getDatasetLineageEnabled)
+            .orElse(true);
     facetBuilder.fields(context.getBuilder().buildFields(datasetLineageEnabled));
     context
         .getBuilder()
@@ -87,7 +84,9 @@ public class ColumnLevelLineageUtils {
   private static boolean isSchemaExceedsLimit(
       OpenLineageContext context, OpenLineage.SchemaDatasetFacet schemaFacet) {
     Integer schemaSizeLimit =
-        context.getOpenLineageConfig().getColumnLineageConfig().getSchemaSizeLimit();
+        Optional.of(context.getOpenLineageConfig().getColumnLineageConfig())
+            .map(ColumnLineageConfig::getSchemaSizeLimit)
+            .orElse(1_000);
     boolean exceedsLimit = schemaFacet.getFields().size() > schemaSizeLimit;
 
     if (exceedsLimit) {
