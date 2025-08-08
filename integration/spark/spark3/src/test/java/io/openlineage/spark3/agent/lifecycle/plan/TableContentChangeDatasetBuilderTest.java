@@ -34,6 +34,7 @@ import org.apache.spark.sql.catalyst.plans.logical.OverwriteByExpression;
 import org.apache.spark.sql.catalyst.plans.logical.OverwritePartitionsDynamic;
 import org.apache.spark.sql.catalyst.plans.logical.ReplaceData;
 import org.apache.spark.sql.catalyst.plans.logical.UpdateTable;
+import org.apache.spark.sql.catalyst.plans.logical.WriteDelta;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
@@ -115,6 +116,13 @@ class TableContentChangeDatasetBuilderTest {
   }
 
   @Test
+  void testApplyForWriteDelta() {
+    WriteDelta logicalPlan = mock(WriteDelta.class);
+    when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
+    verify(logicalPlan, null);
+  }
+
+  @Test
   void testApplyForMergeIntoTable() {
     MergeIntoTable logicalPlan = mock(MergeIntoTable.class);
     when(logicalPlan.targetTable()).thenReturn(dataSourceV2Relation);
@@ -137,6 +145,7 @@ class TableContentChangeDatasetBuilderTest {
     assertTrue(builder.isDefinedAtLogicalPlan(mock(DeleteFromTable.class)));
     assertTrue(builder.isDefinedAtLogicalPlan(mock(UpdateTable.class)));
     assertTrue(builder.isDefinedAtLogicalPlan(mock(ReplaceData.class)));
+    assertTrue(builder.isDefinedAtLogicalPlan(mock(WriteDelta.class)));
     assertFalse(builder.isDefinedAtLogicalPlan(mock(LogicalPlan.class)));
   }
 

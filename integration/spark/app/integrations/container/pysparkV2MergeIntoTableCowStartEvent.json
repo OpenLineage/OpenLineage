@@ -1,14 +1,13 @@
 {
-  "eventType": "COMPLETE",
+  "eventType": "START",
   "job": {
     "namespace": "iceberg-namespace",
-    "name": "iceberg_integration_test.atomic_create_table_as_select.default_tbl_update"
+    "name": "iceberg_integration_test.replace_data.spark_catalog_default_events_cow"
   },
-  "inputs": [],
-  "outputs": [
+  "inputs": [
     {
       "namespace": "file",
-      "name": "/tmp/iceberg/default/tbl_update",
+      "name": "/tmp/iceberg/default/updates_cow",
       "facets": {
         "dataSource": {
           "name": "file",
@@ -17,26 +16,27 @@
         "schema": {
           "fields": [
             {
-              "name": "a",
+              "name": "event_id",
               "type": "long"
             },
             {
-              "name": "b",
+              "name": "updated_at",
               "type": "long"
             }
           ]
         },
+        "version": {},
         "symlinks": {
           "identifiers": [
             {
               "namespace": "file:/tmp/iceberg",
-              "name": "default.tbl_update",
+              "name": "default.updates_cow",
               "type": "TABLE"
             }
           ]
-        },
-        "version": {}
+        }
       }
     }
-  ]
+  ],
+  "outputs": []
 }
