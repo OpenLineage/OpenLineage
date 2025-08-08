@@ -606,7 +606,9 @@ class AsyncHttpTransport(Transport):
         }
         if self.config.compression == HttpCompression.GZIP:
             headers["Content-Encoding"] = "gzip"
-            return gzip.compress(event.encode("utf-8")), headers
+            # levels higher than 3 are twice as slow:
+            # https://github.com/python/cpython/issues/91349#issuecomment-2737161048
+            return gzip.compress(event.encode("utf-8"), compresslevel=3), headers
 
         return event, headers
 
