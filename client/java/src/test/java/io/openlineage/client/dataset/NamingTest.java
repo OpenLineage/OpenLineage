@@ -57,7 +57,7 @@ class NamingTest {
             .database("my-db")
             .table("my-collection")
             .build();
-    assertEquals("azurecosmos://my-host/dbs/my-db", naming.getNamespace());
+    assertEquals("azurecosmos://my-host.documents.azure.com/dbs/my-db", naming.getNamespace());
     assertEquals("colls/my-collection", naming.getName());
   }
 
