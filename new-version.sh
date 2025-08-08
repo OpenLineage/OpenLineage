@@ -146,6 +146,7 @@ perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/flink/exam
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/flink/examples/flink2-test-apps/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/hive/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/hive/hive-openlineage-hook/src/main/resources/io/openlineage/hive/client/version.properties
+perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/hive-udf-interfaces/gradle.properties
 
 # (3) Bump version in docs
 perl -i -pe"s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./integration/spark/README.md

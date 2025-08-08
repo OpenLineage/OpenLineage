@@ -7,7 +7,14 @@ workflows:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
           requires:
             - build-integration-sql-java
+            - build-hive-udf-interfaces
+            - build-integration-hive
             - build-client-java
+      - build-hive-udf-interfaces:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+          context: << pipeline.parameters.build-context >>
       - build-integration-hive:
           filters:
             tags:
@@ -15,6 +22,7 @@ workflows:
           context: << pipeline.parameters.build-context >>
           requires:
            - build-integration-sql-java
+           - build-hive-udf-interfaces
            - build-client-java
       #FIXME - jarVerification step not defined in hive gradle, for now commented out the step
 #      - jar-verification-hive:
@@ -40,6 +48,15 @@ workflows:
           context: release
           requires:
             - integration-test-integration-hive
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              only: main
+      - release-hive-udf-interfaces:
+          context: release
+          requires:
+            - build-hive-udf-interfaces
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
