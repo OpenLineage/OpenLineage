@@ -22,9 +22,9 @@ ext {
 }
 
 dependencies {
-    implementation('com.google.cloud:google-cloud-storage:2.53.3')
+    implementation('com.google.cloud:google-cloud-storage:2.54.0')
 
-    testImplementation('com.google.cloud:google-cloud-nio:0.128.0')
+    testImplementation('com.google.cloud:google-cloud-nio:0.128.1')
 }
 
 shadowJar {
