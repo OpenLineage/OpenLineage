@@ -141,11 +141,13 @@ class DbtArtifactProcessor:
         logger: Optional[logging.Logger] = None,
         models: Optional[Sequence[str]] = None,
         selector: Optional[str] = None,
+        openlineage_job_name: Optional[str] = None,
     ):
         self.producer = producer
         self._dbt_run_metadata: Optional[ParentRunMetadata] = None
         self.logger = logger or logging.getLogger(f"{self.__class__.__module__}.{self.__class__.__name__}")
 
+        self.openlineage_job_name = openlineage_job_name
         self.job_namespace = job_namespace
         self.dataset_namespace = ""
         self.skip_errors = skip_errors
