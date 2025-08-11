@@ -425,6 +425,12 @@ class SparkIcebergIntegrationTest {
     createTempDataset(2).createOrReplaceTempView("temp");
     spark.sql("CREATE TABLE iceberg_temp USING iceberg AS SELECT * FROM temp");
 
+    try {
+      Thread.sleep(2000); // To ensure all events are consumed
+    } catch (InterruptedException e) {
+      // ignore
+    }
+
     HttpRequest[] httpRequests =
         mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage"));
     RunEvent event =
