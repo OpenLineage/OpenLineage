@@ -6,6 +6,7 @@ from openlineage.client.transport.amazon_datazone import AmazonDataZoneConfig, A
 from openlineage.client.transport.async_http import AsyncHttpConfig, AsyncHttpTransport
 from openlineage.client.transport.composite import CompositeTransport
 from openlineage.client.transport.console import ConsoleTransport
+from openlineage.client.transport.datadog import DatadogConfig, DatadogTransport
 from openlineage.client.transport.factory import DefaultTransportFactory
 from openlineage.client.transport.file import FileTransport
 from openlineage.client.transport.http import HttpConfig, HttpTransport
@@ -29,6 +30,7 @@ _factory.register_transport(NoopTransport.kind, NoopTransport)
 _factory.register_transport(FileTransport.kind, FileTransport)
 _factory.register_transport(TransformTransport.kind, TransformTransport)
 _factory.register_transport(AmazonDataZoneTransport.kind, AmazonDataZoneTransport)
+_factory.register_transport(DatadogTransport.kind, DatadogTransport)
 
 
 def get_default_factory() -> DefaultTransportFactory:
@@ -50,6 +52,8 @@ __all__ = [
     "CompositeTransport",
     "Config",
     "ConsoleTransport",
+    "DatadogConfig",
+    "DatadogTransport",
     "FileTransport",
     "HttpConfig",
     "HttpTransport",
