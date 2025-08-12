@@ -1,0 +1,42 @@
+{
+  "eventType": "START",
+  "job": {
+    "namespace": "iceberg-namespace",
+    "name": "iceberg_integration_test.replace_data.spark_catalog_default_events_cow"
+  },
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/iceberg/default/updates_cow",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "event_id",
+              "type": "long"
+            },
+            {
+              "name": "updated_at",
+              "type": "long"
+            }
+          ]
+        },
+        "version": {},
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/iceberg",
+              "name": "default.updates_cow",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": []
+}

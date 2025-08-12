@@ -101,7 +101,7 @@ impl<'a> Context<'a> {
         dialect: &dyn CanonicalDialect,
         default_schema: Option<String>,
         default_database: Option<String>,
-    ) -> Context {
+    ) -> Context<'_> {
         Context {
             inputs: HashSet::new(),
             outputs: HashSet::new(),

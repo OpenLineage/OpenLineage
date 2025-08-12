@@ -10,13 +10,14 @@ from openlineage.client.event_v2 import InputDataset, Job, OutputDataset, Run, R
 from openlineage.common.provider.dbt.facets import ParentRunMetadata
 from openlineage.common.utils import get_from_nullable_chain, parse_single_arg
 
-__version__ = "1.36.0"
+__version__ = "1.38.0"
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt"
 
 # for which command structured logs consumption is implemented
 HANDLED_COMMANDS = ["run", "seed", "snapshot", "test", "build"]
 CONSUME_STRUCTURED_LOGS_COMMAND_OPTION = "--consume-structured-logs"
-DBT_LOG_FILE_MAX_BYTES = str(1024 * 1024 * 1024)
+OPENLINEAGE_DBT_JOB_NAME_OPTION = "--openlineage-dbt-job-name"
+DBT_LOG_FILE_MAX_BYTES = str(5 * 1024 * 1024 * 1024)
 
 log = logging.getLogger(__name__)
 

@@ -224,7 +224,11 @@ class AsyncHttpTransport(Transport):
             "failed": 0,
         }
 
+        # "Hard" exit. Does not wait for completion for events in flight.
         self.should_exit = threading.Event()
+        # "Soft" exit. Does not exit when there are events in the queue and active tasks
+        self.may_exit = threading.Event()
+
         # Maximum number of concurrent requests
         self.max_concurrent = config.max_concurrent_requests
         self.worker_thread = threading.Thread(target=self._setup_loop, daemon=True)
@@ -262,13 +266,19 @@ class AsyncHttpTransport(Transport):
 
         transport = httpx.AsyncHTTPTransport(limits=limits, retries=self.config.retry["total"])
 
+        def _should_exit() -> bool:
+            return self.should_exit.is_set() or (
+                self.event_queue.empty() and not len(active_tasks) and self.may_exit.is_set()
+            )
+
         async with httpx.AsyncClient(
             timeout=httpx.Timeout(timeout=self.config.timeout),
             verify=self.config.verify,
             follow_redirects=True,
             transport=transport,
         ) as client:
-            while not self.should_exit.is_set():
+            last_processed_time = time.time()
+            while not _should_exit():
                 processed_items = False
                 while not self.event_queue.empty() and len(active_tasks) < self.max_concurrent:
                     try:
@@ -286,6 +296,10 @@ class AsyncHttpTransport(Transport):
                         processed_items = True
                     except queue.Empty:
                         break
+
+                # Update last processed time if we processed items
+                if processed_items:
+                    last_processed_time = time.time()
 
                 if active_tasks:
                     done, _ = await asyncio.wait(
@@ -320,9 +334,30 @@ class AsyncHttpTransport(Transport):
                             log.exception("Error in event processing task")
                 # No tasks are active, didn't process any new items - sleep
                 elif not processed_items:
+                    current_time = time.time()
+                    if current_time - last_processed_time >= 10.0:
+                        log.warning(
+                            "No new events processed for %.1fs. Queue empty: %s, "
+                            "active tasks: %d, max concurrent: %d, "
+                            "query stats: pending %d success %d failed %s",
+                            current_time - last_processed_time,
+                            self.event_queue.empty(),
+                            len(active_tasks),
+                            self.max_concurrent,
+                            self.event_stats["pending"],
+                            self.event_stats["success"],
+                            self.event_stats["failed"],
+                        )
+                        last_processed_time = current_time
                     await asyncio.sleep(0.01)
 
-            log.debug("AsyncHttpTransport event loop worker completed")
+            log.debug(
+                "AsyncHttpTransport event loop worker completed. "
+                "Stats: %d pending, %d success, %d failed events",
+                self.event_stats["pending"],
+                self.event_stats["success"],
+                self.event_stats["failed"],
+            )
 
     async def _process_event(
         self,
@@ -497,7 +532,31 @@ class AsyncHttpTransport(Transport):
         self._add_event(request)
 
         # Wait for space in the regular capacity portion of the queue
-        while self.event_queue.qsize() >= self.configured_queue_size:
+        wait_start_time = time.time()
+        last_log_time = wait_start_time
+        while (qsize := self.event_queue.qsize()) >= self.configured_queue_size:
+            current_time = time.time()
+            if current_time - last_log_time >= 15.0:
+                # Check if worker thread is still alive
+                if not self.worker_thread.is_alive():
+                    log.error(
+                        "Worker thread died while waiting for queue space. Queue size: %d, "
+                        "configured size: %d, waiting time: %.1fs",
+                        qsize,
+                        self.configured_queue_size,
+                        current_time - wait_start_time,
+                    )
+                    raise RuntimeError("AsyncHttpTransport worker thread died")
+
+                log.warning(
+                    "Queue capacity exceeded, waiting for space. Queue size: %d, configured size: %d, "
+                    "waiting time: %.1fs, worker thread alive: %s",
+                    qsize,
+                    self.configured_queue_size,
+                    current_time - wait_start_time,
+                    self.worker_thread.is_alive(),
+                )
+                last_log_time = current_time
             time.sleep(0.01)
 
         # Add to queue - include run_id and event_type for START event tracking
@@ -515,6 +574,7 @@ class AsyncHttpTransport(Transport):
             bool: True if all events were processed, False if some events were not processed.
         """
         log.debug("Waiting for events completion for %.3f seconds", timeout)
+        self.may_exit.set()
         start_time = time.time()
         while timeout < 0 or time.time() - start_time < timeout:
             if self._all_processed():
@@ -527,6 +587,7 @@ class AsyncHttpTransport(Transport):
         return self._all_processed()
 
     def close(self, timeout: float = -1.0) -> bool:
+        log.debug("Closing Async HTTP transport with timeout %.3f seconds", timeout)
         result = self.wait_for_completion(timeout)
         self.should_exit.set()
         self.events = {}
@@ -545,7 +606,9 @@ class AsyncHttpTransport(Transport):
         }
         if self.config.compression == HttpCompression.GZIP:
             headers["Content-Encoding"] = "gzip"
-            return gzip.compress(event.encode("utf-8")), headers
+            # levels higher than 3 are twice as slow:
+            # https://github.com/python/cpython/issues/91349#issuecomment-2737161048
+            return gzip.compress(event.encode("utf-8"), compresslevel=3), headers
 
         return event, headers
 

@@ -43,27 +43,28 @@ def serialize(inst, field, value):
 
 
 @pytest.mark.parametrize(
-    "path",
+    ("path", "job_name"),
     [
-        "tests/dbt/small",
-        "tests/dbt/large",
-        "tests/dbt/profiles",
-        "tests/dbt/catalog",
-        "tests/dbt/fail",
-        "tests/dbt/build",
-        "tests/dbt/compiled_code",
-        "tests/dbt/spark/thrift",
-        "tests/dbt/spark/odbc",
-        "tests/dbt/postgres",
-        "tests/dbt/snapshot",
-        "tests/dbt/duckdb",
+        ("tests/dbt/small", "dbt-job-name"),
+        ("tests/dbt/large", None),
+        ("tests/dbt/profiles", None),
+        ("tests/dbt/catalog", None),
+        ("tests/dbt/fail", None),
+        ("tests/dbt/build", None),
+        ("tests/dbt/compiled_code", None),
+        ("tests/dbt/spark/thrift", None),
+        ("tests/dbt/spark/odbc", "dbt-job-name"),
+        ("tests/dbt/postgres", None),
+        ("tests/dbt/snapshot", None),
+        ("tests/dbt/duckdb", None),
     ],
 )
-def test_dbt_parse_and_compare_event(path, parent_run_metadata):
+def test_dbt_parse_and_compare_event(path, job_name, parent_run_metadata):
     processor = DbtLocalArtifactProcessor(
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
         job_namespace="job-namespace",
         project_dir=path,
+        openlineage_job_name=job_name,
     )
     processor.dbt_run_metadata = parent_run_metadata
     dbt_events = processor.parse()

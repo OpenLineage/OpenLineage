@@ -85,8 +85,6 @@ addDependenciesToConfiguration(additionalJarsConfigurationName, spark, scala, th
 dependencies {
     implementation(project(path: ":shared"))
     implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
-    implementation(project(path: ":spark2"))
-    implementation(project(path: ":spark2", configuration: "scala212RuntimeElements"))
     implementation(project(path: ":spark3"))
     implementation(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
 
@@ -114,9 +112,8 @@ dependencies {
     compileOnly("io.micrometer:micrometer-core:${micrometerVersion}")
 
     testImplementation("org.apache.spark:spark-core_${scala}:${spark}")
-    // TODO: remove preview from testImplementation for Spark 4.0.0 -> this makes test compile without Spark 4.0.0 discrepancies
-    testImplementation("org.apache.spark:spark-sql_${scala}:${spark.startsWith("4") ? spark + "-preview2" : spark}")
-    testImplementation("org.apache.spark:spark-hive_${scala}:${spark.startsWith("4") ? spark + "-preview2" : spark}")
+    testImplementation("org.apache.spark:spark-sql_${scala}:${spark}")
+    testImplementation("org.apache.spark:spark-hive_${scala}:${spark}")
     testImplementation("org.apache.spark:spark-sql-kafka-0-10_${scala}:${spark}")
     testImplementation(platform("org.junit:junit-bom:${junit5Version}"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -253,7 +250,6 @@ tasks.named("shadowJar", ShadowJar.class) {
 
     minimize() {
         exclude(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
-        exclude(project(path: ":spark2", configuration: "scala212RuntimeElements"))
         exclude(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
         exclude(project(path: ":spark31", configuration: "scala212RuntimeElements"))
         exclude(project(path: ":spark32", configuration: activeRuntimeElementsConfiguration))

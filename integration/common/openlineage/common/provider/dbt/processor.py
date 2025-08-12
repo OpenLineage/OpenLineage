@@ -141,11 +141,13 @@ class DbtArtifactProcessor:
         logger: Optional[logging.Logger] = None,
         models: Optional[Sequence[str]] = None,
         selector: Optional[str] = None,
+        openlineage_job_name: Optional[str] = None,
     ):
         self.producer = producer
         self._dbt_run_metadata: Optional[ParentRunMetadata] = None
         self.logger = logger or logging.getLogger(f"{self.__class__.__module__}.{self.__class__.__name__}")
 
+        self.openlineage_job_name = openlineage_job_name
         self.job_namespace = job_namespace
         self.dataset_namespace = ""
         self.skip_errors = skip_errors
@@ -376,7 +378,7 @@ class DbtArtifactProcessor:
                     "success",
                     started_at,
                     completed_at,
-                    self.get_run(run_id),
+                    self.get_run(run_id=run_id),
                     Job(namespace=self.job_namespace, name=job_name, facets=job_facets),
                     [
                         InputDataset(
@@ -722,7 +724,7 @@ class DbtArtifactProcessor:
 
         if query_id:
             run_facets["externalQuery"] = ExternalQueryRunFacet(
-                externalQueryId=query_id, source=self.job_namespace
+                externalQueryId=query_id, source=self.dataset_namespace
             )
 
         return Run(

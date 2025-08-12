@@ -405,6 +405,167 @@ client.close()
 
 </Tabs>
 
+### Datadog Transport
+
+The Datadog transport sends OpenLineage events to Datadog's observability platform with intelligent transport routing based on event characteristics. This transport combines both synchronous HTTP and asynchronous HTTP capabilities, automatically selecting the optimal transport method based on configurable rules.
+
+#### Configuration
+
+- `type` - string, must be `"datadog"`. Required.
+- `apiKey` - string, Datadog API key for authentication. Can also be set via `DD_API_KEY` environment variable. Required.
+- `site` - string, Datadog site endpoint. Can be one of the predefined sites or a custom URL. Can also be set via `DD_SITE` environment variable. Optional, default: `"datadoghq.com"`.
+- `timeout` - float specifying timeout (in seconds) value used while connecting to server. Optional, default: `5.0`.
+- `retry` - dictionary of additional configuration options for HTTP retries. Optional, same defaults as HTTP transport.
+- `max_queue_size` - integer specifying maximum events in async processing queue. Optional, default: `10000`.
+- `max_concurrent_requests` - integer specifying maximum parallel HTTP requests for async transport. Optional, default: `100`.
+- `async_transport_rules` - dictionary mapping integration and job types to transport selection. Optional, default: `{"dbt": {"*": True}}`.
+
+#### Predefined Datadog Sites
+
+The transport supports the following predefined Datadog sites:
+- `datadoghq.com`
+- `us3.datadoghq.com`
+- `us5.datadoghq.com`
+- `datadoghq.eu`
+- `ap1.datadoghq.com`
+- `ap2.datadoghq.com`
+- `ddog-gov.com`
+- `datad0g.com`
+
+You can also provide a custom URL for `site` if using a proxy or custom endpoint.
+
+#### Async Transport Rules
+
+The `async_transport_rules` configuration allows fine-grained control over which events use asynchronous transport vs synchronous HTTP transport. Rules are defined as a two-level dictionary:
+
+```yaml
+async_transport_rules:
+  <integration>:
+    <jobType>: <boolean>
+```
+
+First-level keys match against the `integration` field in `JobTypeJobFacet` Second-level keys match against the `jobType` field in `JobTypeJobFacet`.
+Value `true` uses async transport, `false` or lack of value uses synchronous HTTP transport.
+Use `"*"` to match all integrations or job types. All matching is case-insensitive.
+
+When the mapping for some `integration` - `jobType` pair aren't provided, it will use synchronous HTTPTransport. 
+If you want to send all events via async transport, use double wildcard configuration. It will force async transport even if the `JobTypeJobFacet` is not present.
+
+```yaml
+async_transport_rules:
+  "*":
+   "*": true
+```
+
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: datadog
+  apiKey: your-datadog-api-key
+  site: datadoghq.com
+  timeout: 10
+  max_queue_size: 5000
+  max_concurrent_requests: 50
+  async_transport_rules:
+    # All dbt events use async transport
+    dbt:
+      "*": true
+    # Spark sql-level events use async, other use sync
+    spark:
+      sql: true
+    # All Airflow events use async transport
+    airflow:
+      "*": true
+    # Example configuration that sends all events via async transport
+    "*":
+      "*": true
+  retry:
+    total: 5
+    backoff_factor: 0.3
+    status_forcelist: [500, 502, 503, 504]
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.datadog import DatadogConfig, DatadogTransport
+
+datadog_config = DatadogConfig(
+    apiKey="your-datadog-api-key",
+    site="datadoghq.com",
+    timeout=10.0,
+    max_queue_size=5000,
+    max_concurrent_requests=50,
+    async_transport_rules={
+        "dbt": {"*": True},
+        "spark": {"sql": True},
+        "airflow": {"*": True},
+        "*": {"*": True}  # Send all events via async transport.
+    },
+    retry={
+        "total": 5,
+        "backoff_factor": 0.3,
+        "status_forcelist": [500, 502, 503, 504]
+    }
+)
+
+client = OpenLineageClient(transport=DatadogTransport(datadog_config))
+```
+
+</TabItem>
+<TabItem value="env-vars" label="Environment Variables">
+
+```bash
+# Basic configuration
+export OPENLINEAGE__TRANSPORT__TYPE=datadog
+export OPENLINEAGE__TRANSPORT__APIKEY=your-datadog-api-key
+export OPENLINEAGE__TRANSPORT__SITE=datadoghq.com
+export OPENLINEAGE__TRANSPORT__TIMEOUT=10
+
+# Async transport rules
+export OPENLINEAGE__TRANSPORT__ASYNC_TRANSPORT_RULES='{"dbt": {"*": true}, "spark": {"batch_job": true, "streaming_job": false}, "airflow": {"*": true}}'
+```
+
+
+Or using DD environment variables
+```bash
+export OPENLINEAGE__TRANSPORT__TYPE=datadog
+export DD_API_KEY=your-datadog-api-key
+export DD_SITE=datadoghq.com
+```
+
+</TabItem>
+
+</Tabs>
+
+#### Transport Selection Examples
+
+Given these rules:
+```yaml
+async_transport_rules:
+  dbt:
+    "*": true
+  spark:
+    batch_job: true
+    streaming_job: false
+  "*":
+    ml_training: true
+```
+
+**Event routing behavior**:
+- `integration="dbt", jobType="model"` → **Async** (matches `dbt → *`)
+- `integration="spark", jobType="batch_job"` → **Async** (matches `spark → batch_job`)
+- `integration="spark", jobType="streaming_job"` → **HTTP** (matches `spark → streaming_job`)
+- `integration="flink", jobType="ml_training"` → **Async** (matches `* → ml_training`)
+- `integration="kafka", jobType="consumer"` → **HTTP** (no matching rule)
+
 ### Console
 
 This straightforward transport emits OpenLineage events directly to the console through a logger.

@@ -5,21 +5,29 @@
 
 package io.openlineage.spark.agent.lifecycle.plan.column;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ColumnLevelLineageBuilderTest {
 
@@ -174,5 +182,76 @@ class ColumnLevelLineageBuilderTest {
     builder.addInput(exprId, identifier, "a");
 
     assertEquals(1, builder.getInputs().get(exprId).size());
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "100,100,true", // should return non-empty fields
+    "100,1000,true", // should return non-empty fields
+    "2000,2000,false", // should not break things as well
+    "10000,10000,false" // should not break things as well
+  })
+  void testCartesianDependencyPerformance(
+      String outputSize, String inputSize, String shouldContainFields) {
+    Random r = new Random();
+    OpenLineage.SchemaDatasetFacet outputSchema =
+        openLineage.newSchemaDatasetFacet(
+            IntStream.range(1, Integer.parseInt(outputSize) + 1)
+                .boxed()
+                .map(
+                    i ->
+                        openLineage
+                            .newSchemaDatasetFacetFieldsBuilder()
+                            .name("output_" + i)
+                            .type("int")
+                            .build())
+                .collect(Collectors.toList()));
+    ColumnLevelLineageBuilder builder = new ColumnLevelLineageBuilder(outputSchema, context);
+
+    List<ExprId> outputExprIds = new ArrayList<>();
+    outputSchema.getFields().stream()
+        .forEach(
+            f -> {
+              ExprId exprId = ExprId.apply(r.nextLong());
+              outputExprIds.add(exprId);
+              builder.addOutput(exprId, f.getName());
+            });
+
+    // add 1000 input fields
+    DatasetIdentifier di = new DatasetIdentifier("input", "ns");
+    List<ExprId> inputExprIds = new ArrayList<>();
+    IntStream.range(
+            1, Integer.parseInt(inputSize) + 1) // to prevent dataset dependency from being called
+        .boxed()
+        .forEach(
+            fieldIndex -> {
+              ExprId exprId = ExprId.apply(r.nextLong());
+              builder.addInput(exprId, di, "input_" + fieldIndex);
+              inputExprIds.add(exprId);
+            });
+
+    // add 100 million expr dependencies
+    IntStream.range(0, Integer.parseInt(outputSize))
+        .boxed()
+        .forEach(
+            outputFieldIndex -> {
+              // for each input field add input -> inputs can be repeated
+              IntStream.range(
+                      0,
+                      Integer.parseInt(
+                          inputSize)) // to prevent dataset dependency from being called
+                  .boxed()
+                  .forEach(
+                      inputFieldIndex -> {
+                        builder.addDependency(
+                            outputExprIds.get(outputFieldIndex), inputExprIds.get(inputFieldIndex));
+                      });
+            });
+
+    // building facet should work
+    ColumnLineageDatasetFacetFields fields = builder.buildFields(false);
+    if (Boolean.parseBoolean(shouldContainFields)) {
+      assertThat(fields.getAdditionalProperties().size()).isEqualTo(Integer.parseInt(outputSize));
+    }
   }
 }

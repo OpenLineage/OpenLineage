@@ -47,11 +47,23 @@ def dbt_artifact_processor():
 
 
 @pytest.mark.parametrize(
-    "adapter_key,adapter_type", [("query_id", Adapter.SNOWFLAKE), ("job_id", Adapter.BIGQUERY)]
+    "adapter_key,adapter_type,dataset_namespace,profile",
+    [
+        (
+            "query_id",
+            Adapter.SNOWFLAKE,
+            "snowflake://gp12345.us-east-1.aws",
+            {"account": "gp12345.us-east-1"},
+        ),  # Snowflake
+        ("job_id", Adapter.BIGQUERY, "bigquery", {}),  # BigQuery
+    ],
 )
-def test_get_query_id(adapter_key, adapter_type, dbt_artifact_processor, run_result):
+def test_get_query_id(
+    adapter_key, adapter_type, dataset_namespace, profile, dbt_artifact_processor, run_result
+):
     run_result["adapter_response"][adapter_key] = QUERY_ID
     dbt_artifact_processor.adapter_type = adapter_type
+    dbt_artifact_processor.extract_dataset_namespace(profile)
     generated_query_id = dbt_artifact_processor.get_query_id(run_result)
     generated_run = dbt_artifact_processor.get_run(run_id=RUN_ID, query_id=generated_query_id)
 
@@ -64,7 +76,7 @@ def test_get_query_id(adapter_key, adapter_type, dbt_artifact_processor, run_res
             version=DBT_VERSION,
             openlineageAdapterVersion=openlineage_version,
         ),
-        "externalQuery": ExternalQueryRunFacet(externalQueryId=QUERY_ID, source=JOB_NAMESPACE),
+        "externalQuery": ExternalQueryRunFacet(externalQueryId=QUERY_ID, source=dataset_namespace),
     }
 
 

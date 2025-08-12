@@ -1,22 +1,100 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.35.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.37.0...HEAD)
+
+## [1.37.0](https://github.com/OpenLineage/OpenLineage/compare/1.36.0...1.37.0) - 2025-08-11
+
+### Added
+
+* **Python: Add Datadog transport with configurable async routing** [`#3950`](https://github.com/OpenLineage/OpenLineage/pull/3950) [@mobuchowski](https://github.com/mobuchowski)  
+  *Add Datadog transport with intelligent routing between sync/async transports based on configurable rules. Supports wildcard matching and provides seamless integration with Datadog's observability platform.*
+* **Spark: Implement support for WriteDelta, WriteIcebergDelta logical plan nodes** [`#3860`](https://github.com/OpenLineage/OpenLineage/pull/3860) [@orthoxerox](https://github.com/orthoxerox)  
+  *Add support for WriteDelta and WriteIcebergDelta logical plan nodes in Spark integration.*
+* **dbt: Add option to override dbt job name** [`#3933`](https://github.com/OpenLineage/OpenLineage/pull/3933) [@mobuchowski](https://github.com/mobuchowski)  
+  *Add configuration option to override dbt job names in OpenLineage events.*
+* **Java: Add Jackson Blackbird module for JSON performance optimization** [`#3923`](https://github.com/OpenLineage/OpenLineage/pull/3923) [@kyungryun](https://github.com/kyungryun)  
+  *Improve JSON serialization performance with Jackson Blackbird module.*
+
+### Changed
+
+* **Spark: Remove Spark 2 support** [`#3904`](https://github.com/OpenLineage/OpenLineage/pull/3904) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Drop support for Spark 2.x versions. Minimum supported version is now Spark 3.x.*
+* **Python: Change gzip compression level in HTTP transport** [`#3956`](https://github.com/OpenLineage/OpenLineage/pull/3956) [@dolfinus](https://github.com/dolfinus)  
+  *Optimize HTTP transport performance by adjusting gzip compression level.*
+* **Spark: Add support for Spark 4 in streaming tests** [`#3925`](https://github.com/OpenLineage/OpenLineage/pull/3925) [@SalvadorRomo](https://github.com/SalvadorRomo)  
+  *Extend streaming integration tests to support Spark 4.0.*
+
+### Fixed
+
+* **Spark: Improve performance of column level lineage** [`#3946`](https://github.com/OpenLineage/OpenLineage/pull/3946) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Limit memory consumption, provide limits for the amount of dependencies processed (1M) and input fields returned in the facet (100K). Turns on dataset lineage by default.*
+* **Spark: Add schema size limit for column level lineage processing** [`#3949`](https://github.com/OpenLineage/OpenLineage/pull/3949) [@ddebowczyk92](https://github.com/ddebowczyk92)  
+  *Add limits to prevent performance issues with large schemas in column-level lineage processing.*
+* **Spark: Fix context factory for Spark 4** [`#3934`](https://github.com/OpenLineage/OpenLineage/pull/3934) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Fix context factory implementation for Spark 4.0 compatibility.*
+* **Spark: Fix LogicalRelation constructor compatibility for Spark 4** [`#3930`](https://github.com/OpenLineage/OpenLineage/pull/3930) [@yunchipang](https://github.com/yunchipang)  
+  *Fix LogicalRelation constructor to maintain compatibility with Spark 4.0.*
+* **Spark: Fix vendors parsing in SparkOpenLineageConfig** [`#3947`](https://github.com/OpenLineage/OpenLineage/pull/3947) [@ddebowczyk92](https://github.com/ddebowczyk92)  
+  *Fix parsing of vendor configurations in Spark OpenLineage configuration.*
+* **dbt: Use correct namespace for dbt externalQuery facet** [`#3953`](https://github.com/OpenLineage/OpenLineage/pull/3953) [@jroachgolf84](https://github.com/jroachgolf84)  
+  *Fix namespace handling in dbt external query facets.*
+* **Python: Fix tags configuration** [`#3943`](https://github.com/OpenLineage/OpenLineage/pull/3943) [@JDarDagran](https://github.com/JDarDagran)  
+  *Fix configuration handling for user-supplied tags in Python client.*
+
+## [1.36.0](https://github.com/OpenLineage/OpenLineage/compare/1.35.0...1.36.0) - 2025-07-22
 
 ### Added
 
 * **Spark: support Delta 4.0 and cover it with tests on Spark 4.0.** [`#3877`](https://github.com/OpenLineage/OpenLineage/pull/3877) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Fix failing tests for Spark 4.0. Make delta integration tests pass with Delta 4.0 on Spark 4.*
-* **Spark: bump minor versions 3.4.3 -> 3.4.4, 3.5.4 -> 3.5.6.** [`#3907`](https://github.com/OpenLineage/OpenLineage/pull/3907) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Bump tested Spark versions.*
 * **Spark: Add memory info to debug facet.** [`#3914`](https://github.com/OpenLineage/OpenLineage/pull/3914) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Extend DebugFacet with additional information on Spark's driver memory configuration and current memory usage.*
+* **Spark: Add new AlterTableCommandDatasetBuilder for Spark 4.0.** [`#3921`](https://github.com/OpenLineage/OpenLineage/pull/3921) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Add support for AlterTableCommand dataset building in Spark 4.0.*
+* **dbt: Add query IDs for dbt.** [`#3890`](https://github.com/OpenLineage/OpenLineage/pull/3890) [@jroachgolf84](https://github.com/jroachgolf84)  
+  *Add query ID tracking to dbt integration.*
+* **dbt: Add query ID capture in structured logs.** [`#3918`](https://github.com/OpenLineage/OpenLineage/pull/3918) [@mobuchowski](https://github.com/mobuchowski)  
+  *Capture query IDs from dbt structured logs for better traceability.*
+* **Python: Formalize dataset naming for Python client.** [`#3816`](https://github.com/OpenLineage/OpenLineage/pull/3816) [@ddebowczyk92](https://github.com/ddebowczyk92)  
+  *Formalize dataset naming conventions in Python client implementation.*
 
 ### Changed
+
+* **Spark: bump minor versions 3.4.3 -> 3.4.4, 3.5.4 -> 3.5.6.** [`#3907`](https://github.com/OpenLineage/OpenLineage/pull/3907) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Bump tested Spark versions.*
+* **Spark: Close OpenLineageClient in onApplicationEnd.** [`#3851`](https://github.com/OpenLineage/OpenLineage/pull/3851) [@dolfinus](https://github.com/dolfinus)  
+  *Ensure proper cleanup of OpenLineageClient when Spark application ends.*
+* **Python: Do not use f-strings with logging module.** [`#3895`](https://github.com/OpenLineage/OpenLineage/pull/3895) [@dolfinus](https://github.com/dolfinus)  
+  *Replace f-string usage in logging calls with proper logging formatting.*
+* **Python: Update protobuf version to be compatible with newer libraries.** [`#3899`](https://github.com/OpenLineage/OpenLineage/pull/3899) [@Shadi](https://github.com/Shadi)  
+  *Update protobuf dependency to maintain compatibility with newer library versions.*
+* **Website: Documentation for compatibility tests.** [`#3869`](https://github.com/OpenLineage/OpenLineage/pull/3869) [@mobuchowski](https://github.com/mobuchowski)  
+  *Add documentation explaining compatibility testing processes.*
 
 ### Fixed
 
 * **Spark: make visitors stateless - avoid memory leak.** [`#3902`](https://github.com/OpenLineage/OpenLineage/pull/3902) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Merge `SqlExecutionRDDVisitor` and `LogicalRDDVisitor` classes to avoid memory leak.*
+* **Spark: refactor iceberg handler.** [`#3909`](https://github.com/OpenLineage/OpenLineage/pull/3909) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Refactor Iceberg handler implementation for better maintainability.*
+* **Spark: retry exception on empty row.** [`#3908`](https://github.com/OpenLineage/OpenLineage/pull/3908) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Add retry logic for handling empty row exceptions.*
+* **Spark: fix Spark version for databricks test.** [`#3911`](https://github.com/OpenLineage/OpenLineage/pull/3911) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Fix Spark version configuration in Databricks test environment.*
+* **Flink: Fix connector of type kafka-upsert not identifying kafka topics correctly.** [`#3915`](https://github.com/OpenLineage/OpenLineage/pull/3915) [@fetta](https://github.com/fetta)  
+  *Fix kafka-upsert connector to properly identify kafka topics.*
+* **Airflow: Fail fast and reduce timeout for airflow tests.** [`#3905`](https://github.com/OpenLineage/OpenLineage/pull/3905) [@kacpermuda](https://github.com/kacpermuda)  
+  *Improve test performance by implementing fail-fast behavior and reduced timeouts.*
+* **dbt: more telemetry, fix quadratic file reading.** [`#3916`](https://github.com/OpenLineage/OpenLineage/pull/3916) [@mobuchowski](https://github.com/mobuchowski)  
+  *Improve telemetry collection and fix performance issues with file reading.*
+* **dbt: Fix dbt version.** [`#3894`](https://github.com/OpenLineage/OpenLineage/pull/3894) [@mobuchowski](https://github.com/mobuchowski)  
+  *Fix dbt version compatibility issues.*
+* **Python: Fix filenames for windows users.** [`#3889`](https://github.com/OpenLineage/OpenLineage/pull/3889) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Fix filename handling to work correctly on Windows systems.*
+* **Transport: Adjust log level when aliasing default_http transport.** [`#3897`](https://github.com/OpenLineage/OpenLineage/pull/3897) [@dolfinus](https://github.com/dolfinus)  
+  *Adjust logging level for transport aliasing messages.*
+* **Build: Improve comments and add some tests.** [`#3901`](https://github.com/OpenLineage/OpenLineage/pull/3901) [@kacpermuda](https://github.com/kacpermuda)  
+  *Improve code documentation and add additional test coverage.*
 
 ## [1.35.0](https://github.com/OpenLineage/OpenLineage/compare/1.34.0...1.35.0) - 2025-07-11
 

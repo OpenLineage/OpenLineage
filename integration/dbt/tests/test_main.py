@@ -56,6 +56,22 @@ def test_structured_logs(command_line: str, number_of_calls: int, monkeypatch):
             ],
             {"OPENLINEAGE_NAMESPACE": "dbt"},
             {
+                "args": [
+                    "dbt",
+                    "run",
+                    "--select",
+                    "orders",
+                    "--profiles-dir",
+                    "~/dbt/profiles-foo",
+                    "--project-dir",
+                    "~/dbt",
+                    "--target",
+                    "production",
+                    "--target-path",
+                    "dbt-target-1234",
+                    "--vars",
+                    '\'{"foo": "bar"}\'',
+                ],
                 "target": "production",
                 "project_dir": "~/dbt",
                 "profile_name": None,
@@ -112,4 +128,5 @@ def test_consume_structured_logs(command_line, os_envs, function_kwargs, monkeyp
         logger=mock.ANY,
         models=function_kwargs["models"],
         selector=function_kwargs["model_selector"],
+        openlineage_job_name=None,
     )

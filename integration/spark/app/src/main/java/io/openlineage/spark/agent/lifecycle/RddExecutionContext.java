@@ -145,9 +145,9 @@ class RddExecutionContext implements ExecutionContext {
    */
   private Field getConfigField(ResultStage resultStage) throws NoSuchFieldException {
     try {
-      return resultStage.func().getClass().getDeclaredField("config$1");
-    } catch (NoSuchFieldException e) {
       return resultStage.func().getClass().getDeclaredField("arg$1");
+    } catch (NoSuchFieldException e) {
+      return resultStage.func().getClass().getDeclaredField("config$1");
     }
   }
 
