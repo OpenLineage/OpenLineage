@@ -12,9 +12,9 @@ import static io.openlineage.client.utils.TransformationInfo.Subtypes.JOIN;
 import static io.openlineage.client.utils.TransformationInfo.Subtypes.SORT;
 import static io.openlineage.client.utils.TransformationInfo.Subtypes.WINDOW;
 
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
-import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;

@@ -4,13 +4,12 @@
 */
 package io.openlineage.hive.hooks;
 
+import io.openlineage.client.utils.TransformationInfo;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import io.openlineage.client.utils.TransformationInfo;
 import lombok.Getter;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.metadata.Table;

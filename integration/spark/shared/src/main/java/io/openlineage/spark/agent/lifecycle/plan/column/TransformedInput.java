@@ -6,9 +6,8 @@
 package io.openlineage.spark.agent.lifecycle.plan.column;
 
 import io.openlineage.client.utils.DatasetIdentifier;
-import java.util.Objects;
-
 import io.openlineage.client.utils.TransformationInfo;
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;

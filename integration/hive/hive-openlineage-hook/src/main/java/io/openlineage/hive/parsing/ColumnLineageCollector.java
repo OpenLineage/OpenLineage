@@ -10,8 +10,8 @@ import static io.openlineage.client.utils.TransformationInfo.Subtypes.JOIN;
 import static io.openlineage.client.utils.TransformationInfo.Subtypes.SORT;
 import static io.openlineage.client.utils.TransformationInfo.Subtypes.WINDOW;
 
-import io.openlineage.hive.hooks.OutputCLL;
 import io.openlineage.client.utils.TransformationInfo;
+import io.openlineage.hive.hooks.OutputCLL;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
