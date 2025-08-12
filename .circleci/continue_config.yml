@@ -1286,7 +1286,7 @@ jobs:
       - restore_cache:
           name: Restore pre-commit cache
           keys:
-            - v1.4-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
+            - v1.5-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
       - restore_cache:
           name: Restore pmd cache
           keys:
@@ -1303,21 +1303,21 @@ jobs:
           command: |
             python -m venv venv
             . venv/bin/activate
-            pip3 install pre-commit
+            pip3 install prek
             # Install the hooks now so that they'll be cached
-            pre-commit install-hooks
+            prek install-hooks
 
       - save_cache:
           paths:
             - ~/.cache/pre-commit
-          key: v1.4-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
+          key: v1.5-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
           name: Save pre-commit cache
 
       - run:
-          name: Run pre-commit
+          name: Run prek
           command: |
             . venv/bin/activate
-            pre-commit run --show-diff-on-failure --all-files
+            prek run --show-diff-on-failure --all-files
 
       - save_cache:
           paths:
