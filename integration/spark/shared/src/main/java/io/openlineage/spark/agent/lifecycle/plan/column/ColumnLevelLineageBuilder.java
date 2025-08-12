@@ -13,6 +13,7 @@ import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFieldsAddition
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.sql.ColumnMeta;
 import java.util.Collections;

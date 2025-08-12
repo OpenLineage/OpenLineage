@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
+import io.openlineage.client.utils.TransformationInfo;
 import java.util.List;
 import java.util.stream.Collectors;
 

@@ -6,12 +6,12 @@
 package io.openlineage.spark.agent.column;
 
 import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.*;
-import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.CONDITIONAL;
-import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.FILTER;
-import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.GROUP_BY;
-import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.JOIN;
-import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.SORT;
-import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.WINDOW;
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.CONDITIONAL;
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.FILTER;
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.GROUP_BY;
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.JOIN;
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.SORT;
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.WINDOW;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -20,7 +20,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Spark4CompatUtils;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
-import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.util.DerbyUtils;
 import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;

@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.lifecycle.plan.column;
+package io.openlineage.client.utils;
 
 import io.openlineage.client.OpenLineage;
 import java.util.Arrays;
@@ -91,8 +91,7 @@ public class TransformationInfo {
    * Method that simplifies the creation of {@link TransformationInfo} object representing {@link
    * Types#DIRECT}, {@link Subtypes#TRANSFORMATION} transformation.
    *
-   * @param isMasking - is transformation masking e.g. {@link
-   *     org.apache.spark.sql.catalyst.expressions.Sha1}
+   * @param isMasking - is transformation masking
    */
   public static TransformationInfo transformation(Boolean isMasking) {
     return isMasking ? TRANSFORMATION_MASKING : TRANSFORMATION_NON_MASKING;
@@ -108,8 +107,7 @@ public class TransformationInfo {
    * Method that simplifies the creation of {@link TransformationInfo} object representing {@link
    * Types#DIRECT}, {@link Subtypes#AGGREGATION} transformation.
    *
-   * @param isMasking - is transformation masking e.g. {@link
-   *     org.apache.spark.sql.catalyst.expressions.aggregate.Count}
+   * @param isMasking - is transformation masking
    */
   public static TransformationInfo aggregation(Boolean isMasking) {
     return isMasking ? AGGREGATION_MASKING : AGGREGATION_NON_MASKING;
