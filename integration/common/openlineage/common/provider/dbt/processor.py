@@ -20,13 +20,13 @@ from openlineage.client.facet_v2 import (
     data_quality_assertions_dataset,
     datasource_dataset,
     documentation_dataset,
+    external_query_run,
     job_type_job,
     output_statistics_output_dataset,
     processing_engine_run,
     schema_dataset,
     sql_job,
 )
-from openlineage.client.generated.external_query_run import ExternalQueryRunFacet
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet, ParentRunMetadata
 from openlineage.common.provider.dbt.utils import __version__ as openlineage_version
@@ -723,7 +723,7 @@ class DbtArtifactProcessor:
             run_facets["parent"] = self._dbt_run_metadata.to_openlineage()
 
         if query_id:
-            run_facets["externalQuery"] = ExternalQueryRunFacet(
+            run_facets["externalQuery"] = external_query_run.ExternalQueryRunFacet(
                 externalQueryId=query_id, source=self.dataset_namespace
             )
 

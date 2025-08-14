@@ -16,11 +16,11 @@ from openlineage.client.facet_v2 import (
 )
 from openlineage.client.facet_v2 import (
     error_message_run,
+    external_query_run,
     job_type_job,
     processing_engine_run,
     sql_job,
 )
-from openlineage.client.generated import external_query_run
 from openlineage.client.run import InputDataset
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet, ParentRunMetadata

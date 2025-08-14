@@ -3,8 +3,7 @@
 
 
 import pytest
-from openlineage.client.facet_v2 import processing_engine_run
-from openlineage.client.generated.external_query_run import ExternalQueryRunFacet
+from openlineage.client.facet_v2 import external_query_run, processing_engine_run
 from openlineage.client.uuid import generate_new_uuid
 from openlineage.common.provider.dbt.facets import DbtRunRunFacet, DbtVersionRunFacet
 from openlineage.common.provider.dbt.processor import Adapter, DbtArtifactProcessor
@@ -76,7 +75,9 @@ def test_get_query_id(
             version=DBT_VERSION,
             openlineageAdapterVersion=openlineage_version,
         ),
-        "externalQuery": ExternalQueryRunFacet(externalQueryId=QUERY_ID, source=dataset_namespace),
+        "externalQuery": external_query_run.ExternalQueryRunFacet(
+            externalQueryId=QUERY_ID, source=dataset_namespace
+        ),
     }
 
 

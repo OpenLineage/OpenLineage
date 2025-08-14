@@ -111,6 +111,21 @@ repos:
             client/python/openlineage/client/facet\.py |
             client/python/openlineage/client/run\.py
           )$
+      - id: check-python-generated-imports
+        name: Check python imports from generated modules
+        description: "Checks if objects are correctly imported in python from event_v2 and facet_v2 modules"
+        language: pygrep
+        entry: "from openlineage.client.generated"
+        files: "\\.py$"
+        # Exclude internal modules that must import this way
+        exclude: |
+          (?x)^(
+            client/python/openlineage/client/generated/.* |
+            client/python/openlineage/client/facet_v2\.py |
+            client/python/openlineage/client/event_v2\.py |
+            client/python/openlineage/client/generator/base\.py |
+            client/python/tests/generator/test_base\.py
+          )$
       - id: prettier
         name: prettier
         description: ""
