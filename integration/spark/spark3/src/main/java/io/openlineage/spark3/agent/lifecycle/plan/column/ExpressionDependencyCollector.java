@@ -33,6 +33,7 @@ import org.apache.spark.sql.catalyst.expressions.Alias;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.CaseWhen;
+import org.apache.spark.sql.catalyst.expressions.Coalesce;
 import org.apache.spark.sql.catalyst.expressions.Crc32;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
@@ -212,6 +213,8 @@ public class ExpressionDependencyCollector {
       handleExpression((CaseWhen) expr, outputExprId, transformationInfo, builder);
     } else if (expr instanceof If) {
       handleExpression((If) expr, outputExprId, transformationInfo, builder);
+    } else if (expr instanceof Coalesce) {
+      handleExpression((Coalesce) expr, outputExprId, transformationInfo, builder);
     } else if (expr instanceof AggregateExpression) {
       handleExpression((AggregateExpression) expr, outputExprId, transformationInfo, builder);
     } else if (expr instanceof WindowExpression) {
@@ -305,6 +308,23 @@ public class ExpressionDependencyCollector {
     if (cw.elseValue().isDefined()) {
       traverseExpression(cw.elseValue().get(), outputExprId, transformationInfo, builder);
     }
+  }
+
+  private static void handleExpression(
+      Coalesce expr,
+      ExprId outputExprId,
+      TransformationInfo transformationInfo,
+      ColumnLevelLineageBuilder builder) {
+    ScalaConversionUtils.fromSeq(expr.children())
+        .forEach(
+            e -> {
+              traverseExpression(
+                  e,
+                  outputExprId,
+                  transformationInfo.merge(TransformationInfo.indirect(CONDITIONAL)),
+                  builder);
+              traverseExpression(e, outputExprId, transformationInfo, builder);
+            });
   }
 
   private static void handleExpression(

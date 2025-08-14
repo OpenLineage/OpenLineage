@@ -277,6 +277,70 @@ class ColumnLineageWithTransformationTypesTest {
   }
 
   @Test
+  void simpleQueryWithNullIfConditional() {
+    createTable("t1", "a;int", "b;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(getSchemaFacet("cond;int"), "SELECT NULLIF(a, b) AS cond FROM t1");
+    assertCountColumnDependencies(facet, 3);
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(CONDITIONAL));
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(CONDITIONAL));
+    assertCountDatasetDependencies(facet, 0);
+  }
+
+  @Test
+  void simpleQueryWithNvlConditional() {
+    createTable("t1", "a;int", "b;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(getSchemaFacet("cond;int"), "SELECT NVL(a, b) AS cond FROM t1");
+    assertCountColumnDependencies(facet, 4);
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(CONDITIONAL));
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.identity());
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(CONDITIONAL));
+    assertCountDatasetDependencies(facet, 0);
+  }
+
+  @Test
+  void simpleQueryWithNvl2Conditional() {
+    createTable("t1", "a;int", "b;int", "c;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(getSchemaFacet("cond;int"), "SELECT NVL2(a, b, c) AS cond FROM t1");
+    assertCountColumnDependencies(facet, 3);
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(CONDITIONAL));
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.identity());
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "c", TransformationInfo.identity());
+    assertCountDatasetDependencies(facet, 0);
+  }
+
+  @Test
+  void simpleQueryWithCoalesceConditional() {
+    createTable("t1", "a;int", "b;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(getSchemaFacet("cond;int"), "SELECT coalesce(a, b, 0) AS cond FROM t1");
+    assertCountColumnDependencies(facet, 4);
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(CONDITIONAL));
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.identity());
+    assertColumnDependsOnType(
+        facet, "cond", FILE, T1_EXPECTED_NAME, "b", TransformationInfo.indirect(CONDITIONAL));
+    assertCountDatasetDependencies(facet, 0);
+  }
+
+  @Test
   void simpleQueryExplode() {
     createTable("t1", "a;string");
     OpenLineage.ColumnLineageDatasetFacet facet =

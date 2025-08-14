@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.utils.TransformationInfo;
@@ -26,6 +27,7 @@ import org.apache.spark.sql.catalyst.expressions.And;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.BinaryExpression;
 import org.apache.spark.sql.catalyst.expressions.CaseWhen;
+import org.apache.spark.sql.catalyst.expressions.Coalesce;
 import org.apache.spark.sql.catalyst.expressions.Descending$;
 import org.apache.spark.sql.catalyst.expressions.EqualTo;
 import org.apache.spark.sql.catalyst.expressions.Explode;
@@ -488,6 +490,26 @@ class ExpressionDependencyCollectorTest {
         .addDependency(rootAliasExprId, exprId1, TransformationInfo.aggregation());
     verify(builder, times(1))
         .addDependency(rootAliasExprId, exprId2, TransformationInfo.aggregation());
+  }
+
+  @Test
+  void testCollectCoalesceExpressions() {
+    Coalesce coalesceExpr =
+        new Coalesce(getExpressionSeq((Expression) expression1, (Expression) expression2));
+    Alias res = alias(exprId3, "res", coalesceExpr);
+    Project project = new Project(getNamedExpressionSeq(res), mock(LogicalPlan.class));
+    LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
+    ExpressionDependencyCollector.collect(context, plan);
+
+    verify(builder, times(1))
+        .addDependency(
+            exprId3, exprId1, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
+    verify(builder, times(1))
+        .addDependency(
+            exprId3, exprId2, TransformationInfo.indirect(TransformationInfo.Subtypes.CONDITIONAL));
+    verify(builder, times(1)).addDependency(exprId3, exprId1, TransformationInfo.identity());
+    verify(builder, times(1)).addDependency(exprId3, exprId2, TransformationInfo.identity());
+    verifyNoMoreInteractions(builder);
   }
 
   private static Seq<NamedExpression> getNamedExpressionSeq(NamedExpression... expressions) {
