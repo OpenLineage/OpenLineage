@@ -4,6 +4,7 @@
 */
 package io.openlineage.hive.hooks;
 
+import io.openlineage.client.utils.TransformationInfo;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

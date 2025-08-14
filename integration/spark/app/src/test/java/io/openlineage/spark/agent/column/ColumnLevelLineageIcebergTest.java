@@ -5,9 +5,9 @@
 
 package io.openlineage.spark.agent.column;
 
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.FILTER;
 import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
 import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.*;
-import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.FILTER;
 import static org.apache.spark.sql.functions.col;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -18,12 +18,12 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.Spark4CompatUtils;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.DatasetBuilderFactoryProvider;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
-import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
 import io.openlineage.spark.agent.util.DerbyUtils;
 import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;

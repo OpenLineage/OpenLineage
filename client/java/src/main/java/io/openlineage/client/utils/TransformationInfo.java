@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark.agent.lifecycle.plan.column;
+package io.openlineage.client.utils;
 
 import io.openlineage.client.OpenLineage;
 import java.util.Arrays;
@@ -80,6 +80,7 @@ public class TransformationInfo {
   public static TransformationInfo identity() {
     return TRANSFORMATION_IDENTITY;
   }
+
   /**
    * Method that simplifies the creation of an {@link TransformationInfo} object representing
    * non-masking, {@link Types#DIRECT}, {@link Subtypes#TRANSFORMATION} transformation.
@@ -87,16 +88,17 @@ public class TransformationInfo {
   public static TransformationInfo transformation() {
     return TRANSFORMATION_NON_MASKING;
   }
+
   /**
    * Method that simplifies the creation of {@link TransformationInfo} object representing {@link
    * Types#DIRECT}, {@link Subtypes#TRANSFORMATION} transformation.
    *
-   * @param isMasking - is transformation masking e.g. {@link
-   *     org.apache.spark.sql.catalyst.expressions.Sha1}
+   * @param isMasking - is transformation masking
    */
   public static TransformationInfo transformation(Boolean isMasking) {
     return isMasking ? TRANSFORMATION_MASKING : TRANSFORMATION_NON_MASKING;
   }
+
   /**
    * Method that simplifies the creation of an {@link TransformationInfo} object representing
    * non-masking, {@link Types#DIRECT}, {@link Subtypes#AGGREGATION} transformation.
@@ -104,16 +106,17 @@ public class TransformationInfo {
   public static TransformationInfo aggregation() {
     return AGGREGATION_NON_MASKING;
   }
+
   /**
    * Method that simplifies the creation of {@link TransformationInfo} object representing {@link
    * Types#DIRECT}, {@link Subtypes#AGGREGATION} transformation.
    *
-   * @param isMasking - is transformation masking e.g. {@link
-   *     org.apache.spark.sql.catalyst.expressions.aggregate.Count}
+   * @param isMasking - is transformation masking
    */
   public static TransformationInfo aggregation(Boolean isMasking) {
     return isMasking ? AGGREGATION_MASKING : AGGREGATION_NON_MASKING;
   }
+
   /**
    * Method that simplifies the creation of {@link TransformationInfo} object representing
    * non-masking, {@link Types#INDIRECT} transformation.
@@ -125,6 +128,7 @@ public class TransformationInfo {
   public static TransformationInfo indirect(Subtypes subType) {
     return INDIRECT_NON_MASKING_MAP.get(subType);
   }
+
   /**
    * Method that simplifies the creation of {@link TransformationInfo} object representing {@link
    * Types#INDIRECT} transformation.
@@ -154,6 +158,7 @@ public class TransformationInfo {
   public int hashCode() {
     return Objects.hash(type, subType, description, masking);
   }
+
   /**
    * Merges current {@link TransformationInfo} with another e.g. given two dependencies with
    * transformation types a -> b, t1 and b -> c, t2 the result of merge is transformation type for
