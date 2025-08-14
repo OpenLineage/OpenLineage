@@ -12,13 +12,8 @@ import attr
 import pytest
 from openlineage.client import event_v2
 from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions, OpenLineageConfig
+from openlineage.client.facet_v2 import environment_variables_run, tags_job, tags_run
 from openlineage.client.facets import FacetsConfig
-from openlineage.client.generated.environment_variables_run import (
-    EnvironmentVariable,
-    EnvironmentVariablesRunFacet,
-)
-from openlineage.client.generated.tags_job import TagsJobFacet, TagsJobFacetFields
-from openlineage.client.generated.tags_run import TagsRunFacet, TagsRunFacetFields
 from openlineage.client.run import (
     SCHEMA_URL,
     Dataset,
@@ -520,8 +515,10 @@ def test_add_environment_facets():
     modified_event = client.add_environment_facets(event)
 
     assert "environmentVariables" in modified_event.run.facets
-    assert modified_event.run.facets["environmentVariables"] == EnvironmentVariablesRunFacet(
-        [EnvironmentVariable(name="ENV_VAR_1", value="value1")]
+    assert modified_event.run.facets[
+        "environmentVariables"
+    ] == environment_variables_run.EnvironmentVariablesRunFacet(
+        [environment_variables_run.EnvironmentVariable(name="ENV_VAR_1", value="value1")]
     )
 
     event2 = event_v2.RunEvent(
@@ -536,8 +533,10 @@ def test_add_environment_facets():
     modified_event2 = client.add_environment_facets(event2)
 
     assert "environmentVariables" in modified_event2.run.facets
-    assert modified_event2.run.facets["environmentVariables"] == EnvironmentVariablesRunFacet(
-        [EnvironmentVariable(name="ENV_VAR_1", value="value1")]
+    assert modified_event2.run.facets[
+        "environmentVariables"
+    ] == environment_variables_run.EnvironmentVariablesRunFacet(
+        [environment_variables_run.EnvironmentVariable(name="ENV_VAR_1", value="value1")]
     )
 
 
@@ -776,7 +775,9 @@ def test_add_environment_facets_with_custom_env_var(mock_resolve_transport) -> N
     client.emit(event)
     assert mock_transport.emit.call_args[0][0].run.facets[
         "environmentVariables"
-    ] == EnvironmentVariablesRunFacet([EnvironmentVariable(name="CUSTOM_ENV_VAR", value="custom_value")])
+    ] == environment_variables_run.EnvironmentVariablesRunFacet(
+        [environment_variables_run.EnvironmentVariable(name="CUSTOM_ENV_VAR", value="custom_value")]
+    )
 
     mock_transport.emit.reset_mock()
     assert mock_transport.emit.call_args is None
@@ -791,7 +792,9 @@ def test_add_environment_facets_with_custom_env_var(mock_resolve_transport) -> N
     client.emit(event2)
     assert mock_transport.emit.call_args[0][0].run.facets[
         "environmentVariables"
-    ] == EnvironmentVariablesRunFacet([EnvironmentVariable(name="CUSTOM_ENV_VAR", value="custom_value")])
+    ] == environment_variables_run.EnvironmentVariablesRunFacet(
+        [environment_variables_run.EnvironmentVariable(name="CUSTOM_ENV_VAR", value="custom_value")]
+    )
 
 
 @patch.dict(
@@ -1109,8 +1112,8 @@ def test_client_creates_new_job_tag_facet(transport, run_event_multi):
     }
 
     tags = [
-        TagsJobFacetFields("environment", "PRODUCTION", "USER"),
-        TagsJobFacetFields("pipeline", "SALES", "USER"),
+        tags_job.TagsJobFacetFields("environment", "PRODUCTION", "USER"),
+        tags_job.TagsJobFacetFields("pipeline", "SALES", "USER"),
     ]
 
     with patch.dict(os.environ, tag_environment_variables):
@@ -1129,15 +1132,15 @@ def test_client_updates_existing_job_tags_facet(transport, run_event_multi):
     }
 
     existing_tags = [
-        TagsJobFacetFields("environment", "STAGING", "USER"),
-        TagsJobFacetFields("foo", "bar", "USER"),
+        tags_job.TagsJobFacetFields("environment", "STAGING", "USER"),
+        tags_job.TagsJobFacetFields("foo", "bar", "USER"),
     ]
-    run_event_multi.job.facets["tags"] = TagsJobFacet(tags=existing_tags)
+    run_event_multi.job.facets["tags"] = tags_job.TagsJobFacet(tags=existing_tags)
 
     tags = [
-        TagsJobFacetFields("foo", "bar", "USER"),
-        TagsJobFacetFields("environment", "PRODUCTION", "USER"),
-        TagsJobFacetFields("pipeline", "SALES", "USER"),
+        tags_job.TagsJobFacetFields("foo", "bar", "USER"),
+        tags_job.TagsJobFacetFields("environment", "PRODUCTION", "USER"),
+        tags_job.TagsJobFacetFields("pipeline", "SALES", "USER"),
     ]
 
     with patch.dict(os.environ, tag_environment_variables):
@@ -1156,8 +1159,8 @@ def test_client_creates_new_run_tags_facet(transport, run_event_multi):
     }
 
     tags = [
-        TagsRunFacetFields("environment", "PRODUCTION", "USER"),
-        TagsRunFacetFields("pipeline", "SALES", "USER"),
+        tags_run.TagsRunFacetFields("environment", "PRODUCTION", "USER"),
+        tags_run.TagsRunFacetFields("pipeline", "SALES", "USER"),
     ]
 
     with patch.dict(os.environ, tag_environment_variables):
@@ -1176,16 +1179,16 @@ def test_client_updates_existing_run_tags_facet(transport, run_event_multi):
     }
 
     existing_tags = [
-        TagsRunFacetFields("ENVIRONMENT", "STAGING", "USER"),
-        TagsRunFacetFields("foo", "bar", "USER"),
+        tags_run.TagsRunFacetFields("ENVIRONMENT", "STAGING", "USER"),
+        tags_run.TagsRunFacetFields("foo", "bar", "USER"),
     ]
-    run_event_multi.run.facets["tags"] = TagsRunFacet(tags=existing_tags)
+    run_event_multi.run.facets["tags"] = tags_run.TagsRunFacet(tags=existing_tags)
 
     # One existing tag (not updated), one existing tag (updated), one new tag from the user
     tags = [
-        TagsRunFacetFields("foo", "bar", "USER"),
-        TagsRunFacetFields("ENVIRONMENT", "PRODUCTION", "USER"),
-        TagsRunFacetFields("pipeline", "SALES", "USER"),
+        tags_run.TagsRunFacetFields("foo", "bar", "USER"),
+        tags_run.TagsRunFacetFields("ENVIRONMENT", "PRODUCTION", "USER"),
+        tags_run.TagsRunFacetFields("pipeline", "SALES", "USER"),
     ]
 
     with patch.dict(os.environ, tag_environment_variables):
@@ -1204,15 +1207,15 @@ def test_client_keeps_key_case_for_existing_tags(transport, run_event_multi):
     }
 
     tags = [
-        TagsRunFacetFields("environment", "STAGING", "USER"),
-        TagsRunFacetFields("PIPELINE", "FINANCE", "USER"),
+        tags_run.TagsRunFacetFields("environment", "STAGING", "USER"),
+        tags_run.TagsRunFacetFields("PIPELINE", "FINANCE", "USER"),
     ]
 
-    run_event_multi.run.facets["tags"] = TagsRunFacet(tags=tags)
+    run_event_multi.run.facets["tags"] = tags_run.TagsRunFacet(tags=tags)
 
     tags = [
-        TagsRunFacetFields("environment", "PRODUCTION", "USER"),
-        TagsRunFacetFields("PIPELINE", "SALES", "USER"),
+        tags_run.TagsRunFacetFields("environment", "PRODUCTION", "USER"),
+        tags_run.TagsRunFacetFields("PIPELINE", "SALES", "USER"),
     ]
 
     with patch.dict(os.environ, tag_environment_variables):
@@ -1235,8 +1238,8 @@ def test_client_creates_tag_facets_for_job_events(transport, job_event_multi):
     }
 
     tags = [
-        TagsJobFacetFields("environment", "production", "USER"),
-        TagsJobFacetFields("pipeline", "sales", "USER"),
+        tags_job.TagsJobFacetFields("environment", "production", "USER"),
+        tags_job.TagsJobFacetFields("pipeline", "sales", "USER"),
     ]
 
     with patch.dict(os.environ, tag_environment_variables):
@@ -1260,8 +1263,8 @@ def test_client_does_not_update_run_tags_for_job_events(transport, job_event_mul
     }
 
     tags = [
-        TagsJobFacetFields("environment", "production", "USER"),
-        TagsJobFacetFields("pipeline", "sales", "USER"),
+        tags_job.TagsJobFacetFields("environment", "production", "USER"),
+        tags_job.TagsJobFacetFields("pipeline", "sales", "USER"),
     ]
 
     with patch.dict(os.environ, tag_environment_variables):

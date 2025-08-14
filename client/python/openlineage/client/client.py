@@ -12,15 +12,9 @@ from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 import attr
 import yaml
 from openlineage.client import event_v2
+from openlineage.client.facet_v2 import environment_variables_run, tags_job, tags_run
 from openlineage.client.facets import FacetsConfig
 from openlineage.client.filter import Filter, FilterConfig, create_filter
-from openlineage.client.generated.environment_variables_run import (
-    EnvironmentVariable,
-    EnvironmentVariablesRunFacet,
-)
-from openlineage.client.generated.tags_job import TagsJobFacet, TagsJobFacetFields
-from openlineage.client.generated.tags_run import TagsRunFacet, TagsRunFacetFields
-from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 from openlineage.client.serde import Serde
 from openlineage.client.tags import TagsConfig
 from openlineage.client.transport import (
@@ -31,6 +25,10 @@ from openlineage.client.transport import (
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
 from openlineage.client.utils import deep_merge_dicts
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 
 if TYPE_CHECKING:
     from requests import Session
@@ -424,9 +422,10 @@ class OpenLineageClient:
             env_vars := self._collect_environment_variables()
         ):
             event.run.facets = event.run.facets or {}
-            event.run.facets["environmentVariables"] = EnvironmentVariablesRunFacet(
+            event.run.facets["environmentVariables"] = environment_variables_run.EnvironmentVariablesRunFacet(
                 environmentVariables=[
-                    EnvironmentVariable(name=name, value=value) for name, value in env_vars.items()
+                    environment_variables_run.EnvironmentVariable(name=name, value=value)
+                    for name, value in env_vars.items()
                 ]
             )
         return event
@@ -450,29 +449,31 @@ class OpenLineageClient:
         """
         run_event_types = (RunEvent, event_v2.RunEvent)
         run_and_job_event_types = (RunEvent, event_v2.RunEvent, JobEvent, event_v2.JobEvent)
-        # tags_job = self.config.tags.job
-        tags_job = [TagsJobFacetFields(key, value, "USER") for (key, value) in self.config.tags.job.items()]
-        if isinstance(event, run_and_job_event_types) and tags_job:
+        job_tags_list = [
+            tags_job.TagsJobFacetFields(key, value, "USER") for (key, value) in self.config.tags.job.items()
+        ]
+        if isinstance(event, run_and_job_event_types) and job_tags_list:
             # Ensure facets exists
             event.job.facets = {} if not event.job.facets else event.job.facets
-            tags_facet = event.job.facets.get("tags", TagsJobFacet())
-            event.job.facets["tags"] = self._update_tag_facet(tags_facet, tags_job)  # type: ignore [arg-type, assignment]
+            tags_facet = event.job.facets.get("tags", tags_job.TagsJobFacet())
+            event.job.facets["tags"] = self._update_tag_facet(tags_facet, job_tags_list)  # type: ignore [arg-type, assignment]
 
-        # tags_run = self.config.tags.run
-        tags_run = [TagsRunFacetFields(key, value, "USER") for (key, value) in self.config.tags.run.items()]
-        if isinstance(event, run_event_types) and tags_run:
+        run_tags_list = [
+            tags_run.TagsRunFacetFields(key, value, "USER") for (key, value) in self.config.tags.run.items()
+        ]
+        if isinstance(event, run_event_types) and run_tags_list:
             # Ensure facets exists
             event.run.facets = {} if not event.run.facets else event.run.facets
-            tags_facet = event.run.facets.get("tags", TagsRunFacet())
-            event.run.facets["tags"] = self._update_tag_facet(tags_facet, tags_run)  # type: ignore [arg-type, assignment]
+            tags_facet = event.run.facets.get("tags", tags_run.TagsRunFacet())
+            event.run.facets["tags"] = self._update_tag_facet(tags_facet, run_tags_list)  # type: ignore [arg-type, assignment]
 
         return event
 
     @staticmethod
     def _update_tag_facet(
-        tags_facet: TagsJobFacet | TagsRunFacet,
-        user_tags: list[TagsJobFacetFields | TagsRunFacetFields],
-    ) -> TagsJobFacet | TagsRunFacet:
+        tags_facet: tags_job.TagsJobFacet | tags_run.TagsRunFacet,
+        user_tags: list[tags_job.TagsJobFacetFields | tags_run.TagsRunFacetFields],
+    ) -> tags_job.TagsJobFacet | tags_run.TagsRunFacet:
         """
         Handles updating tags in an existing tag facet
         """
