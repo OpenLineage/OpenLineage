@@ -9,6 +9,7 @@ from unittest import mock
 
 from attr import asdict, define
 from openlineage.client.client import OpenLineageClient
+from openlineage.client.constants import __version__ as OPENLINEAGE_CLIENT_VERSION
 from openlineage.client.event_v2 import (
     BaseEvent,
     InputDataset,
@@ -49,9 +50,10 @@ def test_optional_attributed_not_validated():
     nominal_time_run.NominalTimeRunFacet(nominalStartTime="2020-12-17T03:00:00.001Z")
 
 
-def test_custom_facet(mock_http_session_class, test_producer) -> None:
+@mock.patch("openlineage.client.client.OpenLineageClient.add_client_run_facet")
+def test_custom_facet(mocked_add_facet, mock_http_session_class, test_producer) -> None:
     mock_session_class, mock_client, mock_response = mock_http_session_class
-
+    mocked_add_facet.side_effect = lambda x: x  # Mock as no-op
     client = OpenLineageClient(url="http://example.com")
 
     @define
@@ -208,6 +210,7 @@ def test_full_core_event_serializes_properly(mock_http_session_class) -> None:
     with open(os.path.join(dirpath, "example_full_event.json")) as f:
         expected_event = json.load(f)
 
+    expected_event["run"]["facets"]["openlineageClient"]["version"] = OPENLINEAGE_CLIENT_VERSION
     assert expected_event == event_sent
 
 

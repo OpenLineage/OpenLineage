@@ -12,7 +12,8 @@ from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 import attr
 import yaml
 from openlineage.client import event_v2
-from openlineage.client.facet_v2 import environment_variables_run, tags_job, tags_run
+from openlineage.client.constants import __version__ as OPENLINEAGE_CLIENT_VERSION
+from openlineage.client.facet_v2 import environment_variables_run, openlineage_client_run, tags_job, tags_run
 from openlineage.client.facets import FacetsConfig
 from openlineage.client.filter import Filter, FilterConfig, create_filter
 from openlineage.client.serde import Serde
@@ -173,6 +174,7 @@ class OpenLineageClient:
             log.debug("OpenLineage event has been filtered out and will not be emitted.")
             return
 
+        event = self.add_client_run_facet(event)
         event = self.add_environment_facets(event)
         event = self.update_event_tags_facets(event)
 
@@ -414,6 +416,19 @@ class OpenLineageClient:
         # Overwrite if key already exists
         current[keys[-1]] = value
 
+    @staticmethod
+    def add_client_run_facet(event: Event) -> Event:
+        """
+        Adds client facet to the event object.
+        """
+        if isinstance(event, (RunEvent, event_v2.RunEvent)):
+            log.debug("Attaching OpenlineageClientRunFacet to OL event.")
+            event.run.facets = event.run.facets or {}
+            event.run.facets["openlineageClient"] = openlineage_client_run.OpenlineageClientRunFacet(
+                version=OPENLINEAGE_CLIENT_VERSION
+            )
+        return event
+
     def add_environment_facets(self, event: Event) -> Event:
         """
         Adds environment variables as facets to the event object.
@@ -421,6 +436,7 @@ class OpenLineageClient:
         if isinstance(event, (RunEvent, event_v2.RunEvent)) and (
             env_vars := self._collect_environment_variables()
         ):
+            log.debug("Attaching EnvironmentVariablesRunFacet to OL event.")
             event.run.facets = event.run.facets or {}
             event.run.facets["environmentVariables"] = environment_variables_run.EnvironmentVariablesRunFacet(
                 environmentVariables=[
@@ -453,6 +469,7 @@ class OpenLineageClient:
             tags_job.TagsJobFacetFields(key, value, "USER") for (key, value) in self.config.tags.job.items()
         ]
         if isinstance(event, run_and_job_event_types) and job_tags_list:
+            log.debug("Updating TagsJobFacet in OL event.")
             # Ensure facets exists
             event.job.facets = {} if not event.job.facets else event.job.facets
             tags_facet = event.job.facets.get("tags", tags_job.TagsJobFacet())
@@ -462,6 +479,7 @@ class OpenLineageClient:
             tags_run.TagsRunFacetFields(key, value, "USER") for (key, value) in self.config.tags.run.items()
         ]
         if isinstance(event, run_event_types) and run_tags_list:
+            log.debug("Updating TagsRunFacet in OL event.")
             # Ensure facets exists
             event.run.facets = {} if not event.run.facets else event.run.facets
             tags_facet = event.run.facets.get("tags", tags_run.TagsRunFacet())
