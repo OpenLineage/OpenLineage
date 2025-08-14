@@ -150,6 +150,10 @@
       redact_fields:
         - rowCount
         - size
+- module: openlineage_client_run
+  classes:
+    - class_name: OpenlineageClientRunFacet
+      redact_fields: []
 - module: ownership_dataset
   classes:
     - class_name: Owner

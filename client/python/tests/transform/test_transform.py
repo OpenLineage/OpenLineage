@@ -157,7 +157,11 @@ def test_client_with_transform_transport_emits(mocker: MockerFixture) -> None:
     )
 
 
-def test_client_with_transform_transport_emits_modified_event(mocker: MockerFixture) -> None:
+@patch("openlineage.client.client.OpenLineageClient.add_client_run_facet")
+def test_client_with_transform_transport_emits_modified_event(
+    mocked_add_facet, mocker: MockerFixture
+) -> None:
+    mocked_add_facet.side_effect = lambda x: x  # Mock as no-op
     session = mocker.patch("requests.Session")
     config = TransformConfig.from_dict(
         {
@@ -208,7 +212,9 @@ def test_client_with_transform_transport_emits_modified_event(mocker: MockerFixt
     )
 
 
+@patch("openlineage.client.client.OpenLineageClient.add_client_run_facet")
 def test_client_with_transform_transport_emits_modified_event_with_older_facets(
+    mocked_add_facet,
     mocker: MockerFixture,
 ) -> None:
     with warnings.catch_warnings():
@@ -219,6 +225,7 @@ def test_client_with_transform_transport_emits_modified_event_with_older_facets(
         class SomeOldRunFacet(OldBaseFacet):
             version: str = attr.ib()
 
+    mocked_add_facet.side_effect = lambda x: x  # Mock as no-op
     session = mocker.patch("requests.Session")
     config = TransformConfig.from_dict(
         {
@@ -322,9 +329,13 @@ def test_client_with_transform_transport_skips_emission_when_transformed_event_i
     transport.transport.session.post.assert_not_called()
 
 
-def test_client_with_transform_transport_emits_modified_deprecated_event(mocker: MockerFixture) -> None:
+@patch("openlineage.client.client.OpenLineageClient.add_client_run_facet")
+def test_client_with_transform_transport_emits_modified_deprecated_event(
+    mocked_add_facet, mocker: MockerFixture
+) -> None:
     from openlineage.client.run import Job, Run, RunEvent, RunState
 
+    mocked_add_facet.side_effect = lambda x: x  # Mock as no-op
     session = mocker.patch("requests.Session")
     config = TransformConfig.from_dict(
         {

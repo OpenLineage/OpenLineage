@@ -353,8 +353,12 @@ class TestHttpMock:
         call_args = mock_client.post.call_args
         assert call_args.kwargs["url"] == "http://backend:5000/custom/lineage"
 
-    def test_client_with_http_transport_emits_with_gzip_compression(self, mock_http_session_class):
+    @patch("openlineage.client.client.OpenLineageClient.add_client_run_facet")
+    def test_client_with_http_transport_emits_with_gzip_compression(
+        self, mocked_add_facet, mock_http_session_class
+    ):
         mock_session_class, mock_client, mock_response = mock_http_session_class
+        mocked_add_facet.side_effect = lambda x: x  # Mock as no-op
 
         config = HttpConfig.from_dict(
             {

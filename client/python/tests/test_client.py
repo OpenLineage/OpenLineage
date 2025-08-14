@@ -2,17 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import attr
 import pytest
 from openlineage.client import event_v2
 from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions, OpenLineageConfig
-from openlineage.client.facet_v2 import environment_variables_run, tags_job, tags_run
+from openlineage.client.constants import __version__ as OPENLINEAGE_CLIENT_VERSION
+from openlineage.client.facet_v2 import environment_variables_run, openlineage_client_run, tags_job, tags_run
 from openlineage.client.facets import FacetsConfig
 from openlineage.client.run import (
     SCHEMA_URL,
@@ -99,13 +101,6 @@ def test_client_sends_proper_json_with_minimal_run_event(mock_http_session_class
         ),
     )
 
-    body = (
-        '{"eventTime": "2021-11-03T10:53:52.427343", "eventType": "START", "inputs": [], "job": '
-        '{"facets": {}, "name": "job", "namespace": "openlineage"}, "outputs": [], '
-        '"producer": "producer", "run": {"facets": {}, "runId": '
-        f'"69f4acab-b87d-4fc0-b27b-8ea950370ff3"}}, "schemaURL": "{SCHEMA_URL}"}}'
-    )
-
     # Verify the post was called with correct parameters
     mock_client.post.assert_called_once()
     call_args = mock_client.post.call_args
@@ -114,8 +109,32 @@ def test_client_sends_proper_json_with_minimal_run_event(mock_http_session_class
     assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
 
     # Verify the content is the expected JSON
-    actual_content = call_args.kwargs["data"]
-    assert actual_content == body
+    actual_content = json.loads(call_args.kwargs["data"])
+    expected_content = {
+        "eventTime": "2021-11-03T10:53:52.427343",
+        "eventType": "START",
+        "inputs": [],
+        "job": {
+            "facets": {},
+            "name": "job",
+            "namespace": "openlineage",
+        },
+        "outputs": [],
+        "producer": "producer",
+        "run": {
+            "facets": {
+                "openlineageClient": {
+                    "_producer": ANY,
+                    "_schemaURL": ANY,
+                    "version": OPENLINEAGE_CLIENT_VERSION,
+                }
+            },
+            "runId": "69f4acab-b87d-4fc0-b27b-8ea950370ff3",
+        },
+        "schemaURL": SCHEMA_URL,
+    }
+
+    assert actual_content == expected_content
 
 
 def test_client_sends_proper_json_with_minimal_dataset_event(mock_http_session_class) -> None:
@@ -538,6 +557,44 @@ def test_add_environment_facets():
     ] == environment_variables_run.EnvironmentVariablesRunFacet(
         [environment_variables_run.EnvironmentVariable(name="ENV_VAR_1", value="value1")]
     )
+
+
+def test_add_client_run_facet():
+    client = OpenLineageClient()
+    client._config = OpenLineageConfig()
+    run = Run(runId=str(generate_new_uuid()))
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime="2021-11-03T10:53:52.427343",
+        run=run,
+        job=Job(name="name", namespace=""),
+        producer="",
+        schemaURL="",
+    )
+    event.run.facets = {}
+
+    modified_event = client.add_client_run_facet(event)
+
+    assert "openlineageClient" in modified_event.run.facets
+    assert modified_event.run.facets["openlineageClient"] == openlineage_client_run.OpenlineageClientRunFacet(
+        version=OPENLINEAGE_CLIENT_VERSION
+    )
+
+    event2 = event_v2.RunEvent(
+        eventType=event_v2.RunState.START,
+        eventTime="2021-11-03T10:53:52.427343",
+        run=run,
+        job=event_v2.Job(name="name", namespace=""),
+        producer="",
+    )
+    event2.run.facets = {}
+
+    modified_event2 = client.add_client_run_facet(event2)
+
+    assert "openlineageClient" in modified_event2.run.facets
+    assert modified_event2.run.facets[
+        "openlineageClient"
+    ] == openlineage_client_run.OpenlineageClientRunFacet(version=OPENLINEAGE_CLIENT_VERSION)
 
 
 @patch("openlineage.client.client.OpenLineageClient._find_yaml_config_path")
