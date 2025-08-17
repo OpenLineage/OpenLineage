@@ -12,7 +12,7 @@ plugins {
     id 'signing'
     id "com.adarshr.test-logger" version "3.2.0"
     id 'com.diffplug.spotless' version '7.0.2'
-    id "com.gradleup.shadow" version "8.3.8"
+    id "com.gradleup.shadow" version "9.0.2"
     id "pmd"
     id "io.freefair.lombok" version "8.14"
 }
@@ -23,7 +23,7 @@ ext {
 
 dependencies {
     implementation "com.google.cloud.datalineage:producerclient-java8:1.0.0"
-    implementation "com.google.cloud:google-cloud-datalineage:0.60.0"
+    implementation "com.google.cloud:google-cloud-datalineage:0.64.0"
 }
 
 apply from: '../transports.build.gradle'
