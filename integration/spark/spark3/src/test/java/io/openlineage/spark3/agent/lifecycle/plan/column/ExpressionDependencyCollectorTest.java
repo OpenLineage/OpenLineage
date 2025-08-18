@@ -75,6 +75,7 @@ import scala.collection.immutable.Seq;
 
 class ExpressionDependencyCollectorTest {
 
+  final String ALIAS_NAME = "res";
   final String NAME1 = "name1";
   final String NAME2 = "name2";
   final String NAME3 = "name3";
@@ -318,7 +319,7 @@ class ExpressionDependencyCollectorTest {
             new EqualTo((Expression) expression1, (Expression) expression2),
             field(NAME3, exprId3),
             field("name4", exprId4));
-    Alias res = alias(exprId5, "res", ifExpr);
+    Alias res = alias(exprId5, ALIAS_NAME, ifExpr);
     Project project = new Project(getNamedExpressionSeq(res), mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
     ExpressionDependencyCollector.collect(context, plan);
@@ -399,7 +400,7 @@ class ExpressionDependencyCollectorTest {
             new EqualTo((Expression) expression1, (Expression) expression2),
             expression3,
             new Add(expression3, new Literal(1, IntegerType$.MODULE$)));
-    Alias res = alias(exprId5, "res", ifExpr);
+    Alias res = alias(exprId5, ALIAS_NAME, ifExpr);
     Project project = new Project(getNamedExpressionSeq(res), mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
     ExpressionDependencyCollector.collect(context, plan);
@@ -423,7 +424,7 @@ class ExpressionDependencyCollectorTest {
                     ScalaConversionUtils.toScalaTuple(
                         (Expression) expression1, (Expression) expression2))),
             ScalaConversionUtils.toScalaOption((Expression) field(NAME3, exprId3)));
-    Alias res = alias(exprId4, "res", caseWhen);
+    Alias res = alias(exprId4, ALIAS_NAME, caseWhen);
     Project project = new Project(getNamedExpressionSeq(res), mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
     ExpressionDependencyCollector.collect(context, plan);
@@ -443,7 +444,7 @@ class ExpressionDependencyCollectorTest {
             field(NAME3, exprId3),
             new Sha1(field("name4", exprId4)));
 
-    Alias res = alias(exprId5, "name5", ifExpr);
+    Alias res = alias(exprId5, ALIAS_NAME, ifExpr);
 
     Project project = new Project(getNamedExpressionSeq(res), mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
@@ -496,7 +497,7 @@ class ExpressionDependencyCollectorTest {
   void testCollectCoalesceExpressions() {
     Coalesce coalesceExpr =
         new Coalesce(getExpressionSeq((Expression) expression1, (Expression) expression2));
-    Alias res = alias(exprId3, "res", coalesceExpr);
+    Alias res = alias(exprId3, ALIAS_NAME, coalesceExpr);
     Project project = new Project(getNamedExpressionSeq(res), mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
     ExpressionDependencyCollector.collect(context, plan);
