@@ -76,7 +76,7 @@ public final class OpenLineageSql {
   public static Optional<String> loadError = Optional.empty();
 
   private static void loadNativeLibrary(String libName) throws IOException {
-    String fullName = "io/openlineage/sql/" + libName;
+    String fullName = "shaded/io/openlineage/sql/" + libName;
 
     URL url = OpenLineageSql.class.getResource("/" + fullName);
     if (url == null) {

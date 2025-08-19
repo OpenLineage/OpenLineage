@@ -30,7 +30,7 @@ trait AsJavaObject {
 
 impl AsJavaObject for rust_impl::SqlMeta {
     fn java_class_name() -> &'static str {
-        "io/openlineage/sql/SqlMeta"
+        "shaded/io/openlineage/sql/SqlMeta"
     }
 
     fn ctor_signature() -> &'static str {
@@ -84,7 +84,7 @@ impl AsJavaObject for rust_impl::SqlMeta {
 
 impl AsJavaObject for rust_impl::QuoteStyle {
     fn java_class_name() -> &'static str {
-        "io/openlineage/sql/QuoteStyle"
+        "shaded/io/openlineage/sql/QuoteStyle"
     }
 
     fn ctor_signature() -> &'static str {
@@ -115,11 +115,11 @@ impl AsJavaObject for rust_impl::QuoteStyle {
 
 impl AsJavaObject for rust_impl::DbTableMeta {
     fn java_class_name() -> &'static str {
-        "io/openlineage/sql/DbTableMeta"
+        "shaded/io/openlineage/sql/DbTableMeta"
     }
 
     fn ctor_signature() -> &'static str {
-        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/openlineage/sql/QuoteStyle;)V"
+        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lshaded/io/openlineage/sql/QuoteStyle;)V"
     }
 
     fn ctor_arguments<'a>(&self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
@@ -149,11 +149,11 @@ impl AsJavaObject for rust_impl::DbTableMeta {
 
 impl AsJavaObject for rust_impl::ColumnMeta {
     fn java_class_name() -> &'static str {
-        "io/openlineage/sql/ColumnMeta"
+        "shaded/io/openlineage/sql/ColumnMeta"
     }
 
     fn ctor_signature() -> &'static str {
-        "(Lio/openlineage/sql/DbTableMeta;Ljava/lang/String;)V"
+        "(Lshaded/io/openlineage/sql/DbTableMeta;Ljava/lang/String;)V"
     }
 
     fn ctor_arguments<'a>(&self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
@@ -169,11 +169,11 @@ impl AsJavaObject for rust_impl::ColumnMeta {
 
 impl AsJavaObject for rust_impl::ColumnLineage {
     fn java_class_name() -> &'static str {
-        "io/openlineage/sql/ColumnLineage"
+        "shaded/io/openlineage/sql/ColumnLineage"
     }
 
     fn ctor_signature() -> &'static str {
-        "(Lio/openlineage/sql/ColumnMeta;Ljava/util/List;)V"
+        "(Lshaded/io/openlineage/sql/ColumnMeta;Ljava/util/List;)V"
     }
 
     fn ctor_arguments<'a>(&self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
@@ -201,7 +201,7 @@ impl AsJavaObject for rust_impl::ColumnLineage {
 
 impl AsJavaObject for rust_impl::ExtractionError {
     fn java_class_name() -> &'static str {
-        "io/openlineage/sql/ExtractionError"
+        "shaded/io/openlineage/sql/ExtractionError"
     }
 
     fn ctor_signature() -> &'static str {
