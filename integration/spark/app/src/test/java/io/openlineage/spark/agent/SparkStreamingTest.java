@@ -148,11 +148,9 @@ class SparkStreamingTest {
     SparkSession spark =
         createSparkSession(server.getAddress().getPort(), "testKafkaSourceToKafkaSink");
 
-    String userDirProperty = System.getProperty("user.dir");
-    Path userDirPath = Paths.get(userDirProperty);
+    Path tmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
 
-    Path checkpointsDir =
-        userDirPath.resolve("tmp").resolve("checkpoints").resolve(testUuid.toString());
+    Path checkpointsDir = tmpDir.resolve("checkpoints").resolve(testUuid.toString());
 
     Dataset<Row> sourceStream =
         readKafkaTopic(spark, kafkaContainer.sourceTopic, bootstrapServers)
