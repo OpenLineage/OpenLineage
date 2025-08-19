@@ -81,13 +81,11 @@ public class SparkTestUtils {
   }
 
   static SparkSession createSparkSession(Integer httpServerPort, String appName) {
-    String userDirProperty = System.getProperty("user.dir");
-    Path userDirPath = Paths.get(userDirProperty);
+    Path tmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
     UUID testUuid = UUID.randomUUID();
 
-    Path derbySystemHome = userDirPath.resolve("tmp").resolve("derby").resolve(testUuid.toString());
-    Path sparkSqlWarehouse =
-        userDirPath.resolve("tmp").resolve("spark-sql-warehouse").resolve(testUuid.toString());
+    Path derbySystemHome = tmpDir.resolve("derby").resolve(testUuid.toString());
+    Path sparkSqlWarehouse = tmpDir.resolve("spark-sql-warehouse").resolve(testUuid.toString());
 
     return SparkSession.builder()
         .appName(appName)
