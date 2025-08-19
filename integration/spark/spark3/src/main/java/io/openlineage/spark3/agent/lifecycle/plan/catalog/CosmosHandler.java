@@ -5,6 +5,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
+import io.openlineage.client.dataset.Naming;
 import io.openlineage.client.utils.DatasetIdentifier;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
@@ -40,23 +41,19 @@ public class CosmosHandler implements RelationHandler {
   @Override
   public DatasetIdentifier getDatasetIdentifier(DataSourceV2Relation relation) {
 
-    String name;
-    String namespace;
-
+    Naming.AzureCosmosDB.AzureCosmosDBBuilder builder = Naming.AzureCosmosDB.builder();
     String relationName = relation.table().name().replace("com.azure.cosmos.spark.items.", "");
     int expectedParts = 3;
     String[] tableParts = relationName.split("\\.", expectedParts);
 
     if (tableParts.length != expectedParts) {
-      name = relationName;
-      namespace = "azurecosmos";
+      builder.table(relationName);
     } else {
-      namespace =
-          String.format(
-              "azurecosmos://%s.documents.azure.com/dbs/%s", tableParts[0], tableParts[1]);
-      name = String.format("/colls/%s", tableParts[2]);
+      builder.host(tableParts[0]);
+      builder.database(tableParts[1]);
+      builder.table(tableParts[2]);
     }
-    return new DatasetIdentifier(name, namespace);
+    return new DatasetIdentifier(builder.build());
   }
 
   @Override
