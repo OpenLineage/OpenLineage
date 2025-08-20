@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import attr
-from openlineage.client.generated.base import InputDatasetFacet
+from openlineage.client.generated.base import DatasetFacet
 from openlineage.client.utils import RedactMixin
 
 
@@ -29,7 +29,7 @@ class ColumnMetrics(RedactMixin):
 
 
 @attr.define
-class DataQualityMetricsInputDatasetFacet(InputDatasetFacet):
+class DataQualityMetricsDatasetFacet(DatasetFacet):
     columnMetrics: dict[str, ColumnMetrics]  # noqa: N815
     """The property key is the column name"""
 
@@ -47,7 +47,7 @@ class DataQualityMetricsInputDatasetFacet(InputDatasetFacet):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://openlineage.io/spec/facets/1-0-3/DataQualityMetricsInputDatasetFacet.json#/$defs/DataQualityMetricsInputDatasetFacet"
+        return "https://openlineage.io/spec/facets/1-0-0/DataQualityMetricsDatasetFacet.json#/$defs/DataQualityMetricsDatasetFacet"
 
     @lastUpdated.validator
     def lastupdated_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
