@@ -193,7 +193,7 @@ repos:
         description: "Runs the PMD static code analyzer - Spark."
         language: script
         entry: .pre_commit/run-pmd.sh --java-version 17 --ruleset-file integration/spark/pmd-openlineage.xml
-        files: ^integration/flink/.*\.java$
+        files: ^integration/spark/.*\.java$
         exclude: ".*test.*"
         require_serial: true
       - id: spotless-client-java
