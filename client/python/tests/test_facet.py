@@ -5,9 +5,11 @@ from __future__ import annotations
 import copy
 import json
 from typing import Any
+from unittest import mock
 
 import pytest
 from openlineage.client.client import OpenLineageClient
+from openlineage.client.constants import __version__ as OPENLINEAGE_CLIENT_VERSION
 from openlineage.client.facet import (
     BaseFacet,
     ColumnLineageDatasetFacet,
@@ -42,7 +44,19 @@ def event() -> dict[str, Any]:
         },
         "run": {
             "runId": "69f4acab-b87d-4fc0-b27b-8ea950370ff3",
-            "facets": {},
+            "facets": {
+                "tags": {
+                    "_producer": mock.ANY,
+                    "_schemaURL": mock.ANY,
+                    "tags": [
+                        {
+                            "key": "openlineage_client_version",
+                            "value": OPENLINEAGE_CLIENT_VERSION,
+                            "source": "OPENLINEAGE_CLIENT",
+                        }
+                    ],
+                }
+            },
         },
         "inputs": [],
         "outputs": [

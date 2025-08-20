@@ -2,16 +2,18 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import attr
 import pytest
 from openlineage.client import event_v2
 from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions, OpenLineageConfig
+from openlineage.client.constants import __version__ as OPENLINEAGE_CLIENT_VERSION
 from openlineage.client.facet_v2 import environment_variables_run, tags_job, tags_run
 from openlineage.client.facets import FacetsConfig
 from openlineage.client.run import (
@@ -99,13 +101,6 @@ def test_client_sends_proper_json_with_minimal_run_event(mock_http_session_class
         ),
     )
 
-    body = (
-        '{"eventTime": "2021-11-03T10:53:52.427343", "eventType": "START", "inputs": [], "job": '
-        '{"facets": {}, "name": "job", "namespace": "openlineage"}, "outputs": [], '
-        '"producer": "producer", "run": {"facets": {}, "runId": '
-        f'"69f4acab-b87d-4fc0-b27b-8ea950370ff3"}}, "schemaURL": "{SCHEMA_URL}"}}'
-    )
-
     # Verify the post was called with correct parameters
     mock_client.post.assert_called_once()
     call_args = mock_client.post.call_args
@@ -114,8 +109,38 @@ def test_client_sends_proper_json_with_minimal_run_event(mock_http_session_class
     assert call_args.kwargs["headers"]["Content-Type"] == "application/json"
 
     # Verify the content is the expected JSON
-    actual_content = call_args.kwargs["data"]
-    assert actual_content == body
+    actual_content = json.loads(call_args.kwargs["data"])
+    expected_content = {
+        "eventTime": "2021-11-03T10:53:52.427343",
+        "eventType": "START",
+        "inputs": [],
+        "job": {
+            "facets": {},
+            "name": "job",
+            "namespace": "openlineage",
+        },
+        "outputs": [],
+        "producer": "producer",
+        "run": {
+            "facets": {
+                "tags": {
+                    "_producer": ANY,
+                    "_schemaURL": ANY,
+                    "tags": [
+                        {
+                            "key": "openlineage_client_version",
+                            "value": OPENLINEAGE_CLIENT_VERSION,
+                            "source": "OPENLINEAGE_CLIENT",
+                        }
+                    ],
+                }
+            },
+            "runId": "69f4acab-b87d-4fc0-b27b-8ea950370ff3",
+        },
+        "schemaURL": SCHEMA_URL,
+    }
+
+    assert actual_content == expected_content
 
 
 def test_client_sends_proper_json_with_minimal_dataset_event(mock_http_session_class) -> None:
@@ -1105,6 +1130,33 @@ def job_event_multi(request):
     return event_type(**event_args)
 
 
+def test_run_tags():
+    tag_environment_variables = {"OPENLINEAGE__TAGS__RUN__ENVIRONMENT": "PRODUCTION"}
+
+    expected_tags = [
+        tags_run.TagsRunFacetFields("environment", "PRODUCTION", "USER"),
+        tags_run.TagsRunFacetFields(  # Added default run tag
+            "openlineage_client_version", OPENLINEAGE_CLIENT_VERSION, "OPENLINEAGE_CLIENT"
+        ),
+    ]
+
+    with patch.dict(os.environ, tag_environment_variables):
+        client = OpenLineageClient()
+        result = sorted(client._run_tags, key=lambda x: x.key)
+        assert result == expected_tags
+
+
+def test_job_tags():
+    tag_environment_variables = {"OPENLINEAGE__TAGS__JOB__ENVIRONMENT": "PRODUCTION"}
+
+    expected_tags = [tags_job.TagsJobFacetFields("environment", "PRODUCTION", "USER")]
+
+    with patch.dict(os.environ, tag_environment_variables):
+        client = OpenLineageClient()
+        result = sorted(client._job_tags, key=lambda x: x.key)
+        assert result == expected_tags
+
+
 def test_client_creates_new_job_tag_facet(transport, run_event_multi):
     tag_environment_variables = {
         "OPENLINEAGE__TAGS__JOB__ENVIRONMENT": "PRODUCTION",
@@ -1161,6 +1213,9 @@ def test_client_creates_new_run_tags_facet(transport, run_event_multi):
     tags = [
         tags_run.TagsRunFacetFields("environment", "PRODUCTION", "USER"),
         tags_run.TagsRunFacetFields("pipeline", "SALES", "USER"),
+        tags_run.TagsRunFacetFields(
+            "openlineage_client_version", OPENLINEAGE_CLIENT_VERSION, "OPENLINEAGE_CLIENT"
+        ),
     ]
 
     with patch.dict(os.environ, tag_environment_variables):
@@ -1184,11 +1239,14 @@ def test_client_updates_existing_run_tags_facet(transport, run_event_multi):
     ]
     run_event_multi.run.facets["tags"] = tags_run.TagsRunFacet(tags=existing_tags)
 
-    # One existing tag (not updated), one existing tag (updated), one new tag from the user
+    # One existing tag (not updated), one existing tag (updated), one new tag from the user, one default tag
     tags = [
         tags_run.TagsRunFacetFields("foo", "bar", "USER"),
         tags_run.TagsRunFacetFields("ENVIRONMENT", "PRODUCTION", "USER"),
         tags_run.TagsRunFacetFields("pipeline", "SALES", "USER"),
+        tags_run.TagsRunFacetFields(
+            "openlineage_client_version", OPENLINEAGE_CLIENT_VERSION, "OPENLINEAGE_CLIENT"
+        ),
     ]
 
     with patch.dict(os.environ, tag_environment_variables):
@@ -1216,6 +1274,9 @@ def test_client_keeps_key_case_for_existing_tags(transport, run_event_multi):
     tags = [
         tags_run.TagsRunFacetFields("environment", "PRODUCTION", "USER"),
         tags_run.TagsRunFacetFields("PIPELINE", "SALES", "USER"),
+        tags_run.TagsRunFacetFields(
+            "openlineage_client_version", OPENLINEAGE_CLIENT_VERSION, "OPENLINEAGE_CLIENT"
+        ),
     ]
 
     with patch.dict(os.environ, tag_environment_variables):

@@ -6,7 +6,7 @@ import datetime
 import os
 import warnings
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import attr
 import pytest
@@ -157,7 +157,9 @@ def test_client_with_transform_transport_emits(mocker: MockerFixture) -> None:
     )
 
 
-def test_client_with_transform_transport_emits_modified_event(mocker: MockerFixture) -> None:
+@patch.object(OpenLineageClient, "_run_tags", new_callable=PropertyMock)
+def test_client_with_transform_transport_emits_modified_event(mock_run_tags, mocker: MockerFixture) -> None:
+    mock_run_tags.return_value = []
     session = mocker.patch("requests.Session")
     config = TransformConfig.from_dict(
         {
@@ -208,7 +210,9 @@ def test_client_with_transform_transport_emits_modified_event(mocker: MockerFixt
     )
 
 
+@patch.object(OpenLineageClient, "_run_tags", new_callable=PropertyMock)
 def test_client_with_transform_transport_emits_modified_event_with_older_facets(
+    mock_run_tags,
     mocker: MockerFixture,
 ) -> None:
     with warnings.catch_warnings():
@@ -219,6 +223,7 @@ def test_client_with_transform_transport_emits_modified_event_with_older_facets(
         class SomeOldRunFacet(OldBaseFacet):
             version: str = attr.ib()
 
+    mock_run_tags.return_value = []
     session = mocker.patch("requests.Session")
     config = TransformConfig.from_dict(
         {
@@ -322,9 +327,13 @@ def test_client_with_transform_transport_skips_emission_when_transformed_event_i
     transport.transport.session.post.assert_not_called()
 
 
-def test_client_with_transform_transport_emits_modified_deprecated_event(mocker: MockerFixture) -> None:
+@patch.object(OpenLineageClient, "_run_tags", new_callable=PropertyMock)
+def test_client_with_transform_transport_emits_modified_deprecated_event(
+    mock_run_tags, mocker: MockerFixture
+) -> None:
     from openlineage.client.run import Job, Run, RunEvent, RunState
 
+    mock_run_tags.return_value = []
     session = mocker.patch("requests.Session")
     config = TransformConfig.from_dict(
         {
