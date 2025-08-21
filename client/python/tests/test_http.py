@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime
 import gzip
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 from openlineage.client import OpenLineageClient
@@ -353,8 +353,12 @@ class TestHttpMock:
         call_args = mock_client.post.call_args
         assert call_args.kwargs["url"] == "http://backend:5000/custom/lineage"
 
-    def test_client_with_http_transport_emits_with_gzip_compression(self, mock_http_session_class):
+    @patch.object(OpenLineageClient, "_run_tags", new_callable=PropertyMock)
+    def test_client_with_http_transport_emits_with_gzip_compression(
+        self, mock_run_tags, mock_http_session_class
+    ):
         mock_session_class, mock_client, mock_response = mock_http_session_class
+        mock_run_tags.return_value = []
 
         config = HttpConfig.from_dict(
             {
