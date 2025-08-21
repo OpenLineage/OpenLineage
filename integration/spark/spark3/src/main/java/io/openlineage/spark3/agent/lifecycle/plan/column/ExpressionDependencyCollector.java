@@ -16,6 +16,7 @@ import io.openlineage.client.utils.TransformationInfo;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.CreateTableAsSelectNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.GenerateNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
@@ -53,7 +54,6 @@ import org.apache.spark.sql.catalyst.expressions.XxHash64;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
-import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.Distinct;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.Join;
@@ -97,32 +97,30 @@ public class ExpressionDependencyCollector {
       Arrays.asList(
           new ProjectNodeVisitor(),
           new GenerateNodeVisitor(),
+          new CreateTableAsSelectNodeVisitor(),
           new UnionDependencyVisitor(),
           new IcebergMergeIntoDependencyVisitor());
 
   static void collect(ColumnLevelLineageContext context, LogicalPlan plan) {
     plan.foreach(
         node -> {
-          collectFromNode(context, node);
+          CustomCollectorsUtils.collectExpressionDependencies(context, node);
+          collectFromNode(context.getBuilder(), node);
           return scala.runtime.BoxedUnit.UNIT;
         });
   }
 
-  static void collectFromNode(ColumnLevelLineageContext context, LogicalPlan node) {
+  public static void collectFromNode(ColumnLevelLineageBuilder builder, LogicalPlan node) {
     expressionDependencyVisitors.stream()
         .filter(collector -> collector.isDefinedAt(node))
-        .forEach(collector -> collector.apply(node, context.getBuilder()));
+        .forEach(collector -> collector.apply(node, builder));
 
-    CustomCollectorsUtils.collectExpressionDependencies(context, node);
     List<NamedExpression> expressions = new LinkedList<>();
     List<Expression> datasetDependencies = new LinkedList<>();
     Optional<TransformationInfo> datasetTransformation = Optional.empty();
 
-    if (node instanceof CreateTableAsSelect
-        && (node.children() == null || node.children().isEmpty())) {
-      collectFromNode(context, ((CreateTableAsSelect) node).query());
-    } else if (node instanceof Distinct) {
-      collectFromNode(context, ((Distinct) node).child());
+    if (node instanceof Distinct) {
+      collectFromNode(builder, ((Distinct) node).child());
     } else if (node instanceof Aggregate) {
       Aggregate aggregate = (Aggregate) node;
 
@@ -152,22 +150,19 @@ public class ExpressionDependencyCollector {
           ScalaConversionUtils.<NamedExpression>fromSeq(((Window) node).windowExpressions()));
     } else if (node instanceof DataSourceV2Relation
         && ExtensionDataSourceV2Utils.hasQueryExtensionLineage((DataSourceV2Relation) node)) {
-      QueryRelationColumnLineageCollector.extractExpressionsFromQuery(context, node);
+      QueryRelationColumnLineageCollector.extractExpressionsFromQuery(builder, node);
     }
     expressions.stream()
         .forEach(
             expr ->
                 traverseExpression(
-                    (Expression) expr,
-                    expr.exprId(),
-                    TransformationInfo.identity(),
-                    context.getBuilder()));
+                    (Expression) expr, expr.exprId(), TransformationInfo.identity(), builder));
 
     datasetTransformation.ifPresent(
         dt -> {
           ExprId exprId = NamedExpression.newExprId();
-          context.getBuilder().addDatasetDependency(exprId);
-          datasetDependencies.forEach(e -> traverseExpression(e, exprId, dt, context.getBuilder()));
+          builder.addDatasetDependency(exprId);
+          datasetDependencies.forEach(e -> traverseExpression(e, exprId, dt, builder));
         });
   }
 
