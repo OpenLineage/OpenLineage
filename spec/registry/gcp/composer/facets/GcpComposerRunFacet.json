@@ -13,10 +13,6 @@
             "dagRunId": {
               "description": "The id of the DAG run",
               "type": "string"
-            },
-            "taskExecutionDate": {
-              "description": "Execution date of the task",
-              "type": "string"
             }
           },
           "required": [
