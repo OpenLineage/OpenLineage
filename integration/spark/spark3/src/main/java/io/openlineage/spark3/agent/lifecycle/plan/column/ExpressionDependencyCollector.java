@@ -17,6 +17,7 @@ import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilde
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.GenerateNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ProjectNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionDependencyVisitor;
@@ -31,7 +32,6 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.catalyst.expressions.Alias;
-import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.CaseWhen;
 import org.apache.spark.sql.catalyst.expressions.Coalesce;
@@ -56,7 +56,6 @@ import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.Distinct;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
-import org.apache.spark.sql.catalyst.plans.logical.Generate;
 import org.apache.spark.sql.catalyst.plans.logical.Join;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Sort;
@@ -97,6 +96,7 @@ public class ExpressionDependencyCollector {
   private static final List<ExpressionDependencyVisitor> expressionDependencyVisitors =
       Arrays.asList(
           new ProjectNodeVisitor(),
+          new GenerateNodeVisitor(),
           new UnionDependencyVisitor(),
           new IcebergMergeIntoDependencyVisitor());
 
@@ -118,9 +118,7 @@ public class ExpressionDependencyCollector {
     List<Expression> datasetDependencies = new LinkedList<>();
     Optional<TransformationInfo> datasetTransformation = Optional.empty();
 
-    if (node instanceof Generate) {
-      collectFromGenerate(context, (Generate) node);
-    } else if (node instanceof CreateTableAsSelect
+    if (node instanceof CreateTableAsSelect
         && (node.children() == null || node.children().isEmpty())) {
       collectFromNode(context, ((CreateTableAsSelect) node).query());
     } else if (node instanceof Distinct) {
@@ -171,24 +169,6 @@ public class ExpressionDependencyCollector {
           context.getBuilder().addDatasetDependency(exprId);
           datasetDependencies.forEach(e -> traverseExpression(e, exprId, dt, context.getBuilder()));
         });
-  }
-
-  private static void collectFromGenerate(ColumnLevelLineageContext context, Generate node) {
-    List<Attribute> attributes = ScalaConversionUtils.<Attribute>fromSeq(node.generatorOutput());
-    // For some reason ((Generate) node).generator().children() gets "error: cannot find symbol"
-    // during compilation
-    // Casting Generator to Expression is hacky and ugly workaround
-    List<Expression> children =
-        ScalaConversionUtils.<Expression>fromSeq(((Expression) node.generator()).children());
-    attributes.forEach(
-        ne ->
-            children.forEach(
-                e ->
-                    traverseExpression(
-                        e,
-                        ne.exprId(),
-                        TransformationInfo.transformation(),
-                        context.getBuilder())));
   }
 
   public static void traverseExpression(

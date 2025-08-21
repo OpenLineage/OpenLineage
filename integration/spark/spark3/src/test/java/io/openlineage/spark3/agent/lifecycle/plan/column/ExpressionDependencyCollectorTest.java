@@ -30,7 +30,6 @@ import org.apache.spark.sql.catalyst.expressions.CaseWhen;
 import org.apache.spark.sql.catalyst.expressions.Coalesce;
 import org.apache.spark.sql.catalyst.expressions.Descending$;
 import org.apache.spark.sql.catalyst.expressions.EqualTo;
-import org.apache.spark.sql.catalyst.expressions.Explode;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.expressions.GreaterThan;
@@ -45,7 +44,6 @@ import org.apache.spark.sql.catalyst.expressions.SortDirection;
 import org.apache.spark.sql.catalyst.expressions.SortOrder;
 import org.apache.spark.sql.catalyst.expressions.SortOrder$;
 import org.apache.spark.sql.catalyst.expressions.SpecifiedWindowFrame$;
-import org.apache.spark.sql.catalyst.expressions.StringSplit;
 import org.apache.spark.sql.catalyst.expressions.WindowExpression;
 import org.apache.spark.sql.catalyst.expressions.WindowExpression$;
 import org.apache.spark.sql.catalyst.expressions.WindowSpecDefinition$;
@@ -55,7 +53,6 @@ import org.apache.spark.sql.catalyst.plans.JoinType;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
-import org.apache.spark.sql.catalyst.plans.logical.Generate;
 import org.apache.spark.sql.catalyst.plans.logical.Join;
 import org.apache.spark.sql.catalyst.plans.logical.JoinHint;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -96,23 +93,6 @@ class ExpressionDependencyCollectorTest {
     when(context.getBuilder()).thenReturn(builder);
     when(context.getOlContext()).thenReturn(mock(OpenLineageContext.class));
     exprIdAccumulator.reset();
-  }
-
-  @Test
-  void testCollectFromProjectPlan() {
-    Alias alias = alias(exprId3, NAME2, expression2);
-    Alias alias2 =
-        alias(exprId4, NAME3, new Add((Expression) expression1, (Expression) expression2));
-
-    Project project =
-        new Project(getNamedExpressionSeq(expression1, alias, alias2), mock(LogicalPlan.class));
-    LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
-
-    ExpressionDependencyCollector.collect(context, plan);
-
-    verify(builder, times(1)).addDependency(exprId3, exprId2, TransformationInfo.identity());
-    verify(builder, times(1)).addDependency(exprId4, exprId1, TransformationInfo.transformation());
-    verify(builder, times(1)).addDependency(exprId4, exprId2, TransformationInfo.transformation());
   }
 
   @Test
@@ -372,24 +352,6 @@ class ExpressionDependencyCollectorTest {
     verify(builder, times(1))
         .addDependency(
             exprId3, exprId2, TransformationInfo.indirect(TransformationInfo.Subtypes.WINDOW));
-  }
-
-  @Test
-  void testCollectFromGenerate() {
-    Explode explode = new Explode(new StringSplit(field(NAME1, exprId1), field(NAME2, exprId2)));
-    Generate generate =
-        new Generate(
-            explode,
-            ScalaConversionUtils.asScalaSeqEmpty(),
-            false,
-            ScalaConversionUtils.toScalaOption(""),
-            ScalaConversionUtils.fromList(Collections.singletonList(field(NAME3, exprId3))),
-            mock(LogicalPlan.class));
-    LogicalPlan plan = new CreateTableAsSelect(null, null, null, generate, null, null, false);
-    ExpressionDependencyCollector.collect(context, plan);
-
-    verify(builder, times(1)).addDependency(exprId3, exprId1, TransformationInfo.transformation());
-    verify(builder, times(1)).addDependency(exprId3, exprId2, TransformationInfo.transformation());
   }
 
   @Test
