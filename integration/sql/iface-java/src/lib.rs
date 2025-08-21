@@ -221,7 +221,7 @@ impl AsJavaObject for rust_impl::ExtractionError {
 }
 
 #[no_mangle]
-pub extern "system" fn Java_io_openlineage_sql_OpenLineageSql_parse(
+pub extern "system" fn Java_shaded_io_openlineage_sql_OpenLineageSql_parse(
     env: JNIEnv,
     _class: JClass,
     sql: JObject,
@@ -265,7 +265,7 @@ pub extern "system" fn Java_io_openlineage_sql_OpenLineageSql_parse(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_io_openlineage_sql_OpenLineageSql_provider(
+pub extern "system" fn Java_shaded_io_openlineage_sql_OpenLineageSql_provider(
     env: JNIEnv,
     _class: JClass,
 ) -> jstring {

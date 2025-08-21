@@ -20,8 +20,8 @@ import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContex
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
-import io.openlineage.sql.ColumnMeta;
-import io.openlineage.sql.DbTableMeta;
+import shaded.io.openlineage.sql.ColumnMeta;
+import shaded.io.openlineage.sql.DbTableMeta;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;

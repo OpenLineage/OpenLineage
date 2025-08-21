@@ -11,7 +11,7 @@ NC='\033[0m'
 
 BASEDIR=$(dirname "${BASH_SOURCE[0]}")
 ROOT=$BASEDIR/..
-RESOURCES=$ROOT/src/main/resources/io/openlineage/sql
+RESOURCES=$ROOT/src/main/resources/shaded/io/openlineage/sql
 SCRIPTS=$ROOT/script
 
 if [[ -d $ROOT/../target/debug ]]; then
@@ -74,4 +74,3 @@ else
     printf "Expected %s\n Got %s" "$EXPECTED" "$OUTPUT"
     exit 1
 fi
-

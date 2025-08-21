@@ -14,7 +14,7 @@ import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.sql.ColumnMeta;
+import shaded.io.openlineage.sql.ColumnMeta;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
