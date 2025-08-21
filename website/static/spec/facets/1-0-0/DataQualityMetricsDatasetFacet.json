@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-3/DataQualityMetricsInputDatasetFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/DataQualityMetricsDatasetFacet.json",
   "$defs": {
-    "DataQualityMetricsInputDatasetFacet": {
+    "DataQualityMetricsDatasetFacet": {
       "allOf": [
         {
-          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/InputDatasetFacet"
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/DatasetFacet"
         },
         {
           "type": "object",
@@ -24,7 +24,7 @@
               "type": "integer"
             },
             "lastUpdated": {
-              "description": "the last time the dataset was changed",
+              "description": "The last time the dataset was changed",
               "type": "string",
               "format": "date-time"
             },
@@ -75,7 +75,7 @@
   "type": "object",
   "properties": {
     "dataQualityMetrics": {
-      "$ref": "#/$defs/DataQualityMetricsInputDatasetFacet"
+      "$ref": "#/$defs/DataQualityMetricsDatasetFacet"
     }
   }
 }

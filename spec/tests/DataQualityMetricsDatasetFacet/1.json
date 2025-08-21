@@ -19,6 +19,6 @@
     "fileCount": 5,
     "lastUpdated": "2023-05-30T10:54:22.355067Z",
     "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
-    "_schemaURL": "https://openlineage.io/spec/facets/1-0-3/DataQualityMetricsInputDatasetFacet.json"
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/DataQualityMetricsDatasetFacet.json"
   }
 }
