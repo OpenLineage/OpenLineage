@@ -486,6 +486,19 @@ class ColumnLineageWithTransformationTypesTest {
     assertCountDatasetDependencies(facet, 6);
   }
 
+  @Test
+  void simpleDistinctQuery() {
+    createTable("t1", "a;int");
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        getFacetForQuery(getSchemaFacet("a;int"), "SELECT distinct a as a FROM t1");
+    assertCountColumnDependencies(facet, 1);
+    assertColumnDependsOnType(
+        facet, "a", FILE, T1_EXPECTED_NAME, "a", TransformationInfo.identity());
+    assertCountDatasetDependencies(facet, 1);
+    assertDatasetDependsOnType(
+        facet, FILE, T1_EXPECTED_NAME, "a", TransformationInfo.indirect(GROUP_BY));
+  }
+
   @NotNull
   private OpenLineage.ColumnLineageDatasetFacet getFacetForQuery(
       OpenLineage.SchemaDatasetFacet schemaFacet, String query) {
