@@ -18,6 +18,7 @@ import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContex
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ProjectNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionDependencyVisitor;
 import io.openlineage.spark3.agent.utils.ExtensionDataSourceV2Utils;
 import java.util.Arrays;
@@ -58,7 +59,6 @@ import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.Generate;
 import org.apache.spark.sql.catalyst.plans.logical.Join;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.Sort;
 import org.apache.spark.sql.catalyst.plans.logical.Union;
 import org.apache.spark.sql.catalyst.plans.logical.Window;
@@ -95,7 +95,10 @@ public class ExpressionDependencyCollector {
   }
 
   private static final List<ExpressionDependencyVisitor> expressionDependencyVisitors =
-      Arrays.asList(new UnionDependencyVisitor(), new IcebergMergeIntoDependencyVisitor());
+      Arrays.asList(
+          new ProjectNodeVisitor(),
+          new UnionDependencyVisitor(),
+          new IcebergMergeIntoDependencyVisitor());
 
   static void collect(ColumnLevelLineageContext context, LogicalPlan plan) {
     plan.foreach(
@@ -115,10 +118,7 @@ public class ExpressionDependencyCollector {
     List<Expression> datasetDependencies = new LinkedList<>();
     Optional<TransformationInfo> datasetTransformation = Optional.empty();
 
-    if (node instanceof Project) {
-      expressions.addAll(
-          ScalaConversionUtils.<NamedExpression>fromSeq(((Project) node).projectList()));
-    } else if (node instanceof Generate) {
+    if (node instanceof Generate) {
       collectFromGenerate(context, (Generate) node);
     } else if (node instanceof CreateTableAsSelect
         && (node.children() == null || node.children().isEmpty())) {
