@@ -36,6 +36,12 @@
           "name": "file",
           "uri": "file"
         },
+        "catalog": {
+          "framework": "hive",
+          "type": "hive",
+          "warehouseUri": "file:/tmp/ctas_load",
+          "source": "spark"
+        },
         "schema": {
           "fields": [
             {

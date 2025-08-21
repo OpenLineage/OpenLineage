@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.api;
 
+import static io.openlineage.client.OpenLineage.*;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.Builder;
 import io.openlineage.client.OpenLineage.DatasetFacets;
@@ -30,8 +32,8 @@ import org.apache.spark.sql.types.StructType;
  * OpenLineage.OutputDataset}s. This allows {@link QueryPlanVisitor}s that may identify input or
  * output datasets (e.g., a {@link BigQueryNodeOutputVisitor} or {@link
  * LogicalRelationDatasetBuilder}) to be reused in the construction of both input and output
- * datasets, allowing each to focus on extracting the identifier and general {@link
- * OpenLineage.DatasetFacet}s, while delegating to the factory to construct the correct instance.
+ * datasets, allowing each to focus on extracting the identifier and general {@link DatasetFacet}s,
+ * while delegating to the factory to construct the correct instance.
  *
  * <p>Ideally, this would be a sealed class. We emulate that by using a private constructor and
  * provide two static factory methods - {@link #input(OpenLineageContext)} and {@link
@@ -40,9 +42,9 @@ import org.apache.spark.sql.types.StructType;
  * <p>{@link DatasetCompositeFacetsBuilder} should deprecate usage of {@link DatasetFacetsBuilder}
  * in OpenLineage 1.28. Currently, both are supported.
  *
- * @param <D> the implementation of {@link OpenLineage.Dataset} constructed by this factory
+ * @param <D> the implementation of {@link Dataset} constructed by this factory
  */
-public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
+public abstract class DatasetFactory<D extends Dataset> {
   private final OpenLineageContext context;
   protected final DatasetNamespaceCombinedResolver namespaceResolver;
 
@@ -138,8 +140,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   /**
-   * Construct a dataset {@link OpenLineage.Dataset} given a name, namespace, and {@link StructType}
-   * schema.
+   * Construct a dataset {@link Dataset} given a name, namespace, and {@link StructType} schema.
    *
    * @param name
    * @param namespace
@@ -159,8 +160,8 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   /**
-   * Given a {@link URI}, construct a valid {@link OpenLineage.Dataset} following the expected
-   * naming conventions.
+   * Given a {@link URI}, construct a valid {@link Dataset} following the expected naming
+   * conventions.
    *
    * @param outputPath
    * @param schema
@@ -176,8 +177,8 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   /**
-   * Given a {@link URI}, construct a valid {@link OpenLineage.Dataset} following the expected
-   * naming conventions.
+   * Given a {@link URI}, construct a valid {@link Dataset} following the expected naming
+   * conventions.
    *
    * @param outputPath
    * @param schema
@@ -198,8 +199,8 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   /**
-   * Given a {@link URI}, construct a valid {@link OpenLineage.Dataset} following the expected
-   * naming conventions.
+   * Given a {@link URI}, construct a valid {@link Dataset} following the expected naming
+   * conventions.
    *
    * @param outputPath
    * @param schema
@@ -219,7 +220,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   /**
-   * Construct a {@link OpenLineage.Dataset} with the given {@link DatasetIdentifier} and schema.
+   * Construct a {@link Dataset} with the given {@link DatasetIdentifier} and schema.
    *
    * @param ident
    * @param schema
@@ -232,8 +233,23 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   /**
-   * Construct a {@link OpenLineage.Dataset} with the given {@link DatasetIdentifier}, schema and
-   * facets map.
+   * Construct a {@link Dataset} with the given {@link DatasetIdentifier}, schema and catalog facet.
+   *
+   * @param ident
+   * @param schema
+   * @param catalogDatasetFacet
+   * @return
+   */
+  public D getDataset(
+      DatasetIdentifier ident, StructType schema, CatalogDatasetFacet catalogDatasetFacet) {
+    DatasetCompositeFacetsBuilder facetsBuilder = datasetFacetBuilder(schema, ident.getNamespace());
+    includeSymlinksFacet(facetsBuilder, ident);
+    includeCatalogFacet(facetsBuilder, catalogDatasetFacet);
+    return getDataset(ident, facetsBuilder);
+  }
+
+  /**
+   * Construct a {@link Dataset} with the given {@link DatasetIdentifier}, schema and facets map.
    *
    * @param ident
    * @param schema
@@ -253,9 +269,40 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
     return getDataset(new DatasetIdentifier(ident.getName(), ident.getNamespace()), facetsBuilder);
   }
 
+  /**
+   * Construct a {@link Dataset} with the given {@link DatasetIdentifier}, schema and facets map.
+   *
+   * @param ident
+   * @param schema
+   * @param lifecycleStateChange
+   * @param catalogDatasetFacet
+   * @return
+   */
+  public D getDataset(
+      DatasetIdentifier ident,
+      StructType schema,
+      LifecycleStateChange lifecycleStateChange,
+      CatalogDatasetFacet catalogDatasetFacet) {
+    DatasetCompositeFacetsBuilder facetsBuilder = datasetFacetBuilder(schema, ident.getNamespace());
+    facetsBuilder
+        .getFacets()
+        .lifecycleStateChange(
+            context
+                .getOpenLineage()
+                .newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null));
+    includeSymlinksFacet(facetsBuilder, ident);
+    includeCatalogFacet(facetsBuilder, catalogDatasetFacet);
+    return getDataset(new DatasetIdentifier(ident.getName(), ident.getNamespace()), facetsBuilder);
+  }
+
+  private void includeCatalogFacet(
+      DatasetCompositeFacetsBuilder builder, CatalogDatasetFacet catalogDatasetFacet) {
+    builder.getFacets().catalog(catalogDatasetFacet);
+  }
+
   private void includeSymlinksFacet(DatasetCompositeFacetsBuilder builder, DatasetIdentifier di) {
     if (!di.getSymlinks().isEmpty()) {
-      List<OpenLineage.SymlinksDatasetFacetIdentifiers> symlinks =
+      List<SymlinksDatasetFacetIdentifiers> symlinks =
           di.getSymlinks().stream()
               .map(
                   symlink ->
@@ -273,7 +320,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   /**
-   * Construct a {@link OpenLineage.Dataset} with the given {@link DatasetIdentifier} and {@link
+   * Construct a {@link Dataset} with the given {@link DatasetIdentifier} and {@link
    * OpenLineage.DatasetFacets}.
    *
    * @param ident
