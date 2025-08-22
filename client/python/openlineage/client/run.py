@@ -3,12 +3,16 @@
 import uuid
 import warnings
 from enum import Enum
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Optional
 
 import attr
 from dateutil import parser
-from openlineage.client.facet import NominalTimeRunFacet, ParentRunFacet
 from openlineage.client.utils import RedactMixin
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", DeprecationWarning)
+    from openlineage.client.facet import NominalTimeRunFacet, ParentRunFacet
+
 
 warnings.warn(
     "This module is deprecated. Please use `openlineage.client.event_v2`.", DeprecationWarning, stacklevel=2
@@ -36,19 +40,19 @@ _RUN_FACETS = [
 class Dataset(RedactMixin):
     namespace: str = attr.ib()
     name: str = attr.ib()
-    facets: Dict[Any, Any] = attr.ib(factory=dict)
+    facets: dict[Any, Any] = attr.ib(factory=dict)
 
-    _skip_redact: ClassVar[List[str]] = ["namespace", "name"]
+    _skip_redact: ClassVar[list[str]] = ["namespace", "name"]
 
 
 @attr.s
 class InputDataset(Dataset):
-    inputFacets: Dict[Any, Any] = attr.ib(factory=dict)  # noqa:  N815
+    inputFacets: dict[Any, Any] = attr.ib(factory=dict)  # noqa:  N815
 
 
 @attr.s
 class OutputDataset(Dataset):
-    outputFacets: Dict[Any, Any] = attr.ib(factory=dict)  # noqa:  N815
+    outputFacets: dict[Any, Any] = attr.ib(factory=dict)  # noqa:  N815
 
 
 @attr.s
@@ -58,16 +62,16 @@ class DatasetEvent(RedactMixin):
     schemaURL: str = attr.ib()  # noqa: N815
     dataset: Dataset = attr.ib()
 
-    _skip_redact: ClassVar[List[str]] = ["producer"]
+    _skip_redact: ClassVar[list[str]] = ["producer"]
 
 
 @attr.s
 class Job(RedactMixin):
     namespace: str = attr.ib()
     name: str = attr.ib()
-    facets: Dict[Any, Any] = attr.ib(factory=dict)
+    facets: dict[Any, Any] = attr.ib(factory=dict)
 
-    _skip_redact: ClassVar[List[str]] = ["namespace", "name"]
+    _skip_redact: ClassVar[list[str]] = ["namespace", "name"]
 
 
 @attr.s
@@ -76,18 +80,18 @@ class JobEvent(RedactMixin):
     producer: str = attr.ib()
     schemaURL: str = attr.ib()  # noqa: N815
     job: Job = attr.ib()
-    inputs: Optional[List[Dataset]] = attr.ib(factory=list)
-    outputs: Optional[List[Dataset]] = attr.ib(factory=list)
+    inputs: Optional[list[Dataset]] = attr.ib(factory=list)
+    outputs: Optional[list[Dataset]] = attr.ib(factory=list)
 
-    _skip_redact: ClassVar[List[str]] = ["producer"]
+    _skip_redact: ClassVar[list[str]] = ["producer"]
 
 
 @attr.s
 class Run(RedactMixin):
     runId: str = attr.ib()  # noqa:  N815
-    facets: Dict[Any, Any] = attr.ib(factory=dict)
+    facets: dict[Any, Any] = attr.ib(factory=dict)
 
-    _skip_redact: ClassVar[List[str]] = ["runId"]
+    _skip_redact: ClassVar[list[str]] = ["runId"]
 
     @runId.validator
     def check(self, attribute: str, value: str) -> None:  # noqa: ARG002
@@ -101,11 +105,11 @@ class RunEvent(RedactMixin):
     run: Run = attr.ib()
     job: Job = attr.ib()
     producer: str = attr.ib()
-    inputs: Optional[List[Dataset]] = attr.ib(factory=list)
-    outputs: Optional[List[Dataset]] = attr.ib(factory=list)
+    inputs: Optional[list[Dataset]] = attr.ib(factory=list)
+    outputs: Optional[list[Dataset]] = attr.ib(factory=list)
     schemaURL: str = attr.ib(default=SCHEMA_URL)  # noqa: N815
 
-    _skip_redact: ClassVar[List[str]] = ["eventType", "eventTime", "producer", "schemaURL"]
+    _skip_redact: ClassVar[list[str]] = ["eventType", "eventTime", "producer", "schemaURL"]
 
     @eventTime.validator
     def check(self, attribute: str, value: str) -> None:  # noqa: ARG002

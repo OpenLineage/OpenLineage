@@ -11,11 +11,10 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id "com.adarshr.test-logger" version "3.2.0"
-    // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
-    id 'com.diffplug.spotless' version '6.13.0'
-    id "com.gradleup.shadow" version "8.3.5"
+    id 'com.diffplug.spotless' version '7.0.2'
+    id "com.gradleup.shadow" version "8.3.8"
     id "pmd"
-    id "io.freefair.lombok" version "8.12"
+    id "io.freefair.lombok" version "8.14"
 }
 
 ext {

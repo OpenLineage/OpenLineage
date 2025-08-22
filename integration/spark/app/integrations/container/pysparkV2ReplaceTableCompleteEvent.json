@@ -1,40 +1,45 @@
 {
-  "eventType" : "COMPLETE",
-  "job" : {
-    "namespace" : "delta-namespace",
-    "name" : "delta_integration_test.atomic_replace_table.default_tbl"
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "delta-namespace",
+    "name": "delta_integration_test.atomic_replace_table.default_tbl"
   },
-  "inputs" : [ ],
-  "outputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/delta/v2_replace_table",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [ {
-          "name" : "c",
-          "type" : "string"
-        }, {
-          "name" : "d",
-          "type" : "string"
-        } ]
-      },
-      "symlinks": {
-        "identifiers": [
-          {
-            "namespace": "file:/tmp/delta",
-            "name": "default.tbl",
-            "type": "TABLE"
-          }
-        ]
-      },
-      "version" : {},
-      "lifecycleStateChange": {
-        "lifecycleStateChange": "OVERWRITE"
+  "inputs": [],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/delta/v2_replace_table",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "c",
+              "type": "string"
+            },
+            {
+              "name": "d",
+              "type": "string"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/delta",
+              "name": "default.tbl",
+              "type": "TABLE"
+            }
+          ]
+        },
+        "version": {},
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "OVERWRITE"
+        }
       }
     }
-  } ]
+  ]
 }

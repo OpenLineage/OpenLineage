@@ -22,7 +22,9 @@ import io.openlineage.client.transports.CompositeConfig;
 import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.KafkaConfig;
+import io.openlineage.client.utils.TagField;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark.api.SparkOpenLineageConfig.VendorsConfig.VendorConfig;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,8 +42,10 @@ class ArgumentParserTest {
   private static final String JOB_NAME = "job_name";
   private static final String URL = "http://localhost:5000";
   private static final String RUN_ID = "ea445b5c-22eb-457a-8007-01c7c52b6e54";
+  private static final String ROOT_PARENT_JOB_NAME = "root-name";
+  private static final String ROOT_PARENT_JOB_NAMESPACE = "root-namespace";
+  private static final String ROOT_PARENT_RUN_ID = "ea445b5c-1a1a-2b2b-3c3c-01c7c52b6e54";
   private static final String APP_NAME = "test";
-  private static final String DISABLED_FACETS = "[facet1;facet2]";
   private static final String ENDPOINT = "api/v1/lineage";
   private static final String AUTH_TYPE = "api_key";
   private static final String API_KEY = "random_token";
@@ -52,7 +56,6 @@ class ArgumentParserTest {
   @SuppressWarnings({"deprecation"})
   void testDefaults() {
     config = ArgumentParser.parse(new SparkConf());
-    assertThat(config.getFacetsConfig().getDeprecatedDisabledFacets()).isEmpty();
     assertThat(config.getFacetsConfig().getDisabledFacets())
         .containsAllEntriesOf(
             ImmutableMap.of("spark_unknown", true, "spark.logicalPlan", true, "debug", true));
@@ -83,6 +86,9 @@ class ArgumentParserTest {
             .set(ArgumentParser.SPARK_CONF_PARENT_JOB_NAMESPACE, JOB_NAMESPACE)
             .set(ArgumentParser.SPARK_CONF_PARENT_JOB_NAME, JOB_NAME)
             .set(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, RUN_ID)
+            .set("spark.openlineage.rootParentJobName", ROOT_PARENT_JOB_NAME)
+            .set("spark.openlineage.rootParentJobNamespace", ROOT_PARENT_JOB_NAMESPACE)
+            .set("spark.openlineage.rootParentRunId.", ROOT_PARENT_RUN_ID)
             .set(ArgumentParser.SPARK_CONF_APP_NAME, APP_NAME);
 
     config = ArgumentParser.parse(sparkConf);
@@ -91,6 +97,10 @@ class ArgumentParserTest {
     assertEquals(JOB_NAME, config.getParentJobName());
     assertEquals(RUN_ID, config.getParentRunId());
     assertEquals(APP_NAME, config.getOverriddenAppName());
+
+    assertEquals(ROOT_PARENT_JOB_NAME, config.getRootParentJobName());
+    assertEquals(ROOT_PARENT_JOB_NAMESPACE, config.getRootParentJobNamespace());
+    assertEquals(ROOT_PARENT_RUN_ID, config.getRootParentRunId());
   }
 
   @Test
@@ -103,8 +113,7 @@ class ArgumentParserTest {
             .set("spark.openlineage.transport.endpoint", ENDPOINT)
             .set("spark.openlineage.transport.auth.type", AUTH_TYPE)
             .set("spark.openlineage.transport.auth.apiKey", API_KEY)
-            .set("spark.openlineage.transport.timeout", "5000")
-            .set("spark.openlineage.facets.disabled", DISABLED_FACETS)
+            .set("spark.openlineage.transport.timeoutInMillis", "5000")
             .set("spark.openlineage.transport.urlParams.test1", "test1")
             .set("spark.openlineage.transport.urlParams.test2", "test2")
             .set("spark.openlineage.transport.headers.testHeader1", "test1")
@@ -118,7 +127,7 @@ class ArgumentParserTest {
     assert (transportConfig.getAuth() != null);
     assert (transportConfig.getAuth() instanceof ApiKeyTokenProvider);
     assertEquals("Bearer random_token", transportConfig.getAuth().getToken());
-    assertEquals(5000, transportConfig.getTimeout());
+    assertEquals(5000, transportConfig.getTimeoutInMillis());
     assertEquals("test1", transportConfig.getHeaders().get("testHeader1"));
     assertEquals("test2", transportConfig.getHeaders().get("testHeader2"));
     assertEquals(HttpConfig.Compression.GZIP, transportConfig.getCompression());
@@ -233,57 +242,14 @@ class ArgumentParserTest {
   }
 
   @Test
-  @SuppressWarnings("deprecation")
-  void testDeprecatedDisabledFacetsFromSparkConf() {
-    SparkConf sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "[a;b]");
-    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
-    String[] disabledFacets = config.getFacetsConfig().getDeprecatedDisabledFacets();
-    assertThat(disabledFacets).containsExactly("a", "b");
-
-    // test empty value
-    sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "");
-    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDeprecatedDisabledFacets())
-        .hasSize(0);
-
-    // test empty list
-    sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "[]");
-    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDeprecatedDisabledFacets())
-        .hasSize(0);
-
-    assertThat(
-            ArgumentParser.parse(new SparkConf()).getFacetsConfig().getDeprecatedDisabledFacets())
-        .hasSize(0);
-  }
-
-  @Test
-  @SuppressWarnings("deprecation")
-  void testDisabledFacetsFromSparkConf() {
-    SparkConf sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "[a;b]");
-    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
-    assertThat(config.getFacetsConfig().getDeprecatedDisabledFacets()).containsExactly("a", "b");
-
-    // test empty value
-    sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "");
-    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDeprecatedDisabledFacets())
-        .hasSize(0);
-
-    // test empty list
-    sparkConf = new SparkConf().set("spark.openlineage.facets.disabled", "[]");
-    assertThat(ArgumentParser.parse(sparkConf).getFacetsConfig().getDeprecatedDisabledFacets())
-        .hasSize(0);
-
-    assertThat(
-            ArgumentParser.parse(new SparkConf()).getFacetsConfig().getDeprecatedDisabledFacets())
-        .hasSize(0);
-  }
-
-  @Test
   @SuppressWarnings({"deprecation", "UnstableApiUsage", "ConstantConditions"})
   void testConfigReadFromYamlFile() {
     String propertyBefore = System.getProperty("user.dir");
     System.setProperty("user.dir", Resources.getResource("config").getPath());
 
-    SparkOpenLineageConfig config = ArgumentParser.parse(new SparkConf());
+    SparkConf sparkConf = new SparkConf();
+    sparkConf.set("spark.openlineage.run.tags", "overwrite:overwritten");
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
     System.setProperty("user.dir", propertyBefore);
 
     assertThat(config.getTransportConfig()).isInstanceOf(HttpConfig.class);
@@ -292,11 +258,14 @@ class ArgumentParserTest {
     assertThat(httpConfig.getUrl().toString()).isEqualTo("http://localhost:1010");
     assertThat(httpConfig.getAuth().getToken()).isEqualTo("Bearer random_token");
     assertThat(config.getJobName().getAppendDatasetName()).isFalse();
-    assertThat(config.getFacetsConfig().getDeprecatedDisabledFacets()[0])
-        .isEqualTo("aDisabledFacet");
     assertThat(config.getFacetsConfig().getDisabledFacets())
         .containsAllEntriesOf(
             ImmutableMap.of("spark_unknown", false, "spark.logicalPlan", true, "debug", true));
+    assertThat(config.getJobConfig().getTags())
+        .contains(new TagField("key", "value"), new TagField("tag2"));
+    assertThat(config.getRunConfig().getTags())
+        .contains(
+            new TagField("something", "will", "be"), new TagField("overwrite", "overwritten"));
   }
 
   @Test
@@ -376,5 +345,91 @@ class ArgumentParserTest {
     assertThat(namespaceResolvers.get("postgres-test"))
         .hasFieldOrPropertyWithValue(
             "hosts", Arrays.asList("postgres-host1-test", "postgres-host1-test"));
+  }
+
+  @Test
+  void testNodeFilterConfiguration() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set(
+                "spark.openlineage.filter.allowedSparkNodes",
+                "[org.apache.spark.sql.Node1;org.apache.spark.sql.Node1]")
+            .set(
+                "spark.openlineage.filter.deniedSparkNodes",
+                "[org.apache.spark.sql.Node3;org.apache.spark.sql.Node4]");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+
+    assertThat(config.getFilterConfig())
+        .hasFieldOrPropertyWithValue(
+            "allowedSparkNodes",
+            Arrays.asList("org.apache.spark.sql.Node1", "org.apache.spark.sql.Node1"))
+        .hasFieldOrPropertyWithValue(
+            "deniedSparkNodes",
+            Arrays.asList("org.apache.spark.sql.Node3", "org.apache.spark.sql.Node4"));
+  }
+
+  @Test
+  void testExtractTags() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.job.tags", "tag;key:value;k:v:s;this:will:get:skipped")
+            .set("spark.openlineage.run.tags", "otherTag;otherKey:otherValue");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+
+    assertThat(config.getJobConfig().getTags())
+        .isEqualTo(
+            Arrays.asList(
+                new TagField("tag"),
+                new TagField("key", "value"),
+                new TagField("k", "v", "s"),
+                new TagField("this", "will", "get")));
+    assertThat(config.getRunConfig().getTags())
+        .isEqualTo(Arrays.asList(new TagField("otherTag"), new TagField("otherKey", "otherValue")));
+  }
+
+  @Test
+  void testExtractTagsEscape() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.job.tags", "escaped\\:key:escaped\\;value;other:notescaped:tag")
+            .set("spark.openlineage.run.tags", "\\;startkey\\;:endvalue\\;");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+
+    assertThat(config.getJobConfig().getTags())
+        .isEqualTo(
+            Arrays.asList(
+                new TagField("escaped:key", "escaped;value"),
+                new TagField("other", "notescaped", "tag")));
+    assertThat(config.getRunConfig().getTags())
+        .isEqualTo(Arrays.asList(new TagField(";startkey;", "endvalue;")));
+  }
+
+  @Test
+  void testExtractTagsEdgeCases() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.job.tags", "a:;:b")
+            .set("spark.openlineage.run.tags", ";;:; : ;");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+
+    assertThat(config.getJobConfig().getTags())
+        .isEqualTo(Collections.singletonList(new TagField("a")));
+    assertThat(config.getRunConfig().getTags()).isEmpty();
+  }
+
+  @Test
+  void testExtractVendorConfig() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.vendors.iceberg.metricsReporterDisabled", "true")
+            .set("spark.openlineage.vendors.delta.metricsReporterDisabled", "false");
+
+    SparkOpenLineageConfig config = ArgumentParser.parse(sparkConf);
+    assertThat(config.getVendors().getConfig()).containsEntry("iceberg", new VendorConfig(true));
+    assertThat(config.getVendors().getConfig()).containsEntry("delta", new VendorConfig(false));
   }
 }

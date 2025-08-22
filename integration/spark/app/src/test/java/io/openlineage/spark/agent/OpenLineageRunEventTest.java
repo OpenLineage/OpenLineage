@@ -40,12 +40,16 @@ class OpenLineageRunEventTest {
                 "https://github.com/OpenLineage/OpenLineage/tree/0.2.3-SNAPSHOT/integration/spark"));
 
     UUID runId = UUID.fromString("5f24c93c-2ce9-49dc-82e7-95ab4915242f");
+    UUID rootParentRunId = UUID.fromString("5f24c93c-1a1a-49dc-82e7-95ab4915242f");
     OpenLineage.RunFacets runFacets =
         ol.newRunFacetsBuilder()
             .parent(
                 ol.newParentRunFacet(
                     ol.newParentRunFacetRun(runId),
-                    ol.newParentRunFacetJob("namespace", "jobName")))
+                    ol.newParentRunFacetJob("namespace", "jobName"),
+                    ol.newParentRunFacetRoot(
+                        ol.newRootRun(rootParentRunId),
+                        ol.newRootJob("root-namespace", "root-job-name"))))
             .errorMessage(ol.newErrorMessageRunFacet("failed", "JAVA", "<stack_trace>"))
             .build();
     OpenLineage.Run run = ol.newRun(runId, runFacets);
@@ -61,7 +65,7 @@ class OpenLineageRunEventTest {
             .url(URI.create("https://github.com/apache/spark"))
             .tag("v1.0.0")
             .build();
-    OpenLineage.SQLJobFacet sqlJobFacet = ol.newSQLJobFacet("SELECT * FROM test");
+    OpenLineage.SQLJobFacet sqlJobFacet = ol.newSQLJobFacet("SELECT * FROM test", "spark");
 
     OpenLineage.JobFacets jobFacets =
         ol.newJobFacetsBuilder()

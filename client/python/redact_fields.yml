@@ -68,6 +68,12 @@
         - column
     - class_name: DataQualityAssertionsDatasetFacet
       redact_fields: []
+- module: data_quality_metrics_dataset
+  classes:
+    - class_name: ColumnMetrics
+      redact_fields: []
+    - class_name: DataQualityMetricsDatasetFacet
+      redact_fields: []
 - module: data_quality_metrics_input_dataset
   classes:
     - class_name: ColumnMetrics
@@ -175,6 +181,17 @@
     - class_name: Run
       redact_fields:
         - runId
+    - class_name: RootRun
+      redact_fields:
+        - runId
+    - class_name: RootJob
+      redact_fields:
+        - namespace
+        - name
+    - class_name: Root
+      redact_fields:
+        - run
+        - job
 - module: processing_engine_run
   classes:
     - class_name: ProcessingEngineRunFacet
@@ -227,4 +244,8 @@
     - class_name: TagsRunFacetFields
       redact_fields: []
     - class_name: TagsRunFacet
+      redact_fields: []
+- module: catalog_dataset
+  classes:
+    - class_name: CatalogDatasetFacet
       redact_fields: []

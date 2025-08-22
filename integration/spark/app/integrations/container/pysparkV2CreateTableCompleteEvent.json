@@ -1,36 +1,48 @@
 {
-  "eventType" : "COMPLETE",
-  "job" : {
-    "namespace" : "iceberg-namespace",
-    "name" : "iceberg_integration_test.create_table.default_create_table_test"
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "iceberg-namespace",
+    "name": "iceberg_integration_test.create_table.default_create_table_test"
   },
-  "inputs" : [ ],
-  "outputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/iceberg/default/create_table_test",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [ {
-          "name" : "a",
-          "type" : "string"
-        }, {
-          "name" : "b",
-          "type" : "string"
-        } ]
-      },
-      "symlinks": {
-        "identifiers": [
-          {
-            "namespace": "file:/tmp/iceberg",
-            "name": "default.create_table_test",
-            "type": "TABLE"
-          }
-        ]
+  "inputs": [],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/iceberg/default/create_table_test",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "string"
+            },
+            {
+              "name": "b",
+              "type": "string"
+            }
+          ]
+        },
+        "catalog": {
+          "framework": "iceberg",
+          "type": "hadoop",
+          "name": "spark_catalog",
+          "warehouseUri": "/tmp/iceberg",
+          "source": "spark"
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/iceberg",
+              "name": "default.create_table_test",
+              "type": "TABLE"
+            }
+          ]
+        }
       }
     }
-  } ]
+  ]
 }

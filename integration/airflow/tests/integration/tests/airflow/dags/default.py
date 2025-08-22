@@ -23,9 +23,9 @@ RUN_FACETS = {
 JOB_FACETS = {"sql": sql_job.SQLJobFacet(query="SELECT * FROM inputtable")}
 
 
-@attr.s
+@attr.define
 class CompleteRunFacet(BaseFacet):
-    finished: bool = attr.ib()
+    finished: bool
 
 
 class ExampleOperator(BaseOperator):

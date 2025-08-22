@@ -1,0 +1,185 @@
+/*
+/* Copyright 2018-2025 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+import io.franzbecker.gradle.lombok.task.DelombokTask
+
+plugins {
+    id 'java-library'
+    id 'jacoco'
+    id 'com.adarshr.test-logger'
+    id 'com.diffplug.spotless'
+    id 'io.franzbecker.gradle-lombok'
+    id 'io.openlineage.common-config'
+    id 'maven-publish'
+    id 'com.github.johnrengelman.shadow'
+}
+
+archivesBaseName='openlineage-flink1-app'
+
+ext {
+    compileFlinkVersion = project.getProperty('flink.flink1.version')
+    testedFlinkVersion = project.getProperty('flink.version')
+    assertjVersion = '3.27.3'
+    junit5Version = '5.11.4'
+    lombokVersion = '1.18.36'
+    jacksonVersion = "2.15.3"
+    mockitoVersion = '5.2.0'
+    testcontainersVersion = '1.20.5'
+    micrometerVersion = '1.14.4'
+    isReleaseVersion = !version.endsWith('SNAPSHOT')
+}
+
+dependencies {
+    implementation(project(path: ":shared"))
+    implementation(project(path: ":flink115"))
+    implementation(project(path: ":flink117"))
+    implementation(project(path: ":flink118"))
+    api "io.openlineage:openlineage-java:${project.version}"
+
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    compileOnly "org.apache.flink:flink-java:$compileFlinkVersion"
+    compileOnly "org.apache.flink:flink-streaming-java:$compileFlinkVersion"
+    compileOnly "io.micrometer:micrometer-core:${micrometerVersion}"
+
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.4.2'
+    testImplementation "org.apache.flink:flink-java:$testedFlinkVersion"
+    testImplementation "org.apache.flink:flink-streaming-java:$testedFlinkVersion"
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.hamcrest:hamcrest-library:2.2'
+    testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
+    testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    testImplementation 'org.mock-server:mockserver-client-java:5.15.0'
+    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.3.0'
+    testImplementation 'com.github.tomakehurst:wiremock:3.0.1'
+    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.24.3'
+    testImplementation "io.micrometer:micrometer-core:${micrometerVersion}"
+
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation "org.projectlombok:lombok:${lombokVersion}"
+    testImplementation("org.slf4j:slf4j-api:2.0.17")
+    testImplementation("org.slf4j:slf4j-simple:2.0.17")
+
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+}
+
+task sourceJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+def commonTestConfiguration = {
+    classpath =  project.sourceSets.test.runtimeClasspath
+}
+
+test {
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
+}
+
+compileTestJava {
+    if (project.property("flink.version").toString().startsWith("2")) {
+        // don't compile test when testing Flink 2
+        exclude '**/*'
+    }
+}
+
+def integrationTestConfiguration = {
+    forkEvery 1
+    maxParallelForks 1
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+            'flink.version': "${flinkVersion}",
+            'junit.platform.output.capture.stdout': 'true',
+            'junit.platform.output.capture.stderr': 'true',
+            '.flink.jar': "${archivesBaseName}-${project.version}.jar",
+    ]
+    classpath =  project.sourceSets.test.runtimeClasspath
+}
+
+
+task integrationTest(type: Test) {
+    configure integrationTestConfiguration
+    useJUnitPlatform {
+        includeTags "integration-test"
+    }
+}
+
+integrationTest.outputs.upToDateWhen { false }
+
+task delombok(type: DelombokTask, dependsOn: compileJava) {
+    ext.outputDir = file("$buildDir/delombok")
+    outputs.dir(outputDir)
+    sourceSets.main.java.srcDirs.each {
+        inputs.dir(it)
+        args(it, "-d", outputDir)
+    }
+    doFirst {
+        outputDir.deleteDir()
+    }
+}
+
+javadoc {
+    dependsOn delombok
+    source = delombok.outputDir
+    options.tags = [ "apiNote" ]
+}
+
+def reportsDir = "${buildDir}/reports"
+def coverageDir = "${reportsDir}/coverage"
+
+jacoco {
+    toolVersion = '0.8.12'
+    reportsDir = file(coverageDir)
+}
+
+jacocoTestReport {
+    reports {
+        xml {
+            enabled true
+        }
+        html {
+            enabled true
+            destination = file(coverageDir)
+        }
+    }
+}
+
+spotlessJava {
+    dependsOn("compileJava", "compileTestJava")
+}
+
+task createVersionProperties(dependsOn: processResources) {
+    doLast {
+        File dir = new File("$buildDir/resources/main/io/openlineage/flink/client/")
+        dir.mkdirs()
+        new File("$buildDir/resources/main/io/openlineage/flink/client/version.properties").withWriter { w ->
+            Properties p = new Properties()
+            p['version'] = project.version.toString()
+            p.store w, null
+        }
+    }
+}
+
+classes {
+    dependsOn createVersionProperties
+}

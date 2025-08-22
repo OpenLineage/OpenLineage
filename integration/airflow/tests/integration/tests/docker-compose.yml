@@ -32,13 +32,12 @@ x-airflow-base: &airflow-base
     GOOGLE_CLOUD_STORAGE_DESTINATION_URI: ${GOOGLE_CLOUD_STORAGE_DESTINATION_URI}
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: ${DAGS_ARE_PAUSED_AT_CREATION:-False}
     BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
-    DBT_DATASET_PREFIX: ${DBT_DATASET_PREFIX}_dbt
     GOOGLE_APPLICATION_CREDENTIALS: /opt/config/gcloud/gcloud-service-key.json
     OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE: "false"
     OPENLINEAGE_URL: http://backend:5000
     OPENLINEAGE_NAMESPACE: food_delivery
     OPENLINEAGE_EXTRACTORS: custom_extractor.CustomExtractor
-    SNOWFLAKE_AIRFLOW_TEST_VERSION: 2.3.4  # bump this when moving to new Airflow version - only single process can test Snowflake now
+    SNOWFLAKE_AIRFLOW_TEST_VERSION: 2.5.2  # bump this when moving to new Airflow version - only single process can test Snowflake now
     SNOWFLAKE_ACCOUNT_ID: ${SNOWFLAKE_ACCOUNT_ID}
     SNOWFLAKE_USER: ${SNOWFLAKE_USER}
     SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
@@ -89,7 +88,6 @@ services:
         AIRFLOW_IMAGE: ${AIRFLOW_IMAGE}
     environment:
       BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
-      DBT_DATASET_PREFIX: ${DBT_DATASET_PREFIX}_dbt
       AIRFLOW_VERSION: ${AIRFLOW_VERSION}
       SNOWFLAKE_ACCOUNT_ID: ${SNOWFLAKE_ACCOUNT_ID}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
@@ -110,7 +108,7 @@ services:
       - airflow_worker
       - airflow_triggerer
       - backend
-    entrypoint: ["/wait-for-it.sh", "backend:5000", "--", "python", '-m', 'pytest', 'test_integration.py']
+    entrypoint: ["/wait-for-it.sh", "backend:5000", "--", "python", '-m', 'pytest', '-x', 'test_integration.py']
 
   airflow_scheduler:
     <<: *airflow-base

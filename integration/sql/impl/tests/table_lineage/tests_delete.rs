@@ -67,16 +67,14 @@ fn delete_identifier_function() {
 
     for (out_table_id, out_tables) in &test_cases {
         for dialect in &dialects {
-            let sql = format!("DELETE FROM identifier({}) WHERE x = 1;", out_table_id,);
+            let sql = format!("DELETE FROM identifier({out_table_id}) WHERE x = 1;",);
             assert_eq!(
                 test_sql_dialect(&sql, dialect).unwrap().table_lineage,
                 TableLineage {
                     in_tables: vec![],
                     out_tables: out_tables.clone(),
                 },
-                "Failed for dialect: {} with SQL: {}",
-                dialect,
-                sql
+                "Failed for dialect: {dialect} with SQL: {sql}"
             );
         }
     }

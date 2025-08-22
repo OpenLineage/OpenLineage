@@ -24,7 +24,9 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
+import io.openlineage.spark.api.OpenLineageRunStatus;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
+import io.openlineage.spark.api.VisitedNodes;
 import java.util.Optional;
 import java.util.UUID;
 import org.apache.spark.scheduler.JobFailed;
@@ -66,10 +68,14 @@ class SparkSQLExecutionContextTest {
   void setup(SparkSession spark) {
     when(olContext.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(olContext.getSparkContext()).thenReturn(Optional.of(spark.sparkContext()));
+    when(olContext.getLineageRunStatus()).thenReturn(new OpenLineageRunStatus());
+    when(queryExecution.sparkPlan())
+        .thenReturn(mock(org.apache.spark.sql.execution.SparkPlan.class));
     when(queryExecution.sparkPlan().sparkContext()).thenReturn(spark.sparkContext());
     when(olContext.getOpenLineage()).thenReturn(openLineage);
     when(olContext.getOpenLineageConfig()).thenReturn(new SparkOpenLineageConfig());
     when(olContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    when(olContext.getVisitedNodes()).thenReturn(new VisitedNodes());
     when(olContext.getRunUuid())
         .thenReturn(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b"));
 
@@ -273,10 +279,49 @@ class SparkSQLExecutionContextTest {
       OpenLineage.ParentRunFacet parentRunFacet = runEvent.getRun().getFacets().getParent();
       OpenLineage.ParentRunFacetJob parentJob = parentRunFacet.getJob();
       OpenLineage.ParentRunFacetRun parentRun = parentRunFacet.getRun();
+      OpenLineage.RootJob rootJob = parentRunFacet.getRoot().getJob();
+      OpenLineage.RootRun rootRun = parentRunFacet.getRoot().getRun();
       assertThat(parentJob.getName()).isEqualTo("app_name");
       assertThat(parentJob.getNamespace()).isEqualTo("ns_name");
       assertThat(parentRun.getRunId())
           .isEqualTo(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
+      assertThat(rootJob.getName()).isEqualTo("app_name");
+      assertThat(rootJob.getNamespace()).isEqualTo("ns_name");
+      assertThat(rootRun.getRunId())
+          .isEqualTo(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
+    }
+  }
+
+  @Test
+  void testParentRunFacetWithRootIsSet(SparkSession spark) {
+    UUID rootUuid = UUID.randomUUID();
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    try (MockedStatic<EventFilterUtils> ignored = mockStatic(EventFilterUtils.class)) {
+      when(EventFilterUtils.isDisabled(any(), any())).thenReturn(false);
+      when(olContext.getSparkContext()).thenReturn(Optional.of(spark.sparkContext()));
+      when(eventEmitter.getRootParentRunId()).thenReturn(Optional.of(rootUuid));
+      when(eventEmitter.getRootParentJobName()).thenReturn(Optional.of("root_job_name"));
+      when(eventEmitter.getRootParentJobNamespace()).thenReturn(Optional.of("root_job_namespace"));
+
+      context.start(mock(SparkListenerJobStart.class));
+      context.start(mock(SparkListenerSQLExecutionStart.class));
+      context.end(mock(SparkListenerSQLExecutionEnd.class));
+      context.end(mock(SparkListenerJobEnd.class));
+    }
+
+    for (RunEvent runEvent : lineageEvent.getAllValues()) {
+      OpenLineage.ParentRunFacet parentRunFacet = runEvent.getRun().getFacets().getParent();
+      OpenLineage.ParentRunFacetJob parentJob = parentRunFacet.getJob();
+      OpenLineage.ParentRunFacetRun parentRun = parentRunFacet.getRun();
+      OpenLineage.RootJob rootJob = parentRunFacet.getRoot().getJob();
+      OpenLineage.RootRun rootRun = parentRunFacet.getRoot().getRun();
+      assertThat(parentJob.getName()).isEqualTo("app_name");
+      assertThat(parentJob.getNamespace()).isEqualTo("ns_name");
+      assertThat(parentRun.getRunId())
+          .isEqualTo(UUID.fromString("8d99e33e-bbbb-cccc-dddd-18f2343aaaaa"));
+      assertThat(rootJob.getName()).isEqualTo("root_job_name");
+      assertThat(rootJob.getNamespace()).isEqualTo("root_job_namespace");
+      assertThat(rootRun.getRunId()).isEqualTo(rootUuid);
     }
   }
 }

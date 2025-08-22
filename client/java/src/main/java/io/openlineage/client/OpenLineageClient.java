@@ -16,6 +16,7 @@ import io.openlineage.client.transports.Transport;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -152,18 +153,26 @@ public final class OpenLineageClient implements AutoCloseable {
             "openlineage.emit.time", "openlineage.transport", transport.getClass().getName());
   }
 
+  /** Shutdown the underlying transport, waiting for all events to complete. */
+  @Override
+  public void close() throws Exception {
+    try {
+      transport.close();
+    } catch (Exception e) {
+      throw new OpenLineageClientException("Failed to close transport " + transport, e);
+    } finally {
+      circuitBreaker.ifPresent(CircuitBreaker::close);
+      meterRegistry.close();
+      OpenLineageClientUtils.getExecutor().ifPresent(ExecutorService::shutdown);
+    }
+  }
+
   /**
    * @return an new {@link OpenLineageClient.Builder} object for building {@link
    *     OpenLineageClient}s.
    */
   public static Builder builder() {
     return new Builder();
-  }
-
-  @Override
-  public void close() throws Exception {
-    transport.close();
-    meterRegistry.close();
   }
 
   /**

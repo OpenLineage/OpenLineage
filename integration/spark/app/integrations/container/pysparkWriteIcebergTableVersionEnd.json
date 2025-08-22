@@ -1,36 +1,41 @@
 {
-  "eventType" : "COMPLETE",
-  "job" : {
-    "namespace" : "iceberg-namespace",
-    "name" : "iceberg_integration_test.append_data.spark_catalog_default_table"
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "iceberg-namespace",
+    "name": "iceberg_integration_test.append_data.spark_catalog_default_table"
   },
-  "outputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/iceberg/default/table",
-    "facets" : {
-      "schema" : {
-        "fields" : [ {
-          "name" : "a",
-          "type" : "integer"
-        }, {
-          "name" : "b",
-          "type" : "integer"
-        } ]
-      },
-      "symlinks": {
-        "identifiers": [
-          {
-            "namespace": "file:/tmp/iceberg",
-            "name": "default.table",
-            "type": "TABLE"
-          }
-        ]
-      },
-      "storage" : {
-        "storageLayer" : "iceberg",
-        "fileFormat" : "parquet"
-      },
-      "version" : {}
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/iceberg/default/table",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "integer"
+            },
+            {
+              "name": "b",
+              "type": "integer"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/iceberg",
+              "name": "default.table",
+              "type": "TABLE"
+            }
+          ]
+        },
+        "storage": {
+          "storageLayer": "iceberg",
+          "fileFormat": "parquet"
+        },
+        "version": {}
+      }
     }
-  } ]
+  ]
 }

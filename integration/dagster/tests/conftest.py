@@ -164,8 +164,8 @@ class DagsterRunLatestProvider(DagsterRunProvider):
 def make_test_event_log_record(
     event_type: Optional[DagsterEventType] = None,
     pipeline_name: str = "a_job",
-    pipeline_run_id: str = str(generate_new_uuid()),
-    timestamp: float = time.time(),
+    pipeline_run_id: Optional[str] = None,
+    timestamp: Optional[float] = None,
     step_key: Optional[str] = None,
     storage_id: int = 1,
 ):
@@ -173,8 +173,8 @@ def make_test_event_log_record(
         None,
         "debug",
         "user_msg",
-        pipeline_run_id,
-        timestamp,
+        pipeline_run_id or str(generate_new_uuid()),
+        timestamp or time.time(),
         step_key,
         pipeline_name,
         _make_dagster_event(event_type, pipeline_name, step_key) if event_type else None,

@@ -1,0 +1,216 @@
+[
+  # OL event for command start
+  {
+    "eventTime": "2024-11-22T15:58:03.518877Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "12e2a73c-5c0b-45d9-a8e1-28d63e831794"
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "dbt-run-jaffle_shop",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "JOB"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [ ],
+    "outputs": [ ]
+  },
+  # OL event for Node start
+  {
+    "eventTime": "2024-11-20T19:45:51.614844Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
+          },
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "12e2a73c-5c0b-45d9-a8e1-28d63e831794"
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "model.jaffle_shop.stg_customers",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "MODEL"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [
+      {
+        "namespace": "postgres://postgres:5432",
+        "name": "postgres.public.raw_customers",
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432"
+          }
+        }
+      }
+    ],
+    "outputs": [
+      {
+        "namespace": "postgres://postgres:5432",
+        "name": "postgres.public.stg_customers",
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "customer_id"
+              }
+            ]
+          }
+        },
+        "outputFacets": { }
+      }
+    ]
+  },
+  {
+    "eventTime":"2024-11-20T19:45:52.437355Z",
+    "run":{
+      "runId":"{{ any(result) }}",
+      "facets":{
+        "parent":{
+          "run":{
+            "runId":"{{ any(result) }}"
+          },
+          "job":{
+            "namespace":"dbt-test-namespace",
+            "name":"dbt-run-jaffle_shop"
+          }
+        },
+        "dbt_version": {
+          "version": "1.8.2"
+        },
+        "dbt_run": {
+          "invocation_id": "12e2a73c-5c0b-45d9-a8e1-28d63e831794"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        }
+      }
+    },
+    "job":{
+      "namespace":"dbt-test-namespace",
+      "name":"model.jaffle_shop.stg_customers",
+      "facets":{
+        "jobType":{
+          "processingType":"BATCH",
+          "integration":"DBT",
+          "jobType":"MODEL"
+        }
+      }
+    },
+    "eventType":"COMPLETE",
+    "inputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.raw_customers",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          }
+        }
+      }
+    ],
+    "outputs":[
+      {
+        "namespace":"postgres://postgres:5432",
+        "name":"postgres.public.stg_customers",
+        "facets":{
+          "dataSource":{
+            "name":"postgres://postgres:5432",
+            "uri":"postgres://postgres:5432"
+          },
+          "schema":{
+            "fields":[
+              {
+                "name":"customer_id",
+                "fields":[ ]
+              }
+            ]
+          }
+        },
+        "outputFacets":{ }
+      }
+    ]
+  },
+  # OL event for not found CommandCompleted log event
+  {
+    "eventTime": "2024-01-01T00:00:00.000001",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "12e2a73c-5c0b-45d9-a8e1-28d63e831794"
+        }
+      }
+    },
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "dbt-run-jaffle_shop",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "JOB"
+        }
+      }
+    },
+    "eventType": "ABORT",
+    "inputs": [ ],
+    "outputs": [ ]
+  }
+]

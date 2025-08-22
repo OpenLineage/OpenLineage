@@ -21,9 +21,13 @@ A dataset, or `table`, is organized according to a producer, namespace, database
 | Azure Cosmos DB               | Warehouse                            | `azurecosmos://{host}/dbs/{database}`                          | `colls/{table}`                                                              |
 | Azure Data Explorer           | Warehouse                            | `azurekusto://{host}.kusto.windows.net`                        | `{database}/{table}`                                                         |
 | Azure Synapse                 | Warehouse                            | `sqlserver://{host}:{port}`                                    | `{schema}.{table}`                                                           |
-| BigQuery                      | Warehouse                            | `bigquery://`                                                  | `{project id}.{dataset name}.{table name}`                                   |
+| BigQuery                      | Warehouse                            | `bigquery`                                                     | `{project id}.{dataset name}.{table name}`                                   |
 | Cassandra                     | Warehouse                            | `cassandra://{host}:{port}`                                    | `{keyspace}.{table}`                                                         |
 | MySQL                         | Warehouse                            | `mysql://{host}:{port}`                                        | `{database}.{table}`                                                         |
+| CrateDB                       | Warehouse                            | `crate://{host}:{port}`                                        | `{database}.{schema}.{table}`                                                |
+| DB2                           | Warehouse                            | `db2://{host}:{port}`                                          | `{database}.{schema}.{table}`                                                |
+| Hive                          | Warehouse                            | `hive://{host}:{port}`                                         | `{database}.{table}`                                                         |
+| OceanBase                     | Warehouse                            | `oceanbase://{host}:{port}`                                    | `{database}.{table}`                                                         |
 | Oracle                        | Warehouse                            | `oracle://{host}:{port}`                                       | `{serviceName}.{schema}.{table} or {sid}.{schema}.{table}`                   |
 | Postgres                      | Warehouse                            | `postgres://{host}:{port}`                                     | `{database}.{schema}.{table}`                                                |
 | Teradata                      | Warehouse                            | `teradata://{host}:{port}`                                     | `{database}.{table}`                                                         |
@@ -54,6 +58,7 @@ config. The job name is unique within its namespace.
 | Airflow task | `{dag_id}.{task_id}`          | `orders_etl.count_orders`                                    |
 | Spark job    | `{appName}.{command}.{table}` | `my_awesome_app.execute_insert_into_hive_table.mydb_mytable` |
 | SQL          | `{schema}.{table}`            | `gx.validate_datasets`                                       |
+| Debezium     | `{topic.prefix}.{taskId}`     | `inventory.0`                                                |
 
 ## Run Naming
 

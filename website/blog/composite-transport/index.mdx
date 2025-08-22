@@ -69,7 +69,7 @@ HttpConfig httpConfig = new HttpConfig();
 httpConfig.setUrl("http://example.com/api");
 KafkaConfig kafkaConfig = new KafkaConfig();
 KafkaConfig.setTopicName("openlineage.events");
-KafkaConfig.setLocalServerId("some-value");
+KafkaConfig.setMessageKey("some-key");
 
 CompositeConfig compositeConfig = new CompositeConfig(Arrays.asList(
   new HttpTransport(httpConfig),

@@ -7,6 +7,14 @@
       "facets": {
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "d8dea887-0e91-4907-99b1-7ebc5e028b73"
         }
       }
     },
@@ -42,6 +50,14 @@
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "d8dea887-0e91-4907-99b1-7ebc5e028b73"
         }
       }
     },
@@ -65,12 +81,6 @@
           "dataSource":{
             "name":"postgres://postgres:5432",
             "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       }
@@ -88,14 +98,9 @@
             "fields":[
               {
                 "name":"customer_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }

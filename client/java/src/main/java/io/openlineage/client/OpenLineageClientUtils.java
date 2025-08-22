@@ -6,6 +6,7 @@
 package io.openlineage.client;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static com.fasterxml.jackson.databind.MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -19,6 +20,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.module.blackbird.BlackbirdModule;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.utils.OpenLineageEnvParser;
 import java.io.ByteArrayInputStream;
@@ -34,6 +36,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +57,12 @@ public final class OpenLineageClientUtils {
 
   private static final ObjectMapper YML = newObjectMapper(new YAMLFactory());
   private static final ObjectMapper JSON = newObjectMapper();
+
+  /**
+   * An {@link ExecutorService} that can be used for asynchronous operations. It is initialized to
+   * null and can be set up when needed.
+   */
+  private static ExecutorService EXECUTOR;
 
   @JsonFilter("disabledFacets")
   public class DisabledFacetsMixin {}
@@ -73,9 +86,11 @@ public final class OpenLineageClientUtils {
    */
   public static ObjectMapper newObjectMapper(JsonFactory jsonFactory) {
     final ObjectMapper mapper = new ObjectMapper(jsonFactory);
+    mapper.registerModule(new BlackbirdModule());
     mapper.registerModule(new Jdk8Module());
     mapper.registerModule(new JavaTimeModule());
     mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    mapper.enable(ACCEPT_CASE_INSENSITIVE_ENUMS);
     mapper.disable(FAIL_ON_UNKNOWN_PROPERTIES);
     mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     return mapper;
@@ -130,6 +145,21 @@ public final class OpenLineageClientUtils {
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  /**
+   * Performs a deep copy of an object by serializing it to JSON and then deserializing it back to
+   * its original type.
+   *
+   * @param object The object to be deep copied.
+   * @param type The Jackson TypeReference used for deserialization.
+   * @param <T> The generic type of the object.
+   * @return A deep copy of the input object.
+   */
+  public static <T> T deepCopy(@NonNull final T object, TypeReference<T> type)
+      throws UncheckedIOException {
+    String jsonValue = toJson(object);
+    return fromJson(jsonValue, type);
   }
 
   /**
@@ -320,5 +350,48 @@ public final class OpenLineageClientUtils {
       ObjectMapper deserializer, InputStream inputStream, TypeReference<T> valueTypeRef)
       throws IOException {
     return deserializer.readValue(inputStream, valueTypeRef);
+  }
+
+  public static ExecutorService getOrCreateExecutor() {
+    if (EXECUTOR == null || EXECUTOR.isShutdown()) {
+      EXECUTOR = Executors.newCachedThreadPool(new ExecutorThreadFactory("openlineage-executor"));
+    }
+    return EXECUTOR;
+  }
+
+  public static ExecutorService getOrCreateExecutor(ThreadFactory threadFactory) {
+    if (EXECUTOR == null || EXECUTOR.isShutdown()) {
+      EXECUTOR = Executors.newCachedThreadPool(threadFactory);
+    }
+    return EXECUTOR;
+  }
+
+  public static Optional<ExecutorService> getExecutor() {
+    return Optional.ofNullable(EXECUTOR);
+  }
+
+  public static class ExecutorThreadFactory implements java.util.concurrent.ThreadFactory {
+    private final AtomicInteger threadNumber = new AtomicInteger(1);
+    private final String namePrefix;
+    private final ThreadGroup group;
+
+    /**
+     * Creates a ThreadFactory with the specified name prefix and daemon flag. Threads will be named
+     * as "{namePrefix}-{number}".
+     *
+     * @param namePrefix the prefix for thread names
+     */
+    public ExecutorThreadFactory(String namePrefix) {
+      this.group = Thread.currentThread().getThreadGroup();
+      this.namePrefix = namePrefix + "-";
+    }
+
+    @Override
+    public Thread newThread(Runnable r) {
+      Thread t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
+      if (t.isDaemon()) t.setDaemon(false);
+      if (t.getPriority() != Thread.NORM_PRIORITY) t.setPriority(Thread.NORM_PRIORITY);
+      return t;
+    }
   }
 }

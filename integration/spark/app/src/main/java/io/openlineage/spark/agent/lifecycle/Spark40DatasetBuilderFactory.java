@@ -32,12 +32,13 @@ import io.openlineage.spark3.agent.lifecycle.plan.SparkExtensionV1OutputDatasetB
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
-import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import io.openlineage.spark33.agent.lifecycle.plan.ReplaceIcebergDataDatasetBuilder;
+import io.openlineage.spark34.agent.lifecycle.plan.WriteIcebergDeltaDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.CreateReplaceInputDatasetBuilder;
 import io.openlineage.spark34.agent.lifecycle.plan.column.DropTableDatasetBuilder;
 import io.openlineage.spark35.agent.lifecycle.plan.CreateReplaceOutputDatasetBuilder;
 import io.openlineage.spark35.agent.lifecycle.plan.MergeRowsColumnLineageVisitor;
+import io.openlineage.spark40.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import io.openlineage.spark40.agent.lifecycle.plan.StreamingDataSourceV2ScanRelationDatasetBuilder;
 import java.util.Collection;
 import java.util.List;
@@ -94,6 +95,10 @@ public class Spark40DatasetBuilderFactory extends Spark32DatasetBuilderFactory
 
     if (ReplaceIcebergDataDatasetBuilder.hasClasses()) {
       builder.add(new ReplaceIcebergDataDatasetBuilder(context));
+    }
+
+    if (WriteIcebergDeltaDatasetBuilder.hasClasses()) {
+      builder.add(new WriteIcebergDeltaDatasetBuilder(context));
     }
 
     if (DeltaUtils.hasMergeIntoCommandClass()) {

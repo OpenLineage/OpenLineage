@@ -1,7 +1,7 @@
 {
   "eventType": "COMPLETE",
   "job": {
-    "namespace" : "iceberg-namespace"
+    "namespace": "iceberg-namespace"
   },
   "inputs": [],
   "outputs": [
@@ -9,10 +9,6 @@
       "namespace": "file",
       "name": "/tmp/iceberg/default/iceberg_drop_table_test",
       "facets": {
-        "dataSource": {
-          "name": "file",
-          "uri": "file"
-        },
         "lifecycleStateChange": {
           "lifecycleStateChange": "DROP"
         },

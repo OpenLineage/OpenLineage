@@ -9,6 +9,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.dataset.DatasetConfig;
+import io.openlineage.client.job.JobConfig;
+import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
 import java.util.Map;
@@ -16,6 +18,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 /**
  * Configuration for {@link OpenLineageClient}.
@@ -27,6 +30,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class OpenLineageConfig<T extends OpenLineageConfig> implements MergeConfig<T> {
   @JsonProperty("transport")
   protected TransportConfig transportConfig;
@@ -43,6 +47,12 @@ public class OpenLineageConfig<T extends OpenLineageConfig> implements MergeConf
   @JsonProperty("metrics")
   protected Map<String, Object> metricsConfig;
 
+  @JsonProperty("run")
+  protected RunConfig runConfig;
+
+  @JsonProperty("job")
+  protected JobConfig jobConfig;
+
   /**
    * Overwrites existing object with properties of other config entries whenever they're present.
    *
@@ -56,6 +66,8 @@ public class OpenLineageConfig<T extends OpenLineageConfig> implements MergeConf
         mergePropertyWith(facetsConfig, other.facetsConfig),
         mergePropertyWith(datasetConfig, other.datasetConfig),
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
-        mergePropertyWith(metricsConfig, other.metricsConfig));
+        mergePropertyWith(metricsConfig, other.metricsConfig),
+        mergePropertyWith(runConfig, other.runConfig),
+        mergePropertyWith(jobConfig, other.jobConfig));
   }
 }

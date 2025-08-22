@@ -23,6 +23,10 @@ public class JdbcDatasetUtils {
     new SqlServerJdbcExtractor(),
     new TeradataJdbcExtractor(),
     new DerbyJdbcExtractor(),
+    new CrateJdbcExtractor(),
+    new Db2JdbcExtractor(),
+    new TrinoJdbcExtractor(),
+    new OceanBaseJdbcExtractor(),
     new GenericJdbcExtractor()
   };
 

@@ -10,7 +10,7 @@ from setuptools import find_namespace_packages, setup
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "1.28.0"
+__version__ = "1.38.0"
 
 
 project_urls = {
@@ -23,6 +23,7 @@ requirements = [
     "attrs>=19.3.0",
     f"openlineage-python=={__version__}",
     f"openlineage_sql=={__version__}",
+    "pyyaml>=5.3.1",
 ]
 
 extras_require = {
@@ -33,7 +34,7 @@ extras_require = {
         "google-cloud-core>=1.6.0",
         "google-crc32c>=1.1.2",
     ],
-    "dbt": ["dbt-core>=0.20.0", "pyyaml>=5.3.1"],
+    "dbt": [],  # left for backcompat
     "great_expectations": [
         "great_expectations>=0.13.26,<0.15.35",
         "sqlalchemy>=1.3.24,<2.0.0",
@@ -73,7 +74,7 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     zip_safe=False,
     keywords="openlineage",
 )

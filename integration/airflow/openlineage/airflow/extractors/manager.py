@@ -36,13 +36,17 @@ class ExtractorManager:
             if task_uuid:
                 extractor.set_context("task_uuid", task_uuid)
             try:
-                self.log.debug(f"Using extractor {extractor.__class__.__name__} {task_info}")
+                self.log.debug(
+                    "Using extractor %s for task instance %s",
+                    extractor.__class__.__name__,
+                    task_info,
+                )
                 if complete:
                     task_metadata = extractor.extract_on_complete(task_instance)
                 else:
                     task_metadata = extractor.extract()
 
-                self.log.debug(f"Found task metadata for operation {task.task_id}: {task_metadata}")
+                self.log.debug("Found task metadata for operation %s: %s", task.task_id, task_metadata)
                 if task_metadata:
                     if (not task_metadata.inputs) and (not task_metadata.outputs):
                         inlets = task.get_inlet_defs()
@@ -59,14 +63,18 @@ class ExtractorManager:
                     )
                 else:
                     self.log.exception(
-                        f"Failed to extract metadata {e} {task_info}",
+                        "Failed to extract metadata from %s: %s",
+                        task_info,
+                        e,
                     )
             except Exception as e:
                 self.log.exception(
-                    f"Failed to extract metadata {e} {task_info}",
+                    "Failed to extract metadata from %s: %s",
+                    task_info,
+                    e,
                 )
         else:
-            self.log.debug(f"Unable to find an extractor. {task_info}")
+            self.log.debug("Unable to find an extractor %s", task_info)
 
             # Only include the unkonwnSourceAttribute facet if there is no extractor
             task_metadata = TaskMetadata(
@@ -85,7 +93,7 @@ class ExtractorManager:
         if task.task_id in self.extractors:
             return self.extractors[task.task_id]
         extractor = self.task_to_extractor.get_extractor_class(get_operator_class(task))
-        self.log.debug(f"extractor for {task.__class__} is {extractor}")
+        self.log.debug("extractor for %s is %s", task.__class__, extractor)
         if extractor:
             self.extractors[task.task_id] = extractor(task)
             return self.extractors[task.task_id]

@@ -9,18 +9,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
-import io.openlineage.spark.agent.util.DatasetVersionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
-import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.List;
-import java.util.Optional;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -68,24 +64,10 @@ class DataSourceV2RelationInputDatasetOnStartBuilderTest {
 
     try (MockedStatic planUtils3MockedStatic =
         mockStatic(DataSourceV2RelationDatasetExtractor.class)) {
-      try (MockedStatic facetUtilsMockedStatic =
-          mockStatic(DatasetVersionDatasetFacetUtils.class)) {
-        try (MockedStatic versionUtilsMockedStatic = mockStatic(DatasetVersionUtils.class)) {
-          when(DataSourceV2RelationDatasetExtractor.extract(
-                  factory, context, relation, datasetFacetsBuilder))
-              .thenReturn(datasets);
-
-          when(DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
-                  context, relation))
-              .thenReturn(Optional.of("v2"));
-
-          Assertions.assertEquals(datasets, builder.apply(relation));
-
-          versionUtilsMockedStatic.verify(
-              () -> DatasetVersionUtils.buildVersionFacets(context, datasetFacetsBuilder, "v2"),
-              times(1));
-        }
-      }
+      when(DataSourceV2RelationDatasetExtractor.extractIncludingVersionFacet(
+              factory, context, relation))
+          .thenReturn(datasets);
+      Assertions.assertEquals(datasets, builder.apply(relation));
     }
   }
 }

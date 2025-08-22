@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import warnings
 from enum import Enum
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Optional
 
 import attr
 from openlineage.client.constants import DEFAULT_PRODUCER
@@ -27,8 +27,8 @@ class BaseFacet(RedactMixin):
     _producer: str = attr.ib(init=False)
     _schemaURL: str = attr.ib(init=False)  # noqa: N815
 
-    _base_skip_redact: ClassVar[List[str]] = ["_producer", "_schemaURL"]
-    _additional_skip_redact: ClassVar[List[str]] = []
+    _base_skip_redact: ClassVar[list[str]] = ["_producer", "_schemaURL"]
+    _additional_skip_redact: ClassVar[list[str]] = []
 
     def __attrs_post_init__(self) -> None:
         self._producer = PRODUCER
@@ -39,7 +39,7 @@ class BaseFacet(RedactMixin):
         return SCHEMA_URI + "#/definitions/BaseFacet"
 
     @property
-    def skip_redact(self) -> List[str]:
+    def skip_redact(self) -> list[str]:
         return self._base_skip_redact + self._additional_skip_redact
 
 
@@ -48,7 +48,7 @@ class NominalTimeRunFacet(BaseFacet):
     nominalStartTime: str = attr.ib()  # noqa: N815
     nominalEndTime: Optional[str] = attr.ib(default=None)  # noqa: N815
 
-    _additional_skip_redact: ClassVar[List[str]] = ["nominalStartTime", "nominalEndTime"]
+    _additional_skip_redact: ClassVar[list[str]] = ["nominalStartTime", "nominalEndTime"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -57,10 +57,10 @@ class NominalTimeRunFacet(BaseFacet):
 
 @attr.s
 class ParentRunFacet(BaseFacet):
-    run: Dict[Any, Any] = attr.ib()
-    job: Dict[Any, Any] = attr.ib()
+    run: dict[Any, Any] = attr.ib()
+    job: dict[Any, Any] = attr.ib()
 
-    _additional_skip_redact: ClassVar[List[str]] = ["job", "run"]
+    _additional_skip_redact: ClassVar[list[str]] = ["job", "run"]
 
     @classmethod
     def create(cls, runId: str, namespace: str, name: str) -> "ParentRunFacet":  # noqa: N803
@@ -93,7 +93,7 @@ class SourceCodeLocationJobFacet(BaseFacet):
     type: str = attr.ib()
     url: str = attr.ib()
 
-    _additional_skip_redact: ClassVar[List[str]] = ["type", "url"]
+    _additional_skip_redact: ClassVar[list[str]] = ["type", "url"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -124,12 +124,12 @@ class SchemaField(RedactMixin):
     type: str = attr.ib()
     description: Optional[str] = attr.ib(default=None)
 
-    _do_not_redact: ClassVar[List[str]] = ["name", "type"]
+    _do_not_redact: ClassVar[list[str]] = ["name", "type"]
 
 
 @attr.s
 class SchemaDatasetFacet(BaseFacet):
-    fields: List[SchemaField] = attr.ib()
+    fields: list[SchemaField] = attr.ib()
 
     @staticmethod
     def _get_schema() -> str:
@@ -141,7 +141,7 @@ class DataSourceDatasetFacet(BaseFacet):
     name: str = attr.ib()
     uri: str = attr.ib()
 
-    _additional_skip_redact: ClassVar[List[str]] = ["name", "uri"]
+    _additional_skip_redact: ClassVar[list[str]] = ["name", "uri"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -154,7 +154,7 @@ class OutputStatisticsOutputDatasetFacet(BaseFacet):
     size: Optional[int] = attr.ib(default=None)
     fileCount: Optional[int] = attr.ib(default=None)  # noqa: N815
 
-    _additional_skip_redact: ClassVar[List[str]] = ["rowCount", "size", "fileCount"]
+    _additional_skip_redact: ClassVar[list[str]] = ["rowCount", "size", "fileCount"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -169,7 +169,7 @@ class ColumnMetric:
     count: Optional[int] = attr.ib(default=None)
     min: Optional[float] = attr.ib(default=None)
     max: Optional[float] = attr.ib(default=None)
-    quantiles: Optional[Dict[str, float]] = attr.ib(default=None)
+    quantiles: Optional[dict[str, float]] = attr.ib(default=None)
 
 
 @attr.s
@@ -177,7 +177,7 @@ class DataQualityMetricsInputDatasetFacet(BaseFacet):
     rowCount: Optional[int] = attr.ib(default=None)  # noqa: N815
     bytes: Optional[int] = attr.ib(default=None)
     fileCount: Optional[int] = attr.ib(default=None)  # noqa: N815
-    columnMetrics: Dict[str, ColumnMetric] = attr.ib(factory=dict)  # noqa: N815
+    columnMetrics: dict[str, ColumnMetric] = attr.ib(factory=dict)  # noqa: N815
 
     @staticmethod
     def _get_schema() -> str:
@@ -190,7 +190,7 @@ class Assertion(RedactMixin):
     success: bool = attr.ib()
     column: Optional[str] = attr.ib(default=None)
 
-    _skip_redact: ClassVar[List[str]] = ["column"]
+    _skip_redact: ClassVar[list[str]] = ["column"]
 
 
 @attr.s
@@ -198,7 +198,7 @@ class DataQualityAssertionsDatasetFacet(BaseFacet):
 
     """This facet represents asserted expectations on dataset or it's column."""
 
-    assertions: List[Assertion] = attr.ib()
+    assertions: list[Assertion] = attr.ib()
 
     @staticmethod
     def _get_schema() -> str:
@@ -213,7 +213,7 @@ class SourceCodeJobFacet(BaseFacet):
     language: str = attr.ib()  # language that the code was written in
     source: str = attr.ib()  # source code text
 
-    _additional_skip_redact: ClassVar[List[str]] = ["language"]
+    _additional_skip_redact: ClassVar[list[str]] = ["language"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -235,7 +235,7 @@ class ErrorMessageRunFacet(BaseFacet):
     programmingLanguage: str = attr.ib()  # noqa: N815
     stackTrace: Optional[str] = attr.ib(default=None)  # noqa: N815
 
-    _additional_skip_redact: ClassVar[List[str]] = ["programmingLanguage"]
+    _additional_skip_redact: ClassVar[list[str]] = ["programmingLanguage"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -254,7 +254,7 @@ class SymlinksDatasetFacet(BaseFacet):
 
     """This facet represents dataset symlink names."""
 
-    identifiers: List[SymlinksDatasetFacetIdentifiers] = attr.ib(factory=dict)
+    identifiers: list[SymlinksDatasetFacetIdentifiers] = attr.ib(factory=dict)
 
     @staticmethod
     def _get_schema() -> str:
@@ -285,7 +285,7 @@ class OwnershipJobFacet(BaseFacet):
 
     """This facet represents ownership of a job."""
 
-    owners: List[OwnershipJobFacetOwners] = attr.ib(factory=dict)
+    owners: list[OwnershipJobFacetOwners] = attr.ib(factory=dict)
 
     @staticmethod
     def _get_schema() -> str:
@@ -357,7 +357,7 @@ class OwnershipDatasetFacet(BaseFacet):
 
     """This facet represents ownership of a dataset."""
 
-    owners: List[OwnershipDatasetFacetOwners] = attr.ib(factory=dict)
+    owners: list[OwnershipDatasetFacetOwners] = attr.ib(factory=dict)
 
     @staticmethod
     def _get_schema() -> str:
@@ -370,12 +370,12 @@ class ColumnLineageDatasetFacetFieldsAdditionalInputFields(RedactMixin):
     name: str = attr.ib()
     field: str = attr.ib()
 
-    _skip_redact: ClassVar[List[str]] = ["namespace", "name", "field"]
+    _skip_redact: ClassVar[list[str]] = ["namespace", "name", "field"]
 
 
 @attr.s
 class ColumnLineageDatasetFacetFieldsAdditional:
-    inputFields: ClassVar[List[ColumnLineageDatasetFacetFieldsAdditionalInputFields]] = attr.ib()  # noqa: N815
+    inputFields: ClassVar[list[ColumnLineageDatasetFacetFieldsAdditionalInputFields]] = attr.ib()  # noqa: N815
     transformationDescription: str = attr.ib()  # noqa:  N815
     transformationType: str = attr.ib()  # noqa:  N815
 
@@ -385,7 +385,7 @@ class ColumnLineageDatasetFacet(BaseFacet):
 
     """This facet contains column lineage of a dataset."""
 
-    fields: Dict[str, ColumnLineageDatasetFacetFieldsAdditional] = attr.ib(factory=dict)
+    fields: dict[str, ColumnLineageDatasetFacetFieldsAdditional] = attr.ib(factory=dict)
 
     @staticmethod
     def _get_schema() -> str:
@@ -415,7 +415,7 @@ class ExtractionError(BaseFacet):
 class ExtractionErrorRunFacet(BaseFacet):
     totalTasks: int = attr.ib()  # noqa: N815
     failedTasks: int = attr.ib()  # noqa: N815
-    errors: List[ExtractionError] = attr.ib()
+    errors: list[ExtractionError] = attr.ib()
 
     @staticmethod
     def _get_schema() -> str:

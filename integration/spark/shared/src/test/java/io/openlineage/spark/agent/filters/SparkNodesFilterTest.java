@@ -7,11 +7,13 @@ package io.openlineage.spark.agent.filters;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Arrays;
 import java.util.Optional;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
@@ -26,7 +28,7 @@ import org.mockito.MockedStatic;
 
 class SparkNodesFilterTest {
 
-  OpenLineageContext context = mock(OpenLineageContext.class);
+  OpenLineageContext context = mock(OpenLineageContext.class, RETURNS_DEEP_STUBS);
   SparkNodesFilter filter = new SparkNodesFilter(context);
   SparkSession sparkSession = mock(SparkSession.class);
   SparkContext sparkContext = mock(SparkContext.class);
@@ -58,6 +60,32 @@ class SparkNodesFilterTest {
       when(queryExecution.optimizedPlan()).thenReturn(mock(CreateTable.class));
 
       assertFalse(filter.isDisabled(sparkListenerEvent));
+    }
+  }
+
+  @Test
+  void testNodeAllowedInConfig() {
+    when(context.getOpenLineageConfig().getFilterConfig().getAllowedSparkNodes())
+        .thenReturn(Arrays.asList("org.apache.spark.sql.catalyst.plans.logical.Aggregate"));
+
+    try (MockedStatic mocked = mockStatic(SparkSession.class)) {
+      when(SparkSession.active()).thenReturn(sparkSession);
+      when(queryExecution.optimizedPlan()).thenReturn(mock(Aggregate.class));
+
+      assertFalse(filter.isDisabled(sparkListenerEvent));
+    }
+  }
+
+  @Test
+  void testNodeDeniedInConfig() {
+    when(context.getOpenLineageConfig().getFilterConfig().getDeniedSparkNodes())
+        .thenReturn(Arrays.asList("org.apache.spark.sql.execution.datasources.CreateTable"));
+
+    try (MockedStatic mocked = mockStatic(SparkSession.class)) {
+      when(SparkSession.active()).thenReturn(sparkSession);
+      when(queryExecution.optimizedPlan()).thenReturn(mock(CreateTable.class));
+
+      assertTrue(filter.isDisabled(sparkListenerEvent));
     }
   }
 }

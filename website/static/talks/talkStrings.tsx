@@ -11,6 +11,40 @@ export type Talk = {
 
 export const Talks: Talk[] = [
   {
+    conf: "Current London 2025",
+    date: "2025-04-09",
+    image: "current_london_2025.png",
+    title: "Native Data Lineage Support in Apache Flink with OpenLineage",
+    speakers: ["Paweł Leszczyński"],
+    description:
+      "Flink 2.0 is now available, and this talk highlights the collaborative efforts of the Flink and OpenLineage communities to bring native lineage support to Flink.",
+    video_url:
+      "https://current.confluent.io/post-conference-videos-2025/native-data-lineage-support-in-apache-flink-with-openlineage-lnd25",
+    conf_url: "https://current.confluent.io/london",
+  },
+  {
+    conf: "Iceberg Summit 2025",
+    date: "2025-04-09",
+    image: "iceberg_summit_2025.png",
+    title: "Operationalizing Iceberg Metrics with OpenLineage",
+    speakers: ["Paweł Leszczyński"],
+    description:
+      "Recent efforts by the OpenLineage community have enriched lineage metadata with Iceberg’s scan and commit reports, which provides beneficial insights on data read and written. This knowledge can be applied for optimizing costs, as it enables the identification of jobs with the highest cost reduction potential. In this talk, we introduce OpenLineage to the Iceberg community and present the community's efforts to include Iceberg’s scan and commit reports within the lineage metadata collected.",
+    video_url: "https://www.youtube.com/watch?v=7mXbe_XCFdA",
+    conf_url: "https://www.icebergsummit2025.com",
+  },
+  {
+    conf: "move(data) 2025",
+    date: "2025-03-20",
+    image: "move_data_2025.png",
+    title: "Following the Data Breadcrumbs: Data Lineage using OpenLineage",
+    speakers: ["Rahul Madan, Atlan"],
+    description:
+      "Whether you're troubleshooting data issues, planning pipeline changes, or ensuring compliance, this session will equip you with the knowledge to leverage OpenLineage for better data visibility and control. Demystify data lineage and its critical role in modern data ecosystems, explore real-world use cases that demonstrate the power of lineage tracking, and learn how following your data's breadcrumbs (Data Lineage) can transform your team's efficiency and data reliability!",
+    video_url: "https://www.youtube.com/watch?v=fSL110nYCYo&list=PLgyvStszwUHj-HwMVPGQAWRwhnZSkePRA",
+    conf_url: "https://movedata.airbyte.com/",
+  },
+  {
     conf: "Airflow Summit 2024",
     date: "2024-09-10",
     image: "airflow_summit_v2.png",

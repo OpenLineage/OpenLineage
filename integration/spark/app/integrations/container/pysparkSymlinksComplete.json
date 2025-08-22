@@ -1,9 +1,9 @@
 {
-  "eventType" : "COMPLETE",
-  "job" : {
-    "namespace" : "symlinks"
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "symlinks"
   },
-  "outputs" : [
+  "outputs": [
     {
       "namespace": "file",
       "name": "/tmp/warehouse/test",

@@ -6,7 +6,7 @@ export const Producers: Array<Partner> = [
     org: "Airflow",
     full_name: "Airflow",
     description: "A library integrates DAGs for automatic metadata collection.",
-    docs_url: "https://github.com/OpenLineage/OpenLineage/blob/main/integration/airflow",
+    docs_url: "https://airflow.apache.org/docs/apache-airflow-providers-openlineage",
     org_url: "https://airflow.apache.org",
   },
   {
@@ -122,5 +122,14 @@ export const Producers: Array<Partner> = [
       "Data Observability. Simplified. Unified API for lineage metadata interoperability across platforms like Airflow, Spark, Flink and more.",
     docs_url: "https://docs.oleander.dev/",
     org_url: "https://oleander.dev/",
+  },
+  {
+    image: "debezium_logo.svg",
+    org: "Debezium",
+    full_name: "Debezium",
+    description:
+      "Debezium's OpenLineage integration automatically emits all connector information as OpenLineage metadata",
+    docs_url: "https://debezium.io/documentation/reference/integrations/openlineage.html",
+    org_url: "https://debezium.io/",
   },
 ];

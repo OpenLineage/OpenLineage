@@ -115,6 +115,13 @@ public class OpenLineageContext {
   @Default @NonNull @Getter
   final List<ColumnLevelLineageVisitor> columnLevelLineageVisitors = new ArrayList<>();
 
+  /**
+   * A {@link VisitedNodes} instance that tracks visited leaf nodes in a Spark LogicalPlan from
+   * which InputDataset information has been extracted. This field is used to prevent duplicate
+   * processing of nodes representing the same data source.
+   */
+  @Default @NonNull @Getter private final VisitedNodes visitedNodes = new VisitedNodes();
+
   /** Optional {@link QueryExecution} for runs that are Spark SQL queries. */
   private final QueryExecution queryExecution;
 
@@ -295,6 +302,12 @@ public class OpenLineageContext {
    * and the extension implementations provided by spark-extension-interfaces.
    */
   @Getter final SparkOpenLineageExtensionVisitorWrapper sparkExtensionVisitorWrapper;
+
+  /**
+   * Status of the OpenLineage run, which can be used to indicate whether inputs or outputs were
+   * detected
+   */
+  @Builder.Default @Getter final OpenLineageRunStatus lineageRunStatus = new OpenLineageRunStatus();
 
   @Override
   public String toString() {

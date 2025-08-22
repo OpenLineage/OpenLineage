@@ -14,12 +14,23 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.SystemUtils;
 
+/**
+ * Main class for OpenLineage SQL parsing and lineage extraction.
+ * Provides static methods to parse SQL statements and extract metadata.
+ */
 public final class OpenLineageSql {
 
   // TODO: wrap defaultSchema
   private static native SqlMeta parse(List<String> sql, String dialect, String defaultSchema)
       throws RuntimeException;
 
+  /**
+   * Parses SQL statements with a specific dialect.
+   *
+   * @param sql list of SQL statements to parse
+   * @param dialect the SQL dialect to use for parsing
+   * @return optional SqlMeta containing parsed metadata, empty if parsing fails
+   */
   public static Optional<SqlMeta> parse(List<String> sql, String dialect) {
     if (loadError.isPresent()) {
       // TODO: pass error
@@ -32,6 +43,12 @@ public final class OpenLineageSql {
     }
   }
 
+  /**
+   * Parses SQL statements using automatic dialect detection.
+   *
+   * @param sql list of SQL statements to parse
+   * @return optional SqlMeta containing parsed metadata, empty if parsing fails
+   */
   public static Optional<SqlMeta> parse(List<String> sql) {
     if (loadError.isPresent()) {
       // TODO: pass error
@@ -45,8 +62,17 @@ public final class OpenLineageSql {
     }
   }
 
+  /**
+   * Returns the provider information for the native library.
+   *
+   * @return provider string identifying the native library version
+   */
   public static native String provider();
 
+  /**
+   * Contains any error that occurred during native library loading.
+   * Empty if the library loaded successfully.
+   */
   public static Optional<String> loadError = Optional.empty();
 
   private static void loadNativeLibrary(String libName) throws IOException {

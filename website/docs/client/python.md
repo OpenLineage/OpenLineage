@@ -100,7 +100,6 @@ OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP__ENDPOINT="api/v1/lineage"
 ```
 * If one does not want to use aliased HTTP transport in Composite Transport, they can set `OPENLINEAGE__TRANSPORT__TRANSPORTS__DEFAULT_HTTP` to `{}`.
 
-
 #### Examples
 
 <Tabs groupId="configs">
@@ -217,9 +216,9 @@ environment variables:
 
 ## Built-in Transport Types
 
-### HTTP
+### HTTP Transport
 
-Allows sending events to HTTP endpoint, using [requests](https://requests.readthedocs.io/).
+The HTTP transport provides synchronous, blocking event emission. This is the default transport implementation suitable for most use cases where immediate event delivery and error handling are preferred.
 
 #### Configuration
 
@@ -233,10 +232,17 @@ Allows sending events to HTTP endpoint, using [requests](https://requests.readth
   - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
 - `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`. Added in v1.13.0.
 - `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
+- `retry` - dictionary of additional configuration options for HTTP retries. Added in v1.33.0. Defaults are below; those are non-exhaustive options, but the ones that are set by default.
+  - `total` - total number of retries to be attempted. Default is `5`.
+  - `read` - number of retries to be attempted on read errors. Default is `5`.
+  - `connect` - number of retries to be attempted on connection errors. Default is `5`.
+  - `backoff_factor` - a backoff factor to apply between attempts after the second try, default is `0.3`.
+  - `status_forcelist` - a set of integer HTTP status codes that we should force a retry on, default is `[500, 502, 503, 504]`.
+  - `allowed_methods` - a set of HTTP methods that we should retry on, default is `["HEAD", "POST"]`.
 
 #### Behavior
 
-Events are serialized to JSON, and then are send as HTTP POST request with `Content-Type: application/json`.
+Events are serialized to JSON, and then are sent as HTTP POST request with `Content-Type: application/json`. Events are sent immediately and the call blocks until completion. Uses httpx with built-in retry support and raises exceptions on failure.
 
 #### Examples
 
@@ -254,6 +260,13 @@ transport:
     type: api_key
     apiKey: f048521b-dfe8-47cd-9c65-0cb07d57591e
   compression: gzip
+  retry:
+    total: 5
+    read: 5
+    connect: 5
+    backoff_factor: 0.3
+    status_forcelist: [500, 502, 503, 504]
+    allowed_methods: ["HEAD", "POST"]
 ```
 
 </TabItem>
@@ -277,6 +290,281 @@ client = OpenLineageClient(transport=HttpTransport(http_config))
 </TabItem>
 
 </Tabs>
+
+### Async HTTP Transport
+
+The Async HTTP transport provides high-performance, non-blocking event emission with advanced queuing and ordering guarantees. Use this transport when you need high throughput or want to avoid blocking your application on lineage event delivery.
+
+Async transport API is experimental, and can change over the next few releases.
+
+#### Configuration
+
+- `type` - string, must be `"async_http"` or use direct instantiation. Required.
+- `url` - string, base url for HTTP requests. Required.
+- `endpoint` - string specifying the endpoint to which events are sent, appended to `url`. Optional, default: `api/v1/lineage`.
+- `timeout` - float specifying timeout (in seconds) value used while connecting to server. Optional, default: `5`.
+- `verify` - boolean specifying whether the client should verify TLS certificates from the backend. Optional, default: `true`.
+- `auth` - dictionary specifying authentication options. Optional, by default no authorization is used. If set, requires the `type` property.
+  - `type` - string specifying the "api_key" or the fully qualified class name of your TokenProvider. Required if `auth` is provided.
+  - `apiKey` - string setting the Authentication HTTP header as the Bearer. Required if `type` is `api_key`.
+- `compression` - string, name of algorithm used by HTTP client to compress request body. Optional, default value `null`, allowed values: `gzip`.
+- `custom_headers` - dictionary of additional headers to be sent with each request. Optional, default: `{}`.
+- `max_queue_size` - integer specifying maximum events in processing queue. Optional, default: `10000`.
+- `max_concurrent_requests` - integer specifying maximum parallel HTTP requests. Optional, default: `100`.
+- `retry` - dictionary of additional configuration options for HTTP retries. Added in v1.33.0. Defaults are below; those are non-exhaustive options, but the ones that are set by default.
+  - `total` - total number of retries to be attempted. Default is `5`.
+  - `read` - number of retries to be attempted on read errors. Default is `5`.
+  - `connect` - number of retries to be attempted on connection errors. Default is `5`.
+  - `backoff_factor` - a backoff factor to apply between attempts after the second try, default is `0.3`.
+  - `status_forcelist` - a set of integer HTTP status codes that we should force a retry on, default is `[500, 502, 503, 504]`.
+  - `allowed_methods` - a set of HTTP methods that we should retry on, default is `["HEAD", "POST"]`.
+
+#### Behavior
+
+Events are processed asynchronously with the following features:
+
+- **Event Ordering Guarantees**: START events are sent before their corresponding COMPLETE, FAIL, or ABORT events
+- **High Throughput**: Non-blocking event emission with configurable concurrent processing
+- **Queue Management**: Bounded queue prevents memory exhaustion with configurable size
+- **Advanced Error Handling**: Retry logic with exponential backoff for network and server errors
+- **Event Tracking**: Real-time statistics on pending, successful, and failed events
+
+#### Event Flow
+
+1. Events are queued for processing (START events immediately, other events wait until corresponding START event is send)
+2. Worker thread processes events using configurable parallelism
+3. Successful START events trigger release of pending completion events
+4. Event statistics are tracked and available via `get_stats()`
+
+#### Additional Methods
+
+- `wait_for_completion(timeout: float)` - Wait for all events to be processed with timeout. If the value passed is negative, wait until all events get processed.
+- `get_stats()` - Get processing statistics (`{"pending": 0, "success": 10, "failed": 0}`)
+- `close(timeout: float)` - Shutdown with timeout. Skip pending events if they are still processing after timeout. If the value passed is negative, wait until all events get processed.
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: openlineage.client.transport.async_http.AsyncHttpTransport
+  url: https://backend:5000
+  endpoint: api/v1/lineage
+  timeout: 5
+  verify: false
+  auth:
+    type: api_key
+    apiKey: f048521b-dfe8-47cd-9c65-0cb07d57591e
+  compression: gzip
+  max_queue_size: 1000000
+  max_concurrent_requests: 100
+  retry:
+    total: 5
+    read: 5
+    connect: 5
+    backoff_factor: 0.3
+    status_forcelist: [500, 502, 503, 504]
+    allowed_methods: ["HEAD", "POST"]
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.async_http import ApiKeyTokenProvider, AsyncHttpConfig, HttpCompression, AsyncHttpTransport
+
+async_config = AsyncHttpConfig(
+  url="https://backend:5000",
+  endpoint="api/v1/lineage",
+  timeout=5,
+  verify=False,
+  auth=ApiKeyTokenProvider({"apiKey": "f048521b-dfe8-47cd-9c65-0cb07d57591e"}),
+  compression=HttpCompression.GZIP,
+  max_queue_size=1000000,
+  max_concurrent_requests=100
+)
+
+client = OpenLineageClient(transport=AsyncHttpTransport(async_config))
+
+# Emit events asynchronously
+client.emit(start_event)      # Non-blocking
+client.emit(complete_event)   # Waits for START success, then sent
+
+# Wait for all events to complete
+client.transport.wait_for_completion()
+# Get processing statistics
+stats = client.transport.get_stats()
+print(f"Pending: {stats['pending']}, Success: {stats['success']}, Failed: {stats['failed']}")
+# Graceful shutdown
+client.close()
+```
+</TabItem>
+
+</Tabs>
+
+### Datadog Transport
+
+The Datadog transport sends OpenLineage events to Datadog's observability platform with intelligent transport routing based on event characteristics. This transport combines both synchronous HTTP and asynchronous HTTP capabilities, automatically selecting the optimal transport method based on configurable rules.
+
+#### Configuration
+
+- `type` - string, must be `"datadog"`. Required.
+- `apiKey` - string, Datadog API key for authentication. Can also be set via `DD_API_KEY` environment variable. Required.
+- `site` - string, Datadog site endpoint. Can be one of the predefined sites or a custom URL. Can also be set via `DD_SITE` environment variable. Optional, default: `"datadoghq.com"`.
+- `timeout` - float specifying timeout (in seconds) value used while connecting to server. Optional, default: `5.0`.
+- `retry` - dictionary of additional configuration options for HTTP retries. Optional, same defaults as HTTP transport.
+- `max_queue_size` - integer specifying maximum events in async processing queue. Optional, default: `10000`.
+- `max_concurrent_requests` - integer specifying maximum parallel HTTP requests for async transport. Optional, default: `100`.
+- `async_transport_rules` - dictionary mapping integration and job types to transport selection. Optional, default: `{"dbt": {"*": True}}`.
+
+#### Predefined Datadog Sites
+
+The transport supports the following predefined Datadog sites:
+- `datadoghq.com`
+- `us3.datadoghq.com`
+- `us5.datadoghq.com`
+- `datadoghq.eu`
+- `ap1.datadoghq.com`
+- `ap2.datadoghq.com`
+- `ddog-gov.com`
+- `datad0g.com`
+
+You can also provide a custom URL for `site` if using a proxy or custom endpoint.
+
+#### Async Transport Rules
+
+The `async_transport_rules` configuration allows fine-grained control over which events use asynchronous transport vs synchronous HTTP transport. Rules are defined as a two-level dictionary:
+
+```yaml
+async_transport_rules:
+  <integration>:
+    <jobType>: <boolean>
+```
+
+First-level keys match against the `integration` field in `JobTypeJobFacet` Second-level keys match against the `jobType` field in `JobTypeJobFacet`.
+Value `true` uses async transport, `false` or lack of value uses synchronous HTTP transport.
+Use `"*"` to match all integrations or job types. All matching is case-insensitive.
+
+When the mapping for some `integration` - `jobType` pair aren't provided, it will use synchronous HTTPTransport. 
+If you want to send all events via async transport, use double wildcard configuration. It will force async transport even if the `JobTypeJobFacet` is not present.
+
+```yaml
+async_transport_rules:
+  "*":
+   "*": true
+```
+
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: datadog
+  apiKey: your-datadog-api-key
+  site: datadoghq.com
+  timeout: 10
+  max_queue_size: 5000
+  max_concurrent_requests: 50
+  async_transport_rules:
+    # All dbt events use async transport
+    dbt:
+      "*": true
+    # Spark sql-level events use async, other use sync
+    spark:
+      sql: true
+    # All Airflow events use async transport
+    airflow:
+      "*": true
+    # Example configuration that sends all events via async transport
+    "*":
+      "*": true
+  retry:
+    total: 5
+    backoff_factor: 0.3
+    status_forcelist: [500, 502, 503, 504]
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.datadog import DatadogConfig, DatadogTransport
+
+datadog_config = DatadogConfig(
+    apiKey="your-datadog-api-key",
+    site="datadoghq.com",
+    timeout=10.0,
+    max_queue_size=5000,
+    max_concurrent_requests=50,
+    async_transport_rules={
+        "dbt": {"*": True},
+        "spark": {"sql": True},
+        "airflow": {"*": True},
+        "*": {"*": True}  # Send all events via async transport.
+    },
+    retry={
+        "total": 5,
+        "backoff_factor": 0.3,
+        "status_forcelist": [500, 502, 503, 504]
+    }
+)
+
+client = OpenLineageClient(transport=DatadogTransport(datadog_config))
+```
+
+</TabItem>
+<TabItem value="env-vars" label="Environment Variables">
+
+```bash
+# Basic configuration
+export OPENLINEAGE__TRANSPORT__TYPE=datadog
+export OPENLINEAGE__TRANSPORT__APIKEY=your-datadog-api-key
+export OPENLINEAGE__TRANSPORT__SITE=datadoghq.com
+export OPENLINEAGE__TRANSPORT__TIMEOUT=10
+
+# Async transport rules
+export OPENLINEAGE__TRANSPORT__ASYNC_TRANSPORT_RULES='{"dbt": {"*": true}, "spark": {"batch_job": true, "streaming_job": false}, "airflow": {"*": true}}'
+```
+
+
+Or using DD environment variables
+```bash
+export OPENLINEAGE__TRANSPORT__TYPE=datadog
+export DD_API_KEY=your-datadog-api-key
+export DD_SITE=datadoghq.com
+```
+
+</TabItem>
+
+</Tabs>
+
+#### Transport Selection Examples
+
+Given these rules:
+```yaml
+async_transport_rules:
+  dbt:
+    "*": true
+  spark:
+    batch_job: true
+    streaming_job: false
+  "*":
+    ml_training: true
+```
+
+**Event routing behavior**:
+- `integration="dbt", jobType="model"` → **Async** (matches `dbt → *`)
+- `integration="spark", jobType="batch_job"` → **Async** (matches `spark → batch_job`)
+- `integration="spark", jobType="streaming_job"` → **HTTP** (matches `spark → streaming_job`)
+- `integration="flink", jobType="ml_training"` → **Async** (matches `* → ml_training`)
+- `integration="kafka", jobType="consumer"` → **HTTP** (no matching rule)
 
 ### Console
 
@@ -333,6 +621,7 @@ It can be installed also by specifying kafka client extension: `pip install open
 - `messageKey` - string, key for all Kafka messages produced by transport. Optional, default value described below. Added in v1.13.0.
 
   Default values for `messageKey` are:
+  - `run:{rootJob.namespace}/{rootJob.name}` - for RunEvent with parent facet containing link to `root` job
   - `run:{parentJob.namespace}/{parentJob.name}` - for RunEvent with parent facet
   - `run:{job.namespace}/{job.name}` - for RunEvent
   - `job:{job.namespace}/{job.name}` - for JobEvent
@@ -450,13 +739,23 @@ The `CompositeTransport` is designed to combine multiple transports, allowing ev
 
 - `type` - string, must be "composite". Required.
 - `transports` - a list or a map of transport configurations. Required.
-- `continue_on_failure` - boolean flag, determines if the process should continue even when one of the transports fails. Default is `false`.
+- `continue_on_failure` - boolean flag, determines if the process should continue even when one of the transports fails. Default is `true`.
+- `continue_on_success` - boolean flag, determines if the process should continue when one of the transports succeeds. Default is `true`.
+- `sort_transports` - boolean flag, determines if transports should be sorted by `priority` before emission. Default is `false`.
 
 #### Behavior
 
 - The configured transports will be initialized and used in sequence to emit OpenLineage events.
 - If `continue_on_failure` is set to `false`, a failure in one transport will stop the event emission process, and an exception will be raised.
-- If `continue_on_failure` is `true`, the failure will be logged, but the remaining transports will still attempt to send the event.
+- If `continue_on_failure` is `true`, the failure will be logged and the process will continue allowing the remaining transports to still send the event.
+- If `continue_on_success` is set to `false`, a success of one transport will stop the event emission process. This is useful if you want to deliver events to at most one backend, and only fallback to other backends in case of failure.
+- If `continue_on_success` is set to `true`, the success will be logged and the process will continue allowing the remaining transports to send the event.
+
+#### Transport Priority
+Each transport in the `transports` configuration can include an optional `priority` field (integer). 
+When `sort_transports` is `true`, transports are sorted by priority in descending order (higher priority values are processed first). 
+Transports without a priority field default to priority 0.
+
 
 #### Notes for Multiple Transports
 The composite transport can be used with any OpenLineage transport (e.g. `HttpTransport`, `KafkaTransport`, etc).
@@ -478,7 +777,9 @@ Transport names are not required for basic functionality. Their primary purpose 
 ```yaml
 transport:
   type: composite
-  continueOnFailure: true
+  continue_on_failure: true
+  continue_on_success: true
+  sort_transports: false
   transports:
     - type: http
       url: http://example.com/api
@@ -494,7 +795,9 @@ transport:
 ```yaml
 transport:
   type: composite
-  continueOnFailure: true
+  continue_on_failure: true
+  continue_on_success: true
+  sort_transports: true
   transports:
     my_http:
       type: http
@@ -503,6 +806,7 @@ transport:
       type: http
       url: http://localhost:5000
       endpoint: /api/v1/lineage
+      priority: 10
 ```
 
 </TabItem>
@@ -515,6 +819,9 @@ from openlineage.client.transport.composite import CompositeTransport, Composite
 config = CompositeConfig.from_dict(
         {
             "type": "composite",
+            "continue_on_failure": True,
+            "continue_on_success": True,
+            "sort_transports": True,
             "transports": [
                 {
                     "type": "kafka",
@@ -523,13 +830,239 @@ config = CompositeConfig.from_dict(
                     "messageKey": "key",
                     "flush": False,
                 },
-                {"type": "console"},
+                {"type": "console", "priority": 1},
             ],
         },
     )
 client = OpenLineageClient(transport=CompositeTransport(config))
 ```
 </TabItem>
+<TabItem value="env_vars" label="Environment Variables">
+
+```python
+import os
+from openlineage.client import OpenLineageClient
+
+os.environ["OPENLINEAGE__TRANSPORT__TYPE"] = "composite"
+os.environ["OPENLINEAGE__TRANSPORT__CONTINUE_ON_FAILURE"] = "true"
+os.environ["OPENLINEAGE__TRANSPORT__CONTINUE_ON_SUCCESS"] = "true"
+os.environ["OPENLINEAGE__TRANSPORT__SORT_TRANSPORTS"] = "true"
+
+# First transport - transform with http
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TYPE"] = "transform"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__PRIORITY"] = "1"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSFORMER_CLASS"] = "openlineage.client.transport.transform.JobNamespaceReplaceTransformer"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSFORMER_PROPERTIES"] = '{"new_job_namespace": "new_namespace_value"}'
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSPORT__TYPE"] = "http"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSPORT__URL"] = "http://backend:5000"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSPORT__ENDPOINT"] = "api/v1/lineage"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSPORT__AUTH__TYPE"] = "api_key"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__MY_FIRST_TRANSPORT_NAME__TRANSPORT__AUTH__API_KEY"] = "1500100900"
+
+# Second transport - http 
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__TYPE"] = "http"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__PRIORITY"] = "0"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__URL"] = "http://another-backend:5000"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__ENDPOINT"] = "another/endpoint/v2"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__AUTH__TYPE"] = "api_key"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORTS__SECOND__AUTH__API_KEY"] = "bf6128d06dc2"
+
+client = OpenLineageClient()
+```
+</TabItem>
+
+</Tabs>
+
+### Transform
+
+The `TransformTransport` is designed to enable event manipulation before emitting the event. 
+Together with `CompositeTransport`, it can be used to send different events into multiple backends.
+
+#### Configuration
+
+- `type` - string, must be "transform". Required.
+- `transport` - Transport configuration to emit modified events. Required.
+- `transformer_class` - class name of the event transformer. Class has to implement `openlineage.client.transports.transform.EventTransformer` interface and be a fully qualified class name that can be imported. Required.
+- `transformer_properties` - Extra properties to be passed as `properties` kwarg into `transformer_class` constructor. Optional, default is `{}`.
+
+#### Behavior
+
+- The configured `transformer_class` will be used to alter events before the emission.
+- Modified events will be passed into the configured `transport` for further processing.
+- If transformation fails, event emission will be skipped.
+- If modified event is None, event emission will be skipped.
+
+#### `EventTransformer` interface
+
+```python
+from __future__ import annotations
+
+from typing import Any
+from openlineage.client.client import Event
+
+class EventTransformer:
+    def __init__(self, properties: dict[str, Any]) -> None:
+        self.properties = properties
+
+    def transform(self, event: Event) -> Event | None:
+        raise NotImplementedError
+```
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: transform
+  transformer_class: openlineage.client.transport.transform.JobNamespaceReplaceTransformer
+  transformer_properties:
+    new_job_namespace: new_value
+  transport:
+    type: http
+    url: https://backend:5000
+    endpoint: api/v1/lineage
+    timeout: 5
+    verify: false
+    auth:
+      type: api_key
+      apiKey: f048521b-dfe8-47cd-9c65-0cb07d57591e
+    compression: gzip
+    retry:
+      total: 5
+      read: 5
+      connect: 5
+      backoff_factor: 0.3
+      status_forcelist: [500, 502, 503, 504]
+      allowed_methods: ["HEAD", "POST"]
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.transform import TransformTransport, TransformConfig
+
+transform_config = TransformConfig(
+    transport={
+        "type": "http",
+        "url": "http://backend:5000",
+        "endpoint": "api/v1/lineage",
+        "verify": False,
+        "auth": {
+            "type": "api_key",
+            "api_key": "1500100900",
+        },
+        "compression": "gzip",
+        "retry": {
+            "total": 7,
+            "connect": 3,
+            "read": 2,
+            "status": 5,
+            "other": 1,
+            "allowed_methods": ["POST"],
+            "status_forcelist": [500, 502, 503, 504],
+            "backoff_factor": 0.5,
+            "raise_on_redirect": False,
+            "raise_on_status": False,
+        },
+    },
+    transformer_class="openlineage.client.transport.transform.JobNamespaceReplaceTransformer",
+    transformer_properties={"new_job_namespace": "new_namespace"}
+)
+
+client = OpenLineageClient(transport=TransformTransport(transform_config))
+```
+</TabItem>
+<TabItem value="env_vars" label="Environment Variables">
+
+```python
+import os
+from openlineage.client import OpenLineageClient
+
+os.environ["OPENLINEAGE__TRANSPORT__TYPE"] = "transform"
+
+# Transformer
+os.environ["OPENLINEAGE__TRANSPORT__TRANSFORMER_CLASS"] = "openlineage.client.transport.transform.JobNamespaceReplaceTransformer"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSFORMER_PROPERTIES"] = '{"new_job_namespace": "new_namespace"}'
+
+# Transport
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__TYPE"] = "http"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__URL"] = "http://backend:5000"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__ENDPOINT"] = "api/v1/lineage"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__VERIFY"] = "false"
+
+# Transport Auth
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__AUTH__TYPE"] = "api_key"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__AUTH__API_KEY"] = "1500100900"
+
+# Transport Compression
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__COMPRESSION"] = "gzip"
+
+# Transport Retry settings
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__TOTAL"] = "7"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__CONNECT"] = "3"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__READ"] = "2"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__STATUS"] = "5"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__OTHER"] = "1"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__ALLOWED_METHODS"] = '["POST"]'
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__STATUS_FORCELIST"] = "[500, 502, 503, 504]"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__BACKOFF_FACTOR"] = "0.5"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__RAISE_ON_REDIRECT"] = "false"
+os.environ["OPENLINEAGE__TRANSPORT__TRANSPORT__RETRY__RAISE_ON_STATUS"] = "false"
+
+client = OpenLineageClient()
+```
+</TabItem>
+
+</Tabs>
+
+### Amazon DataZone
+
+The `AmazonDataZoneTransport` requires `boto3` package to be additionally installed. It can be done via `pip install openlineage-python[datazone]`. This transport will send event to DataZone / SageMaker Unified Studio domain.
+
+#### Configuration
+
+- `type` - string, must be `"amazon_datazone_api"`. Required.
+- `domainId` - string, specifies the DataZone / SageMaker Unified Studio domain id. The lineage events will be then sent to the following domain. Required.
+- `endpointOverride` - string, overrides the default HTTP endpoint for Amazon DataZone client.
+  Default value will be set by AWS SDK to [following endpoints](https://docs.aws.amazon.com/general/latest/gr/datazone.html#datazone_region) based on the region.
+  Optional, default: None
+
+#### Behavior
+
+- Events are serialized to JSON, and then dispatched to the `DataZone` / `SageMaker Unified Studio` endpoint.
+
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: amazon_datazone_api
+  domainId: dzd-domain-id
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.amazon_datazone import AmazonDataZoneTransport, AmazonDataZoneConfig
+
+datazone_config = AmazonDataZoneConfig(
+  domainId="dzd-domain-id",
+)
+
+client = OpenLineageClient(transport=AmazonDataZoneTransport(datazone_config))
+```
+
+</TabItem>
+
 </Tabs>
 
 ### Custom Transport Type
@@ -951,3 +1484,202 @@ for event in events:
 The resulting lineage events received by Marquez would look like this.
 
 ![the Marquez graph](./mqz_graph_example.png)
+
+
+##### User-supplied Tags with Environment Variables 
+
+Integrations can add [tag facets](https://github.com/OpenLineage/OpenLineage/blob/main/proposals/3169/tags_facet.md) to runs, jobs and datasets. To allow more control over tags, users can add to and override integration-supplied tags through environment variables supplied to the client. The following rules apply to user-supplied tags. 
+
+* User-supplied tags follow the conventions of [dynamic configuration with environment variables.](#dynamic-configuration-with-environment-variables)
+  * `OPENLINEAGE__TAGS__JOB__key=value`
+  * `OPENLINEAGE__TAGS__RUN__key=value`
+  * `OPENLINEAGE__TAGS='{"job": {"key": "value"}, "run": {"key": "value"}}'`
+* User-supplied tag keys are always transformed to lowercase. 
+* Key and value are both treated as strings 
+* Source for a user-supplied tag is always set to "USER"
+* If an integration-supplied tag has the same key as a user tag (case-insensitive), the tag value and source will be overridden.
+
+
+###### Examples
+
+Using this environment variable, an event with no tags facets will create a tag facet and add the following tag. 
+
+```sh
+OPENLINEAGE__TAGS__JOB__ENVIRONMENT="PRODUCTION"
+```
+or 
+
+```sh
+OPENLINEAGE__TAGS='{"job": {"ENVIRONMENT": "PRODUCTION"}}'
+```
+
+```json
+"facets": {
+  "tags": {
+    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.27.0/client/python",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TagsJobFacet.json#/$defs/TagsJobFacet",
+    "tags": [
+      {
+        "key": "environment",
+        "value": "PRODUCTION",
+        "source": "USER"
+      }
+    ]
+  }
+}
+```
+
+Consider this run event. It has one tag with key="ENVIRONMENT" for the job. Run has no tags facet.  
+
+```json
+{
+  "eventTime": "2023-07-17T10:54:22.355067Z",
+  "eventType": "COMPLETE",
+  "inputs": [],
+  "job": {
+    "facets": {
+      "tags": {
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.27.0/client/python",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TagsJobFacet.json#/$defs/TagsJobFacet",
+        "tags": [
+          {
+            "key": "PIPELINE",
+            "value": "sales" 
+            "source": "DBT_INTEGRATION"
+          }
+        ]
+      } 
+    },
+    "name": "dbt",
+    "namespace": "food_delivery"
+  },
+  "outputs": [],
+  "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.30.0/integration/airflow",
+  "run": {
+    "facets": {},
+    "runId": "f69a6e9b-9bac-3c9a-9cf6-eacb70ecc9a9"
+  },
+  "dataset": { "namespace": "123", "name": "1" },
+  "schemaURL": "https://openlineage.io/spec/1-0-5/OpenLineage.json#/definitions/RunEvent"
+}
+```
+
+If we set the following environment variables, three things will happen.
+* Job: Create a new tag for environment.
+* Job: Update the pipeline tag value from "sales" to "sales_monthly". 
+* Run: Create a new tag for adhoc. 
+
+```sh
+OPENLINEAGE__TAGS__JOB__ENVIRONMENT="PRODUCTION"
+OPENLINEAGE__TAGS__JOB__PIPELINE="sales_monthly"
+OPENLINEAGE__TAGS__RUN__adhoc="true"
+```
+
+or
+
+```sh
+OPENLINIAGE__TAGS='{"job": {"ENVIRONMENT": "PRODUCTION", "PIPELINE": "sales_monthly"}, "run": {"adhoc": "true"}}'
+```
+
+The event will now have these tag updates. 
+
+```json
+{
+  "eventTime": "2023-07-17T10:54:22.355067Z",
+  "eventType": "COMPLETE",
+  "inputs": [],
+  "job": {
+    "facets": {
+      "tags": {
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.27.0/client/python",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TagsJobFacet.json#/$defs/TagsJobFacet",
+        "tags": [
+          {
+            "key": "PIPELINE",
+            "value": "sales_monthly" # Updated tag value
+            "source": "DBT_INTEGRATION"
+          },
+          {
+            "key": "environment", # New tag with lowercase key 
+            "value": "PRODUCTION" 
+            "source": "USER"
+          }
+        ]
+      } 
+    },
+    "name": "dbt",
+    "namespace": "food_delivery"
+  },
+  "outputs": [],
+  "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.30.0/integration/airflow",
+  "run": {
+    "facets": {
+      "tags": { # New tags facet
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/1.27.0/client/python",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/TagsJobFacet.json#/$defs/TagsJobFacet",
+        "tags": [
+          {
+            "key": "adhoc", # New tag
+            "value": "true" 
+            "source": "USER"
+          }
+        ]
+      }
+    },
+    "runId": "f69a6e9b-9bac-3c9a-9cf6-eacb70ecc9a9"
+  },
+  "dataset": { "namespace": "123", "name": "1" },
+  "schemaURL": "https://openlineage.io/spec/1-0-5/OpenLineage.json#/definitions/RunEvent"
+}
+```
+
+## Generator CLI Tool
+
+The Python client includes a CLI tool that allows you to generate Python classes from OpenLineage specification files. This is particularly useful if you want to:
+
+- Create custom facets based on your own JSON schema definitions
+- Generate client code that matches a specific version of the OpenLineage specification
+- Extend the OpenLineage model with domain-specific classes
+
+### Dependencies
+
+The CLI tool requires `datamodel-code-generator`, a library that converts JSON Schema to Python data models. If you plan to use the generator, install it with:
+
+```bash
+pip install "openlineage-python[generator]"
+```
+
+### Usage
+
+```bash
+ol-generate-code [FACETS_SPEC_LOCATION] [--output-location OUTPUT_LOCATION]
+```
+
+#### Arguments
+
+- `FACETS_SPEC_LOCATION`: Path to a JSON file or directory containing JSON files with OpenLineage facet specifications
+- `--output-location`: (Optional) Directory where the generated Python classes will be saved. If not specified, output will be printed to stdout with proposed file names.
+
+#### Examples
+
+Generate Python classes from a single facet specification file:
+
+```bash
+ol-generate-code my_custom_facet.json --output-location ./generated_code
+```
+
+Generate Python classes from a directory containing multiple facet specification files:
+
+```bash
+ol-generate-code ./facets_dir --output-location ./generated_code
+```
+
+### How It Works
+
+The CLI tool:
+
+1. Retrieves the base OpenLineage specification from `https://openlineage.io/spec/2-0-2/OpenLineage.json`
+2. Loads and parses your custom facet specifications
+3. Uses the `datamodel-code-generator` library to generate Python classes that match the structure of the specifications
+4. Formats the generated code using Ruff. The generator automatically converts camelCase names to snake_case for Python conventions
+5. Outputs the files to the specified location

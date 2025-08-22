@@ -6,8 +6,10 @@
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergHandler;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -92,11 +94,36 @@ public class CatalogUtils3 {
                         relation.simpleString(5), relation.getClass().getCanonicalName())));
   }
 
+  public static void addStorageAndCatalogFacets(
+      OpenLineageContext context,
+      TableCatalog catalog,
+      Map<String, String> properties,
+      DatasetCompositeFacetsBuilder builder) {
+    CatalogUtils3.getStorageDatasetFacet(context, catalog, properties)
+        .map(storageDatasetFacet -> builder.getFacets().storage(storageDatasetFacet));
+    CatalogUtils3.getCatalogDatasetFacet(context, catalog, properties)
+        .ifPresent(
+            catalogDatasetFacet -> {
+              builder.getFacets().catalog(catalogDatasetFacet.getCatalogDatasetFacet());
+              catalogDatasetFacet
+                  .getAdditionalFacets()
+                  .forEach((k, v) -> builder.getFacets().put(k, v));
+            });
+  }
+
   public static Optional<OpenLineage.StorageDatasetFacet> getStorageDatasetFacet(
       OpenLineageContext context, TableCatalog catalog, Map<String, String> properties) {
     Optional<CatalogHandler> catalogHandler = getCatalogHandler(context, catalog);
     return catalogHandler.isPresent()
         ? catalogHandler.get().getStorageDatasetFacet(properties)
+        : Optional.empty();
+  }
+
+  public static Optional<CatalogHandler.CatalogWithAdditionalFacets> getCatalogDatasetFacet(
+      OpenLineageContext context, TableCatalog catalog, Map<String, String> properties) {
+    Optional<CatalogHandler> catalogHandler = getCatalogHandler(context, catalog);
+    return catalogHandler.isPresent()
+        ? catalogHandler.get().getCatalogDatasetFacet(catalog, properties)
         : Optional.empty();
   }
 

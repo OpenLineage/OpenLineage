@@ -13,6 +13,7 @@ from openlineage.client.generated.base import (
     OutputDataset,
     Run,
     RunEvent,
+    StaticDataset,
     set_producer,
 )
 from openlineage.client.generated.base import (
@@ -20,16 +21,17 @@ from openlineage.client.generated.base import (
 )
 
 __all__ = [
+    "PRODUCER",
     "BaseEvent",
-    "RunEvent",
-    "JobEvent",
-    "DatasetEvent",
-    "RunState",
     "Dataset",
+    "DatasetEvent",
     "InputDataset",
+    "Job",
+    "JobEvent",
     "OutputDataset",
     "Run",
-    "Job",
-    "PRODUCER",
+    "RunEvent",
+    "RunState",
+    "StaticDataset",
     "set_producer",
 ]

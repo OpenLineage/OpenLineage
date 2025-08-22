@@ -16,7 +16,6 @@ import lombok.ToString;
 @ToString
 public class CircuitBreakerState {
   @Getter private final boolean isClosed;
-
   @Getter private final Optional<String> reason;
 
   public CircuitBreakerState(boolean isClosed) {

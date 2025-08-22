@@ -6,7 +6,7 @@ import json
 import logging
 import sys
 from enum import Enum
-from typing import Any, Dict, List, cast
+from typing import Any, cast
 
 import attr
 
@@ -23,14 +23,14 @@ class Serde:
     def remove_nulls_and_enums(cls, obj: Any) -> Any:
         if isinstance(obj, Enum):
             return obj.value
-        if isinstance(obj, Dict):
+        if isinstance(obj, dict):
             return dict(
                 filter(
                     lambda x: x[1] is not None,
                     {k: cls.remove_nulls_and_enums(v) for k, v in obj.items()}.items(),
                 ),
             )
-        if isinstance(obj, List):
+        if isinstance(obj, list):
             return list(
                 filter(
                     lambda x: x is not None and (not isinstance(x, dict) or x != {}),
@@ -47,7 +47,7 @@ class Serde:
     def to_dict(cls, obj: Any) -> dict[Any, Any]:
         if not isinstance(obj, dict):
             obj = attr.asdict(obj)
-        return cast(Dict[Any, Any], cls.remove_nulls_and_enums(obj))
+        return cast("dict[Any, Any]", cls.remove_nulls_and_enums(obj))
 
     @classmethod
     def to_json(cls, obj: Any) -> str:

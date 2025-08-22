@@ -1,0 +1,42 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "iceberg-namespace",
+    "name": "iceberg_integration_test.replace_data.spark_catalog_default_tbl_update_cow"
+  },
+  "inputs": [],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/iceberg/default/tbl_update_cow",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "long"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/iceberg",
+              "name": "default.tbl_update_cow",
+              "type": "TABLE"
+            }
+          ]
+        },
+        "version": {}
+      }
+    }
+  ]
+}

@@ -35,7 +35,7 @@ class SageMakerProcessingExtractor(BaseExtractor):
                 processing_outputs=xcom_values["Processing"]["ProcessingOutputConfig"]["Outputs"],
             )
         except KeyError as e:
-            self.log.error(f"Could not find input/output information in Xcom. {e}")
+            self.log.exception("Could not find input/output information in Xcom: %s", e)
 
         return TaskMetadata(
             name=f"{self.operator.dag_id}.{self.operator.task_id}",
@@ -51,13 +51,13 @@ class SageMakerProcessingExtractor(BaseExtractor):
             for processing_input in processing_inputs:
                 inputs.append(generate_s3_dataset(processing_input["S3Input"]["S3Uri"]))
         except Exception as e:
-            self.log.error(f"Cannot find S3 input details. {e}", exc_info=True)
+            self.log.exception("Cannot find S3 input details: %s", e)
 
         try:
             for processing_output in processing_outputs:
                 outputs.append(generate_s3_dataset(processing_output["S3Output"]["S3Uri"]))
         except Exception as e:
-            self.log.error(f"Cannot find S3 output details. {e}", exc_info=True)
+            self.log.exception("Cannot find S3 output details: %s", e)
 
         return inputs, outputs
 
@@ -71,7 +71,7 @@ class SageMakerTransformExtractor(BaseExtractor):
         pass
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-        self.log.debug(f"extract_on_complete({task_instance})")
+        self.log.debug("extract_on_complete(%s)", task_instance)
 
         xcom_values = task_instance.xcom_pull(task_ids=task_instance.task_id)
 
@@ -82,16 +82,16 @@ class SageMakerTransformExtractor(BaseExtractor):
         try:
             model_package_arn = xcom_values["Model"]["PrimaryContainer"]["ModelPackageName"]
         except KeyError as e:
-            self.log.error(f"Cannot find Model Package Name in Xcom values. {e}", exc_info=True)
+            self.log.exception("Cannot find Model Package Name in Xcom values: %s", e)
 
         try:
             transform = xcom_values["Transform"]
             transform_input = transform["TransformInput"]["DataSource"]["S3DataSource"]["S3Uri"]
             transform_output = transform["TransformOutput"]["S3OutputPath"]
         except KeyError as e:
-            self.log.error(
-                f"Cannot find some required input/output details in XCom. {e}",
-                exc_info=True,
+            self.log.exception(
+                "Cannot find some required input/output details in XCom: %s",
+                e,
             )
 
         inputs = []
@@ -124,7 +124,7 @@ class SageMakerTransformExtractor(BaseExtractor):
             for container in model_containers:
                 model_data_urls.append(container["ModelDataUrl"])
         except Exception as e:
-            self.log.error(f"Cannot retrieve model details. {e}", exc_info=True)
+            self.log.exception("Cannot retrieve model details: %s", e)
 
         return model_data_urls
 
@@ -138,7 +138,7 @@ class SageMakerTrainingExtractor(BaseExtractor):
         pass
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-        self.log.debug(f"extract_on_complete({task_instance})")
+        self.log.debug("extract_on_complete(%s)", task_instance)
 
         xcom_values = task_instance.xcom_pull(task_ids=task_instance.task_id)
 
@@ -149,12 +149,12 @@ class SageMakerTrainingExtractor(BaseExtractor):
             for input_data in xcom_values["Training"]["InputDataConfig"]:
                 inputs.append(generate_s3_dataset(input_data["DataSource"]["S3DataSource"]["S3Uri"]))
         except KeyError as e:
-            self.log.error(f"Issues extracting inputs. {e}")
+            self.log.exception("Issues extracting inputs: %s", e)
 
         try:
             output.append(generate_s3_dataset(xcom_values["Training"]["ModelArtifacts"]["S3ModelArtifacts"]))
         except KeyError as e:
-            self.log.error(f"Issues extracting inputs. {e}")
+            self.log.exception("Issues extracting output: %s", e)
 
         return TaskMetadata(
             name=f"{self.operator.dag_id}.{self.operator.task_id}",

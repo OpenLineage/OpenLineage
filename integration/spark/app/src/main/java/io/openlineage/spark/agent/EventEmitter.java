@@ -11,12 +11,15 @@ import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.TransportFactory;
 import io.openlineage.client.utils.UUIDUtils;
+import io.openlineage.spark.api.DebugConfig;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,6 +31,9 @@ public class EventEmitter {
   @Getter private Optional<String> parentJobName;
   @Getter private Optional<String> parentJobNamespace;
   @Getter private Optional<UUID> parentRunId;
+  @Getter private Optional<String> rootParentJobName;
+  @Getter private Optional<String> rootParentJobNamespace;
+  @Getter private Optional<UUID> rootParentRunId;
   @Getter private UUID applicationRunId;
   @Getter private String applicationJobName;
   @Getter private Optional<List<String>> customEnvironmentVariables;
@@ -38,6 +44,9 @@ public class EventEmitter {
     this.parentJobName = Optional.ofNullable(config.getParentJobName());
     this.parentJobNamespace = Optional.ofNullable(config.getParentJobNamespace());
     this.parentRunId = convertToUUID(config.getParentRunId());
+    this.rootParentJobName = Optional.ofNullable(config.getRootParentJobName());
+    this.rootParentJobNamespace = Optional.ofNullable(config.getRootParentJobNamespace());
+    this.rootParentRunId = convertToUUID(config.getRootParentRunId());
     this.overriddenAppName = Optional.ofNullable(config.getOverriddenAppName());
     this.customEnvironmentVariables =
         config.getFacetsConfig() != null
@@ -46,10 +55,21 @@ public class EventEmitter {
                     Arrays.asList(config.getFacetsConfig().getCustomEnvironmentVariables()))
                 : Optional.empty()
             : Optional.empty();
+
+    List<String> disabledFacets =
+        Stream.of(config.getFacetsConfig().getEffectiveDisabledFacets())
+            .collect(Collectors.toList());
+    // make sure DebugFacet is not disabled if smart debug is enabled
+    // debug facet will be only sent when triggered with smart debug. Facet filtering is done
+    // on the Spark side, so we can exclude it here
+    Optional.ofNullable(config.getDebugConfig())
+        .filter(DebugConfig::isSmartEnabled)
+        .ifPresent(e -> disabledFacets.remove("debug"));
+
     this.client =
         OpenLineageClient.builder()
             .transport(new TransportFactory(config.getTransportConfig()).build())
-            .disableFacets(config.getFacetsConfig().getEffectiveDisabledFacets())
+            .disableFacets(disabledFacets.toArray(new String[0]))
             .build();
     this.applicationJobName = applicationJobName;
     this.applicationRunId = UUIDUtils.generateNewUUID();
@@ -69,6 +89,14 @@ public class EventEmitter {
       }
     } catch (OpenLineageClientException exception) {
       log.error("Could not emit lineage w/ exception", exception);
+    }
+  }
+
+  public void close() {
+    try {
+      client.close();
+    } catch (Exception e) {
+      log.error("Failed to close OpenLineage client", e);
     }
   }
 

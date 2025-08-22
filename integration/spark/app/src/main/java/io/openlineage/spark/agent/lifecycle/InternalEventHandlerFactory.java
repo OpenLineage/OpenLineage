@@ -14,17 +14,7 @@ import io.openlineage.client.OpenLineage.JobFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OutputDatasetFacet;
 import io.openlineage.client.OpenLineage.RunFacet;
-import io.openlineage.spark.agent.facets.builder.CustomEnvironmentFacetBuilder;
-import io.openlineage.spark.agent.facets.builder.DatabricksEnvironmentFacetBuilder;
-import io.openlineage.spark.agent.facets.builder.DebugRunFacetBuilder;
-import io.openlineage.spark.agent.facets.builder.ErrorFacetBuilder;
-import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
-import io.openlineage.spark.agent.facets.builder.OutputStatisticsOutputDatasetFacetBuilder;
-import io.openlineage.spark.agent.facets.builder.OwnershipJobFacetBuilder;
-import io.openlineage.spark.agent.facets.builder.SparkApplicationDetailsFacetBuilder;
-import io.openlineage.spark.agent.facets.builder.SparkJobDetailsFacetBuilder;
-import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilder;
-import io.openlineage.spark.agent.facets.builder.SparkPropertyFacetBuilder;
+import io.openlineage.spark.agent.facets.builder.*;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -208,7 +198,8 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                 new SparkPropertyFacetBuilder(context),
                 new SparkProcessingEngineRunFacetBuilder(context),
                 new SparkApplicationDetailsFacetBuilder(context),
-                new SparkJobDetailsFacetBuilder());
+                new SparkJobDetailsFacetBuilder(),
+                new TagsRunFacetBuilder(context));
     if (DatabricksEnvironmentFacetBuilder.isDatabricksRuntime()) {
       listBuilder.add(new DatabricksEnvironmentFacetBuilder(context));
     } else if (context.getCustomEnvironmentVariables() != null) {
@@ -228,6 +219,7 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                     eventHandlerFactories, factory -> factory.createJobFacetBuilders(context)));
 
     listBuilder.add(new OwnershipJobFacetBuilder(context));
+    listBuilder.add(new TagsJobFacetBuilder(context));
     return listBuilder.build();
   }
 

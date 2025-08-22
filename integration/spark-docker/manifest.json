@@ -45,7 +45,7 @@
     "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
     "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.4.3/spark-3.4.3-bin-hadoop3.tgz",
     "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.4.3/spark-3.4.3-bin-hadoop3.tgz.asc",
-    "sparkVersion": "3.4.3"
+    "sparkVersion": "3.4.4"
   },
   {
     "baseImageTag": "3.4.3",
@@ -53,22 +53,22 @@
     "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
     "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.4.3/spark-3.4.3-bin-hadoop3-scala2.13.tgz",
     "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.4.3/spark-3.4.3-bin-hadoop3-scala2.13.tgz.asc",
-    "sparkVersion": "3.4.3"
+    "sparkVersion": "3.4.4"
   },
   {
-    "baseImageTag": "3.5.2",
+    "baseImageTag": "3.5.6",
     "scalaBinaryVersion": "2.12",
     "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
-    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.5.2/spark-3.5.2-bin-hadoop3.tgz",
-    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.5.2/spark-3.5.2-bin-hadoop3.tgz.asc",
-    "sparkVersion": "3.5.2"
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.5.6/spark-3.5.6-bin-hadoop3.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.5.6/spark-3.5.6-bin-hadoop3.tgz.asc",
+    "sparkVersion": "3.5.6"
   },
   {
-    "baseImageTag": "3.5.2",
+    "baseImageTag": "3.5.6",
     "scalaBinaryVersion": "2.13",
     "sparkPgpKeys": "https://www.apache.org/dist/spark/KEYS",
-    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.5.2/spark-3.5.2-bin-hadoop3-scala2.13.tgz",
-    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.5.2/spark-3.5.2-bin-hadoop3-scala2.13.tgz.asc",
-    "sparkVersion": "3.5.2"
+    "sparkSourceBinaries": "https://archive.apache.org/dist/spark/spark-3.5.6/spark-3.5.6-bin-hadoop3-scala2.13.tgz",
+    "sparkSourceBinariesAsc": "https://archive.apache.org/dist/spark/spark-3.5.6/spark-3.5.6-bin-hadoop3-scala2.13.tgz.asc",
+    "sparkVersion": "3.5.6"
   }
 ]

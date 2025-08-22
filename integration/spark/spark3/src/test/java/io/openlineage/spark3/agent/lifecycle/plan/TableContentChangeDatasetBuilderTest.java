@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoStatement;
@@ -35,6 +34,7 @@ import org.apache.spark.sql.catalyst.plans.logical.OverwriteByExpression;
 import org.apache.spark.sql.catalyst.plans.logical.OverwritePartitionsDynamic;
 import org.apache.spark.sql.catalyst.plans.logical.ReplaceData;
 import org.apache.spark.sql.catalyst.plans.logical.UpdateTable;
+import org.apache.spark.sql.catalyst.plans.logical.WriteDelta;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
@@ -116,6 +116,13 @@ class TableContentChangeDatasetBuilderTest {
   }
 
   @Test
+  void testApplyForWriteDelta() {
+    WriteDelta logicalPlan = mock(WriteDelta.class);
+    when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
+    verify(logicalPlan, null);
+  }
+
+  @Test
   void testApplyForMergeIntoTable() {
     MergeIntoTable logicalPlan = mock(MergeIntoTable.class);
     when(logicalPlan.targetTable()).thenReturn(dataSourceV2Relation);
@@ -138,6 +145,7 @@ class TableContentChangeDatasetBuilderTest {
     assertTrue(builder.isDefinedAtLogicalPlan(mock(DeleteFromTable.class)));
     assertTrue(builder.isDefinedAtLogicalPlan(mock(UpdateTable.class)));
     assertTrue(builder.isDefinedAtLogicalPlan(mock(ReplaceData.class)));
+    assertTrue(builder.isDefinedAtLogicalPlan(mock(WriteDelta.class)));
     assertFalse(builder.isDefinedAtLogicalPlan(mock(LogicalPlan.class)));
   }
 
@@ -165,19 +173,14 @@ class TableContentChangeDatasetBuilderTest {
             .thenReturn(datasetVersionDatasetFacet);
 
         when(DataSourceV2RelationDatasetExtractor.extract(
-                any(), eq(openLineageContext), eq(dataSourceV2Relation), any()))
+                any(), eq(openLineageContext), eq(dataSourceV2Relation), any(), any(Boolean.class)))
             .thenReturn(Collections.singletonList(dataset));
-        when(CatalogUtils3.getDatasetVersion(any(), any(), any(), any()))
-            .thenReturn(Optional.of("v2"));
-        when(datasetFacetsBuilder.version(eq(datasetVersionDatasetFacet)))
-            .thenReturn(datasetFacetsBuilder);
 
         List<OpenLineage.OutputDataset> datasetList =
             builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
 
         assertEquals(1, datasetList.size());
         assertEquals(dataset, datasetList.get(0));
-        Mockito.verify(datasetFacetsBuilder).version(eq(datasetVersionDatasetFacet));
 
         if (lifecycleStateChange != null) {
           Mockito.verify(datasetFacetsBuilder)

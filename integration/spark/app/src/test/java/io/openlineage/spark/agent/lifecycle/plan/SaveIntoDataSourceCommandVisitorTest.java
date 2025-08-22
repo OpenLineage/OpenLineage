@@ -176,5 +176,19 @@ class SaveIntoDataSourceCommandVisitorTest {
     assertEquals("some_db.public.test_table", result.get(0).getName());
   }
 
+  @Test
+  void testJobNameSuffixForTableOption() {
+    CreatableRelationProvider dataSource = mock(CreatableRelationProvider.class);
+    when(command.dataSource()).thenReturn(dataSource);
+
+    when(command.options())
+        .thenReturn(
+            (Map<String, String>)
+                ScalaConversionUtils.fromJavaMap(
+                    Collections.singletonMap("table", "my-target-table")));
+
+    assertThat(visitor.jobNameSuffix(command)).isPresent().get().isEqualTo("my-target-table");
+  }
+
   abstract class DeltaDataSource implements CreatableRelationProvider {}
 }

@@ -14,9 +14,7 @@
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
             "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-            "fields": [
-              { "description": "The primary key for this table", "name": "id" }
-            ]
+            "fields": [{ "description": "The primary key for this table", "name": "id" }]
           }
         },
         "name": "postgres.postgres.my_second_dbt_model",
@@ -27,8 +25,9 @@
       "facets": {
         "sql": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-          "query": "\n\n\n\nselect * from \"postgres\".\"postgres\".\"my_second_dbt_model\"\n"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "\n\n\n\nselect * from \"postgres\".\"postgres\".\"my_second_dbt_model\"\n",
+          "dialect": "postgres"
         }
       },
       "name": "postgres.postgres.snapshot_test.orders_snapshot.snapshot",
@@ -62,11 +61,23 @@
           "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
           "version": "{{ any(result) }}"
         },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "{{ any(result) }}",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
           "job": { "name": "dbt-job-name", "namespace": "dbt" },
           "run": { "runId": "{{ any(result) }}" }
+        },
+        "dbt_run": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-run-run-facet.json",
+          "invocation_id": "69c7b548-c6fd-4a70-87b8-9f111378149b"
         }
       },
       "runId": "{{ any(result) }}"
@@ -87,9 +98,7 @@
           "schema": {
             "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
             "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet",
-            "fields": [
-              { "description": "The primary key for this table", "name": "id" }
-            ]
+            "fields": [{ "description": "The primary key for this table", "name": "id" }]
           }
         },
         "name": "postgres.postgres.my_second_dbt_model",
@@ -100,8 +109,9 @@
       "facets": {
         "sql": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/SQLJobFacet.json#/$defs/SQLJobFacet",
-          "query": "\n\n\n\nselect * from \"postgres\".\"postgres\".\"my_second_dbt_model\"\n"
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/SQLJobFacet.json#/$defs/SQLJobFacet",
+          "query": "\n\n\n\nselect * from \"postgres\".\"postgres\".\"my_second_dbt_model\"\n",
+          "dialect": "postgres"
         },
         "jobType": {
           "jobType": "SNAPSHOT",
@@ -140,11 +150,23 @@
           "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
           "version": "{{ any(result) }}"
         },
+        "processing_engine": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-1/ProcessingEngineRunFacet.json#/$defs/ProcessingEngineRunFacet",
+          "name": "dbt",
+          "version": "{{ any(result) }}",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
         "parent": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-          "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json#/$defs/ParentRunFacet",
+          "_schemaURL": "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/ParentRunFacet",
           "job": { "name": "dbt-job-name", "namespace": "dbt" },
           "run": { "runId": "{{ any(result) }}" }
+        },
+        "dbt_run": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-run-run-facet.json",
+          "invocation_id": "69c7b548-c6fd-4a70-87b8-9f111378149b"
         }
       },
       "runId": "{{ any(result) }}"

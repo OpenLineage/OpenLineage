@@ -98,6 +98,9 @@ class OpenLineageValidationAction(ValidationAction):
         openlineage_parent_run_id=None,
         openlineage_parent_job_namespace=None,
         openlineage_parent_job_name=None,
+        openlineage_root_parent_run_id=None,
+        openlineage_root_parent_job_namespace=None,
+        openlineage_root_parent_job_name=None,
         job_name=None,
         job_description=None,
         code_location=None,
@@ -122,6 +125,9 @@ class OpenLineageValidationAction(ValidationAction):
         self.parent_run_id = openlineage_parent_run_id
         self.parent_job_namespace = openlineage_parent_job_namespace
         self.parent_job_name = openlineage_parent_job_name
+        self.root_parent_run_id = openlineage_root_parent_run_id
+        self.root_parent_job_namespace = openlineage_root_parent_job_namespace
+        self.root_parent_job_name = openlineage_root_parent_job_name
         self.job_name = job_name
         self.job_description = job_description
         self.code_location = code_location
@@ -150,11 +156,20 @@ class OpenLineageValidationAction(ValidationAction):
             datasets = self._fetch_datasets_from_pandas_source(data_asset, validation_result_suite)
         run_facets: Dict[str, RunFacet] = {}
         if self.parent_run_id is not None:
+            root = None
+            if self.root_parent_run_id is not None:
+                root = parent_run.Root(
+                    run=parent_run.RootRun(self.root_parent_run_id),
+                    job=parent_run.RootJob(
+                        namespace=self.root_parent_job_namespace, name=self.root_parent_job_name
+                    ),
+                )
             run_facets.update(
                 {
                     "parent": parent_run.ParentRunFacet(
                         run=parent_run.Run(runId=self.parent_run_id),
                         job=parent_run.Job(namespace=self.parent_job_namespace, name=self.parent_job_name),
+                        root=root,
                     ),
                 }
             )

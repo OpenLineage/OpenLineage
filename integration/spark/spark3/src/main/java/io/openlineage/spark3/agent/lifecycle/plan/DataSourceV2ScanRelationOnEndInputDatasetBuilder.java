@@ -77,7 +77,7 @@ public final class DataSourceV2ScanRelationOnEndInputDatasetBuilder
                       }
                     }));
 
-    return DataSourceV2RelationDatasetExtractor.extract(
+    return DataSourceV2RelationDatasetExtractor.extractIncludingVersionFacet(
         factory, context, relation, datasetFacetsBuilder);
   }
 

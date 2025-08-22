@@ -1,0 +1,24 @@
+{
+  "eventType": "FAIL",
+  "job": {
+    "namespace": "flink_job_namespace",
+    "name": "flink_failed_job"
+  },
+  "run": {
+    "runId": "${json-unit.any-string}",
+    "facets": {
+      "errorMessage": {
+        "message": "Application Status: FAILED",
+        "programmingLanguage": "JAVA"
+      },
+      "processing_engine": {
+        "version": "${json-unit.regex}1\\.\\d+\\.\\d+",
+        "name": "flink",
+        "openlineageAdapterVersion": "${json-unit.any-string}"
+      },
+      "flink_job": {
+        "jobId": "${json-unit.any-string}"
+      }
+    }
+  }
+}

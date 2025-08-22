@@ -10,6 +10,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.sql.connector.catalog.TableCatalog;
 
 /**
  * The DatabricksUnityV2Handler is intended to support Databricks' custom Unity Catalog which has
@@ -31,6 +32,21 @@ public class DatabricksUnityV2Handler extends AbstractDatabricksHandler {
         context
             .getOpenLineage()
             .newStorageDatasetFacet("unity", "parquet")); // The default is parquet / delta
+  }
+
+  @Override
+  public Optional<CatalogWithAdditionalFacets> getCatalogDatasetFacet(
+      TableCatalog tableCatalog, Map<String, String> properties) {
+    OpenLineage.CatalogDatasetFacetBuilder builder =
+        context
+            .getOpenLineage()
+            .newCatalogDatasetFacetBuilder()
+            .name(tableCatalog.name())
+            .framework("delta")
+            .type("unity")
+            .source("spark");
+
+    return Optional.of(CatalogWithAdditionalFacets.of(builder.build()));
   }
 
   @Override

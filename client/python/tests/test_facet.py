@@ -5,11 +5,13 @@ from __future__ import annotations
 import copy
 import json
 from typing import Any
-from unittest.mock import MagicMock
+from unittest import mock
 
 import pytest
 from openlineage.client.client import OpenLineageClient
+from openlineage.client.constants import __version__ as OPENLINEAGE_CLIENT_VERSION
 from openlineage.client.facet import (
+    BaseFacet,
     ColumnLineageDatasetFacet,
     ColumnLineageDatasetFacetFieldsAdditional,
     ColumnLineageDatasetFacetFieldsAdditionalInputFields,
@@ -27,9 +29,10 @@ from openlineage.client.facet import (
     SymlinksDatasetFacetIdentifiers,
 )
 from openlineage.client.run import SCHEMA_URL, Dataset, Job, Run, RunEvent, RunState
+from openlineage.client.serde import Serde
 
 
-@pytest.fixture()
+@pytest.fixture
 def event() -> dict[str, Any]:
     return {
         "eventType": "START",
@@ -41,7 +44,19 @@ def event() -> dict[str, Any]:
         },
         "run": {
             "runId": "69f4acab-b87d-4fc0-b27b-8ea950370ff3",
-            "facets": {},
+            "facets": {
+                "tags": {
+                    "_producer": mock.ANY,
+                    "_schemaURL": mock.ANY,
+                    "tags": [
+                        {
+                            "key": "openlineage_client_version",
+                            "value": OPENLINEAGE_CLIENT_VERSION,
+                            "source": "OPENLINEAGE_CLIENT",
+                        }
+                    ],
+                }
+            },
         },
         "inputs": [],
         "outputs": [
@@ -56,9 +71,10 @@ def event() -> dict[str, Any]:
     }
 
 
-def test_symlink_dataset_facet(event: dict[str, Any]) -> None:
-    session = MagicMock()
-    client = OpenLineageClient(url="http://example.com", session=session)
+def test_symlink_dataset_facet(mock_http_session_class, event: dict[str, Any]) -> None:
+    mock_session_class, mock_client, mock_response = mock_http_session_class
+
+    client = OpenLineageClient(url="http://example.com")
 
     symlink_facet = {
         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
@@ -101,7 +117,10 @@ def test_symlink_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -110,9 +129,10 @@ def test_symlink_dataset_facet(event: dict[str, Any]) -> None:
     assert expected_event == event_sent
 
 
-def test_storage_dataset_facet(event: dict[str, Any]) -> None:
-    session = MagicMock()
-    client = OpenLineageClient(url="http://example.com", session=session)
+def test_storage_dataset_facet(mock_http_session_class, event: dict[str, Any]) -> None:
+    mock_session_class, mock_client, mock_response = mock_http_session_class
+
+    client = OpenLineageClient(url="http://example.com")
 
     storage_facet = {
         "storageLayer": "iceberg",
@@ -145,7 +165,10 @@ def test_storage_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -154,9 +177,10 @@ def test_storage_dataset_facet(event: dict[str, Any]) -> None:
     assert expected_event == event_sent
 
 
-def test_ownership_job_facet(event: dict[str, Any]) -> None:
-    session = MagicMock()
-    client = OpenLineageClient(url="http://example.com", session=session)
+def test_ownership_job_facet(mock_http_session_class, event: dict[str, Any]) -> None:
+    mock_session_class, mock_client, mock_response = mock_http_session_class
+
+    client = OpenLineageClient(url="http://example.com")
 
     ownership_job_facet = {
         "owners": [
@@ -197,7 +221,10 @@ def test_ownership_job_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
     expected_event["job"]["facets"] = {}
@@ -206,9 +233,10 @@ def test_ownership_job_facet(event: dict[str, Any]) -> None:
     assert expected_event == event_sent
 
 
-def test_dataset_version_dataset_facet(event: dict[str, Any]) -> None:
-    session = MagicMock()
-    client = OpenLineageClient(url="http://example.com", session=session)
+def test_dataset_version_dataset_facet(mock_http_session_class, event: dict[str, Any]) -> None:
+    mock_session_class, mock_client, mock_response = mock_http_session_class
+
+    client = OpenLineageClient(url="http://example.com")
 
     dataset_version_facet = {
         "datasetVersion": "v0.1",
@@ -242,7 +270,10 @@ def test_dataset_version_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -251,9 +282,10 @@ def test_dataset_version_dataset_facet(event: dict[str, Any]) -> None:
     assert expected_event == event_sent
 
 
-def test_lifecycle_state_change_dataset_facet(event: dict[str, Any]) -> None:
-    session = MagicMock()
-    client = OpenLineageClient(url="http://example.com", session=session)
+def test_lifecycle_state_change_dataset_facet(mock_http_session_class, event: dict[str, Any]) -> None:
+    mock_session_class, mock_client, mock_response = mock_http_session_class
+
+    client = OpenLineageClient(url="http://example.com")
 
     lifecycle_state_change_dataset_facet = {
         "lifecycleStateChange": "DROP",
@@ -295,7 +327,10 @@ def test_lifecycle_state_change_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["data"])
 
     dataset_facets = {}
     dataset_facets["lifecycleStateChange"] = lifecycle_state_change_dataset_facet
@@ -305,9 +340,10 @@ def test_lifecycle_state_change_dataset_facet(event: dict[str, Any]) -> None:
     assert expected_event == event_sent
 
 
-def test_ownership_dataset_facet(event: dict[str, Any]) -> None:
-    session = MagicMock()
-    client = OpenLineageClient(url="http://example.com", session=session)
+def test_ownership_dataset_facet(mock_http_session_class, event: dict[str, Any]) -> None:
+    mock_session_class, mock_client, mock_response = mock_http_session_class
+
+    client = OpenLineageClient(url="http://example.com")
 
     ownership_dataset_facet = {
         "owners": [
@@ -351,7 +387,10 @@ def test_ownership_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -360,9 +399,10 @@ def test_ownership_dataset_facet(event: dict[str, Any]) -> None:
     assert expected_event == event_sent
 
 
-def test_column_lineage_dataset_facet(event: dict[str, Any]) -> None:
-    session = MagicMock()
-    client = OpenLineageClient(url="http://example.com", session=session)
+def test_column_lineage_dataset_facet(mock_http_session_class, event: dict[str, Any]) -> None:
+    mock_session_class, mock_client, mock_response = mock_http_session_class
+
+    client = OpenLineageClient(url="http://example.com")
 
     column_lineage_dataset_facet = {
         "fields": {
@@ -420,7 +460,10 @@ def test_column_lineage_dataset_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
@@ -429,9 +472,10 @@ def test_column_lineage_dataset_facet(event: dict[str, Any]) -> None:
     assert expected_event == event_sent
 
 
-def test_job_type_job_facet(event: dict[str, Any]) -> None:
-    session = MagicMock()
-    client = OpenLineageClient(url="http://example.com", session=session)
+def test_job_type_job_facet(mock_http_session_class, event: dict[str, Any]) -> None:
+    mock_session_class, mock_client, mock_response = mock_http_session_class
+
+    client = OpenLineageClient(url="http://example.com")
 
     job_type_facet = {
         "processingType": "BATCH",
@@ -457,7 +501,10 @@ def test_job_type_job_facet(event: dict[str, Any]) -> None:
         ),
     )
 
-    event_sent = json.loads(session.post.call_args.kwargs["data"])
+    # Verify the post was called with correct parameters
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    event_sent = json.loads(call_args.kwargs["data"])
 
     expected_event = copy.deepcopy(event)
     expected_event["outputs"] = []
@@ -465,3 +512,19 @@ def test_job_type_job_facet(event: dict[str, Any]) -> None:
     expected_event["job"]["facets"]["jobType"] = job_type_facet
 
     assert expected_event == event_sent
+
+
+def test_facet_copy_serialization_base_facet():
+    facet = BaseFacet()
+    facet_copy = copy.deepcopy(facet)
+    assert Serde.to_json(facet) == Serde.to_json(facet_copy)
+
+
+def test_facet_copy_serialization_parent_run_facet():
+    facet = OwnershipJobFacet(
+        owners=[
+            OwnershipJobFacetOwners("some-owner", "some-owner-type"),
+        ],
+    )
+    facet_copy = copy.deepcopy(facet)
+    assert Serde.to_json(facet) == Serde.to_json(facet_copy)

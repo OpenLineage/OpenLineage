@@ -7,37 +7,38 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 import attr
 from openlineage.client import event_v2
-from openlineage.client.facet import ParentRunFacet
 from openlineage.client.facet_v2 import parent_run
-from openlineage.client.run import DatasetEvent, JobEvent
+from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields
 from packaging.version import Version
 
 if TYPE_CHECKING:
-    from confluent_kafka import KafkaError, Message
+    from confluent_kafka import KafkaError, Message, Producer
     from openlineage.client.client import Event
+    from openlineage.client.facet import ParentRunFacet
+
 log = logging.getLogger(__name__)
 
 _T = TypeVar("_T", bound="KafkaConfig")
 
 
-@attr.s
+@attr.define
 class KafkaConfig(Config):
     # Kafka producer config
     # https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html#kafka-client-configuration
-    config: dict[str, str] = attr.ib()
+    config: dict[str, str]
 
     # Topic on which we should send messages
-    topic: str = attr.ib()
+    topic: str
 
     # Explicit key for Kafka producer
-    messageKey: str | None = attr.ib(default=None)  # noqa: N815
+    messageKey: str | None = None  # noqa: N815
 
     # Set to true if Kafka should flush after each event. The process that emits can be killed in
     # some cases - for example in Airflow integration, so flushing is desirable there.
-    flush: bool = attr.ib(default=True)
+    flush: bool = True
 
     @classmethod
     def from_dict(cls: type[_T], params: dict[str, Any]) -> _T:
@@ -70,27 +71,43 @@ class KafkaTransport(Transport):
         self.message_key = config.messageKey
         self.kafka_config = config
         self._is_airflow_sqlalchemy = _check_if_airflow_sqlalchemy_context()
-        self.producer = None
+        self.producer: Producer | None = None
         if not self._is_airflow_sqlalchemy:
             self._setup_producer(self.kafka_config.config)
-        log.debug(
-            "Constructing OpenLineage transport that will send events "
-            "to kafka topic `%s` using the following config: %s",
-            self.topic,
-            self.kafka_config,
-        )
+        log.debug("Constructing OpenLineage transport that will send events to kafka topic `%s`", self.topic)
 
-    def _get_message_key(self, event: Event) -> str:
+    def _get_message_key(self, event: Event) -> str | None:
         if isinstance(event, (DatasetEvent, event_v2.DatasetEvent)):
             return f"dataset:{event.dataset.namespace}/{event.dataset.name}"
 
         if isinstance(event, (JobEvent, event_v2.JobEvent)):
             return f"job:{event.job.namespace}/{event.job.name}"
 
+        if isinstance(event, (RunEvent, event_v2.RunEvent)):
+            return self._get_run_message_key(event)
+
+        return None
+
+    def _get_run_message_key(self, event: RunEvent | event_v2.RunEvent) -> str:
+        """
+        To keep order of events in Kafka topic, we need to send them to the same partition.
+        This is the case for:
+            1. different runs of the same job.
+            2. runs in the chain parent -> child -> grandchild.
+
+        For (1) Kafka message_key has format "run:<namespace>/<name>".
+        For (2) source for `<namespace>` and `<name>` is selected using this order:
+        - run.facets.parent.root.job
+        - run.facets.parent.job
+        - run.job
+        """
+
+        run_default_result = f"run:{event.job.namespace}/{event.job.name}"
+
         run_facets: dict[str, Any] = event.run.facets or {}
-        parent_run_facet: ParentRunFacet | parent_run.ParentRunFacet = run_facets.get(
-            "parent"
-        ) or ParentRunFacet({}, {})
+        parent_run_facet: ParentRunFacet | parent_run.ParentRunFacet | None = run_facets.get("parent")
+        if not parent_run_facet:
+            return run_default_result
 
         parent_job_namespace: str | None = None
         parent_job_name: str | None = None
@@ -98,19 +115,19 @@ class KafkaTransport(Transport):
             (
                 parent_job_namespace,
                 parent_job_name,
-            ) = self._get_message_key_args_from_parent_run_facet_v2(parent_run_facet)
+            ) = self._get_run_message_key_args_from_parent_run_facet_v2(parent_run_facet)
         else:
             (
                 parent_job_namespace,
                 parent_job_name,
-            ) = self._get_message_key_args_from_parent_run_facet(parent_run_facet)
+            ) = self._get_run_message_key_args_from_parent_run_facet(parent_run_facet)
 
-        if parent_job_namespace and parent_job_name:
-            return f"run:{parent_job_namespace}/{parent_job_name}"
+        if not parent_job_namespace or not parent_job_name:
+            return run_default_result
 
-        return f"run:{event.job.namespace}/{event.job.name}"
+        return f"run:{parent_job_namespace}/{parent_job_name}"
 
-    def _get_message_key_args_from_parent_run_facet(
+    def _get_run_message_key_args_from_parent_run_facet(
         self,
         parent_run_facet: ParentRunFacet,
     ) -> tuple[str | None, str | None]:
@@ -118,31 +135,56 @@ class KafkaTransport(Transport):
         parent_job_name = parent_run_facet.job.get("name")
         return parent_job_namespace, parent_job_name
 
-    def _get_message_key_args_from_parent_run_facet_v2(
+    def _get_run_message_key_args_from_parent_run_facet_v2(
         self,
         parent_run_facet: parent_run.ParentRunFacet,
     ) -> tuple[str, str]:
+        if parent_run_facet.root:
+            root_job_namespace: str = parent_run_facet.root.job.namespace
+            root_job_name: str = parent_run_facet.root.job.name
+            return root_job_namespace, root_job_name
+
         parent_job_namespace: str = parent_run_facet.job.namespace
         parent_job_name: str = parent_run_facet.job.name
         return parent_job_namespace, parent_job_name
 
     def emit(self, event: Event) -> None:
-        if self._is_airflow_sqlalchemy:
+        if self.producer is None:
             self._setup_producer(self.kafka_config.config)
 
         key = self.message_key or self._get_message_key(event)
 
-        self.producer.produce(  # type: ignore[attr-defined]
+        self.producer.produce(  # type: ignore[union-attr]
             topic=self.topic,
             key=key,
             value=Serde.to_json(event).encode("utf-8"),
             on_delivery=on_delivery,
         )
         if self.flush:
-            rest = self.producer.flush(timeout=10)  # type: ignore[attr-defined]
-            log.debug("Amount of messages left in Kafka buffers after flush %d", rest)
+            self.wait_for_completion()
         if self._is_airflow_sqlalchemy:
-            self.producer = None
+            self.close()
+
+    def wait_for_completion(self, timeout: float = -1) -> bool:
+        """
+        Block until all events are processed or timeout is reached.
+
+        Params:
+          timeout: Timeout in seconds. `-1` means to block until last event is processed, 0 means no timeout.
+
+        Returns:
+            bool: True if all events were processed, False if some events were not processed.
+        """
+        if self.producer is None:
+            return True
+        messages_left: int = self.producer.flush(timeout=timeout)
+        log.debug("Amount of messages left in Kafka buffers after flush: %d", messages_left)
+        return not messages_left
+
+    def close(self, timeout: float = -1) -> bool:
+        all_processed = self.wait_for_completion(timeout)
+        self.producer = None
+        return all_processed
 
     def _setup_producer(self, config: dict) -> None:  # type: ignore[type-arg]
         try:

@@ -12,13 +12,14 @@ from airflow.version import version as AIRFLOW_VERSION
 
 __author__ = """OpenLineage"""
 
-if Version(AIRFLOW_VERSION) < Version("2.3.0"):  # type: ignore
+if Version(AIRFLOW_VERSION) < Version("2.5.0"):  # type: ignore
     logging.warning(
         f"""
         OpenLineage support for Airflow version {AIRFLOW_VERSION} is REMOVED.
-        Please make sure to upgrade your Airflow version to minimum of 2.3.0
+        Please make sure to upgrade your Airflow version to minimum of 2.5.0
         in order to continue using OpenLineage.
         OpenLineage version 1.14.0 is the last one that supported Airflow 2.1.x and 2.2.x
+        OpenLineage version 1.33.0 is the last one that supported Airflow 2.3.x and 2.4.x
         """
     )
 elif Version(AIRFLOW_VERSION) >= Version("2.8.0b1"):  # type: ignore

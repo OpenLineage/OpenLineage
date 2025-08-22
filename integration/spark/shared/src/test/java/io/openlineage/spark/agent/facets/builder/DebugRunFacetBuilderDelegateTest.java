@@ -11,10 +11,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static scala.util.Properties.versionNumberString;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.spark.agent.facets.DebugRunFacet.ClasspathDebugFacet;
 import io.openlineage.spark.agent.facets.DebugRunFacet.LogicalPlanDebugFacet;
+import io.openlineage.spark.agent.facets.DebugRunFacet.MemoryDebugFacet;
+import io.openlineage.spark.agent.facets.DebugRunFacet.MetricsDebugFacet;
+import io.openlineage.spark.agent.facets.DebugRunFacet.MetricsNode;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -138,7 +142,8 @@ class DebugRunFacetBuilderDelegateTest {
     when(leaf1.nodeName()).thenReturn("LogicalRelation");
     when(leaf2.nodeName()).thenReturn("LogicalRelation");
 
-    when(queryExecution.optimizedPlan()).thenReturn(root);
+    when(openLineageContext.getLogicalPlan()).thenReturn(root);
+    when(openLineageContext.hasLogicalPlan()).thenReturn(Boolean.TRUE);
     when(root.children())
         .thenReturn(ScalaConversionUtils.fromList(Collections.singletonList(node)));
     when(node.children()).thenReturn(ScalaConversionUtils.fromList(Arrays.asList(leaf1, leaf2)));
@@ -165,5 +170,65 @@ class DebugRunFacetBuilderDelegateTest {
     assertThat(facet.getNodes().get(3))
         .hasFieldOrPropertyWithValue("id", "LogicalRelation@" + leaf2.hashCode())
         .hasFieldOrPropertyWithValue("children", null);
+  }
+
+  @Test
+  void testMetricsArePresentByDefault() {
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(openLineageContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+
+    openLineageContext.getMeterRegistry().counter("sampleCounter").increment(2.0);
+
+    MetricsDebugFacet facet = delegate.buildFacet().getMetrics();
+
+    assertThat(facet).isNotNull();
+    assertThat(facet.getMetrics())
+        .hasSize(1)
+        .contains(
+            MetricsNode.builder()
+                .name("sampleCounter")
+                .value(2.0)
+                .tags(Collections.emptyList())
+                .build());
+  }
+
+  @Test
+  void testMetricsCanBeDisabled() {
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(openLineageContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+    when(openLineageContext.getOpenLineageConfig().getDebugConfig().isMetricsDisabled())
+        .thenReturn(true);
+
+    openLineageContext.getMeterRegistry().counter("sampleCounter").increment(2.0);
+
+    MetricsDebugFacet facet = delegate.buildFacet().getMetrics();
+
+    assertThat(facet).isNull();
+  }
+
+  @Test
+  void testMemoryDebugFacet() {
+    when(openLineageContext.getSparkContext()).thenReturn(Optional.of(sparkContext));
+    when(openLineageContext.getMeterRegistry()).thenReturn(new SimpleMeterRegistry());
+
+    when(sparkContext.conf())
+        .thenReturn(
+            new SparkConf()
+                .set("spark.driver.memory", "2g")
+                .set("spark.driver.memoryOverhead", "512m")
+                .set("spark.driver.minMemoryOverhead", "256m")
+                .set("spark.driver.memoryOverheadFactor", "0.1"));
+
+    MemoryDebugFacet facet = delegate.buildFacet().getMemory();
+
+    assertThat(facet)
+        .hasFieldOrPropertyWithValue("sparkConfDriverMemory", "2g")
+        .hasFieldOrPropertyWithValue("sparkConfDriverMemoryOverhead", "512m")
+        .hasFieldOrPropertyWithValue("sparkConfDriverMinMemoryOverhead", "256m")
+        .hasFieldOrPropertyWithValue("sparkConfDriverMemoryOverheadFactor", "0.1");
+
+    assertThat(facet.getFreeMemory()).isGreaterThan(0L);
+    assertThat(facet.getTotalMemory()).isGreaterThan(0L);
+    assertThat(facet.getMaxMemory()).isGreaterThan(0L);
   }
 }

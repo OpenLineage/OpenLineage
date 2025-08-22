@@ -3,6 +3,7 @@
 import pytest
 from openlineage.common.provider.dbt.utils import CONSUME_STRUCTURED_LOGS_COMMAND_OPTION
 from openlineage.common.utils import (
+    IncrementalFileReader,
     add_command_line_arg,
     add_or_replace_command_line_option,
     get_from_nullable_chain,
@@ -152,3 +153,46 @@ def test_add_or_replace_command_line_option(command_line, option, replace_option
 def test_remove_command_line_option(command_line, command_option, expected_command_line):
     actual_command_line = remove_command_line_option(command_line, command_option)
     assert actual_command_line == expected_command_line
+
+
+@pytest.mark.parametrize(
+    "incremental_reads, expected_lines",
+    [
+        (["foo", " bar", " bim\nbuzz", " foo\n"], ["foo bar bim", "buzz foo"]),
+        (["foo bar bim\n", "buzz foo\n"], ["foo bar bim", "buzz foo"]),
+        (["foo bar bim\n", "buzz foo"], ["foo bar bim"]),
+        (["foo", " bar", " bim\nbuzz\nfizz\n", "foo\n"], ["foo bar bim", "buzz", "fizz", "foo"]),
+    ],
+    ids=[
+        "new_line_in_middle",
+        "new_line_at_the_end",
+        "last_read_has_no_new_line",
+        "many_new_lines_in_one_read",
+    ],
+)
+def test_incremental_file_reader(incremental_reads, expected_lines):
+    class DummyTextFile:
+        """
+        This simulates a text file that reads incomplete lines.
+        """
+
+        def __init__(self):
+            self.incremental_reads = incremental_reads
+            self.name = "dummy"
+            self.i = 0
+
+        def read(self, *args, **kwargs):
+            """
+            This simulates incomplete reads.
+            """
+            next_read = self.incremental_reads[self.i] if self.i < len(incremental_reads) else ""
+            self.i += 1
+            return next_read
+
+    dummy_text_file = DummyTextFile()
+    incremental_reader = IncrementalFileReader(dummy_text_file)
+    actual_lines_read = []
+    for line in incremental_reader.read_lines(4096):
+        actual_lines_read.append(line)
+
+    assert expected_lines == actual_lines_read

@@ -13,12 +13,11 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id "com.adarshr.test-logger" version "3.2.0"
-    // Don't bump above 6.13 - it requires Java 11 https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md#changes-12
-    id 'com.diffplug.spotless' version '6.13.0'
+    id 'com.diffplug.spotless' version '7.0.2'
     id "org.openapi.generator" version "6.6.0"
-    id "com.gradleup.shadow" version "8.3.5"
+    id "com.gradleup.shadow" version "8.3.8"
     id "pmd"
-    id "io.freefair.lombok" version "8.12"
+    id "io.freefair.lombok" version "8.14"
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
 }
 
@@ -40,6 +39,14 @@ pmdMain {
     }
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
 repositories {
     mavenLocal()
     mavenCentral()
@@ -48,12 +55,12 @@ repositories {
 ext {
     assertjVersion = '3.27.3'
     jacksonVersion = "2.15.3"
-    junit5Version = '5.11.4'
-    lombokVersion = '1.18.36'
-    mockitoVersion = '5.2.0'
-    micrometerVersion = '1.14.3'
+    junit5Version = '5.13.3'
+    lombokVersion = '1.18.38'
+    mockitoVersion = '5.18.0'
+    micrometerVersion = '1.15.2'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
-    guavaVersion = '33.4.0-jre'
+    guavaVersion = '33.4.8-jre'
 }
 
 configurations {
@@ -67,14 +74,15 @@ dependencies {
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
-    implementation 'org.apache.commons:commons-lang3:3.17.0'
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.4.1'
-    implementation 'commons-logging:commons-logging:1.3.4'
+    implementation "com.fasterxml.jackson.module:jackson-module-blackbird:${jacksonVersion}"
+    implementation 'org.apache.commons:commons-lang3:3.18.0'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.5'
+    implementation 'commons-logging:commons-logging:1.3.5'
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation "io.micrometer:micrometer-core:${micrometerVersion}"
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly 'org.apache.kafka:kafka-clients:3.9.0'
+    compileOnly 'org.apache.kafka:kafka-clients:4.0.0'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     compileOnly "io.micrometer:micrometer-registry-statsd:${micrometerVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -83,13 +91,24 @@ dependencies {
 
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
     testImplementation "org.mockito:mockito-core:${mockitoVersion}"
-    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
-    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}") {
+        exclude(group: 'org.junit.jupiter')
+    }
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
     testImplementation "io.micrometer:micrometer-registry-statsd:${micrometerVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     testImplementation "com.google.guava:guava:${guavaVersion}"
+    testImplementation 'org.slf4j:slf4j-simple:1.7.36'
+
+    testImplementation("org.mock-server:mockserver-netty:5.14.0:shaded") {
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.datatype'
+        exclude group: 'com.fasterxml.jackson.dataformat'
+        exclude group: 'org.mock-server.mockserver-client-java'
+    }
 }
 
 configurations {
@@ -217,17 +236,22 @@ publishing {
 nexusPublishing {
     repositories {
         sonatype {
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
             username = System.getenv('RELEASE_USERNAME')
             password = System.getenv('RELEASE_PASSWORD')
         }
     }
 }
 
+
 signing {
     required { isReleaseVersion }
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
-    useInMemoryPgpKeys(signingKey, signingPassword)
+    if (signingKey && signingPassword) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+    }
     sign publishing.publications.mavenJava
 }
 

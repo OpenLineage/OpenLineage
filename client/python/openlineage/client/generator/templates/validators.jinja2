@@ -1,0 +1,43 @@
+{#- validators logic -#}
+{%- macro validator(name, type, required) -%}
+{#- try to parse datetime #}
+    {%- if 'date-time' in type %}
+    @{{ name }}.validator
+    def {{ name | lower }}_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        {% if not required %}
+        if value is None:
+            return
+        {% endif -%}
+        from dateutil import parser
+        parser.isoparse(value)
+        if "t" not in value.lower():
+            # make sure date-time contains time
+            msg = f"Parsed date-time has to contain time: {value}"
+            raise ValueError(msg)
+    {#- try to parse uri #}
+    {%- elif 'uri' in type %}
+    @{{ name }}.validator
+    def {{ name | lower }}_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        {% if not required %}
+        if value is None:
+            return
+        {% endif -%}
+        from urllib.parse import urlparse
+        urlparse(value)
+    {%- elif 'uuid' in type %}
+{#- check uuid format #}
+    @{{ name }}.validator
+    def {{ name | lower }}_check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        {% if not required %}
+        if value is None:
+            return
+        {% endif -%}
+        from uuid import UUID
+        UUID(value)
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro validator_needed(type) -%}
+    {#- generate validators only for below types -#}
+    {{ type in ['date-time', 'uuid', 'uri'] }}
+{%- endmacro -%}

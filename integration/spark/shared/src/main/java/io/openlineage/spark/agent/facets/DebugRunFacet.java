@@ -6,9 +6,11 @@
 package io.openlineage.spark.agent.facets;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.micrometer.core.instrument.Tag;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.facets.serializer.DebugRunFacetSerializer;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -22,25 +24,35 @@ import lombok.Value;
  * integration and provide details on potential problems.
  */
 @Getter
+@JsonSerialize(using = DebugRunFacetSerializer.class)
 public class DebugRunFacet extends OpenLineage.DefaultRunFacet {
   private final ClasspathDebugFacet classpath;
   private final SystemDebugFacet system;
   private final SparkConfigDebugFacet config;
   private final LogicalPlanDebugFacet logicalPlan;
   private final MetricsDebugFacet metrics;
+  private final MemoryDebugFacet memory;
+  private final List<String> logs;
+  private final int payloadSizeLimitInKilobytes;
 
   public DebugRunFacet(
       SparkConfigDebugFacet config,
       ClasspathDebugFacet classpath,
       SystemDebugFacet system,
       LogicalPlanDebugFacet logicalPlan,
-      MetricsDebugFacet metricsDebugFacet) {
+      MetricsDebugFacet metricsDebugFacet,
+      MemoryDebugFacet memory,
+      List<String> logs,
+      int payloadSizeLimitInKilobytes) {
     super(Versions.OPEN_LINEAGE_PRODUCER_URI);
     this.config = config;
     this.classpath = classpath;
     this.system = system;
     this.logicalPlan = logicalPlan;
     this.metrics = metricsDebugFacet;
+    this.memory = memory;
+    this.logs = logs;
+    this.payloadSizeLimitInKilobytes = payloadSizeLimitInKilobytes;
   }
 
   /** Entries from SparkConf that can be valuable for debugging. */
@@ -124,6 +136,18 @@ public class DebugRunFacet extends OpenLineage.DefaultRunFacet {
     String id;
     String desc;
     List<String> children;
+  }
+
+  @Value
+  @Builder
+  public static class MemoryDebugFacet {
+    String sparkConfDriverMemory;
+    String sparkConfDriverMemoryOverhead;
+    String sparkConfDriverMinMemoryOverhead;
+    String sparkConfDriverMemoryOverheadFactor;
+    long freeMemory;
+    long totalMemory;
+    long maxMemory;
   }
 
   /**

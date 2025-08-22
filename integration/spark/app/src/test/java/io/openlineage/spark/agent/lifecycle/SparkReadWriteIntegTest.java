@@ -6,11 +6,10 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import static io.openlineage.client.OpenLineage.RunEvent;
+import static org.apache.spark.sql.functions.col;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
@@ -18,17 +17,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.cloud.bigquery.MockBigQueryRelationProvider;
-import com.google.cloud.bigquery.connector.common.BigQueryUtil;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.BigQuery;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.Field;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.Schema;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.StandardSQLTypeName;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.StandardTableDefinition;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.TableId;
-import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Binder;
-import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Module;
-import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Provides;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage;
@@ -39,10 +27,7 @@ import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
-import io.openlineage.spark.agent.Versions;
-import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.SparkVersionUtils;
-import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -52,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -80,7 +66,6 @@ import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.GenericRow;
-import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
 import org.apache.spark.sql.types.BinaryType$;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.LongType$;
@@ -116,7 +101,6 @@ class SparkReadWriteIntegTest {
   private static final String NAME = "name";
   private static final String AGE = "age";
   private static final String FILE_URI_PREFIX = "file://";
-  private static final String GREATER_THAN_SPARK2 = "([34].*)";
   private static final String SPARK_VERSION = "spark.version";
 
   private final KafkaContainer kafkaContainer =
@@ -124,7 +108,6 @@ class SparkReadWriteIntegTest {
 
   @BeforeEach
   public void setUp() {
-    reset(MockBigQueryRelationProvider.BIG_QUERY);
     when(SparkAgentTestExtension.EVENT_EMITTER.getParentRunId())
         .thenReturn(Optional.of(UUID.randomUUID()));
     when(SparkAgentTestExtension.EVENT_EMITTER.getParentJobName())
@@ -142,106 +125,7 @@ class SparkReadWriteIntegTest {
     }
   }
 
-  // TODO: Please note the test remains disabled for Spark 4.0 for now (no applicable connector
-  // version available)
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "(3.*)")
-  void testBigQueryReadWriteToFile(@TempDir Path writeDir, SparkSession spark)
-      throws InterruptedException, TimeoutException {
-    TableId tableId = TableId.of("testproject", "dataset", "MyTable");
-    BigQuery bq = MockBigQueryRelationProvider.BIG_QUERY;
-    StructType tableSchema =
-        new StructType(
-            new StructField[] {
-              new StructField(NAME, StringType$.MODULE$, false, Metadata.empty()),
-              new StructField(AGE, LongType$.MODULE$, false, Metadata.empty())
-            });
-
-    MockBigQueryRelationProvider.INJECTOR.setTestModule(
-        new Module() {
-          @Override
-          public void configure(Binder binder) {}
-
-          @Provides
-          public Dataset<Row> testData() {
-            return spark.createDataFrame(
-                Arrays.asList(
-                    new GenericRowWithSchema(new Object[] {"john", 25L}, tableSchema),
-                    new GenericRowWithSchema(new Object[] {"sam", 22L}, tableSchema),
-                    new GenericRowWithSchema(new Object[] {"alicia", 35L}, tableSchema),
-                    new GenericRowWithSchema(new Object[] {"bob", 47L}, tableSchema),
-                    new GenericRowWithSchema(new Object[] {"jordan", 52L}, tableSchema),
-                    new GenericRowWithSchema(new Object[] {"liz", 19L}, tableSchema),
-                    new GenericRowWithSchema(new Object[] {"marcia", 83L}, tableSchema),
-                    new GenericRowWithSchema(new Object[] {"maria", 40L}, tableSchema),
-                    new GenericRowWithSchema(new Object[] {"luis", 8L}, tableSchema),
-                    new GenericRowWithSchema(new Object[] {"gabriel", 30L}, tableSchema)),
-                tableSchema);
-          }
-        });
-    when(bq.getTable(eq(tableId)))
-        .thenAnswer(
-            invocation ->
-                MockBigQueryRelationProvider.makeTable(
-                    tableId,
-                    StandardTableDefinition.newBuilder()
-                        .setSchema(
-                            Schema.of(
-                                Field.of(NAME, StandardSQLTypeName.STRING),
-                                Field.of(AGE, StandardSQLTypeName.INT64)))
-                        .setNumBytes(100L)
-                        .setNumRows(1000L)
-                        .build()));
-
-    Dataset<Row> df =
-        spark
-            .read()
-            .format(MockBigQueryRelationProvider.class.getName())
-            .option("gcpAccessToken", "not a real access token")
-            .option("parentProject", "not a project")
-            .load("testproject.dataset.MyTable");
-    String outputDir = writeDir.resolve("testBigQueryRead").toAbsolutePath().toUri().getPath();
-    df.write().csv(FILE_URI_PREFIX + outputDir);
-
-    // wait for event processing to complete
-    StaticExecutionContextFactory.waitForExecutionEnd();
-
-    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
-        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(5)).emit(lineageEvent.capture());
-    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
-    OpenLineage.RunEvent event = events.get(3);
-    assertThat(event.getRun().getFacets().getAdditionalProperties())
-        .hasEntrySatisfying(
-            TestOpenLineageEventHandlerFactory.TEST_FACET_KEY,
-            facet ->
-                assertThat(facet)
-                    .isInstanceOf(TestOpenLineageEventHandlerFactory.TestRunFacet.class)
-                    .hasFieldOrProperty("message"));
-    List<InputDataset> inputs = event.getInputs();
-    assertEquals("bigquery", inputs.get(0).getNamespace());
-    assertEquals(BigQueryUtil.friendlyTableName(tableId), inputs.get(0).getName());
-
-    List<OutputDataset> outputs = event.getOutputs();
-    OutputDataset output = outputs.get(0);
-    assertEquals(FILE, output.getNamespace());
-    assertEquals(outputDir, output.getName());
-    SchemaDatasetFacet schemaDatasetFacet =
-        PlanUtils.schemaFacet(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI), tableSchema);
-    assertThat(output.getFacets().getSchema())
-        .usingRecursiveComparison()
-        .isEqualTo(schemaDatasetFacet);
-
-    assertNotNull(output.getFacets().getAdditionalProperties());
-    if (SparkVersionUtils.isSpark3OrHigher()) {
-      assertThat(output.getOutputFacets().getOutputStatistics()).isNotNull();
-    }
-  }
-
-  @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testReadFromFileWriteToJdbc(@TempDir Path writeDir, SparkSession spark)
       throws InterruptedException, TimeoutException, IOException {
     Path testFile = writeTestDataToFile(writeDir);
@@ -468,9 +352,6 @@ class SparkReadWriteIntegTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testCreateDataSourceTableAsSelect(@TempDir Path tmpDir, SparkSession spark)
       throws InterruptedException, TimeoutException, IOException {
     Path testFile = writeTestDataToFile(tmpDir);
@@ -501,7 +382,7 @@ class SparkReadWriteIntegTest {
         .first()
         .hasFieldOrPropertyWithValue(NAME, testFile.getParent().toString())
         .hasFieldOrPropertyWithValue(NAMESPACE, FILE);
-    String warehouseDir = spark.sqlContext().conf().getConfString("spark.sql.warehouse.dir");
+    String warehouseDir = spark.sqlContext().getConf("spark.sql.warehouse.dir");
     assertThat(event.getOutputs())
         .first()
         .hasFieldOrPropertyWithValue(
@@ -595,14 +476,17 @@ class SparkReadWriteIntegTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(5)).emit(lineageEvent.capture());
-    OpenLineage.RunEvent event = lineageEvent.getAllValues().get(4);
-    assertThat(event).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
+    List<RunEvent> reversed = lineageEvent.getAllValues();
+    Collections.reverse(reversed);
+    Optional<RunEvent> event =
+        reversed.stream().filter(e -> e.getEventType().equals(EventType.COMPLETE)).findFirst();
+    assertThat(event).get().hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     String kafkaNamespace =
         "kafka://"
             + kafkaContainer.getHost()
             + ":"
             + kafkaContainer.getMappedPort(KafkaContainer.KAFKA_PORT);
-    assertThat(event.getInputs())
+    assertThat(event.get().getInputs())
         .hasSize(2)
         .satisfiesExactlyInAnyOrder(
             dataset ->
@@ -711,9 +595,6 @@ class SparkReadWriteIntegTest {
 
   @Test
   @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testExternalRDDWithS3Bucket(SparkSession spark)
       throws InterruptedException, TimeoutException, IOException, URISyntaxException {
     spark.conf().set("fs.s3a.secret.key", System.getenv("S3_SECRET_KEY"));
@@ -775,6 +656,74 @@ class SparkReadWriteIntegTest {
         .get()
         .hasFieldOrPropertyWithValue(NAMESPACE, namespace)
         .hasFieldOrPropertyWithValue(NAME, bDatasetName);
+  }
+
+  @Test
+  void testDoesNotCreateDuplicatedInputDatasets(@TempDir Path writeDir, SparkSession spark)
+      throws InterruptedException, TimeoutException {
+    String ordersInputPath = "src/test/resources/debug/orders";
+    String datesInputPath = "src/test/resources/debug/dates";
+    String outputPath = writeDir + "/some_output";
+
+    Dataset<Row> ordersDF =
+        spark.read().option("header", true).option("inferSchema", true).csv(ordersInputPath);
+
+    Dataset<Row> dateDF =
+        spark.read().option("header", true).option("inferSchema", true).csv(datesInputPath);
+
+    String dateIdCol = "date_id";
+    Dataset<Row> orderAnalysisBase =
+        ordersDF.join(
+            dateDF.alias("order_dates"),
+            ordersDF.col("order_date").equalTo(dateDF.col(dateIdCol)),
+            "left");
+
+    for (String colName : dateDF.columns()) {
+      if (!dateIdCol.equals(colName)) {
+        orderAnalysisBase = orderAnalysisBase.withColumnRenamed(colName, "order_" + colName);
+      }
+    }
+    orderAnalysisBase = orderAnalysisBase.drop(col(dateIdCol));
+
+    orderAnalysisBase =
+        orderAnalysisBase.join(
+            dateDF.alias("ship_dates"),
+            orderAnalysisBase.col("shipped_date").equalTo(dateDF.col(dateIdCol)),
+            "left");
+
+    for (String colName : dateDF.columns()) {
+      if (!dateIdCol.equals(colName)) {
+        orderAnalysisBase = orderAnalysisBase.withColumnRenamed(colName, "ship_" + colName);
+      }
+    }
+    orderAnalysisBase = orderAnalysisBase.drop(col(dateIdCol));
+
+    Dataset<Row> intermediateDF =
+        orderAnalysisBase.select(col("order_id").alias("intermediate_order_id"));
+
+    Dataset<Row> finalOutput =
+        orderAnalysisBase.join(
+            intermediateDF,
+            orderAnalysisBase.col("order_id").equalTo(intermediateDF.col("intermediate_order_id")),
+            "inner");
+
+    finalOutput.write().option("header", true).mode("overwrite").csv(outputPath);
+
+    StaticExecutionContextFactory.waitForExecutionEnd();
+
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+
+    Mockito.verify(SparkAgentTestExtension.EVENT_EMITTER, atLeast(1)).emit(lineageEvent.capture());
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+    ObjectAssert<RunEvent> completionEvent =
+        assertThat(events)
+            .filteredOn(e -> e.getEventType().equals(RunEvent.EventType.COMPLETE))
+            .isNotEmpty()
+            .last();
+    completionEvent
+        .extracting(RunEvent::getInputs, InstanceOfAssertFactories.list(InputDataset.class))
+        .hasSize(2);
   }
 
   private CompletableFuture sendMessage(

@@ -32,7 +32,16 @@ public class AwsUtils {
                   getGlueCatalogId(sparkConf, hadoopConf)
                       .map(glueCatalogId -> "arn:aws:glue:" + region + ":" + glueCatalogId));
     } else {
-      return Optional.empty();
+      try {
+        return awsRegion()
+            .flatMap(
+                region ->
+                    getGlueCatalogId(sparkConf, hadoopConf)
+                        .map(glueCatalogId -> "arn:aws:glue:" + region + ":" + glueCatalogId));
+      } catch (Exception e) {
+        log.error("Failed to retrieve Glue", e);
+        return Optional.empty();
+      }
     }
   }
 

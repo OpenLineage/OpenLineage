@@ -35,7 +35,7 @@
 				"post-hook": [],
 				"pre-hook": []
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default",
 			"fqn": ["jaffle_shop", "orders"],
 			"unique_id": "model.jaffle_shop.orders",
@@ -171,7 +171,7 @@
 				"post-hook": [],
 				"pre-hook": []
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default",
 			"fqn": ["jaffle_shop", "staging", "stg_customers"],
 			"unique_id": "model.jaffle_shop.stg_customers",
@@ -242,7 +242,7 @@
 				"post-hook": [],
 				"pre-hook": []
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default",
 			"fqn": ["jaffle_shop", "staging", "stg_payments"],
 			"unique_id": "model.jaffle_shop.stg_payments",
@@ -321,7 +321,7 @@
 				"post-hook": [],
 				"pre-hook": []
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default",
 			"fqn": ["jaffle_shop", "staging", "stg_orders"],
 			"unique_id": "model.jaffle_shop.stg_orders",
@@ -400,7 +400,7 @@
 				"post-hook": [],
 				"pre-hook": []
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default",
 			"fqn": ["jaffle_shop", "raw_customers"],
 			"unique_id": "seed.jaffle_shop.raw_customers",
@@ -454,7 +454,7 @@
 				"post-hook": [],
 				"pre-hook": []
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default",
 			"fqn": ["jaffle_shop", "raw_orders"],
 			"unique_id": "seed.jaffle_shop.raw_orders",
@@ -508,7 +508,7 @@
 				"post-hook": [],
 				"pre-hook": []
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default",
 			"fqn": ["jaffle_shop", "raw_payments"],
 			"unique_id": "seed.jaffle_shop.raw_payments",
@@ -570,7 +570,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "unique_orders_order_id"],
 			"unique_id": "test.jaffle_shop.unique_orders_order_id.fed79b3a6e",
@@ -640,7 +640,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "not_null_orders_order_id"],
 			"unique_id": "test.jaffle_shop.not_null_orders_order_id.cf6c17daed",
@@ -710,7 +710,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "not_null_orders_customer_id"],
 			"unique_id": "test.jaffle_shop.not_null_orders_customer_id.c5f02694af",
@@ -782,7 +782,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "relationships_orders_customer_id__customer_id__ref_customers_"],
 			"unique_id": "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2",
@@ -854,7 +854,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "accepted_values_orders_status__placed__shipped__completed__return_pending__returned"],
 			"unique_id": "test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.be6b5b5ec3",
@@ -926,7 +926,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "not_null_orders_amount"],
 			"unique_id": "test.jaffle_shop.not_null_orders_amount.106140f9fd",
@@ -996,7 +996,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "not_null_orders_credit_card_amount"],
 			"unique_id": "test.jaffle_shop.not_null_orders_credit_card_amount.d3ca593b59",
@@ -1066,7 +1066,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "not_null_orders_coupon_amount"],
 			"unique_id": "test.jaffle_shop.not_null_orders_coupon_amount.ab90c90625",
@@ -1136,7 +1136,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "not_null_orders_bank_transfer_amount"],
 			"unique_id": "test.jaffle_shop.not_null_orders_bank_transfer_amount.7743500c49",
@@ -1206,7 +1206,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "not_null_orders_gift_card_amount"],
 			"unique_id": "test.jaffle_shop.not_null_orders_gift_card_amount.413a0d2d7a",
@@ -1276,7 +1276,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "staging", "unique_stg_customers_customer_id"],
 			"unique_id": "test.jaffle_shop.unique_stg_customers_customer_id.c7614daada",
@@ -1346,7 +1346,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "staging", "not_null_stg_customers_customer_id"],
 			"unique_id": "test.jaffle_shop.not_null_stg_customers_customer_id.e2cfb1f9aa",
@@ -1416,7 +1416,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "staging", "unique_stg_orders_order_id"],
 			"unique_id": "test.jaffle_shop.unique_stg_orders_order_id.e3b841c71a",
@@ -1486,7 +1486,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "staging", "not_null_stg_orders_order_id"],
 			"unique_id": "test.jaffle_shop.not_null_stg_orders_order_id.81cfe2fe64",
@@ -1557,7 +1557,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "staging", "accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned"],
 			"unique_id": "test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.080fb20aad",
@@ -1629,7 +1629,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "staging", "unique_stg_payments_payment_id"],
 			"unique_id": "test.jaffle_shop.unique_stg_payments_payment_id.3744510712",
@@ -1699,7 +1699,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "staging", "not_null_stg_payments_payment_id"],
 			"unique_id": "test.jaffle_shop.not_null_stg_payments_payment_id.c19cc50075",
@@ -1770,7 +1770,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "staging", "accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card"],
 			"unique_id": "test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.3c3820f278",
@@ -1834,7 +1834,7 @@
 				"post-hook": [],
 				"pre-hook": []
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default",
 			"fqn": ["jaffle_shop", "customers"],
 			"unique_id": "model.jaffle_shop.customers",
@@ -1963,7 +1963,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "unique_customers_customer_id"],
 			"unique_id": "test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1",
@@ -2033,7 +2033,7 @@
 				"warn_if": "!= 0",
 				"error_if": "!= 0"
 			},
-			"database": "db",
+			"database": null,
 			"schema": "default_dbt_test__audit",
 			"fqn": ["jaffle_shop", "not_null_customers_customer_id"],
 			"unique_id": "test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",

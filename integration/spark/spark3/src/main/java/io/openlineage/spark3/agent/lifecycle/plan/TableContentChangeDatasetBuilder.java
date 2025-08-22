@@ -8,13 +8,11 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.dataset.DatasetCompositeFacetsBuilder;
-import io.openlineage.spark.agent.util.DatasetVersionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.iceberg.IcebergHandler;
 import io.openlineage.spark3.agent.utils.DataSourceV2RelationDatasetExtractor;
-import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
@@ -29,6 +27,7 @@ import org.apache.spark.sql.catalyst.plans.logical.OverwriteByExpression;
 import org.apache.spark.sql.catalyst.plans.logical.OverwritePartitionsDynamic;
 import org.apache.spark.sql.catalyst.plans.logical.ReplaceData;
 import org.apache.spark.sql.catalyst.plans.logical.UpdateTable;
+import org.apache.spark.sql.catalyst.plans.logical.WriteDelta;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 
@@ -50,6 +49,7 @@ public class TableContentChangeDatasetBuilder
         || (x instanceof DeleteFromTable)
         || (x instanceof UpdateTable)
         || (new IcebergHandler(context).hasClasses() && x instanceof ReplaceData)
+        || (new IcebergHandler(context).hasClasses() && x instanceof WriteDelta)
         || (x instanceof MergeIntoTable)
         || (x instanceof InsertIntoStatement);
   }
@@ -89,14 +89,8 @@ public class TableContentChangeDatasetBuilder
         (table instanceof DataSourceV2ScanRelation)
             ? castToDataSourceV2Relation(x, table)
             : (DataSourceV2Relation) table;
-    if (includeDatasetVersion(event)) {
-      DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(context, returnTable)
-          .ifPresent(
-              s -> DatasetVersionUtils.buildVersionOutputFacets(context, datasetFacetsBuilder, s));
-    }
-
     return DataSourceV2RelationDatasetExtractor.extract(
-        outputDataset(), context, returnTable, datasetFacetsBuilder);
+        outputDataset(), context, returnTable, datasetFacetsBuilder, includeDatasetVersion(event));
   }
 
   private NamedRelation getNamedRelation(LogicalPlan x) {
@@ -106,9 +100,9 @@ public class TableContentChangeDatasetBuilder
     } else if (x instanceof InsertIntoStatement) {
       return (NamedRelation) ((InsertIntoStatement) x).table();
     } else if (new IcebergHandler(context).hasClasses() && x instanceof ReplaceData) {
-      // DELETE FROM on ICEBERG HAS START ELEMENT WITH ReplaceData AND COMPLETE ONE WITH
-      // DeleteFromTable
       return ((ReplaceData) x).table();
+    } else if (new IcebergHandler(context).hasClasses() && x instanceof WriteDelta) {
+      return ((WriteDelta) x).table();
     } else if (x instanceof DeleteFromTable) {
       return (NamedRelation) ((DeleteFromTable) x).table();
     } else if (x instanceof UpdateTable) {

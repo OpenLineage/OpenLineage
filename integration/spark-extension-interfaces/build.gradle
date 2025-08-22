@@ -48,6 +48,14 @@ pmdTest {
     dependsOn shadowJar
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
 repositories {
     mavenLocal()
     mavenCentral()
@@ -191,6 +199,8 @@ publishing {
 nexusPublishing {
     repositories {
         sonatype {
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
             username = System.getenv('RELEASE_USERNAME')
             password = System.getenv('RELEASE_PASSWORD')
         }
@@ -241,6 +251,10 @@ shadowJar {
         )
     }
     zip64 true
+}
+
+tasks.withType(GenerateModuleMetadata.class).configureEach {
+    enabled = false
 }
 
 tasks.register("createVersionProperties") {

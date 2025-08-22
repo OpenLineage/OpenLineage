@@ -10,7 +10,9 @@ import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceCombined
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.ColumnLineageConfig;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.SparkOpenLineageConfig;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Map;
 import java.util.Optional;
@@ -36,7 +38,8 @@ public class ColumnLevelLineageUtils {
       OpenLineage.SchemaDatasetFacet schemaFacet) {
     if (!olContext.getQueryExecution().isPresent()
         || olContext.getQueryExecution().get().optimizedPlan() == null
-        || schemaFacet == null) {
+        || schemaFacet == null
+        || isSchemaExceedsLimit(olContext, schemaFacet)) {
       return Optional.empty();
     }
 
@@ -56,15 +59,10 @@ public class ColumnLevelLineageUtils {
         olContext.getOpenLineage().newColumnLineageDatasetFacetBuilder();
 
     boolean datasetLineageEnabled =
-        context
-            .getOlContext()
-            .getOpenLineageConfig()
-            .getColumnLineageConfig()
-            .isDatasetLineageEnabled();
-    if (!datasetLineageEnabled) {
-      log.warn(
-          "DEPRECATION WARNING: The columnLineage.datasetLineageEnabled configuration is set to false. This flag will default to true in the future versions. To avoid this warning, explicitly set it to true. This warning will automatically be removed once the default is switched to true.");
-    }
+        Optional.of(context.getOlContext().getOpenLineageConfig())
+            .map(SparkOpenLineageConfig::getColumnLineageConfig)
+            .map(ColumnLineageConfig::getDatasetLineageEnabled)
+            .orElse(true);
     facetBuilder.fields(context.getBuilder().buildFields(datasetLineageEnabled));
     context
         .getBuilder()
@@ -77,6 +75,29 @@ public class ColumnLevelLineageUtils {
     } else {
       return Optional.of(facet);
     }
+  }
+
+  /**
+   * Checks if the schema size exceeds the configured limit for column lineage processing. When the
+   * schema is too large, column lineage facet creation is skipped to avoid performance issues.
+   */
+  private static boolean isSchemaExceedsLimit(
+      OpenLineageContext context, OpenLineage.SchemaDatasetFacet schemaFacet) {
+    Integer schemaSizeLimit =
+        Optional.of(context.getOpenLineageConfig().getColumnLineageConfig())
+            .map(ColumnLineageConfig::getSchemaSizeLimit)
+            .orElse(1_000);
+    boolean exceedsLimit = schemaFacet.getFields().size() > schemaSizeLimit;
+
+    if (exceedsLimit) {
+      log.warn(
+          "Schema size ({} fields) exceeds configured limit ({} fields). "
+              + "Consider increasing spark.openlineage.columnLineage.schemaSizeLimit if column lineage is needed for large schemas.",
+          schemaFacet.getFields().size(),
+          schemaSizeLimit);
+    }
+
+    return exceedsLimit;
   }
 
   private static LogicalPlan getAdjustedPlan(OpenLineageContext context) {

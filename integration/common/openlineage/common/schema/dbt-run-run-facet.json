@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "$id": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/integration/common/openlineage/common/schema/dbt-run-run-facet.json",
+  "$defs": {
+    "DbtRunRunFacet": {
+      "allOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/RunFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "invocation_id": {
+              "type": "str",
+              "format": "uuid",
+              "example": "e0c64ee8-2672-4c7a-92cc-2e27c2d4324f"
+            }
+          },
+          "required": ["invocation_id"]
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "properties": {
+    "dbt_run": {
+      "$ref": "#/$defs/DbtRunRunFacet"
+    }
+  }
+}

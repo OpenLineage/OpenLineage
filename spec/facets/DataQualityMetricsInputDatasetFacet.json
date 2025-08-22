@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-2/DataQualityMetricsInputDatasetFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-0-3/DataQualityMetricsInputDatasetFacet.json",
   "$defs": {
     "DataQualityMetricsInputDatasetFacet": {
       "allOf": [
@@ -22,6 +22,11 @@
             "fileCount": {
               "description": "The number of files evaluated",
               "type": "integer"
+            },
+            "lastUpdated": {
+              "description": "the last time the dataset was changed",
+              "type": "string",
+              "format": "date-time"
             },
             "columnMetrics": {
               "description": "The property key is the column name",

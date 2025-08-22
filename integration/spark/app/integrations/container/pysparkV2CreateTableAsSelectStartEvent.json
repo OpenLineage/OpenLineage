@@ -1,69 +1,72 @@
 {
-  "eventType" : "START",
-  "job" : {
-    "namespace" : "iceberg-namespace",
-    "name" : "iceberg_integration_test.atomic_create_table_as_select.default_target"
+  "eventType": "START",
+  "job": {
+    "namespace": "iceberg-namespace",
+    "name": "iceberg_integration_test.atomic_create_table_as_select.default_target"
   },
-  "inputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/iceberg/default/source1",
-    "facets" : {
-      "dataSource": {
-        "name": "file",
-        "uri": "file"
-      },
-      "schema": {
-        "fields": [
-          {
-            "name": "a",
-            "type": "long"
-          },
-          {
-            "name": "b",
-            "type": "long"
-          }
-        ]
-      },
-      "symlinks": {
-        "identifiers": [
-          {
-            "namespace": "file:/tmp/iceberg",
-            "name": "default.source1",
-            "type": "TABLE"
-          }
-        ]
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/iceberg/default/source1",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "long"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/iceberg",
+              "name": "default.source1",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "namespace": "file",
+      "name": "/tmp/iceberg/default/source2",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "long"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/iceberg",
+              "name": "default.source2",
+              "type": "TABLE"
+            }
+          ]
+        }
       }
     }
-  }, {
-    "namespace" : "file",
-    "name" : "/tmp/iceberg/default/source2",
-    "facets" : {
-      "dataSource": {
-        "name": "file",
-        "uri": "file"
-      },
-      "schema": {
-        "fields": [
-          {
-            "name": "a",
-            "type": "long"
-          },
-          {
-            "name": "b",
-            "type": "long"
-          }
-        ]
-      },
-      "symlinks": {
-        "identifiers": [
-          {
-            "namespace": "file:/tmp/iceberg",
-            "name": "default.source2",
-            "type": "TABLE"
-          }
-        ]
-      }
-    }
-  } ],
-  "outputs" : [  ]
+  ],
+  "outputs": []
 }

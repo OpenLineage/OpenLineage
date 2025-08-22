@@ -1,0 +1,112 @@
+[
+  # Command started dbt event
+  {
+    "data": {
+      "log_version": 3,
+      "version": "=1.8.2"
+    },
+    "info": {
+      "category": "",
+      "code": "A001",
+      "extra": { },
+      "invocation_id": "12e2a73c-5c0b-45d9-a8e1-28d63e831794",
+      "level": "info",
+      "msg": "Running with dbt=1.8.2",
+      "name": "MainReportVersion",
+      "pid": 278,
+      "thread": "MainThread",
+      "ts": "2024-11-22T15:58:03.518877Z"
+    }
+  },
+  {
+    "data": {
+      "node_info": {
+        "materialized": "view",
+        "meta": { },
+        "node_finished_at": "",
+        "node_name": "stg_customers",
+        "node_path": "staging/stg_customers.sql",
+        "node_relation": {
+          "alias": "stg_customers",
+          "database": "postgres",
+          "relation_name": "\"postgres\".\"public\".\"stg_customers\"",
+          "schema": "public"
+        },
+        "node_started_at": "2024-11-20T19:45:51.614844",
+        "node_status": "started",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_customers"
+      }
+    },
+    "info": {
+      "category": "",
+      "code": "Q024",
+      "extra": { },
+      "invocation_id": "12e2a73c-5c0b-45d9-a8e1-28d63e831794",
+      "level": "debug",
+      "msg": "Began running node model.jaffle_shop.stg_customers",
+      "name": "NodeStart",
+      "pid": 248,
+      "thread": "Thread-1 (worker)",
+      "ts": "2024-11-20T19:45:51.616078Z"
+    }
+  },
+  # Node finished dbt event
+  {
+    "data": {
+      "node_info": {
+        "materialized": "view",
+        "meta": { },
+        "node_finished_at": "2024-11-20T19:45:52.437355",
+        "node_name": "stg_customers",
+        "node_path": "staging/stg_customers.sql",
+        "node_relation": {
+          "alias": "stg_customers",
+          "database": "postgres",
+          "relation_name": "\"postgres\".\"public\".\"stg_customers\"",
+          "schema": "public"
+        },
+        "node_started_at": "2024-11-20T19:45:51.614844",
+        "node_status": "success",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_customers"
+      },
+      "run_result": {
+        "adapter_response": {
+          "_message": "CREATE VIEW",
+          "code": "CREATE VIEW",
+          "rows_affected": -1.0
+        },
+        "execution_time": 0.8032694,
+        "message": "CREATE VIEW",
+        "num_failures": 0,
+        "status": "success",
+        "thread": "Thread-1 (worker)",
+        "timing_info": [
+          {
+            "completed_at": "2024-11-20T19:45:51.714549Z",
+            "name": "compile",
+            "started_at": "2024-11-20T19:45:51.647115Z"
+          },
+          {
+            "completed_at": "2024-11-20T19:45:52.429938Z",
+            "name": "execute",
+            "started_at": "2024-11-20T19:45:51.722484Z"
+          }
+        ]
+      }
+    },
+    "info": {
+      "category": "",
+      "code": "Q025",
+      "extra": { },
+      "invocation_id": "12e2a73c-5c0b-45d9-a8e1-28d63e831794",
+      "level": "debug",
+      "msg": "Finished running node model.jaffle_shop.stg_customers",
+      "name": "NodeFinished",
+      "pid": 248,
+      "thread": "Thread-1 (worker)",
+      "ts": "2024-11-20T19:45:52.457427Z"
+    }
+  }
+]

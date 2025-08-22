@@ -17,29 +17,26 @@ plugins {
     id("io.freefair.lombok")
     id("com.github.johnrengelman.shadow")
     id("io.openlineage.common-config")
-    id "org.gradle.test-retry" version "1.6.1"
+    id "org.gradle.test-retry" version "1.6.2"
 }
 
 ext {
     spark = project.findProperty('spark.version').toString()
-    if (spark.startsWith("4")) {
-        spark = spark + "-preview1"
-    }
     scala = project.findProperty('scala.binary.version').toString()
     activeRuntimeElementsConfiguration = "scala" + scala.replace(".", "") + "RuntimeElements"
 
     assertjVersion = '3.27.3'
-    bigqueryVersion = '0.35.1'
+    bigqueryVersion = '0.42.2'
     junit5Version = '5.11.4'
     mockitoVersion = '4.11.0'
     postgresqlVersion = '42.7.5'
-    testcontainersVersion = '1.20.4'
+    testcontainersVersion = '1.20.5'
     configurableTestConfig = [
             sparkConfFile: project.findProperty('spark.conf.file') ?: System.getProperty('spark.conf.file'),
             hostDir      : project.findProperty('host.dir') ?: System.getProperty('host.dir'),
             testDir      : project.findProperty('test.dir') ?: System.getProperty('test.dir')
     ]
-    micrometerVersion = '1.14.3'
+    micrometerVersion = '1.14.4'
 }
 
 // This workaround is needed because the version of Snappy that Spark 2.4.x runs with,
@@ -86,19 +83,27 @@ addDependenciesToConfiguration(testSourceSet.runtimeOnlyConfigurationName, spark
 addDependenciesToConfiguration(additionalJarsConfigurationName, spark, scala, this.&additionalJars)
 
 dependencies {
+    implementation(project(path: ":shared"))
     implementation(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
-    implementation(project(path: ":spark2", configuration: "scala212RuntimeElements"))
+    implementation(project(path: ":spark3"))
     implementation(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
+
+    implementation(project(path: ":spark31"))
     implementation(project(path: ":spark31", configuration: "scala212RuntimeElements"))
+    implementation(project(path: ":spark32"))
     implementation(project(path: ":spark32", configuration: activeRuntimeElementsConfiguration))
+    implementation(project(path: ":spark33"))
     implementation(project(path: ":spark33", configuration: activeRuntimeElementsConfiguration))
+    implementation(project(path: ":spark34"))
     implementation(project(path: ":spark34", configuration: activeRuntimeElementsConfiguration))
+    implementation(project(path: ":spark35"))
     implementation(project(path: ":spark35", configuration: activeRuntimeElementsConfiguration))
+    implementation(project(path: ":spark40"))
     implementation(project(path: ":spark40", configuration: "scala213RuntimeElements"))
     implementation(project(path: ":iceberg"))
     implementation(project(path: ":gcp"))
 
-    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.1")
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.2")
 
     compileOnly("org.apache.spark:spark-core_${scala}:${spark}")
     compileOnly("org.apache.spark:spark-sql_${scala}:${spark}")
@@ -115,14 +120,14 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params")
     testImplementation("org.postgresql:postgresql:${postgresqlVersion}")
     testImplementation('org.hamcrest:hamcrest-library:3.0')
-    testImplementation('org.xerial:sqlite-jdbc:3.48.0.0')
+    testImplementation('org.xerial:sqlite-jdbc:3.49.1.0')
     testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.testcontainers:mockserver")
     testImplementation("org.testcontainers:kafka")
-    testImplementation("commons-beanutils:commons-beanutils:1.10.0")
-    testImplementation("org.awaitility:awaitility:4.2.2")
+    testImplementation("commons-beanutils:commons-beanutils:1.10.1")
+    testImplementation("org.awaitility:awaitility:4.3.0")
     testImplementation("org.assertj:assertj-core:${assertjVersion}")
     testImplementation("org.mockito:mockito-core:${mockitoVersion}")
     testImplementation("org.mockito:mockito-inline:${mockitoVersion}")
@@ -132,7 +137,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.module'
     }
 
-    testImplementation(platform("software.amazon.awssdk:bom:2.30.6"))
+    testImplementation(platform("software.amazon.awssdk:bom:2.30.29"))
     testImplementation("software.amazon.awssdk:auth")
     testImplementation("software.amazon.awssdk:emr")
     testImplementation("software.amazon.awssdk:s3")
@@ -245,7 +250,6 @@ tasks.named("shadowJar", ShadowJar.class) {
 
     minimize() {
         exclude(project(path: ":shared", configuration: activeRuntimeElementsConfiguration))
-        exclude(project(path: ":spark2", configuration: "scala212RuntimeElements"))
         exclude(project(path: ":spark3", configuration: activeRuntimeElementsConfiguration))
         exclude(project(path: ":spark31", configuration: "scala212RuntimeElements"))
         exclude(project(path: ":spark32", configuration: activeRuntimeElementsConfiguration))
@@ -500,12 +504,30 @@ void addDependenciesToConfiguration(String configurationName, String spark, Stri
 }
 
 List<Dependency> bigqueryDependencies(String spark, String scala) {
-    return [
-            dependencies.create("com.google.cloud.spark:spark-bigquery-with-dependencies_${scala}:${bigqueryVersion}", {
-                exclude(group: 'com.fasterxml.jackson.core')
-                exclude(group: 'com.fasterxml.jackson.module')
-            })
-    ]
+    final def registry = [
+            "3.2.4": [
+                dependencies.create("com.google.cloud.spark:spark-3.2-bigquery:${bigqueryVersion}",
+                        { transitive = false }
+                )
+            ],
+            "3.3.4": [
+                dependencies.create("com.google.cloud.spark:spark-3.3-bigquery:${bigqueryVersion}",
+                        { transitive = false }
+                )
+            ],
+            "3.4.4": [
+                dependencies.create("com.google.cloud.spark:spark-3.4-bigquery:${bigqueryVersion}",
+                        { transitive = false }
+                )
+            ],
+            "3.5.6": [
+                dependencies.create("com.google.cloud.spark:spark-3.5-bigquery:${bigqueryVersion}",
+                        { transitive = false }
+                )
+            ]
+    ];
+
+    return registry.get(spark, [])
 }
 
 List<Dependency> icebergDependencies(String spark, String scala) {
@@ -524,13 +546,13 @@ List<Dependency> icebergDependencies(String spark, String scala) {
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
                     dependencies.create("org.scala-lang.modules:scala-collection-compat_${scala}:2.11.0"),
             ],
-            "3.4.3": [
+            "3.4.4": [
                     dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.4_${scala}:1.6.0"),
                     dependencies.create("org.scala-lang:scala-library:${scalaVersion}"),
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
                     dependencies.create("org.scala-lang.modules:scala-collection-compat_${scala}:2.11.0"),
             ],
-            "3.5.2": [
+            "3.5.6": [
                     dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.5_${scala}:1.6.0"),
                     dependencies.create("org.scala-lang:scala-library:${scalaVersion}"),
                     dependencies.create("org.scala-lang:scala-reflect:${scalaVersion}"),
@@ -545,16 +567,23 @@ List<Dependency> deltaDependencies(String spark, String scala) {
     final def registry = [
             "3.2.4": "1.1.0",
             "3.3.4": "2.1.0",
-            "3.4.3": "2.4.0",
+            "3.4.4": "2.4.0",
+            "3.5.6": "3.3.2",
+            "4.0.0": "4.0.0"
     ]
 
     def delta = registry.get(spark)
     if (delta == null) {
         return []
+    } else if (delta.startsWith("1.") || delta.startsWith("2.")) {
+        return [
+                dependencies.create("io.delta:delta-core_${scala}:$delta")
+        ]
+    } else if (delta.startsWith("3.") || delta.startsWith("4.")) {
+        return [
+                dependencies.create("io.delta:delta-spark_${scala}:$delta")
+        ]
     }
-    return [
-            dependencies.create("io.delta:delta-core_${scala}:$delta")
-    ]
 }
 
 List<Dependency> gcsDependencies(String spark, String scala) {
@@ -562,8 +591,8 @@ List<Dependency> gcsDependencies(String spark, String scala) {
             "2.4.8": "hadoop2-2.2.9",
             "3.2.4": "hadoop3-2.2.9",
             "3.3.4": "hadoop3-2.2.9",
-            "3.4.3": "hadoop3-2.2.9",
-            "3.5.2": "hadoop3-2.2.9",
+            "3.4.4": "hadoop3-2.2.9",
+            "3.5.6": "hadoop3-2.2.9",
     ]
 
     def gcs = registry.get(spark)
@@ -582,8 +611,8 @@ List<Dependency> hadoopClientDependencies(String spark, String scala) {
             "2.4.8": "2.10.2",
             "3.2.4": "3.3.4",
             "3.3.4": "3.3.2",
-            "3.4.3": "3.3.4",
-            "3.5.2": "3.3.4",
+            "3.4.4": "3.3.4",
+            "3.5.6": "3.3.4",
     ]
 
     def hadoopClient = registry.get(spark)
@@ -637,15 +666,15 @@ List<Dependency> additionalJars(String spark, String scala) {
                     }),
                     dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.3_${scala}:1.6.0")
             ],
-            "3.4.3": [
+            "3.4.4": [
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
                         transitive = false
                     }),
                     dependencies.create("org.apache.iceberg:iceberg-spark-runtime-3.4_${scala}:1.6.0")
             ],
-            "3.5.2": [
+            "3.5.6": [
                     dependencies.create("org.slf4j:slf4j-api:2.0.10"),
-                    dependencies.create("org.slf4j:slf4j-reload4j:2.0.16"),
+                    dependencies.create("org.slf4j:slf4j-reload4j:2.0.17"),
                     dependencies.create("org.apache.spark:spark-mllib_${scala}:${spark}", {
                         transitive = false
                     }),

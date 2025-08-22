@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.Spark4CompatUtils;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.DatasetBuilderFactoryProvider;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
@@ -31,7 +32,6 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
@@ -96,7 +96,7 @@ class ColumnLevelLineageDeltaTest {
             .queryExecution(queryExecution)
             .meterRegistry(new SimpleMeterRegistry())
             .openLineageConfig(config)
-            .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
+            .sparkExtensionVisitorWrapper(mock(SparkOpenLineageExtensionVisitorWrapper.class))
             .build();
 
     context
@@ -111,14 +111,14 @@ class ColumnLevelLineageDeltaTest {
   @SneakyThrows
   public static void beforeAll() {
     DerbyUtils.loadSystemProperty(ColumnLevelLineageDeltaTest.class.getName());
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
     DerbyUtils.clearDerbyProperty();
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
   }
 
   @Test

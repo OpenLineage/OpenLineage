@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-title: Supported Airflow versions
+title: Supported Airflow Versions
 ---
 
 :::caution
@@ -21,6 +21,8 @@ For Airflow 2.7+ use the native Airflow OpenLineage provider
 [package](https://airflow.apache.org/docs/apache-airflow-providers-openlineage) `apache-airflow-providers-openlineage`.
 
 ##### Airflow 2.3 - 2.6
+
+> **_NOTE:_** The last version of openlineage-airflow to support Airflow versions 2.3-2.4 is **1.33.0**  
 
 The integration automatically registers itself starting from Airflow 2.3 if it's installed on the Airflow worker's Python.
 This means you don't have to do anything besides configuring where the events are sent, which is described in the [configuration](#configuration) section.

@@ -8,6 +8,15 @@
         "job": {
           "namespace": "namespace",
           "name": "jobName"
+        },
+        "root": {
+          "run": {
+            "runId": "5f24c93c-1a1a-49dc-82e7-95ab4915242f"
+          },
+          "job": {
+            "namespace": "root-namespace",
+            "name": "root-job-name"
+          }
         }
       },
       "errorMessage": {
@@ -34,7 +43,8 @@
         "branch": "branch"
       },
       "sql": {
-        "query": "SELECT * FROM test"
+        "query": "SELECT * FROM test",
+        "dialect": "spark"
       }
     }
   },

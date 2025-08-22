@@ -28,10 +28,6 @@ public final class HttpConfig implements TransportConfig, MergeConfig<HttpConfig
   @Getter @Setter private URI url;
   @Getter @Setter private @Nullable String endpoint;
 
-  @Getter @Setter
-  private @Nullable Double
-      timeout; // deprecated, will be removed in 1.13, assumes timeout is in seconds
-
   @Getter @Setter private @Nullable Integer timeoutInMillis;
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -51,16 +47,21 @@ public final class HttpConfig implements TransportConfig, MergeConfig<HttpConfig
 
   @Getter @Setter private @Nullable Compression compression;
 
+  @JsonProperty("sslContext")
+  @Getter
+  @Setter
+  private @Nullable HttpSslContextConfig sslContextConfig;
+
   @Override
   public HttpConfig mergeWithNonNull(HttpConfig other) {
     return new HttpConfig(
         mergePropertyWith(url, other.url),
         mergePropertyWith(endpoint, other.endpoint),
-        mergePropertyWith(timeout, other.timeout),
         mergePropertyWith(timeoutInMillis, other.timeoutInMillis),
         mergePropertyWith(auth, other.auth),
         mergePropertyWith(urlParams, other.urlParams),
         mergePropertyWith(headers, other.headers),
-        mergePropertyWith(compression, other.compression));
+        mergePropertyWith(compression, other.compression),
+        mergePropertyWith(sslContextConfig, other.sslContextConfig));
   }
 }

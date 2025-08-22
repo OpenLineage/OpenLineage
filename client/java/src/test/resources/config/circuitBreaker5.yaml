@@ -1,0 +1,9 @@
+transport:
+  type: console
+circuitBreaker:
+  type: asyncTaskQueue
+  threadCount: 1
+  queueSize: 2
+  blockingTimeInSeconds: 3
+  shutdownTimeoutSeconds: 4
+  circuitCheckIntervalInMillis: 5

@@ -1,71 +1,71 @@
 {
-    "eventType": "COMPLETE",
-    "inputs": [],
-    "job": {
-        "name": "open_lineage_integration_hive.execute_insert_into_hive_table.warehouse_test",
-        "namespace": "testPysparkSQLHiveTest"
-    },
-    "outputs": [
-        {
-            "facets": {
-                "dataSource": {
-                    "name": "file",
-                    "uri": "file"
-                },
-                "schema": {
-                    "fields": [
-                        {
-                            "name": "key",
-                            "type": "integer"
-                        },
-                        {
-                            "name": "value",
-                            "type": "string"
-                        }
-                    ]
-                },
-                "symlinks": {
-                    "identifiers": [
-                        {
-                            "namespace": "file:/tmp/warehouse",
-                            "name": "default.test",
-                            "type": "TABLE"
-                        }
-                    ]
-                }
+  "eventType": "COMPLETE",
+  "inputs": [],
+  "job": {
+    "name": "open_lineage_integration_hive.execute_insert_into_hive_table.warehouse_test",
+    "namespace": "testPysparkSQLHiveTest"
+  },
+  "outputs": [
+    {
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "key",
+              "type": "integer"
             },
-            "name": "/tmp/warehouse/test",
-            "namespace": "file"
-        }
-    ],
-    "run": {
-        "facets": {
-            "spark.logicalPlan": {},
-            "spark_unknown": {
-                "inputs": [
-                    {
-                        "description": {},
-                        "inputAttributes": [],
-                        "outputAttributes": [
-                            {
-                                "metadata": {},
-                                "name": "key",
-                                "type": "integer"
-                            },
-                            {
-                                "metadata": {},
-                                "name": "value",
-                                "type": "string"
-                            }
-                        ]
-                    }
-                ]
-            },
-            "processing_engine": {
-                "version": "${json-unit.any-string}",
-                "name": "spark",
-                "openlineageAdapterVersion": "${json-unit.any-string}"
+            {
+              "name": "value",
+              "type": "string"
             }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "file:/tmp/warehouse",
+              "name": "default.test",
+              "type": "TABLE"
+            }
+          ]
         }
+      },
+      "name": "/tmp/warehouse/test",
+      "namespace": "file"
     }
+  ],
+  "run": {
+    "facets": {
+      "spark.logicalPlan": {},
+      "spark_unknown": {
+        "inputs": [
+          {
+            "description": {},
+            "inputAttributes": [],
+            "outputAttributes": [
+              {
+                "metadata": {},
+                "name": "key",
+                "type": "integer"
+              },
+              {
+                "metadata": {},
+                "name": "value",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      },
+      "processing_engine": {
+        "version": "${json-unit.any-string}",
+        "name": "spark",
+        "openlineageAdapterVersion": "${json-unit.any-string}"
+      }
+    }
+  }
 }

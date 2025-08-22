@@ -1,12 +1,61 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openlineage-dbt"
+version = "1.38.0"
+description = "OpenLineage integration with dbt"
+readme = "README.md"
+authors = [{name = "OpenLineage"}]
+requires-python = ">=3.9"
+keywords = ["openlineage"]
+dependencies = [
+    "tqdm>=4.62.0",
+    "openlineage-integration-common==1.38.0",
+    "dbt-core>=1.0.0",
+]
+
+[project.optional-dependencies]
+tests = [
+    "pytest>=7.0.0",
+    "pytest-cov", 
+    "pytest-xdist>=2.5.0",
+    "mock",
+    "ruff",
+    "mypy>=0.9.6",
+    "python-dateutil",
+    "requests>=2.25.0",
+    "docker>=6.0.0",
+]
+dev = ["openlineage-dbt[tests]"]
+
+[project.scripts]
+dbt-ol = "openlineage.dbt:main"
+
+[tool.setuptools.packages.find]
+include = ["openlineage.*"]
+
+[tool.setuptools.package-data]
+"*" = ["*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+pythonpath = "."
+
 [tool.ruff]
 line-length = 110
-select = [
+lint.select = [
     "F",
     "E",
     "W",
     "I001"
 ]
-target-version = "py37"
-ignore-init-module-imports = true
+target-version = "py39"
+lint.ignore-init-module-imports = true
 src = ["openlineage", "tests"]
 namespace-packages = ["openlineage/common"]

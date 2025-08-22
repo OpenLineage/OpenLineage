@@ -5,13 +5,13 @@
 
 package io.openlineage.client.circuitBreaker;
 
+import io.openlineage.client.OpenLineageClientUtils;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,13 +25,13 @@ public abstract class ExecutorCircuitBreaker implements CircuitBreaker {
   public ExecutorCircuitBreaker(Integer circuitCheckIntervalInMillis) {
     this.circuitCheckIntervalInMillis = circuitCheckIntervalInMillis;
     this.timeout = Optional.empty();
-    executor = Executors.newCachedThreadPool();
+    executor = OpenLineageClientUtils.getOrCreateExecutor();
   }
 
   public ExecutorCircuitBreaker(Integer circuitCheckIntervalInMillis, Duration timeout) {
     this.circuitCheckIntervalInMillis = circuitCheckIntervalInMillis;
     this.timeout = Optional.of(timeout);
-    executor = Executors.newCachedThreadPool();
+    executor = OpenLineageClientUtils.getOrCreateExecutor();
   }
 
   @Override
@@ -88,6 +88,11 @@ public abstract class ExecutorCircuitBreaker implements CircuitBreaker {
   @Override
   public int getCheckIntervalMillis() {
     return circuitCheckIntervalInMillis;
+  }
+
+  @Override
+  public void close() {
+    log.info("No-op close");
   }
 
   public Optional<Duration> getTimeout() {

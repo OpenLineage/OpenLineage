@@ -5,8 +5,9 @@
 
 package io.openlineage.spark.agent.column;
 
+import static io.openlineage.client.utils.TransformationInfo.Subtypes.FILTER;
+import static io.openlineage.spark.agent.SparkTestUtils.SPARK_VERSION;
 import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.*;
-import static io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo.Subtypes.FILTER;
 import static org.apache.spark.sql.functions.col;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,11 +18,12 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.TransformationInfo;
+import io.openlineage.spark.agent.Spark4CompatUtils;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.DatasetBuilderFactoryProvider;
 import io.openlineage.spark.agent.lifecycle.SparkOpenLineageExtensionVisitorWrapper;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
-import io.openlineage.spark.agent.lifecycle.plan.column.TransformationInfo;
 import io.openlineage.spark.agent.util.DerbyUtils;
 import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -39,7 +41,6 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.expressions.GenericRow;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
@@ -92,14 +93,14 @@ class ColumnLevelLineageIcebergTest {
   @SneakyThrows
   public static void beforeAll() {
     DerbyUtils.loadSystemProperty(ColumnLevelLineageIcebergTest.class.getName());
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
     DerbyUtils.clearDerbyProperty();
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
   }
 
   @BeforeEach
@@ -133,7 +134,7 @@ class ColumnLevelLineageIcebergTest {
             .queryExecution(queryExecution)
             .meterRegistry(new SimpleMeterRegistry())
             .openLineageConfig(config)
-            .sparkExtensionVisitorWrapper(new SparkOpenLineageExtensionVisitorWrapper(config))
+            .sparkExtensionVisitorWrapper(mock(SparkOpenLineageExtensionVisitorWrapper.class))
             .build();
 
     context
@@ -418,7 +419,7 @@ class ColumnLevelLineageIcebergTest {
   }
 
   @Test
-  void testMergeInto() {
+  void testMergeIntoCow() {
     Dataset<Row> dataset =
         spark
             .createDataFrame(
@@ -434,7 +435,10 @@ class ColumnLevelLineageIcebergTest {
             .repartition(1);
     dataset.createOrReplaceTempView("temp");
 
-    spark.sql("CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp");
+    spark.sql(
+        "CREATE TABLE local.db.t1 USING iceberg"
+            + " TBLPROPERTIES ('write.merge.mode'='copy-on-write')"
+            + " AS SELECT * FROM temp");
     spark.sql("CREATE TABLE local.db.t2 USING iceberg AS SELECT * FROM temp");
 
     spark.sql(
@@ -450,6 +454,65 @@ class ColumnLevelLineageIcebergTest {
                 p ->
                     p.getClass().getCanonicalName().endsWith("ReplaceIcebergData")
                         || p.getClass().getCanonicalName().endsWith("ReplaceData"))
+            .findAny()
+            .get();
+
+    when(queryExecution.optimizedPlan()).thenReturn(plan);
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils
+            .buildColumnLineageDatasetFacet(event, context, schemaDatasetFacet)
+            .get();
+
+    assertColumnDependsOn(facet, "a", "file", T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "b", "file", T1_EXPECTED_NAME, "b");
+
+    assertColumnDependsOn(facet, "a", "file", T2_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "b", "file", T2_EXPECTED_NAME, "b");
+  }
+
+  @Test
+  void testMergeIntoMor() {
+    if (System.getProperty(SPARK_VERSION).startsWith("3.4")) {
+      // This test will not work as Iceberg has unfixed bug with Spark 3.4
+      // https://github.com/apache/iceberg/issues/11821
+      assertThat(true).isTrue();
+      return;
+    }
+
+    Dataset<Row> dataset =
+        spark
+            .createDataFrame(
+                ImmutableList.of(
+                    RowFactory.create(1L, "bat"),
+                    RowFactory.create(2L, "mouse"),
+                    RowFactory.create(3L, "horse")),
+                new StructType(
+                    new StructField[] {
+                      new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                      new StructField("b", StringType$.MODULE$, false, Metadata.empty())
+                    }))
+            .repartition(1);
+    dataset.createOrReplaceTempView("temp");
+
+    spark.sql(
+        "CREATE TABLE local.db.t1 USING iceberg"
+            + " TBLPROPERTIES ('write.merge.mode'='merge-on-read')"
+            + " AS SELECT * FROM temp");
+    spark.sql("CREATE TABLE local.db.t2 USING iceberg AS SELECT * FROM temp");
+
+    spark.sql(
+        "MERGE INTO local.db.t1 USING local.db.t2 ON local.db.t1.a = local.db.t2.a"
+            + " WHEN MATCHED THEN UPDATE SET *"
+            + " WHEN NOT MATCHED THEN INSERT *");
+
+    List<LogicalPlan> plans = LastQueryExecutionSparkEventListener.getExecutedLogicalPlans();
+
+    LogicalPlan plan =
+        plans.stream()
+            .filter(
+                p ->
+                    p.getClass().getCanonicalName().endsWith("WriteIcebergDelta")
+                        || p.getClass().getCanonicalName().endsWith("WriteDelta"))
             .findAny()
             .get();
 

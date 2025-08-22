@@ -107,7 +107,8 @@ class OpenLineageTest {
                     "ns",
                     "ds",
                     ol.newDatasetFacetsBuilder()
-                        .documentation(ol.newDocumentationDatasetFacet("foo"))
+                        .documentation(
+                            ol.newDocumentationDatasetFacetBuilder().description("foo").build())
                         .build()))
             .build();
 
@@ -134,7 +135,9 @@ class OpenLineageTest {
                     "ns",
                     "ds",
                     ol.newDatasetFacetsBuilder()
-                        .put(documentation, ol.newDocumentationDatasetFacet("foo"))
+                        .put(
+                            documentation,
+                            ol.newDocumentationDatasetFacetBuilder().description("foo").build())
                         .build()))
             .build();
 
@@ -201,12 +204,24 @@ class OpenLineageTest {
     URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
     UUID runId = UUID.randomUUID();
+    UUID parentId = UUID.randomUUID();
+    UUID rootParentId = UUID.randomUUID();
+
     RunFacets runFacets =
         ol.newRunFacetsBuilder()
             .nominalTime(
                 ol.newNominalTimeRunFacetBuilder()
                     .nominalStartTime(now)
                     .nominalEndTime(now)
+                    .build())
+            .parent(
+                ol.newParentRunFacetBuilder()
+                    .job(ol.newParentRunFacetJob("parent-namespace", "parent-name"))
+                    .run(ol.newParentRunFacetRun(parentId))
+                    .root(
+                        ol.newParentRunFacetRoot(
+                            ol.newRootRun(rootParentId),
+                            ol.newRootJob("root-namespace", "root-job-name")))
                     .build())
             .build();
     Run run = ol.newRunBuilder().runId(runId).facets(runFacets).build();
@@ -372,6 +387,15 @@ class OpenLineageTest {
       assertEquals(runStateUpdate.getEventType(), read.getEventType());
       assertEquals(runStateUpdate.getEventTime(), read.getEventTime());
       assertEquals(1, runStateUpdate.getInputs().size());
+
+      OpenLineage.ParentRunFacet parentRun = runStateUpdate.getRun().getFacets().getParent();
+      assertEquals(parentId, parentRun.getRun().getRunId());
+      assertEquals("parent-namespace", parentRun.getJob().getNamespace());
+      assertEquals("parent-name", parentRun.getJob().getName());
+      assertEquals(rootParentId, parentRun.getRoot().getRun().getRunId());
+      assertEquals("root-namespace", parentRun.getRoot().getJob().getNamespace());
+      assertEquals("root-job-name", parentRun.getRoot().getJob().getName());
+
       InputDataset inputDataset = runStateUpdate.getInputs().get(0);
       assertEquals("ins", inputDataset.getNamespace());
       assertEquals("input", inputDataset.getName());

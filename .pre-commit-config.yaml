@@ -70,12 +70,6 @@ repos:
       - id: ruff-format
         name: ruff-format
         files: ^client/python/|^dev/|^integration/airflow/|^integration/common/|^integration/dagster/|^integration/dbt/|^integration/spark/|^integration/sql/
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: "v4.0.0-alpha.8"
-    hooks:
-      - id: prettier
-        files: ^spec/|\.ts$|\.tsx$|^website.*\.js$|^website.*\.jsx$|\.css$|^\..*\.yaml$|\^\..*\.yml$
-        args: ["--print-width=120", "--prose-wrap=always"]
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:
@@ -97,6 +91,52 @@ repos:
         exclude: ".*gradlew$"
   - repo: local
     hooks:
+      - id: check-version-files
+        name: Check version file paths in new-version.sh
+        description: "Verifies that file paths in new-version.sh exist and are only defined in that file"
+        language: script
+        entry: .pre_commit/check_version_update_path.sh
+        files: new-version\.sh$|\.gradle$|gradle\.properties$|README\.md$|version\.properties$
+        pass_filenames: false
+      - id: forbid-attr-s
+        name: Check for @attr.s
+        description: "Checks if @attr.s is used instead of desired @attr.define"
+        language: pygrep
+        entry: "@(attr\\.s|s)(\\s|\\n|\\()"
+        files: "\\.(py|md)$"
+        # Exclude tests directories and deprecated modules that can use @attr.s
+        exclude: |
+          (?x)^(
+            .*tests.* |
+            client/python/openlineage/client/facet\.py |
+            client/python/openlineage/client/run\.py
+          )$
+      - id: check-python-generated-imports
+        name: Check python imports from generated modules
+        description: "Checks if objects are correctly imported in python from event_v2 and facet_v2 modules"
+        language: pygrep
+        entry: "from openlineage.client.generated"
+        files: "\\.py$"
+        # Exclude internal modules that must import this way
+        exclude: |
+          (?x)^(
+            client/python/openlineage/client/generated/.* |
+            client/python/openlineage/client/facet_v2\.py |
+            client/python/openlineage/client/event_v2\.py |
+            client/python/openlineage/client/generator/base\.py |
+            client/python/tests/generator/test_base\.py
+          )$
+      - id: prettier
+        name: prettier
+        description: ""
+        entry: prettier --write --ignore-unknown
+        files: ^spec/|\.ts$|\.tsx$|^website.*\.js$|^website.*\.jsx$|\.css$|^\..*\.yaml$|\^\..*\.yml$|^integration/.*\.json$
+        exclude: run_results\.json|manifest\.json|catalog\.json|metadata/.*\.json|bigquery/.*\.json|data/great_expectations/|integration/airflow/tests/extractors/|test_data/serde/
+        args: ["--print-width=120", "--prose-wrap=always"]
+        language: node
+        types: [text]
+        require_serial: false
+        additional_dependencies: ["prettier@3.5.2"]
       - id: check_schemas
         name: Check JSON Schema spec files.
         language: golang
@@ -113,7 +153,7 @@ repos:
       - id: generate_facets
         name: Generate OpenLineage facets for Python client.
         language: python
-        entry: python ./.pre_commit/generate-facets/generate.py
+        entry: python ./client/python/openlineage/client/generator/generate.py
         files: ^spec/.*\.json$|^client/python/facets\.py$
         exclude: ^spec/tests/.*$
         pass_filenames: false
@@ -153,22 +193,22 @@ repos:
         description: "Runs the PMD static code analyzer - Spark."
         language: script
         entry: .pre_commit/run-pmd.sh --java-version 17 --ruleset-file integration/spark/pmd-openlineage.xml
-        files: ^integration/flink/.*\.java$
+        files: ^integration/spark/.*\.java$
         exclude: ".*test.*"
         require_serial: true
       - id: spotless-client-java
         name: spotless-client-java
-        description: "Runs the Spotless formatter."
+        description: "Runs the Spotless formatter - Java client."
         language: system
-        entry: bash -c "cd client/java && ./gradlew spotlessApply"
+        entry: .pre_commit/run-spotless.sh --java-version 17 --location client/java
         files: ^client/java/src/.*\.java$
         exclude: ".*test.*"
         pass_filenames: false
       - id: spotless-integration-spark
         name: spotless-integration-spark
-        description: "Runs the Spotless formatter for Spark."
+        description: "Runs the Spotless formatter - Spark."
         language: system
-        entry: bash -c "cd integration/spark && ./gradlew spotlessApply"
+        entry: .pre_commit/run-spotless.sh --java-version 17 --location integration/spark
         files: ^integration/spark/.*\.java$
         exclude: ".*test.*"
         pass_filenames: false

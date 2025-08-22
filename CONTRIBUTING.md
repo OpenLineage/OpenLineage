@@ -33,7 +33,7 @@ To ensure your pull request is accepted, follow these guidelines:
 
 * All changes should be accompanied by tests
 * Do your best to have a [well-formed commit message](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html) for your change
-* Do your best to have a [well-formed](https://frontside.com/blog/2020-7-reasons-for-good-pull-request-descriptions) pull request description for your change
+  * Do your best to have a [well-formed](https://frontside.com/blog/2020-04-15-7-reasons-for-good-pull-request-descriptions) pull request description for your change
 * [Keep diffs small](https://kurtisnusbaum.medium.com/stacked-diffs-keeping-phabricator-diffs-small-d9964f4dcfa6) and self-contained
 * If your change fixes a bug, please [link the issue](https://help.github.com/articles/closing-issues-using-keywords) in your pull request description
 * Your pull request title should be of the form `component: name`, where `component` is the part of openlineage repo that your PR changes. For example: `flink: add Iceberg source visitor`
@@ -107,11 +107,11 @@ Look for tickets labeled ['good first issue'][goodfirstissues] and ['help wanted
 
 Before submitting your pull request, make sure to set up and run pre-commit hooks to ensure code quality and consistency. [Pre-commit](pre-commit.com) hooks are automated checks that run before each commit is made. These checks include code formatting, linting and JSON Schema specification validations. To set up the pre-commit hooks for this project, follow these steps:
 
-* Install pre-commit: If you haven't already, install pre-commit on your local machine by running `pip install pre-commit` in your virtual environment.
+* Install prek: If you haven't already, install prek on your local machine by running `pip install prek` in your virtual environment.
 
-* Set up hooks: Once pre-commit is installed, navigate to the project's root directory and execute `pre-commit install`. This command will set up the necessary hooks in your local repository.
+* Set up hooks: Once prek is installed, navigate to the project's root directory and execute `prek install`. This command will set up the necessary hooks in your local repository.
 
-* Run pre-commit: Now, every time you attempt to make a commit, the pre-commit hooks will automatically run on the staged files. If any issues are detected, the commit process will be halted, allowing you to address the problems before making the commit. You can also run `pre-commit run --all-files` to manually trigger the hooks for all files in the repository.
+* Run prek: Now, every time you attempt to make a commit, the prek hooks will automatically run on the staged files. If any issues are detected, the commit process will be halted, allowing you to address the problems before making the commit. You can also run `prek run --all-files` to manually trigger the hooks for all files in the repository.
 
 
 ## Triggering CI runs from forks (committers)

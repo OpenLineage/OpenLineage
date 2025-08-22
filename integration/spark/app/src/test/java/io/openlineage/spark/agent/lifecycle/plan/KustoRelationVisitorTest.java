@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.LogicalRelationFactory;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -125,21 +126,21 @@ class KustoRelationVisitorTest {
       String expectedNamespace,
       int expectedNumOfDatasets) {
 
-    // Instantiate a MockKustoRelation
     LogicalRelation lr =
-        new LogicalRelation(
-            new MockKustoRelation(inputQuery, url, database),
-            ScalaConversionUtils.fromList(
-                Collections.singletonList(
-                    new AttributeReference(
-                        FIELD_NAME,
-                        StringType$.MODULE$,
-                        false,
-                        null,
-                        ExprId.apply(1L),
-                        ScalaConversionUtils.<String>asScalaSeqEmpty()))),
-            Option.empty(),
-            false);
+        LogicalRelationFactory.create(
+                new MockKustoRelation(inputQuery, url, database),
+                ScalaConversionUtils.fromList(
+                    Collections.singletonList(
+                        new AttributeReference(
+                            FIELD_NAME,
+                            StringType$.MODULE$,
+                            false,
+                            null,
+                            ExprId.apply(1L),
+                            ScalaConversionUtils.<String>asScalaSeqEmpty()))),
+                Option.empty(),
+                false)
+            .orElseThrow(() -> new RuntimeException("Failed to create LogicalRelation"));
 
     TestKustoRelationVisitor visitor =
         new TestKustoRelationVisitor(

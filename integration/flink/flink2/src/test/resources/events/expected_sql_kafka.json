@@ -1,0 +1,125 @@
+{
+  "schemaURL": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent",
+  "eventType": "START",
+  "run": {
+    "runId": "${json-unit.any-string}",
+    "facets": {
+      "processing_engine": {
+        "version": "${json-unit.regex}2\\.\\d+.*",
+        "name": "flink",
+        "openlineageAdapterVersion": "${json-unit.any-string}"
+      },
+      "flink_job": {
+        "jobId": "${json-unit.any-string}"
+      }
+    }
+  },
+  "job": {
+    "namespace": "flink-jobs",
+    "name": "insert-into_default_catalog.default_database.kafka_output",
+    "facets": {
+      "jobType": {
+        "processingType": "STREAMING",
+        "integration": "FLINK",
+        "jobType": "JOB"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "namespace": "kafka://kafka-cluster-prod:9092",
+      "name": "io.openlineage.flink.kafka.input1",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "price",
+              "type": "DECIMAL(38, 18)",
+              "description": ""
+            },
+            {
+              "name": "currency",
+              "type": "STRING",
+              "description": ""
+            },
+            {
+              "name": "log_date",
+              "type": "DATE",
+              "description": ""
+            },
+            {
+              "name": "log_time",
+              "type": "TIME(0)",
+              "description": ""
+            },
+            {
+              "name": "log_ts",
+              "type": "TIMESTAMP(3)",
+              "description": ""
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "kafka://kafka-cluster-prod:9092",
+              "name": "default_catalog.default_database.kafka_input",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "kafka://kafka-cluster-prod:9092",
+      "name": "io.openlineage.flink.kafka.output",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "ts_interval",
+              "type": "STRING",
+              "description": ""
+            },
+            {
+              "name": "max_log_date",
+              "type": "STRING",
+              "description": ""
+            },
+            {
+              "name": "max_log_time",
+              "type": "STRING",
+              "description": ""
+            },
+            {
+              "name": "max_ts",
+              "type": "STRING",
+              "description": ""
+            },
+            {
+              "name": "counter",
+              "type": "BIGINT",
+              "description": ""
+            },
+            {
+              "name": "max_price",
+              "type": "DECIMAL(38, 18)",
+              "description": ""
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "kafka://kafka-cluster-prod:9092",
+              "name": "default_catalog.default_database.kafka_output",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

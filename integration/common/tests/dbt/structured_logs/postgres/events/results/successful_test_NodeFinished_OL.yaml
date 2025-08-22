@@ -7,6 +7,14 @@
       "facets": {
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "63229a72-6e73-4195-bb46-1a509d42989a"
         }
       }
     },
@@ -42,6 +50,14 @@
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "63229a72-6e73-4195-bb46-1a509d42989a"
         }
       }
     },
@@ -70,45 +86,31 @@
             "fields": [
               {
                 "name": "customer_id",
-                "type": "",
-                "description": "This is a unique identifier for a customer",
-                "fields": [ ]
+                "description": "This is a unique identifier for a customer"
               },
               {
                 "name": "first_name",
-                "type": "",
-                "description": "Customer's first name. PII.",
-                "fields": [ ]
+                "description": "Customer's first name. PII."
               },
               {
                 "name": "last_name",
-                "type": "",
-                "description": "Customer's last name. PII.",
-                "fields": [ ]
+                "description": "Customer's last name. PII."
               },
               {
                 "name": "first_order",
-                "type": "",
-                "description": "Date (UTC) of a customer's first order",
-                "fields": [ ]
+                "description": "Date (UTC) of a customer's first order"
               },
               {
                 "name": "most_recent_order",
-                "type": "",
-                "description": "Date (UTC) of a customer's most recent order",
-                "fields": [ ]
+                "description": "Date (UTC) of a customer's most recent order"
               },
               {
                 "name": "number_of_orders",
-                "type": "",
-                "description": "Count of the number of orders a customer has placed",
-                "fields": [ ]
+                "description": "Count of the number of orders a customer has placed"
               },
               {
                 "name": "total_order_amount",
-                "type": "",
-                "description": "Total value (AUD) of a customer's orders",
-                "fields": [ ]
+                "description": "Total value (AUD) of a customer's orders"
               }
             ]
           },
@@ -126,12 +128,6 @@
           "dataSource": {
             "name": "postgres://postgres:5432",
             "uri": "postgres://postgres:5432"
-          },
-          "schema": {
-            "fields": [ ]
-          },
-          "documentation": {
-            "description": ""
           }
         },
         "outputFacets": { }
@@ -155,6 +151,14 @@
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "63229a72-6e73-4195-bb46-1a509d42989a"
         }
       }
     },
@@ -183,45 +187,31 @@
             "fields": [
               {
                 "name": "customer_id",
-                "type": "",
-                "description": "This is a unique identifier for a customer",
-                "fields": [ ]
+                "description": "This is a unique identifier for a customer"
               },
               {
                 "name": "first_name",
-                "type": "",
-                "description": "Customer's first name. PII.",
-                "fields": [ ]
+                "description": "Customer's first name. PII."
               },
               {
                 "name": "last_name",
-                "type": "",
-                "description": "Customer's last name. PII.",
-                "fields": [ ]
+                "description": "Customer's last name. PII."
               },
               {
                 "name": "first_order",
-                "type": "",
-                "description": "Date (UTC) of a customer's first order",
-                "fields": [ ]
+                "description": "Date (UTC) of a customer's first order"
               },
               {
                 "name": "most_recent_order",
-                "type": "",
-                "description": "Date (UTC) of a customer's most recent order",
-                "fields": [ ]
+                "description": "Date (UTC) of a customer's most recent order"
               },
               {
                 "name": "number_of_orders",
-                "type": "",
-                "description": "Count of the number of orders a customer has placed",
-                "fields": [ ]
+                "description": "Count of the number of orders a customer has placed"
               },
               {
                 "name": "total_order_amount",
-                "type": "",
-                "description": "Total value (AUD) of a customer's orders",
-                "fields": [ ]
+                "description": "Total value (AUD) of a customer's orders"
               }
             ]
           },
@@ -248,12 +238,6 @@
           "dataSource": {
             "name": "postgres://postgres:5432",
             "uri": "postgres://postgres:5432"
-          },
-          "schema": {
-            "fields": [ ]
-          },
-          "documentation": {
-            "description": ""
           }
         },
         "outputFacets": { }

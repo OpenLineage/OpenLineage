@@ -2,7 +2,23 @@
   "eventType": "START",
   "job": {
     "name": "generic_integration_test",
-    "namespace": "generic-namespace"
+    "namespace": "generic-namespace",
+    "facets": {
+      "tags": {
+        "tags": [
+          {
+            "key": "spark",
+            "value": "true",
+            "source": "CONFIG"
+          },
+          {
+            "key": "key",
+            "value": "value",
+            "source": "CONFIG"
+          }
+        ]
+      }
+    }
   },
   "run": {
     "facets": {
@@ -14,6 +30,20 @@
         "run": {
           "runId": "bd9c2467-3ed7-4fdc-85c2-41ebf5c73b40"
         }
+      },
+      "tags": {
+        "tags": [
+          {
+            "key": "run",
+            "value": "true",
+            "source": "CONFIG"
+          },
+          {
+            "key": "set",
+            "value": "up",
+            "source": "SERVICE"
+          }
+        ]
       }
     }
   }

@@ -10,7 +10,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableMap;
+import io.openlineage.client.OpenLineage.Job;
+import io.openlineage.client.OpenLineage.Run;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
+import io.openlineage.client.OpenLineage.RunFacet;
+import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,9 +54,7 @@ class SparkContainerIntegrationTest {
   private static final MockServerContainer openLineageClientMockContainer =
       SparkContainerUtils.makeMockServerContainer(network);
 
-  private static final String GREATER_THAN_SPARK2 = "([34].*)";
   private static final String PACKAGES = "--packages";
-  private static final String SPARK_VERSION = "spark.version";
 
   private static GenericContainer<?> pyspark;
   private static GenericContainer<?> kafka;
@@ -98,9 +101,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testPysparkWordCountWithCliArgs() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
@@ -115,9 +115,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testPysparkRddToTable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testPysparkRddToTable", "spark_rdd_to_table.py");
@@ -183,9 +180,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testPysparkSQLHiveTest() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testPysparkSQLHiveTest", "spark_hive.py");
@@ -199,9 +193,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testPysparkSQLHadoopFSTest() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
@@ -214,9 +205,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testOverwriteName() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
@@ -234,9 +222,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testPysparkSQLOverwriteDirHiveTest() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
@@ -250,9 +235,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testCreateAsSelectAndLoad() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testCreateAsSelectAndLoad", "spark_ctas_load.py");
@@ -263,16 +245,10 @@ class SparkContainerIntegrationTest {
         "pysparkLoadStart.json",
         "pysparkLoadComplete.json");
 
-    if (System.getProperty(SPARK_VERSION).matches(GREATER_THAN_SPARK2)) {
-      // verify CTAS contains column level lineage
-      verifyEvents(mockServerClient, "pysparkCTASWithColumnLineageEnd.json");
-    }
+    verifyEvents(mockServerClient, "pysparkCTASWithColumnLineageEnd.json");
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testCachedDataset() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "cachedDataset", "spark_cached.py");
@@ -280,9 +256,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = GREATER_THAN_SPARK2) // Spark version >= 3.*
   void testSymlinksFacetForHiveCatalog() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "symlinks", "spark_hive_catalog.py");
@@ -330,7 +303,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = GREATER_THAN_SPARK2)
   void testOptimizedCreateAsSelectAndLoad() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
@@ -341,7 +313,6 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = GREATER_THAN_SPARK2)
   void testColumnLevelLineage() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testColumnLevelLineage", "spark_cll.py");
@@ -388,5 +359,70 @@ class SparkContainerIntegrationTest {
         Collections.singletonList("spark.openlineage.facets.debug.disabled=false"),
         "spark_emit_metrics.py");
     verifyEvents(mockServerClient, "pysparkMetricsEnd.json");
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = "spark.version", matches = "([34].*)")
+  void testSmartDebugFacet() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network,
+        openLineageClientMockContainer,
+        "testSmartDebugFacet",
+        Collections.emptyList(),
+        Arrays.asList(
+            "spark.openlineage.debug.smart=true",
+            "spark.openlineage.debug.smartMode=output-missing",
+            "spark.openlineage.filter.allowedSparkNodes=[org.apache.spark.sql.catalyst.plans.logical.ShowTables]", // get smart debug facet only for ShowTables node
+            "spark.openlineage.facets.debug.disabled=true" // make sure debug facet is disabled
+            ),
+        "spark_smart_debug.py");
+
+    List<RunEvent> events =
+        Arrays.stream(
+                mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")))
+            .map(r -> OpenLineageClientUtils.runEventFromJson(r.getBodyAsString()))
+            .collect(Collectors.toList());
+
+    // make sure application event does not have debug facet
+    assertThat(
+            events.stream()
+                .map(r -> r.getRun().getFacets())
+                .filter(r -> r.getParent() == null)
+                .filter(r -> r.getAdditionalProperties().containsKey("debug")))
+        .isEmpty();
+
+    // make sure debug facet comes only for COMPLETE event
+    assertThat(
+            events.stream()
+                .filter(r -> r.getRun().getFacets().getAdditionalProperties().containsKey("debug"))
+                .map(RunEvent::getEventType)
+                .collect(Collectors.toSet()))
+        .containsOnly(EventType.COMPLETE);
+
+    // assert job name of the event with debug facet
+    assertThat(
+            events.stream()
+                .filter(r -> r.getRun().getFacets().getAdditionalProperties().containsKey("debug"))
+                .map(RunEvent::getJob)
+                .map(Job::getName)
+                .collect(Collectors.toSet()))
+        .containsAnyOf(
+            "smart_debug_facet_test.show_tables",
+            "smart_debug_facet_test.execute_show_tables_command");
+
+    // assert there is only one debug facet in the events received
+    List<RunFacet> debugFacets =
+        events.stream()
+            .map(RunEvent::getRun)
+            .map(Run::getFacets)
+            .map(RunFacets::getAdditionalProperties)
+            .filter(p -> p.containsKey("debug"))
+            .map(p -> p.get("debug"))
+            .collect(Collectors.toList());
+
+    // make sure debug facet is included only once and this happens for COMPLETE event
+    assertThat(debugFacets).hasSize(1);
+    assertThat((List<String>) debugFacets.get(0).getAdditionalProperties().get("logs"))
+        .containsExactly("No input datasets detected", "No output datasets detected");
   }
 }

@@ -1,0 +1,32 @@
+{
+  "eventType": "START",
+  "job": {
+    "namespace": "flink_job_namespace",
+    "name": "flink_examples_cassandra"
+  },
+  "run": {
+    "runId": "${json-unit.any-string}",
+    "facets": {
+      "processing_engine": {
+        "version": "${json-unit.regex}1\\.\\d+\\.\\d+",
+        "name": "flink",
+        "openlineageAdapterVersion": "${json-unit.any-string}"
+      },
+      "flink_job": {
+        "jobId": "${json-unit.any-string}"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "namespace": "cassandra://cassandra-cluster-prod:9042",
+      "name": "flink.source_event"
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "cassandra://cassandra-cluster-prod:9042",
+      "name": "flink.sink_event"
+    }
+  ]
+}

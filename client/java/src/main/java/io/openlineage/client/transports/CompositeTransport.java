@@ -8,13 +8,13 @@ package io.openlineage.client.transports;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.BaseEvent;
 import io.openlineage.client.OpenLineageClientException;
+import io.openlineage.client.OpenLineageClientUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -30,8 +30,8 @@ public class CompositeTransport extends Transport {
     this.config = config;
     initializeTransports();
 
-    if (config.getWithThreadPool()) {
-      executorService = Optional.of(Executors.newFixedThreadPool(transports.size()));
+    if (config.getWithThreadPool() && config.getContinueOnFailure()) {
+      executorService = Optional.of(OpenLineageClientUtils.getOrCreateExecutor());
     } else {
       executorService = Optional.empty();
     }
@@ -69,18 +69,15 @@ public class CompositeTransport extends Transport {
    * @param event
    */
   private void doEmit(BaseEvent event) {
-    if (!config.getContinueOnFailure()) {
+    if (!config.getContinueOnFailure() || !config.getWithThreadPool()) {
       // Emit events sequentially
       for (Transport transport : transports) {
         emit(transport, event);
       }
     } else {
-      // Emit events in parallel
-      ExecutorService threadPool =
-          executorService.orElse(Executors.newFixedThreadPool(transports.size()));
-
       try {
-        threadPool
+        executorService
+            .get()
             .invokeAll(
                 transports.stream()
                     .map(
@@ -101,10 +98,6 @@ public class CompositeTransport extends Transport {
                 });
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
-      } finally {
-        if (!config.getWithThreadPool()) {
-          threadPool.shutdown();
-        }
       }
     }
   }
@@ -133,15 +126,18 @@ public class CompositeTransport extends Transport {
 
   @Override
   public void close() throws Exception {
-    executorService.ifPresent(ExecutorService::shutdown);
-    transports.forEach(
-        t -> {
-          try {
-            t.close();
-          } catch (Exception e) {
-            log.error("Failed to close {} transport", t.getClass().getSimpleName(), e);
-            throw new OpenLineageClientException(e);
-          }
-        });
+    // do not close executor service as it is shared
+    Exception latestException = null;
+    for (Transport transport : transports) {
+      try {
+        transport.close();
+      } catch (Exception e) {
+        log.error("Failed to close {} transport", transport.getClass().getSimpleName(), e);
+        latestException = e;
+      }
+    }
+    if (latestException != null) {
+      throw new OpenLineageClientException(latestException);
+    }
   }
 }

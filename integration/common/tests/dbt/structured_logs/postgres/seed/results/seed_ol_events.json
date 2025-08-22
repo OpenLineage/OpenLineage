@@ -1,452 +1,537 @@
 [
   {
-    "eventTime":"2024-12-13T11:16:35.618584Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "dbt_version":{
-          "version":"1.8.2"
+    "eventTime": "2024-12-13T11:16:35.618584Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2ad07ef4-6ce9-4ceb-bbb9-818d75eebbb4"
         }
       }
     },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"dbt-run-jaffle_shop",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"JOB"
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "dbt-run-jaffle_shop",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "JOB"
         }
       }
     },
-    "eventType":"START",
-    "inputs":[ ],
-    "outputs":[ ]
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
   },
   {
-    "eventTime":"2024-12-13T11:16:47.087308Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-12-13T11:16:47.087308Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"dbt-run-jaffle_shop"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version":{
-          "version":"1.8.2"
+        "dbt_version": {
+          "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2ad07ef4-6ce9-4ceb-bbb9-818d75eebbb4"
         }
       }
     },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"seed.jaffle_shop.raw_customers",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"SEED"
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "seed.jaffle_shop.raw_customers",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SEED"
         }
       }
     },
-    "eventType":"START",
-    "inputs":[ ],
-    "outputs":[
+    "eventType": "START",
+    "inputs": [],
+    "outputs": [
       {
-        "namespace":"postgres://postgres:5432",
-        "name":"postgres.public.raw_customers",
-        "facets":{
-          "dataSource":{
-            "name":"postgres://postgres:5432",
-            "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
+        "namespace": "postgres://postgres:5432",
+        "name": "postgres.public.raw_customers",
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432"
           }
         },
-        "outputFacets":{ }
+        "outputFacets": {}
       }
     ]
   },
   {
-    "eventTime":"2024-12-13T11:16:47.325649Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-12-13T11:16:47.325649Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"seed.jaffle_shop.raw_customers"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version":{
-          "version":"1.8.2"
-        }
-      }
-    },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"seed.jaffle_shop.raw_customers.sql.1",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"SQL"
+        "dbt_version": {
+          "version": "1.8.2"
         },
-        "sql":{
-          "query":"BEGIN"
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2ad07ef4-6ce9-4ceb-bbb9-818d75eebbb4"
         }
       }
     },
-    "eventType":"START",
-    "inputs":[ ],
-    "outputs":[ ]
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "seed.jaffle_shop.raw_customers.sql.1",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "BEGIN",
+          "dialect": "postgres"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
   },
   {
-    "eventTime":"2024-12-13T11:16:47.419150Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-12-13T11:16:47.419150Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"seed.jaffle_shop.raw_customers"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version":{
-          "version":"1.8.2"
-        }
-      }
-    },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"seed.jaffle_shop.raw_customers.sql.1",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"SQL"
+        "dbt_version": {
+          "version": "1.8.2"
         },
-        "sql":{
-          "query":"BEGIN"
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2ad07ef4-6ce9-4ceb-bbb9-818d75eebbb4"
         }
       }
     },
-    "eventType":"COMPLETE",
-    "inputs":[ ],
-    "outputs":[ ]
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "seed.jaffle_shop.raw_customers.sql.1",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "BEGIN"
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "outputs": []
   },
   {
-    "eventTime":"2024-12-13T11:16:47.434173Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-12-13T11:16:47.434173Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"seed.jaffle_shop.raw_customers"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version":{
-          "version":"1.8.2"
-        }
-      }
-    },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"seed.jaffle_shop.raw_customers.sql.2",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"SQL"
+        "dbt_version": {
+          "version": "1.8.2"
         },
-        "sql":{
-          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\ntruncate table \"postgres\".\"public\".\"raw_customers\""
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2ad07ef4-6ce9-4ceb-bbb9-818d75eebbb4"
         }
       }
     },
-    "eventType":"START",
-    "inputs":[ ],
-    "outputs":[ ]
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "seed.jaffle_shop.raw_customers.sql.2",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\ntruncate table \"postgres\".\"public\".\"raw_customers\""
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
   },
   {
-    "eventTime":"2024-12-13T11:16:47.443836Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-12-13T11:16:47.443836Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"seed.jaffle_shop.raw_customers"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version":{
-          "version":"1.8.2"
-        }
-      }
-    },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"seed.jaffle_shop.raw_customers.sql.2",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"SQL"
+        "dbt_version": {
+          "version": "1.8.2"
         },
-        "sql":{
-          "query":"/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\ntruncate table \"postgres\".\"public\".\"raw_customers\""
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2ad07ef4-6ce9-4ceb-bbb9-818d75eebbb4"
         }
       }
     },
-    "eventType":"COMPLETE",
-    "inputs":[ ],
-    "outputs":[ ]
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "seed.jaffle_shop.raw_customers.sql.2",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "/* {\"app\": \"dbt\", \"dbt_version\": \"1.8.2\", \"profile_name\": \"jaffle_shop\", \"target_name\": \"pg\", \"node_id\": \"seed.jaffle_shop.raw_customers\"} */\ntruncate table \"postgres\".\"public\".\"raw_customers\""
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "outputs": []
   },
   {
-    "eventTime":"2024-12-13T11:16:47.760713Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-12-13T11:16:47.760713Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"seed.jaffle_shop.raw_customers"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version":{
-          "version":"1.8.2"
-        }
-      }
-    },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"seed.jaffle_shop.raw_customers.sql.3",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"SQL"
+        "dbt_version": {
+          "version": "1.8.2"
         },
-        "sql":{
-          "query":"\n          insert into \"postgres\".\"public\".\"raw_customers\" (\"id\", \"first_name\", \"last_name\") values\n          (%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s..."
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2ad07ef4-6ce9-4ceb-bbb9-818d75eebbb4"
         }
       }
     },
-    "eventType":"START",
-    "inputs":[ ],
-    "outputs":[ ]
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "seed.jaffle_shop.raw_customers.sql.3",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "\n          insert into \"postgres\".\"public\".\"raw_customers\" (\"id\", \"first_name\", \"last_name\") values\n          (%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s..."
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
   },
   {
-    "eventTime":"2024-12-13T11:16:47.772563Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-12-13T11:16:47.772563Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"seed.jaffle_shop.raw_customers"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version":{
-          "version":"1.8.2"
-        }
-      }
-    },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"seed.jaffle_shop.raw_customers.sql.3",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"SQL"
+        "dbt_version": {
+          "version": "1.8.2"
         },
-        "sql":{
-          "query":"\n          insert into \"postgres\".\"public\".\"raw_customers\" (\"id\", \"first_name\", \"last_name\") values\n          (%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s..."
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2ad07ef4-6ce9-4ceb-bbb9-818d75eebbb4"
         }
       }
     },
-    "eventType":"COMPLETE",
-    "inputs":[ ],
-    "outputs":[ ]
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "seed.jaffle_shop.raw_customers.sql.3",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "\n          insert into \"postgres\".\"public\".\"raw_customers\" (\"id\", \"first_name\", \"last_name\") values\n          (%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s..."
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "outputs": []
   },
   {
-    "eventTime":"2024-12-13T11:16:47.982973Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-12-13T11:16:47.982973Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"seed.jaffle_shop.raw_customers"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version":{
-          "version":"1.8.2"
-        }
-      }
-    },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"seed.jaffle_shop.raw_customers.sql.4",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"SQL"
+        "dbt_version": {
+          "version": "1.8.2"
         },
-        "sql":{
-          "query":"COMMIT"
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2ad07ef4-6ce9-4ceb-bbb9-818d75eebbb4"
         }
       }
     },
-    "eventType":"START",
-    "inputs":[ ],
-    "outputs":[ ]
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "seed.jaffle_shop.raw_customers.sql.4",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "COMMIT"
+        }
+      }
+    },
+    "eventType": "START",
+    "inputs": [],
+    "outputs": []
   },
   {
-    "eventTime":"2024-12-13T11:16:47.990842Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-12-13T11:16:47.990842Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"seed.jaffle_shop.raw_customers"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "seed.jaffle_shop.raw_customers"
           }
         },
-        "dbt_version":{
-          "version":"1.8.2"
-        }
-      }
-    },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"seed.jaffle_shop.raw_customers.sql.4",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"SQL"
+        "dbt_version": {
+          "version": "1.8.2"
         },
-        "sql":{
-          "query":"COMMIT"
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2ad07ef4-6ce9-4ceb-bbb9-818d75eebbb4"
         }
       }
     },
-    "eventType":"COMPLETE",
-    "inputs":[ ],
-    "outputs":[ ]
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "seed.jaffle_shop.raw_customers.sql.4",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SQL"
+        },
+        "sql": {
+          "query": "COMMIT"
+        }
+      }
+    },
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "outputs": []
   },
   {
-    "eventTime":"2024-12-13T11:16:48.013713Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "parent":{
-          "run":{
-            "runId":"{{ any(result) }}"
+    "eventTime": "2024-12-13T11:16:48.013713Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "parent": {
+          "run": {
+            "runId": "{{ any(result) }}"
           },
-          "job":{
-            "namespace":"dbt-test-namespace",
-            "name":"dbt-run-jaffle_shop"
+          "job": {
+            "namespace": "dbt-test-namespace",
+            "name": "dbt-run-jaffle_shop"
           }
         },
-        "dbt_version":{
-          "version":"1.8.2"
+        "dbt_version": {
+          "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2ad07ef4-6ce9-4ceb-bbb9-818d75eebbb4"
         }
       }
     },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"seed.jaffle_shop.raw_customers",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"SEED"
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "seed.jaffle_shop.raw_customers",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "SEED"
         }
       }
     },
-    "eventType":"COMPLETE",
-    "inputs":[ ],
-    "outputs":[
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "outputs": [
       {
-        "namespace":"postgres://postgres:5432",
-        "name":"postgres.public.raw_customers",
-        "facets":{
-          "dataSource":{
-            "name":"postgres://postgres:5432",
-            "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
+        "namespace": "postgres://postgres:5432",
+        "name": "postgres.public.raw_customers",
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432"
           }
         },
-        "outputFacets":{ }
+        "outputFacets": {}
       }
     ]
   },
   {
-    "eventTime":"2024-12-13T11:16:48.736907Z",
-    "run":{
-      "runId":"{{ any(result) }}",
-      "facets":{
-        "dbt_version":{
-          "version":"1.8.2"
+    "eventTime": "2024-12-13T11:16:48.736907Z",
+    "run": {
+      "runId": "{{ any(result) }}",
+      "facets": {
+        "dbt_version": {
+          "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "2ad07ef4-6ce9-4ceb-bbb9-818d75eebbb4"
         }
       }
     },
-    "job":{
-      "namespace":"dbt-test-namespace",
-      "name":"dbt-run-jaffle_shop",
-      "facets":{
-        "jobType":{
-          "processingType":"BATCH",
-          "integration":"DBT",
-          "jobType":"JOB"
+    "job": {
+      "namespace": "dbt-test-namespace",
+      "name": "dbt-run-jaffle_shop",
+      "facets": {
+        "jobType": {
+          "processingType": "BATCH",
+          "integration": "DBT",
+          "jobType": "JOB"
         }
       }
     },
-    "eventType":"COMPLETE",
-    "inputs":[ ],
-    "outputs":[ ]
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "outputs": []
   }
 ]

@@ -8,7 +8,6 @@ transport:
 jobName:
   appendDatasetName: false
 facets:
-  disabled: [ aDisabledFacet ]
   spark:
     logicalPlan:
       disabled: true
@@ -19,3 +18,7 @@ facets:
 #    disabled: true
 incorrectEntry:
   shouldNotFail: true
+job:
+  tags: [ key:value, tag2 ]
+run:
+  tags: [ something:will:be:missing, overwrite:thisisoverwritten ]

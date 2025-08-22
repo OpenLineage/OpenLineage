@@ -31,7 +31,7 @@ ext {
     jacksonVersion = "2.15.3"
     junit5Version = "5.11.4"
     mockitoVersion = "4.11.0"
-    micrometerVersion = "1.14.3"
+    micrometerVersion = "1.14.4"
 
     sparkVersion = project.findProperty("spark33.spark.version")
     scalaBinaryVersion = project.findProperty("scala.binary.version")
@@ -46,7 +46,9 @@ configurations.configureEach { // https://github.com/apache/spark/pull/38355 - c
 }
 
 dependencies {
+    implementation(project(path: ":shared"))
     implementation(project(path: ":shared", configuration: "scala${configurationName}RuntimeElements"))
+    implementation(project(path: ":spark3"))
     implementation(project(path: ":spark3", configuration: "scala${configurationName}RuntimeElements"))
 
     compileOnly("org.apache.iceberg:iceberg-spark-runtime-3.3_${scalaBinaryVersion}:${icebergVersion}")

@@ -18,6 +18,7 @@ import io.openlineage.client.circuitBreaker.JavaRuntimeCircuitBreaker;
 import io.openlineage.client.circuitBreaker.JavaRuntimeCircuitBreakerConfig;
 import io.openlineage.client.circuitBreaker.SimpleMemoryCircuitBreaker;
 import io.openlineage.client.circuitBreaker.SimpleMemoryCircuitBreakerConfig;
+import io.openlineage.client.circuitBreaker.TaskQueueCircuitBreaker;
 import io.openlineage.client.dataset.namespace.resolver.DatasetNamespaceResolverConfig;
 import io.openlineage.client.dataset.namespace.resolver.PatternMatchingGroupNamespaceResolverConfig;
 import io.openlineage.client.dataset.namespace.resolver.PatternNamespaceResolverConfig;
@@ -31,9 +32,12 @@ import io.openlineage.client.transports.HttpTransport;
 import io.openlineage.client.transports.NoopTransport;
 import io.openlineage.client.transports.TransformTransport;
 import io.openlineage.client.transports.Transport;
+import io.openlineage.client.utils.TagField;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -42,6 +46,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,6 +54,15 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 
 class ConfigTest {
+
+  public static final String LOG_FILE_NAME = "test-logs.txt";
+
+  @BeforeAll
+  static void setupLogging() {
+    // Set this before any logger is created
+    System.setProperty("org.slf4j.simpleLogger.logFile", LOG_FILE_NAME);
+  }
+
   @BeforeEach
   void clear() {
     MicrometerProvider.clear();
@@ -64,7 +78,9 @@ class ConfigTest {
   @ParameterizedTest
   @ValueSource(strings = {"config/composite-array.yaml", "config/composite-map.yaml"})
   void testLoadCompositeTransportConfigFromYaml(String yamlFile)
-      throws NoSuchFieldException, SecurityException, IllegalArgumentException,
+      throws NoSuchFieldException,
+          SecurityException,
+          IllegalArgumentException,
           IllegalAccessException {
     OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(yamlFile));
     assertThat(client.transport).isInstanceOf(CompositeTransport.class);
@@ -180,7 +196,7 @@ class ConfigTest {
   void testFacetsDisabledConfigFromYaml() throws URISyntaxException {
     OpenLineageClient client = Clients.newClient(new TestConfigPathProvider("config/facets.yaml"));
 
-    assertThat(client.disabledFacets).contains("facet1", "facet2");
+    assertThat(client.disabledFacets).contains("facet1", "spark.logicalPlan");
   }
 
   @Test
@@ -220,6 +236,17 @@ class ConfigTest {
         .isInstanceOf(SimpleMemoryCircuitBreaker.class)
         .hasFieldOrPropertyWithValue("config", new SimpleMemoryCircuitBreakerConfig(13, 200, 90));
     assertThat(client.circuitBreaker.get().getCheckIntervalMillis()).isEqualTo(200);
+  }
+
+  @Test
+  void testTaskQueueCircuitBreakerFromYaml() {
+    OpenLineageClient client =
+        Clients.newClient(new TestConfigPathProvider("config/circuitBreaker5.yaml"));
+
+    assertThat(client.circuitBreaker.get())
+        .isInstanceOf(TaskQueueCircuitBreaker.class)
+        .hasFieldOrPropertyWithValue("blockingTimeInSeconds", 3L)
+        .hasFieldOrPropertyWithValue("shutdownTimeoutSeconds", 4L);
   }
 
   @Test
@@ -340,5 +367,73 @@ class ConfigTest {
         .hasFieldOrPropertyWithValue("schema", "cassandra")
         .hasFieldOrPropertyWithValue(
             "regex", "(?<cluster>[a-zA-Z-]+)-(\\d)+\\.company\\.com:[\\d]*");
+  }
+
+  @Test
+  void testExtractTags() {
+    final OpenLineageConfig config =
+        OpenLineageClientUtils.loadOpenLineageConfigYaml(
+            new TestConfigPathProvider("config/tags.yaml"),
+            new TypeReference<OpenLineageConfig>() {});
+
+    assertThat(config.getJobConfig().getTags())
+        .isEqualTo(Arrays.asList(new TagField("key", "value"), new TagField("tag2", "true")));
+    assertThat(config.getRunConfig().getTags())
+        .isEqualTo(
+            Arrays.asList(
+                new TagField("something", "will", "be"), new TagField("overwrite", "something")));
+  }
+
+  @Test
+  void testExtractTagsEdgeCases() {
+    final OpenLineageConfig config =
+        OpenLineageClientUtils.loadOpenLineageConfigYaml(
+            new TestConfigPathProvider("config/tags-edge-case.yaml"),
+            new TypeReference<OpenLineageConfig>() {});
+
+    assertThat(config.getJobConfig().getTags())
+        .isEqualTo(
+            Arrays.asList(
+                new TagField("valid", "tag"),
+                new TagField("single_tag", "true"),
+                new TagField("key", "value", "source"),
+                new TagField("missing-value", "true"),
+                new TagField("dangling", "separator"),
+                new TagField("too", "many", "parts"),
+                new TagField("key with spaces", "value"),
+                new TagField("key", "value with spaces"),
+                new TagField("key", "value", "source with spaces"),
+                new TagField("🔑", "🔧", "📱"),
+                new TagField("key:with:colons", "value"),
+                new TagField("key", "value:with:colons"),
+                new TagField("tag;with;semicolons", "true"),
+                new TagField("tag", "with;:semicolons")));
+    assertThat(config.getRunConfig().getTags())
+        .isEqualTo(
+            Arrays.asList(
+                new TagField("surrounding", "whitespace"), new TagField("whitespace", "around")));
+  }
+
+  @Test
+  void testLoadNotExistingConfigFromYaml() throws IOException, InterruptedException {
+
+    try (MockedStatic mocked = mockStatic(Environment.class)) {
+      when(Environment.getAllEnvironmentVariables())
+          .thenReturn(Map.of("OPENLINEAGE__TRANSPORT__TYPE", "console"));
+
+      Clients.newClient(() -> List.of(Paths.get("config/notexist.yaml")));
+    }
+
+    // Give it a moment to write
+    Thread.sleep(100);
+
+    String content = new String(Files.readAllBytes(Paths.get(LOG_FILE_NAME)));
+    assertThat(content)
+        .contains(
+            "Unable to load config from [config/notexist.yaml]. Trying to load it from EnvVars");
+
+    Files.delete(Paths.get(LOG_FILE_NAME));
+
+    System.clearProperty("org.slf4j.simpleLogger.logFile");
   }
 }

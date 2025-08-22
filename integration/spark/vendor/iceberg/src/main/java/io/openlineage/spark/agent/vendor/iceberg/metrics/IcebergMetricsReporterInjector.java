@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.vendor.iceberg.metrics;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
@@ -21,6 +22,7 @@ import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.iceberg.CachingCatalog;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.spark.SparkCatalog;
+import org.apache.iceberg.spark.SparkSessionCatalog;
 import org.apache.spark.sql.catalyst.plans.logical.BinaryCommand;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.UnaryCommand;
@@ -39,8 +41,6 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
     extends QueryPlanVisitor<LogicalPlan, D> {
 
-  private static final String ICEBERG_REPORTER_DISABLED = "iceberg.metricsReporterDisabled";
-
   public IcebergMetricsReporterInjector(OpenLineageContext context) {
     super(context);
   }
@@ -50,10 +50,10 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
     // if this is called, then Iceberg classes are on the classpath
     if (Optional.ofNullable(context.getOpenLineageConfig())
         .map(SparkOpenLineageConfig::getVendors)
-        .map(VendorsConfig::getAdditionalProperties)
-        .map(p -> p.getOrDefault(ICEBERG_REPORTER_DISABLED, "false"))
-        .orElse("false")
-        .equalsIgnoreCase("true")) {
+        .map(VendorsConfig::getConfig)
+        .flatMap(p -> Optional.ofNullable(p.get("iceberg")))
+        .map(VendorsConfig.VendorConfig::getMetricsReporterDisabled)
+        .orElse(false)) {
       log.debug("Iceberg metrics reporter is disabled");
       return false;
     }
@@ -75,9 +75,10 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
    */
   private Optional<CatalogPlugin> getCatalog(LogicalPlan plan) {
     if (plan instanceof DataSourceV2Relation) {
-      return Optional.ofNullable(((DataSourceV2Relation) plan).catalog().get());
+      return ScalaConversionUtils.asJavaOptional(((DataSourceV2Relation) plan).catalog());
     } else if (plan instanceof DataSourceV2ScanRelation) {
-      return Optional.ofNullable(((DataSourceV2ScanRelation) plan).relation().catalog().get());
+      return ScalaConversionUtils.asJavaOptional(
+          ((DataSourceV2ScanRelation) plan).relation().catalog());
     }
 
     Optional<CatalogPlugin> catalog = getCatalogFromCaseClass(plan);
@@ -105,8 +106,8 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
    * org.apache.spark.sql.catalyst.analysis.ResolvedTable (3.2.4) -
    * org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect (3.2.4) -
    * org.apache.spark.sql.catalyst.analysis.ResolvedDBObjectName (3.3.4) -
-   * org.apache.spark.sql.catalyst.analysis.ResolvedTable (3.3.4, 3.4.3, 3.5.2) -
-   * org.apache.spark.sql.catalyst.analysis.ResolvedIdentifier (3.4.3, 3.5.2)
+   * org.apache.spark.sql.catalyst.analysis.ResolvedTable (3.3.4, 3.4.3, 3.5.4) -
+   * org.apache.spark.sql.catalyst.analysis.ResolvedIdentifier (3.4.3, 3.5.4)
    *
    * @param plan
    * @return
@@ -133,9 +134,8 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
    */
   @Override
   public List<D> apply(LogicalPlan x) {
-    SparkCatalog catalog = (SparkCatalog) getCatalog(x).get();
     // hack catalog to inject OpenLineageMetricsReporter
-    Catalog icebergCatalog = catalog.icebergCatalog();
+    Catalog icebergCatalog = getIcebergCatalog(x).get();
     if (icebergCatalog instanceof CachingCatalog) {
       // get root catalog of a caching catalog
       Field catalogField = FieldUtils.getField(icebergCatalog.getClass(), "catalog", true);
@@ -155,5 +155,16 @@ public class IcebergMetricsReporterInjector<D extends OpenLineage.Dataset>
     }
 
     return Collections.emptyList();
+  }
+
+  private Optional<Catalog> getIcebergCatalog(LogicalPlan x) {
+    CatalogPlugin catalog = getCatalog(x).get();
+    if (catalog instanceof SparkCatalog) {
+      return Optional.ofNullable(((SparkCatalog) catalog).icebergCatalog());
+    }
+    if (catalog instanceof SparkSessionCatalog) {
+      return Optional.ofNullable(((SparkSessionCatalog<?>) catalog).icebergCatalog());
+    }
+    return Optional.empty();
   }
 }

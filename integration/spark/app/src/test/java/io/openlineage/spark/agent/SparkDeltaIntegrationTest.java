@@ -15,10 +15,16 @@ import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
 
 import com.google.common.collect.ImmutableList;
+import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineage.RunEvent;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -28,7 +34,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
+import org.apache.spark.sql.functions;
 import org.apache.spark.sql.types.ArrayType;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.LongType$;
@@ -36,6 +42,7 @@ import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,7 +68,7 @@ class SparkDeltaIntegrationTest {
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
     mockServer = MockServerUtils.createAndConfigureMockServer(MOCK_SERVER_PORT);
     FileUtils.deleteDirectory(new File("/tmp/delta/"));
   }
@@ -69,7 +76,7 @@ class SparkDeltaIntegrationTest {
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
     MockServerUtils.stopMockServer(mockServer);
   }
 
@@ -376,9 +383,9 @@ class SparkDeltaIntegrationTest {
                     }))
             .repartition(1);
 
-    dataset.write().mode("overwrite").format("delta").saveAsTable("t1");
-    dataset.write().mode("overwrite").format("delta").saveAsTable("t2");
-    dataset.write().mode("overwrite").format("delta").saveAsTable("t3");
+    dataset.write().format("delta").saveAsTable("t1");
+    dataset.write().format("delta").saveAsTable("t2");
+    dataset.write().format("delta").saveAsTable("t3");
 
     // wait until t3 complete event is sent
     await()
@@ -446,6 +453,13 @@ class SparkDeltaIntegrationTest {
         mockServer,
         "pysparkV2MergeIntoDeltaTableStartEvent.json",
         "pysparkV2MergeIntoDeltaTableCompleteEvent.json");
+
+    assertThat(
+            MockServerUtils.getEventsEmitted(mockServer).stream()
+                .map(e -> e.getInputs().size())
+                .collect(Collectors.toList()))
+        .describedAs("Number of inputs in each event")
+        .containsOnly(0, 1, 2);
   }
 
   @Test
@@ -464,7 +478,7 @@ class SparkDeltaIntegrationTest {
                     }))
             .repartition(1);
 
-    dataset.write().mode("overwrite").format("delta").saveAsTable("t1");
+    dataset.write().format("delta").saveAsTable("t1");
     spark.sql("CREATE TABLE t2 USING delta AS SELECT sum(a) AS c, b AS d FROM t1 group by b");
 
     verifyEvents(mockServer, "pysparkDeltaGroupByCompleteEvent.json");
@@ -499,6 +513,82 @@ class SparkDeltaIntegrationTest {
         "deltaMergeCommandVerificationComplete.json");
   }
 
+  @Test
+  @SneakyThrows
+  void testWithColumnOnMerge() {
+    StructType schema =
+        new StructType(
+            new StructField[] {
+              new StructField("id", IntegerType$.MODULE$, false, Metadata.empty()),
+              new StructField("value", StringType$.MODULE$, false, Metadata.empty()),
+            });
+
+    Dataset<Row> source =
+        spark
+            .createDataFrame(
+                ImmutableList.of(
+                    RowFactory.create(1, "A"),
+                    RowFactory.create(2, "B"),
+                    RowFactory.create(3, "C")),
+                schema)
+            .withColumn("__load_ts", functions.lit("2022-01-01 00:02:00").cast("timestamp"))
+            .repartition(1);
+
+    Dataset<Row> target =
+        spark
+            .createDataFrame(
+                ImmutableList.of(
+                    RowFactory.create(1, "A_old"),
+                    RowFactory.create(2, "B_old"),
+                    RowFactory.create(3, "C_old")),
+                schema)
+            .withColumn("__load_ts", functions.lit("2022-01-01 00:02:00").cast("timestamp"))
+            .repartition(1);
+
+    source.write().format("delta").saveAsTable("source_table");
+    target.write().format("delta").saveAsTable("target_table");
+
+    spark.sql(
+        "WITH source as (SELECT *, __load_ts as load_ts FROM source_table) "
+            + " MERGE INTO target_table target USING source "
+            + " ON target.id = source.id"
+            + " WHEN MATCHED THEN UPDATE SET *"
+            + " WHEN NOT MATCHED THEN INSERT *");
+
+    await()
+        .pollInterval(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(10))
+        .until(
+            () -> {
+              // wait for the merge command to complete
+              List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
+              RunEvent lastEvent = events.get(events.size() - 1);
+              return "COMPLETE".equals(lastEvent.getEventType().toString())
+                  && lastEvent.getJob().getName().contains("merge_into_command");
+            });
+
+    List<RunEvent> events = MockServerUtils.getEventsEmitted(mockServer);
+    Optional<RunEvent> mergeEvent =
+        events.stream()
+            .filter(f -> "COMPLETE".equals(f.getEventType().name()))
+            .filter(f -> f.getJob().getName().contains("merge_into_command"))
+            .findFirst();
+
+    assertThat(mergeEvent).isPresent();
+    assertThat(mergeEvent)
+        .get()
+        .extracting(RunEvent::getOutputs)
+        .asInstanceOf(InstanceOfAssertFactories.list(OutputDataset.class))
+        .extracting(OutputDataset::getName)
+        .containsExactlyInAnyOrder("/tmp/delta/target_table");
+    assertThat(mergeEvent)
+        .get()
+        .extracting(RunEvent::getInputs)
+        .asInstanceOf(InstanceOfAssertFactories.list(InputDataset.class))
+        .extracting(InputDataset::getName)
+        .containsExactlyInAnyOrder("/tmp/delta/target_table", "/tmp/delta/source_table");
+  }
+
   /**
    * Environment variables differ on local environment and CI. This method returns any environment
    * variable being set for testing.
@@ -510,8 +600,10 @@ class SparkDeltaIntegrationTest {
   }
 
   private void clearTables(String... tables) {
-    Arrays.asList(tables).stream()
-        .filter(t -> spark.catalog().tableExists(t))
-        .forEach(t -> spark.sql("DROP TABLE IF EXISTS " + t));
+    try {
+      Arrays.stream(tables).forEach(t -> spark.sql("DROP TABLE IF EXISTS " + t));
+    } catch (Exception e) {
+      // Ignore exceptions during table drop, as they may not exist
+    }
   }
 }

@@ -1,0 +1,9 @@
+order_id,customer_id,order_date,status,amount
+1,1,2023-01-10,completed,100.00
+2,1,2023-01-15,completed,150.00
+3,2,2023-01-12,pending,75.00
+4,3,2023-01-14,completed,200.00
+5,2,2023-01-18,cancelled,50.00
+6,4,2023-01-20,completed,300.00
+7,5,2023-01-22,pending,125.00
+8,1,2023-01-25,completed,80.00

@@ -10,6 +10,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.sql.connector.catalog.TableCatalog;
 
 /**
  * The DatabricksDeltaHandler is intended to support Databricks' custom DeltaCatalog which has the
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class DatabricksDeltaHandler extends AbstractDatabricksHandler {
+  private static final String DELTA = "delta";
 
   public DatabricksDeltaHandler(OpenLineageContext context) {
     super(context, "com.databricks.sql.transaction.tahoe.catalog.DeltaCatalog");
@@ -30,11 +32,26 @@ public class DatabricksDeltaHandler extends AbstractDatabricksHandler {
     return Optional.of(
         context
             .getOpenLineage()
-            .newStorageDatasetFacet("delta", "parquet")); // Delta is always parquet
+            .newStorageDatasetFacet(DELTA, "parquet")); // Delta is always parquet
+  }
+
+  @Override
+  public Optional<CatalogWithAdditionalFacets> getCatalogDatasetFacet(
+      TableCatalog tableCatalog, Map<String, String> properties) {
+    OpenLineage.CatalogDatasetFacetBuilder builder =
+        context
+            .getOpenLineage()
+            .newCatalogDatasetFacetBuilder()
+            .name(tableCatalog.name())
+            .framework(DELTA)
+            .type(DELTA)
+            .source("spark");
+
+    return Optional.of(CatalogWithAdditionalFacets.of(builder.build()));
   }
 
   @Override
   public String getName() {
-    return "delta";
+    return DELTA;
   }
 }

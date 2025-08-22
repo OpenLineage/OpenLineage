@@ -7,6 +7,14 @@
       "facets": {
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "e4ca83f1-6dd3-46ee-9f25-494f5b46bfe6"
         }
       }
     },
@@ -42,6 +50,14 @@
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "e4ca83f1-6dd3-46ee-9f25-494f5b46bfe6"
         }
       }
     },
@@ -65,12 +81,6 @@
           "dataSource": {
             "name": "postgres://postgres:5432",
             "uri": "postgres://postgres:5432"
-          },
-          "schema": {
-            "fields": [ ]
-          },
-          "documentation": {
-            "description": ""
           }
         }
       }
@@ -87,15 +97,9 @@
           "schema": {
             "fields": [
               {
-                "name": "customer_id",
-                "type": "",
-                "description": "",
-                "fields": [ ]
+                "name": "customer_id"
               }
             ]
-          },
-          "documentation": {
-            "description": ""
           }
         },
         "outputFacets": { }
@@ -119,6 +123,14 @@
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "e4ca83f1-6dd3-46ee-9f25-494f5b46bfe6"
         }
       }
     },
@@ -157,6 +169,18 @@
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "e4ca83f1-6dd3-46ee-9f25-494f5b46bfe6"
+        },
+        "externalQuery": {
+          "externalQueryId": "01bdd1f2-020e-223c-0046-e4070065a01a",
+          "source": "source"
         }
       }
     },

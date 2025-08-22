@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.lifecycle;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.EventEmitter;
+import io.openlineage.spark.agent.Spark4CompatUtils;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
@@ -92,7 +93,7 @@ public class ContextFactory {
       log.error("Query execution is null: can't emit event for executionId {}", executionId);
       return Optional.empty();
     }
-    SparkSession sparkSession = queryExecution.sparkSession();
+    SparkSession sparkSession = Spark4CompatUtils.getSparkSession(queryExecution);
     OpenLineageContext olContext =
         OpenLineageContext.builder()
             .sparkSession(sparkSession)
@@ -120,7 +121,7 @@ public class ContextFactory {
     return executionFromCompleteEvent(event)
         .map(
             queryExecution -> {
-              SparkSession sparkSession = queryExecution.sparkSession();
+              SparkSession sparkSession = Spark4CompatUtils.getSparkSession(queryExecution);
               OpenLineageContext olContext =
                   OpenLineageContext.builder()
                       .sparkSession(sparkSession)
@@ -142,6 +143,10 @@ public class ContextFactory {
               return new SparkSQLExecutionContext(
                   event.executionId(), openLineageEventEmitter, olContext, runEventBuilder);
             });
+  }
+
+  public void close() {
+    openLineageEventEmitter.close();
   }
 
   public static Optional<QueryExecution> executionFromCompleteEvent(

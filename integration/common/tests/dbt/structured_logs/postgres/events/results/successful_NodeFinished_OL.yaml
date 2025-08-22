@@ -7,6 +7,14 @@
       "facets": {
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "c7bcefd4-ce3a-447c-90cf-21de0ff9a417"
         }
       }
     },
@@ -42,6 +50,14 @@
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "c7bcefd4-ce3a-447c-90cf-21de0ff9a417"
         }
       }
     },
@@ -65,12 +81,6 @@
           "dataSource": {
             "name": "postgres://postgres:5432",
             "uri": "postgres://postgres:5432"
-          },
-          "schema": {
-            "fields": [ ]
-          },
-          "documentation": {
-            "description": ""
           }
         }
       }
@@ -87,15 +97,9 @@
           "schema": {
             "fields": [
               {
-                "name": "customer_id",
-                "type": "",
-                "description": "",
-                "fields": [ ]
+                "name": "customer_id"
               }
             ]
-          },
-          "documentation": {
-            "description": ""
           }
         },
         "outputFacets": { }
@@ -118,6 +122,14 @@
         },
         "dbt_version": {
           "version": "1.8.2"
+        },
+        "processing_engine": {
+          "name": "dbt",
+          "version": "1.8.2",
+          "openlineageAdapterVersion": "{{ any(result) }}"
+        },
+        "dbt_run": {
+          "invocation_id": "c7bcefd4-ce3a-447c-90cf-21de0ff9a417"
         }
       }
     },
@@ -141,12 +153,6 @@
           "dataSource":{
             "name":"postgres://postgres:5432",
             "uri":"postgres://postgres:5432"
-          },
-          "schema":{
-            "fields":[ ]
-          },
-          "documentation":{
-            "description":""
           }
         }
       }
@@ -164,14 +170,9 @@
             "fields":[
               {
                 "name":"customer_id",
-                "type":"",
-                "description":"",
                 "fields":[ ]
               }
             ]
-          },
-          "documentation":{
-            "description":""
           }
         },
         "outputFacets":{ }

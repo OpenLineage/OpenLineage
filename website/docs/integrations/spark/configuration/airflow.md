@@ -11,18 +11,49 @@ When using the [`OpenLineage Airflow`](https://airflow.apache.org/docs/apache-ai
 integration with operators that submit Spark jobs, the entire Spark OpenLineage integration can be configured 
 directly within Airflow.
 
+### Automatic Injection
+
+There are several operators that are used to submit Spark jobs that in their newest versions have the 
+ability to automatically inject the OpenLineage Spark integration into the Spark job.
+
+There are two types of configuration that can be automatically injected: parent job info (see [Preserving Job Hierarchy](#preserving-job-hierarchy)) 
+and transport info - that enables you to pass the same transport configuration from Airflow to the Spark job.
+
+To enable configuring parent job info, Airflow configuration [spark_inject_parent_job_info](https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/configurations-ref.html#spark-inject-parent-job-info)
+must be set to true.
+
+To enable configuring transport information, Airflow configuration [spark_inject_transport_info](https://airflow.apache.org/docs/apache-airflow-providers-openlineage/stable/configurations-ref.html#spark-inject-transport-info)
+must be set to true.
+
+The following operators are supported:
+- [`SparkSubmitOperator`](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/dataproc.html)
+- [`SparkSubmitOperator`](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/dataproc.html)
+- [`DataprocSubmitJobOperator`](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/dataproc.html)
+- [`DataprocInstantiateInlineWorkflowTemplateOperator`](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/dataproc.html)
+- [`DataprocCreateBatchOperator`](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/dataproc.html)
+
+This list is non-exhaustive, please check the documentation of the operator you are using to see if it supports automatic injection.
+
 ### Preserving Job Hierarchy
 
 To establish a correct job hierarchy in lineage tracking, the Spark application and lineage backend require
 identifiers of the parent job that triggered the Spark job. These identifiers allow the Spark integration
-to automatically add a `parentRunFacet` to the application-level OpenLineage event, facilitating the linkage 
+to automatically add a `ParentRunFacet` to the application-level OpenLineage event, facilitating the linkage 
 of the Spark job to its originating (Airflow) job in the lineage graph.
 
-The following properties are necessary for the automatic creation of the `parentRunFacet`:
+The following properties are necessary for the automatic creation of the `ParentRunFacet`:
 
 - `spark.openlineage.parentJobNamespace`
 - `spark.openlineage.parentJobName`
 - `spark.openlineage.parentRunId`
+
+Additionally, in version 1.31.0 and later, the following properties are also added to `ParentRunFacet` that 
+allow easier connection of the root (top-level parent) job to the children jobs:
+
+- `spark.openlineage.rootParentJobNamespace`
+- `spark.openlineage.rootParentJobName`
+- `spark.openlineage.rootParentRunId`
+
 
 Refer to the [Spark Configuration](spark_conf.md) documentation for more information on these properties.
 

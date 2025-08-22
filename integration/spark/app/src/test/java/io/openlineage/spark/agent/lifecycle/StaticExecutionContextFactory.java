@@ -14,9 +14,11 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
+import io.openlineage.spark.agent.Spark4CompatUtils;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.OpenLineageRunStatus;
 import io.openlineage.spark.api.SparkOpenLineageConfig;
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +26,7 @@ import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import lombok.SneakyThrows;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
@@ -86,6 +89,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
     SparkOpenLineageConfig olConfig = new SparkOpenLineageConfig();
     olConfig.setOverriddenAppName("test_rdd");
     when(olContext.getOpenLineageConfig()).thenReturn(olConfig);
+    when(olContext.getLineageRunStatus()).thenReturn(new OpenLineageRunStatus());
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, new TestOpenLineageEventHandlerFactory());
 
@@ -112,11 +116,12 @@ public class StaticExecutionContextFactory extends ContextFactory {
   }
 
   @Override
+  @SneakyThrows
   public Optional<ExecutionContext> createSparkSQLExecutionContext(long executionId) {
     return Optional.ofNullable(SQLExecution.getQueryExecution(executionId))
         .map(
             qe -> {
-              SparkSession session = qe.sparkSession();
+              SparkSession session = Spark4CompatUtils.getSparkSession(qe);
               SparkContext sparkContext = qe.sparkPlan().sparkContext();
               SparkOpenLineageConfig config = new SparkOpenLineageConfig();
               OpenLineageContext olContext =

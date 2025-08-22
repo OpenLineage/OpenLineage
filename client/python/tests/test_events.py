@@ -103,25 +103,25 @@ def test_schema_field_default() -> None:
     )
 
 
-@attr.s
+@attr.define
 class NestedObject:
-    value: int | None = attr.ib(default=None)
+    value: int | None = None
 
 
-@attr.s
+@attr.define
 class NestingObject:
-    nested: list[NestedObject] = attr.ib()
-    optional: int | None = attr.ib(default=None)
+    nested: list[NestedObject]
+    optional: int | None = None
 
 
-@attr.s
+@attr.define
 class ListOfStrings:
-    values: list[str] = attr.ib()
+    values: list[str]
 
 
-@attr.s
+@attr.define
 class NestedListOfStrings:
-    nested: list[ListOfStrings] = attr.ib()
+    nested: list[ListOfStrings]
 
 
 def test_serde_list_of_strings() -> None:

@@ -37,18 +37,43 @@ public final class KafkaTransport extends Transport {
       return null;
     }
 
+    /*
+      To keep order of events in Kafka topic, we need to send them to the same partition.
+      This is the case for:
+        1. different runs of the same job.
+        2. runs in the chain parent -> child -> grandchild.
+
+      For (1) Kafka messageKey has format "run:<namespace>/<name>".
+      For (2) source for `<namespace>` and `<name>` is selected using this order:
+      - run.facets.parent.root.job
+      - run.facets.parent.job
+      - run.job
+    */
+    final String defaultResult = "run:" + job.getNamespace() + "/" + job.getName();
+
     final OpenLineage.RunFacets runFacets = run.getFacets();
-    if (runFacets != null) {
-      final OpenLineage.ParentRunFacet parentRunFacet = runFacets.getParent();
-      if (parentRunFacet != null) {
-        final OpenLineage.ParentRunFacetJob parentJob = parentRunFacet.getJob();
-        final OpenLineage.ParentRunFacetRun parentRun = parentRunFacet.getRun();
-        if (parentRun != null && parentJob != null) {
-          return "run:" + parentJob.getNamespace() + "/" + parentJob.getName();
-        }
+    if (runFacets == null) {
+      return defaultResult;
+    }
+
+    final OpenLineage.ParentRunFacet parentFacet = runFacets.getParent();
+    if (parentFacet == null) {
+      return defaultResult;
+    }
+
+    final OpenLineage.ParentRunFacetRoot rootParent = parentFacet.getRoot();
+    if (rootParent != null) {
+      final OpenLineage.RootJob rootJob = rootParent.getJob();
+      if (rootJob != null) {
+        return "run:" + rootJob.getNamespace() + "/" + rootJob.getName();
       }
     }
-    return "run:" + job.getNamespace() + "/" + job.getName();
+
+    final OpenLineage.ParentRunFacetJob parentJob = parentFacet.getJob();
+    if (parentJob == null) {
+      return defaultResult;
+    }
+    return "run:" + parentJob.getNamespace() + "/" + parentJob.getName();
   }
 
   private String getMessageKey(@NonNull OpenLineage.DatasetEvent datasetEvent) {

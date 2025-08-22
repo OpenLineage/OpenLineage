@@ -5,10 +5,12 @@
 
 package io.openlineage.client.transports;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetEvent;
 import io.openlineage.client.OpenLineage.JobEvent;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineageClientUtils;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -52,13 +54,16 @@ public class TransformTransport extends Transport {
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
     RunEvent updatedRunEvent;
+    RunEvent deepCopyEvent =
+        OpenLineageClientUtils.deepCopy(runEvent, new TypeReference<RunEvent>() {});
     try {
-      updatedRunEvent = transformer.transform(runEvent);
+      updatedRunEvent = transformer.transform(deepCopyEvent);
     } catch (Exception e) {
       throw new TransformTransportException("Error transforming RunEvent", e);
     }
     if (updatedRunEvent == null) {
-      throw new TransformTransportException("Transformed RunEvent is null, not emitting");
+      log.warn("Transformed RunEvent is null, not emitting");
+      return;
     }
     transport.emit(updatedRunEvent);
   }
@@ -66,13 +71,16 @@ public class TransformTransport extends Transport {
   @Override
   public void emit(@NonNull DatasetEvent datasetEvent) {
     DatasetEvent updatedDatasetEvent;
+    DatasetEvent deepCopyEvent =
+        OpenLineageClientUtils.deepCopy(datasetEvent, new TypeReference<DatasetEvent>() {});
     try {
-      updatedDatasetEvent = transformer.transform(datasetEvent);
+      updatedDatasetEvent = transformer.transform(deepCopyEvent);
     } catch (Exception e) {
       throw new TransformTransportException("Error transforming DatasetEvent", e);
     }
     if (updatedDatasetEvent == null) {
-      throw new TransformTransportException("Transformed DatasetEvent is null, not emitting");
+      log.warn("Transformed DatasetEvent is null, not emitting");
+      return;
     }
     transport.emit(updatedDatasetEvent);
   }
@@ -80,13 +88,16 @@ public class TransformTransport extends Transport {
   @Override
   public void emit(@NonNull JobEvent jobEvent) {
     JobEvent updatedJobEvent;
+    JobEvent deepCopyEvent =
+        OpenLineageClientUtils.deepCopy(jobEvent, new TypeReference<JobEvent>() {});
     try {
-      updatedJobEvent = transformer.transform(jobEvent);
+      updatedJobEvent = transformer.transform(deepCopyEvent);
     } catch (Exception e) {
       throw new TransformTransportException("Error transforming JobEvent", e);
     }
     if (updatedJobEvent == null) {
-      throw new TransformTransportException("Transformed JobEvent is null, not emitting");
+      log.warn("Transformed JobEvent is null, not emitting");
+      return;
     }
     transport.emit(updatedJobEvent);
   }

@@ -33,7 +33,6 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
@@ -64,14 +63,14 @@ class SparkGenericIntegrationTest {
   @BeforeAll
   @SneakyThrows
   public static void beforeAll() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
     mockServer = MockServerUtils.createAndConfigureMockServer(MOCK_SERVER_PORT);
   }
 
   @AfterAll
   @SneakyThrows
   public static void afterAll() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    Spark4CompatUtils.cleanupAnyExistingSession();
     MockServerUtils.stopMockServer(mockServer);
   }
 
@@ -95,9 +94,12 @@ class SparkGenericIntegrationTest {
             .config("spark.openlineage.parentJobName", "parent-job")
             .config("spark.openlineage.parentRunId", "bd9c2467-3ed7-4fdc-85c2-41ebf5c73b40")
             .config("spark.openlineage.parentJobNamespace", "parent-namespace")
+            .config("spark.openlineage.job.tags", "spark;key:value")
             .config("spark.openlineage.job.owners.team", "MyTeam")
             .config("spark.openlineage.job.owners.person", "John Smith")
+            .config("spark.openlineage.run.tags", "run;set:up:SERVICE")
             .config("spark.openlineage.parentJobNamespace", "parent-namespace")
+            .config("spark.openlineage.facets.debug.disabled", "false")
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .getOrCreate();
   }
@@ -177,14 +179,10 @@ class SparkGenericIntegrationTest {
               return event.getJob().getFacets().getJobType() != null;
             });
 
-    // Only Spark application START events have spark_applicationDetails facet
+    // Only START events have spark_applicationDetails facet
     assertThat(
             events.stream()
-                .filter(
-                    event ->
-                        event.getEventType() == RunEvent.EventType.START
-                            && event.getJob().getFacets().getJobType().getJobType()
-                                == "APPLICATION")
+                .filter(event -> event.getEventType() == RunEvent.EventType.START)
                 .collect(Collectors.toList()))
         .allMatch(
             event -> {
@@ -233,6 +231,23 @@ class SparkGenericIntegrationTest {
               }
               return null;
             });
+
+    // at least one event should have the debug facet with app start metrics above 0
+    assertThat(
+            events.stream()
+                .map(e -> e.getRun().getFacets().getAdditionalProperties().get("debug"))
+                .filter(Objects::nonNull)
+                .map(
+                    debugFacet ->
+                        ((OpenLineage.DefaultRunFacet) debugFacet)
+                            .getAdditionalProperties()
+                            .get("metrics"))
+                .map(m -> (List<Map<String, Object>>) ((Map<String, Object>) m).get("metrics"))
+                .flatMap(List::stream)
+                .filter(m -> "openlineage.spark.event.app.start".equals(m.get("name"))))
+        .isNotNull()
+        .filteredOn(m -> (Double) m.get("value") > 0)
+        .isNotEmpty();
   }
 
   @Test

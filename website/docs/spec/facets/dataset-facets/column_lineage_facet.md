@@ -1,5 +1,5 @@
 ---
-sidebar_position: 1
+sidebar_position: 3
 ---
 
 # Column Level Lineage Dataset Facet
@@ -52,8 +52,8 @@ An OpenLinage run state update that represent this query using column-level line
             "name": "public.top_delivery_times",
             "facets": {
                 "columnLineage": {
-                    "_producer": "https://github.com/MarquezProject/marquez/blob/main/docker/metadata.json",
-                    "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ColumnLineageDatasetFacet.json",
+                    "_producer": "https://some.producer.com/version/1.0",
+                    "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/ColumnLineageDatasetFacet.json",
                     "fields": {
                         "order_id": {
                             "inputFields": [
@@ -65,32 +65,6 @@ An OpenLinage run state update that represent this query using column-level line
                                         {
                                             "type": "DIRECT",
                                             "subtype": "IDENTITY",
-                                            "description": "",
-                                            "masking": false
-                                        }
-                                    ]
-                                },
-                                {
-                                    "namespace": "food_delivery",
-                                    "name": "public.delivery_7_days",
-                                    "field": "order_placed_on",
-                                    "transformations": [
-                                        {
-                                            "type": "INDIRECT",
-                                            "subtype": "SORT",
-                                            "description": "",
-                                            "masking": false
-                                        }
-                                    ]
-                                },
-                                {
-                                    "namespace": "food_delivery",
-                                    "name": "public.delivery_7_days",
-                                    "field": "order_delivered_on",
-                                    "transformations": [
-                                        {
-                                            "type": "INDIRECT",
-                                            "subtype": "SORT",
                                             "description": "",
                                             "masking": false
                                         }
@@ -110,27 +84,8 @@ An OpenLinage run state update that represent this query using column-level line
                                             "subtype": "IDENTITY",
                                             "description": "",
                                             "masking": false
-                                        },
-                                        {
-                                            "type": "INDIRECT",
-                                            "subtype": "SORT",
-                                            "description": "",
-                                            "masking": false
                                         }
                                     ]                                  
-                                },
-                                {
-                                    "namespace": "food_delivery",
-                                    "name": "public.delivery_7_days",
-                                    "field": "order_delivered_on",
-                                    "transformations": [
-                                        {
-                                            "type": "INDIRECT",
-                                            "subtype": "SORT",
-                                            "description": "",
-                                            "masking": false
-                                        }
-                                    ]
                                 }
                             ]
                         },
@@ -144,25 +99,6 @@ An OpenLinage run state update that represent this query using column-level line
                                         {
                                             "type": "DIRECT",
                                             "subtype": "IDENTITY",
-                                            "description": "",
-                                            "masking": false
-                                        },
-                                        {
-                                            "type": "INDIRECT",
-                                            "subtype": "SORT",
-                                            "description": "",
-                                            "masking": false
-                                        }
-                                    ]
-                                },
-                                {
-                                    "namespace": "food_delivery",
-                                    "name": "public.delivery_7_days",
-                                    "field": "order_placed_on",
-                                    "transformations": [
-                                        {
-                                            "type": "INDIRECT",
-                                            "subtype": "SORT",
                                             "description": "",
                                             "masking": false
                                         }
@@ -182,12 +118,6 @@ An OpenLinage run state update that represent this query using column-level line
                                             "subtype": "TRANSFORMATION",
                                             "description": "",
                                             "masking": false
-                                        },
-                                        {
-                                          "type": "INDIRECT",
-                                          "subtype": "SORT",
-                                          "description": "",
-                                          "masking": false
                                         }
                                     ]
                                 },
@@ -201,18 +131,40 @@ An OpenLinage run state update that represent this query using column-level line
                                             "subtype": "TRANSFORMATION",
                                             "description": "",
                                             "masking": false
-                                        },
-                                        {
-                                          "type": "INDIRECT",
-                                          "subtype": "SORT",
-                                          "description": "",
-                                          "masking": false
                                         }
                                     ]
                                 }
                             ]
                         }
-                    }
+                    },
+                    "dataset": [
+                        {
+                            "namespace": "food_delivery",
+                            "name": "public.delivery_7_days",
+                            "field": "order_placed_on",
+                            "transformations": [
+                                {
+                                    "type": "INDIRECT",
+                                    "subtype": "SORT",
+                                    "description": "",
+                                    "masking": false
+                                }
+                            ]
+                        },
+                        {
+                            "namespace": "food_delivery",
+                            "name": "public.delivery_7_days",
+                            "field": "order_delivered_on",
+                            "transformations": [
+                                {
+                                    "type": "INDIRECT",
+                                    "subtype": "SORT",
+                                    "description": "",
+                                    "masking": false
+                                }
+                            ],
+                        }
+                    ]
                 }
             }
         }
@@ -221,7 +173,7 @@ An OpenLinage run state update that represent this query using column-level line
 }
 ```
 
-The facet specification can be found [here](https://openlineage.io/spec/facets/1-1-0/ColumnLineageDatasetFacet.json).
+The facet specification can be found [here](https://openlineage.io/spec/facets/1-2-0/ColumnLineageDatasetFacet.json).
 
 ## Transformation Type
 
@@ -243,20 +195,130 @@ WHERE pred = true;
 #### Subtype
 Contains more specific information about the transformation
 
-Direct
-- Identity - output value is taken as is from the input
-- Transformation - output value is transformed source value from input row 
-- Aggregation - output value is aggregation of source values from multiple input rows
+Direct:
+- `IDENTITY` - output value is taken as is from the input
+- `TRANSFORMATION` - output value is transformed source value from input row 
+- `AGGREGATION` - output value is aggregation of source values from multiple input rows
 
-Indirect
-- Join - input used in join condition
-- GroupBy - output is aggregated based on input (e.g. `GROUP BY` clause)
-- Filter - input used as a filtering condition (e.g. `WHERE` clause)
-- Order - output is sorted based on input field
-- Window - output is windowed based on input field
-- Conditional - input value is used in `IF` of `CASE WHEN` statements
+Indirect:
+- `JOIN` - input used in join condition
+- `GROUP_BY` - output is aggregated based on input (e.g. `GROUP BY` clause)
+- `FILTER` - input used as a filtering condition (e.g. `WHERE` clause)
+- `SORT` - output is sorted based on input field (e.g. `ORDER BY` clause)
+- `WINDOW` - output is windowed based on input field
+- `CONDITIONAL` - input value is used in `IF`, `CASE WHEN` or `COALESCE` statements
 
 #### Masking
 Boolean value indicating if the input value was obfuscated during the transformation. 
-The examples are: `hash` for Transformation and `count` for Aggregation.
+The examples are: `hash` for `TRANSFORMATION` and `count` for `AGGREGATION`.
 List of available methods that are considered masking is dependent on the source system.
+
+## Legacy representation
+
+For Spark, the result above is produced using config option `spark.openlineage.columnLineage.datasetLineageEnabled=True`.
+Default option value is `False` which moves all columns from `"dataset"` field to `"fields"`:
+```json
+{
+    "columnLineage": {
+        "_producer": "https://some.producer.com/version/1.0",
+        "_schemaURL": "https://openlineage.io/spec/facets/1-2-0/ColumnLineageDatasetFacet.json",
+        "fields": {
+            "order_id": {
+                "inputFields": [
+                    {
+                        "namespace": "food_delivery",
+                        "name": "public.delivery_7_days",
+                        "field": "order_id",
+                        "transformations": [
+                            {
+                                "type": "DIRECT",
+                                "subtype": "IDENTITY",
+                                "description": "",
+                                "masking": false
+                            },
+                        ]
+                    },
+                    {
+                        "namespace": "food_delivery",
+                        "name": "public.delivery_7_days",
+                        "field": "order_placed_on",
+                        "transformations": [
+                            {
+                                "type": "INDIRECT",
+                                "subtype": "SORT",
+                                "description": "",
+                                "masking": false
+                            }
+                        ]
+                    },
+                    {
+                        "namespace": "food_delivery",
+                        "name": "public.delivery_7_days",
+                        "field": "order_delivered_on",
+                        "transformations": [
+                            {
+                                "type": "INDIRECT",
+                                "subtype": "SORT",
+                                "description": "",
+                                "masking": false
+                            }
+                        ],
+                    }
+                ]
+            },
+            "order_placed_on": {
+                "inputFields": [
+                    {
+                        "namespace": "food_delivery",
+                        "name": "public.delivery_7_days",
+                        "field": "order_placed_on",
+                        "transformations": [
+                            {
+                                "type": "DIRECT",
+                                "subtype": "IDENTITY",
+                                "description": "",
+                                "masking": false
+                            }
+                        ]                                  
+                    },
+                    {
+                        "namespace": "food_delivery",
+                        "name": "public.delivery_7_days",
+                        "field": "order_placed_on",
+                        "transformations": [
+                            {
+                                "type": "INDIRECT",
+                                "subtype": "SORT",
+                                "description": "",
+                                "masking": false
+                            }
+                        ]
+                    },
+                    {
+                        "namespace": "food_delivery",
+                        "name": "public.delivery_7_days",
+                        "field": "order_delivered_on",
+                        "transformations": [
+                            {
+                                "type": "INDIRECT",
+                                "subtype": "SORT",
+                                "description": "",
+                                "masking": false
+                            }
+                        ],
+                    }
+                ]
+            }
+            // ... other fields
+        },
+        "dataset": [] // empty
+    }
+}
+```
+
+So each target dataset field depends on each source dataset field with `INDIRECT` column lineage,
+producing almost a cartesian product of all dataset fields. This is very inefficient.
+
+It is recommended to use `spark.openlineage.columnLineage.datasetLineageEnabled=True`,
+as this produces more compact column lineage representation.
+Default value may be changed in future versions of OpenLineage.

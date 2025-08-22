@@ -17,7 +17,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.Transport;
 import java.nio.ByteBuffer;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,7 @@ public class KinesisTransport extends Transport {
 
   private final KinesisProducer producer;
 
-  private final Executor listeningExecutor;
+  private final ExecutorService listeningExecutor;
 
   public KinesisTransport(
       @NonNull final KinesisProducer kinesisProducer, @NonNull final KinesisConfig kinesisConfig) {
@@ -57,28 +57,71 @@ public class KinesisTransport extends Transport {
     this.listeningExecutor = Executors.newSingleThreadExecutor();
   }
 
+  private String getPartitionKey(@NonNull OpenLineage.RunEvent runEvent) {
+    /*
+      To keep order of events in Kinesis stream, we need to send them to the same partition.
+      This is the case for:
+        1. different runs of the same job.
+        2. runs in the chain parent -> child -> grandchild.
+
+      For (1) Kinesis partitionKey has format "run:<namespace>/<name>".
+      For (2) source for `<namespace>` and `<name>` is selected using this order:
+      - run.facets.parent.root.job
+      - run.facets.parent.job
+      - run.job
+    */
+    final OpenLineage.Run run = runEvent.getRun();
+    final OpenLineage.Job job = runEvent.getJob();
+    final String defaultResult = "run:" + job.getNamespace() + "/" + job.getName();
+
+    final OpenLineage.RunFacets runFacets = run.getFacets();
+    if (runFacets == null) {
+      return defaultResult;
+    }
+
+    final OpenLineage.ParentRunFacet parentFacet = runFacets.getParent();
+    if (parentFacet == null) {
+      return defaultResult;
+    }
+
+    final OpenLineage.ParentRunFacetRoot rootParent = parentFacet.getRoot();
+    if (rootParent != null) {
+      final OpenLineage.RootJob rootJob = rootParent.getJob();
+      if (rootJob != null) {
+        return "run:" + rootJob.getNamespace() + "/" + rootJob.getName();
+      }
+    }
+
+    final OpenLineage.ParentRunFacetJob parentJob = parentFacet.getJob();
+    if (parentJob == null) {
+      return defaultResult;
+    }
+    return "run:" + parentJob.getNamespace() + "/" + parentJob.getName();
+  }
+
+  private String getPartitionKey(@NonNull OpenLineage.DatasetEvent datasetEvent) {
+    final OpenLineage.Dataset dataset = datasetEvent.getDataset();
+    return "dataset:" + dataset.getNamespace() + "/" + dataset.getName();
+  }
+
+  private String getPartitionKey(@NonNull OpenLineage.JobEvent jobEvent) {
+    final OpenLineage.Job job = jobEvent.getJob();
+    return "job:" + job.getNamespace() + "/" + job.getName();
+  }
+
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
-    final String eventAsJson = OpenLineageClientUtils.toJson(runEvent);
-    final OpenLineage.Job job = runEvent.getJob();
-    final String partitionKey = "run:" + job.getNamespace() + "/" + job.getName();
-    emit(eventAsJson, partitionKey);
+    emit(OpenLineageClientUtils.toJson(runEvent), getPartitionKey(runEvent));
   }
 
   @Override
   public void emit(@NonNull OpenLineage.DatasetEvent datasetEvent) {
-    final String eventAsJson = OpenLineageClientUtils.toJson(datasetEvent);
-    final OpenLineage.Dataset dataset = datasetEvent.getDataset();
-    final String partitionKey = "dataset:" + dataset.getNamespace() + "/" + dataset.getName();
-    emit(eventAsJson, partitionKey);
+    emit(OpenLineageClientUtils.toJson(datasetEvent), getPartitionKey(datasetEvent));
   }
 
   @Override
   public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
-    final String eventAsJson = OpenLineageClientUtils.toJson(jobEvent);
-    final OpenLineage.Job job = jobEvent.getJob();
-    final String partitionKey = "job:" + job.getNamespace() + "/" + job.getName();
-    emit(eventAsJson, partitionKey);
+    emit(OpenLineageClientUtils.toJson(jobEvent), getPartitionKey(jobEvent));
   }
 
   private void emit(String eventAsJson, String partitionKey) {
@@ -100,5 +143,11 @@ public class KinesisTransport extends Transport {
         };
 
     Futures.addCallback(future, callback, this.listeningExecutor);
+  }
+
+  @Override
+  public void close() throws Exception {
+    this.producer.flushSync();
+    this.listeningExecutor.shutdown();
   }
 }

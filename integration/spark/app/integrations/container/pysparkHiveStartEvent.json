@@ -1,38 +1,38 @@
 {
-    "eventType": "START",
-    "inputs": [],
-    "job": {
-        "name": "open_lineage_integration_hive.execute_insert_into_hive_table.warehouse_test",
-        "namespace": "testPysparkSQLHiveTest"
-    },
-    "run": {
-        "facets": {
-            "spark.logicalPlan": {},
-            "spark_unknown": {
-                "inputs": [
-                    {
-                        "description": {},
-                        "inputAttributes": [],
-                        "outputAttributes": [
-                            {
-                                "metadata": {},
-                                "name": "key",
-                                "type": "integer"
-                            },
-                            {
-                                "metadata": {},
-                                "name": "value",
-                                "type": "string"
-                            }
-                        ]
-                    }
-                ]
-            },
-            "processing_engine": {
-                "version": "${json-unit.any-string}",
-                "name": "spark",
-                "openlineageAdapterVersion": "${json-unit.any-string}"
-            }
-        }
+  "eventType": "START",
+  "inputs": [],
+  "job": {
+    "name": "open_lineage_integration_hive.execute_insert_into_hive_table.warehouse_test",
+    "namespace": "testPysparkSQLHiveTest"
+  },
+  "run": {
+    "facets": {
+      "spark.logicalPlan": {},
+      "spark_unknown": {
+        "inputs": [
+          {
+            "description": {},
+            "inputAttributes": [],
+            "outputAttributes": [
+              {
+                "metadata": {},
+                "name": "key",
+                "type": "integer"
+              },
+              {
+                "metadata": {},
+                "name": "value",
+                "type": "string"
+              }
+            ]
+          }
+        ]
+      },
+      "processing_engine": {
+        "version": "${json-unit.any-string}",
+        "name": "spark",
+        "openlineageAdapterVersion": "${json-unit.any-string}"
+      }
     }
+  }
 }

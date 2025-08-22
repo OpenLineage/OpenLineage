@@ -11,12 +11,14 @@ import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineageConfig;
 import io.openlineage.client.circuitBreaker.CircuitBreakerConfig;
 import io.openlineage.client.dataset.DatasetConfig;
+import io.openlineage.client.job.JobConfig;
+import io.openlineage.client.run.RunConfig;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -38,21 +40,36 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   private String parentJobName;
   private String parentJobNamespace;
   private String parentRunId;
+  private String rootParentJobName;
+  private String rootParentJobNamespace;
+  private String rootParentRunId;
   private String overriddenAppName;
-  @NonNull private String debugFacet;
   private String testExtensionProvider;
   private JobNameConfig jobName;
-  private JobConfig job;
+
+  @JsonProperty("vendors")
   private VendorsConfig vendors;
 
   @JsonProperty("columnLineage")
   private ColumnLineageConfig columnLineageConfig;
+
+  @JsonProperty("filter")
+  private FilterConfig filterConfig;
+
+  @JsonProperty("debug")
+  private DebugConfig debugConfig;
+
+  @JsonProperty("timeout")
+  private TimeoutConfig timeoutConfig;
 
   public SparkOpenLineageConfig(
       String namespace,
       String parentJobName,
       String parentJobNamespace,
       String parentRunId,
+      String rootParentJobName,
+      String rootParentJobNamespace,
+      String rootParentRunId,
       String overriddenAppName,
       String testExtensionProvider,
       JobNameConfig jobName,
@@ -63,18 +80,23 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
       CircuitBreakerConfig circuitBreaker,
       Map<String, Object> metricsConfig,
       ColumnLineageConfig columnLineageConfig,
-      VendorsConfig vendors) {
-    super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig);
+      VendorsConfig vendors,
+      FilterConfig filterConfig,
+      RunConfig run) {
+    super(transportConfig, facetsConfig, datasetConfig, circuitBreaker, metricsConfig, run, job);
     this.namespace = namespace;
     this.parentJobName = parentJobName;
     this.parentJobNamespace = parentJobNamespace;
     this.parentRunId = parentRunId;
+    this.rootParentJobName = rootParentJobName;
+    this.rootParentJobNamespace = rootParentJobNamespace;
+    this.rootParentRunId = rootParentRunId;
     this.overriddenAppName = overriddenAppName;
     this.testExtensionProvider = testExtensionProvider;
     this.jobName = jobName;
-    this.job = job;
     this.columnLineageConfig = columnLineageConfig;
     this.vendors = vendors;
+    this.filterConfig = filterConfig;
   }
 
   @Override
@@ -82,17 +104,11 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     if (facetsConfig == null) {
       facetsConfig = new FacetsConfig();
     }
-    if (facetsConfig.getDeprecatedDisabledFacets() == null) {
-      facetsConfig.setDeprecatedDisabledFacets(new String[] {});
-    }
-    if (facetsConfig.getDisabledFacets() == null) {
-      facetsConfig.setDisabledFacets(new HashMap<>());
-    } else {
-      Map<String, Boolean> DISABLED_BY_DEFAULT_MAP =
-          DISABLED_BY_DEFAULT.stream().collect(Collectors.toMap(facet -> facet, facet -> true));
-      facetsConfig.setDisabledFacets(
-          mergePropertyWith(DISABLED_BY_DEFAULT_MAP, facetsConfig.getDisabledFacets()));
-    }
+
+    Map<String, Boolean> DISABLED_BY_DEFAULT_MAP =
+        DISABLED_BY_DEFAULT.stream().collect(Collectors.toMap(facet -> facet, facet -> true));
+    facetsConfig.setDisabledFacets(
+        mergePropertyWith(DISABLED_BY_DEFAULT_MAP, facetsConfig.getDisabledFacets()));
 
     return facetsConfig;
   }
@@ -115,7 +131,8 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
     if (columnLineageConfig == null) {
       columnLineageConfig = new ColumnLineageConfig();
       // TODO #3084: For the release 1.26.0 this flag should default to true
-      columnLineageConfig.setDatasetLineageEnabled(false);
+      columnLineageConfig.setSchemaSizeLimit(1_000);
+      columnLineageConfig.setDatasetLineageEnabled(true);
     }
     return columnLineageConfig;
   }
@@ -131,23 +148,23 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
   @Getter
   @Setter
   @ToString
-  public static class JobConfig {
-    private JobOwnersConfig owners;
-  }
+  public static class VendorsConfig {
+    @JsonAnySetter @NonNull private final Map<String, VendorConfig> config = new HashMap<>();
 
-  @Getter
-  @ToString
-  public static class JobOwnersConfig {
-    @JsonAnySetter @NonNull
-    private final Map<String, String> additionalProperties = new HashMap<>();
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class VendorConfig {
+      @NonNull private Boolean metricsReporterDisabled = false;
+    }
   }
 
   @Getter
   @Setter
   @ToString
-  public static class VendorsConfig {
-    @JsonAnySetter @NonNull
-    private final Map<String, String> additionalProperties = new HashMap<>();
+  public static class FilterConfig {
+    private final List<String> allowedSparkNodes = new ArrayList<>();
+    private final List<String> deniedSparkNodes = new ArrayList<>();
   }
 
   @Override
@@ -157,16 +174,21 @@ public class SparkOpenLineageConfig extends OpenLineageConfig<SparkOpenLineageCo
         mergePropertyWith(parentJobName, other.parentJobName),
         mergePropertyWith(parentJobNamespace, other.parentJobNamespace),
         mergePropertyWith(parentRunId, other.parentRunId),
+        mergePropertyWith(rootParentJobName, other.rootParentJobName),
+        mergePropertyWith(rootParentJobNamespace, other.rootParentJobNamespace),
+        mergePropertyWith(rootParentRunId, other.rootParentRunId),
         mergePropertyWith(overriddenAppName, other.overriddenAppName),
         mergePropertyWith(testExtensionProvider, other.testExtensionProvider),
         mergePropertyWith(jobName, other.jobName),
-        mergePropertyWith(job, other.job),
+        mergePropertyWith(jobConfig, other.jobConfig),
         mergePropertyWith(transportConfig, other.transportConfig),
         mergePropertyWith(facetsConfig, other.facetsConfig),
         mergePropertyWith(datasetConfig, other.datasetConfig),
         mergePropertyWith(circuitBreaker, other.circuitBreaker),
         mergePropertyWith(metricsConfig, other.metricsConfig),
         mergePropertyWith(columnLineageConfig, other.columnLineageConfig),
-        mergePropertyWith(vendors, other.vendors));
+        mergePropertyWith(vendors, other.vendors),
+        mergePropertyWith(filterConfig, other.filterConfig),
+        mergePropertyWith(runConfig, other.runConfig));
   }
 }

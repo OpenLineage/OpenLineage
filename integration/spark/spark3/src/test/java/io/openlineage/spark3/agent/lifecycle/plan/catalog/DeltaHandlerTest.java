@@ -10,15 +10,19 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.OpenLineage;
 import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import org.apache.spark.sql.RuntimeConfig;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
@@ -34,10 +38,12 @@ import scala.Option;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class DeltaHandlerTest {
+  OpenLineageContext context = mock(OpenLineageContext.class);
   DeltaCatalog deltaCatalog = mock(DeltaCatalog.class);
-  DeltaHandler deltaHandler = new DeltaHandler(mock(OpenLineageContext.class));
+  DeltaHandler deltaHandler = new DeltaHandler(context);
   SparkSession sparkSession = mock(SparkSession.class);
   SparkContext sparkContext = mock(SparkContext.class);
+  RuntimeConfig runtimeConfig = mock(RuntimeConfig.class);
 
   @BeforeEach
   void beforeEach() {
@@ -47,6 +53,9 @@ class DeltaHandlerTest {
     when(sparkContext.getConf()).thenReturn(sparkConf);
     when(sparkContext.hadoopConfiguration()).thenReturn(hadoopConf);
     when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(ScalaConversionUtils.fromJavaMap(Collections.emptyMap()));
   }
 
   @Test
@@ -82,7 +91,42 @@ class DeltaHandlerTest {
 
   @Test
   @SneakyThrows
-  void testGetidentifierForDeltaTableWithDefaultLocation() {
+  void testGetIdentifierForDeltaTableWithoutCatalogTable() {
+    Identifier identifier = Identifier.of(new String[] {"database", "schema"}, "table");
+    TableIdentifier tableIdentifier = mock(TableIdentifier.class);
+    when(tableIdentifier.database()).thenReturn(Option.apply("schema"));
+    when(tableIdentifier.table()).thenReturn("table");
+
+    when(deltaCatalog.isPathIdentifier(identifier)).thenReturn(false);
+
+    DeltaTableV2 deltaTable = Mockito.mock(DeltaTableV2.class);
+    when(deltaTable.catalogTable()).thenReturn(Option.empty());
+    when(deltaTable.path()).thenReturn(new Path("/some/location"));
+    when(deltaCatalog.loadTable(identifier)).thenReturn(deltaTable);
+
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            ScalaConversionUtils.fromJavaMap(
+                Collections.singletonMap("spark.sql.warehouse.dir", "/tmp/warehouse")));
+
+    DatasetIdentifier datasetIdentifier =
+        deltaHandler.getDatasetIdentifier(
+            sparkSession, deltaCatalog, identifier, Collections.emptyMap());
+
+    assertThat(datasetIdentifier)
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", "/some/location");
+
+    assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+    assertThat(datasetIdentifier.getSymlinks().get(0))
+        .hasFieldOrPropertyWithValue("namespace", "/tmp/warehouse")
+        .hasFieldOrPropertyWithValue("name", "database.schema.table")
+        .hasFieldOrPropertyWithValue("type", DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetIdentifierForDeltaTableWithDefaultLocation() {
     Identifier identifier = Identifier.of(new String[] {"database", "schema"}, "table");
     TableIdentifier tableIdentifier = mock(TableIdentifier.class);
     when(tableIdentifier.database()).thenReturn(Option.apply("schema"));
@@ -118,7 +162,7 @@ class DeltaHandlerTest {
 
   @Test
   @SneakyThrows
-  void testGetidentifierForV1TableWithDefaultLocation() {
+  void testGetIdentifierForV1TableWithDefaultLocation() {
     Identifier identifier = Identifier.of(new String[] {"database", "schema"}, "table");
     TableIdentifier tableIdentifier = mock(TableIdentifier.class);
     when(tableIdentifier.database()).thenReturn(Option.apply("schema"));
@@ -154,7 +198,7 @@ class DeltaHandlerTest {
 
   @Test
   @SneakyThrows
-  void testGetidentifierForDeltaTableWithCustomLocation() {
+  void testGetIdentifierForDeltaTableWithCustomLocation() {
     Identifier identifier = Identifier.of(new String[] {"database", "schema"}, "table");
     TableIdentifier tableIdentifier = mock(TableIdentifier.class);
     when(tableIdentifier.database()).thenReturn(Option.apply("schema"));
@@ -185,7 +229,7 @@ class DeltaHandlerTest {
 
   @Test
   @SneakyThrows
-  void testGetidentifierForV1TableWithCustomLocation() {
+  void testGetIdentifierForV1TableWithCustomLocation() {
     Identifier identifier = Identifier.of(new String[] {"database", "schema"}, "table");
     TableIdentifier tableIdentifier = mock(TableIdentifier.class);
     when(tableIdentifier.database()).thenReturn(Option.apply("schema"));
@@ -212,5 +256,21 @@ class DeltaHandlerTest {
         .hasFieldOrPropertyWithValue("name", "/some/location");
 
     assertThat(datasetIdentifier.getSymlinks()).hasSize(0);
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetCatalogDatasetFacet() {
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(URI.create("http://localhost")));
+    when(deltaCatalog.name()).thenReturn("name");
+
+    Optional<CatalogHandler.CatalogWithAdditionalFacets> catalogDatasetFacet =
+        deltaHandler.getCatalogDatasetFacet(deltaCatalog, Collections.emptyMap());
+    assertThat(catalogDatasetFacet.isPresent()).isTrue();
+
+    OpenLineage.CatalogDatasetFacet facet = catalogDatasetFacet.get().getCatalogDatasetFacet();
+    assertThat(facet.getName()).isEqualTo("name");
+    assertThat(facet.getFramework()).isEqualTo("delta");
+    assertThat(facet.getType()).isEqualTo("delta");
   }
 }

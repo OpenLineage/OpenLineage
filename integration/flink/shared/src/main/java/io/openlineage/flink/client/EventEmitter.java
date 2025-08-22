@@ -10,7 +10,6 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageConfig;
-import io.openlineage.client.transports.TransportFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -33,10 +32,7 @@ public class EventEmitter {
   public EventEmitter(OpenLineageConfig openLineageConfig) {
     if (openLineageConfig.getTransportConfig() != null) {
       // build emitter client based on flink configuration
-      this.client =
-          OpenLineageClient.builder()
-              .transport(new TransportFactory(openLineageConfig.getTransportConfig()).build())
-              .build();
+      this.client = Clients.newClient(openLineageConfig);
     } else {
       // build emitter default way - openlineage.yml file or system properties
       client = Clients.newClient();
@@ -48,6 +44,14 @@ public class EventEmitter {
       client.emit(event);
     } catch (OpenLineageClientException exception) {
       log.error("Failed to emit OpenLineage event: ", exception);
+    }
+  }
+
+  public void close() {
+    try {
+      client.close();
+    } catch (Exception e) {
+      log.error("Failed to close OpenLineage client", e);
     }
   }
 

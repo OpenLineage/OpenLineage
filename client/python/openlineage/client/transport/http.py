@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import gzip
+import http.client as http_client
 import inspect
 import logging
 import warnings
@@ -11,17 +12,17 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import attr
-
-if TYPE_CHECKING:
-    from openlineage.client.client import Event, OpenLineageClientOptions
-    from requests.adapters import HTTPAdapter, Response
-
-import http.client as http_client
-
+import urllib3.util
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields, try_import_from_string
 from requests import Session
+from requests.adapters import HTTPAdapter
+
+if TYPE_CHECKING:
+    from openlineage.client.client import Event, OpenLineageClientOptions
+    from requests import Response
+
 
 log = logging.getLogger(__name__)
 
@@ -74,21 +75,32 @@ def get_session() -> Session:
     return Session()
 
 
-@attr.s
+@attr.define
 class HttpConfig(Config):
-    url: str = attr.ib()
-    endpoint: str = attr.ib(default="api/v1/lineage")
-    timeout: float = attr.ib(default=5.0)
+    url: str
+    endpoint: str = "api/v1/lineage"
+    timeout: float = 5.0
     # check TLS certificates
-    verify: bool = attr.ib(default=True)
-    auth: TokenProvider = attr.ib(factory=lambda: TokenProvider({}))
-    compression: HttpCompression | None = attr.ib(default=None)
+    verify: bool = True
+    auth: TokenProvider = attr.field(factory=lambda: TokenProvider({}))
+    compression: HttpCompression | None = None
     # not set by TransportFactory
-    session: Session | None = attr.ib(default=None)
+    session: Session | None = None
     # not set by TransportFactory
-    adapter: HTTPAdapter | None = attr.ib(default=None)
+    adapter: HTTPAdapter | None = None
     # custom headers support
-    custom_headers: dict[str, str] = attr.ib(factory=dict)
+    custom_headers: dict[str, str] = attr.field(factory=dict)
+    # retry settings
+    retry: dict[str, Any] = attr.field(
+        default={
+            "total": 5,
+            "read": 5,
+            "connect": 5,
+            "backoff_factor": 0.3,
+            "status_forcelist": [500, 502, 503, 504],
+            "allowed_methods": ["HEAD", "POST"],
+        }
+    )
 
     @classmethod
     def from_dict(cls, params: dict[str, Any]) -> HttpConfig:
@@ -146,23 +158,11 @@ class HttpTransport(Transport):
                 raise ValueError(msg)
         self.url = url
         self.endpoint = config.endpoint
-        self.session = None
-        if config.session:
-            self.session = config.session
-            self.session.headers["Content-Type"] = "application/json"
-            auth_headers = self._auth_headers(config.auth)
-            self.session.headers.update(auth_headers)
-            self.session.headers.update(config.custom_headers)
         self.timeout = config.timeout
         self.verify = config.verify
         self.compression = config.compression
-
-        if config.adapter:
-            self.set_adapter(config.adapter)
-
-    def set_adapter(self, adapter: HTTPAdapter) -> None:
-        if self.session:
-            self.session.mount(self.url, adapter)
+        self._session: Session | None = None
+        self.session = config.session  # type: ignore[assignment]
 
     def emit(self, event: Event) -> Response:
         # If anyone overrides debuglevel manually, we can potentially leak secrets to logs.
@@ -171,33 +171,36 @@ class HttpTransport(Transport):
         http_client.HTTPConnection.debuglevel = 0
         body, headers = self._prepare_request(Serde.to_json(event))
 
-        # Update headers with custom headers from the config
-        headers.update(self.config.custom_headers)
-
-        if self.session:
-            resp = self.session.post(
-                url=urljoin(self.url, self.endpoint),
-                data=body,
-                headers=headers,
-                timeout=self.timeout,
-                verify=self.verify,
-            )
-        else:
-            headers["Content-Type"] = "application/json"
-            headers.update(self._auth_headers(self.config.auth))
-            headers.update(self.config.custom_headers)
-            with Session() as session:
-                resp = session.post(
-                    url=urljoin(self.url, self.endpoint),
-                    data=body,
-                    headers=headers,
-                    timeout=self.timeout,
-                    verify=self.verify,
-                )
-            resp.close()
+        resp = self.session.post(
+            url=urljoin(self.url, self.endpoint),
+            data=body,
+            headers=headers,
+            timeout=self.timeout,
+            verify=self.verify,
+        )
+        resp.close()
         http_client.HTTPConnection.debuglevel = prev_debuglevel
         resp.raise_for_status()
         return resp
+
+    @property
+    def session(self) -> Session:
+        if not self._session:
+            self._session = Session()
+            self._prepare_session(self._session)
+        return self._session
+
+    @session.setter
+    def session(self, value: Session | None) -> None:
+        if value:
+            self._prepare_session(value)
+        self._session = value
+
+    def close(self, timeout: float = -1) -> bool:
+        if self._session:
+            self._session.close()
+            self._session = None
+        return True
 
     def _auth_headers(self, token_provider: TokenProvider) -> dict:  # type: ignore[type-arg]
         bearer = token_provider.get_bearer()
@@ -205,8 +208,26 @@ class HttpTransport(Transport):
             return {"Authorization": bearer}
         return {}
 
-    def _prepare_request(self, event_str: str) -> tuple[bytes | str, dict[str, str]]:
-        if self.compression == HttpCompression.GZIP:
-            return gzip.compress(event_str.encode("utf-8")), {"Content-Encoding": "gzip"}
+    def _prepare_session(self, session: Session) -> None:
+        if self.config.adapter:
+            session.mount(self.url, self.config.adapter)
+        else:
+            session.mount(self.url, self._prepare_adapter())
 
-        return event_str, {}
+    def _prepare_adapter(self) -> HTTPAdapter:
+        retry = urllib3.util.Retry(**self.config.retry)
+        return HTTPAdapter(max_retries=retry)
+
+    def _prepare_request(self, event_str: str) -> tuple[bytes | str, dict[str, str]]:
+        headers = {
+            "Content-Type": "application/json",
+            **self._auth_headers(self.config.auth),
+            **self.config.custom_headers,
+        }
+        if self.compression == HttpCompression.GZIP:
+            headers["Content-Encoding"] = "gzip"
+            # levels higher than 3 are twice as slow:
+            # https://github.com/python/cpython/issues/91349#issuecomment-2737161048
+            return gzip.compress(event_str.encode("utf-8"), compresslevel=3), headers
+
+        return event_str, headers

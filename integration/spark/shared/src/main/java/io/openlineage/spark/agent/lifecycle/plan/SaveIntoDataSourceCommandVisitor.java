@@ -16,6 +16,7 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.client.utils.jdbc.JdbcDatasetUtils;
 import io.openlineage.spark.agent.util.DatasetFacetsUtils;
+import io.openlineage.spark.agent.util.LogicalRelationFactory;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -105,8 +106,11 @@ public class SaveIntoDataSourceCommandVisitor
                   event.getClass().getName(),
                   context.getSparkSession().get().sqlContext(),
                   command.options());
-      return Collections.singletonList(
-          outputDataset().getDataset(datasetIdentifier, getSchema(command)));
+
+      return datasetIdentifier != null
+          ? Collections.singletonList(
+              outputDataset().getDataset(datasetIdentifier, getSchema(command)))
+          : Collections.emptyList();
     }
 
     // Kafka has some special handling because the Source and Sink relations require different
@@ -181,11 +185,12 @@ public class SaveIntoDataSourceCommandVisitor
       throw ex;
     }
     LogicalRelation logicalRelation =
-        new LogicalRelation(
-            relation,
-            ScalaConversionUtils.asScalaSeqEmpty(),
-            Option.empty(),
-            command.isStreaming());
+        LogicalRelationFactory.create(
+                relation,
+                ScalaConversionUtils.asScalaSeqEmpty(),
+                Option.empty(),
+                command.isStreaming())
+            .orElseThrow(() -> new RuntimeException("Failed to create LogicalRelation"));
     return delegate(
             context.getOutputDatasetQueryPlanVisitors(), context.getOutputDatasetBuilders(), event)
         .applyOrElse(
@@ -256,6 +261,8 @@ public class SaveIntoDataSourceCommandVisitor
       return Optional.ofNullable(command.options().get("kustotable"))
           .filter(Option::isDefined)
           .map(Option::get);
+    } else if (command.options().get("table").isDefined()) {
+      return Optional.of(command.options().get("table").get());
     } else if (command.dataSource() instanceof RelationProvider
         || command.dataSource() instanceof SchemaRelationProvider) {
       return ScalaConversionUtils.fromMap(command.options()).keySet().stream()

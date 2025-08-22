@@ -49,9 +49,13 @@ ls -halt "$RESOURCES"
 if [[ -n "${GPG_SIGNING_KEY}" ]]; then
     ORG_GRADLE_PROJECT_signingKey=$(echo "$GPG_SIGNING_KEY" | base64 -d)
     export ORG_GRADLE_PROJECT_signingKey
-    export RELEASE_PASSWORD="$OSSRH_TOKEN_USERNAME"
-    export RELEASE_USERNAME="$OSSRH_TOKEN_USERNAME"
+    export RELEASE_PASSWORD="$MAVEN_CENTRAL_TOKEN_PASSWORD"
+    export RELEASE_USERNAME="$MAVEN_CENTRAL_TOKEN_USERNAME"
 fi
+
+printf "\n------ Running gradle tests ------\n"
+"$ROOT"/gradlew test
+printf "\n------ Gradle tests passed ------\n"
 
 # Install to maven
 "$ROOT"/gradlew -x javadoc publishToMavenLocal
@@ -70,3 +74,4 @@ else
     printf "Expected %s\n Got %s" "$EXPECTED" "$OUTPUT"
     exit 1
 fi
+

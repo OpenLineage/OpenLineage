@@ -1,0 +1,378 @@
+/*
+/* Copyright 2018-2025 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+import java.util.function.Supplier
+
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'pmd'
+    id 'jacoco'
+    id "com.adarshr.test-logger"
+    id 'com.diffplug.spotless'
+    id 'com.github.johnrengelman.shadow'
+}
+
+group = "io.openlineage"
+
+ext {
+    openLineageVersion = version
+    cloudDataLineageVersion = '0.46.0'
+    producerClientVersion = '1.0.0'
+    cloudStorageVersion = '2.45.0'
+    gcsConnectorVersion = 'hadoop2-2.2.25'
+    lombokVersion = '1.18.36'
+    guavaVersion = '33.3.1-jre'
+    bigqueryVersion = '2.44.0'
+    hiveBigqueryConnectorVersion = '2.0.3'
+    assertjVersion = '3.26.3'
+    hiverunnerVersion = '6.1.0'
+    jupiterVersion = '5.11.3'
+    jacksonVersion = '2.18.1'
+    mockitoVersion = '4.11.0'
+    hiveVersion = '3.1.3'
+    hadoopVersion = '2.10.2'
+    postgresqlVersion = '42.7.5'
+    testcontainersVersion = '1.20.4'
+}
+
+dependencies {
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    compileOnly("org.apache.hadoop:hadoop-common:${hadoopVersion}") {
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'org.apache.avro', module: 'avro'
+    }
+
+    compileOnly("org.apache.hive:hive-service:${hiveVersion}");
+
+    compileOnly("org.apache.hive:hive-exec:${hiveVersion}") {
+        exclude group: 'org.pentaho', module: '*'
+        exclude group: 'org.apache.hadoop', module: '*'
+    }
+
+    implementation("com.google.guava:guava:${guavaVersion}")
+
+    api("io.openlineage:openlineage-java:${openLineageVersion}") {
+        exclude group: 'com.fasterxml.jackson.core', module: '*'
+    }
+    implementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
+
+    // Test dependencies ---------------------------------------------------------------------
+    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${jupiterVersion}"
+    testImplementation("io.github.hiverunner:hiverunner:${hiverunnerVersion}") {
+        exclude group: 'org.apache.tez', module: '*'
+        exclude group: 'org.apache.hive', module: '*'
+        exclude group: 'org.apache.hive.hcatalog', module: '*'
+        exclude group: 'org.apache.hadoop', module: '*'
+        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-annotations'
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation("io.openlineage:openlineage-java:${openLineageVersion}") {
+        exclude group: 'com.fasterxml.jackson.core', module: '*'
+    }
+    testImplementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation(platform("org.testcontainers:testcontainers-bom:${testcontainersVersion}"))
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:mockserver")
+    testImplementation("org.awaitility:awaitility:4.3.0")
+    testImplementation("com.zaxxer:HikariCP:4.0.3")
+    testImplementation("org.apache.iceberg:iceberg-hive-runtime:1.7.1")
+    testImplementation("org.apache.hive:hive-jdbc:${hiveVersion}")
+    testImplementation("org.apache.hive:hive-service:${hiveVersion}")
+    testImplementation("org.apache.thrift:libthrift:0.21.0")
+    testImplementation("org.mock-server:mockserver-netty:5.14.0:shaded") {
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.datatype'
+        exclude group: 'com.fasterxml.jackson.dataformat'
+        exclude group: 'org.mock-server.mockserver-client-java'
+    }
+
+    testImplementation 'org.datanucleus:datanucleus-rdbms:4.1.19'
+    testImplementation 'org.datanucleus:datanucleus-api-jdo:4.2.4'
+    testImplementation 'org.datanucleus:datanucleus-core:4.1.17'
+
+    testImplementation("org.apache.hive:hive-exec:${hiveVersion}") {
+        exclude group: 'org.pentaho', module: '*'
+        exclude group: 'org.apache.hadoop', module: '*'
+    }
+    testImplementation("org.apache.hive:hive-common:${hiveVersion}") {
+        exclude group: 'org.apache.hadoop', module: '*'
+        exclude group: 'com.github.joshelser', module: 'dropwizard-metrics-hadoop-metrics2-reporter'
+    }
+    testImplementation("org.apache.hive:hive-service:${hiveVersion}") {
+        exclude group: 'org.pentaho', module: '*'
+        exclude group: 'org.apache.hadoop', module: '*'
+        exclude group: 'org.apache.hbase', module: '*'
+        exclude group: 'org.apache.parquet', module: 'parquet-hadoop-bundle'
+        exclude group: 'com.github.joshelser', module: 'dropwizard-metrics-hadoop-metrics2-reporter'
+        exclude group: 'com.lmax', module: 'disruptor'
+    }
+    testImplementation("org.apache.hive.hcatalog:hive-hcatalog-pig-adapter:${hiveVersion}") {
+        exclude group: 'org.apache.hive', module: 'hive-exec'
+        exclude group: 'org.apache.hadoop', module: '*'
+        exclude group: 'org.apache.pig', module: '*'
+    }
+    testImplementation("org.apache.hadoop:hadoop-common:${hadoopVersion}") {
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'org.apache.avro', module: 'avro'
+    }
+    testImplementation("org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}") {
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'org.apache.avro', module: 'avro'
+    }
+    testImplementation("org.apache.hadoop:hadoop-hdfs:${hadoopVersion}") {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(8))
+    }
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+compileJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+compileTestJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+task sourceJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+def commonTestConfiguration = {
+    classpath =  project.sourceSets.test.runtimeClasspath
+}
+
+test {
+
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
+    jacoco {
+        excludes += ['org/apache/hadoop/hive/ql/parse/HiveParser']
+    }
+}
+
+def integrationTestConfiguration = {
+    forkEvery 1
+    maxParallelForks 1
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    var buildDirectory = layout.buildDirectory;
+    systemProperties = [
+            "build.dir"                           : buildDirectory.get().asFile.absolutePath,
+            "resources.dir"                       : buildDirectory.get().dir("resources/test").asFile.absolutePath,
+            'junit.platform.output.capture.stdout': 'true',
+            'junit.platform.output.capture.stderr': 'true',
+            '.hive.hook.jar': "${archivesBaseName}-${version}-shadow.jar",
+    ]
+    classpath =  project.sourceSets.test.runtimeClasspath
+}
+
+
+task integrationTest(type: Test) {
+    configure integrationTestConfiguration
+    useJUnitPlatform {
+        includeTags "integration-test"
+    }
+}
+
+integrationTest.dependsOn(shadowJar, project.tasks.publishToMavenLocal)
+
+integrationTest.outputs.upToDateWhen { false }
+
+def reportsDir = "${buildDir}/reports"
+def coverageDir = "${reportsDir}/coverage"
+
+jacoco {
+    toolVersion = '0.8.0'
+    reportsDir = file(coverageDir)
+}
+
+jacocoTestReport {
+    reports {
+        xml {
+            enabled true
+        }
+        html {
+            enabled true
+            destination = file(coverageDir)
+        }
+    }
+}
+
+
+final String additionalJarsConfigurationName = "additionalJars"
+
+configurations {
+    create(additionalJarsConfigurationName) {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+}
+
+List<Dependency> additionalJars() {
+    return [
+            dependencies.create('org.postgresql:postgresql:42.5.1'),
+            dependencies.create("org.apache.iceberg:iceberg-hive-runtime:1.7.1")]
+}
+
+addDependenciesToConfiguration(additionalJarsConfigurationName, this.&additionalJars)
+
+final def buildDirectory = layout.buildDirectory
+final def libsShadowDir = buildDirectory.dir("libs")
+final def destAdditionalJarsDir = buildDirectory.dir("additional/jars")
+
+
+tasks.register("copyAdditionalJars", Copy) {
+    group = "copy"
+    description = "Copies additional jars to the build directory"
+    from(configurations.named(additionalJarsConfigurationName))
+    into(destAdditionalJarsDir)
+
+    onlyIf({ configurations.named(additionalJarsConfigurationName).get().files.any() })
+}
+
+
+apply plugin: 'com.adarshr.test-logger'
+
+testlogger {
+    theme 'plain'
+    showStandardStreams true
+}
+
+tasks.named("jar", Jar.class) {
+    destinationDirectory.set(layout.buildDirectory)
+}
+
+shadowJar {
+    dependsOn(tasks.named("jar"))
+    group = "shadow"
+    archiveClassifier = "shadow"
+    destinationDirectory.set(libsShadowDir)
+
+    zip64 true
+
+    exclude 'module-info.class'
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+    exclude 'META-INF/MANIFEST.MF'
+    exclude 'META-INF/DEPENDENCIES'
+    exclude 'META-INF/LICENSE'
+    exclude 'META-INF/NOTICE'
+    exclude 'META-INF/versions/21/**'
+    exclude 'META-INF/versions/22/**'
+
+    dependencies {
+        exclude(dependency("com.google.guava:guava:${guavaVersion}"))
+        exclude(dependency("org.slf4j::"))
+        exclude("org/apache/commons/logging/**")
+        exclude("io/openlineage/server/**")
+        exclude("javax/**")
+        exclude("com/google/**")
+        exclude("org/checkerframework/**")
+        exclude("org/publicsuffix/**")
+        exclude("org/slf4j/**")
+    }
+
+    relocate "com.github.ok2c.hc5", "io.openlineage.hive.shaded.com.github.ok2c.hc5"
+    relocate "org.apache.httpcomponents.client5", "io.openlineage.hive.shaded.org.apache.httpcomponents.client5"
+    relocate "javassist", "io.openlineage.hive.shaded.javassist"
+    relocate "org.apache.hc", "io.openlineage.hive.shaded.org.apache.hc"
+    relocate "org.apache.http", "io.openlineage.hive.shaded.org.apache.http"
+    relocate "org.apache.commons.codec", "io.openlineage.hive.shaded.org.apache.commons.codec"
+    relocate "org.apache.commons.lang3", "io.openlineage.hive.shaded.org.apache.commons.lang3"
+    relocate "org.apache.commons.beanutils", "io.openlineage.hive.shaded.org.apache.commons.beanutils"
+    relocate 'org.yaml.snakeyaml', 'io.openlineage.hive.shaded.org.yaml.snakeyaml'
+    relocate "com.fasterxml.jackson", "io.openlineage.hive.shaded.com.fasterxml.jackson"
+    relocate "org.LatencyUtils", "io.openlineage.hive.shaded.org.latencyutils"
+    relocate "org.HdrHistogram", "io.openlineage.hive.shaded.org.hdrhistogram"
+
+
+    manifest {
+        attributes([
+                'Created-By'            : "Gradle ${gradle.gradleVersion}",
+                'Built-By'              : System.getProperty('user.name'),
+                'Build-Jdk'             : System.getProperty('java.version'),
+                'Implementation-Title'  : project.name,
+                'Implementation-Version': project.version
+        ])
+    }
+    zip64 true
+    mergeServiceFiles()
+}
+
+tasks.register('createVersionProperties') {
+    doLast {
+        File dir = new File("$projectDir/src/main/resources/io/openlineage/hive/client/")
+        dir.mkdirs()
+        new File("$projectDir/src/main/resources/io/openlineage/hive/client/version.properties").withWriter { w ->
+            Properties p = new Properties()
+            p['version'] = parent.project.version.toString()
+            p.each { key, value ->
+                w.write("$key=$value\n")
+            }
+        }
+    }
+}
+
+processResources {
+    dependsOn tasks.named('createVersionProperties')
+}
+
+classes {
+    dependsOn processResources
+}
+
+void addDependenciesToConfiguration(String configurationName, Supplier<List<Dependency>> func) {
+    def deps = func.get()
+    deps.each {
+        dependencies.add(configurationName, it)
+    }
+}
+
+assemble {
+    dependsOn shadowJar
+}
+
+spotlessJava {
+    dependsOn("compileJava", "compileTestJava")
+}
+
+classes {
+    dependsOn createVersionProperties
+}

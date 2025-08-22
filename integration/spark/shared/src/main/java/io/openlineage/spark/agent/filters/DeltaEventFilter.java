@@ -11,6 +11,7 @@ import static io.openlineage.spark.agent.filters.EventFilterUtils.isDeltaPlan;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -21,7 +22,12 @@ import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.catalyst.plans.logical.SerializeFromObject;
+import org.apache.spark.sql.catalyst.trees.TreeNode;
 import org.apache.spark.sql.execution.LogicalRDD;
+import org.apache.spark.sql.execution.QueryExecution;
+import org.apache.spark.sql.execution.SparkPlanInfo;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import scala.collection.JavaConverters;
 
 @Slf4j
@@ -34,6 +40,9 @@ public class DeltaEventFilter implements EventFilter {
 
   private static final List<String> DELTA_LOG_INTERNAL_COLUMNS =
       Arrays.asList("protocol", "metaData", "action_sort_column");
+
+  private static final String STAGING_DELTA_TABLE =
+      "AppendDataExecV1 org.apache.spark.sql.delta.catalog.DeltaCatalog$StagedDeltaTableV2";
 
   public DeltaEventFilter(OpenLineageContext context) {
     this.context = context;
@@ -48,6 +57,7 @@ public class DeltaEventFilter implements EventFilter {
     return isFilterRoot()
         || isLocalRelationOnly()
         || isLogicalRDDWithInternalDataColumns()
+        || isStagedDeltaTable(event)
         || isDeltaLogProjection()
         || isSerializeFromObject()
         || isOnJobStartOrEnd(event);
@@ -60,6 +70,25 @@ public class DeltaEventFilter implements EventFilter {
    */
   private boolean isOnJobStartOrEnd(SparkListenerEvent event) {
     return event instanceof SparkListenerJobStart || event instanceof SparkListenerJobEnd;
+  }
+
+  /** Returns true if Staged Delta table is written */
+  private boolean isStagedDeltaTable(SparkListenerEvent event) {
+    if (event instanceof SparkListenerSQLExecutionStart) {
+      return Optional.of((SparkListenerSQLExecutionStart) event)
+          .map(SparkListenerSQLExecutionStart::sparkPlanInfo)
+          .map(SparkPlanInfo::simpleString)
+          .filter(s -> s.contains(STAGING_DELTA_TABLE))
+          .isPresent();
+    } else if (event instanceof SparkListenerSQLExecutionEnd) {
+      return Optional.of((SparkListenerSQLExecutionEnd) event)
+          .map(SparkListenerSQLExecutionEnd::qe)
+          .map(QueryExecution::executedPlan)
+          .map(TreeNode::toString)
+          .filter(s -> s.contains(STAGING_DELTA_TABLE))
+          .isPresent();
+    }
+    return false;
   }
 
   /** Returns true if LocalRelation is the only element of LogicalPlan. */

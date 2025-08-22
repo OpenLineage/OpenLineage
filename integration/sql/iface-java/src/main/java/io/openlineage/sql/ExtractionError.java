@@ -7,11 +7,21 @@ package io.openlineage.sql;
 
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+/**
+ * Represents an error that occurred during SQL parsing or lineage extraction.
+ */
 public class ExtractionError {
   private final long index;
   private final String message;
   private final String originStatement;
 
+  /**
+   * Creates a new ExtractionError instance.
+   *
+   * @param index the position or index where the error occurred
+   * @param message the error message describing what went wrong
+   * @param originStatement the original SQL statement that caused the error
+   */
   public ExtractionError(long index, String message, String originStatement) {
     this.index = index;
     this.message = message;
@@ -22,10 +32,20 @@ public class ExtractionError {
     return index;
   }
 
+  /**
+   * Returns the error message.
+   *
+   * @return the error message describing what went wrong
+   */
   public String message() {
     return message;
   }
 
+  /**
+   * Returns the original SQL statement that caused the error.
+   *
+   * @return the SQL statement where the error occurred
+   */
   public String originStatement() {
     return originStatement;
   }

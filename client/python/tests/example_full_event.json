@@ -20,6 +20,17 @@
           "namespace": "my-scheduler-namespace",
           "name": "myjob.mytask"
         }
+      },
+      "tags": {
+        "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+        "_schemaURL": "http://test.schema.url",
+        "tags": [
+          {
+            "key": "openlineage_client_version",
+            "value": "1.30.0",
+            "source": "OPENLINEAGE_CLIENT"
+          }
+        ]
       }
     }
   },

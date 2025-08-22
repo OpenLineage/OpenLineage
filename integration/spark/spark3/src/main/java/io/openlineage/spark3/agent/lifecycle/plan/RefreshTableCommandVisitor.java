@@ -21,14 +21,14 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.RefreshTableCommand;
 
 public class RefreshTableCommandVisitor
-    extends QueryPlanVisitor<RefreshTableCommand, OpenLineage.OutputDataset> {
+    extends QueryPlanVisitor<RefreshTableCommand, OpenLineage.InputDataset> {
 
   public RefreshTableCommandVisitor(OpenLineageContext context) {
     super(context);
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+  public List<OpenLineage.InputDataset> apply(LogicalPlan x) {
     Optional<CatalogTable> tableOption = catalogTableFor(((RefreshTableCommand) x).tableIdent());
 
     if (!tableOption.isPresent()) {
@@ -48,7 +48,7 @@ public class RefreshTableCommandVisitor
                 OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.ALTER)
             .build();
 
-    DatasetFactory<OpenLineage.OutputDataset> factory = outputDataset();
+    DatasetFactory<OpenLineage.InputDataset> factory = inputDataset();
 
     DatasetCompositeFacetsBuilder datasetFacetsBuilder = factory.createCompositeFacetBuilder();
     datasetFacetsBuilder

@@ -9,23 +9,23 @@ import cattr
 from openlineage.client.run import InputDataset, OutputDataset
 
 
-@attr.s
+@attr.define
 class RunningStep:
-    step_run_id: str = attr.ib()
-    input_datasets: List[InputDataset] = attr.ib(factory=list)
-    output_datasets: List[OutputDataset] = attr.ib(factory=list)
+    step_run_id: str
+    input_datasets: List[InputDataset] = attr.field(factory=list)
+    output_datasets: List[OutputDataset] = attr.field(factory=list)
 
 
-@attr.s
+@attr.define
 class RunningPipeline:
-    running_steps: Dict[str, RunningStep] = attr.ib(factory=dict)
-    repository_name: Optional[str] = attr.ib(default=None)
+    running_steps: Dict[str, RunningStep] = attr.field(factory=dict)
+    repository_name: Optional[str] = None
 
 
-@attr.s
+@attr.define
 class OpenLineageCursor:
-    last_storage_id: int = attr.ib()
-    running_pipelines: Dict[str, RunningPipeline] = attr.ib(factory=dict)
+    last_storage_id: int
+    running_pipelines: Dict[str, RunningPipeline] = attr.field(factory=dict)
 
     def to_json(self):
         return json.dumps(attr.asdict(self))
