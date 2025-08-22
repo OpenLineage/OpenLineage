@@ -48,6 +48,18 @@ public class SparkContainerUtils {
       DockerImageName.parse("mockserver/mockserver")
           .withTag("mockserver-" + MockServerClient.class.getPackage().getImplementationVersion());
 
+  static final DockerImageName HIVE_IMAGE = DockerImageName.parse("apache/hive").withTag("3.1.3");
+
+  public static GenericContainer<?> makeHiveMetastoreContainer(Network network) {
+    GenericContainer<?> container =
+        new GenericContainer<>(HIVE_IMAGE)
+            .withNetwork(network)
+            .withNetworkAliases("metastore-standalone")
+            .withEnv("SERVICE_NAME", "metastore")
+            .withExposedPorts(9083);
+    return container;
+  }
+
   static MockServerContainer makeMockServerContainer(Network network) {
     return new MockServerContainer(MOCKSERVER_IMAGE)
         .withNetwork(network)
