@@ -49,9 +49,21 @@ public class IcebergInputStatisticsInputDatasetFacetBuilder
       return false;
     }
 
-    // should be defined for `org.apache.iceberg.spark.source.SparkBatchQueryScan` which is not
-    // public class
-    return x.getClass().getCanonicalName().startsWith("org.apache.iceberg.spark");
+    try {
+      // Load the target interface class by its fully qualified name
+      Class<?> targetInterface =
+          Class.forName("org.apache.iceberg.spark.source.SparkPartitioningAwareScan");
+
+      // isAssignableFrom checks if x's class is the same as, or is a superclass or
+      // superinterface of, the specified targetInterface. This is the correct way
+      // to perform a runtime 'instanceof' check against a class/interface
+      // that may not be visible at compile time.
+      return targetInterface.isAssignableFrom(x.getClass());
+
+    } catch (ClassNotFoundException e) {
+      // If the class/interface doesn't exist in the classpath, then x can't be an instance of it.
+      return false;
+    }
   }
 
   @Override
