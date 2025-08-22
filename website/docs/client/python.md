@@ -29,6 +29,40 @@ To install the package from source, use
 python -m pip install .
 ```
 
+### Optional Dependencies
+
+The Python client supports optional dependencies for enhanced functionality:
+
+#### Remote Filesystem Support
+For file transport with remote storage backends (S3, GCS, Azure, etc.):
+```bash
+pip install openlineage-python[fsspec]
+```
+
+#### Kafka Support
+For Kafka transport:
+```bash
+pip install openlineage-python[kafka]
+```
+
+#### MSK IAM Support
+For AWS MSK with IAM authentication:
+```bash
+pip install openlineage-python[msk-iam]
+```
+
+#### DataZone Support
+For AWS DataZone integration:
+```bash
+pip install openlineage-python[datazone]
+```
+
+#### All Optional Dependencies
+To install all optional dependencies:
+```bash
+pip install openlineage-python[fsspec,kafka,msk-iam,datazone]
+```
+
 ## Configuration
 
 We recommend configuring the client with an `openlineage.yml` file that contains all the
@@ -199,6 +233,30 @@ transport:
     retries: 3
   flush: true
   message_key: some-value # this has been aliased to messageKey
+```
+</TabItem>
+
+<TabItem value="file" label="File Transport with Remote Storage">
+
+Setting following environment variables:
+
+```sh
+OPENLINEAGE__TRANSPORT__TYPE=file
+OPENLINEAGE__TRANSPORT__LOG_FILE_PATH=s3://my-bucket/lineage/events.jsonl
+OPENLINEAGE__TRANSPORT__APPEND=true
+OPENLINEAGE__TRANSPORT__STORAGE_OPTIONS='{"key": "AKIAIOSFODNN7EXAMPLE", "secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", "endpoint_url": "https://s3.amazonaws.com"}'
+```
+
+is equivalent to passing following YAML configuration:
+```yaml
+transport:
+  type: file
+  log_file_path: s3://my-bucket/lineage/events.jsonl
+  append: true
+  storage_options:
+    key: AKIAIOSFODNN7EXAMPLE
+    secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    endpoint_url: https://s3.amazonaws.com
 ```
 </TabItem>
 
@@ -687,24 +745,100 @@ client = OpenLineageClient(transport=KafkaTransport(kafka_config))
 
 ### File
 
-Designed mainly for integration testing, the `FileTransport` emits OpenLineage events to a given file(s).
+Designed mainly for integration testing, the `FileTransport` emits OpenLineage events to a given file(s). Supports both local and remote filesystems through optional fsspec integration.
 
 #### Configuration
 
 - `type` - string, must be `"file"`. Required.
 - `log_file_path` - string specifying the path of the file or file prefix (when `append` is true). Required.
 - `append` - boolean, see *Behavior* section below. Optional, default: `false`.
+- `storage_options` - dictionary, additional options passed to fsspec for authentication and configuration. Optional.
+- `filesystem` - string, dotted import path to a custom filesystem class or instance. Optional, provides explicit control over the filesystem.
+- `fs_kwargs` - dictionary, keyword arguments for constructing the filesystem when using `filesystem`. Optional.
 
 #### Behavior
 
 - If the target file is absent, it's created.
 - If `append` is `true`, each event will be appended to a single file `log_file_path`, separated by newlines.
 - If `append` is `false`, each event will be written to as separated file with name `{log_file_path}-{datetime}`.
+- When using remote filesystems, the transport automatically handles authentication and connection management through fsspec.
+
+#### Remote Filesystem Support
+
+The File transport supports remote filesystems through [fsspec](https://filesystem-spec.readthedocs.io/), which provides a unified interface for various storage backends including:
+
+- **Amazon S3** (`s3://`)
+- **Google Cloud Storage** (`gcs://` or `gs://`)
+- **Azure Blob Storage** (`az://`, `abfs://`)
+- **HDFS** (`hdfs://`)
+- **FTP/SFTP** (`ftp://`, `sftp://`)
+- **HTTP** (`http://`, `https://`)
+
+##### Installation
+
+To use remote filesystems, install the fsspec extra:
+
+```bash
+pip install openlineage-python[fsspec]
+```
+
+##### Configuration Methods
+
+**Auto-detection Configuration**: FSSpec automatically detects the protocol from URL schemes:
+
+```yaml
+transport:
+  type: file
+  log_file_path: s3://my-bucket/lineage/events.jsonl
+  # Protocol auto-detected from s3:// scheme
+  storage_options:
+    key: your-access-key
+    secret: your-secret-key
+    endpoint_url: https://custom-s3-endpoint.com
+```
+
+**Explicit Filesystem Configuration**: Provide explicit control over the filesystem using the `filesystem` parameter. This supports three approaches:
+
+1. **Filesystem Class**: Reference a filesystem class that will be instantiated with `fs_kwargs`
+2. **Filesystem Instance**: Reference a pre-configured filesystem instance (ignores `fs_kwargs`)  
+3. **Factory Function**: Reference a callable that returns a filesystem instance when called with `fs_kwargs`
+
+```yaml
+# Example: Filesystem class
+transport:
+  type: file
+  log_file_path: s3://my-bucket/lineage/events.jsonl
+  filesystem: s3fs.S3FileSystem
+  fs_kwargs:
+    key: your-access-key
+    secret: your-secret-key
+```
+
+##### Append Mode Considerations
+
+**Important**: Many cloud storage filesystems (S3, GCS, Azure) do not support reliable append operations. When append mode is requested but not supported by the underlying filesystem, these filesystems may silently switch to overwrite mode, potentially causing data loss.
+
+**Recommendations for cloud storage**:
+
+- Use `append: false` to create timestamped files for better reliability
+- Test append behavior with your specific storage backend before production use
+- Monitor file outputs to ensure expected behavior
+
+```yaml
+transport:
+  type: file
+  log_file_path: s3://my-bucket/lineage/events
+  protocol: s3
+  append: false  # Recommended for cloud storage (creates timestamped files)
+  storage_options:
+    key: your-access-key
+    secret: your-secret-key
+```
 
 #### Examples
 
 <Tabs groupId="integrations">
-<TabItem value="yaml" label="Yaml Config">
+<TabItem value="yaml-local" label="Local File">
 
 ```yaml
 transport:
@@ -714,21 +848,198 @@ transport:
 ```
 
 </TabItem>
-<TabItem value="python" label="Python Code">
+<TabItem value="yaml-s3" label="Amazon S3">
+
+```yaml
+transport:
+  type: file
+  log_file_path: s3://my-bucket/lineage/events.jsonl
+  append: false  # Recommended for cloud storage
+  storage_options:
+    key: AKIAIOSFODNN7EXAMPLE
+    secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    endpoint_url: https://s3.amazonaws.com
+```
+
+</TabItem>
+<TabItem value="yaml-gcs" label="Google Cloud Storage">
+
+```yaml
+transport:
+  type: file
+  log_file_path: gs://my-bucket/lineage/events.jsonl
+  append: false  # Recommended for cloud storage
+  storage_options:
+    token: /path/to/service-account.json
+    project: my-gcp-project
+```
+
+</TabItem>
+<TabItem value="yaml-azure" label="Azure Blob Storage">
+
+```yaml
+transport:
+  type: file
+  log_file_path: az://container/lineage/events.jsonl
+  append: false  # Recommended for cloud storage
+  storage_options:
+    account_name: mystorageaccount
+    account_key: base64_encoded_key
+```
+
+</TabItem>
+<TabItem value="yaml-custom-fs" label="Custom Filesystem">
+
+```yaml
+transport:
+  type: file
+  log_file_path: /custom/path/events.jsonl
+  filesystem: mymodule.MyCustomFileSystem
+  fs_kwargs:
+    endpoint: https://custom-storage.example.com
+    auth_token: custom_token_123
+    timeout: 30
+```
+
+</TabItem>
+<TabItem value="yaml-fs-instance" label="Filesystem Instance">
+
+```yaml
+transport:
+  type: file
+  log_file_path: s3://my-bucket/lineage/events.jsonl
+  filesystem: mymodule.my_preconfigured_s3_instance
+  # fs_kwargs ignored when using an instance
+```
+
+</TabItem>
+<TabItem value="yaml-fs-factory" label="Filesystem Factory">
+
+```yaml
+transport:
+  type: file
+  log_file_path: s3://my-bucket/lineage/events.jsonl
+  filesystem: mymodule.create_secure_s3_filesystem
+  fs_kwargs:
+    key: AKIAIOSFODNN7EXAMPLE
+    secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+    endpoint_url: https://custom-s3-endpoint.com
+    use_ssl: true
+```
+
+</TabItem>
+<TabItem value="python-local" label="Python Code (Local)">
 
 ```python
 from openlineage.client import OpenLineageClient
 from openlineage.client.transport.file import FileConfig, FileTransport
 
 file_config = FileConfig(
-  log_file_path="/path/to/your/file",
-  append=False,
+    log_file_path="/path/to/your/file",
+    append=False,
 )
 
 client = OpenLineageClient(transport=FileTransport(file_config))
 ```
-</TabItem>
 
+</TabItem>
+<TabItem value="python-s3" label="Python Code (S3)">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.file import FileConfig, FileTransport
+
+file_config = FileConfig(
+    log_file_path="s3://my-bucket/lineage/events.jsonl",
+    append=True,
+    storage_options={
+        "key": "AKIAIOSFODNN7EXAMPLE",
+        "secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        "endpoint_url": "https://s3.amazonaws.com",
+    },
+)
+
+client = OpenLineageClient(transport=FileTransport(file_config))
+```
+
+</TabItem>
+<TabItem value="python-custom" label="Python Code (Custom FS)">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.file import FileConfig, FileTransport
+
+file_config = FileConfig(
+    log_file_path="/custom/path/events.jsonl",
+    filesystem="s3fs.S3FileSystem",
+    fs_kwargs={
+        "key": "AKIAIOSFODNN7EXAMPLE",
+        "secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        "client_kwargs": {"region_name": "us-west-2"},
+    },
+)
+
+client = OpenLineageClient(transport=FileTransport(file_config))
+```
+
+</TabItem>
+<TabItem value="python-fs-instance" label="Python Code (FS Instance)">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.file import FileConfig, FileTransport
+import s3fs
+
+# Create filesystem instance directly
+s3_fs = s3fs.S3FileSystem(
+    key="AKIAIOSFODNN7EXAMPLE",
+    secret="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+    endpoint_url="https://s3.amazonaws.com"
+)
+
+file_config = FileConfig(
+    log_file_path="s3://my-bucket/lineage/events.jsonl",
+    filesystem="__main__.s3_fs",  # Reference to the instance
+    # fs_kwargs are ignored when using an instance
+)
+
+client = OpenLineageClient(transport=FileTransport(file_config))
+```
+
+</TabItem>
+<TabItem value="python-fs-factory" label="Python Code (FS Factory)">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.file import FileConfig, FileTransport
+
+def create_custom_s3_filesystem(**kwargs):
+    """Factory function that creates a customized S3 filesystem."""
+    import s3fs
+    
+    # Apply custom defaults or modifications
+    config = {
+        "use_ssl": True,
+        "s3_additional_kwargs": {"ServerSideEncryption": "AES256"},
+        **kwargs  # Allow override via fs_kwargs
+    }
+    
+    return s3fs.S3FileSystem(**config)
+
+file_config = FileConfig(
+    log_file_path="s3://my-bucket/lineage/events.jsonl",
+    filesystem="__main__.create_custom_s3_filesystem",  # Reference to factory function
+    fs_kwargs={
+        "key": "AKIAIOSFODNN7EXAMPLE",
+        "secret": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+        "endpoint_url": "https://custom-s3-endpoint.com",
+    },
+)
+
+client = OpenLineageClient(transport=FileTransport(file_config))
+```
+
+</TabItem>
 </Tabs>
 
 ### Composite
