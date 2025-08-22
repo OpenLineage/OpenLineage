@@ -43,7 +43,7 @@ class DataQualityMetricsDatasetFacet(DatasetFacet):
     """The number of files evaluated"""
 
     lastUpdated: str | None = attr.field(default=None)  # noqa: N815
-    """the last time the dataset was changed"""
+    """The last time the dataset was changed"""
 
     @staticmethod
     def _get_schema() -> str:
