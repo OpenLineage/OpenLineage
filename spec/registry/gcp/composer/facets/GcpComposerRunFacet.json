@@ -15,9 +15,7 @@
               "type": "string"
             }
           },
-          "required": [
-            "dagRunId"
-          ],
+          "required": ["dagRunId"],
           "additionalProperties": true
         }
       ],

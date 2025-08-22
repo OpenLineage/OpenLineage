@@ -1,9 +1,6 @@
 {
   "producer": {
     "root_doc_URL": "https://cloud.google.com/composer/docs/composer-3/lineage-integration",
-    "produced_facets": [
-      "ol:gcp:composer:GcpComposerJobFacet.json",
-      "ol:gcp:composer:GcpComposerRunFacet.json"
-    ]
+    "produced_facets": ["ol:gcp:composer:GcpComposerJobFacet.json", "ol:gcp:composer:GcpComposerRunFacet.json"]
   }
 }
