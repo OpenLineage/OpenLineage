@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple, TypeVar
 
 import yaml
 from jinja2 import Environment, Undefined
-from openlineage.common.provider.dbt.processor import DbtArtifactProcessor
+from openlineage.common.provider.dbt.processor import DbtArtifactProcessor, DbtRunRunFacet
 from openlineage.common.utils import get_from_nullable_chain
 
 DBT_TARGET_PATH_ENVVAR = "DBT_TARGET_PATH"
@@ -102,6 +102,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
 
         self.target = target
         self.project_name = dbt_project["name"]
+        self.project_version = dbt_project["version"]
         self.profile_name = profile_name or dbt_project.get("profile")
         if not self.profile_name:
             raise KeyError(f"profile not found in {dbt_project}")
@@ -268,3 +269,17 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         profile = profile["outputs"][self.target]
 
         return manifest, run_result, profile, catalog
+
+    def dbt_run_run_facet(self) -> dict[str, DbtRunRunFacet]:
+        invocation_id = self.run_metadata.get("invocation_id")
+        if not invocation_id:
+            return {}
+        return {
+            "dbt_run": DbtRunRunFacet(
+                invocation_id=invocation_id,
+                project_name=self.project_name,
+                project_version=self.project_version,
+                profile_name=self.profile_name,
+                dbt_runtime="core",
+            )
+        }

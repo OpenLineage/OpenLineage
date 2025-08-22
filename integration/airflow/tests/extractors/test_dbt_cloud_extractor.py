@@ -101,8 +101,10 @@ class TestDbtCloudExtractorE2E:
         mock_client.emit.side_effect = emit_event
         mock_hook.get_project.return_value.json.return_value = {
             "data": {
+                "name": "dbt-project",
                 "connection": {
                     "type": "snowflake",
+                    "name": "snowflake",
                     "details": {
                         "account": "gp21411.us-east-1",
                         "database": "SANDBOX",
@@ -111,7 +113,7 @@ class TestDbtCloudExtractorE2E:
                         "client_session_keep_alive": False,
                         "role": None,
                     },
-                }
+                },
             }
         }
         mock_hook.get_job.return_value.json.return_value = {
