@@ -24,7 +24,7 @@
               "type": "integer"
             },
             "lastUpdated": {
-              "description": "the last time the dataset was changed",
+              "description": "The last time the dataset was changed",
               "type": "string",
               "format": "date-time"
             },
