@@ -755,7 +755,6 @@ Designed mainly for integration testing, the `FileTransport` emits OpenLineage e
 - `storage_options` - dictionary, additional options passed to fsspec for authentication and configuration. Optional.
 - `filesystem` - string, dotted import path to a custom filesystem class or instance. Optional, provides explicit control over the filesystem.
 - `fs_kwargs` - dictionary, keyword arguments for constructing the filesystem when using `filesystem`. Optional.
-- `force_timestamped_files` - boolean, always create timestamped files, ignoring append setting. Optional, default: `false`.
 
 #### Behavior
 

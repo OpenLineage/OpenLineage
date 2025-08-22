@@ -328,14 +328,12 @@ def test_file_config_from_dict_with_filesystem():
 
 @mock.patch("openlineage.client.transport.file.FSSPEC_AVAILABLE", False)
 def test_file_transport_raises_error_when_fsspec_not_available_with_filesystem():
-    """Test that FileTransport raises error when fsspec is not available but filesystem is specified."""
+    """Test that FileConfig raises error when fsspec is not available but filesystem is specified."""
     log_dir = tempfile.TemporaryDirectory()
     file_path = join(log_dir.name, "logtest")
 
-    config = FileConfig(log_file_path=file_path, filesystem="tests.test_file.MockFileSystem")
-
     with pytest.raises(RuntimeError):
-        FileTransport(config)
+        FileConfig.from_dict({"log_file_path": file_path, "filesystem": "tests.test_file.MockFileSystem"})
 
 
 @mock.patch("openlineage.client.transport.file.FSSPEC_AVAILABLE", True)
@@ -351,9 +349,11 @@ def test_file_transport_creates_filesystem_from_class():
     )
 
     transport = FileTransport(config)
-    assert transport._fs is not None
-    assert isinstance(transport._fs, MockFileSystem)
-    assert transport._fs.storage_options == {"test_arg": "test_value"}
+    assert hasattr(transport, "_file_handler")
+    assert hasattr(transport._file_handler, "_fs")
+    assert transport._file_handler._fs is not None
+    assert isinstance(transport._file_handler._fs, MockFileSystem)
+    assert transport._file_handler._fs.storage_options == {"test_arg": "test_value"}
 
 
 @mock.patch("openlineage.client.transport.file.FSSPEC_AVAILABLE", True)
@@ -377,9 +377,11 @@ def test_file_transport_creates_filesystem_from_callable():
         )
 
         transport = FileTransport(config)
-        assert transport._fs is not None
-        assert isinstance(transport._fs, MockFileSystem)
-        assert transport._fs.storage_options == {"factory_arg": "factory_value"}
+        assert hasattr(transport, "_file_handler")
+        assert hasattr(transport._file_handler, "_fs")
+        assert transport._file_handler._fs is not None
+        assert isinstance(transport._file_handler._fs, MockFileSystem)
+        assert transport._file_handler._fs.storage_options == {"factory_arg": "factory_value"}
 
 
 @mock.patch("openlineage.client.transport.file.FSSPEC_AVAILABLE", True)
@@ -397,8 +399,10 @@ def test_file_transport_uses_existing_filesystem_instance():
         )
 
         transport = FileTransport(config)
-        assert transport._fs is mock_fs
-        assert transport._fs.storage_options == {"existing": "instance"}
+        assert hasattr(transport, "_file_handler")
+        assert hasattr(transport._file_handler, "_fs")
+        assert transport._file_handler._fs is mock_fs
+        assert transport._file_handler._fs.storage_options == {"existing": "instance"}
 
 
 @mock.patch("openlineage.client.transport.file.FSSPEC_AVAILABLE", True)
@@ -441,7 +445,7 @@ def test_file_transport_emit_with_explicit_filesystem():
     transport.emit(event)
 
     # Verify that the mock filesystem was used
-    mock_fs = transport._fs
+    mock_fs = transport._file_handler._fs
     assert len(mock_fs._open_calls) == 1
     assert mock_fs._open_calls[0][0] == file_path  # path
     assert mock_fs._open_calls[0][1] == "a"  # mode (append)
@@ -514,7 +518,7 @@ def test_file_transport_get_file_path_with_append():
 
 @mock.patch("openlineage.client.transport.file.FSSPEC_AVAILABLE", True)
 def test_file_transport_open_file_local_fallback():
-    """Test that _open_file falls back to built-in open when no fsspec configuration is provided."""
+    """Test that file handler falls back to built-in open when no fsspec configuration is provided."""
     log_dir = tempfile.TemporaryDirectory()
     file_path = join(log_dir.name, "logtest")
 
@@ -522,7 +526,7 @@ def test_file_transport_open_file_local_fallback():
     transport = FileTransport(config)
 
     # Should use built-in open since no fsspec configuration
-    with transport._open_file(file_path, "w") as f:
+    with transport._file_handler.open_file(file_path, "w") as f:
         f.write("test content")
 
     # Verify file was created using standard filesystem
@@ -534,7 +538,7 @@ def test_file_transport_open_file_local_fallback():
 @mock.patch("openlineage.client.transport.file.FSSPEC_AVAILABLE", True)
 @mock.patch("openlineage.client.transport.file.fsspec")
 def test_file_transport_protocol_auto_detection(mock_fsspec):
-    """Test that _open_file auto-detects protocol from URL scheme."""
+    """Test that file handler auto-detects protocol from URL scheme."""
     s3_path = "s3://my-bucket/lineage/events.jsonl"
 
     # Mock fsspec.open to return our mock file
@@ -547,7 +551,7 @@ def test_file_transport_protocol_auto_detection(mock_fsspec):
     transport = FileTransport(config)
 
     # Test opening file with auto-detection
-    with transport._open_file(s3_path, "w") as f:
+    with transport._file_handler.open_file(s3_path, "w") as f:
         f.write("test content")
 
     # Verify that fsspec.open was called without protocol parameter (auto-detection)
@@ -556,23 +560,25 @@ def test_file_transport_protocol_auto_detection(mock_fsspec):
 
 @mock.patch("openlineage.client.transport.file.FSSPEC_AVAILABLE", True)
 @mock.patch("openlineage.client.transport.file.fsspec")
-def test_file_transport_protocol_auto_detection_fallback(mock_fsspec):
-    """Test that _open_file falls back to built-in open when fsspec can't handle the path."""
+def test_file_transport_uses_local_handler_for_local_paths(mock_fsspec):
+    """Test that file transport uses LocalFileHandler for local paths without protocol."""
     log_dir = tempfile.TemporaryDirectory()
     local_path = join(log_dir.name, "logtest")
-
-    # Mock fsspec.open to raise ValueError (can't handle local path)
-    mock_fsspec.open.side_effect = ValueError("No filesystem found for protocol")
 
     config = FileConfig(log_file_path=local_path)
     transport = FileTransport(config)
 
-    # Should fall back to built-in open
-    with transport._open_file(local_path, "w") as f:
+    # Should use LocalFileHandler, not fsspec
+    from openlineage.client.transport.file import LocalFileHandler
+
+    assert isinstance(transport._file_handler, LocalFileHandler)
+
+    # Verify file can be opened and written
+    with transport._file_handler.open_file(local_path, "w") as f:
         f.write("test content")
 
-    # Verify fsspec was attempted first
-    mock_fsspec.open.assert_called_once_with(local_path, mode="w")
+    # Verify fsspec was never called since we use LocalFileHandler
+    mock_fsspec.open.assert_not_called()
 
     # Verify file was created using standard filesystem
     assert os.path.exists(local_path)
