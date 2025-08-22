@@ -1,10 +1,10 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 ---
 
 # Data Quality Metrics Facet
 
-*Note: this facet will be removed in a future OpenLineage release. To report on data quality metrics, please use [DataQualityMetricsDatasetFacet](https://openlineage.io/docs/spec/facets/dataset-facets/data_quality_metrics) instead.*
+This facet allows platforms to display and monitor metrics related to the health of a given dataset.
 
 Example:
 
@@ -15,7 +15,7 @@ Example:
         "inputFacets": {
             "dataQualityMetrics": {
                 "_producer": "https://some.producer.com/version/1.0",
-                "_schemaURL": "https://openlineage.io/spec/facets/1-0-2/DataQualityMetricsInputDatasetFacet.json",
+                "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/DataQualityMetricsDatasetFacet.json",
                 "rowCount": 123,
                 "fileCount": 5,
                 "bytes": 35602,
@@ -70,4 +70,4 @@ Example:
     ...
 }
 ```
-The facet specification can be found [here](https://openlineage.io/spec/facets/1-0-3/DataQualityMetricsInputDatasetFacet.json).
+The facet specification can be found [here](https://openlineage.io/spec/facets/1-0-0/DataQualityMetricsDatasetFacet.json).
