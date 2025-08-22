@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Data Quality Metrics Facet
 
-*Note: this facet will be removed in a future OpenLineage release. To report on data quality metrics, please use [DataQualityMetricsDatasetFacet](https://openlineage.io/docs/spec/facets/dataset-facets/data_quality_metrics) instead.*
+*Note: this facet is now **deprecated** and will be removed in a the next OpenLineage major release. To report on data quality metrics, please use [DataQualityMetricsDatasetFacet](https://openlineage.io/docs/spec/facets/dataset-facets/data_quality_metrics) instead.*
 
 Example:
 

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 4
 ---
 
 # Data Quality Metrics Facet
@@ -12,7 +12,7 @@ Example:
 {
     ...
     "inputs": {
-        "inputFacets": {
+        "facets": {
             "dataQualityMetrics": {
                 "_producer": "https://some.producer.com/version/1.0",
                 "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/DataQualityMetricsDatasetFacet.json",
