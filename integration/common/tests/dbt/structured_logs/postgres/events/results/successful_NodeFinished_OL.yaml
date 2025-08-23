@@ -14,7 +14,11 @@
           "openlineageAdapterVersion": "{{ any(result) }}"
         },
         "dbt_run": {
-          "invocation_id": "c7bcefd4-ce3a-447c-90cf-21de0ff9a417"
+          "invocation_id": "c7bcefd4-ce3a-447c-90cf-21de0ff9a417",
+          "project_name": "jaffle_shop",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "dbt_runtime": "core",
         }
       }
     },
@@ -57,7 +61,11 @@
           "openlineageAdapterVersion": "{{ any(result) }}"
         },
         "dbt_run": {
-          "invocation_id": "c7bcefd4-ce3a-447c-90cf-21de0ff9a417"
+          "invocation_id": "c7bcefd4-ce3a-447c-90cf-21de0ff9a417",
+          "project_name": "jaffle_shop",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "dbt_runtime": "core",
         }
       }
     },
@@ -129,7 +137,11 @@
           "openlineageAdapterVersion": "{{ any(result) }}"
         },
         "dbt_run": {
-          "invocation_id": "c7bcefd4-ce3a-447c-90cf-21de0ff9a417"
+          "invocation_id": "c7bcefd4-ce3a-447c-90cf-21de0ff9a417",
+          "project_name": "jaffle_shop",
+          "project_version": "0.1",
+          "profile_name": "jaffle_shop",
+          "dbt_runtime": "core",
         }
       }
     },

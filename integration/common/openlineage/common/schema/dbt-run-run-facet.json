@@ -14,6 +14,22 @@
               "type": "str",
               "format": "uuid",
               "example": "e0c64ee8-2672-4c7a-92cc-2e27c2d4324f"
+            },
+            "project_name": {
+              "type": "str",
+              "example": "my_project"
+            },
+            "project_version": {
+              "type": "str",
+              "example": "0.20.1"
+            },
+            "profile_name": {
+              "type": "str",
+              "example": "default"
+            },
+            "dbt_runtime": {
+              "type": "str",
+              "example": "cloud"
             }
           },
           "required": ["invocation_id"]
