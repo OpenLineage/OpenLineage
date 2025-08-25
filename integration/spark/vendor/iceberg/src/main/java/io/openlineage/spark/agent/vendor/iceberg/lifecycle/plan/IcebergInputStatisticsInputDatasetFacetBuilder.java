@@ -88,7 +88,10 @@ public class IcebergInputStatisticsInputDatasetFacetBuilder
               .build());
     } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
       // do nothing
-      log.warn("Failed to extract input statistics from Iceberg scan", e);
+      log.warn(
+          "Failed to extract input statistics from Iceberg scan class {}",
+          scan.getClass().getCanonicalName());
+      log.debug("Failed to extract input statistics from Iceberg scan", e);
     }
   }
 }
