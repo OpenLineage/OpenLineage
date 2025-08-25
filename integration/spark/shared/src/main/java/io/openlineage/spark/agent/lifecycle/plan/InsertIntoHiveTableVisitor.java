@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.CatalogUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
@@ -47,21 +48,44 @@ public class InsertIntoHiveTableVisitor
 
     InsertIntoHiveTable cmd = (InsertIntoHiveTable) x;
     CatalogTable table = cmd.table();
-
+    Optional<OpenLineage.CatalogDatasetFacet> catalogDatasetFacetForHive =
+        CatalogUtils.getCatalogDatasetFacetForHive(context);
     OpenLineage.OutputDataset outputDataset;
     if (cmd.overwrite()) {
       outputDataset =
-          outputDataset()
-              .getDataset(
-                  PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
-                  table.schema(),
-                  OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
+          catalogDatasetFacetForHive
+              .map(
+                  catalogDatasetFacet ->
+                      outputDataset()
+                          .getDataset(
+                              PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
+                              table.schema(),
+                              OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
+                                  .OVERWRITE,
+                              catalogDatasetFacet))
+              .orElse(
+                  outputDataset()
+                      .getDataset(
+                          PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
+                          table.schema(),
+                          OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
+                              .OVERWRITE));
+
     } else {
       outputDataset =
-          outputDataset()
-              .getDataset(
-                  PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
-                  table.schema());
+          catalogDatasetFacetForHive
+              .map(
+                  catalogDatasetFacet ->
+                      outputDataset()
+                          .getDataset(
+                              PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
+                              table.schema(),
+                              catalogDatasetFacet))
+              .orElse(
+                  outputDataset()
+                      .getDataset(
+                          PathUtils.fromCatalogTable(table, context.getSparkSession().get()),
+                          table.schema()));
     }
 
     return Collections.singletonList(outputDataset);

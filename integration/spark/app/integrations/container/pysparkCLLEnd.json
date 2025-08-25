@@ -58,6 +58,12 @@
           "name": "file",
           "uri": "file"
         },
+        "catalog": {
+          "framework": "hive",
+          "type": "hive",
+          "warehouseUri": "file:/tmp/cll_test",
+          "source": "spark"
+        },
         "schema": {
           "fields": [
             {

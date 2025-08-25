@@ -31,6 +31,12 @@
             }
           ]
         },
+        "catalog": {
+          "framework": "hive",
+          "type": "hive",
+          "warehouseUri": "file:/tmp/overwrite",
+          "source": "spark"
+        },
         "dataSource": {
           "name": "file",
           "uri": "file"
