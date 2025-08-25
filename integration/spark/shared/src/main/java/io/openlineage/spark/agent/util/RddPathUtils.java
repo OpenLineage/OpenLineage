@@ -90,7 +90,7 @@ public class RddPathUtils {
         log.debug("Hadoop RDD input paths {}", Arrays.toString(inputPaths));
         log.debug("Hadoop RDD job conf {}", rdd.getJobConf());
       }
-      return Arrays.stream(inputPaths).map(p -> PlanUtils.getDirectoryPath(p, hadoopConf));
+      return PlanUtils.getDirectoryPaths(Arrays.asList(inputPaths), hadoopConf).stream();
     }
   }
 
@@ -107,7 +107,7 @@ public class RddPathUtils {
             org.apache.hadoop.mapreduce.lib.input.FileInputFormat.getInputPaths(
                 new Job(((NewHadoopRDD<?, ?>) rdd).getConf()));
 
-        return Arrays.stream(inputPaths).map(p -> PlanUtils.getDirectoryPath(p, rdd.getConf()));
+        return PlanUtils.getDirectoryPaths(Arrays.asList(inputPaths), rdd.getConf()).stream();
       } catch (IOException e) {
         log.error("Openlineage spark agent could not get input paths", e);
       }

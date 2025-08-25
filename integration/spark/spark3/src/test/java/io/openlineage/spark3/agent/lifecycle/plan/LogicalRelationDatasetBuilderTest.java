@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -22,6 +23,7 @@ import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
@@ -43,6 +45,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
+import scala.collection.JavaConverters;
 import scala.collection.immutable.HashMap;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
@@ -84,10 +87,10 @@ class LogicalRelationDatasetBuilderTest {
     when(logicalRelation.relation()).thenReturn(hadoopFsRelation);
     when(sessionState.newHadoopConfWithOptions(any())).thenReturn(hadoopConfig);
     when(hadoopFsRelation.location()).thenReturn(fileIndex);
+
     when(fileIndex.rootPaths())
         .thenReturn(
-            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
-                    Arrays.asList(path, path))
+            JavaConverters.collectionAsScalaIterableConverter(Arrays.asList(path, path))
                 .asScala()
                 .toSeq());
     when(openLineage.newDatasetFacetsBuilder()).thenReturn(new OpenLineage.DatasetFacetsBuilder());
@@ -95,7 +98,8 @@ class LogicalRelationDatasetBuilderTest {
 
     try (MockedStatic mocked = mockStatic(PlanUtils.class)) {
       try (MockedStatic mockedFacetUtils = mockStatic(DatasetVersionDatasetFacetUtils.class)) {
-        when(PlanUtils.getDirectoryPath(path, hadoopConfig)).thenReturn(new Path("/tmp"));
+        when(PlanUtils.getDirectoryPaths(any(), eq(hadoopConfig)))
+            .thenReturn(Collections.singletonList(new Path("/tmp")));
         when(DatasetVersionDatasetFacetUtils.extractVersionFromLogicalRelation(logicalRelation))
             .thenReturn(Optional.of(SOME_VERSION));
 
