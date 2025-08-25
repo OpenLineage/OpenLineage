@@ -1,5 +1,4 @@
 {
-  "eventType": "COMPLETE",
   "job": {
     "namespace": "testRddWithParquet",
     "name": "open_lineage_integration_rdd_with_parquet.execute_insert_into_hadoop_fs_relation_command.tmp_rdd_c"
@@ -39,6 +38,12 @@
         },
         "lifecycleStateChange": {
           "lifecycleStateChange": "OVERWRITE"
+        }
+      },
+      "outputFacets": {
+        "outputStatistics": {
+          "rowCount": "${json-unit.any-number}",
+          "size": "${json-unit.any-number}"
         }
       }
     }
