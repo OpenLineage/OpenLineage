@@ -244,6 +244,9 @@ jobs:
       - store_artifacts:
           path: ./build/libs
           destination: sql-java-artifacts
+      - store_artifacts:
+          path: ./shaded/build/libs
+          destination: sql-java-artifacts
 
   release-integration-sql-java:
     working_directory: ~/openlineage/integration/sql/iface-java
