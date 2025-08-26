@@ -3,14 +3,15 @@
 
 from __future__ import annotations
 
-import attr
+from attr import define
+from attr import field as attr_field
 from openlineage.client.generated.base import JobFacet
 from openlineage.client.utils import RedactMixin
 
 
-@attr.define
+@define
 class TagsJobFacet(JobFacet):
-    tags: list[TagsJobFacetFields] | None = attr.field(factory=list)
+    tags: list[TagsJobFacetFields] | None = attr_field(factory=list)
     """The tags applied to the job facet"""
 
     @staticmethod
@@ -18,7 +19,7 @@ class TagsJobFacet(JobFacet):
         return "https://openlineage.io/spec/facets/1-0-0/TagsJobFacet.json#/$defs/TagsJobFacet"
 
 
-@attr.define
+@define
 class TagsJobFacetFields(RedactMixin):
     key: str
     """Key that identifies the tag"""
@@ -26,7 +27,7 @@ class TagsJobFacetFields(RedactMixin):
     value: str
     """The value of the field"""
 
-    source: str | None = attr.field(default=None)
+    source: str | None = attr_field(default=None)
     """The source of the tag. INTEGRATION|USER|DBT CORE|SPARK|etc."""
 
     @staticmethod

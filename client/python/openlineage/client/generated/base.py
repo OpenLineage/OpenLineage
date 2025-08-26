@@ -6,7 +6,8 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, ClassVar, cast
 
-import attr
+from attr import define, fields, make_class
+from attr import field as attr_field
 from openlineage.client.constants import DEFAULT_PRODUCER
 from openlineage.client.utils import RedactMixin
 
@@ -18,13 +19,13 @@ def set_producer(producer: str) -> None:
     PRODUCER = producer
 
 
-@attr.define(kw_only=True)
+@define(kw_only=True)
 class BaseEvent(RedactMixin):
-    eventTime: str = attr.field()  # noqa: N815
+    eventTime: str = attr_field()  # noqa: N815
     """the time the event occurred at"""
 
-    producer: str = attr.field(default="", kw_only=True)  # noqa: N815
-    schemaURL: str = attr.field(  # noqa: N815
+    producer: str = attr_field(default="", kw_only=True)  # noqa: N815
+    schemaURL: str = attr_field(  # noqa: N815
         default="https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/BaseEvent", init=False
     )
     _base_skip_redact: ClassVar[list[str]] = ["producer", "schemaURL"]
@@ -66,12 +67,12 @@ class BaseEvent(RedactMixin):
         urlparse(value)
 
 
-@attr.define
+@define
 class BaseFacet(RedactMixin):
     """all fields of the base facet are prefixed with _ to avoid name conflicts in facets"""
 
-    _producer: str = attr.field(default="", kw_only=True)  # noqa: N815
-    _schemaURL: str = attr.field(  # noqa: N815
+    _producer: str = attr_field(default="", kw_only=True)  # noqa: N815
+    _schemaURL: str = attr_field(  # noqa: N815
         default="https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/BaseFacet", init=False
     )
     _base_skip_redact: ClassVar[list[str]] = ["_producer", "_schemaURL"]
@@ -88,15 +89,15 @@ class BaseFacet(RedactMixin):
 
     def with_additional_properties(self, **kwargs: dict[str, Any]) -> "BaseFacet":
         """Add additional properties to updated class instance."""
-        current_attrs = [a.name for a in attr.fields(self.__class__)]
+        current_attrs = [a.name for a in fields(self.__class__)]
 
-        new_class = attr.make_class(
+        new_class = make_class(
             self.__class__.__name__,
-            {k: attr.field(default=None) for k in kwargs if k not in current_attrs},
+            {k: attr_field(default=None) for k in kwargs if k not in current_attrs},
             bases=(self.__class__,),
         )
         new_class.__module__ = self.__class__.__module__
-        attrs = attr.fields(self.__class__)
+        attrs = fields(self.__class__)
         for a in attrs:
             if not a.init:
                 continue
@@ -123,7 +124,7 @@ class BaseFacet(RedactMixin):
         urlparse(value)
 
 
-@attr.define
+@define
 class Dataset(RedactMixin):
     namespace: str
     """The namespace containing that dataset"""
@@ -131,7 +132,7 @@ class Dataset(RedactMixin):
     name: str
     """The unique name for that dataset within that namespace"""
 
-    facets: dict[str, DatasetFacet] | None = attr.field(factory=dict, kw_only=True)
+    facets: dict[str, DatasetFacet] | None = attr_field(factory=dict, kw_only=True)
     """The facets for this dataset"""
 
     _skip_redact: ClassVar[list[str]] = ["namespace", "name"]
@@ -141,7 +142,7 @@ class Dataset(RedactMixin):
         return "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/Dataset"
 
 
-@attr.define(kw_only=True)
+@define(kw_only=True)
 class DatasetEvent(BaseEvent):
     dataset: StaticDataset
 
@@ -150,11 +151,11 @@ class DatasetEvent(BaseEvent):
         return "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/DatasetEvent"
 
 
-@attr.define
+@define
 class DatasetFacet(BaseFacet):
     """A Dataset Facet"""
 
-    _deleted: bool | None = attr.field(default=None, kw_only=True)
+    _deleted: bool | None = attr_field(default=None, kw_only=True)
     """set to true to delete a facet"""
 
     @staticmethod
@@ -177,11 +178,11 @@ class EventType(Enum):
     OTHER = "OTHER"
 
 
-@attr.define
+@define
 class InputDataset(Dataset):
     """An input dataset"""
 
-    inputFacets: dict[str, InputDatasetFacet] | None = attr.field(factory=dict)  # noqa: N815
+    inputFacets: dict[str, InputDatasetFacet] | None = attr_field(factory=dict)  # noqa: N815
     """The input facets for this dataset."""
 
     _additional_skip_redact: ClassVar[list[str]] = ["namespace", "name"]
@@ -191,7 +192,7 @@ class InputDataset(Dataset):
         return "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/InputDataset"
 
 
-@attr.define
+@define
 class InputDatasetFacet(BaseFacet):
     """An Input Dataset Facet"""
 
@@ -200,7 +201,7 @@ class InputDatasetFacet(BaseFacet):
         return "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/InputDatasetFacet"
 
 
-@attr.define
+@define
 class Job(RedactMixin):
     namespace: str
     """The namespace containing that job"""
@@ -208,7 +209,7 @@ class Job(RedactMixin):
     name: str
     """The unique name for that job within that namespace"""
 
-    facets: dict[str, JobFacet] | None = attr.field(factory=dict)
+    facets: dict[str, JobFacet] | None = attr_field(factory=dict)
     """The job facets."""
 
     _skip_redact: ClassVar[list[str]] = ["namespace", "name"]
@@ -218,13 +219,13 @@ class Job(RedactMixin):
         return "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/Job"
 
 
-@attr.define(kw_only=True)
+@define(kw_only=True)
 class JobEvent(BaseEvent):
     job: Job
-    inputs: list[InputDataset] | None = attr.field(factory=list)
+    inputs: list[InputDataset] | None = attr_field(factory=list)
     """The set of **input** datasets."""
 
-    outputs: list[OutputDataset] | None = attr.field(factory=list)
+    outputs: list[OutputDataset] | None = attr_field(factory=list)
     """The set of **output** datasets."""
 
     @staticmethod
@@ -232,11 +233,11 @@ class JobEvent(BaseEvent):
         return "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/JobEvent"
 
 
-@attr.define
+@define
 class JobFacet(BaseFacet):
     """A Job Facet"""
 
-    _deleted: bool | None = attr.field(default=None, kw_only=True)
+    _deleted: bool | None = attr_field(default=None, kw_only=True)
     """set to true to delete a facet"""
 
     @staticmethod
@@ -244,11 +245,11 @@ class JobFacet(BaseFacet):
         return "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/JobFacet"
 
 
-@attr.define
+@define
 class OutputDataset(Dataset):
     """An output dataset"""
 
-    outputFacets: dict[str, OutputDatasetFacet] | None = attr.field(factory=dict)  # noqa: N815
+    outputFacets: dict[str, OutputDatasetFacet] | None = attr_field(factory=dict)  # noqa: N815
     """The output facets for this dataset"""
 
     _additional_skip_redact: ClassVar[list[str]] = ["namespace", "name"]
@@ -258,7 +259,7 @@ class OutputDataset(Dataset):
         return "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/OutputDataset"
 
 
-@attr.define
+@define
 class OutputDatasetFacet(BaseFacet):
     """An Output Dataset Facet"""
 
@@ -267,12 +268,12 @@ class OutputDatasetFacet(BaseFacet):
         return "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/OutputDatasetFacet"
 
 
-@attr.define
+@define
 class Run(RedactMixin):
-    runId: str = attr.field()  # noqa: N815
+    runId: str = attr_field()  # noqa: N815
     """The globally unique ID of the run associated with the job."""
 
-    facets: dict[str, RunFacet] | None = attr.field(factory=dict)
+    facets: dict[str, RunFacet] | None = attr_field(factory=dict)
     """The run facets."""
 
     _skip_redact: ClassVar[list[str]] = ["runId"]
@@ -288,20 +289,20 @@ class Run(RedactMixin):
         UUID(value)
 
 
-@attr.define(kw_only=True)
+@define(kw_only=True)
 class RunEvent(BaseEvent):
     run: Run
     job: Job
-    eventType: EventType | None = attr.field(default=None)  # noqa: N815
+    eventType: EventType | None = attr_field(default=None)  # noqa: N815
     """
     the current transition of the run state. It is required to issue 1 START event and 1 of [ COMPLETE,
     ABORT, FAIL ] event per run. Additional events with OTHER eventType can be added to the same run.
     For example to send additional metadata after the run is complete
     """
-    inputs: list[InputDataset] | None = attr.field(factory=list)
+    inputs: list[InputDataset] | None = attr_field(factory=list)
     """The set of **input** datasets."""
 
-    outputs: list[OutputDataset] | None = attr.field(factory=list)
+    outputs: list[OutputDataset] | None = attr_field(factory=list)
     """The set of **output** datasets."""
 
     _additional_skip_redact: ClassVar[list[str]] = ["eventType", "eventTime"]
@@ -311,7 +312,7 @@ class RunEvent(BaseEvent):
         return "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunEvent"
 
 
-@attr.define
+@define
 class RunFacet(BaseFacet):
     """A Run Facet"""
 
@@ -320,7 +321,7 @@ class RunFacet(BaseFacet):
         return "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/RunFacet"
 
 
-@attr.define
+@define
 class StaticDataset(Dataset):
     """A Dataset sent within static metadata events"""
 

@@ -5,14 +5,15 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-import attr
+from attr import define
+from attr import field as attr_field
 from openlineage.client.generated.base import DatasetFacet
 
 
-@attr.define
+@define
 class DatasourceDatasetFacet(DatasetFacet):
-    name: str | None = attr.field(default=None)
-    uri: str | None = attr.field(default=None)
+    name: str | None = attr_field(default=None)
+    uri: str | None = attr_field(default=None)
     _additional_skip_redact: ClassVar[list[str]] = ["name", "uri"]
 
     @staticmethod

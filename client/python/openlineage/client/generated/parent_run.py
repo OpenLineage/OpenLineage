@@ -5,12 +5,13 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-import attr
+from attr import define
+from attr import field as attr_field
 from openlineage.client.generated.base import RunFacet
 from openlineage.client.utils import RedactMixin
 
 
-@attr.define
+@define
 class Job(RedactMixin):
     namespace: str
     """The namespace containing that job"""
@@ -19,7 +20,7 @@ class Job(RedactMixin):
     """The unique name for that job within that namespace"""
 
 
-@attr.define
+@define
 class ParentRunFacet(RunFacet):
     """
     the id of the parent run and job, iff this run was spawn from an other run (for example, the Dag run
@@ -28,7 +29,7 @@ class ParentRunFacet(RunFacet):
 
     run: Run
     job: Job
-    root: Root | None = attr.field(default=None)
+    root: Root | None = attr_field(default=None)
     _additional_skip_redact: ClassVar[list[str]] = ["job", "run"]
 
     @staticmethod
@@ -47,14 +48,14 @@ class ParentRunFacet(RunFacet):
         return cls(run=Run(runId=runId), job=Job(namespace=namespace, name=name))
 
 
-@attr.define
+@define
 class Root(RedactMixin):
     run: RootRun
     job: RootJob
     _skip_redact: ClassVar[list[str]] = ["run", "job"]
 
 
-@attr.define
+@define
 class RootJob(RedactMixin):
     namespace: str
     """The namespace containing root job"""
@@ -69,9 +70,9 @@ class RootJob(RedactMixin):
         return "https://openlineage.io/spec/facets/1-1-0/ParentRunFacet.json#/$defs/RootJob"
 
 
-@attr.define
+@define
 class RootRun(RedactMixin):
-    runId: str = attr.field()  # noqa: N815
+    runId: str = attr_field()  # noqa: N815
     """The globally unique ID of the root run associated with the root job."""
 
     _skip_redact: ClassVar[list[str]] = ["runId"]
@@ -87,9 +88,9 @@ class RootRun(RedactMixin):
         UUID(value)
 
 
-@attr.define
+@define
 class Run(RedactMixin):
-    runId: str = attr.field()  # noqa: N815
+    runId: str = attr_field()  # noqa: N815
     """The globally unique ID of the run associated with the job."""
 
     @runId.validator

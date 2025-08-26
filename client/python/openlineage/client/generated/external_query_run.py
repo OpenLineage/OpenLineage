@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
-import attr
+from attr import define
 from openlineage.client.generated.base import RunFacet
 
 
-@attr.define
+@define
 class ExternalQueryRunFacet(RunFacet):
     externalQueryId: str  # noqa: N815
     """Identifier for the external system"""

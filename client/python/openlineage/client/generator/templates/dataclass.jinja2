@@ -30,7 +30,7 @@
     {% for decorator in decorators -%}
         {{ decorator }}
 {% endfor -%}
-@attr.define
+@define
 {#- always force kw_only for event classes -#}
 {%- if class_name.endswith("Event") -%}(kw_only=True){%- endif -%}
 {#- add parent class if exists -#}
@@ -71,12 +71,12 @@ class {{ class_name }}:
     {%- if field.field %}
     {{ field.name }}: {{ type_hint }} =
         {#- attrs requires field() for validators -#}
-        {%- if 'True' == validators.validator_needed(field.type_hint) -%} attr.field(default={{ field.field }}
+        {%- if 'True' == validators.validator_needed(field.type_hint) -%} attr_field(default={{ field.field }}
         {%- else -%} {{ field.field }} {%- endif -%}
     {%- else %}
     {{ field.name }}: {{ type_hint }}
     {#- attrs requires field() for validators -#}
-    {%- if 'True' == validators.validator_needed(field.type_hint) %} = attr.field() {%- endif -%}
+    {%- if 'True' == validators.validator_needed(field.type_hint) %} = attr_field() {%- endif -%}
     {%- if not (field.required or (field.represented_default == 'None' and field.strip_default_none)) -%}
         {#- use factories for list and dict types -#}
         {%- if 'list' in type_hint -%}
@@ -86,7 +86,7 @@ class {{ class_name }}:
         {%- else -%}
             {%- set default_value = 'default='+field.represented_default -%}
         {%- endif -%}
-        = attr.field({{ default_value }}
+        = attr_field({{ default_value }}
         {#- if other classes inherit from this class make field kw_only -#}
         {%- if field.parent.reference.children | map(attribute='name') | join -%}, kw_only=True{%- endif -%}
         )
@@ -122,8 +122,8 @@ class {{ class_name }}:
 {%- endfor -%}
 {#- special case for producer and schemaURL fields -#}
 {%- if class_name in ['BaseFacet', 'BaseEvent'] %}
-    {{ private_prefix }}producer: str = attr.field(default='', kw_only=True)  # noqa: N815
-    {{ private_prefix }}schemaURL: str = attr.field(  # noqa: N815
+    {{ private_prefix }}producer: str = attr_field(default='', kw_only=True)  # noqa: N815
+    {{ private_prefix }}schemaURL: str = attr_field(  # noqa: N815
         default="{{ _schemaURL }}", init=False)
 {%- endif -%}
 {#- try to match redfact fields per module_name -#}
@@ -153,15 +153,15 @@ class {{ class_name }}:
 {%- if additionalProperties == True %}
     def with_additional_properties(self, **kwargs: dict[str, Any]) -> "{{ class_name }}":
         """Add additional properties to updated class instance."""
-        current_attrs = [a.name for a in attr.fields(self.__class__)]
+        current_attrs = [a.name for a in fields(self.__class__)]
 
-        new_class = attr.make_class(
+        new_class = make_class(
                 self.__class__.__name__,
-                {k: attr.field(default=None) for k in kwargs if k not in current_attrs},
+                {k: attr_field(default=None) for k in kwargs if k not in current_attrs},
                 bases=(self.__class__,),
             )
         new_class.__module__ = self.__class__.__module__
-        attrs = attr.fields(self.__class__)
+        attrs = fields(self.__class__)
         for a in attrs:
             if not a.init:
                 continue

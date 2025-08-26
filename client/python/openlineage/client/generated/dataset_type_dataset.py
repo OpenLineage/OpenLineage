@@ -5,16 +5,17 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-import attr
+from attr import define
+from attr import field as attr_field
 from openlineage.client.generated.base import DatasetFacet
 
 
-@attr.define
+@define
 class DatasetTypeDatasetFacet(DatasetFacet):
     datasetType: str  # noqa: N815
     """Dataset type, for example: FILE|STREAM|MODEL|TABLE|VIEW."""
 
-    subType: str | None = attr.field(default=None)  # noqa: N815
+    subType: str | None = attr_field(default=None)  # noqa: N815
     """Optional sub-type within the dataset type (e.g., BEST VALIDATION under MODEL CHECKPOINT)."""
 
     _additional_skip_redact: ClassVar[list[str]] = ["datasetType", "subType"]

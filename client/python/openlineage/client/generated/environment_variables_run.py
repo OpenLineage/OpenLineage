@@ -5,12 +5,12 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-import attr
+from attr import define
 from openlineage.client.generated.base import RunFacet
 from openlineage.client.utils import RedactMixin
 
 
-@attr.define
+@define
 class EnvironmentVariable(RedactMixin):
     name: str
     """The name of the environment variable."""
@@ -25,7 +25,7 @@ class EnvironmentVariable(RedactMixin):
         return "https://openlineage.io/spec/facets/1-0-0/EnvironmentVariablesRunFacet.json#/$defs/EnvironmentVariable"
 
 
-@attr.define
+@define
 class EnvironmentVariablesRunFacet(RunFacet):
     environmentVariables: list[EnvironmentVariable]  # noqa: N815
     """The environment variables for the run."""

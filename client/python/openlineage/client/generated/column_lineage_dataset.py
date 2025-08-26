@@ -5,17 +5,18 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, cast
 
-import attr
+from attr import define, fields, make_class
+from attr import field as attr_field
 from openlineage.client.generated.base import DatasetFacet
 from openlineage.client.utils import RedactMixin
 
 
-@attr.define
+@define
 class ColumnLineageDatasetFacet(DatasetFacet):
     fields: dict[str, Fields]
     """Column level lineage that maps output fields into input fields used to evaluate them."""
 
-    dataset: list[InputField] | None = attr.field(factory=list)
+    dataset: list[InputField] | None = attr_field(factory=list)
     """
     Column level lineage that affects the whole dataset. This includes filtering, sorting, grouping
     (aggregates), joining, window functions, etc.
@@ -26,13 +27,13 @@ class ColumnLineageDatasetFacet(DatasetFacet):
         return "https://openlineage.io/spec/facets/1-2-0/ColumnLineageDatasetFacet.json#/$defs/ColumnLineageDatasetFacet"
 
 
-@attr.define
+@define
 class Fields(RedactMixin):
     inputFields: list[InputField]  # noqa: N815
-    transformationDescription: str | None = attr.field(default=None)  # noqa: N815
+    transformationDescription: str | None = attr_field(default=None)  # noqa: N815
     """a string representation of the transformation applied"""
 
-    transformationType: str | None = attr.field(default=None)  # noqa: N815
+    transformationType: str | None = attr_field(default=None)  # noqa: N815
     """
     IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no
     original data available (like a hash of PII for example)
@@ -40,15 +41,15 @@ class Fields(RedactMixin):
 
     def with_additional_properties(self, **kwargs: dict[str, Any]) -> "Fields":
         """Add additional properties to updated class instance."""
-        current_attrs = [a.name for a in attr.fields(self.__class__)]
+        current_attrs = [a.name for a in fields(self.__class__)]
 
-        new_class = attr.make_class(
+        new_class = make_class(
             self.__class__.__name__,
-            {k: attr.field(default=None) for k in kwargs if k not in current_attrs},
+            {k: attr_field(default=None) for k in kwargs if k not in current_attrs},
             bases=(self.__class__,),
         )
         new_class.__module__ = self.__class__.__module__
-        attrs = attr.fields(self.__class__)
+        attrs = fields(self.__class__)
         for a in attrs:
             if not a.init:
                 continue
@@ -59,7 +60,7 @@ class Fields(RedactMixin):
         return cast(Fields, new_class(**kwargs))
 
 
-@attr.define
+@define
 class InputField(RedactMixin):
     """Represents a single dependency on some field (column)."""
 
@@ -72,20 +73,20 @@ class InputField(RedactMixin):
     field: str
     """The input field"""
 
-    transformations: list[Transformation] | None = attr.field(factory=list)
+    transformations: list[Transformation] | None = attr_field(factory=list)
     _skip_redact: ClassVar[list[str]] = ["namespace", "name", "field"]
 
     def with_additional_properties(self, **kwargs: dict[str, Any]) -> "InputField":
         """Add additional properties to updated class instance."""
-        current_attrs = [a.name for a in attr.fields(self.__class__)]
+        current_attrs = [a.name for a in fields(self.__class__)]
 
-        new_class = attr.make_class(
+        new_class = make_class(
             self.__class__.__name__,
-            {k: attr.field(default=None) for k in kwargs if k not in current_attrs},
+            {k: attr_field(default=None) for k in kwargs if k not in current_attrs},
             bases=(self.__class__,),
         )
         new_class.__module__ = self.__class__.__module__
-        attrs = attr.fields(self.__class__)
+        attrs = fields(self.__class__)
         for a in attrs:
             if not a.init:
                 continue
@@ -100,33 +101,33 @@ class InputField(RedactMixin):
         return "https://openlineage.io/spec/facets/1-2-0/ColumnLineageDatasetFacet.json#/$defs/InputField"
 
 
-@attr.define
+@define
 class Transformation(RedactMixin):
     type: str  # noqa: A003
     """The type of the transformation. Allowed values are: DIRECT, INDIRECT"""
 
-    subtype: str | None = attr.field(default=None)
+    subtype: str | None = attr_field(default=None)
     """The subtype of the transformation"""
 
-    description: str | None = attr.field(default=None)
+    description: str | None = attr_field(default=None)
     """a string representation of the transformation applied"""
 
-    masking: bool | None = attr.field(default=None)
+    masking: bool | None = attr_field(default=None)
     """is transformation masking the data or not"""
 
     _skip_redact: ClassVar[list[str]] = ["type", "subtype", "masking"]
 
     def with_additional_properties(self, **kwargs: dict[str, Any]) -> "Transformation":
         """Add additional properties to updated class instance."""
-        current_attrs = [a.name for a in attr.fields(self.__class__)]
+        current_attrs = [a.name for a in fields(self.__class__)]
 
-        new_class = attr.make_class(
+        new_class = make_class(
             self.__class__.__name__,
-            {k: attr.field(default=None) for k in kwargs if k not in current_attrs},
+            {k: attr_field(default=None) for k in kwargs if k not in current_attrs},
             bases=(self.__class__,),
         )
         new_class.__module__ = self.__class__.__module__
-        attrs = attr.fields(self.__class__)
+        attrs = fields(self.__class__)
         for a in attrs:
             if not a.init:
                 continue
