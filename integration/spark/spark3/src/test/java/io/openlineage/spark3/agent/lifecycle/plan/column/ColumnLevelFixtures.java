@@ -7,12 +7,16 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Arrays;
+import java.util.concurrent.atomic.LongAccumulator;
 import org.apache.spark.sql.catalyst.expressions.Alias;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
+import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata$;
+import org.mockito.MockedStatic;
+import org.mockito.stubbing.Answer;
 import scala.Option;
 import scala.collection.immutable.Seq;
 
@@ -38,6 +42,18 @@ public class ColumnLevelFixtures {
   @SafeVarargs
   public static <T> Seq<T> asSeq(T... elements) {
     return ScalaConversionUtils.fromList(Arrays.asList(elements));
+  }
+
+  public static void mockNewExprId(LongAccumulator id, MockedStatic<NamedExpression> utilities) {
+    utilities
+        .when(NamedExpression::newExprId)
+        .thenAnswer(
+            (Answer<ExprId>)
+                invocation -> {
+                  ExprId exprId = ExprId.apply(id.get());
+                  id.accumulate(1);
+                  return exprId;
+                });
   }
 
   public static final class AliasBuilder {

@@ -48,9 +48,7 @@ import org.apache.spark.sql.catalyst.expressions.WindowExpression;
 import org.apache.spark.sql.catalyst.expressions.WindowExpression$;
 import org.apache.spark.sql.catalyst.expressions.WindowSpecDefinition$;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
-import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
 import org.apache.spark.sql.catalyst.plans.JoinType;
-import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.Join;
@@ -93,37 +91,6 @@ class ExpressionDependencyCollectorTest {
     when(context.getBuilder()).thenReturn(builder);
     when(context.getOlContext()).thenReturn(mock(OpenLineageContext.class));
     exprIdAccumulator.reset();
-  }
-
-  @Test
-  void testCollectFromAggregatePlan() {
-    try (MockedStatic<NamedExpression> utilities = mockStatic(NamedExpression.class)) {
-      mockNewExprId(exprIdAccumulator, utilities);
-      ExprId datasetDependencyExpression = ExprId.apply(0);
-      Seq<Expression> children =
-          ScalaConversionUtils.fromList(Collections.singletonList((Expression) expression2));
-      Alias alias3 =
-          alias(exprId5, NAME3, (Expression) new Count(children).toAggregateExpression());
-
-      Aggregate aggregate =
-          new Aggregate(
-              getExpressionSeq((Expression) expression1),
-              getNamedExpressionSeq(alias3),
-              mock(LogicalPlan.class));
-      LogicalPlan plan = new CreateTableAsSelect(null, null, null, aggregate, null, null, false);
-
-      ExpressionDependencyCollector.collect(context, plan);
-
-      verify(builder, times(1))
-          .addDependency(exprId5, exprId2, TransformationInfo.aggregation(true));
-      verify(builder, times(1)).addDatasetDependency(datasetDependencyExpression);
-      verify(builder, times(1))
-          .addDependency(
-              datasetDependencyExpression,
-              exprId1,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.GROUP_BY));
-      utilities.verify(NamedExpression::newExprId, times(1));
-    }
   }
 
   @Test
@@ -492,10 +459,6 @@ class ExpressionDependencyCollectorTest {
         Metadata$.MODULE$.empty(),
         exprId,
         ScalaConversionUtils.asScalaSeqEmpty());
-  }
-
-  private static Alias alias(ExprId aliasExprId, String aliasName, NamedExpression child) {
-    return alias(aliasExprId, aliasName, (Expression) child);
   }
 
   @NotNull
