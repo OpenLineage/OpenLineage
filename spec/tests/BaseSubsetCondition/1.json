@@ -1,0 +1,6 @@
+{
+  "condition": {
+    "type": "location",
+    "locations": ["s3://some/bucket/location1", "s3://some/bucket/location2", "s3://some/bucket/location"]
+  }
+}

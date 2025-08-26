@@ -10,6 +10,7 @@ import static java.util.Arrays.asList;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
  */
 public class TypeResolver {
 
+  private static final String OPENLINEAGE_ROOT_FILE = "OpenLineage.json";
   private Map<String, ObjectResolvedType> types = new HashMap<>();
   private Set<String> baseTypes = new HashSet<>();
 
@@ -49,7 +51,8 @@ public class TypeResolver {
 
   public TypeResolver(Collection<URL> baseUrls) {
     super();
-    for (final URL baseUrl : baseUrls) {
+
+    for (final URL baseUrl : orderUrls(baseUrls)) {
 
       String path = baseUrl.getPath();
       final String container = path.substring(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
@@ -186,12 +189,20 @@ public class TypeResolver {
           String absolutePointer = refType.getPointer();
           int anchorIndex = absolutePointer.indexOf('#');
           String pointer = absolutePointer.substring(anchorIndex + 1);
-          String base = absolutePointer.substring(0, anchorIndex);
           String typeName = titleCase(lastPart(pointer));
           final String refContainer;
+          JsonNode refJsonNode = rootSchema;
           if (anchorIndex > 0) {
+            String base = absolutePointer.substring(0, anchorIndex);
             String file = base.substring(base.lastIndexOf('/') + 1);
             refContainer = file.substring(0, file.lastIndexOf('.'));
+          } else if (pointer.startsWith("http") && anchorIndex < 0) {
+            // ref to external facet definition
+            // used when a facet references another object defined in another file
+            refContainer = lastPart(pointer).substring(0, lastPart(pointer).lastIndexOf('.'));
+            refJsonNode = readJson(getFacetFileUrl(baseUrl, refContainer));
+            pointer = "/$defs/" + refContainer;
+            typeName = refContainer;
           } else {
             refContainer = container;
           }
@@ -203,9 +214,10 @@ public class TypeResolver {
             throw new RuntimeException("This ref should have been resolved already: " + refContainer + " " + refType.getPointer() + " => "+ key + " keys: " + types.keySet());
           }
 
-          final JsonNode ref = rootSchema.at(pointer);
+          JsonNode ref = refJsonNode.at(pointer);
           if (ref.isMissingNode()) {
-            throw new RuntimeException("ref " + pointer + " not found in " + rootSchema);
+            // try to read by refContainer
+           throw new RuntimeException("ref " + pointer + " not found in");
           }
           return visit(typeName, parser.parse(ref));
         }
@@ -231,8 +243,40 @@ public class TypeResolver {
     }
   }
 
+  /**
+   * Sorts the urls so that Openlineage.json is first and then alphabetically. This assures
+   * that the base prefixed urls are processed first.
+   *
+   * @param baseUrls
+   * @return
+   */
+  private Collection<URL> orderUrls(Collection<URL> baseUrls) {
+    return baseUrls
+        .stream()
+        .sorted((u1, u2) -> {
+          String file1 = u1.getFile().split("/")[u1.getFile().split("/").length - 1];
+          String file2 = u2.getFile().split("/")[u2.getFile().split("/").length - 1];
+          if (file1.endsWith(OPENLINEAGE_ROOT_FILE)) {
+            return -1;
+          }
+          if (file2.endsWith(OPENLINEAGE_ROOT_FILE)) {
+            return 1;
+          }
+          return file1.compareTo(file2);
+        }).collect(Collectors.toList());
+  }
+
+  private URL getFacetFileUrl(URL baseUrl, String refContainer) {
+    try {
+      return new URL("file://" + baseUrl.getPath().substring(0, baseUrl.getPath().lastIndexOf("/")) + "/" + refContainer + ".json");
+    } catch (MalformedURLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private JsonNode readJson(URL baseUrl) {
     try {
+      System.out.println("reading json from " + baseUrl);
       InputStream input;
       input = baseUrl.openStream();
       ObjectMapper mapper = new ObjectMapper();

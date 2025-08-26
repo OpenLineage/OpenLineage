@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/BaseSubsetCondition.json",
+  "$defs": {
+    "BaseSubsetCondition": {
+      "description": "The condition to define a subset",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true,
+      "required": ["type"]
+    },
+    "BinarySubsetCondition": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseSubsetCondition"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "left": {
+              "$ref": "#/$defs/BaseSubsetCondition"
+            },
+            "right": {
+              "$ref": "#/$defs/BaseSubsetCondition"
+            },
+            "type": {
+              "const": "binary"
+            },
+            "operator": {
+              "type": "string",
+              "example": "AND",
+              "description": "Allowed values: 'AND' or 'OR'"
+            }
+          },
+          "required": ["left", "right", "operator"]
+        }
+      ]
+    },
+    "CompareSubsetCondition": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseSubsetCondition"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "compare"
+            },
+            "left": {
+              "$ref": "#/$defs/BaseSubsetCondition"
+            },
+            "right": {
+              "$ref": "#/$defs/BaseSubsetCondition"
+            },
+            "comparison": {
+              "type": "string",
+              "example": "EQUAL",
+              "description": "Allowed values: 'EQUAL', 'GREATER_THAN', 'GREATER_EQUAL_THAN', 'LESS_THAN', 'LESS_EQUAL_THAN'"
+            }
+          }
+        }
+      ]
+    },
+    "BaseCompareExpression": {
+      "type": "object"
+    },
+    "FieldBaseCompareExpression": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseCompareExpression"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "field"
+            },
+            "field": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "PartitionSubsetCondition": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseSubsetCondition"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "partitions": {
+              "type": "array",
+              "items": {
+                "types": "object",
+                "properties": {
+                  "identifier": {
+                    "type": "string",
+                    "description": "Optionally provided identifier of the partition specified"
+                  },
+                  "type": {
+                    "const": "partition"
+                  },
+                  "dimensions": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "LocationSubsetCondition": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/BaseSubsetCondition"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "location"
+            },
+            "locations": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": ["locations", "type"]
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "condition": {
+      "$ref": "#/$defs/BaseSubsetCondition"
+    }
+  },
+  "required": ["condition"]
+}

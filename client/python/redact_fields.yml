@@ -249,3 +249,29 @@
   classes:
     - class_name: CatalogDatasetFacet
       redact_fields: []
+- module: output_subset_output_dataset
+  classes:
+    - class_name: OutputSubsetOutputDatasetFacet
+      redact_fields: []
+- module: input_subset_input_dataset
+  classes:
+    - class_name: InputSubsetInputDatasetFacet
+      redact_fields: []
+- module: base_subset_condition
+  classes:
+    - class_name: BaseCompareExpression
+      redact_fields: []
+    - class_name: BaseSubsetCondition
+      redact_fields: []
+    - class_name: BinarySubsetCondition
+      redact_fields: []
+    - class_name: CompareSubsetCondition
+      redact_fields: []
+    - class_name: FieldBaseCompareExpression
+      redact_fields: []
+    - class_name: LocationSubsetCondition
+      redact_fields: []
+    - class_name: Partition
+      redact_fields: []
+    - class_name: PartitionSubsetCondition
+      redact_fields: []

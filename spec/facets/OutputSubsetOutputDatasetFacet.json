@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/OutputSubsetOutputDatasetFacet.json",
+  "$defs": {
+    "OutputSubsetOutputDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/2-0-2/OpenLineage.json#/$defs/OutputDatasetFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "condition": {
+              "$ref": "https://openlineage.io/spec/facets/1-0-0/BaseSubsetCondition.json"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "subset": {
+      "$ref": "#/$defs/OutputSubsetOutputDatasetFacet"
+    }
+  }
+}

@@ -241,6 +241,14 @@ class OpenLineageTest {
                         .build())
                 .inputFacets(
                     ol.newInputDatasetInputFacetsBuilder()
+                        .subset(
+                            ol.newInputSubsetInputDatasetFacetBuilder()
+                                .condition(
+                                    ol.newBaseSubsetConditionBuilder()
+                                        .type("location")
+                                        .put("locations", Collections.singletonList("location"))
+                                        .build())
+                                .build())
                         .dataQualityMetrics(
                             ol.newDataQualityMetricsInputDatasetFacetBuilder()
                                 .rowCount(10L)

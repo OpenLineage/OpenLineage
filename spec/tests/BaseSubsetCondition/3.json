@@ -1,0 +1,29 @@
+{
+  "condition": {
+    "type": "binary",
+    "left": {
+      "type": "compare",
+      "left": {
+        "type": "field",
+        "field": "first_name"
+      },
+      "right": {
+        "type": "literal",
+        "value": "John"
+      },
+      "comparison": "EQUAL"
+    },
+    "right": {
+      "type": "compare",
+      "left": {
+        "type": "field",
+        "field": "last_name"
+      },
+      "right": {
+        "type": "literal"
+      },
+      "comparison": "EQUAL"
+    },
+    "operator": "AND"
+  }
+}

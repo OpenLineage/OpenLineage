@@ -143,7 +143,9 @@ repos:
         additional_dependencies: ["github.com/santhosh-tekuri/jsonschema/cmd/jv@latest"]
         entry: ./.pre_commit/json-schema/check-spec.sh
         files: ^spec/.*\.json$
-        exclude: ^spec/tests/.*$
+        exclude:
+          (?x)^( spec/tests/.* | spec/facets/InputSubsetInputDatasetFacet.json |
+          spec/facets/OutputSubsetOutputDatasetFacet.json )$
       - id: test_events
         name: Test events against JSON Schema spec files.
         language: golang
