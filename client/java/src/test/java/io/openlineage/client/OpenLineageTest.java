@@ -241,6 +241,16 @@ class OpenLineageTest {
                         .build())
                 .inputFacets(
                     ol.newInputDatasetInputFacetsBuilder()
+                        .put(
+                            "subset",
+                            ol.newInputSubsetInputDatasetFacetBuilder()
+                                .inputCondition(
+                                    ol.newLocationSubsetConditionBuilder()
+                                        .type("location")
+                                        .locations(
+                                            Arrays.asList("s3://bucket/key1", "s3://bucket/key2"))
+                                        .build())
+                                .build())
                         .dataQualityMetrics(
                             ol.newDataQualityMetricsInputDatasetFacetBuilder()
                                 .rowCount(10L)
