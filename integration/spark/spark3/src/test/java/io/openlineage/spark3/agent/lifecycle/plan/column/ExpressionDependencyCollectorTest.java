@@ -127,38 +127,6 @@ class ExpressionDependencyCollectorTest {
   }
 
   @Test
-  void testCollectFromJoinPlan() {
-    try (MockedStatic<NamedExpression> utilities = mockStatic(NamedExpression.class)) {
-      mockNewExprId(exprIdAccumulator, utilities);
-      ExprId datasetDependencyExpression = ExprId.apply(0);
-      EqualTo equalTo = new EqualTo((Expression) expression1, (Expression) expression2);
-      Join join =
-          new Join(
-              mock(LogicalPlan.class),
-              mock(LogicalPlan.class),
-              JoinType.apply("inner"),
-              ScalaConversionUtils.toScalaOption((Expression) equalTo),
-              JoinHint.NONE());
-
-      LogicalPlan plan = new CreateTableAsSelect(null, null, null, join, null, null, false);
-      ExpressionDependencyCollector.collect(context, plan);
-
-      verify(builder, times(1)).addDatasetDependency(datasetDependencyExpression);
-      verify(builder, times(1))
-          .addDependency(
-              datasetDependencyExpression,
-              exprId1,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.JOIN));
-      verify(builder, times(1))
-          .addDependency(
-              datasetDependencyExpression,
-              exprId2,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.JOIN));
-      utilities.verify(NamedExpression::newExprId, times(1));
-    }
-  }
-
-  @Test
   void testCollectFromSortPlan() {
     try (MockedStatic<NamedExpression> utilities = mockStatic(NamedExpression.class)) {
       mockNewExprId(exprIdAccumulator, utilities);

@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.LongAccumulator;
 import org.apache.spark.sql.catalyst.expressions.Alias;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
+import org.apache.spark.sql.catalyst.expressions.EqualTo;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
@@ -37,6 +38,10 @@ public class ColumnLevelFixtures {
         Metadata$.MODULE$.empty(),
         exprId,
         ScalaConversionUtils.asScalaSeqEmpty());
+  }
+
+  public static EqualTo equalTo(Expression left, Expression right) {
+    return new EqualTo(left, right);
   }
 
   @SafeVarargs
