@@ -3,19 +3,20 @@
 
 from __future__ import annotations
 
-import attr
+from attr import define
+from attr import field as attr_field
 from openlineage.client.generated.base import RunFacet
 
 
-@attr.define
+@define
 class ProcessingEngineRunFacet(RunFacet):
     version: str
     """Processing engine version. Might be Airflow or Spark version."""
 
-    name: str | None = attr.field(default=None)
+    name: str | None = attr_field(default=None)
     """Processing engine name, e.g. Airflow or Spark"""
 
-    openlineageAdapterVersion: str | None = attr.field(default=None)  # noqa: N815
+    openlineageAdapterVersion: str | None = attr_field(default=None)  # noqa: N815
     """OpenLineage adapter package version. Might be e.g. OpenLineage Airflow integration package version"""
 
     @staticmethod

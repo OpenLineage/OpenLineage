@@ -5,19 +5,20 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-import attr
+from attr import define
+from attr import field as attr_field
 from openlineage.client.generated.base import InputDatasetFacet
 
 
-@attr.define
+@define
 class InputStatisticsInputDatasetFacet(InputDatasetFacet):
-    rowCount: int | None = attr.field(default=None)  # noqa: N815
+    rowCount: int | None = attr_field(default=None)  # noqa: N815
     """The number of rows read"""
 
-    size: int | None = attr.field(default=None)
+    size: int | None = attr_field(default=None)
     """The size in bytes read"""
 
-    fileCount: int | None = attr.field(default=None)  # noqa: N815
+    fileCount: int | None = attr_field(default=None)  # noqa: N815
     """The number of files read"""
 
     _additional_skip_redact: ClassVar[list[str]] = ["rowCount", "size"]

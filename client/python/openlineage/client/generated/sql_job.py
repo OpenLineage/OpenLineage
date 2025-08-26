@@ -3,14 +3,15 @@
 
 from __future__ import annotations
 
-import attr
+from attr import define
+from attr import field as attr_field
 from openlineage.client.generated.base import JobFacet
 
 
-@attr.define
+@define
 class SQLJobFacet(JobFacet):
     query: str
-    dialect: str | None = attr.field(default=None)
+    dialect: str | None = attr_field(default=None)
 
     @staticmethod
     def _get_schema() -> str:

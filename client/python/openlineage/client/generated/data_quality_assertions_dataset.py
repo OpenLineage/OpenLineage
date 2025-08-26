@@ -5,18 +5,19 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-import attr
+from attr import define
+from attr import field as attr_field
 from openlineage.client.generated.base import InputDatasetFacet
 from openlineage.client.utils import RedactMixin
 
 
-@attr.define
+@define
 class Assertion(RedactMixin):
     assertion: str
     """Type of expectation test that dataset is subjected to"""
 
     success: bool
-    column: str | None = attr.field(default=None)
+    column: str | None = attr_field(default=None)
     """
     Column that expectation is testing. It should match the name provided in SchemaDatasetFacet. If
     column field is empty, then expectation refers to whole dataset.
@@ -24,7 +25,7 @@ class Assertion(RedactMixin):
     _skip_redact: ClassVar[list[str]] = ["column"]
 
 
-@attr.define
+@define
 class DataQualityAssertionsDatasetFacet(InputDatasetFacet):
     """list of tests performed on dataset or dataset columns, and their results"""
 

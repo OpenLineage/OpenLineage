@@ -5,7 +5,8 @@ from __future__ import annotations
 
 from enum import Enum
 
-import attr
+from attr import define
+from attr import field as attr_field
 from openlineage.client.generated.base import DatasetFacet
 from openlineage.client.utils import RedactMixin
 
@@ -21,12 +22,12 @@ class LifecycleStateChange(Enum):
     TRUNCATE = "TRUNCATE"
 
 
-@attr.define
+@define
 class LifecycleStateChangeDatasetFacet(DatasetFacet):
     lifecycleStateChange: LifecycleStateChange  # noqa: N815
     """The lifecycle state change."""
 
-    previousIdentifier: PreviousIdentifier | None = attr.field(default=None)  # noqa: N815
+    previousIdentifier: PreviousIdentifier | None = attr_field(default=None)  # noqa: N815
     """Previous name of the dataset in case of renaming it."""
 
     @staticmethod
@@ -34,7 +35,7 @@ class LifecycleStateChangeDatasetFacet(DatasetFacet):
         return "https://openlineage.io/spec/facets/1-0-1/LifecycleStateChangeDatasetFacet.json#/$defs/LifecycleStateChangeDatasetFacet"
 
 
-@attr.define
+@define
 class PreviousIdentifier(RedactMixin):
     """Previous name of the dataset in case of renaming it."""
 

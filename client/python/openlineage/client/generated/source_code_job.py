@@ -5,11 +5,11 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-import attr
+from attr import define
 from openlineage.client.generated.base import JobFacet
 
 
-@attr.define
+@define
 class SourceCodeJobFacet(JobFacet):
     language: str
     """Language in which source code of this job was written."""
