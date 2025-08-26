@@ -13,6 +13,8 @@ import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.EqualTo;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
+import org.apache.spark.sql.catalyst.expressions.GreaterThan;
+import org.apache.spark.sql.catalyst.expressions.Literal;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata$;
@@ -42,6 +44,10 @@ public class ColumnLevelFixtures {
 
   public static EqualTo equalTo(Expression left, Expression right) {
     return new EqualTo(left, right);
+  }
+
+  public static GreaterThan greaterThan(AttributeReference field, int value) {
+    return new GreaterThan(field, new Literal(value, IntegerType$.MODULE$));
   }
 
   @SafeVarargs
