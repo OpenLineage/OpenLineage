@@ -54,7 +54,6 @@ import org.apache.spark.sql.catalyst.expressions.XxHash64;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
-import org.apache.spark.sql.catalyst.plans.logical.Distinct;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.Join;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -119,9 +118,7 @@ public class ExpressionDependencyCollector {
     List<Expression> datasetDependencies = new LinkedList<>();
     Optional<TransformationInfo> datasetTransformation = Optional.empty();
 
-    if (node instanceof Distinct) {
-      collectFromNode(builder, ((Distinct) node).child());
-    } else if (node instanceof Aggregate) {
+    if (node instanceof Aggregate) {
       Aggregate aggregate = (Aggregate) node;
 
       // don't add group by transformations if child is UNION and aggregate contains group by
