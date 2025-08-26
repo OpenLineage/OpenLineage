@@ -132,3 +132,9 @@ jobs:
       "key:value:source"
     ] 
 ```
+
+## Dataset Name Normalization
+
+import DatasetNameNormalizer from './partials/java_dataset_name_normalizer.md';
+
+<DatasetNameNormalizer/>

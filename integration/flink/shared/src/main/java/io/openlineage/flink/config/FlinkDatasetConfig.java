@@ -32,8 +32,10 @@ public class FlinkDatasetConfig extends DatasetConfig {
 
   public FlinkDatasetConfig(
       FlinkDatasetKafkaConfig kafkaConfig,
-      Map<String, DatasetNamespaceResolverConfig> namespaceResolvers) {
-    super(namespaceResolvers);
+      Map<String, DatasetNamespaceResolverConfig> namespaceResolvers,
+      String disabledTrimmers,
+      String extraTrimmers) {
+    super(namespaceResolvers, disabledTrimmers, extraTrimmers);
     this.kafkaConfig = kafkaConfig;
   }
 
@@ -42,7 +44,9 @@ public class FlinkDatasetConfig extends DatasetConfig {
     if (t instanceof FlinkDatasetConfig) {
       return new FlinkDatasetConfig(
           mergePropertyWith(kafkaConfig, ((FlinkDatasetConfig) t).kafkaConfig),
-          mergePropertyWith(getNamespaceResolvers(), t.getNamespaceResolvers()));
+          mergePropertyWith(getNamespaceResolvers(), t.getNamespaceResolvers()),
+          mergePropertyWith(getDisabledTrimmers(), t.getDisabledTrimmers()),
+          mergePropertyWith(getExtraTrimmers(), t.getExtraTrimmers()));
     } else {
       return super.mergeWithNonNull(t);
     }
