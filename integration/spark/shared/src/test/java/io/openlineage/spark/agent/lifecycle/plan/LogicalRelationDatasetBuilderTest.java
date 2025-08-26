@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -167,8 +168,8 @@ class LogicalRelationDatasetBuilderTest {
                 .toSeq());
 
     try (MockedStatic mocked = mockStatic(PlanUtils.class)) {
-      when(PlanUtils.getDirectoryPath(p1, hadoopConfig)).thenReturn(new Path("/tmp"));
-      when(PlanUtils.getDirectoryPath(p2, hadoopConfig)).thenReturn(new Path("/tmp"));
+      when(PlanUtils.getDirectoryPaths(any(Collection.class), any(Configuration.class)))
+          .thenReturn(Collections.singletonList(new Path("/tmp")));
 
       List<OpenLineage.Dataset> datasets =
           builder.apply(mock(SparkListenerEvent.class), logicalRelation);

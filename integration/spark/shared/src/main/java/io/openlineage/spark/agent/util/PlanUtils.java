@@ -12,9 +12,11 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.naming.NameNormalizer;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -250,7 +252,29 @@ public class PlanUtils {
         .build();
   }
 
-  public static Path getDirectoryPath(Path p, Configuration hadoopConf) {
+  /**
+   * Given a list of paths, it collects list of data location directories. For each path, a parent
+   * directory is taken and list of distinct locations is returned. Operation is optimized to check
+   * for each path if it was already added to the list of normalized paths.
+   *
+   * @param paths
+   * @param hadoopConf
+   * @return
+   */
+  public static List<Path> getDirectoryPaths(Collection<Path> paths, Configuration hadoopConf) {
+    LinkedHashSet<Path> normalizedPaths = new LinkedHashSet<>();
+    for (Path path : paths) {
+      // check if the root path is already contained in normalized Paths
+      Path parent = path.getParent();
+      if (parent != null && !normalizedPaths.contains(parent)) {
+        // if not, add new path to normalized paths -> call getDirectoryPath
+        normalizedPaths.add(PlanUtils.getDirectoryPath(path, hadoopConf));
+      }
+    }
+    return new ArrayList<>(normalizedPaths);
+  }
+
+  private static Path getDirectoryPath(Path p, Configuration hadoopConf) {
     try {
       if (p.getFileSystem(hadoopConf).getFileStatus(p).isFile()) {
         return p.getParent();
