@@ -94,39 +94,6 @@ class ExpressionDependencyCollectorTest {
   }
 
   @Test
-  void testCollectFromFilterPlan() {
-    try (MockedStatic<NamedExpression> utilities = mockStatic(NamedExpression.class)) {
-      mockNewExprId(exprIdAccumulator, utilities);
-      ExprId datasetDependencyExpression = ExprId.apply(0);
-      EqualTo equalTo = new EqualTo((Expression) expression1, (Expression) expression2);
-      AttributeReference expression3 = field(NAME3, exprId3);
-      GreaterThan greaterThan = new GreaterThan(expression3, new Literal(5, IntegerType$.MODULE$));
-      Filter filter = new Filter(new And(equalTo, greaterThan), mock(LogicalPlan.class));
-
-      LogicalPlan plan = new CreateTableAsSelect(null, null, null, filter, null, null, false);
-      ExpressionDependencyCollector.collect(context, plan);
-
-      verify(builder, times(1)).addDatasetDependency(datasetDependencyExpression);
-      verify(builder, times(1))
-          .addDependency(
-              datasetDependencyExpression,
-              exprId1,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER));
-      verify(builder, times(1))
-          .addDependency(
-              datasetDependencyExpression,
-              exprId2,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER));
-      verify(builder, times(1))
-          .addDependency(
-              datasetDependencyExpression,
-              exprId3,
-              TransformationInfo.indirect(TransformationInfo.Subtypes.FILTER));
-      utilities.verify(NamedExpression::newExprId, times(1));
-    }
-  }
-
-  @Test
   void testCollectFromSortPlan() {
     try (MockedStatic<NamedExpression> utilities = mockStatic(NamedExpression.class)) {
       mockNewExprId(exprIdAccumulator, utilities);

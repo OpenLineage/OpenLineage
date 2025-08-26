@@ -6,7 +6,6 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import static io.openlineage.client.utils.TransformationInfo.Subtypes.CONDITIONAL;
-import static io.openlineage.client.utils.TransformationInfo.Subtypes.FILTER;
 import static io.openlineage.client.utils.TransformationInfo.Subtypes.SORT;
 import static io.openlineage.client.utils.TransformationInfo.Subtypes.WINDOW;
 
@@ -17,6 +16,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.AggregateNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.CreateTableAsSelectNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.FilterNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.GenerateNodeVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.JoinNodeVisitor;
@@ -51,7 +51,6 @@ import org.apache.spark.sql.catalyst.expressions.WindowExpression;
 import org.apache.spark.sql.catalyst.expressions.XxHash64;
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.expressions.aggregate.Count;
-import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Sort;
 import org.apache.spark.sql.catalyst.plans.logical.Window;
@@ -93,6 +92,7 @@ public class ExpressionDependencyCollector {
           new CreateTableAsSelectNodeVisitor(),
           new AggregateNodeVisitor(),
           new JoinNodeVisitor(),
+          new FilterNodeVisitor(),
           new UnionDependencyVisitor(),
           new IcebergMergeIntoDependencyVisitor());
 
@@ -114,10 +114,7 @@ public class ExpressionDependencyCollector {
     List<Expression> datasetDependencies = new LinkedList<>();
     Optional<TransformationInfo> datasetTransformation = Optional.empty();
 
-    if (node instanceof Filter) {
-      datasetDependencies.add(((Filter) node).condition());
-      datasetTransformation = Optional.of(TransformationInfo.indirect(FILTER));
-    } else if (node instanceof Sort) {
+    if (node instanceof Sort) {
       datasetDependencies.addAll(ScalaConversionUtils.<SortOrder>fromSeq(((Sort) node).order()));
       datasetTransformation = Optional.of(TransformationInfo.indirect(SORT));
     } else if (node instanceof Window) {
