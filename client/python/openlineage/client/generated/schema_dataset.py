@@ -3,15 +3,14 @@
 
 from __future__ import annotations
 
-from attr import define
-from attr import field as attr_field
+import attr
 from openlineage.client.generated.base import DatasetFacet
 from openlineage.client.utils import RedactMixin
 
 
-@define
+@attr.define
 class SchemaDatasetFacet(DatasetFacet):
-    fields: list[SchemaDatasetFacetFields] | None = attr_field(factory=list)
+    fields: list[SchemaDatasetFacetFields] | None = attr.field(factory=list)
     """The fields of the data source."""
 
     @staticmethod
@@ -19,18 +18,18 @@ class SchemaDatasetFacet(DatasetFacet):
         return "https://openlineage.io/spec/facets/1-1-1/SchemaDatasetFacet.json#/$defs/SchemaDatasetFacet"
 
 
-@define
+@attr.define
 class SchemaDatasetFacetFields(RedactMixin):
     name: str
     """The name of the field."""
 
-    type: str | None = attr_field(default=None)  # noqa: A003
+    type: str | None = attr.field(default=None)  # noqa: A003
     """The type of the field."""
 
-    description: str | None = attr_field(default=None)
+    description: str | None = attr.field(default=None)
     """The description of the field."""
 
-    fields: list[SchemaDatasetFacetFields] | None = attr_field(factory=list)
+    fields: list[SchemaDatasetFacetFields] | None = attr.field(factory=list)
     """Nested struct fields."""
 
     @staticmethod

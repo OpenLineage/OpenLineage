@@ -3,17 +3,16 @@
 
 from __future__ import annotations
 
-from attr import define
-from attr import field as attr_field
+import attr
 from openlineage.client.generated.base import DatasetFacet
 
 
-@define
+@attr.define
 class StorageDatasetFacet(DatasetFacet):
     storageLayer: str  # noqa: N815
     """Storage layer provider with allowed values: iceberg, delta."""
 
-    fileFormat: str | None = attr_field(default=None)  # noqa: N815
+    fileFormat: str | None = attr.field(default=None)  # noqa: N815
     """File format with allowed values: parquet, orc, avro, json, csv, text, xml."""
 
     @staticmethod

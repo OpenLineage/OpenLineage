@@ -3,12 +3,11 @@
 
 from __future__ import annotations
 
-from attr import define
-from attr import field as attr_field
+import attr
 from openlineage.client.generated.base import JobFacet
 
 
-@define
+@attr.define
 class JobTypeJobFacet(JobFacet):
     processingType: str  # noqa: N815
     """Job processing type like: BATCH or STREAMING"""
@@ -16,7 +15,7 @@ class JobTypeJobFacet(JobFacet):
     integration: str
     """OpenLineage integration type of this job: for example SPARK|DBT|AIRFLOW|FLINK"""
 
-    jobType: str | None = attr_field(default=None)  # noqa: N815
+    jobType: str | None = attr.field(default=None)  # noqa: N815
     """Run type, for example: QUERY|COMMAND|DAG|TASK|JOB|MODEL. This is an integration-specific field."""
 
     @staticmethod

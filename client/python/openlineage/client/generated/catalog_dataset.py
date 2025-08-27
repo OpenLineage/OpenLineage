@@ -3,12 +3,11 @@
 
 from __future__ import annotations
 
-from attr import define
-from attr import field as attr_field
+import attr
 from openlineage.client.generated.base import DatasetFacet
 
 
-@define
+@attr.define
 class CatalogDatasetFacet(DatasetFacet):
     framework: str
     """The storage framework for which the catalog is configured"""
@@ -19,13 +18,13 @@ class CatalogDatasetFacet(DatasetFacet):
     name: str
     """Name of the catalog, as configured in the source system."""
 
-    metadataUri: str | None = attr_field(default=None)  # noqa: N815
+    metadataUri: str | None = attr.field(default=None)  # noqa: N815
     """URI or connection string to the catalog, if applicable."""
 
-    warehouseUri: str | None = attr_field(default=None)  # noqa: N815
+    warehouseUri: str | None = attr.field(default=None)  # noqa: N815
     """URI or connection string to the physical location of the data that the catalog describes."""
 
-    source: str | None = attr_field(default=None)
+    source: str | None = attr.field(default=None)
     """Source system where the catalog is configured."""
 
     @staticmethod

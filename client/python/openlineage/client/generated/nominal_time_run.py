@@ -5,19 +5,18 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from attr import define
-from attr import field as attr_field
+import attr
 from openlineage.client.generated.base import RunFacet
 
 
-@define
+@attr.define
 class NominalTimeRunFacet(RunFacet):
-    nominalStartTime: str = attr_field()  # noqa: N815
+    nominalStartTime: str = attr.field()  # noqa: N815
     """
     An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal start time
     (included) of the run. AKA the schedule time
     """
-    nominalEndTime: str | None = attr_field(default=None)  # noqa: N815
+    nominalEndTime: str | None = attr.field(default=None)  # noqa: N815
     """
     An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal end time
     (excluded) of the run. (Should be the nominal start time of the next run)

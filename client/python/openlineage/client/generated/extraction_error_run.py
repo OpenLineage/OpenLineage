@@ -3,30 +3,29 @@
 
 from __future__ import annotations
 
-from attr import define
-from attr import field as attr_field
+import attr
 from openlineage.client.generated.base import RunFacet
 from openlineage.client.utils import RedactMixin
 
 
-@define
+@attr.define
 class Error(RedactMixin):
     errorMessage: str  # noqa: N815
     """Text representation of extraction error message."""
 
-    stackTrace: str | None = attr_field(default=None)  # noqa: N815
+    stackTrace: str | None = attr.field(default=None)  # noqa: N815
     """Stack trace of extraction error message"""
 
-    task: str | None = attr_field(default=None)
+    task: str | None = attr.field(default=None)
     """
     Text representation of task that failed. This can be, for example, SQL statement that parser could
     not interpret.
     """
-    taskNumber: int | None = attr_field(default=None)  # noqa: N815
+    taskNumber: int | None = attr.field(default=None)  # noqa: N815
     """Order of task (counted from 0)."""
 
 
-@define
+@attr.define
 class ExtractionErrorRunFacet(RunFacet):
     totalTasks: int  # noqa: N815
     """
