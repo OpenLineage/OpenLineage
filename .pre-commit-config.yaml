@@ -154,7 +154,7 @@ repos:
         name: Generate OpenLineage facets for Python client.
         language: python
         entry: python ./client/python/openlineage/client/generator/generate.py
-        files: ^spec/.*\.json$|^client/python/facets\.py$|^client/python/openlineage/client/generator
+        files: ^spec/.*\.json$|^client/python/facets\.py$
         exclude: ^spec/tests/.*$
         pass_filenames: false
         additional_dependencies: ["ruff==0.12.10", "click", "datamodel-code-generator==0.33.0"]
