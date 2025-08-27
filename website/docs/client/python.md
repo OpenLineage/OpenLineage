@@ -624,6 +624,122 @@ async_transport_rules:
 - `integration="flink", jobType="ml_training"` → **Async** (matches `* → ml_training`)
 - `integration="kafka", jobType="consumer"` → **HTTP** (no matching rule)
 
+### GCP Data Catalog Lineage
+
+The GCP Data Catalog Lineage transport sends OpenLineage events to Google Cloud Data Catalog Lineage API with intelligent transport routing. This transport combines both synchronous and asynchronous capabilities, automatically selecting the optimal transport method based on configurable rules similar to the Datadog transport.
+
+#### Configuration
+
+- `type` - string, must be `"gcplineage"`. Required.
+- `project_id` - string, GCP project ID where the lineage data will be stored. Required.
+- `location` - string, GCP location (region) for the lineage service. Optional, default: `"us-central1"`.
+- `credentials_path` - string, path to service account JSON credentials file. Optional, uses default credentials if not provided.
+- `async_transport_rules` - dictionary mapping integration and job types to transport selection. Optional, default: `{"dbt": {"*": True}}`.
+
+#### Authentication
+
+The transport supports two authentication methods:
+
+1. **Service Account Key File**: Provide the path to a JSON key file via `credentials_path`
+2. **Default Credentials**: Uses Google Cloud SDK default credentials (recommended for production)
+
+When using default credentials, ensure your environment has proper authentication configured:
+- For local development: `gcloud auth application-default login`
+- For production: Use service account attached to compute resources or workload identity
+
+#### Async Transport Rules
+
+The `async_transport_rules` configuration works identically to the Datadog transport, allowing fine-grained control over which events use asynchronous transport vs synchronous transport. Rules are defined as a two-level dictionary:
+
+```yaml
+async_transport_rules:
+  <integration>:
+    <jobType>: <boolean>
+```
+
+First-level keys match against the `integration` field in `JobTypeJobFacet`. Second-level keys match against the `jobType` field in `JobTypeJobFacet`.
+Value `true` uses async transport, `false` or missing value uses synchronous transport.
+Use `"*"` to match all integrations or job types. All matching is case-insensitive.
+
+When no mapping is provided for an `integration` - `jobType` pair, it uses synchronous transport.
+To send all events via async transport, use double wildcard configuration:
+
+```yaml
+async_transport_rules:
+  "*":
+   "*": true
+```
+
+#### Examples
+
+<Tabs groupId="integrations">
+<TabItem value="yaml" label="Yaml Config">
+
+```yaml
+transport:
+  type: gcplineage
+  project_id: my-gcp-project
+  location: us-central1
+  credentials_path: /path/to/service-account.json
+  async_transport_rules:
+    # All dbt events use async transport
+    dbt:
+      "*": true
+    # All Airflow events use async transport
+    airflow:
+      "*": true
+```
+
+</TabItem>
+<TabItem value="python" label="Python Code">
+
+```python
+from openlineage.client import OpenLineageClient
+from openlineage.client.transport.gcplineage import GCPLineageConfig, GCPLineageTransport
+
+gcp_config = GCPLineageConfig(
+    project_id="my-gcp-project",
+    location="us-central1",
+    credentials_path="/path/to/service-account.json",
+    async_transport_rules={
+        "dbt": {"*": True},
+        "airflow": {"*": True}
+    }
+)
+
+client = OpenLineageClient(transport=GCPLineageTransport(gcp_config))
+```
+
+</TabItem>
+<TabItem value="env-vars" label="Environment Variables">
+
+```bash
+# Basic configuration
+export OPENLINEAGE__TRANSPORT__TYPE=gcplineage
+export OPENLINEAGE__TRANSPORT__PROJECT_ID=my-gcp-project
+export OPENLINEAGE__TRANSPORT__LOCATION=us-central1
+export OPENLINEAGE__TRANSPORT__CREDENTIALS_PATH=/path/to/service-account.json
+
+# Async transport rules
+export OPENLINEAGE__TRANSPORT__ASYNC_TRANSPORT_RULES='{"dbt": {"*": true}, "airflow": {"*": true}}'
+```
+
+</TabItem>
+
+</Tabs>
+
+#### Requirements
+
+This transport requires the `google-cloud-datacatalog-lineage` package:
+
+```bash
+pip install google-cloud-datacatalog-lineage
+```
+
+#### Integration with Google Dataplex
+
+Events sent via this transport will appear in Google Cloud Data Catalog and can be viewed through Google Dataplex for lineage visualization and metadata management.
+
 ### Console
 
 This straightforward transport emits OpenLineage events directly to the console through a logger.

@@ -9,6 +9,7 @@ from openlineage.client.transport.console import ConsoleTransport
 from openlineage.client.transport.datadog import DatadogConfig, DatadogTransport
 from openlineage.client.transport.factory import DefaultTransportFactory
 from openlineage.client.transport.file import FileTransport
+from openlineage.client.transport.gcplineage import GCPLineageConfig, GCPLineageTransport
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 from openlineage.client.transport.kafka import KafkaConfig, KafkaTransport
 from openlineage.client.transport.msk_iam import MSKIAMConfig, MSKIAMTransport
@@ -31,6 +32,7 @@ _factory.register_transport(FileTransport.kind, FileTransport)
 _factory.register_transport(TransformTransport.kind, TransformTransport)
 _factory.register_transport(AmazonDataZoneTransport.kind, AmazonDataZoneTransport)
 _factory.register_transport(DatadogTransport.kind, DatadogTransport)
+_factory.register_transport(GCPLineageTransport.kind, GCPLineageTransport)
 
 
 def get_default_factory() -> DefaultTransportFactory:
@@ -55,6 +57,8 @@ __all__ = [
     "DatadogConfig",
     "DatadogTransport",
     "FileTransport",
+    "GCPLineageConfig",
+    "GCPLineageTransport",
     "HttpConfig",
     "HttpTransport",
     "KafkaConfig",

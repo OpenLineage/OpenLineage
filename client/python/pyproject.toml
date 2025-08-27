@@ -43,6 +43,9 @@ optional-dependencies.msk-iam = [
 optional-dependencies.datazone = [
   "boto3>=1.34.134"
 ]
+optional-dependencies.gcplineage = [
+  "google-cloud-datacatalog-lineage>=0.3.14"
+]
 optional-dependencies.fsspec = [
   "fsspec>=2023.1.0"
 ]
@@ -108,8 +111,8 @@ lint.select = [
     "W",
     "I001"
 ]
-target-version = "py39"
 lint.ignore-init-module-imports = true
+target-version = "py39"
 src = ["openlineage", "tests"]
 namespace-packages = ["openlineage/client"]
 
@@ -127,4 +130,9 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "-ra"
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.2",
 ]
